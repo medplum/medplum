@@ -18,6 +18,7 @@ import { showNotification } from '@mantine/notifications';
 import { convertToTransactionBundle } from '@medplum/core';
 import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
 import { MedplumLink, useMedplum } from '@medplum/react';
+import { useSyncOrderSet } from '@medplum/react-hooks';
 import {
   IconApps,
   IconArrowUpRight,
@@ -43,6 +44,7 @@ import classes from './GetStartedPage.module.css';
 
 export function GetStartedPage(): JSX.Element {
   const medplum = useMedplum();
+  const syncOrderSet = useSyncOrderSet();
   const [importingPatient, setImportingPatient] = useState(false);
   const [importingVisit, setImportingVisit] = useState(false);
   const [importingIcd10, setImportingIcd10] = useState(false);
@@ -129,6 +131,13 @@ export function GetStartedPage(): JSX.Element {
       const resourceCount =
         result.entry?.filter((entry: BundleEntry) => entry.response?.status?.startsWith('2')).length || 0;
 
+      const pdLocation = result.entry?.find((e) => e.response?.location?.startsWith('PlanDefinition/'))?.response
+        ?.location;
+      const pdId = pdLocation?.split('/')[1];
+      if (pdId) {
+        await syncOrderSet(pdId);
+      }
+
       showNotification({
         color: 'green',
         title: 'Success',
@@ -139,7 +148,7 @@ export function GetStartedPage(): JSX.Element {
     } finally {
       setImportingOrderSet(false);
     }
-  }, [medplum]);
+  }, [medplum, syncOrderSet]);
 
   const integrations = [
     { src: '/img/integrations/labcorp.png', alt: 'Labcorp', left: 20, top: 20, zIndex: 1, rotation: -2 },

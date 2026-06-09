@@ -398,6 +398,105 @@ describe('Bundle tests', () => {
         expect(entry.request?.method).toBe('POST');
       }
     });
+
+    test('SMART Health Card style references', () => {
+      // Source: https://build.fhir.org/ig/HL7/smart-health-cards-and-links/example-00-a-fhirBundle.json
+      const smartHealthExamplePath = join(
+        dirname(fileURLToPath(import.meta.url)),
+        '__fixtures__',
+        'example-00-a-fhirBundle.json'
+      );
+      const bundle = JSON.parse(readFileSync(smartHealthExamplePath, 'utf8')) as Bundle;
+      const transactionBundle = convertToTransactionBundle(bundle);
+      expect(transactionBundle.resourceType).toBe('Bundle');
+      expect(transactionBundle.type).toBe('transaction');
+      expect(transactionBundle.entry?.length).toBeGreaterThan(0);
+
+      const patientEntry = transactionBundle.entry?.find((e) => e.resource?.resourceType === 'Patient');
+      const immunizations =
+        transactionBundle.entry
+          ?.filter((e) => e.resource?.resourceType === 'Immunization')
+          .map((e) => e.resource as any) ?? [];
+
+      for (const immunization of immunizations) {
+        expect(immunization.patient?.reference).toBe(patientEntry?.fullUrl);
+      }
+    });
+
+    test('Patient with self-referential link does not produce duplicate entries', () => {
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Patient',
+              id: '1',
+              link: [
+                {
+                  extension: [
+                    {
+                      url: 'https://open.epic.com/FHIR/StructureDefinition/patient-merge-target-reference',
+                      valueReference: {
+                        reference: 'Patient/1',
+                      },
+                    },
+                  ],
+                  other: {
+                    reference: 'Patient/2',
+                  },
+                  type: 'replaces',
+                },
+              ],
+            },
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+
+      expect(result.entry).toHaveLength(1);
+      expect(result.entry?.[0]?.request?.method).toBe('POST');
+      expect(result.entry?.[0]?.resource?.resourceType).toBe('Patient');
+    });
+
+    test('Patient self-referential link is remapped to the new urn:uuid', () => {
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Patient',
+              id: '1',
+              link: [
+                {
+                  extension: [
+                    {
+                      url: 'https://open.epic.com/FHIR/StructureDefinition/patient-merge-target-reference',
+                      valueReference: { reference: 'Patient/1' },
+                    },
+                  ],
+                  other: { reference: 'Patient/1' },
+                  type: 'seealso',
+                },
+              ],
+            },
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+      expect(result.entry).toHaveLength(1);
+
+      const patientEntry = result.entry?.[0];
+      const patientFullUrl = patientEntry?.fullUrl;
+      expect(patientFullUrl).toMatch(/^urn:uuid:/);
+
+      const patient = patientEntry?.resource as any;
+      expect(patient.link?.[0]?.extension?.[0]?.valueReference?.reference).toBe(patientFullUrl);
+      expect(patient.link?.[0]?.other?.reference).toBe(patientFullUrl);
+    });
   });
 
   describe('convertContainedResourcesToBundle', () => {

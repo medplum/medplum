@@ -554,7 +554,7 @@ Binary resources cannot use compartment-based access controls. They require expl
 }
 ```
 
-:::caution Binary Security Context
+:::caution[Binary Security Context]
 
 `Binary` resources cannot use compartment-based access controls. Access is restricted by matching the `securityContext` field to the patient. When creating a `Binary` in a patient context, always set `securityContext` to the patient reference — otherwise the patient will not be able to access it:
 

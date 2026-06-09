@@ -49,7 +49,7 @@ function renderOrderSetHook(
 describe('useMedicationOrderSet', () => {
   test('happy path — POSTs to $order-set-url and exposes launchUrl', async () => {
     const medplum = new MockClient();
-    const post = jest
+    const post = vi
       .spyOn(medplum, 'post')
       .mockResolvedValue(paramsResponse(URL_A, { vendorPatientId: 100, vendorOrderSetId: 377 }));
 
@@ -76,7 +76,7 @@ describe('useMedicationOrderSet', () => {
 
   test('forwards planDefinitionId branch when no vendorOrderSetId is set', async () => {
     const medplum = new MockClient();
-    const post = jest.spyOn(medplum, 'post').mockResolvedValue(paramsResponse(URL_A));
+    const post = vi.spyOn(medplum, 'post').mockResolvedValue(paramsResponse(URL_A));
 
     renderOrderSetHook(medplum, {
       patientId: PATIENT_ID,
@@ -96,7 +96,7 @@ describe('useMedicationOrderSet', () => {
 
   test('stays idle (no operation call, no URL) when patientId is undefined', async () => {
     const medplum = new MockClient();
-    const post = jest.spyOn(medplum, 'post');
+    const post = vi.spyOn(medplum, 'post');
 
     const { result } = renderOrderSetHook(medplum, {
       patientId: undefined,
@@ -110,7 +110,7 @@ describe('useMedicationOrderSet', () => {
 
   test('stays idle when neither planDefinitionId nor vendorOrderSetId is set', async () => {
     const medplum = new MockClient();
-    const post = jest.spyOn(medplum, 'post');
+    const post = vi.spyOn(medplum, 'post');
 
     const { result } = renderOrderSetHook(medplum, {
       patientId: PATIENT_ID,
@@ -122,7 +122,7 @@ describe('useMedicationOrderSet', () => {
 
   test('clears URL and reruns when inputs change (abort-on-change semantics)', async () => {
     const medplum = new MockClient();
-    const post = jest
+    const post = vi
       .spyOn(medplum, 'post')
       .mockResolvedValueOnce(paramsResponse(URL_A))
       .mockResolvedValueOnce(paramsResponse(URL_B));
@@ -155,7 +155,7 @@ describe('useMedicationOrderSet', () => {
       resolveFirst = r;
     });
 
-    jest.spyOn(medplum, 'post').mockReturnValueOnce(firstPromise).mockResolvedValueOnce(paramsResponse(URL_B));
+    vi.spyOn(medplum, 'post').mockReturnValueOnce(firstPromise).mockResolvedValueOnce(paramsResponse(URL_B));
 
     const { result, rerender } = renderOrderSetHook(medplum, {
       patientId: PATIENT_ID,
@@ -176,7 +176,7 @@ describe('useMedicationOrderSet', () => {
   test('captures error from operation call and surfaces it via error state', async () => {
     const medplum = new MockClient();
     const boom = new Error('operation blew up');
-    jest.spyOn(medplum, 'post').mockRejectedValue(boom);
+    vi.spyOn(medplum, 'post').mockRejectedValue(boom);
 
     const { result } = renderOrderSetHook(medplum, {
       patientId: PATIENT_ID,
@@ -190,10 +190,7 @@ describe('useMedicationOrderSet', () => {
 
   test('refresh() re-runs the operation call and returns the fresh URL', async () => {
     const medplum = new MockClient();
-    jest
-      .spyOn(medplum, 'post')
-      .mockResolvedValueOnce(paramsResponse(URL_A))
-      .mockResolvedValueOnce(paramsResponse(URL_B));
+    vi.spyOn(medplum, 'post').mockResolvedValueOnce(paramsResponse(URL_A)).mockResolvedValueOnce(paramsResponse(URL_B));
 
     const { result } = renderOrderSetHook(medplum, {
       patientId: PATIENT_ID,
@@ -218,8 +215,7 @@ describe('useMedicationOrderSet', () => {
       resolveRefreshFetch = r;
     });
 
-    jest
-      .spyOn(medplum, 'post')
+    vi.spyOn(medplum, 'post')
       .mockResolvedValueOnce(paramsResponse(URL_A))
       .mockReturnValueOnce(refreshFetchPromise)
       .mockResolvedValueOnce(paramsResponse(URL_B));
@@ -250,7 +246,7 @@ describe('useMedicationOrderSet', () => {
 
   test('refresh() returns undefined when inputs are incomplete', async () => {
     const medplum = new MockClient();
-    const post = jest.spyOn(medplum, 'post');
+    const post = vi.spyOn(medplum, 'post');
 
     const { result } = renderOrderSetHook(medplum, {
       patientId: undefined,
@@ -267,7 +263,7 @@ describe('useMedicationOrderSet', () => {
 
   test('throws decoding error when server returns a non-Parameters body', async () => {
     const medplum = new MockClient();
-    jest.spyOn(medplum, 'post').mockResolvedValue({ launchUrl: URL_A });
+    vi.spyOn(medplum, 'post').mockResolvedValue({ launchUrl: URL_A });
 
     const { result } = renderOrderSetHook(medplum, {
       patientId: PATIENT_ID,
@@ -281,7 +277,7 @@ describe('useMedicationOrderSet', () => {
 
   test('throws decoding error when Parameters payload is missing launchUrl', async () => {
     const medplum = new MockClient();
-    jest.spyOn(medplum, 'post').mockResolvedValue({
+    vi.spyOn(medplum, 'post').mockResolvedValue({
       resourceType: 'Parameters',
       parameter: [{ name: 'vendorPatientId', valueInteger: 1 }],
     } satisfies Parameters);

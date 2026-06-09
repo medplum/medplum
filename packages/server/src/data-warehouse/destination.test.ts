@@ -4,7 +4,6 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SqlBuilder } from '../fhir/sql';
 import { LocalParquetWarehouseDestination } from './destination';
 
 describe('data warehouse destinations', () => {
@@ -13,15 +12,11 @@ describe('data warehouse destinations', () => {
     try {
       const destination = new LocalParquetWarehouseDestination(basePath);
       const table = destination.getDestinationName({
-        postgresTable: 'Patient_history',
+        postgresTable: 'Patient_History',
         icebergTable: 'patient_history',
       });
       expect(table).toContain('patient_history.parquet');
-      const sourcePredicateSql = new SqlBuilder();
-      sourcePredicateSql.appendExpression(
-        destination.buildSourcePredicate({ postgresTable: 'a', icebergTable: 'a' }, 'default')
-      );
-      expect(sourcePredicateSql.toString()).toBe('TRUE');
+      expect(destination.buildSourcePredicate({ postgresTable: 'a', icebergTable: 'a' }, 'default')).toBeUndefined();
     } finally {
       rmSync(basePath, { recursive: true, force: true });
     }

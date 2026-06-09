@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ClientApplication, Project, ProjectSetting } from '@medplum/fhirtypes';
+import type { ClientApplication, IdentityProvider, Project, ProjectSetting } from '@medplum/fhirtypes';
 import type { KeepJobs } from 'bullmq';
 
 export interface MedplumServerConfig {
@@ -113,6 +113,9 @@ export interface MedplumServerConfig {
 
   /** Number of milliseconds to use as a base for exponential backoff in transaction retries */
   transactionExpBackoffBaseDelayMs?: number;
+
+  /** Optional threshold in milliseconds for logging and recording high idle time within transactions */
+  idleInTransactionLogThresholdMs?: number;
 
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
@@ -292,7 +295,9 @@ export interface MedplumBullmqConfig {
 
 export interface MedplumExternalAuthConfig {
   readonly issuer: string;
-  readonly userInfoUrl: string;
+  /** @deprecated Use identityProvider.userInfoUrl instead. */
+  readonly userInfoUrl?: string;
+  readonly identityProvider?: IdentityProvider;
 }
 
 export type WorkerName =
@@ -341,6 +346,15 @@ export interface MedplumDataWarehouseConfig {
   localBasePath?: string;
   /** Optional Iceberg namespace used by sync. */
   namespace?: string;
+  /**
+   * Earliest resource `lastUpdated` timestamp to include in sync (ISO-8601 date or date-time string).
+   * History rows with `lastUpdated` before this value are excluded.
+   */
+  startDate?: string;
+  /** FHIR resource types to include (e.g. `Patient`, `Observation`). When omitted, all types are candidates. */
+  includeResourceTypes?: string[];
+  /** FHIR resource types to exclude from sync. Cannot be set together with `includeResourceTypes`. */
+  excludeResourceTypes?: string[];
 }
 
 export interface MedplumFissionConfig {

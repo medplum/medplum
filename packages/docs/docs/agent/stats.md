@@ -32,6 +32,8 @@ For example:
 medplum get 'Agent/$stats?_tag=Group+A'
 ```
 
+Here, `_tag=Group+A` is an `Agent` search parameter used to select which agents to fetch stats from. For example, to fetch stats from all active agents use `status=active`. See [Using Agent search parameters in bulk operations](./using-search-parameters.md) for more ways to select operation targets.
+
 ## Single Agent Response
 
 When querying a single agent by ID, the response is a `Parameters` resource containing the stats payload.
@@ -179,6 +181,14 @@ Some useful search parameters are:
 - `status`
 - `_count` and `_offset`
 
+:::note[Default page size]
+
+When `_count` is omitted, the operation fetches stats from at most the **default page of 20 agents** — it does _not_ automatically run against every matching agent. The maximum allowed `_count` is `100`. To cover more agents than fit on one page, use `_count` and `_offset` to page through the results (see [Paging Through Agent Stats](#paging-through-agent-stats)).
+
+:::
+
+> For more recipes and details on selecting operation targets, see [Using Agent search parameters in bulk operations](./using-search-parameters.md).
+
 ## Recipes
 
 ### Single Agent by ID
@@ -199,7 +209,7 @@ medplum get 'Agent/$stats?identifier=agent-007'
 
 ### Multiple Agents by Name
 
-Fetch stats from all agents with a specific name prefix:
+Fetch stats from agents with a specific name prefix (without a `_count`, this acts on at most the default page of 20 agents):
 
 ```bash
 medplum get 'Agent/$stats?name=Production+Agent'
@@ -207,7 +217,7 @@ medplum get 'Agent/$stats?name=Production+Agent'
 
 ### Multiple Agents by Status
 
-Fetch stats from all active agents:
+Fetch stats from active agents (without a `_count`, this acts on at most the default page of 20 agents):
 
 ```bash
 medplum get 'Agent/$stats?status=active'

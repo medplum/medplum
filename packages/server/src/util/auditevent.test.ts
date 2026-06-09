@@ -8,11 +8,13 @@ import type { BotExecutionRequest } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import { globalLogger } from '../logger';
 import {
+  ApplicationAgentType,
   AuditEventOutcome,
   createAuditEvent,
   createBotAuditEvent,
   CreateInteraction,
   logAuditEvent,
+  ReadInteraction,
   RestfulOperationType,
 } from './auditevent';
 
@@ -80,6 +82,65 @@ describe('AuditEvent utils', () => {
     expect(auditLog).not.toContain('User');
   });
 
+  test('Appends authenticating client as a non-requestor agent', async () => {
+    await loadTestConfig();
+
+    const auditEvent = createAuditEvent(
+      RestfulOperationType,
+      ReadInteraction,
+      randomUUID(),
+      { reference: 'Practitioner/user-123' },
+      undefined,
+      AuditEventOutcome.Success,
+      { client: { reference: 'ClientApplication/agent-client' } }
+    );
+
+    expect(auditEvent.agent).toHaveLength(2);
+    expect(auditEvent.agent?.[0]).toMatchObject({
+      who: { reference: 'Practitioner/user-123' },
+      requestor: true,
+    });
+    expect(auditEvent.agent?.[1]).toMatchObject({
+      who: { reference: 'ClientApplication/agent-client' },
+      requestor: false,
+      type: { coding: [ApplicationAgentType] },
+    });
+  });
+
+  test('Does not duplicate client agent when client is the actor', async () => {
+    await loadTestConfig();
+
+    // client_credentials: the client is itself the author/actor (agent[0]).
+    const clientRef = { reference: 'ClientApplication/agent-client' };
+    const auditEvent = createAuditEvent(
+      RestfulOperationType,
+      ReadInteraction,
+      randomUUID(),
+      clientRef,
+      undefined,
+      AuditEventOutcome.Success,
+      { client: clientRef }
+    );
+
+    expect(auditEvent.agent).toHaveLength(1);
+    expect(auditEvent.agent?.[0]).toMatchObject({ who: clientRef, requestor: true });
+  });
+
+  test('Omits client agent when no client is present', async () => {
+    await loadTestConfig();
+
+    const auditEvent = createAuditEvent(
+      RestfulOperationType,
+      ReadInteraction,
+      randomUUID(),
+      { reference: 'Practitioner/user-123' },
+      undefined,
+      AuditEventOutcome.Success
+    );
+
+    expect(auditEvent.agent).toHaveLength(1);
+  });
+
   test.each<Bot['auditEventTrigger']>(['never', 'on-error', 'on-output'])(
     'Skips creating audit event with `%s` trigger',
     async (trigger) => {
@@ -105,6 +166,9 @@ describe('AuditEvent utils', () => {
   );
 
   test('Logs Bot output', async () => {
+    const config = await loadTestConfig();
+    config.logAuditEvents = true;
+
     const bot: WithId<Bot> = {
       resourceType: 'Bot',
       id: randomUUID(),

@@ -1252,7 +1252,11 @@ async function tryExternalAuthLogin(
 
   // Validate the token against the external IDP's userinfo endpoint
   try {
-    await getExternalUserInfo(externalAuthConfig.userInfoUrl, accessToken);
+    const userInfoUrl = externalAuthConfig.identityProvider?.userInfoUrl ?? externalAuthConfig.userInfoUrl;
+    if (!userInfoUrl) {
+      return undefined;
+    }
+    await getExternalUserInfo(userInfoUrl, accessToken, externalAuthConfig.identityProvider);
   } catch (err: any) {
     getLogger().warn('Failed to get external user info', err);
     return undefined;

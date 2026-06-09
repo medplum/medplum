@@ -127,9 +127,11 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
 
     expect(updateProgress).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining(`Synced ${icebergTable}: 1 row(s)`),
+        tablesCompleted: 1,
+        tablesTotal: 1,
         icebergTable,
-        count: 1,
+        destination: expectedParquetPath,
+        rowsInserted: 1,
       })
     );
 

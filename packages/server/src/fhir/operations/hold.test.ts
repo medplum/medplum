@@ -130,6 +130,7 @@ describe('Appointment/$hold', () => {
   async function makeSchedule(opts: {
     actor: WithId<Practitioner | Device>;
     extension?: Extension[];
+    planningHorizon?: Schedule['planningHorizon'];
   }): Promise<WithId<Schedule>> {
     return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
@@ -137,6 +138,7 @@ describe('Appointment/$hold', () => {
       actor: [createReference(opts.actor)],
       serviceType: toCodeableReferenceLike(officeVisitService),
       extension: opts.extension ?? [makeSchedulingExtension({ service: officeVisitService })],
+      planningHorizon: opts.planningHorizon,
     });
   }
 
@@ -1191,6 +1193,31 @@ describe('Appointment/$hold', () => {
       resourceType: 'OperationOutcome',
       issue: [{ details: { text: 'No timezone specified' } }],
     });
+  });
+
+  test('errors when appointment is outside schedule planning horizon', async () => {
+    const schedule = await makeSchedule({
+      actor: practitioner1,
+      planningHorizon: { start: '2026-01-01T00:00:00Z', end: '2026-01-14T00:00:00Z' },
+    });
+
+    // trying to book before planningHorizon.start fails
+    const beforeHorizonResponse = await request
+      .post('/fhir/R4/Appointment/$hold')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send(holdParams({ schedule, start: '2025-12-28T14:00:00Z', end: '2025-12-28T15:00:00Z' }));
+    expect(beforeHorizonResponse.status).toBe(400);
+    expect(beforeHorizonResponse.body.issue[0].details.text).toBe(
+      'Appointment falls outside schedule planning horizon'
+    );
+
+    // trying to book after planningHorizon.end fails
+    const afterHorizonResponse = await request
+      .post('/fhir/R4/Appointment/$hold')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send(holdParams({ schedule, start: '2026-01-15T14:00:00Z', end: '2026-01-15T15:00:00Z' }));
+    expect(afterHorizonResponse.status).toBe(400);
+    expect(afterHorizonResponse.body.issue[0].details.text).toBe('Appointment falls outside schedule planning horizon');
   });
 });
 

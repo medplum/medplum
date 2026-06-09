@@ -4,7 +4,8 @@ import type { ResourceType } from '@medplum/fhirtypes';
 import type { Atom, AtomContext } from '../fhirlexer/parse';
 import { InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer/parse';
 import type { TypedValue } from '../types';
-import { PropertyType, isResource } from '../types';
+import { isResource, PropertyType } from '../types';
+import type { TypedValueWithPath } from '../typeschema/crawler';
 import { getTypedPropertyValueWithPath } from '../typeschema/crawler';
 import { functions } from './functions';
 import {
@@ -112,6 +113,9 @@ export class SymbolAtom implements Atom {
     }
 
     if (isResource(input, this.name as ResourceType)) {
+      if (!('path' in typedValue)) {
+        (typedValue as TypedValueWithPath).path = input.resourceType;
+      }
       return typedValue;
     }
     return getTypedPropertyValueWithPath(typedValue, this.name);

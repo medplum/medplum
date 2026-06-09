@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Stack, Title } from '@mantine/core';
+import { Button, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { EMPTY, formatDateTime, getReferenceString, isDefined } from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
@@ -125,6 +125,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
         },
         (error) => {
           if (!signal.aborted) {
+            setAppointments([]);
             showErrorNotification(error);
           }
         }
@@ -198,6 +199,11 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
             {formatDateTime(appointment.start)}
           </Button>
         ))}
+        {appointments?.length === 0 && (
+          <Text size="sm" c="dimmed" mt="sm">
+            No available appointments found in this calendar range.
+          </Text>
+        )}
       </Stack>
     );
   }

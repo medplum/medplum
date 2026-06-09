@@ -71,6 +71,8 @@ export function initOpenTelemetry(): void {
     new RuntimeNodeInstrumentation(),
     new HttpInstrumentation({
       applyCustomAttributesOnSpan: httpResponseHook,
+      ignoreIncomingRequestHook: (req) => req.url === '/healthcheck',
+      requireParentforOutgoingSpans: true,
     }),
 
     new PgInstrumentation({

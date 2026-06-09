@@ -61790,7 +61790,7 @@
           "$ref": "#/definitions/string"
         },
         "accessPolicy": {
-          "description": "The access policy for the user within the project memebership.",
+          "description": "The access policy for the user within the project membership.",
           "$ref": "#/definitions/Reference"
         },
         "access": {
@@ -61801,7 +61801,7 @@
           "type": "array"
         },
         "userConfiguration": {
-          "description": "The user configuration for the user within the project memebership such as menu links, saved searches, and features.",
+          "description": "The user configuration for the user within the project membership such as menu links, saved searches, and features.",
           "$ref": "#/definitions/Reference"
         },
         "admin": {
@@ -62900,6 +62900,23 @@
         "useSubject": {
           "description": "Optional flag to use the subject field instead of the email field.",
           "$ref": "#/definitions/boolean"
+        },
+        "identitySource": {
+          "description": "External credential field used to identify the user.",
+          "enum": [
+            "email",
+            "subject",
+            "fhir-user"
+          ]
+        },
+        "identityMappingMode": {
+          "description": "Medplum identity mapping target.",
+          "enum": [
+            "user-email",
+            "user-external-id",
+            "project-membership-external-id",
+            "project-membership-profile"
+          ]
         }
       },
       "additionalProperties": false,
