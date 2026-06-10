@@ -34,6 +34,9 @@ exposure, especially access policies, ProjectMembership scopes, and PHI handling
    so scope one task per thread and re-check work at checkpoints.
 4. Verify and validate the output: check generated code against the type system and tests,
    review sensitive code by hand, and use Medplum's server-side validation where you can.
+5. Encode your conventions in a rule file: a `CLAUDE.md`, Cursor rules, or `AGENTS.md`-style
+   file keeps the agent pointed at Medplum's docs without being told each time, and the
+   conventions survive compaction.
 
 ## 1. Give Your AI Tools Access to Medplum
 
@@ -83,7 +86,9 @@ and code, summarize the recommended pattern and trade-offs, and only then write 
 
 When possible, have the agent adapt the closest existing implementation rather than
 generate from scratch; [Medplum Provider](/docs/provider) is a good starting reference
-point for most clinical workflows.
+point for most clinical workflows. You can also capture instructions like these in a rule
+file so you don't restate them in every prompt; see
+[section 5](#5-encode-your-conventions-in-a-rule-file).
 
 ## 3. Keep Conversations Short and Re-Anchor on the Docs
 
@@ -107,11 +112,9 @@ Practical habits that keep the agent grounded:
 - Watch for drift. If the agent stops citing real Medplum snippets and starts producing
   plausible-but-generic FHIR, that's your signal to reset.
 
-A rule or instructions file (e.g. `CLAUDE.md`, Cursor rules, or an `AGENTS.md`-style file)
-helps here: it re-establishes the key conventions and source-of-truth pointers on every
-turn, such as the FHIR version, your access-control conventions, and where to find
-examples, so they survive compaction instead of being summarized away. _(Medplum is
-working on a maintained rule file you can drop into your project; coming soon.)_
+A rule file is the durable fix: because it is re-read on every turn, these conventions and
+source-of-truth pointers survive compaction instead of being summarized away. See
+[section 5](#5-encode-your-conventions-in-a-rule-file).
 
 ## 4. Verify and Validate the Output
 
@@ -133,7 +136,7 @@ These run against your own project and the cloned repo, with no server or live d
   compare its output before you accept it.
 - Mind the FHIR version. Medplum uses FHIR R4; LLMs readily mix in R5 fields or deprecated
   APIs from their training data, so this is a common silent error. A project rule file
-  (see section 3) is the durable place to pin this.
+  (see section 5) is the durable place to pin this.
 - Review sensitive output by hand. Access policies, auth scopes, and any code touching PHI
   deserve a detailed human read before shipping. A second pass, where the agent re-checks
   its own work against the docs in a fresh conversation, catches more but does not replace
@@ -150,6 +153,55 @@ definitions, catching structural and terminology errors the type system can't (h
 LOINC, SNOMED, and ICD codes are a common failure mode). They need either a local dev
 server (synthetic data, no BAA required) or a token against a live server; see
 [Direct Data Access](#direct-data-access-advanced) for the caveats.
+
+## 5. Encode Your Conventions in a Rule File
+
+A rule or instructions file — `CLAUDE.md` for Claude Code, `.cursorrules` for Cursor, or an
+`AGENTS.md`-style file — is re-read on every turn. That does two things: it saves you from
+restating "read the Medplum docs" in every prompt, and it keeps these conventions alive
+through compaction in long sessions. The most valuable part is the documentation block;
+pointing the agent at Medplum's docs as the source of truth is what makes it reach for them
+on its own.
+
+The example below is the rule file we offer as a starting point. Keep the one
+documentation-access bullet that matches how you set things up in
+[section 1](#1-give-your-ai-tools-access-to-medplum), drop the conventions that don't apply
+to you, and add your own.
+
+```markdown
+# Agent Rules for Medplum
+
+## Documentation is the source of truth
+<!-- Keep the ONE bullet matching your setup; delete the other two and this comment. -->
+
+- Medplum docs are at `medplum-link/packages/docs/docs/` — `[slug]` → that path + `.md`. Read with the file tools.
+- Resolve `[slug]`s with your own Medplum docs skill: invoke `<YOUR_SKILL_NAME>` with the bracketed slug/topic as the query.
+- Resolve `[slug]`s using your Medplum MCP server.
+
+Read the relevant doc once before building in an area — prefer real Medplum patterns over generic
+FHIR. Don't re-read docs you've already read this session, EXCEPT: if the conversation has been
+compacted/summarized (or you can no longer see the doc's actual text), re-read the relevant doc
+before writing code — the rules below are reminders, not a substitute for the doc.
+
+## Core
+
+FHIR R4 only; type with `@medplum/fhirtypes`; reuse `@medplum/core` helpers; don't invent fields,
+search params, or operations.
+
+## Common Mistakes
+
+- Messaging: thread header carries no payload; `recipient` = ALL participants incl. the sender/creator.  [communications/messaging-data-model]
+- Scheduling (alpha): availability is implicit — create `Slot`s only for booked/blocked time, never for open availability.  [scheduling/defining-availability]
+- Bundles: entries that cross-reference need `type: transaction` + `urn:uuid` fullUrls (or `reorderBundle()`), not batch.  [fhir-datastore/fhir-batch-requests]
+- Idempotent writes: conditional create/update keyed on `identifier` (`createResourceIfNoneExist`), never search-then-create.  [fhir-datastore/working-with-fhir]
+- Files: `createMedia`/`createBinary`/`createAttachment` → `Binary/{id}` url + securityContext; never base64 in `Attachment.data`.  [fhir-datastore/binary-data]
+- Access: patient-compartment access comes from a resource's OWN compartment references (e.g. `subject`); it does NOT propagate through links like `Communication.partOf`. Enforce via `AccessPolicy` + `ProjectMembership` (`%patient`/`%org` variables), never app-layer filtering.  [access/access-policies]
+- Licensing: one `PractitionerRole` per state; Medplum does not enforce licensure — your app code must.  [scheduling/state-by-state-licensure]
+- Subscriptions: scope `criteria` tightly; create/update-only firing and `%previous`/`%current` transition criteria exist as Medplum extensions.  [subscriptions/subscription-extensions]
+- Form extraction: SDC `templateExtract` or a Bot — one strategy per form.  [questionnaires/parsing-questionnaire-responses]
+
+Before finishing: re-check your code against the list above; verify with `tsc` and tests.
+```
 
 ## Direct Data Access (Advanced)
 
