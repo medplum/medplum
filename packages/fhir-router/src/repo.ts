@@ -19,7 +19,7 @@ import {
   preconditionFailed,
   stringify,
 } from '@medplum/core';
-import type { Bundle, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import type { Bundle, OperationOutcome, Parameters, Reference, Resource } from '@medplum/fhirtypes';
 import type { Operation } from 'rfc6902';
 import { applyPatch } from 'rfc6902';
 
@@ -164,7 +164,7 @@ export abstract class FhirRepository<TClient = unknown> {
   abstract patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[]
+    patch: Operation[] | Parameters
   ): Promise<WithId<T>>;
 
   /**

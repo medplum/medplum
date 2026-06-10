@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobInteraction, Filter, SearchRequest, WithId } from '@medplum/core';
+import type { BackgroundJobInteraction, FhirPathPatch, Filter, SearchRequest, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
@@ -13,6 +13,7 @@ import {
   EMPTY,
   evalFhirPathTyped,
   extractAccountReferences,
+  fhirpathPatchTypedValue,
   forbidden,
   formatSearchQuery,
   getStatus,
@@ -38,6 +39,7 @@ import {
   satisfiedAccessPolicy,
   sleep,
   stringify,
+  toTypedValue,
   validateResourceType,
 } from '@medplum/core';
 import type {
@@ -55,7 +57,10 @@ import type {
   BundleEntry,
   ClientApplication,
   Meta,
+  OperationDefinition,
+  OperationDefinitionParameter,
   OperationOutcome,
+  Parameters,
   Project,
   Reference,
   Resource,
@@ -99,7 +104,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
 import type { FhirRateLimiter } from './fhirquota';
-import { clamp } from './operations/utils/parameters';
+import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
@@ -1229,7 +1234,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[],
+    patch: Operation[] | Parameters,
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
     await this.rateLimiter()?.recordWrite();
@@ -1246,7 +1251,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           throw new OperationOutcomeError(badRequest('Incorrect ID'));
         }
 
-        patchObject(resource, patch);
+        if (Array.isArray(patch)) {
+          patchObject(resource, patch);
+        } else if (patch.parameter) {
+          const params = parseParametersFromDefinitions(
+            patchOperationDefinition.parameter as OperationDefinitionParameter[],
+            patch.parameter
+          );
+          fhirpathPatchTypedValue(toTypedValue(resource), params.operation as FhirPathPatch[]);
+        }
 
         const result = await this.updateResourceImpl(resource, false, options);
         const durationMs = Date.now() - startTime;
@@ -2350,3 +2363,25 @@ export async function getProjectSystemRepo(
   // But for now, all projects are on the global shard.
   return getGlobalSystemRepo();
 }
+
+const patchOperationDefinition: OperationDefinition = {
+  resourceType: 'OperationDefinition',
+  name: 'FHIRPatch',
+  code: 'UNUSED',
+  kind: 'operation',
+  status: 'unknown',
+  system: false,
+  type: false,
+  instance: false,
+  parameter: [
+    makeOperationDefinitionParameter('in', 'operation', undefined, 1, '*', [
+      makeOperationDefinitionParameter('in', 'type', 'code', 1, '1'),
+      makeOperationDefinitionParameter('in', 'path', 'string', 1, '1'),
+      makeOperationDefinitionParameter('in', 'name', 'string', 0, '1'),
+      makeOperationDefinitionParameter('in', 'value', 'Any', 0, '1'),
+      makeOperationDefinitionParameter('in', 'index', 'integer', 0, '1'),
+      makeOperationDefinitionParameter('in', 'source', 'integer', 0, '1'),
+      makeOperationDefinitionParameter('in', 'destination', 'integer', 0, '1'),
+    ]),
+  ],
+};

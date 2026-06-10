@@ -699,6 +699,30 @@ describe('FHIR Repo', () => {
       expect(patched.identifier?.at(0)?.value).toStrictEqual('123');
     }));
 
+  test('Patch resource with FHIRPath Path body', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(patient.resourceType, patient.id, {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'operation',
+            part: [
+              { name: 'type', valueCode: 'add' },
+              { name: 'path', valueString: `Patient.name.where(family = 'Test')` },
+              { name: 'name', valueString: 'given' },
+              { name: 'value', valueString: 'Jan' },
+            ],
+          },
+        ],
+      });
+      expect(patched.name?.[0]?.given).toStrictEqual(['Jan']);
+    }));
+
   test('Compartment permissions', () =>
     withTestContext(async () => {
       const { repo: repo1 } = await createTestProject({ withRepo: true });
