@@ -246,7 +246,7 @@ describe('ResourceDiffTable', () => {
   });
 
   test('Handles changes in contained resources', async () => {
-    console.warn = jest.fn();
+    console.warn = vi.fn();
 
     const original: MedicationRequest = {
       resourceType: 'MedicationRequest',
