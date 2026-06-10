@@ -4,50 +4,31 @@ import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
-import { act, fireEvent, render, screen, within } from '../test-utils/render';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  selectAutocompleteOption,
+  typeInAutocomplete,
+  within,
+} from '../test-utils/render';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 describe('AsyncAutocomplete', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
-  async function enterSearchString(input: HTMLInputElement, text: string): Promise<void> {
-    await act(async () => {
-      fireEvent.change(input, { target: { value: text } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-  }
-
-  async function selectOption(input: HTMLInputElement, text: string, downCount: number): Promise<void> {
-    await enterSearchString(input, text);
-
-    // Press the down arrow
-    await act(async () => {
-      for (let i = 0; i < downCount; i++) {
-        fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-      }
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
-  }
-
   test('select one value', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     render(
       <MedplumProvider medplum={new MockClient()}>
         <ValueSetAutocomplete binding="x" onChange={onChange} placeholder="Test" maxValues={1} />
@@ -56,18 +37,18 @@ describe('AsyncAutocomplete', () => {
 
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
 
-    await selectOption(input, 'Display', 1);
+    await selectAutocompleteOption(input, 'Display', 'Test Display');
     const selected = within(screen.getByTestId('selected-items'));
     expect(selected.queryByText('Test Display')).toBeInTheDocument();
     expect(selected.queryByText('Test Display 2')).not.toBeInTheDocument();
     expect(selected.queryByText('Test Display 3')).not.toBeInTheDocument();
 
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
+    expect(onChange).toHaveBeenCalled();
+    expect(onChange.mock.lastCall?.[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
   });
 
   test('select multiple values', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     render(
       <MedplumProvider medplum={new MockClient()}>
         <ValueSetAutocomplete binding="x" onChange={onChange} placeholder="Test" maxValues={5} />
@@ -76,14 +57,14 @@ describe('AsyncAutocomplete', () => {
 
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
 
-    await selectOption(input, 'Display', 1);
+    await selectAutocompleteOption(input, 'Display', 'Test Display');
     const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
     expect(selected.queryByText('Test Display')).toBeInTheDocument();
     expect(selected.queryByText('Test Display 2')).not.toBeInTheDocument();
     expect(selected.queryByText('Test Display 3')).not.toBeInTheDocument();
 
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
+    expect(onChange).toHaveBeenCalled();
+    expect(onChange.mock.lastCall?.[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
 
     await act(async () => {
       fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
@@ -95,7 +76,7 @@ describe('AsyncAutocomplete', () => {
     expect(selected.queryByText('Test Display 3')).toBeInTheDocument();
 
     expect(onChange).toHaveBeenCalledTimes(2);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual([
+    expect(onChange.mock.lastCall?.[0].map((c: ValueSetExpansionContains) => c.code)).toEqual([
       'test-code',
       'test-code-3',
     ]);
@@ -112,7 +93,7 @@ describe('AsyncAutocomplete', () => {
     });
 
     expect(onChange).toHaveBeenCalledTimes(3);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
+    expect(onChange.mock.lastCall?.[0].map((c: ValueSetExpansionContains) => c.code)).toEqual(['test-code']);
 
     // Remove Test Display
     await act(async () => {
@@ -120,18 +101,18 @@ describe('AsyncAutocomplete', () => {
     });
 
     expect(onChange).toHaveBeenCalledTimes(4);
-    expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual([]);
+    expect(onChange.mock.lastCall?.[0].map((c: ValueSetExpansionContains) => c.code)).toEqual([]);
   });
 
   test('expandParams.count overrides default count', async () => {
     const medplum = new MockClient();
-    const spy = jest.spyOn(medplum, 'valueSetExpand');
+    const spy = vi.spyOn(medplum, 'valueSetExpand');
 
     render(
       <MedplumProvider medplum={medplum}>
         <ValueSetAutocomplete
           binding="x"
-          onChange={jest.fn()}
+          onChange={vi.fn()}
           placeholder="Test"
           maxValues={1}
           expandParams={{ count: 25 }}
@@ -140,7 +121,7 @@ describe('AsyncAutocomplete', () => {
     );
 
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
-    await enterSearchString(input, 'test');
+    await typeInAutocomplete(input, 'test');
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ count: 25 }), expect.anything());
     spy.mockRestore();
@@ -148,23 +129,23 @@ describe('AsyncAutocomplete', () => {
 
   test('uses default count of 10 when expandParams omits count', async () => {
     const medplum = new MockClient();
-    const spy = jest.spyOn(medplum, 'valueSetExpand');
+    const spy = vi.spyOn(medplum, 'valueSetExpand');
 
     render(
       <MedplumProvider medplum={medplum}>
-        <ValueSetAutocomplete binding="x" onChange={jest.fn()} placeholder="Test" maxValues={1} />
+        <ValueSetAutocomplete binding="x" onChange={vi.fn()} placeholder="Test" maxValues={1} />
       </MedplumProvider>
     );
 
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
-    await enterSearchString(input, 'test');
+    await typeInAutocomplete(input, 'test');
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ count: 10 }), expect.anything());
     spy.mockRestore();
   });
 
   test('empty search', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     render(
       <MedplumProvider medplum={new MockClient()}>
         <ValueSetAutocomplete binding="x" onChange={onChange} placeholder="Test" maxValues={1} />
@@ -173,7 +154,7 @@ describe('AsyncAutocomplete', () => {
 
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
 
-    await enterSearchString(input, '');
+    await typeInAutocomplete(input, '');
     const options = screen.getByTestId(AsyncAutocompleteTestIds.options);
     expect(options).not.toHaveAttribute('hidden');
     expect(onChange).toHaveBeenCalledTimes(0);

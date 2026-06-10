@@ -113,6 +113,19 @@ describe('claims utils', () => {
       expect(result.item).toHaveLength(1);
     });
 
+    test('adds the rendering practitioner to careTeam as the primary provider', () => {
+      const result = buildClaimFromEncounter({ patient, encounter, practitioner, chargeItems });
+      expect(result.careTeam).toEqual([
+        expect.objectContaining({
+          sequence: 1,
+          provider: expect.objectContaining({ reference: 'Practitioner/practitioner-1' }),
+          role: {
+            coding: [{ system: 'http://terminology.hl7.org/CodeSystem/claimcareteamrole', code: 'primary' }],
+          },
+        }),
+      ]);
+    });
+
     test('defaults insurance to an empty array when none is provided', () => {
       const result = buildClaimFromEncounter({ patient, encounter, practitioner, chargeItems });
       expect(result.insurance).toEqual([]);

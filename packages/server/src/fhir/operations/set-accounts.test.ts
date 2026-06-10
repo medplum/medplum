@@ -178,6 +178,7 @@ describe('Patient Set Accounts Operation', () => {
     // Check if accounts are updated on the diagnostic report
     const res6 = await request(app)
       .get(`/fhir/R4/DiagnosticReport/${diagnosticReport.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
     const updatedDiagnosticReport = res6.body as DiagnosticReport;
@@ -294,6 +295,7 @@ describe('Patient Set Accounts Operation', () => {
 
     const res4 = await request(app)
       .get(`/fhir/R4/Communication/${communication.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
     const updatedCommunication = res4.body as Communication;
@@ -361,6 +363,7 @@ describe('Patient Set Accounts Operation', () => {
     //check if the accounts are updated on the patient
     const res4 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
     const updatedPatient = res4.body as Patient;
@@ -370,16 +373,19 @@ describe('Patient Set Accounts Operation', () => {
     // Check if accounts are updated on the observation
     const res5 = await request(app)
       .get(`/fhir/R4/Observation/${observation.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res5.status).toBe(200);
     const finalObservation = res5.body as Observation;
-    expect(finalObservation.meta?.accounts).toHaveLength(2);
-    expect(finalObservation.meta?.accounts?.[0].reference).toBe(`Organization/${organization2.id}`);
-    expect(finalObservation.meta?.accounts?.[1].reference).toBe(`Organization/${organization1.id}`);
+    expect(finalObservation.meta?.accounts).toStrictEqual([
+      { reference: getReferenceString(organization2) },
+      { reference: getReferenceString(organization1) },
+    ]);
 
     // Check if accounts are updated on the diagnostic report
     const res6 = await request(app)
       .get(`/fhir/R4/DiagnosticReport/${diagnosticReport.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
     const updatedDiagnosticReport = res6.body as DiagnosticReport;
@@ -477,6 +483,7 @@ describe('Patient Set Accounts Operation', () => {
 
     const get1 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(get1.status).toBe(200);
     expect(get1.body.meta?.accounts?.map((r: any) => r.reference)).toEqual(
@@ -498,6 +505,7 @@ describe('Patient Set Accounts Operation', () => {
 
     const get2 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(get2.status).toBe(200);
     const acctRefs = (get2.body.meta?.accounts ?? []).map((r: any) => r.reference);

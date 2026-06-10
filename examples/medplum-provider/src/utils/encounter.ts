@@ -14,6 +14,7 @@ import type {
   Reference,
   Schedule,
   ServiceRequest,
+  Slot,
   Task,
 } from '@medplum/fhirtypes';
 
@@ -27,11 +28,26 @@ export async function createAppointment(
 ): Promise<Appointment> {
   const practitionerRef = isResource(practitioner) ? createReference(practitioner) : practitioner;
 
+  // If we have a schedule reference, add a busy slot to prevent future
+  // scheduling operations (such as $find or $book) from thinking this
+  // time is free.
+  let slot: WithId<Slot> | undefined = undefined;
+  if (schedule) {
+    slot = await medplum.createResource({
+      resourceType: 'Slot',
+      start: start.toISOString(),
+      end: end.toISOString(),
+      schedule: createReference(schedule),
+      status: 'busy',
+    });
+  }
+
   const appointment = await medplum.createResource({
     resourceType: 'Appointment',
     status: 'booked',
     start: start.toISOString(),
     end: end.toISOString(),
+    slot: slot ? [createReference(slot)] : undefined,
     participant: [
       {
         actor: createReference(patient),
@@ -43,19 +59,6 @@ export async function createAppointment(
       },
     ],
   });
-
-  // If we have a schedule reference, add a busy slot to prevent future
-  // scheduling operations (such as $find or $book) from thinking this
-  // time is free.
-  if (schedule) {
-    await medplum.createResource({
-      resourceType: 'Slot',
-      start: start.toISOString(),
-      end: end.toISOString(),
-      schedule: createReference(schedule),
-      status: 'busy',
-    });
-  }
 
   return appointment;
 }

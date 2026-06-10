@@ -53,6 +53,7 @@ import type {
   Binary,
   Bundle,
   BundleEntry,
+  ClientApplication,
   Meta,
   OperationOutcome,
   Project,
@@ -154,6 +155,17 @@ export interface RepositoryContext {
    * This value will be included in every resource as meta.onBehalfOf.
    */
   onBehalfOf?: Reference;
+
+  /**
+   * The authenticating ClientApplication for the current login, when present.
+   * This is the application that obtained the access token, which may differ
+   * from the acting `author` (e.g. when using `X-Medplum-On-Behalf-Of`, or for
+   * a SMART on FHIR app acting on behalf of a user). It is recorded as an
+   * additional non-requestor `agent[]` participant on per-interaction AuditEvents
+   * so the audit trail captures which client performed an action.
+   * Absent on the pure `client_credentials` / system paths.
+   */
+  client?: Reference<ClientApplication>;
 
   remoteAddress?: string;
 
@@ -324,7 +336,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns a SystemRepository for the same shard as this repository.
    */
   getSystemRepo(): SystemRepository {
-    const contextDefaults = {
+    const contextDefaults: SystemRepositoryContextDefaults = {
       skipBackgroundJobs: this.context.skipBackgroundJobs,
     };
     if (this.connection.hasConnection()) {
@@ -332,6 +344,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return createSystemRepository(this.shardId, this.connection, contextDefaults);
     }
     return createSystemRepository(this.shardId, undefined, contextDefaults);
+  }
+
+  withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository {
+    if (this.connection.hasConnection()) {
+      this.assertNotClosed();
+      return new Repository({ ...this.context, ...config }, this.connection);
+    } else {
+      return new Repository({ ...this.context, ...config });
+    }
   }
 
   setMode(mode: RepositoryMode): void {
@@ -2065,6 +2086,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         resource,
         searchQuery: query,
         durationMs: options?.durationMs,
+        client: this.context.client,
       }
     );
     logAuditEvent(auditEvent);
@@ -2202,7 +2224,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.connection.ensureInTransaction(callback);
   }
 
-  getConfig(): RepositoryContext {
+  getConfig(): Readonly<RepositoryContext> {
     return this.context;
   }
 

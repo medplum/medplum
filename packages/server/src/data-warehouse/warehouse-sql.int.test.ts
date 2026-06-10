@@ -106,6 +106,7 @@ describe('warehouse SQL (integration)', () => {
       expect(row.project_id).toBe('project-from-json');
     } finally {
       connection.closeSync();
+      instance.closeSync();
     }
   }, 30_000);
 });

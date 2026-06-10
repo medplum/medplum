@@ -21,14 +21,14 @@ describe('PatientSummary - SmokingStatus', () => {
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', async () => {
@@ -68,7 +68,7 @@ describe('PatientSummary - SmokingStatus', () => {
   });
 
   test('Click on resource', async () => {
-    const mockOnClickResource = jest.fn();
+    const mockOnClickResource = vi.fn();
     await setup(
       <SmokingStatus
         patient={HomerSimpson}

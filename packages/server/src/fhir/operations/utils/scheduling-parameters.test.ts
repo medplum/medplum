@@ -20,12 +20,12 @@ describe('parseSchedulingParametersExtensions', () => {
     meta: { project: project.id },
   };
 
-  test('minimally specified extension sets default values', () => {
-    const service: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      id: 'hs-12345',
-    };
+  const service: WithId<HealthcareService> = {
+    resourceType: 'HealthcareService',
+    id: 'hs-12345',
+  };
 
+  test('minimally specified extension sets default values', () => {
     const schedule: Schedule = {
       resourceType: 'Schedule',
       meta: { project: project.id },
@@ -39,20 +39,6 @@ describe('parseSchedulingParametersExtensions', () => {
             { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
             // `service` is required to have exactly one entry
             { url: 'service', valueReference: createReference(service) },
-            // `availability` is required to have at least one entry
-            {
-              url: 'availability',
-              extension: [
-                {
-                  url: 'availableTime',
-                  extension: [
-                    { url: 'daysOfWeek', valueCode: 'mon' },
-                    { url: 'availableStartTime', valueTime: '09:00:00' },
-                    { url: 'availableEndTime', valueTime: '17:00:00' },
-                  ],
-                },
-              ],
-            },
           ],
         },
       ],
@@ -62,9 +48,9 @@ describe('parseSchedulingParametersExtensions', () => {
       {
         availability: [
           {
-            dayOfWeek: ['mon'],
-            availableStartTime: '09:00:00',
-            availableEndTime: '17:00:00',
+            dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+            availableStartTime: '00:00:00',
+            availableEndTime: '00:00:00',
           },
         ],
         bufferBefore: 0,
@@ -79,11 +65,6 @@ describe('parseSchedulingParametersExtensions', () => {
   });
 
   test('with all the options', () => {
-    const service: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      id: 'hs-12345',
-    };
-
     const schedule: Schedule = {
       resourceType: 'Schedule',
       meta: { project: project.id },
@@ -158,11 +139,6 @@ describe('parseSchedulingParametersExtensions', () => {
   });
 
   describe('with availability extension', () => {
-    const service: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      id: 'hs-12345',
-    };
-
     test('basic start/end time pair parses to correct availability', () => {
       const schedule: Schedule = {
         resourceType: 'Schedule',
@@ -371,24 +347,6 @@ describe('parseSchedulingParametersExtensions', () => {
         "Scheduling parameter attribute 'availability' is not allowed on HealthcareService"
       );
     });
-  });
-
-  test('missing required availability', () => {
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      meta: { project: project.id },
-      actor: [createReference(practitioner)],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [{ url: 'duration', valueDuration: { unit: 'h', value: 2 } }],
-        },
-      ],
-    };
-
-    expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toThrow(
-      "Required scheduling parameter attribute 'availability' is missing"
-    );
   });
 
   test('missing required duration', () => {
@@ -601,7 +559,7 @@ describe('parseSchedulingParametersExtensions', () => {
     });
 
     test('availability is not required on HealthcareService', () => {
-      // No availableTime on resource, no availability in extension — should not throw
+      // No availableTime on resource, no availability in extension — should default to "always available"
       const hs: HealthcareService = {
         resourceType: 'HealthcareService',
         id: 'hs-123',
@@ -613,7 +571,13 @@ describe('parseSchedulingParametersExtensions', () => {
       expect(() => parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).not.toThrow();
       expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
         {
-          availability: [],
+          availability: [
+            {
+              dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+              availableStartTime: '00:00:00',
+              availableEndTime: '00:00:00',
+            },
+          ],
           service: { reference: 'HealthcareService/hs-123' },
           duration: 30,
         },
