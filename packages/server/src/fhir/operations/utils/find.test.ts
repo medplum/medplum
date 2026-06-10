@@ -127,6 +127,31 @@ describe('findAlignedSlotTimes', () => {
     ]);
   });
 
+  test('slot alignment by values that do not evenly divide an hour', () => {
+    // Slots are aligned to a fifty-minute grid. The first slot is found at `00:00`.
+    const slots50Midnight = findAlignedSlotTimes(
+      { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T03:00:00Z') },
+      { alignment: 50, offsetMinutes: 0, durationMinutes: 10 }
+    );
+    expect(slots50Midnight).toEqual([
+      { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T00:10:00Z') },
+      { start: new Date('2025-12-01T00:50:00Z'), end: new Date('2025-12-01T01:00:00Z') },
+      { start: new Date('2025-12-01T01:40:00Z'), end: new Date('2025-12-01T01:50:00Z') },
+      { start: new Date('2025-12-01T02:30:00Z'), end: new Date('2025-12-01T02:40:00Z') },
+    ]);
+
+    // When searching does not start at midnight, we still find slots aligned
+    // to the same fifty-minute grid.
+    const slots50Later = findAlignedSlotTimes(
+      { start: new Date('2025-12-01T01:00:00Z'), end: new Date('2025-12-01T03:00:00Z') },
+      { alignment: 50, offsetMinutes: 0, durationMinutes: 10 }
+    );
+    expect(slots50Later).toEqual([
+      { start: new Date('2025-12-01T01:40:00Z'), end: new Date('2025-12-01T01:50:00Z') },
+      { start: new Date('2025-12-01T02:30:00Z'), end: new Date('2025-12-01T02:40:00Z') },
+    ]);
+  });
+
   test('errors when alignment is zero', () => {
     expect(() => {
       findAlignedSlotTimes(

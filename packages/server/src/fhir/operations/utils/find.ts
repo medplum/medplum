@@ -30,7 +30,7 @@ function mod(n: number, d: number): number {
  *
  * @param interval - The interval to find slots within
  * @param options - The alignment parameters
- * @param options.alignment - An hour divisor to align to; should be in range [1, 60]
+ * @param options.alignment - Minutes between slot starts; the grid is anchored to midnight (offset by offsetMinutes). Must be >= 1.
  * @param options.offsetMinutes - A number of minutes to offset the alignment by
  * @param options.durationMinutes - How long each slot should last
  * @param options.maxCount - Maximum number of intervals to find
@@ -51,8 +51,11 @@ export function findAlignedSlotTimes(
 
   const firstMinuteStart = advanceToMinuteMark(interval.start);
 
-  // Find how much we need to shift the interval start to hit an alignment
-  const remainder = mod(firstMinuteStart.getMinutes() - options.offsetMinutes, options.alignment);
+  // Find how much we need to shift the interval start to hit an alignment.
+  // Use total minutes since midnight so that non-hour-divisible alignments (e.g. 50min)
+  // stay anchored to 00:00 regardless of where the search interval starts.
+  const minutesSinceMidnight = firstMinuteStart.getUTCHours() * 60 + firstMinuteStart.getUTCMinutes();
+  const remainder = mod(minutesSinceMidnight - options.offsetMinutes, options.alignment);
   const toAlign = remainder === 0 ? 0 : options.alignment - remainder;
 
   // set start/end to the first interval boundaries
