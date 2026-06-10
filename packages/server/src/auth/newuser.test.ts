@@ -314,10 +314,12 @@ describe('New user', () => {
         password,
       });
       // As a super admin, set the recaptcha site key
-      // but *not* the access policy
+      // but *not* the access policy (remove the default patient access policy
+      // that is automatically provisioned on project creation)
       const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
+        defaultPatientAccessPolicy: undefined,
         site: [
           {
             name: 'Test Site',
