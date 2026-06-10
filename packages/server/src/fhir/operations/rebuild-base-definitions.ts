@@ -5,7 +5,7 @@ import type { WithId } from '@medplum/core';
 import { allOk, EMPTY, forbidden, isResource, Operator } from '@medplum/core';
 import {
   getDefinitionResource,
-  processBaseDefinitions,
+  readJsonAsync,
   SEARCH_PARAMETER_BUNDLE_FILES,
   STRUCTURE_DEFINITION_BUNDLE_FILES,
   TERMINOLOGY_BUNDLE_FILES,
@@ -23,7 +23,6 @@ import type {
 } from '@medplum/fhirtypes';
 import { r4ProjectId } from '../../constants';
 import { getAuthenticatedContext } from '../../context';
-import { DatabaseMode } from '../../database';
 import { globalLogger } from '../../logger';
 import type { Repository } from '../repo';
 import { parseInputParameters } from './utils/parameters';
@@ -45,7 +44,6 @@ export async function rebuildBaseDefinitionsOperation(req: FhirRequest): Promise
   }
 
   const params = parseInputParameters<InputParams>(op, req);
-  console.log(params);
   await rebuildBaseDefinitions(repo, params.resourceType);
 
   return [allOk];
@@ -54,26 +52,13 @@ export async function rebuildBaseDefinitionsOperation(req: FhirRequest): Promise
 export async function rebuildBaseDefinitions(repo: Repository, types?: ResourceType[]): Promise<void> {
   // Search Parameters
   if (types?.includes('SearchParameter') !== false) {
-    const client = repo.getDatabaseClient(DatabaseMode.WRITER);
-    await client.query('DELETE FROM "SearchParameter" WHERE "projectId" = $1', [r4ProjectId]);
     await processBaseDefinitions(SEARCH_PARAMETER_BUNDLE_FILES, (entry) => processSearchParameterEntry(repo, entry));
   }
 
   // Profile Bundles: Structure + Operation Definitions
-  let importProfileBundles = false;
-  if (types?.includes('StructureDefinition') !== false) {
-    const client = repo.getDatabaseClient(DatabaseMode.WRITER);
-    await client.query(`DELETE FROM "StructureDefinition" WHERE "projectId" = $1`, [r4ProjectId]);
-    importProfileBundles = true;
-  }
-  if (types?.includes('OperationDefinition') !== false) {
-    const client = repo.getDatabaseClient(DatabaseMode.WRITER);
-    await client.query(`DELETE FROM "OperationDefinition" WHERE "projectId" = $1`, [r4ProjectId]);
-    importProfileBundles = true;
-  }
-  if (importProfileBundles) {
+  if (types?.some((t) => t === 'StructureDefinition' || t === 'OperationDefinition')) {
     await processBaseDefinitions(STRUCTURE_DEFINITION_BUNDLE_FILES, async (entry) => {
-      if (types?.includes(entry.resource?.resourceType as ResourceType) === false) {
+      if (!types.includes(entry.resource?.resourceType as ResourceType)) {
         return;
       }
       if (entry.resource?.resourceType === 'StructureDefinition') {
@@ -84,7 +69,7 @@ export async function rebuildBaseDefinitions(repo: Repository, types?: ResourceT
     });
   }
 
-  // Terminolopgy Resources: Code Systems and Value Sets
+  // Terminology Resources: Code Systems and Value Sets
   if (types?.includes('CodeSystem') !== false || types.includes('ValueSet')) {
     await processBaseDefinitions(TERMINOLOGY_BUNDLE_FILES, async (entry) => {
       if (types?.includes(entry.resource?.resourceType as ResourceType) !== false) {
@@ -101,7 +86,7 @@ async function processSearchParameterEntry(repo: Repository, entry: BundleEntry)
 
   const param = entry.resource;
   globalLogger.debug('SearchParameter: ' + param.name);
-  await repo.createResource<SearchParameter>(cleanSeedResource(param));
+  await replaceExisting(repo, param, r4ProjectId);
 }
 
 async function processStructureDefinitionEntry(
@@ -115,9 +100,7 @@ async function processStructureDefinitionEntry(
   globalLogger.debug('StructureDefinition: ' + sd.name);
 
   try {
-    const clean = cleanSeedResource(sd);
-    clean.differential = undefined;
-    const result = await repo.createResource<StructureDefinition>(clean);
+    const result = await replaceExisting(repo, sd, r4ProjectId);
     globalLogger.debug('Created: ' + result.id);
   } catch (error) {
     globalLogger.error('Error seeding StructureDefinition', { name: sd.name, error });
@@ -131,7 +114,7 @@ async function processOperationDefinitionEntry(
 ): Promise<void> {
   const op = entry.resource as OperationDefinition;
   try {
-    await repo.createResource<OperationDefinition>(cleanSeedResource(op));
+    await replaceExisting(repo, op, r4ProjectId);
   } catch (error) {
     globalLogger.error('Error seeding OperationDefinition', { name: op.name, error });
     throw error;
@@ -143,30 +126,32 @@ async function processTerminologyDefinitionEntry(
   entry: BundleEntry<CodeSystem | ValueSet>
 ): Promise<void> {
   const resource = entry.resource as CodeSystem | ValueSet;
-  await deleteExisting(repo, resource, r4ProjectId);
-  await repo.createResource(cleanSeedResource(resource));
+  await replaceExisting(repo, resource, r4ProjectId);
 }
 
-async function deleteExisting(
+async function replaceExisting<T extends Resource & { url?: string }>(
   systemRepo: Repository,
-  resource: CodeSystem | ValueSet,
+  resource: T,
   projectId: string
-): Promise<void> {
-  const bundle = await systemRepo.search({
-    resourceType: resource.resourceType,
-    filters: [
-      { code: 'url', operator: Operator.EQUALS, value: resource.url as string },
-      { code: '_project', operator: Operator.EQUALS, value: projectId },
-    ],
+): Promise<WithId<T>> {
+  return systemRepo.withTransaction(async () => {
+    const bundle = await systemRepo.search({
+      resourceType: resource.resourceType,
+      filters: [
+        { code: 'url', operator: Operator.EQUALS, value: resource.url as string },
+        { code: '_project', operator: Operator.EQUALS, value: projectId },
+      ],
+    });
+    for (const entry of bundle.entry ?? EMPTY) {
+      const existing = entry.resource as WithId<CodeSystem | ValueSet>;
+      await systemRepo.deleteResource(existing.resourceType, existing.id);
+    }
+    return systemRepo.createResource(cleanSeedResource(resource));
   });
-  for (const entry of bundle.entry ?? EMPTY) {
-    const existing = entry.resource as WithId<CodeSystem | ValueSet>;
-    await systemRepo.deleteResource(existing.resourceType, existing.id);
-  }
 }
 
 function cleanSeedResource<T extends Resource>(resource: T): T {
-  return {
+  const clean = {
     ...resource,
     meta: {
       ...resource.meta,
@@ -176,4 +161,17 @@ function cleanSeedResource<T extends Resource>(resource: T): T {
     },
     text: undefined,
   };
+  if ('differential' in clean) {
+    clean.differential = undefined;
+  }
+  return clean;
+}
+
+async function processBaseDefinitions(files: string[], callback: (entry: BundleEntry) => Promise<void>): Promise<void> {
+  for (const filename of files) {
+    const bundle = await readJsonAsync(filename);
+    for (const entry of bundle.entry ?? EMPTY) {
+      await callback(entry);
+    }
+  }
 }

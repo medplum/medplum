@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import type { Bundle, Resource } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
@@ -52,17 +52,6 @@ function getCurrentDir(): string {
     return resolve(dirname(fileURLToPath(import.meta.url)));
   } else {
     throw new Error('No data directory found');
-  }
-}
-
-export async function processBaseDefinitions(
-  files: string[],
-  callback: (entry: BundleEntry) => Promise<void>
-): Promise<void> {
-  for (const filename of files) {
-    for (const entry of (await readJsonAsync(filename)).entry as BundleEntry[]) {
-      await callback(entry);
-    }
   }
 }
 
