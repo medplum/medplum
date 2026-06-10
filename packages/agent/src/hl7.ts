@@ -178,6 +178,12 @@ export class AgentHl7Channel extends BaseChannel {
       );
       // Suppressed by app-level ACK policy — this is a successful outcome from
       // the worker's perspective: no error occurred, we just chose not to forward.
+      // Still clear the pending RTT entry: in aaMode the app-level ACK is the
+      // response we were waiting on, so not recording it here would leave every
+      // message pending until it timed out. (regression guard for #9443)
+      if (msgControlId) {
+        this.stats.recordAckReceived(msgControlId);
+      }
       return true;
     }
 
