@@ -28,7 +28,7 @@ import {
 } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChatInput, DEFAULT_MODEL } from '../../pages/spaces/ChatInput';
 import type { Message } from '../../types/spaces';
 import { showErrorNotification } from '../../utils/notifications';
@@ -73,7 +73,6 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
   const loadVersionRef = useRef(0);
-  const componentStreamOpenedRef = useRef(false);
   const isAtBottomRef = useRef(true);
 
   // Load conversation when topic changes
@@ -222,7 +221,6 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setLoading(true);
     isSendingRef.current = true;
     loadVersionRef.current++;
-    componentStreamOpenedRef.current = false;
 
     try {
       const result = await processMessage({
@@ -247,17 +245,10 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           setSelectedResource(undefined);
           setSelectedResources(undefined);
           setComponentPanelOpen(true);
-          componentStreamOpenedRef.current = true;
           setStreamingComponentCode('');
           setCurrentFhirRequest(undefined);
         },
         onComponentStreamChunk: (chunk) => {
-          if (!componentStreamOpenedRef.current) {
-            setSelectedResource(undefined);
-            setSelectedResources(undefined);
-            setComponentPanelOpen(true);
-            componentStreamOpenedRef.current = true;
-          }
           setStreamingComponentCode((prev) => (prev ?? '') + chunk);
           setCurrentFhirRequest(undefined);
         },
@@ -308,12 +299,15 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
 
   // Map each tool response to the tool call that produced it, so each request can
   // be rendered together with its matching response.
-  const toolResponsesByCallId = new Map<string, Message>();
-  for (const message of visibleMessages) {
-    if (message.role === 'tool' && message.tool_call_id) {
-      toolResponsesByCallId.set(message.tool_call_id, message);
+  const toolResponsesByCallId = useMemo(() => {
+    const map = new Map<string, Message>();
+    for (const message of messages) {
+      if (message.role === 'tool' && message.tool_call_id) {
+        map.set(message.tool_call_id, message);
+      }
     }
-  }
+    return map;
+  }, [messages]);
 
   return (
     <>
