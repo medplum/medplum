@@ -199,6 +199,7 @@ search params, or operations.
 - Licensing: one `PractitionerRole` per state; Medplum does not enforce licensure — your app code must.  [scheduling/state-by-state-licensure]
 - Subscriptions: scope `criteria` tightly; create/update-only firing and `%previous`/`%current` transition criteria exist as Medplum extensions.  [subscriptions/subscription-extensions]
 - Form extraction: SDC `templateExtract` or a Bot — one strategy per form.  [questionnaires/parsing-questionnaire-responses]
+- Codes: agents routinely hallucinate SNOMED/LOINC/ICD-10 codes; don't invent them or pull them from the internet (unreliable). When unsure, use a clearly-marked placeholder and flag it for human verification rather than shipping a made-up code.  [terminology/common-terminologies]
 
 Before finishing: re-check your code against the list above; verify with `tsc` and tests.
 ```
