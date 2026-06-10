@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Project, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import type * as MedplumReactHooks from '@medplum/react-hooks';
 import { MedplumProvider, useWhisper } from '@medplum/react-hooks';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
@@ -15,8 +14,8 @@ vi.mock('@mantine/notifications');
 
 // Replace useWhisper with a controllable mock while keeping the rest of
 // @medplum/react-hooks (useMedplum, MedplumProvider, ...) real.
-vi.mock('@medplum/react-hooks', async (importOriginal) => {
-  const actual = await importOriginal<typeof MedplumReactHooks>();
+vi.mock(import('@medplum/react-hooks'), async (importOriginal) => {
+  const actual = await importOriginal();
   return {
     ...actual,
     useWhisper: vi.fn(),

@@ -49,9 +49,8 @@ describe('ExtensionDisplay', () => {
       const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
       if (!sd) {
         expect.fail(`could not find structure definition for ${url}`);
-      } else {
-        loadDataType(sd);
       }
+      loadDataType(sd);
     }
     const schema = tryGetProfile(profileUrl);
     const slice = schema?.elements['extension'].slicing?.slices.find((slice) => slice.name === 'race');

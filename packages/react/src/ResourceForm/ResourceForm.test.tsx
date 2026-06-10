@@ -357,9 +357,8 @@ describe('ResourceForm', () => {
       const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
       if (!sd) {
         expect.fail(`could not find structure definition for ${url}`);
-      } else {
-        loadDataType(sd);
       }
+      loadDataType(sd);
     }
 
     const onSubmit = vi.fn();
@@ -389,9 +388,8 @@ describe('ResourceForm', () => {
         const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
         if (!sd) {
           expect.fail(`could not find structure definition for ${url}`);
-        } else {
-          loadDataType(sd);
         }
+        loadDataType(sd);
       }
     });
 
@@ -530,17 +528,15 @@ describe('ResourceForm', () => {
       const typeLabel1 = typeInputs[0];
       if (typeLabel1.parentElement === null) {
         expect.fail('typeLabel1.parentElement is null');
-      } else {
-        expect(within(typeLabel1.parentElement).queryByText('Missing required property')).toBeInTheDocument();
       }
+      expect(within(typeLabel1.parentElement).queryByText('Missing required property')).toBeInTheDocument();
 
       // Patient.link[1].type has NO error
       const typeLabel2 = typeInputs[1];
       if (typeLabel2.parentElement === null) {
         expect.fail('typeLabel2.parentElement is null');
-      } else {
-        expect(within(typeLabel2.parentElement).queryByText('Missing required property')).not.toBeInTheDocument();
       }
+      expect(within(typeLabel2.parentElement).queryByText('Missing required property')).not.toBeInTheDocument();
     });
   });
 });

@@ -80,9 +80,8 @@ describe('ResourceTable', () => {
       const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
       if (!sd) {
         expect.fail(`could not find structure definition for ${url}`);
-      } else {
-        loadDataType(sd);
       }
+      loadDataType(sd);
     }
 
     const mockedMedplum = new MockClient();

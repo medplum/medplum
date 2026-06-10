@@ -3,15 +3,14 @@
 import { Notifications } from '@mantine/notifications';
 import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
-import type * as MedplumReactHooks from '@medplum/react-hooks';
 import * as reactHooks from '@medplum/react-hooks';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, render, screen, userEvent, waitFor } from '../../test-utils/render';
 import { ThreadInbox } from './ThreadInbox';
 
-vi.mock('@medplum/react-hooks', async (importOriginal) => ({
-  ...(await importOriginal<typeof MedplumReactHooks>()),
+vi.mock(import('@medplum/react-hooks'), async (importOriginal) => ({
+  ...(await importOriginal()),
   useSubscription: vi.fn(),
 }));
 

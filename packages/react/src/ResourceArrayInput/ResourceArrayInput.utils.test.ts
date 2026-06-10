@@ -35,9 +35,8 @@ describe('assignValuesIntoSlices', () => {
         const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
         if (!sd) {
           expect.fail(`could not find structure definition for ${url}`);
-        } else {
-          loadDataType(sd);
         }
+        loadDataType(sd);
       }
       expect(isProfileLoaded(profileUrl)).toBe(true);
       patientSchema = tryGetProfile(profileUrl) as InternalTypeSchema;
@@ -96,21 +95,20 @@ describe('assignValuesIntoSlices', () => {
       });
       if (!elementsContext) {
         expect.fail('elementsContext should be defined');
-      } else {
-        const slices = await prepareSlices({
-          medplum,
-          property,
-        });
-
-        expect(slices.length).toBe(4);
-        const slicedValues = assignValuesIntoSlices(
-          patient.extension,
-          slices,
-          property.slicing,
-          elementsContext.profileUrl
-        );
-        expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 1, 1, 1, 0]);
       }
+      const slices = await prepareSlices({
+        medplum,
+        property,
+      });
+
+      expect(slices.length).toBe(4);
+      const slicedValues = assignValuesIntoSlices(
+        patient.extension,
+        slices,
+        property.slicing,
+        elementsContext.profileUrl
+      );
+      expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 1, 1, 1, 0]);
     });
   });
 
@@ -152,21 +150,20 @@ describe('assignValuesIntoSlices', () => {
       });
       if (!elementsContext) {
         expect.fail('elementsContext should be defined');
-      } else {
-        const slices = await prepareSlices({
-          medplum,
-          property,
-        });
-
-        expect(slices.length).toBe(1);
-        const slicedValues = assignValuesIntoSlices(
-          resource.category,
-          slices,
-          property.slicing,
-          elementsContext.profileUrl
-        );
-        expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 0]);
       }
+      const slices = await prepareSlices({
+        medplum,
+        property,
+      });
+
+      expect(slices.length).toBe(1);
+      const slicedValues = assignValuesIntoSlices(
+        resource.category,
+        slices,
+        property.slicing,
+        elementsContext.profileUrl
+      );
+      expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 0]);
     });
 
     test('Observation.component (systolic and diastolic)', async () => {
@@ -220,21 +217,20 @@ describe('assignValuesIntoSlices', () => {
 
       if (!elementsContext) {
         expect.fail('elementsContext should be defined');
-      } else {
-        const slices = await prepareSlices({
-          medplum,
-          property,
-        });
-        const slicedValues = assignValuesIntoSlices(
-          resource.component,
-          slices,
-          property.slicing,
-          elementsContext.profileUrl
-        );
-
-        expect(slices.length).toBe(2);
-        expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 1, 0]);
       }
+      const slices = await prepareSlices({
+        medplum,
+        property,
+      });
+      const slicedValues = assignValuesIntoSlices(
+        resource.component,
+        slices,
+        property.slicing,
+        elementsContext.profileUrl
+      );
+
+      expect(slices.length).toBe(2);
+      expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 1, 0]);
     });
   });
 });
