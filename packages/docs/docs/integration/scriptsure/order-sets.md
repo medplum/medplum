@@ -22,7 +22,7 @@ Calls `POST /fhir/R4/PlanDefinition/$order-set-url` to resolve the authenticated
 import { useScriptSureOrderSet } from '@medplum/scriptsure-react';
 
 function OrderSetTab({ patientId, planDefinitionId }: { patientId: string; planDefinitionId: string }) {
-  const { url, loading, error, refresh } = useScriptSureOrderSet({ patientId, planDefinitionId });
+  const { url, loading, error } = useScriptSureOrderSet({ patientId, planDefinitionId });
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error loading order set</div>;
@@ -50,13 +50,21 @@ Either `planDefinitionId` or `scriptSureOrdersetId` must be provided.
 | `url` | `string \| undefined` | Authenticated iFrame URL for the order set widget. |
 | `loading` | `boolean` | `true` while the URL is being fetched. |
 | `error` | `unknown` | Set if the request fails. |
-| `refresh` | `() => Promise<string \| undefined>` | Re-fetches the URL. Safe to call repeatedly — useful for refreshing session tokens. |
+| `refresh` | `() => Promise<string \| undefined>` | Re-fetches the URL imperatively. Call it just before re-opening the prescribing widget to ensure the session token is fresh–the hook auto-fetches on mount, but tokens expire if the widget is closed and reopened later. |
 
 ## Creating an order set
 
 An order set is a `PlanDefinition` resource with `type.coding[0].code = "order-set"`, plus one `ActivityDefinition` per medication line. Each `PlanDefinition.action` references its `ActivityDefinition` by canonical URL.
 
-The bundle below is a minimal working example — a geriatric type 2 diabetes starter pack. The bundle type is `collection`; before posting, convert it to a `transaction` bundle (e.g. via `convertToTransactionBundle` from `@medplum/core`) and then execute it with `medplum.executeBatch()`, which posts to `POST /fhir/R4`.
+The bundle below is a minimal working example–a geriatric type 2 diabetes starter pack. The bundle type is `collection`; convert it to a `transaction` bundle before posting:
+
+```typescript
+import { convertToTransactionBundle } from '@medplum/core';
+import orderSetBundle from './order-set-example-bundle.json';
+
+const result = await medplum.executeBatch(convertToTransactionBundle(orderSetBundle));
+const pdId = result.entry?.find((e) => e.response?.location?.startsWith('PlanDefinition/'))?.response?.location?.split('/')[1];
+```
 
 <details>
 <summary>Example order set bundle (`PlanDefinition` + `ActivityDefinition`)</summary>

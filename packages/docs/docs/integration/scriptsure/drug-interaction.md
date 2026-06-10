@@ -12,7 +12,7 @@ The ScriptSure integration is in beta. Features and APIs may change.
 
 Checks one or more candidate drugs for drug-drug interactions (DDI) against a patient's current medication list in ScriptSure. Two modes are supported:
 
-- **`check`** (default) — lightweight DDI list via `POST /v3/fdb/drugcheck/interaction`
+- **`check`** (default) — lightweight DDI list
 - **`details`** — full FDB screening payload per candidate including allergy, age, and duplicate-therapy checks
 
 If the prescriber has not completed ScriptSure EULA or identity proofing, returns `{ interactions: [], skipped: true, providerNotReady: true }` rather than throwing.

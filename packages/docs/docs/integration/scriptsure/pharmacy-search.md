@@ -15,20 +15,33 @@ The ScriptSure integration is in beta. Features and APIs may change.
 Wraps `usePharmacySearch` with ScriptSure bot identifiers pre-configured. Exposes two methods: `searchPharmacies` to query the pharmacy directory and `addToFavorites` to save a pharmacy to a patient's profile.
 
 ```tsx
+import { useState } from 'react';
 import { useScriptSurePharmacySearch } from '@medplum/scriptsure-react';
 import type { Organization } from '@medplum/fhirtypes';
 
 function PharmacyPicker({ patientId }: { patientId: string }) {
   const { searchPharmacies, addToFavorites } = useScriptSurePharmacySearch();
+  const [results, setResults] = useState<Organization[]>([]);
 
   async function handleSearch() {
-    const results = await searchPharmacies({ zip: '94103', name: 'CVS' });
-    // results is Organization[]
+    const pharmacies = await searchPharmacies({ zip: '94103', name: 'CVS' });
+    setResults(pharmacies);
   }
 
-  async function handleAdd(pharmacy: Organization) {
+  async function handleSelect(pharmacy: Organization) {
     await addToFavorites({ patientId, pharmacy, setAsPrimary: true });
   }
+
+  return (
+    <ul>
+      {results.map((pharmacy, i) => (
+        <li key={i}>
+          {pharmacy.name}
+          <button onClick={() => handleSelect(pharmacy)}>Add</button>
+        </li>
+      ))}
+    </ul>
+  );
 }
 ```
 
@@ -55,3 +68,5 @@ Calls `scriptsure-add-patient-pharmacy-bot` and saves the pharmacy to the patien
 | `patientId` | `string` | Medplum `Patient` resource ID |
 | `pharmacy` | `Organization` | FHIR `Organization` resource to add |
 | `setAsPrimary` | `boolean` | Whether to set as the patient's primary pharmacy |
+
+Returns `{ success: boolean, message: string, organization: Organization }`. If the provider is not yet enrolled, the pharmacy is saved locally and synced to ScriptSure on the next patient sync — `success` is still `true` in that case.
