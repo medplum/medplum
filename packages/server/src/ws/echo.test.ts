@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { sleep } from '@medplum/core';
 import type { Express } from 'express';
 import express from 'express';
 import type { Server } from 'node:http';
@@ -33,9 +32,6 @@ describe('Echo websocket', () => {
     withTestContext(async () => {
       await request(server)
         .ws('/ws/echo')
-        .exec(async () => {
-          await sleep(10);
-        })
         .sendText('foo')
         .expectText('foo')
         .sendText('bar')
