@@ -27,7 +27,7 @@ Then tell the model it can read `medplum-link/`. If you would rather not clone, 
 
 ## Plan and prompt with Medplum as the source of truth
 
-The setup only pays off if your prompts push the model toward it. The pattern that has worked best, in our experience, is to **plan before you build**: ask the model to read the relevant docs and code (or have a rules file that does this for you - see the docs page for more information on this), explain the common design patterns and their tradeoffs, and only then implement. It is far cheaper to catch a wrong architectural turn while it is still a paragraph than after it is a few hundred lines. Where you can, point the agent at the closest existing implementation to adapt rather than asking it to start from a blank file.
+The setup only pays off if your prompts push the model toward it. The pattern that has worked best, in our experience, is to **plan before you build**: ask the model to read the relevant docs and code (or have a rule file do this for you — more on that below), explain the common design patterns and their tradeoffs, and only then implement. It is far cheaper to catch a wrong architectural turn while it is still a paragraph than after it is a few hundred lines. Where you can, point the agent at the closest existing implementation to adapt rather than asking it to start from a blank file.
 
 ## Keep conversations short
 
@@ -38,6 +38,10 @@ One thing that is a real risk - long conversations decay. An agent that started 
 An agent's confidence is not a measure of correctness, so build verification in. The cheapest check — and one the agent can run itself if it has terminal access — is to **compile the generated code against Medplum's TypeScript types.** The types are strict, so a hallucinated field on a typed FHIR resource is a compile error rather than a production surprise. Tests and linting catch more, and when you want the real thing, Medplum's server-side validation will check resources against the actual FHIR and profile definitions.
 
 And the part we would never skip, because this is healthcare: **review the output, especially the sensitive parts.** LLMs make mistakes, and a wrong access policy does not throw an error — it quietly exposes data. Anything touching access control, auth scopes, or PHI deserves a careful human read before it ships.
+
+## Put it in a rule file
+
+Everything above works better when you write it down once instead of repeating it in every prompt. A rule file — `CLAUDE.md`, Cursor rules, or an `AGENTS.md` — gets read on every turn, so it keeps the model pointed at Medplum's docs without being told, and it survives the context decay from the last section. We offer a starter rule file you can drop in and adapt; grab it from the [guide](/docs/building-with-ai-coding-assistants#5-encode-your-conventions-in-a-rule-file).
 
 ## Advanced: direct data access
 
