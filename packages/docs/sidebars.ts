@@ -186,6 +186,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'fhir-datastore/fhir-batch-requests' },
         { type: 'doc', id: 'fhir-datastore/processing-async-bundles' },
         { type: 'doc', id: 'fhir-datastore/working-with-fhir' },
+        { type: 'doc', id: 'fhir-datastore/multilingual-support' },
         {
           type: 'html',
           value: '<strong class="menu__link">Data Validation</strong>',
