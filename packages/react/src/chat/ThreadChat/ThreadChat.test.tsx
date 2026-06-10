@@ -19,7 +19,7 @@ type SubscriptionControllerEvents = {
 
 vi.mock(import('@medplum/react-hooks'), async (importOriginal) => {
   const { TypedEventTarget } = await import('@medplum/core');
-  const _subscriptionController = new TypedEventTarget();
+  const _subscriptionController = new TypedEventTarget<SubscriptionControllerEvents>();
   const original = await importOriginal();
   return {
     ...original,

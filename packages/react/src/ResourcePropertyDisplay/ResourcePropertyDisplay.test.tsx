@@ -484,7 +484,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Primitive with extension but no value should render empty string', async () => {
-    console.warn = jest.fn();
+    console.warn = vi.fn();
     await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, path: 'Patient.birthDate', type: [{ code: 'date' }] }}
