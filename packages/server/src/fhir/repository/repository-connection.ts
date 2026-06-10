@@ -179,10 +179,10 @@ export class RepositoryConnection implements Disposable {
       }
 
       const client = await this.getConnection(options.mode ?? DatabaseMode.WRITER);
-      this.pinDepth++;
-      this.discardOnRelease = true;
 
       await client.query(`SELECT set_config('statement_timeout', $1, false)`, [String(options.timeoutMs)]);
+      this.pinDepth++;
+      this.discardOnRelease = true;
       return client;
     });
 
