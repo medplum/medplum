@@ -3,6 +3,7 @@
 import type { JSX } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { BotsPage } from './admin/BotsPage';
+import { CustomOperationsPage } from './admin/CustomOperationsPage';
 import { ClientsPage } from './admin/ClientsPage';
 import { CreateBotPage } from './admin/CreateBotPage';
 import { CreateClientPage } from './admin/CreateClientPage';
@@ -93,6 +94,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="bots/:membershipId" element={<MemberDetailsPage />} />
           <Route path="bots/new" element={<CreateBotPage />} />
           <Route path="bots" element={<BotsPage />} />
+          <Route path="custom-operations" element={<CustomOperationsPage />} />
           <Route path="clients/:membershipId" element={<MemberDetailsPage />} />
           <Route path="clients/new" element={<CreateClientPage />} />
           <Route path="clients" element={<ClientsPage />} />
