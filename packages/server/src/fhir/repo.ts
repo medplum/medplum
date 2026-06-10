@@ -810,8 +810,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
-      (existing.meta as Meta).compartment = await this.getCompartments(existing); // Update compartments with latest rules
-      if (!this.canPerformInteraction(interaction, existing)) {
+      if (
+        !this.canPerformInteraction(interaction, {
+          ...existing,
+          meta: { ...existing.meta, compartment: await this.getCompartments(existing) },
+        })
+      ) {
         // Check before the update
         throw new OperationOutcomeError(forbidden);
       }
