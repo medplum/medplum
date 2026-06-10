@@ -38,6 +38,7 @@ import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
+import { fhircastR4Router, FHIRCAST_R4_MOUNT_PATH } from './fhircast-r4/routes';
 import { cleanupReservedDatabaseConnections, healthcheckHandler } from './healthcheck';
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
@@ -234,6 +235,8 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/fhir/R4/', fhirRouter);
   apiRouter.use('/fhircast/STU2/', fhircastSTU2Router);
   apiRouter.use('/fhircast/STU3/', fhircastSTU3Router);
+  apiRouter.use(FHIRCAST_R4_MOUNT_PATH, fhircastR4Router);
+  apiRouter.use('/hub', fhircastR4Router); // OHIF compat alias → /api/hub
   apiRouter.use('/keyvalue/v1/', keyValueRouter);
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);

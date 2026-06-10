@@ -13,6 +13,7 @@ import { handleAgentConnection } from './agent';
 import { handleAiRealtimeConnection } from './ai-realtime';
 import { handleEchoConnection, initEchoHeartbeat, stopEchoHeartbeat } from './echo';
 import { handleFhircastConnection, initFhircastHeartbeat, stopFhircastHeartbeat } from './fhircast';
+import { handleFhircastR4Connection, initFhircastR4Heartbeat, stopFhircastR4Heartbeat } from './fhircast-r4';
 import { handleR4SubscriptionConnection } from './subscriptions';
 
 const handlerMap = new Map<string, (socket: WebSocket, request: IncomingMessage) => Promise<void>>();
@@ -20,6 +21,7 @@ handlerMap.set('echo', handleEchoConnection);
 handlerMap.set('agent', handleAgentConnection);
 handlerMap.set('ai-realtime', handleAiRealtimeConnection);
 handlerMap.set('fhircast', handleFhircastConnection);
+handlerMap.set('fhircast-r4', handleFhircastR4Connection);
 handlerMap.set('subscriptions-r4', handleR4SubscriptionConnection);
 
 type WebSocketState = {
@@ -95,6 +97,7 @@ export function initWebSockets(server: http.Server): void {
   });
 
   initFhircastHeartbeat();
+  initFhircastR4Heartbeat();
   initEchoHeartbeat();
 }
 
@@ -104,6 +107,7 @@ function getWebSocketPath(path: string): string {
 
 export async function closeWebSockets(): Promise<void> {
   stopFhircastHeartbeat();
+  stopFhircastR4Heartbeat();
   stopEchoHeartbeat();
 
   if (wsServer) {

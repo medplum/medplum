@@ -21,6 +21,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { getFhircastHubUrl } from '../fhircast-r4/routes';
 
 /**
  * The base CapabilityStatement that seeds the server generated statement.
@@ -225,7 +226,7 @@ function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
           extension: [
             {
               url: 'hub.url',
-              valueUrl: `${config.baseUrl}fhircast/STU3`,
+              valueUrl: getFhircastHubUrl(config.baseUrl),
             },
           ],
           url: 'http://hl7.org/fhir/uv/fhircast/StructureDefinition/fhircast-configuration-extension',

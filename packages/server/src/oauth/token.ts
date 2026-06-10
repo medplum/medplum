@@ -27,6 +27,7 @@ import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { getFhircastHubUrl } from '../fhircast-r4/routes';
 import { getTopicForUser } from '../fhircast/utils';
 import { validateClientCert } from './cert';
 import type { MedplumRefreshTokenClaims } from './keys';
@@ -795,7 +796,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
       sendTokenError(res, normalizeErrorString(err));
       return;
     }
-    fhircastProps['hub.url'] = `${config.baseUrl}fhircast/STU3`; // TODO: Figure out how to handle the split between STU2 and STU3...
+    fhircastProps['hub.url'] = getFhircastHubUrl(config.baseUrl);
     fhircastProps['hub.topic'] = topic;
   }
 
