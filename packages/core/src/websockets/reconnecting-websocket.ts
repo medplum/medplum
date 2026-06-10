@@ -55,10 +55,23 @@ export type IWebSocketEventMap = {
 
 /**
  * Generic interface that an implementation of `WebSocket` must satisfy to be used with `ReconnectingWebSocket`.
- * This is a slightly modified fork of the `WebSocket` global type used in Node.
+ * This is a slightly modified fork of the `WebSocket` global type used in Node, narrowed to exactly the members
+ * `ReconnectingWebSocket` actually depends on.
  *
- * The main key difference is making all the `onclose`, `onerror`, etc. functions have `any[]` args, making `data` in `send()` of type `any`, and making `binaryType` of type string,
- * though the particular implementation should narrow each of these implementation-specific types.
+ * `addEventListener`/`removeEventListener` declare a typed overload against `IWebSocketEventMap` (the global event
+ * interfaces, used here rather than the local `WebSocketEventMap` since they are generic enough to describe the
+ * events `ReconnectingWebSocket` attaches to). They also declare the permissive string overload that the real
+ * `WebSocket` types carry, which is what lets conformant implementations whose event types do not structurally
+ * match the global ones (e.g. the `ws` library, whose events are a minimal subset and use `target: WebSocket`)
+ * still satisfy this interface.
+ *
+ * The `onopen`/`onclose`/`onmessage`/`onerror` handler properties are intentionally omitted: `ReconnectingWebSocket`
+ * never assigns to them (it uses `addEventListener`), and because they are function-valued properties their
+ * parameters are checked contravariantly, which no single precise event type can satisfy across implementations
+ * (e.g. `ws`'s events use `target: WebSocket` while the DOM's use `target: EventTarget | null`).
+ *
+ * `binaryType` is widened to `string` and `send()` accepts the full `Message` union; a particular implementation
+ * should narrow each of these implementation-specific types.
  */
 export interface IWebSocket {
   binaryType: string;
@@ -66,26 +79,21 @@ export interface IWebSocket {
   readonly bufferedAmount: number;
   readonly extensions: string;
 
-  onclose: ((...args: any[]) => any) | null;
-  onerror: ((...args: any[]) => any) | null;
-  onmessage: ((...args: any[]) => any) | null;
-  onopen: ((...args: any[]) => any) | null;
-
   readonly protocol: string;
   readonly readyState: number;
   readonly url: string;
 
   close(code?: number, reason?: string): void;
-  send(data: any): void;
+  send(data: Message): void;
 
   readonly CLOSED: number;
   readonly CLOSING: number;
   readonly CONNECTING: number;
   readonly OPEN: number;
 
-  addEventListener<K extends keyof WebSocketEventMap>(
+  addEventListener<K extends keyof IWebSocketEventMap>(
     type: K,
-    listener: (ev: WebSocketEventMap[K]) => any,
+    listener: (event: IWebSocketEventMap[K]) => void,
     options?: boolean | AddEventListenerOptions
   ): void;
   addEventListener(
@@ -93,9 +101,9 @@ export interface IWebSocket {
     listener: EventListenerOrEventListenerObject,
     options?: boolean | AddEventListenerOptions
   ): void;
-  removeEventListener<K extends keyof WebSocketEventMap>(
+  removeEventListener<K extends keyof IWebSocketEventMap>(
     type: K,
-    listener: (ev: WebSocketEventMap[K]) => any,
+    listener: (event: IWebSocketEventMap[K]) => void,
     options?: boolean | EventListenerOptions
   ): void;
   removeEventListener(
@@ -150,7 +158,41 @@ export function assert(condition: unknown, msg?: string): asserts condition {
 }
 
 function cloneEvent(e: Event): Event {
+  // The generic clone below relies on the DOM `(type, eventInitDict)` constructor convention, which
+  // native events follow. Our polyfilled `CloseEvent`/`ErrorEvent` use non-standard signatures
+  // (`(code, reason, target)` and `(error, target)`), so they must be reconstructed explicitly —
+  // otherwise e.g. a cloned close event ends up with `code: 'close'` and `reason: <event object>`.
+  if (e instanceof Events.CloseEvent) {
+    const closeEvent = e as CloseEvent;
+    return new Events.CloseEvent(closeEvent.code, closeEvent.reason, undefined);
+  }
+  if (e instanceof Events.ErrorEvent) {
+    const errorEvent = e as ErrorEvent;
+    return new Events.ErrorEvent(errorEvent.error ?? new Error(errorEvent.message), undefined);
+  }
   return new (e as any).constructor(e.type, e);
+}
+
+/**
+ * Normalizes the various `error` event shapes dispatched by different `WebSocket` implementations
+ * into a single `ErrorEvent` carrying a real `Error`, so downstream listeners always get `message`
+ * and `error` regardless of the underlying implementation:
+ *
+ * - Browsers dispatch a plain `Event` with no error details (per the WHATWG WebSocket spec).
+ * - Node's `ws` library and Node's built-in (undici) `WebSocket` dispatch an `ErrorEvent` with both
+ *   `message` and `error`.
+ * - Bun dispatches a plain `Event` with a `message` string but no `error`.
+ *
+ * @param event - The `error` event as dispatched by the underlying `WebSocket`.
+ * @param target - The `ReconnectingWebSocket` instance the normalized event is dispatched from.
+ * @returns An `ErrorEvent` with a populated `message` and `error`.
+ */
+export function normalizeErrorEvent(event: Event | ErrorEvent, target: unknown): ErrorEvent {
+  const candidate = event as Partial<ErrorEvent>;
+  if (candidate.error instanceof Error) {
+    return new Events.ErrorEvent(candidate.error, target);
+  }
+  return new Events.ErrorEvent(new Error(candidate.message || 'WebSocket error'), target);
 }
 
 export type Options<WS extends IWebSocket = WebSocket> = {
@@ -543,15 +585,19 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
     this.dispatchEvent(cloneEvent(event));
   };
 
-  private readonly _handleError = (event: ErrorEvent): void => {
-    this._debug('error event', event.message);
-    this._disconnect(undefined, event.message === 'TIMEOUT' ? 'timeout' : undefined);
+  private readonly _handleError = (event: Event | ErrorEvent): void => {
+    // The `error` event shape differs across WebSocket implementations (plain `Event` in browsers,
+    // `ErrorEvent` in `ws`/undici, `Event` + `message` in Bun), so normalize it to an `ErrorEvent`
+    // carrying a real `Error` before doing anything with it.
+    const errorEvent = normalizeErrorEvent(event, this);
+    this._debug('error event', errorEvent.message);
+    this._disconnect(undefined, errorEvent.message === 'TIMEOUT' ? 'timeout' : undefined);
 
     if (this.onerror) {
-      this.onerror(event);
+      this.onerror(errorEvent);
     }
     this._debug('exec error listeners');
-    this.dispatchEvent(cloneEvent(event));
+    this.dispatchEvent(cloneEvent(errorEvent));
 
     this._connect();
   };

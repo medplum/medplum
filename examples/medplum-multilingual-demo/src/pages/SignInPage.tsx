@@ -1,0 +1,21 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Title } from '@mantine/core';
+import { Logo, SignInForm } from '@medplum/react';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
+import { getConfig } from '../config';
+
+export function SignInPage(): JSX.Element {
+  const navigate = useNavigate();
+  return (
+    <SignInForm
+      googleClientId={getConfig().googleClientId}
+      clientId={getConfig().clientId}
+      onSuccess={() => navigate('/')?.catch(console.error)}
+    >
+      <Logo size={32} />
+      <Title>Sign in to Medplum</Title>
+    </SignInForm>
+  );
+}
