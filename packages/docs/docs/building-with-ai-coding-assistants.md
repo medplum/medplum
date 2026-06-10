@@ -191,7 +191,7 @@ search params, or operations.
 ## Common Mistakes
 
 - Messaging: thread header carries no payload; `recipient` = ALL participants incl. the sender/creator.  [communications/messaging-data-model]
-- Scheduling (alpha): availability is implicit — create `Slot`s only for booked/blocked time, never for open availability.  [scheduling/defining-availability]
+- Scheduling: availability is implicit — create `Slot`s only for booked/blocked time, never for open availability.  [scheduling/defining-availability]
 - Bundles: entries that cross-reference need `type: transaction` + `urn:uuid` fullUrls (or `reorderBundle()`), not batch.  [fhir-datastore/fhir-batch-requests]
 - Idempotent writes: conditional create/update keyed on `identifier` (`createResourceIfNoneExist`), never search-then-create.  [fhir-datastore/working-with-fhir]
 - Files: `createMedia`/`createBinary`/`createAttachment` → `Binary/{id}` url + securityContext; never base64 in `Attachment.data`.  [fhir-datastore/binary-data]
