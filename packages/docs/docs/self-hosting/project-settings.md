@@ -36,7 +36,7 @@ are:
 | `graphql-introspection`   | Allows potentially-expensive [GraphQL schema introspection](/docs/graphql) queries                                               |
 | `terminology`             | Enable full standards-compliant implementation for the [`ValueSet/$expand` operation](/docs/api/fhir/operations/valueset-expand) |
 | `websocket-subscriptions` | Allows setting up a [Subscription](/docs/subscriptions) over Websockets                                                          |
-| `transaction-bundles`     | Use strong database transaction isolation for `transaction` Bundles                                                              |
+| `transaction-bundles`     | Process `transaction` Bundles atomically. Without this flag, `transaction` Bundles are processed as batches. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests#transaction-limits) |
 
 ## Project system settings
 
