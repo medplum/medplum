@@ -133,6 +133,34 @@ describe('CLI Bots', () => {
     expect(check.sourceCode).toBeDefined();
   });
 
+  test('Save bot source file not found', async () => {
+    const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+
+    const botConfig = JSON.stringify({
+      bots: [
+        {
+          name: 'hello-world',
+          id: bot.id,
+          source: 'src/hello-world.ts',
+          dist: 'dist/hello-world.js',
+        },
+      ],
+    });
+
+    // Config file exists but source file does not
+    (fs.existsSync as unknown as jest.Mock).mockImplementation((p: string) =>
+      (p as string).endsWith('medplum.config.json')
+    );
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(botConfig);
+
+    await expect(main(['node', 'index.js', 'bot', 'save', 'hello-world'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(processError).toHaveBeenCalledWith(
+      expect.stringContaining('Error: 1 bot(s) had failures. Bots with failures:')
+    );
+  });
+
   test('Deploy bot success', async () => {
     medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
 
@@ -160,6 +188,34 @@ describe('CLI Bots', () => {
     const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
+  });
+
+  test('Deploy bot dist file not found', async () => {
+    const bot = await medplum.createResource<Bot>({ id: randomUUID(), resourceType: 'Bot' });
+
+    const botConfig = JSON.stringify({
+      bots: [
+        {
+          name: 'hello-world',
+          id: bot.id,
+          source: 'src/hello-world.ts',
+          dist: 'dist/hello-world.js',
+        },
+      ],
+    });
+
+    // Config file and source exist but dist file does not
+    (fs.existsSync as unknown as jest.Mock).mockImplementation((p: string) =>
+      !(p as string).endsWith('hello-world.js')
+    );
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(botConfig);
+
+    await expect(main(['node', 'index.js', 'bot', 'deploy', 'hello-world'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(processError).toHaveBeenCalledWith(
+      expect.stringContaining('Error: 1 bot(s) had failures. Bots with failures:')
+    );
   });
 
   test('Deploy bot without dist success', async () => {

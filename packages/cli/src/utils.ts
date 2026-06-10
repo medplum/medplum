@@ -54,7 +54,7 @@ export async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfi
   const codePath = botConfig.source;
   const code = readFileContents(codePath);
   if (!code) {
-    return;
+    throw new Error(`Source file not found: ${codePath}`);
   }
 
   console.log('Saving source code...');
@@ -76,7 +76,7 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
   const codePath = botConfig.dist ?? botConfig.source;
   const code = readFileContents(codePath);
   if (!code) {
-    return;
+    throw new Error(`Bot code file not found: ${codePath}`);
   }
 
   console.log('Deploying bot...');
