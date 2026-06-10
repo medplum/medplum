@@ -20,7 +20,11 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
+import * as redis from '../redis';
 import { initTestAuth, withTestContext } from '../test.setup';
+import { handleFhircastConnection } from './fhircast';
+import type { IncomingMessage } from 'node:http';
+import type { WebSocket } from 'ws';
 
 describe('FHIRcast WebSocket', () => {
   describe('Basic flow', () => {
@@ -915,6 +919,37 @@ describe('FHIRcast WebSocket', () => {
           .sendJson({ ok: true })
           .close()
           .expectClosed();
+      }));
+  });
+
+  describe('Subscribe failure', () => {
+    test('Closes socket and logs when subscribe rejects', () =>
+      withTestContext(async () => {
+        const subscribeError = new Error('Connection is closed.');
+        const cacheSpy = jest.spyOn(redis, 'getCacheRedis').mockReturnValue({
+          get: jest.fn().mockResolvedValue('project-id:my-topic'),
+        } as any);
+        const subscriberSpy = jest.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+          subscribe: jest.fn().mockRejectedValue(subscribeError),
+          on: jest.fn(),
+          disconnect: jest.fn(),
+        } as any);
+        const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+
+        const socket = { on: jest.fn(), send: jest.fn(), close: jest.fn() } as unknown as WebSocket;
+        const req = { url: '/ws/fhircast/some-endpoint' } as IncomingMessage;
+
+        try {
+          await expect(handleFhircastConnection(socket, req)).resolves.toBeUndefined();
+          expect(errorSpy).toHaveBeenCalledWith('[FHIRcast]: Failed to subscribe to topic', {
+            err: subscribeError,
+          });
+          expect(socket.close).toHaveBeenCalled();
+        } finally {
+          cacheSpy.mockRestore();
+          subscriberSpy.mockRestore();
+          errorSpy.mockRestore();
+        }
       }));
   });
 });
