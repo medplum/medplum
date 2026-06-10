@@ -147,7 +147,6 @@ export async function setResourceAccounts(
     throw new OperationOutcomeError(notFound);
   }
   const accounts = params.accounts;
-  // const oldAccounts = target.meta?.accounts;
 
   // Update the target resource with the new accounts
   target.meta = {
@@ -192,8 +191,6 @@ async function updateCompartmentResource<T extends Resource>(
   systemRepo: SystemRepository,
   resource: T,
   params: SetAccountsParameters
-  // additions: Reference[],
-  // removals: Reference[]
 ): Promise<T> {
   if (params.force) {
     const accountList = params.accounts;

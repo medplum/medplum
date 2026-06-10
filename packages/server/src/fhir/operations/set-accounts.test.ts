@@ -568,6 +568,7 @@ describe('Patient Set Accounts Operation', () => {
     const patientRef = createReference(patient);
     expect(patient.meta?.accounts).toStrictEqual([orgRef]);
     expect(patient.meta?.compartment).toContainEqual(orgRef);
+    expect(patient.meta?.profile).toStrictEqual(['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient']);
 
     const reportRes = await request(app)
       .post(`/fhir/R4/DiagnosticReport`)
@@ -583,7 +584,106 @@ describe('Patient Set Accounts Operation', () => {
     expect(reportRes.status).toBe(201);
     const diagnosticReport = reportRes.body as DiagnosticReport;
     expect(diagnosticReport.subject).toStrictEqual(patientRef);
+    expect(diagnosticReport.meta?.accounts).toBeUndefined();
     expect(diagnosticReport.meta?.compartment).toStrictEqual(expect.arrayContaining([orgRef, patientRef, projectRef]));
     expect(diagnosticReport.meta?.compartment).toHaveLength(3);
+    expect(diagnosticReport.meta?.profile).toBeUndefined();
+  });
+
+  test('Using force parameter to recover from previous state', async () => {
+    const { accessToken, repo, project } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+
+    const organization = await repo.createResource<Organization>({ resourceType: 'Organization' });
+    const orgRef = { reference: getReferenceString(organization) };
+
+    // Previous state double-set accounts on both the Patient and their compartment resources
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient', meta: { accounts: [orgRef] } });
+    const observation = await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      meta: { accounts: [orgRef] },
+      status: 'final',
+      code: { text: 'Genetic testing' },
+      subject: createReference(patient),
+    });
+
+    // First run: clear accounts
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          // Force set no accounts on all resources in the compartment
+          {
+            name: 'propagate',
+            valueBoolean: true,
+          },
+          {
+            name: 'force',
+            valueBoolean: true,
+          },
+        ],
+      });
+    expect(res.status).toBe(200);
+
+    const interPatient = await repo.readResource('Patient', patient.id);
+    expect(interPatient.meta?.accounts).toBeUndefined();
+    expect(interPatient.meta?.compartment).toStrictEqual(
+      expect.arrayContaining([{ reference: getReferenceString(project) }, { reference: getReferenceString(patient) }])
+    );
+    expect(interPatient.meta?.compartment).toHaveLength(2);
+    const interObservation = await repo.readResource('Observation', observation.id);
+    expect(interObservation.meta?.accounts).toBeUndefined();
+    expect(interObservation.meta?.compartment).toStrictEqual(
+      expect.arrayContaining([{ reference: getReferenceString(project) }, { reference: getReferenceString(patient) }])
+    );
+    expect(interObservation.meta?.compartment).toHaveLength(2);
+
+    console.log('HERE!');
+
+    // Second run: set correct accounts without force
+    const res2 = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          // Normal propagation of the intended account
+          {
+            name: 'accounts',
+            valueReference: orgRef,
+          },
+          {
+            name: 'propagate',
+            valueBoolean: true,
+          },
+        ],
+      });
+    expect(res2.status).toBe(200);
+
+    const finalPatient = await repo.readResource('Patient', patient.id);
+    expect(finalPatient.meta?.accounts).toStrictEqual([orgRef]); // Patient accounts are set
+    expect(finalPatient.meta?.compartment).toStrictEqual(
+      expect.arrayContaining([
+        { reference: getReferenceString(project) },
+        { reference: getReferenceString(patient) },
+        orgRef, // Compartments includes account
+      ])
+    );
+    expect(finalPatient.meta?.compartment).toHaveLength(3);
+    const finalObservation = await repo.readResource('Observation', observation.id);
+    expect(finalObservation.meta?.accounts).toBeUndefined(); // Account is not set on compartment resource
+    expect(finalObservation.meta?.compartment).toStrictEqual(
+      expect.arrayContaining([
+        { reference: getReferenceString(project) },
+        { reference: getReferenceString(patient) },
+        orgRef, // Compartments still includes linked Patient account
+      ])
+    );
+    expect(finalObservation.meta?.compartment).toHaveLength(3);
   });
 });
