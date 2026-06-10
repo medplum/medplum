@@ -14,8 +14,9 @@ import type { Express } from 'express';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
-import type { Server } from 'node:http';
+import type { IncomingMessage, Server } from 'node:http';
 import request from 'superwstest';
+import type { WebSocket } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
@@ -23,8 +24,6 @@ import { globalLogger } from '../logger';
 import * as redis from '../redis';
 import { initTestAuth, withTestContext } from '../test.setup';
 import { handleFhircastConnection } from './fhircast';
-import type { IncomingMessage } from 'node:http';
-import type { WebSocket } from 'ws';
 
 describe('FHIRcast WebSocket', () => {
   describe('Basic flow', () => {
