@@ -3,6 +3,7 @@
 import type { OperationOutcomeError } from '@medplum/core';
 import { normalizeErrorString, sleep } from '@medplum/core';
 import { RepositoryMode } from '@medplum/fhir-router';
+import assert from 'node:assert';
 import type { PoolClient } from 'pg';
 import { getConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
@@ -29,6 +30,43 @@ export type StatementTimeoutOptions = {
   mode?: DatabaseMode;
 };
 
+export type ScopeToken = object & { readonly _brand: 'scope_token' };
+export type Scope = object & { readonly _brand: 'scope' };
+
+type WritableScope = {
+  readonly _brand: 'scope';
+  parent?: WritableScope;
+  token: ScopeToken;
+  state: 'active' | 'post-commit' | 'ended';
+  preCommitCallbacks: (() => Promise<void>)[];
+  postCommitCallbacks: (() => Promise<void>)[];
+};
+
+function createScope(parent?: WritableScope): WritableScope {
+  return {
+    _brand: 'scope',
+    parent,
+    token: createScopeToken(),
+    state: 'active',
+    preCommitCallbacks: [],
+    postCommitCallbacks: [],
+  };
+}
+
+function createScopeToken(): ScopeToken {
+  return {} as ScopeToken;
+}
+
+function validateWritableScope(scope: unknown): WritableScope {
+  if (typeof scope === 'object' && scope !== null && '_brand' in scope && scope._brand === 'scope') {
+    return scope as unknown as WritableScope;
+  }
+  throw new Error('Invalid scope');
+}
+
+// type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+// export type WritableScope = Writeable<Scope>;
+
 /**
  * Shared database-session state for one or more Repository facades.
  *
@@ -52,11 +90,17 @@ export class RepositoryConnection implements Disposable {
   private postCommitCallbacks: (() => Promise<void>)[] = [];
   private callbackStack: CallbackFrame[] = [];
 
+  private rootScope: WritableScope;
+  private currentScope: WritableScope;
+
   /**
    * Creates a connection that owns any PoolClient it acquires.
    */
   constructor() {
     this.mode = RepositoryMode.WRITER;
+    // rootScope can not actually have callbacks, maybe we should update the type
+    this.rootScope = createScope();
+    this.currentScope = this.rootScope;
   }
 
   /**
@@ -75,6 +119,14 @@ export class RepositoryConnection implements Disposable {
     return connection;
   }
 
+  getCurrentScope(): Scope {
+    return this.currentScope;
+  }
+
+  // getCurrentToken(): ScopeToken {
+  //   return this.currentScope.token;
+  // }
+
   isInTransaction(): boolean {
     return this.transactionDepth > 0;
   }
@@ -83,6 +135,37 @@ export class RepositoryConnection implements Disposable {
     return !!this.conn;
   }
 
+  assertScope(scope: Scope): WritableScope {
+    const writableScope = validateWritableScope(scope);
+    let current = writableScope;
+    if (current.state === 'ended') {
+      throw new Error('Scope is ended');
+    }
+
+    while (current !== this.currentScope) {
+      if (!current.parent) {
+        throw new Error('Invalid scope');
+      }
+      current = current.parent;
+    }
+
+    return writableScope;
+  }
+
+  // assertToken(token: ScopeToken): void {
+  //   let current = this.currentScope;
+  //   while (current.token !== token) {
+  //     if (!current.parent) {
+  //       throw new Error('Invalid scope');
+  //     }
+  //     current = current.parent;
+  //   }
+
+  //   if (current.state === 'ended') {
+  //     throw new Error('Scope is ended');
+  //   }
+  // }
+
   /**
    * Returns a database client.
    * Use this method when you don't care if you're in a transaction or not.
@@ -90,11 +173,13 @@ export class RepositoryConnection implements Disposable {
    * The return value can either be a pool client or a pool.
    * If in a transaction, then returns the transaction client (PoolClient).
    * Otherwise, returns the pool (Pool).
+   * @param scope - The scope of the database client.
    * @param mode - The database mode.
    * @returns The database client.
    */
-  getDatabaseClient(mode: DatabaseMode): PgQueryable {
+  getDatabaseClient(scope: Scope, mode: DatabaseMode): PgQueryable {
     this.assertNotClosed();
+    this.assertScope(scope);
     if (this.conn) {
       // A held client might be pinned outside a transaction, but it still has one physical
       // database role. Do not let writer work accidentally run on a reader connection.
@@ -344,6 +429,7 @@ export class RepositoryConnection implements Disposable {
       if (nextDepth === 1) {
         this.transactionIsolationLevel = isolationLevel;
       }
+      this.currentScope = createScope(this.currentScope);
       this.transactionDepth = nextDepth;
       this.pushCallbackFrame();
       return conn;
@@ -360,7 +446,7 @@ export class RepositoryConnection implements Disposable {
     // since it could involve transactions. Repository.withTransaction keeps the caller repo blocked
     // during this window, so callback code must use the transaction-scoped repo it was given.
     if (shouldProcessPreCommit) {
-      await this.processPreCommit();
+      await this.processPreCommit(this.currentScope);
     }
 
     const shouldProcessPostCommit = await this.withConnectionStateLock(async () => {
@@ -369,6 +455,10 @@ export class RepositoryConnection implements Disposable {
       if (this.transactionDepth === 1) {
         await conn.query('COMMIT');
         this.finishTransactionIdleTracking('committed');
+
+        assert(this.currentScope.state === 'active');
+        this.currentScope.state = 'post-commit';
+
         this.transactionDepth = 0;
         this.transactionIsolationLevel = undefined;
         this.releaseConnection();
@@ -381,13 +471,27 @@ export class RepositoryConnection implements Disposable {
         // scope can still commit. rollbackTransaction's own catch handles the truly-dead-connection case.
         await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
         this.transactionDepth--; // safe to decrement since assertInTransaction() ensures transactionDepth > 0
+
+        assert(this.currentScope.parent);
+        this.currentScope.parent.preCommitCallbacks.push(...this.currentScope.preCommitCallbacks);
+        this.currentScope.parent.postCommitCallbacks.push(...this.currentScope.postCommitCallbacks);
+        this.currentScope.state = 'ended';
+        this.currentScope = this.currentScope.parent;
+
         this.popCallbackFrame();
         return false;
       }
     });
 
     if (shouldProcessPostCommit) {
-      await this.processPostCommit();
+      try {
+        await this.processPostCommit(this.currentScope);
+      } finally {
+        assert(this.currentScope.state === 'post-commit');
+        assert(this.currentScope.parent);
+        this.currentScope.state = 'ended';
+        this.currentScope = this.currentScope.parent;
+      }
     }
   }
 
@@ -418,6 +522,11 @@ export class RepositoryConnection implements Disposable {
         });
 
         // abort the transaction
+        while (this.currentScope !== this.rootScope) {
+          assert(this.currentScope.parent);
+          this.currentScope.state = 'ended';
+          this.currentScope = this.currentScope.parent;
+        }
         this.transactionDepth = 0;
         this.transactionIsolationLevel = undefined;
         this.clearCallbackStack();
@@ -428,6 +537,11 @@ export class RepositoryConnection implements Disposable {
       if (isOuter) {
         this.finishTransactionIdleTracking('rolled_back');
       }
+      assert(this.currentScope.state === 'active');
+      assert(this.currentScope.parent);
+      this.currentScope.state = 'ended';
+      this.currentScope = this.currentScope.parent;
+
       this.transactionDepth--; // safe to decrement since early return if transactionDepth === 0
       this.truncateCommitCallbacks();
       if (isOuter) {
@@ -505,7 +619,11 @@ export class RepositoryConnection implements Disposable {
     }
   }
 
-  async preCommit(fn: () => Promise<void>): Promise<void> {
+  async preCommit(scope: Scope, fn: () => Promise<void>): Promise<void> {
+    const writableScope = this.assertScope(scope);
+    if (writableScope.state !== 'active') {
+      throw new Error('Cannot add pre-commit callback while scope is not active');
+    }
     if (this.transactionDepth) {
       this.preCommitCallbacks.push(fn);
     } else {
@@ -514,21 +632,16 @@ export class RepositoryConnection implements Disposable {
     }
   }
 
-  private async processPreCommit(): Promise<void> {
-    while (this.preCommitCallbacks.length > 0) {
-      const cb = this.preCommitCallbacks.shift();
-      if (!cb) {
-        throw new Error('Pre-commit callback is undefined');
-      }
-      // rely on thrown errors bubbling up from here to halt the transaction
+  private async processPreCommit(scope: WritableScope): Promise<void> {
+    let cb: (() => Promise<void>) | undefined;
+    while ((cb = scope.preCommitCallbacks.shift()) !== undefined) {
       await cb();
     }
   }
 
-  private processingPostCommit = false;
-
-  async postCommit(fn: () => Promise<void>): Promise<void> {
-    if (this.processingPostCommit) {
+  async postCommit(scope: Scope, fn: () => Promise<void>): Promise<void> {
+    const writableScope = this.assertScope(scope);
+    if (writableScope.state === 'post-commit') {
       // this constraint could be relaxed if we wanted to allow post-commit callbacks
       // to add additional post-commit callbacks if there is a compelling reason to do so
       // But from the lifecycle of a transaction, it's not clear why that would be sensible
@@ -543,18 +656,9 @@ export class RepositoryConnection implements Disposable {
     }
   }
 
-  private async processPostCommit(): Promise<void> {
-    // capture a snapshot of the post-commit callbacks to invoke ad defense in depth
-    // against processing callbacks added while processing callbacks
-    const callbacks = this.postCommitCallbacks;
-    this.postCommitCallbacks = [];
-    this.processingPostCommit = true;
-    try {
-      for (const cb of callbacks) {
-        await this.invokePostCommitCallback(cb);
-      }
-    } finally {
-      this.processingPostCommit = false;
+  private async processPostCommit(scope: WritableScope): Promise<void> {
+    for (const cb of scope.postCommitCallbacks) {
+      await this.invokePostCommitCallback(cb);
     }
   }
 
@@ -583,11 +687,9 @@ export class RepositoryConnection implements Disposable {
 
   private popCallbackFrame(): CallbackFrame {
     const frame = this.callbackStack.pop();
-
     if (!frame) {
       throw new Error('No callback frame');
     }
-
     return frame;
   }
 

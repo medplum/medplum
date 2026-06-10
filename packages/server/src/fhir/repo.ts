@@ -105,7 +105,7 @@ import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { removeField } from './repository/field-utils';
 import { removeCachedProfile } from './repository/profile-cache';
-import type { StatementTimeoutOptions } from './repository/repository-connection';
+import type { Scope, StatementTimeoutOptions } from './repository/repository-connection';
 import { RepositoryConnection } from './repository/repository-connection';
 import type { CacheEntry } from './repository/resource-cache';
 import {
@@ -125,7 +125,7 @@ import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './sear
 import { lookupTables } from './searchparameter';
 import { GLOBAL_SHARD_ID } from './sharding';
 import type { Expression, PgQueryable } from './sql';
-import { Condition, DeleteQuery, Disjunction, InsertQuery, isPoolClient, SelectQuery } from './sql';
+import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
 
 export type { StatementTimeoutOptions } from './repository/repository-connection';
 
@@ -267,21 +267,9 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
 export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirRepository implements Disposable {
   private readonly context: RepositoryContext;
   private readonly connection: RepositoryConnection;
+  // private readonly connectionToken: ScopeToken;
+  private readonly connectionScope: Scope;
   private readonly ownsConnection: boolean;
-  /** Whether this repository is currently starting a transaction. */
-  private startingTxn = false;
-  /**
-   * The active child transaction repository, if any, created by this repo. Used to determine if the
-   * current repository is usable.
-   */
-  private transactionChildRepo?: this;
-  /**
-    The status and PoolClient the current (transaction-scoped) repository is bound to, if any. Used to prevent
-    the repository from being improperly used after its related transaction has ended.
-   */
-  private transactionScope?: { closed: boolean; readonly client: PoolClient };
-  /** If the repository owns its transaction scope and is responsible for managing its lifecycle */
-  private ownsTransactionScope = false;
   private closed = false;
 
   /**
@@ -319,6 +307,8 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     this.context = context;
     this.ownsConnection = connection === undefined;
     this.connection = connection ?? new RepositoryConnection();
+    // this.connectionToken = this.connection.getCurrentToken();
+    this.connectionScope = this.connection.getCurrentScope();
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
@@ -348,26 +338,12 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
       throw new Error('Not in transaction');
     }
 
-    const client = this.connection.getDatabaseClient(DatabaseMode.WRITER);
-    if (!isPoolClient(client)) {
-      throw new Error('Transaction-scoped repository is not pinned to a PoolClient');
-    }
-
     // use this.constructor to create the exact class, e.g. SystemRepository vs Repository, of the current instance.
     const RepositoryConstructor = this.constructor as new (
       context: RepositoryContext,
       connection?: RepositoryConnection
     ) => this;
     const txnScopedRepo = new RepositoryConstructor(this.context, this.connection) as TransactionRepository & this;
-
-    if (this.transactionScope) {
-      // nested transactions inherit transaction scope
-      txnScopedRepo.transactionScope = this.transactionScope;
-    } else {
-      // creating a top-level transaction-scoped repository
-      txnScopedRepo.transactionScope = { closed: false, client: client };
-      txnScopedRepo.ownsTransactionScope = true;
-    }
     return txnScopedRepo;
   }
 
@@ -389,7 +365,6 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     let systemRepo: SystemRepository<TClient>;
     if (this.connection.hasConnection()) {
       systemRepo = createSystemRepository<TClient>(this.shardId, this.connection, contextDefaults);
-      systemRepo.transactionScope = this.transactionScope;
     } else {
       systemRepo = createSystemRepository<TClient>(this.shardId, undefined, contextDefaults);
     }
@@ -404,7 +379,6 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     } else {
       repo = new Repository({ ...this.context, ...config });
     }
-    repo.transactionScope = this.transactionScope;
     return repo;
   }
 
@@ -2238,12 +2212,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
    */
   getDatabaseClient(mode: DatabaseMode): TClient {
     this.assertUsable();
-    const client = this.connection.getDatabaseClient(mode);
-
-    if (this.transactionScope && client !== this.transactionScope.client) {
-      throw new Error('Transaction-scoped repository is no longer pinned to initial PoolClient');
-    }
-
+    const client = this.connection.getDatabaseClient(this.connectionScope, mode);
     return client as TClient;
   }
 
@@ -2252,33 +2221,14 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     options?: { serializable?: boolean }
   ): Promise<TResult> {
     this.assertUsable();
-    this.startingTxn = true;
     let txnScopedRepo: (TransactionRepository & this) | undefined;
-    const closeTxnScopedRepo = (txRepo: (TransactionRepository & this) | undefined): void => {
-      // only close transaction scopes for top-level transaction-scoped repositories.
-      // nested transaction-scoped repos must remain open through the duration of their outermos
-      // transaction so that they (the nested txn repos) can be used in post-commit callbacks.
-      if (txRepo?.ownsTransactionScope && txRepo.transactionScope && !txRepo.transactionScope.closed) {
-        txRepo.transactionScope.closed = true;
-      }
-    };
-    try {
-      return await this.connection.withTransaction(async () => {
-        // cleanup after retries
-        closeTxnScopedRepo(txnScopedRepo);
-        // create transaction-scoped repository within RepositoryConnection.withTransaction callback
-        // since the callback is only invoked after a sticky PoolClient is established to begin the
-        // transaction.
-        txnScopedRepo = this.createTransactionScopedRepo();
-        this.transactionChildRepo = txnScopedRepo;
-        this.startingTxn = false;
-        return callback(txnScopedRepo);
-      }, options);
-    } finally {
-      closeTxnScopedRepo(txnScopedRepo);
-      this.startingTxn = false;
-      this.transactionChildRepo = undefined;
-    }
+    return this.connection.withTransaction(async () => {
+      // create transaction-scoped repository within RepositoryConnection.withTransaction callback
+      // since the callback is only invoked after a sticky PoolClient is established to begin the
+      // transaction.
+      txnScopedRepo = this.createTransactionScopedRepo();
+      return callback(txnScopedRepo);
+    }, options);
   }
 
   async withStatementTimeout<TResult>(
@@ -2294,12 +2244,12 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
 
   async preCommit(fn: (repo: this) => void | Promise<void>): Promise<void> {
     this.assertUsable();
-    return this.connection.preCommit(async () => fn(this));
+    return this.connection.preCommit(this.connectionScope, async () => fn(this));
   }
 
   async postCommit(fn: () => void | Promise<void>): Promise<void> {
     this.assertUsable();
-    return this.connection.postCommit(async () => fn());
+    return this.connection.postCommit(this.connectionScope, async () => fn());
   }
 
   /**
@@ -2400,7 +2350,6 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     if (this.closed) {
       return;
     }
-    this.assertUsable();
     this.closed = true;
     if (this.ownsConnection) {
       this.connection[Symbol.dispose](removeConnection);
@@ -2408,18 +2357,14 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
   }
 
   isClosed(): boolean {
-    return this.closed || (this.transactionScope?.closed ?? false);
+    return this.closed;
   }
 
   private assertUsable(): void {
     if (this.isClosed()) {
       throw new Error('Already closed');
     }
-    if (this.startingTxn || this.transactionChildRepo) {
-      throw new Error(
-        'Repository is in an active transaction callback; use the transaction-scoped repository passed to the callback'
-      );
-    }
+    this.connection.assertScope(this.connectionScope);
   }
 }
 
