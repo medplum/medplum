@@ -5,13 +5,14 @@ import {
   Badge,
   Box,
   Button,
-  Card,
+  Code,
   Divider,
   Group,
   JsonInput,
   Loader,
   NavLink,
   ScrollArea,
+  SegmentedControl,
   Select,
   Stack,
   Text,
@@ -25,10 +26,12 @@ import type { Bot, OperationDefinition, OperationDefinitionParameter, Parameters
 import { MedplumLink, useMedplum } from '@medplum/react';
 import { IconExternalLink, IconPlayerPlay, IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const OPERATION_IMPLEMENTATION_EXTENSION =
   'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation';
+
+type InvokeLevel = 'system' | 'type' | 'instance';
 
 interface OperationWithBot {
   operation: OperationDefinition;
@@ -46,12 +49,39 @@ export function CustomOperationsPage(): JSX.Element {
   const [operations, setOperations] = useState<OperationWithBot[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<OperationWithBot | undefined>();
+  const [invokeLevel, setInvokeLevel] = useState<InvokeLevel>('system');
+  const [resourceType, setResourceType] = useState<string>('');
+  const [instanceId, setInstanceId] = useState<string>('');
   const [paramValues, setParamValues] = useState<ParameterValue[]>([]);
   const [rawMode, setRawMode] = useState(false);
   const [rawBody, setRawBody] = useState('');
   const [invoking, setInvoking] = useState(false);
   const [result, setResult] = useState<string | undefined>();
   const [lastAuditEventId, setLastAuditEventId] = useState<string | undefined>();
+
+  const baseUrl = useMemo(() => {
+    // Strip trailing slash
+    const base = medplum.fhirUrl('').toString().replace(/\/$/, '');
+    // base ends with /fhir/R4 — trim that to get the server root, then re-add
+    return base;
+  }, [medplum]);
+
+  const materializedUrl = useMemo(() => {
+    if (!selected) {
+      return '';
+    }
+    const code = selected.operation.code ?? '';
+    if (invokeLevel === 'system') {
+      return `${baseUrl}/$${code}`;
+    }
+    const rt = resourceType || (selected.operation.resource?.[0] ?? 'Resource');
+    if (invokeLevel === 'type') {
+      return `${baseUrl}/${rt}/$${code}`;
+    }
+    // instance
+    const id = instanceId || '<id>';
+    return `${baseUrl}/${rt}/${id}/$${code}`;
+  }, [selected, invokeLevel, resourceType, instanceId, baseUrl]);
 
   const loadOperations = useCallback(async () => {
     setLoading(true);
@@ -92,7 +122,23 @@ export function CustomOperationsPage(): JSX.Element {
     setSelected(item);
     setResult(undefined);
     setLastAuditEventId(undefined);
-    const inParams = (item.operation.parameter ?? []).filter((p) => p.use === 'in');
+    setInstanceId('');
+    const op = item.operation;
+    const rt = op.resource?.[0] ?? '';
+    setResourceType(rt);
+
+    // Determine default level
+    if (op.system) {
+      setInvokeLevel('system');
+    } else if (op.type) {
+      setInvokeLevel('type');
+    } else if (op.instance) {
+      setInvokeLevel('instance');
+    } else {
+      setInvokeLevel('system');
+    }
+
+    const inParams = (op.parameter ?? []).filter((p) => p.use === 'in');
     setParamValues(inParams.map((p) => ({ name: p.name ?? '', value: '' })));
     setRawBody(JSON.stringify({ resourceType: 'Parameters', parameter: [] }, null, 2));
     setRawMode(false);
@@ -104,7 +150,6 @@ export function CustomOperationsPage(): JSX.Element {
       parameter: paramValues
         .filter((pv) => pv.value.trim() !== '')
         .map((pv) => {
-          // Attempt to parse as JSON first (for complex types), fall back to string
           let parsed: unknown;
           try {
             parsed = JSON.parse(pv.value);
@@ -130,7 +175,17 @@ export function CustomOperationsPage(): JSX.Element {
       const body: Parameters = rawMode ? JSON.parse(rawBody) : buildParameters();
       const op = selected.operation;
       const code = op.code ?? '';
-      const url = medplum.fhirUrl(`$${code}`).toString();
+      const rt = resourceType || (op.resource?.[0] ?? '');
+
+      let url: string;
+      if (invokeLevel === 'system') {
+        url = medplum.fhirUrl(`$${code}`).toString();
+      } else if (invokeLevel === 'type') {
+        url = medplum.fhirUrl(rt, `$${code}`).toString();
+      } else {
+        url = medplum.fhirUrl(rt, instanceId, `$${code}`).toString();
+      }
+
       const response = await medplum.post(url, body, 'application/fhir+json');
       setResult(JSON.stringify(response, null, 2));
 
@@ -152,7 +207,33 @@ export function CustomOperationsPage(): JSX.Element {
     } finally {
       setInvoking(false);
     }
-  }, [selected, medplum, rawMode, rawBody, buildParameters]);
+  }, [selected, medplum, rawMode, rawBody, buildParameters, invokeLevel, resourceType, instanceId]);
+
+  // Which level toggles are available for the selected operation
+  const availableLevels = useMemo(() => {
+    if (!selected) {
+      return [];
+    }
+    const op = selected.operation;
+    const levels: { label: string; value: InvokeLevel }[] = [];
+    if (op.system) {
+      levels.push({ label: 'System', value: 'system' });
+    }
+    if (op.type) {
+      levels.push({ label: 'Type', value: 'type' });
+    }
+    if (op.instance) {
+      levels.push({ label: 'Instance', value: 'instance' });
+    }
+    return levels;
+  }, [selected]);
+
+  const resourceTypeOptions = useMemo(() => {
+    if (!selected?.operation.resource?.length) {
+      return [];
+    }
+    return selected.operation.resource.map((r) => ({ label: r, value: r }));
+  }, [selected]);
 
   return (
     <Box style={{ display: 'flex', height: '100%', minHeight: 600 }}>
@@ -215,14 +296,6 @@ export function CustomOperationsPage(): JSX.Element {
             <Group justify="space-between" align="flex-start">
               <Box>
                 <Title order={4}>{selected.operation.title ?? selected.operation.name}</Title>
-                <Group gap="xs" mt={4}>
-                  <Badge variant="outline" color="violet">
-                    ${selected.operation.code}
-                  </Badge>
-                  {selected.operation.system && <Badge color="gray">system</Badge>}
-                  {selected.operation.type && <Badge color="gray">type</Badge>}
-                  {selected.operation.instance && <Badge color="gray">instance</Badge>}
-                </Group>
                 {selected.operation.description && (
                   <Text size="sm" c="dimmed" mt={4}>
                     {selected.operation.description}
@@ -230,33 +303,97 @@ export function CustomOperationsPage(): JSX.Element {
                 )}
               </Box>
               {selected.bot && (
-                <MedplumLink to={`/Bot/${selected.bot.id}`}>
-                  <Group gap={4}>
-                    <Text size="sm">View Bot</Text>
-                    <IconExternalLink size={14} />
-                  </Group>
-                </MedplumLink>
+                <Group gap="xs">
+                  <MedplumLink to={`/Bot/${selected.bot.id}/editor`}>
+                    <Group gap={4}>
+                      <Text size="sm">{selected.bot.name}</Text>
+                      <IconExternalLink size={13} />
+                    </Group>
+                  </MedplumLink>
+                </Group>
               )}
             </Group>
 
-            <Divider />
-
-            {/* Bot info */}
-            {selected.bot && (
-              <Card withBorder p="sm" radius="sm" bg="blue.0">
-                <Group gap="xs">
-                  <Text size="sm" fw={500}>
-                    Bot:
-                  </Text>
-                  <Text size="sm">{selected.bot.name}</Text>
-                  <MedplumLink to={`/Bot/${selected.bot.id}/editor`}>
-                    <Text size="xs" c="blue">
-                      Open editor →
-                    </Text>
-                  </MedplumLink>
-                </Group>
-              </Card>
+            {/* Level toggle — only shown when more than one level is supported */}
+            {availableLevels.length > 1 && (
+              <SegmentedControl
+                size="xs"
+                value={invokeLevel}
+                onChange={(v) => setInvokeLevel(v as InvokeLevel)}
+                data={availableLevels}
+              />
             )}
+
+            {/* Resource type selector (when type or instance level) */}
+            {(invokeLevel === 'type' || invokeLevel === 'instance') && resourceTypeOptions.length > 1 && (
+              <Select
+                label="Resource type"
+                size="xs"
+                w={200}
+                value={resourceType}
+                data={resourceTypeOptions}
+                onChange={(v) => setResourceType(v ?? '')}
+              />
+            )}
+
+            {/* Instance ID input */}
+            {invokeLevel === 'instance' && (
+              <TextInput
+                label="Resource ID"
+                size="xs"
+                w={300}
+                placeholder="e.g. 2e27c71e-30c8-4ceb-8c1c-5641e066c0a4"
+                value={instanceId}
+                onChange={(e) => setInstanceId(e.currentTarget.value)}
+              />
+            )}
+
+            {/* URL bar */}
+            <Box>
+              <Text size="xs" c="dimmed" mb={4} tt="uppercase" fw={600} style={{ letterSpacing: '0.05em' }}>
+                Request URL
+              </Text>
+              <Group
+                gap={0}
+                style={{
+                  border: '1px solid var(--mantine-color-default-border)',
+                  borderRadius: 'var(--mantine-radius-sm)',
+                  overflow: 'hidden',
+                  background: 'var(--mantine-color-default)',
+                }}
+              >
+                <Box
+                  px="sm"
+                  py={6}
+                  style={{
+                    background: 'var(--mantine-color-violet-6)',
+                    color: 'white',
+                    fontWeight: 700,
+                    fontSize: 11,
+                    letterSpacing: '0.05em',
+                    flexShrink: 0,
+                  }}
+                >
+                  POST
+                </Box>
+                <Code
+                  flex={1}
+                  px="sm"
+                  py={6}
+                  style={{
+                    fontSize: 12,
+                    background: 'transparent',
+                    whiteSpace: 'nowrap',
+                    overflow: 'auto',
+                    display: 'block',
+                  }}
+                >
+                  {materializedUrl}
+                </Code>
+              </Group>
+            </Box>
+
+            <Divider />
 
             {/* Input parameters */}
             <Box>
@@ -264,15 +401,14 @@ export function CustomOperationsPage(): JSX.Element {
                 <Text fw={500} size="sm">
                   Input Parameters
                 </Text>
-                <Select
+                <SegmentedControl
                   size="xs"
-                  w={140}
                   value={rawMode ? 'raw' : 'structured'}
+                  onChange={(v) => setRawMode(v === 'raw')}
                   data={[
                     { label: 'Structured', value: 'structured' },
                     { label: 'Raw JSON', value: 'raw' },
                   ]}
-                  onChange={(v) => setRawMode(v === 'raw')}
                 />
               </Group>
 
@@ -324,7 +460,7 @@ export function CustomOperationsPage(): JSX.Element {
               </Box>
             )}
 
-            {/* Output parameter definitions */}
+            {/* Output parameter schema */}
             {(selected.operation.parameter ?? []).filter((p) => p.use === 'out').length > 0 && (
               <Box>
                 <Text fw={500} size="sm" mb="xs">
@@ -378,7 +514,9 @@ function ParameterForm({ params, values, onChange }: ParameterFormProps): JSX.El
             placeholder={param.type ?? 'string'}
             value={value}
             onChange={(e) => {
-              const newValues = values.map((v) => (v.name === param.name ? { ...v, value: e.currentTarget.value } : v));
+              const newValues = values.map((v) =>
+                v.name === param.name ? { ...v, value: e.currentTarget.value } : v
+              );
               onChange(newValues);
             }}
           />
