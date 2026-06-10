@@ -27,8 +27,6 @@ const result = await medplum.executeBot(
     timeframeDays: 365,  // optional, defaults to 365
   }
 );
-// check mode: { interactions: DrugInteraction[] }
-// details mode: { interactions: [], details?: Record<string, unknown>[], detailsErrors?: { routedMedId: number; message: string }[] }
 ```
 
 ## Input fields
@@ -39,3 +37,23 @@ const result = await medplum.executeBot(
 | `candidateRoutedMedIds` | `number[]` | ScriptSure `ROUTED_MED_ID` integers for the drugs to check |
 | `mode` | `'check' \| 'details'` | Interaction check mode. Defaults to `'check'` |
 | `timeframeDays` | `number` | Lookback window for current medications. Defaults to `365` |
+
+## Response fields
+
+All modes return the same top-level shape:
+
+| Field | Type | Description |
+|---|---|---|
+| `interactions` | `DrugInteraction[]` | DDI results. Empty array in `details` mode and when the provider is not ready. |
+| `skipped` | `boolean` | `true` when the check was skipped because the provider has not completed EULA or identity proofing. |
+| `providerNotReady` | `boolean` | `true` alongside `skipped` when the provider is not yet enrolled. |
+| `details` | `Record<string, unknown>[]` | `details` mode only. One full FDB drugcheck response object per successfully resolved candidate. Shape varies by FDB version. |
+| `detailsErrors` | `{ routedMedId: number; message: string }[]` | `details` mode only. Per-candidate resolution failures. Sibling candidates are still processed. |
+
+Each `interactions` item (`check` mode):
+
+| Field | Type | Description |
+|---|---|---|
+| `ROUTED_MED_ID` | `number` | The candidate drug that has an interaction |
+| `DDI_DES` | `string` | Interaction description (e.g. `"LOOP DIURETICS/DESMOPRESSIN"`) |
+| `DDI_SL` | `string` | Severity level code (FDB-defined; treat as opaque string) |
