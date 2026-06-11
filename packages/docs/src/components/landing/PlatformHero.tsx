@@ -16,16 +16,16 @@ import styles from './PlatformHero.module.css';
 const CODE_LINES: JSX.Element[] = [
   // prettier-ignore
   <><span className={styles.cKeyword}>import</span>{' { '}<span className={styles.cClass}>MedplumClient</span>{' } '}<span className={styles.cKeyword}>from</span> <span className={styles.cString}>&apos;@medplum/core&apos;</span>;</>,
-  <>{' '}</>,
+  <> </>,
   // prettier-ignore
   <><span className={styles.cKeyword}>const</span> medplum = <span className={styles.cKeyword}>new</span> <span className={styles.cClass}>MedplumClient</span>();</>,
-  <>{' '}</>,
+  <> </>,
   // prettier-ignore
   <><span className={styles.cKeyword}>const</span> patient = <span className={styles.cKeyword}>await</span> medplum.<span className={styles.cMethod}>searchOne</span>(<span className={styles.cString}>&apos;Patient&apos;</span>, {'{'}</>,
   // prettier-ignore
   <>{'  '}identifier: <span className={styles.cString}>&apos;mrn-44218&apos;</span>,</>,
   <>{'}'});</>,
-  <>{' '}</>,
+  <> </>,
   // prettier-ignore
   <><span className={styles.cKeyword}>await</span> medplum.<span className={styles.cMethod}>createResource</span>({'{'}</>,
   // prettier-ignore
@@ -50,11 +50,7 @@ function CodeSnippetCard(): JSX.Element {
       </div>
       <pre className={styles.codeBody}>
         {CODE_LINES.map((line, i) => (
-          <span
-            key={i}
-            className={styles.codeLine}
-            style={{ '--line-delay': `${i * 110}ms` } as CSSProperties}
-          >
+          <span key={i} className={styles.codeLine} style={{ '--line-delay': `${i * 110}ms` } as CSSProperties}>
             {line}
           </span>
         ))}
