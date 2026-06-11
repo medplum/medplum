@@ -49,6 +49,46 @@ const config: Config = {
             from: '/docs/charting/ordering-labs-imaging',
             to: '/docs/labs-imaging/ordering-labs-imaging',
           },
+          {
+            from: '/docs/charting/soap-notes',
+            to: '/docs/charting/visit-templates',
+          },
+          {
+            from: '/docs/charting/capturing-vital-signs',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/representing-diagnoses',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/allergy-intolerances',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/patient-demographics',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/implantable-devices',
+            to: '/docs/charting/chart-data-model',
+          },
+          {
+            from: '/docs/charting/external-documents',
+            to: '/docs/fhir-datastore/external-documents',
+          },
+          {
+            from: '/docs/questionnaires/structured-data-capture',
+            to: '/docs/questionnaires/parsing-questionnaire-responses',
+          },
+          {
+            from: '/docs/integration/stedi/eligibility-checks',
+            to: '/docs/integration/stedi/insurance-eligibility/eligibility-checks',
+          },
+          {
+            from: '/docs/integration/stedi/professional-claims',
+            to: '/docs/integration/stedi/claim-submission/professional-claims',
+          },
         ],
       },
     ],
@@ -196,6 +236,10 @@ const config: Config = {
               label: 'Contributing',
               to: '/docs/contributing',
             },
+            {
+              label: 'Events',
+              to: '/blog/events-calendar',
+            },
           ],
         },
         {
@@ -267,6 +311,15 @@ const config: Config = {
     },
   },
   themes: ['@docusaurus/theme-mermaid'],
+  scripts: [
+    {
+      src: 'https://cdn-cookieyes.com/client_data/11362a9d5311bc6aa21c5f47d05599c6/script.js',
+    },
+    {
+      src: 'https://ddwl4m2hdecbv.cloudfront.net/b/LNKLDHEYLZOJ/LNKLDHEYLZOJ.js.gz',
+      async: true,
+    },
+  ],
 };
 
 export default config;

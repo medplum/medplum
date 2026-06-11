@@ -1,22 +1,29 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClientOptions } from '@medplum/core';
+import type * as NodeFs from 'node:fs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { sep } from 'node:path';
+import type { Mock } from 'vitest';
 import { FileSystemStorage } from '../storage';
 import { createMedplumClient } from './client';
 
-jest.mock('node:os');
-jest.mock('fast-glob', () => ({
-  sync: jest.fn(() => []),
-}));
-jest.mock('node:fs', () => ({
-  ...jest.requireActual('node:fs'),
-  writeFile: jest.fn((path, data, callback) => {
-    callback();
-  }),
-}));
+vi.mock('node:os');
+vi.mock('fast-glob', () => {
+  const mock = { sync: vi.fn(() => []) };
+  return { default: mock, ...mock };
+});
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof NodeFs>('node:fs');
+  const mock = {
+    ...actual,
+    writeFile: vi.fn((path, data, callback) => {
+      callback();
+    }),
+  };
+  return { default: mock, ...mock };
+});
 const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
 
 const originalWindow = globalThis.window;
@@ -26,7 +33,7 @@ describe('createMedplumClient', () => {
 
   beforeEach(() => {
     process.env = { ...env };
-    console.log = jest.fn();
+    console.log = vi.fn();
   });
 
   afterEach(() => {
@@ -35,7 +42,7 @@ describe('createMedplumClient', () => {
 
   beforeAll(async () => {
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
-    (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
+    (os.homedir as unknown as Mock).mockReturnValue(testHomeDir);
   });
 
   afterAll(async () => {
@@ -60,18 +67,18 @@ describe('createMedplumClient', () => {
   });
 
   test('with global options set', async () => {
-    const fetch = jest.fn(async (url: string) => {
+    const fetch = vi.fn(async (url: string) => {
       if (url.includes('healthcheck')) {
         return {
           status: 200,
           ok: true,
-          json: jest.fn(async () => ({ ok: true })),
+          json: vi.fn(async () => ({ ok: true })),
         };
       }
       return {
         status: 200,
         ok: true,
-        json: jest.fn(async () => ({})),
+        json: vi.fn(async () => ({})),
       };
     });
     const options: MedplumClientOptions = {
@@ -99,11 +106,11 @@ describe('createMedplumClient', () => {
     const storage = new FileSystemStorage(testProfile);
     storage.setObject('options', { name: testProfile, authType: 'client_credentials' });
 
-    const fetch = jest.fn(async () => {
+    const fetch = vi.fn(async () => {
       return {
         status: 200,
         ok: true,
-        json: jest.fn(async () => ({
+        json: vi.fn(async () => ({
           access_token: accessToken,
         })),
       };
@@ -116,7 +123,7 @@ describe('createMedplumClient', () => {
   });
 
   test('Unauthenticated', async () => {
-    const fetch = jest.fn(async () => {
+    const fetch = vi.fn(async () => {
       return {
         status: 401,
       };
@@ -132,18 +139,18 @@ describe('createMedplumClient', () => {
   });
 
   test('validates base URL healthcheck on non-default URL', async () => {
-    const fetch = jest.fn(async (url: string) => {
+    const fetch = vi.fn(async (url: string) => {
       if (url.includes('healthcheck')) {
         return {
           status: 200,
           ok: true,
-          json: jest.fn(async () => ({ ok: true })),
+          json: vi.fn(async () => ({ ok: true })),
         };
       }
       return {
         status: 200,
         ok: true,
-        json: jest.fn(async () => ({})),
+        json: vi.fn(async () => ({})),
       };
     });
 
@@ -157,18 +164,18 @@ describe('createMedplumClient', () => {
   });
 
   test('throws error when healthcheck fails', async () => {
-    const fetch = jest.fn(async (url: string) => {
+    const fetch = vi.fn(async (url: string) => {
       if (url.includes('healthcheck')) {
         return {
           status: 500,
           ok: false,
-          json: jest.fn(async () => ({ ok: false })),
+          json: vi.fn(async () => ({ ok: false })),
         };
       }
       return {
         status: 200,
         ok: true,
-        json: jest.fn(async () => ({})),
+        json: vi.fn(async () => ({})),
       };
     });
 
@@ -181,18 +188,18 @@ describe('createMedplumClient', () => {
   });
 
   test('throws error when healthcheck response missing ok field', async () => {
-    const fetch = jest.fn(async (url: string) => {
+    const fetch = vi.fn(async (url: string) => {
       if (url.includes('healthcheck')) {
         return {
           status: 200,
           ok: true,
-          json: jest.fn(async () => ({ status: 'ok' })),
+          json: vi.fn(async () => ({ status: 'ok' })),
         };
       }
       return {
         status: 200,
         ok: true,
-        json: jest.fn(async () => ({})),
+        json: vi.fn(async () => ({})),
       };
     });
 
@@ -205,11 +212,11 @@ describe('createMedplumClient', () => {
   });
 
   test('does not validate healthcheck for default URL', async () => {
-    const fetch = jest.fn(async () => {
+    const fetch = vi.fn(async () => {
       return {
         status: 200,
         ok: true,
-        json: jest.fn(async () => ({})),
+        json: vi.fn(async () => ({})),
       };
     });
 

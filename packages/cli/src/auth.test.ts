@@ -6,50 +6,54 @@ import { MockClient } from '@medplum/mock';
 import cp from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-jest.mock('node:child_process');
-jest.mock('node:http');
-jest.mock('./util/client');
-jest.mock('node:fs', () => ({
-  existsSync: jest.fn(),
-  mkdirSync: jest.fn(),
-  readFileSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  constants: {
-    O_CREAT: 0,
-  },
-  promises: {
-    readFile: jest.fn(async () => '{}'),
-  },
-}));
+vi.mock('node:child_process');
+vi.mock('node:http');
+vi.mock('./util/client');
+vi.mock('node:fs', () => {
+  const mock = {
+    existsSync: vi.fn(),
+    mkdirSync: vi.fn(),
+    readFileSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    constants: {
+      O_CREAT: 0,
+    },
+    promises: {
+      readFile: vi.fn(async () => '{}'),
+    },
+  };
+  return { default: mock, ...mock };
+});
 
 describe('CLI auth', () => {
   const env = process.env;
   let medplum: MedplumClient;
-  let processError: jest.SpyInstance;
+  let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = jest.fn().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn().mockImplementation(function exit(exitCode?: number): never {
       if (exitCode === 0) {
-        return;
+        return undefined as never;
       }
       throw new Error(`Process exited with exit code ${exitCode}`);
     }) as unknown as typeof process.exit;
-    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+    processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
   });
 
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
     process.env = { ...env };
     medplum = new MockClient();
-    console.log = jest.fn();
-    console.error = jest.fn();
+    console.log = vi.fn();
+    console.error = vi.fn();
 
-    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+    (createMedplumClient as unknown as Mock).mockImplementation(async () => medplum);
   });
 
   afterEach(() => {
@@ -57,15 +61,15 @@ describe('CLI auth', () => {
   });
 
   test('Login success', async () => {
-    (cp.exec as unknown as jest.Mock).mockImplementation(
-      (_, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+    (cp.exec as unknown as Mock).mockImplementation(
+      (_: unknown, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
         if (callback) {
           callback(null, '', '');
         }
         return true;
       }
     );
-    (http.createServer as unknown as jest.Mock).mockReturnValue({
+    (http.createServer as unknown as Mock).mockReturnValue({
       listen: () => ({
         close: () => undefined,
       }),
@@ -78,18 +82,18 @@ describe('CLI auth', () => {
     await main(['node', 'index.js', 'login']);
 
     // Get the handler
-    const handler = (http.createServer as unknown as jest.Mock).mock.calls[0][0];
+    const handler = (http.createServer as unknown as Mock).mock.calls[0][0];
 
     // Simulate a favicon.ico request, don't crash
     const req1 = { method: 'GET', url: '/favicon.ico' };
-    const res1 = { writeHead: jest.fn(), end: jest.fn() };
+    const res1 = { writeHead: vi.fn(), end: vi.fn() };
     await handler(req1, res1);
     expect(res1.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': ContentType.TEXT });
     expect(res1.end).toHaveBeenCalledWith('Not found');
 
     // Simulate an OPTIONS request, don't process the code
     const req2 = { method: 'OPTIONS', url: '/?code=123' };
-    const res2 = { writeHead: jest.fn(), end: jest.fn() };
+    const res2 = { writeHead: vi.fn(), end: vi.fn() };
     await handler(req2, res2);
     expect(res2.writeHead).toHaveBeenCalledWith(200, {
       Allow: 'GET, POST',
@@ -99,7 +103,7 @@ describe('CLI auth', () => {
 
     // Simulate the redirect
     const req3 = { method: 'GET', url: '/?code=123' };
-    const res3 = { writeHead: jest.fn(), end: jest.fn() };
+    const res3 = { writeHead: vi.fn(), end: vi.fn() };
     await handler(req3, res3);
     expect(res3.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': ContentType.TEXT });
     expect(res3.end).toHaveBeenCalledWith('Signed in as Alice Smith. You may close this window.');
@@ -142,8 +146,8 @@ describe('CLI auth', () => {
   test('Load credentials from disk', async () => {
     medplum = new MockClient({ storage: new FileSystemStorage('default') });
 
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         activeLogin: JSON.stringify({
           accessToken: 'abc',
@@ -162,7 +166,7 @@ describe('CLI auth', () => {
 
     await main(['node', 'index.js', 'whoami']);
 
-    expect((console.log as unknown as jest.Mock).mock.calls).toStrictEqual([
+    expect((console.log as unknown as Mock).mock.calls).toStrictEqual([
       ['Server:  https://example.com/'],
       ['Profile: Alice Smith (Practitioner/123)'],
       ['Project: My Project (Project/456)'],
@@ -172,8 +176,8 @@ describe('CLI auth', () => {
   test('Get access token -- logged in', async () => {
     medplum = new MockClient({ storage: new FileSystemStorage('default') });
 
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         activeLogin: JSON.stringify({
           accessToken: 'abc',
@@ -191,7 +195,7 @@ describe('CLI auth', () => {
     );
 
     await main(['node', 'index.js', 'token']);
-    expect((console.log as unknown as jest.Mock).mock.calls).toStrictEqual([[expect.any(String)]]);
+    expect((console.log as unknown as Mock).mock.calls).toStrictEqual([[expect.any(String)]]);
   });
 
   test('Get access token -- needs auth (expired or not logged in)', async () => {

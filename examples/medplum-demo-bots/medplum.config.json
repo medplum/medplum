@@ -1,6 +1,12 @@
 {
   "bots": [
     {
+      "name": "ai-realtime-questionnaire",
+      "id": "",
+      "source": "src/questionnaire-bots/ai-realtime/ai-realtime-questionnaire.ts",
+      "dist": "dist/questionnaire-bots/ai-realtime/ai-realtime-questionnaire.js"
+    },
+    {
       "name": "hello-patient",
       "id": "",
       "source": "src/hello-patient.ts",
@@ -137,6 +143,12 @@
       "id": "",
       "source": "src/spaces-bots/fhir-visualizer-bot.ts",
       "dist": "dist/spaces-bots/fhir-visualizer-bot.js"
+    },
+    {
+      "name": "nppes-lookup",
+      "id": "",
+      "source": "src/nppes-lookup.ts",
+      "dist": "dist/nppes-lookup.js"
     }
   ]
 }

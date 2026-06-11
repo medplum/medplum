@@ -1,0 +1,275 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import type { Job, QueueBaseOptions } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
+import { S3TablesWarehouseDestination } from '../cloud/aws/data-warehouse-destination';
+import type { MedplumServerConfig } from '../config/types';
+import { getDataWarehouseConfigErrors, isDataWarehouseSyncOperational } from '../config/validate-config';
+import { getWarehouseSyncPostgresTableNames, toIcebergTableName } from '../data-warehouse/config';
+import { LocalParquetWarehouseDestination } from '../data-warehouse/destination';
+import type { SyncOptions } from '../data-warehouse/sync';
+import { syncData } from '../data-warehouse/sync';
+import {
+  acquireAdvisoryLock,
+  DatabaseMode,
+  getDatabasePool,
+  locks,
+  releaseAdvisoryLock,
+  withPoolClient,
+} from '../database';
+import { globalLogger } from '../logger';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
+import { addVerboseQueueLogging, getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+
+export interface DataWarehouseSyncJobData {
+  trigger: 'scheduler';
+}
+
+export const DataWarehouseSyncQueueName = 'DataWarehouseSyncQueue';
+export const DataWarehouseSyncSchedulerId = 'data-warehouse-sync';
+
+/**
+ * Default BullMQ lock duration for long-running warehouse sync jobs.
+ *
+ * This is useful because we want a high-frequency sync, but if it takes a long time,
+ * BullMQ will assume the job is dead.  We alleviate this by job.updateProgress and this
+ * increased default lock duration.
+ */
+export const DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS = 5 * 60 * 1000;
+
+export function logDataWarehouseSyncStatus(config: MedplumServerConfig): void {
+  const syncConfig = config.dataWarehouse;
+  if (!syncConfig?.enabled) {
+    globalLogger.info('Data warehouse sync is disabled', { subsystem: 'data-warehouse-sync' });
+    return;
+  }
+
+  globalLogger.info('Data warehouse sync is enabled', {
+    subsystem: 'data-warehouse-sync',
+    destination: syncConfig.destination,
+    cron: syncConfig.cron,
+    includeResourceTypes: syncConfig.includeResourceTypes,
+    excludeResourceTypes: syncConfig.excludeResourceTypes,
+    startDate: syncConfig.startDate,
+  });
+}
+
+export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
+  logDataWarehouseSyncStatus(config);
+
+  if (options?.workerEnabled === false) {
+    return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
+  }
+
+  if (!isDataWarehouseSyncOperational(config)) {
+    const errors = getDataWarehouseConfigErrors(config);
+    if (errors.length > 0) {
+      globalLogger.warn('Skipping data warehouse sync worker due to invalid configuration', {
+        errors,
+        subsystem: 'data-warehouse-sync',
+      });
+    }
+    return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
+  }
+
+  const defaultOptions: QueueBaseOptions = {
+    connection: getBullmqRedisConnectionOptions(config),
+  };
+
+  const queue = new Queue<DataWarehouseSyncJobData>(DataWarehouseSyncQueueName, {
+    ...defaultOptions,
+    defaultJobOptions: { attempts: 1 },
+  });
+
+  const workerBullmq = getWorkerBullmqConfig(config, 'data-warehouse-sync') ?? {};
+  const worker = new Worker<DataWarehouseSyncJobData>(
+    DataWarehouseSyncQueueName,
+    async (job) => processDataWarehouseSyncJob(config, job),
+    {
+      ...defaultOptions,
+      ...workerBullmq,
+      lockDuration: workerBullmq.lockDuration ?? DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
+      // Data warehouse sync is intentionally serialized.
+      concurrency: 1,
+    }
+  );
+  addVerboseQueueLogging<DataWarehouseSyncJobData>(queue, worker, (job) => ({
+    trigger: job.data.trigger,
+  }));
+
+  refreshDataWarehouseSyncScheduler(config, queue).catch((err) => {
+    globalLogger.error('Failed to refresh data warehouse sync scheduler', { err, subsystem: 'data-warehouse-sync' });
+  });
+
+  return { queue, worker, name: DataWarehouseSyncQueueName };
+};
+
+export function getDataWarehouseSyncQueue(): Queue<DataWarehouseSyncJobData> | undefined {
+  return queueRegistry.get(DataWarehouseSyncQueueName);
+}
+
+export async function refreshDataWarehouseSyncScheduler(
+  config: MedplumServerConfig,
+  queue: Queue<DataWarehouseSyncJobData>
+): Promise<void> {
+  const syncConfig = config.dataWarehouse;
+  if (!syncConfig?.enabled) {
+    try {
+      await queue.removeJobScheduler(DataWarehouseSyncSchedulerId);
+    } catch (err) {
+      globalLogger.warn('Failed removing disabled data warehouse sync scheduler', {
+        err,
+        subsystem: 'data-warehouse-sync',
+      });
+    }
+    return;
+  }
+
+  const errors = getDataWarehouseConfigErrors(config);
+  if (errors.length > 0) {
+    globalLogger.warn('Skipping data warehouse sync scheduler due to invalid configuration', { errors });
+    try {
+      await queue.removeJobScheduler(DataWarehouseSyncSchedulerId);
+    } catch (err) {
+      globalLogger.warn('Failed removing invalid data warehouse sync scheduler', {
+        err,
+        subsystem: 'data-warehouse-sync',
+      });
+    }
+    return;
+  }
+
+  await queue.upsertJobScheduler(
+    DataWarehouseSyncSchedulerId,
+    {
+      pattern: syncConfig.cron,
+    },
+    {
+      data: { trigger: 'scheduler' },
+    }
+  );
+}
+
+export async function processDataWarehouseSyncJob(
+  config: MedplumServerConfig,
+  job: Job<DataWarehouseSyncJobData>
+): Promise<void> {
+  const syncConfig = config.dataWarehouse;
+  const jobStartTime = new Date();
+
+  await withPoolClient(async (client) => {
+    let hasLock = false;
+    try {
+      /*
+       * for a DW sync job, it makes sense to skip on failure,
+       * as it probably means there's already one in progress
+       */
+
+      hasLock = await acquireAdvisoryLock(client, locks.dataWarehouseSync, { maxAttempts: 1 });
+      if (!hasLock) {
+        globalLogger.info('Skipping data warehouse sync; another sync is in progress', {
+          jobId: job.id,
+          trigger: job.data.trigger,
+          subsystem: 'data-warehouse-sync',
+        });
+        return;
+      }
+
+      const syncOptions = getDataWarehouseSyncOptions(config);
+
+      const result = await syncData({
+        ...syncOptions,
+        onProgress: async (_message, metadata) => {
+          await job.updateProgress(metadata ?? {});
+        },
+      });
+
+      let watermarkDurationSeconds = 0;
+      let syncDurationSeconds = 0;
+      for (const table of result.tables) {
+        watermarkDurationSeconds += table.watermarkDurationMs / 1000;
+        syncDurationSeconds += table.syncDurationMs / 1000;
+      }
+
+      const tables = result.tables;
+      const tablesWithRows = tables.filter((t) => t.rowsInserted > 0).length;
+      const tablesEmpty = tables.length - tablesWithRows;
+      const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
+      const jobEndTime = new Date();
+      const durationSeconds = (jobEndTime.getTime() - jobStartTime.getTime()) / 1000;
+      globalLogger.info('Data warehouse sync completed', {
+        jobId: job.id,
+        trigger: job.data.trigger,
+        tablesSynced: tables.length,
+        tablesWithRows,
+        tablesEmpty,
+        rowsInserted,
+        tableCounts: Object.fromEntries(tables.map((t) => [t.icebergTable, t.rowsInserted])),
+        watermarkDurationSeconds,
+        syncDurationSeconds,
+        jobStartTime: jobStartTime.toISOString(),
+        jobEndTime: jobEndTime.toISOString(),
+        durationSeconds,
+        subsystem: 'data-warehouse-sync',
+      });
+    } catch (err) {
+      globalLogger.error('Data warehouse sync failed', {
+        jobId: job.id,
+        trigger: job.data.trigger,
+        destination: syncConfig?.destination,
+        namespace: syncConfig?.namespace,
+        err,
+        subsystem: 'data-warehouse-sync',
+      });
+      throw err;
+    } finally {
+      if (hasLock) {
+        await releaseAdvisoryLock(client, locks.dataWarehouseSync);
+      }
+    }
+    /*
+     * use the _writer_ database pool for the lock, even though we use the reader for sync,
+     * as we can have many readers
+     */
+  }, getDatabasePool(DatabaseMode.WRITER));
+}
+
+export function getDataWarehouseSyncOptions(config: MedplumServerConfig): SyncOptions {
+  const syncConfig = config.dataWarehouse;
+  if (!syncConfig?.enabled) {
+    throw new Error('dataWarehouse.enabled must be true to run scheduled sync');
+  }
+
+  const errors = getDataWarehouseConfigErrors(config);
+  if (errors.length > 0) {
+    throw new Error(errors.join('; '));
+  }
+
+  const { namespace, startDate, includeResourceTypes, excludeResourceTypes } = syncConfig;
+
+  // Fallback to the writer database when readonly is not configured.
+  // For RDS Proxy, set host and ssl.require on the database config directly.
+  const database = config.readonlyDatabase ?? config.database;
+
+  const destination =
+    (syncConfig.destination ?? 'local') === 'local'
+      ? new LocalParquetWarehouseDestination(syncConfig.localBasePath as string)
+      : new S3TablesWarehouseDestination(config.awsRegion, syncConfig.awsS3TableArn as string);
+
+  const warehouseSources = getWarehouseSyncPostgresTableNames(includeResourceTypes, excludeResourceTypes)
+    .map((postgresTable) => ({
+      postgresTable,
+      icebergTable: toIcebergTableName(postgresTable),
+    }))
+    .toSorted((a, b) => a.icebergTable.localeCompare(b.icebergTable));
+  return {
+    database,
+    destination,
+    namespace,
+    startDate,
+    includeResourceTypes,
+    excludeResourceTypes,
+    warehouseSources,
+  };
+}

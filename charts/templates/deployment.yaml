@@ -65,12 +65,22 @@ spec:
               port: {{ .Values.service.targetPort | default 8103 }}
             failureThreshold: 60
             periodSeconds: 10
-          {{- with .Values.deployment.envFrom }}
           envFrom:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            # Source 1: Built-in ConfigMap
+            - configMapRef:
+                name: {{ include "medplum.fullname" . }}-config
+            # Source 2: Built-in Secret
+            - secretRef:
+                name: {{ include "medplum.fullname" . }}-secrets
+            {{- with .Values.deployment.envFrom }}
+            # Source 3: User-defined envFrom sources
+            {{- toYaml . | nindent 6 }}
+            {{- end }}
           env:
-            {{- toYaml .Values.deployment.env | nindent 12 }}
+            {{- with .Values.deployment.env }}
+            # Source 4: User-defined env vars
+            {{- toYaml . | nindent 6 }}
+            {{- end }}
           resources:
             {{- toYaml .Values.deployment.resources | nindent 12 }}
           volumeMounts:

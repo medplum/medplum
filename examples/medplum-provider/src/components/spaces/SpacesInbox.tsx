@@ -17,6 +17,7 @@ import {
 import type { Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react';
 import {
+  IconArrowDown,
   IconArrowLeft,
   IconCode,
   IconLayoutSidebarLeftCollapse,
@@ -35,6 +36,7 @@ import { processMessage } from '../../utils/spaceMessaging';
 import { loadConversationMessages } from '../../utils/spacePersistence';
 import { ComponentPreview } from './ComponentPreview';
 import { HistoryList } from './HistoryList';
+import { Markdown } from './Markdown';
 import { ResourceBox } from './ResourceBox';
 import { ResourcePanel } from './ResourcePanel';
 import classes from './SpacesInbox.module.css';
@@ -67,10 +69,12 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [componentPanelOpen, setComponentPanelOpen] = useState(false);
   const [componentPreview, setComponentPreview] = useState<{ code: string; resources?: string[] } | undefined>();
   const [expandedResponses, setExpandedResponses] = useState(new Set<number>());
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
   const loadVersionRef = useRef(0);
   const componentStreamOpenedRef = useRef(false);
+  const isAtBottomRef = useRef(true);
 
   // Load conversation when topic changes
   useEffect(() => {
@@ -90,6 +94,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
             return;
           }
           setMessages([...loadedMessages]);
+          isAtBottomRef.current = true;
+          setShowScrollButton(false);
           setCurrentTopicId(topicId);
           setHasStarted(true);
           setSelectedResource(undefined);
@@ -118,28 +124,49 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;
-    if (viewport && hasStarted) {
+    if (viewport && hasStarted && isAtBottomRef.current) {
       viewport.scrollTo({
         top: viewport.scrollHeight,
-        behavior: 'smooth',
+        behavior: 'auto',
       });
     }
-  }, [messages, hasStarted, streamingContent]);
+  }, [messages, hasStarted, streamingContent, loading, currentFhirRequest, streamingComponentCode]);
 
   // Scroll again after loading finishes to show resources
   useEffect(() => {
     const viewport = scrollViewportRef.current;
-    if (viewport && hasStarted && !loading) {
+    if (viewport && hasStarted && !loading && isAtBottomRef.current) {
       const timer = setTimeout(() => {
         viewport.scrollTo({
           top: viewport.scrollHeight,
-          behavior: 'smooth',
+          behavior: 'auto',
         });
       }, 300);
       return () => clearTimeout(timer);
     }
     return undefined;
   }, [loading, hasStarted]);
+
+  // Track whether the user is scrolled to the bottom; pause autoscroll otherwise
+  const handleScrollPositionChange = (): void => {
+    const viewport = scrollViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+    const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    const atBottom = distanceFromBottom < 100;
+    isAtBottomRef.current = atBottom;
+    setShowScrollButton(!atBottom);
+  };
+
+  const scrollToBottom = (): void => {
+    const viewport = scrollViewportRef.current;
+    if (viewport) {
+      viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+    }
+    isAtBottomRef.current = true;
+    setShowScrollButton(false);
+  };
 
   const handleSelectTopic = async (selectedTopicId: string): Promise<void> => {
     loadVersionRef.current++;
@@ -151,6 +178,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         return;
       }
       setMessages([...loadedMessages]);
+      isAtBottomRef.current = true;
+      setShowScrollButton(false);
       setCurrentTopicId(selectedTopicId);
       setHasStarted(true);
       setSelectedResource(undefined);
@@ -167,8 +196,12 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     }
   };
 
-  const handleSend = async (): Promise<void> => {
-    if (!input.trim()) {
+  const handleSend = async (overrideInput?: string): Promise<void> => {
+    if (isSendingRef.current) {
+      return;
+    }
+    const text = (overrideInput ?? input).trim();
+    if (!text) {
       return;
     }
 
@@ -177,9 +210,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       setHasStarted(true);
     }
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { role: 'user', content: text };
     const currentMessages = [...messages, userMessage];
     setMessages(currentMessages);
+    isAtBottomRef.current = true;
+    setShowScrollButton(false);
     setInput('');
     setCurrentFhirRequest(undefined);
     setStreamingContent(undefined);
@@ -192,7 +227,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     try {
       const result = await processMessage({
         medplum,
-        input,
+        input: text,
         userMessage,
         currentMessages,
         currentTopicId,
@@ -312,7 +347,12 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
               </Text>
             </div>
           ) : (
-            <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
+            <ScrollArea
+              style={{ flex: 1 }}
+              offsetScrollbars
+              viewportRef={scrollViewportRef}
+              onScrollPositionChange={handleScrollPositionChange}
+            >
               <Stack gap="xl" p="xs">
                 {visibleMessages.map((message, index) => {
                   // FHIR tool call — show method + path
@@ -335,7 +375,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                                 <Group
                                   key={tcIdx}
                                   gap="xs"
-                                  align="center"
+                                  align="flex-start"
                                   wrap="nowrap"
                                   className={classes.toolCallGroup}
                                 >
@@ -405,7 +445,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                     >
                       {message.content && (
                         <div className={classes.messageContent}>
-                          <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                          {message.role === 'assistant' ? (
+                            <Markdown>{message.content}</Markdown>
+                          ) : (
+                            <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                          )}
                         </div>
                       )}
                       {message.componentCode && (
@@ -480,7 +524,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                 {loading && (
                   <div className={cx(classes.messageWrapper, classes.assistantMessage)}>
                     <div className={classes.messageContent}>
-                      {streamingContent && <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>}
+                      {streamingContent && <Markdown>{streamingContent}</Markdown>}
                       {!streamingContent && currentFhirRequest && (
                         <Text size="sm" c="dimmed" fs="italic">
                           Executing {currentFhirRequest}...
@@ -522,6 +566,20 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         </div>
 
         <div className={classes.inputArea}>
+          {hasStarted && showScrollButton && (
+            <div className={classes.scrollToBottomWrapper}>
+              <ActionIcon
+                variant="default"
+                radius="xl"
+                size="lg"
+                className={classes.scrollToBottomButton}
+                onClick={scrollToBottom}
+                aria-label="Scroll to bottom"
+              >
+                <IconArrowDown size={14} />
+              </ActionIcon>
+            </div>
+          )}
           <div className={classes.inputWrapper}>
             <ChatInput
               input={input}

@@ -23,7 +23,7 @@ import type {
   Reference,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { AttachmentDisplay, ObservationTable, useMedplum, useResource } from '@medplum/react';
+import { AttachmentDisplay, DiagnosticReportDisplay, useMedplum, useResource } from '@medplum/react';
 import { IconCheck, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -804,45 +804,9 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             {/* Report Tab Content - for completed items */}
             {activeDetailTab === 'report' && primaryReport && (
               <Stack gap="sm" mb="xl">
-                {primaryReport.result && primaryReport.result.length > 0 && (
-                  <Stack pt="md">
-                    <ObservationTable value={primaryReport.result} hideObservationNotes={false} />
-                  </Stack>
-                )}
-
-                <Stack mt="md">
-                  <Group align="flex-start">
-                    <Text fw={500} size="sm" style={{ minWidth: '150px' }} c="dimmed">
-                      Report Status
-                    </Text>
-                    <Text size="sm" style={{ textTransform: 'capitalize' }}>
-                      {primaryReport.status}
-                    </Text>
-                  </Group>
-
-                  {primaryReport.issued && (
-                    <Group align="flex-start">
-                      <Text fw={500} size="sm" style={{ minWidth: '150px' }} c="dimmed">
-                        Issue Date
-                      </Text>
-                      <Text size="sm">{formatDate(primaryReport.issued)}</Text>
-                    </Group>
-                  )}
-
-                  {primaryReport.conclusion && (
-                    <Group align="flex-start">
-                      <Text fw={500} size="sm" style={{ minWidth: '150px' }} c="dimmed">
-                        Interpretation
-                      </Text>
-                      <Text size="sm">{primaryReport.conclusion}</Text>
-                    </Group>
-                  )}
-                </Stack>
-
                 {/* Results PDF */}
                 {primaryReport?.presentedForm && primaryReport.presentedForm.length > 0 && (
                   <>
-                    <Divider mt="xl" />
                     <Stack gap="lg" mb="xl">
                       <Text fw={800} size="md" pb="0">
                         Lab Document
@@ -875,6 +839,12 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                       </Stack>
                     </Stack>
                   </>
+                )}
+
+                {primaryReport.result && primaryReport.result.length > 0 && (
+                  <Stack pt="md">
+                    <DiagnosticReportDisplay value={primaryReport} />
+                  </Stack>
                 )}
               </Stack>
             )}

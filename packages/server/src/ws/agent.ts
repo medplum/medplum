@@ -93,6 +93,7 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
           case 'agent:reloadconfig:response':
           case 'agent:upgrade:response':
           case 'agent:logs:response':
+          case 'agent:stats:response':
             if (command.callback) {
               await publish(command.callback, JSON.stringify(command));
             }
@@ -154,13 +155,16 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
+    // Bind the message listener before awaiting the subscribe so that messages
+    // published immediately after subscription are not dropped.
     redisSubscriber = getPubSubRedisSubscriber();
-    await redisSubscriber.subscribe(getReferenceString(agent));
+    const subscribed = redisSubscriber.subscribe(getReferenceString(agent));
     redisSubscriber.on('message', (_channel: string, message: string) => {
       // When a message is received, send it to the agent
       socket.send(message, { binary: false });
       agentMessagesSent++;
     });
+    await subscribed;
 
     // Subscribe to heartbeat events
     heartbeat.addEventListener('heartbeat', heartbeatHandler);

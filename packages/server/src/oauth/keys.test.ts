@@ -218,6 +218,15 @@ describe('Keys', () => {
     expect(generateSecret(32)).toHaveLength(64);
   });
 
+  test('Get signing key by algorithm', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    expect(getSigningKey()).toBeDefined();
+    expect(getSigningKey('ES256')).toBeDefined();
+    expect(() => getSigningKey('none')).toThrow('Signing key not found for alg: none');
+  });
+
   test('Generate access token with email', async () => {
     const config = await loadTestConfig();
     await initKeys(config);

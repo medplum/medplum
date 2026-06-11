@@ -1,62 +1,39 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { clearReleaseCache } from '@medplum/core';
-import child_process from 'node:child_process';
-import fs from 'node:fs';
-import type { platform } from 'node:os';
-import os from 'node:os';
+import { execSync, spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { upgraderMain } from './upgrader';
-import { mockFetchForUpgrader } from './upgrader-test-utils';
+import { buildManifest, mockFetchForUpgrader } from './upgrader-test-utils';
 import { getReleaseBinPath } from './upgrader-utils';
-
-jest.mock('node:process', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return new (class MockProcess extends require('node:events') {
-    send = jest.fn().mockImplementation((msg) => {
-      this.emit('childSend', msg);
-    });
-    exit = jest.fn(() => {
-      throw new Error('process.exit');
-    });
-  })();
-});
 
 describe('Upgrader', () => {
   describe('Unsupported platforms', () => {
     test.each(['darwin', 'linux'])('platform() === %s -- should error', async (_platform) => {
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => _platform as ReturnType<typeof platform>);
+      vi.mocked(platform).mockReturnValue(_platform as NodeJS.Platform);
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade'])).rejects.toThrow(
         `Unsupported platform: ${_platform}. Agent upgrader currently only supports Windows`
       );
-      platformSpy.mockRestore();
     });
   });
 
   describe('Windows', () => {
-    let platformSpy: jest.SpyInstance;
-
-    beforeAll(() => {
-      platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => 'win32');
-    });
-
-    afterAll(() => {
-      platformSpy.mockRestore();
-    });
-
     beforeEach(() => {
+      vi.mocked(platform).mockReturnValue('win32');
       clearReleaseCache();
     });
 
     test.each([false, true])('Happy path -- installer downloaded: %s', async (installerDownloaded) => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const fetchSpy = mockFetchForUpgrader();
-      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => installerDownloaded);
-      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(jest.fn());
-      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+      const existsSyncSpy = vi.mocked(existsSync).mockImplementation(() => installerDownloaded);
+      const spawnSyncSpy = vi.mocked(spawnSync).mockImplementation(vi.fn());
+      const execSyncSpy = vi.mocked(execSync).mockImplementation(vi.fn());
 
       const receivedMsgPromise = new Promise<{ type: string }>((resolve) => {
         process.on('childSend', (msg) => {
@@ -85,16 +62,16 @@ describe('Upgrader', () => {
 
     test('Installer fails', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const fetchSpy = mockFetchForUpgrader();
-      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
-      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(
-        jest.fn(() => {
+      const existsSyncSpy = vi.mocked(existsSync).mockImplementation(() => false);
+      const spawnSyncSpy = vi.mocked(spawnSync).mockImplementation(
+        vi.fn(() => {
           throw new Error('Failed to stop the service');
         })
       );
-      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+      const execSyncSpy = vi.mocked(execSync).mockImplementation(vi.fn());
 
       const receivedMsgPromise = new Promise<{ type: string }>((resolve) => {
         process.on('childSend', (msg) => {
@@ -126,16 +103,16 @@ describe('Upgrader', () => {
 
     test('Specified version', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const fetchSpy = mockFetchForUpgrader('4.2.4');
-      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
-      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(
-        jest.fn(() => {
+      const existsSyncSpy = vi.mocked(existsSync).mockImplementation(() => false);
+      const spawnSyncSpy = vi.mocked(spawnSync).mockImplementation(
+        vi.fn(() => {
           throw new Error('Failed to stop the service');
         })
       );
-      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+      const execSyncSpy = vi.mocked(execSync).mockImplementation(vi.fn());
 
       const receivedMsgPromise = new Promise<{ type: string }>((resolve) => {
         process.on('childSend', (msg) => {
@@ -169,13 +146,13 @@ describe('Upgrader', () => {
       const originalConsoleLog = console.log;
 
       const fetchSpy = mockFetchForUpgrader();
-      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
-      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(
-        jest.fn(() => {
+      const existsSyncSpy = vi.mocked(existsSync).mockImplementation(() => false);
+      const spawnSyncSpy = vi.mocked(spawnSync).mockImplementation(
+        vi.fn(() => {
           throw new Error('Failed to stop the service');
         })
       );
-      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+      const execSyncSpy = vi.mocked(execSync).mockImplementation(vi.fn());
 
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', 'INVALID'])).rejects.toThrow(
         'Invalid version specified'
@@ -189,12 +166,12 @@ describe('Upgrader', () => {
 
     test('Pre-4.2.4', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const fetchSpy = mockFetchForUpgrader();
-      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
-      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(jest.fn());
-      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+      const existsSyncSpy = vi.mocked(existsSync).mockImplementation(() => false);
+      const spawnSyncSpy = vi.mocked(spawnSync).mockImplementation(vi.fn());
+      const execSyncSpy = vi.mocked(execSync).mockImplementation(vi.fn());
 
       // Try to use a pre-4.2.4 version
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', '3.1.6'])).resolves.toBeUndefined();
@@ -214,25 +191,13 @@ describe('Upgrader', () => {
 
     test('Download fails with 404 -- sends ERROR message and throws', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
-      const manifest = {
-        tag_name: 'v4.2.4',
-        assets: [
-          {
-            name: 'medplum-agent-4.2.4-linux',
-            browser_download_url: 'https://example.com/linux',
-          },
-          {
-            name: 'medplum-agent-installer-4.2.4-windows.exe',
-            browser_download_url: 'https://example.com/win32',
-          },
-        ],
-      };
+      const manifest = buildManifest('4.2.4');
 
       let count = 0;
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async () => {
           switch (count) {
             case 0:
               count++;
@@ -248,9 +213,9 @@ describe('Upgrader', () => {
           }
         })
       );
-      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
-      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(jest.fn());
-      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+      const existsSyncSpy = vi.mocked(existsSync).mockImplementation(() => false);
+      const spawnSyncSpy = vi.mocked(spawnSync).mockImplementation(vi.fn());
+      const execSyncSpy = vi.mocked(execSync).mockImplementation(vi.fn());
 
       const receivedMsgPromise = new Promise<{ type: string; err?: string }>((resolve) => {
         process.once('childSend', (msg) => {
@@ -277,12 +242,12 @@ describe('Upgrader', () => {
 
     test('Invalid version via IPC -- sends ERROR message and throws', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const fetchSpy = mockFetchForUpgrader();
-      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
-      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(jest.fn());
-      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+      const existsSyncSpy = vi.mocked(existsSync).mockImplementation(() => false);
+      const spawnSyncSpy = vi.mocked(spawnSync).mockImplementation(vi.fn());
+      const execSyncSpy = vi.mocked(execSync).mockImplementation(vi.fn());
 
       const receivedMsgPromise = new Promise<{ type: string; err?: string }>((resolve) => {
         process.once('childSend', (msg) => {
@@ -306,26 +271,30 @@ describe('Upgrader', () => {
 
     test('Not in child process -- Missing process.send', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
       const originalProcessSend = process.send;
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('process.exit');
+      });
       process.send = undefined;
 
       const fetchSpy = mockFetchForUpgrader();
-      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
-      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(
-        jest.fn(() => {
+      const existsSyncSpy = vi.mocked(existsSync).mockImplementation(() => false);
+      const spawnSyncSpy = vi.mocked(spawnSync).mockImplementation(
+        vi.fn(() => {
           throw new Error('Failed to stop the service');
         })
       );
-      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+      const execSyncSpy = vi.mocked(execSync).mockImplementation(vi.fn());
 
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', 'INVALID'])).rejects.toThrow('process.exit');
 
       for (const spy of [fetchSpy, existsSyncSpy, spawnSyncSpy, execSyncSpy]) {
-        spy.mockRestore();
+        spy.mockReset();
       }
       console.log = originalConsoleLog;
       process.send = originalProcessSend;
+      exitSpy.mockRestore();
     });
   });
 });

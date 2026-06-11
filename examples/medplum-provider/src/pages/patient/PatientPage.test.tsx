@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { calculateAgeString } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import * as medplumReact from '@medplum/react';
 import { MedplumProvider } from '@medplum/react';
@@ -22,6 +23,7 @@ describe('PatientPage', () => {
   });
 
   const setup = (initialPath = '/Patient/patient-123'): ReturnType<typeof render> => {
+    window.history.pushState({}, '', initialPath);
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
@@ -125,11 +127,17 @@ describe('PatientPage', () => {
     const patientSummarySpy = vi.spyOn(medplumReact, 'PatientSummary');
     setup(`/Patient/${HomerSimpson.id}`);
 
+    if (!HomerSimpson.birthDate) {
+      throw new Error('Test data in unexpected state - homer has no birthdate');
+    }
+
+    const age = calculateAgeString(HomerSimpson.birthDate);
+
     await waitFor(() => {
       expect(patientSummarySpy).toHaveBeenCalled();
-      expect(screen.getByText('Male')).toBeInTheDocument();
-      expect(screen.getByText('1956-05-12 (069Y)')).toBeInTheDocument();
     });
+    expect(await screen.findByText('Male')).toBeInTheDocument();
+    expect(await screen.findByText(`1956-05-12 (${age})`)).toBeInTheDocument();
   });
 
   test('handles empty pathname correctly', async () => {

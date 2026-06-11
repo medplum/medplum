@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ClientApplication, Project, ProjectSetting } from '@medplum/fhirtypes';
+import type { ClientApplication, IdentityProvider, Project, ProjectSetting } from '@medplum/fhirtypes';
 import type { KeepJobs } from 'bullmq';
 
 export interface MedplumServerConfig {
@@ -114,6 +114,9 @@ export interface MedplumServerConfig {
   /** Number of milliseconds to use as a base for exponential backoff in transaction retries */
   transactionExpBackoffBaseDelayMs?: number;
 
+  /** Optional threshold in milliseconds for logging and recording high idle time within transactions */
+  idleInTransactionLogThresholdMs?: number;
+
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
 
@@ -175,6 +178,12 @@ export interface MedplumServerConfig {
   workers?: MedplumWorkersConfig;
 
   /**
+   * Optional configuration for scheduled data warehouse sync jobs.
+   * Runs incremental in-server data warehouse sync jobs on a fixed cron pattern.
+   */
+  dataWarehouse?: MedplumDataWarehouseConfig;
+
+  /**
    * Optional mTLS certificate header for incoming requests.
    * If set, the server will attempt to extract the client certificate from the specified header.
    * Header name should be all lowercase.
@@ -183,11 +192,21 @@ export interface MedplumServerConfig {
    */
   mtlsCertHeader?: string;
 
+  rangeSearch?: boolean;
+
   /**
    * Optional URL for AI real-time transcription service.
    * Default is `wss://api.openai.com/v1/realtime?intent=transcription`.
    */
   aiRealtimeTranscriptionUrl?: string;
+
+  /**
+   * Optional flag to require email verification before allowing users to create projects.
+   */
+  requireVerifiedEmailForProjectCreation?: boolean;
+
+  /** Optional flag to allow rest-hook Subscriptions to send requests to insecure HTTP URLs. */
+  allowInsecureRestHookUrl?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {
@@ -265,13 +284,20 @@ export interface MedplumBullmqConfig {
    * @see {@link https://docs.bullmq.io/guide/workers/concurrency}
    */
   concurrency?: number;
+  /**
+   * Duration of the job lock in milliseconds while a worker is processing.
+   * @see {@link https://docs.bullmq.io/guide/workers/stalled-jobs}
+   */
+  lockDuration?: number;
   removeOnComplete: KeepJobs;
   removeOnFail: KeepJobs;
 }
 
 export interface MedplumExternalAuthConfig {
   readonly issuer: string;
-  readonly userInfoUrl: string;
+  /** @deprecated Use identityProvider.userInfoUrl instead. */
+  readonly userInfoUrl?: string;
+  readonly identityProvider?: IdentityProvider;
 }
 
 export type WorkerName =
@@ -282,7 +308,9 @@ export type WorkerName =
   | 'reindex'
   | 'batch'
   | 'post-deploy-migration'
-  | 'set-accounts';
+  | 'set-accounts'
+  | 'lambda-cleaner'
+  | 'data-warehouse-sync';
 
 export interface MedplumWorkersConfig {
   /**
@@ -297,6 +325,36 @@ export interface MedplumWorkersConfig {
    * Only takes effect for workers that are enabled.
    */
   bullmq?: Partial<Record<WorkerName, Partial<MedplumBullmqConfig>>>;
+}
+
+export type MedplumDataWarehouseDestinationType = 's3tables' | 'local';
+
+export interface MedplumDataWarehouseConfig {
+  /**
+   * Enables/disables the scheduled sync worker. Defaults to false.
+   */
+  enabled?: boolean;
+  /**
+   * BullMQ cron pattern used to schedule sync runs.
+   */
+  cron?: string;
+  /** Warehouse export destination type. */
+  destination?: MedplumDataWarehouseDestinationType;
+  /** Required when destination is `s3tables`. */
+  awsS3TableArn?: string;
+  /** Required when destination is `local`. */
+  localBasePath?: string;
+  /** Optional Iceberg namespace used by sync. */
+  namespace?: string;
+  /**
+   * Earliest resource `lastUpdated` timestamp to include in sync (ISO-8601 date or date-time string).
+   * History rows with `lastUpdated` before this value are excluded.
+   */
+  startDate?: string;
+  /** FHIR resource types to include (e.g. `Patient`, `Observation`). When omitted, all types are candidates. */
+  includeResourceTypes?: string[];
+  /** FHIR resource types to exclude from sync. Cannot be set together with `includeResourceTypes`. */
+  excludeResourceTypes?: string[];
 }
 
 export interface MedplumFissionConfig {

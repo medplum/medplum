@@ -1,34 +1,36 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type * as MedplumCore from '@medplum/core';
 import { locationUtils } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
+import type { Mocked } from 'vitest';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { LinkTabs } from './LinkTabs';
 
 const medplum = new MockClient();
-const navigateMock = jest.fn();
+const navigateMock = vi.fn();
 
-jest.mock('@medplum/core', () => ({
-  ...jest.requireActual('@medplum/core'),
+vi.mock('@medplum/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof MedplumCore>()),
   locationUtils: {
-    getPathname: jest.fn(),
+    getPathname: vi.fn(),
   },
 }));
 
-const mockLocationUtils = locationUtils as jest.Mocked<typeof locationUtils>;
+const mockLocationUtils = locationUtils as Mocked<typeof locationUtils>;
 
 describe('LinkTabs', () => {
   beforeEach(() => {
     navigateMock.mockClear();
     mockLocationUtils.getPathname.mockReturnValue('/patient/123/overview');
-    jest.spyOn(window, 'open').mockImplementation(() => null);
+    vi.spyOn(window, 'open').mockImplementation(() => null);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   const defaultProps = {
@@ -89,8 +91,27 @@ describe('LinkTabs', () => {
     expect(navigateMock).toHaveBeenCalledWith('/patient/123/timeline');
   });
 
+  test('matches tab whose value contains a query string against the pathname segment', async () => {
+    mockLocationUtils.getPathname.mockReturnValue('/Patient/abc/Encounter');
+    const tabs = [
+      { label: 'Timeline', value: 'timeline' },
+      { label: 'Visits', value: 'Encounter?_count=20&patient=abc' },
+      { label: 'Tasks', value: 'Task' },
+    ];
+    setup({ baseUrl: '/Patient/abc', tabs });
+
+    const visitsTab = screen.getByRole('tab', { name: 'Visits' });
+    expect(visitsTab).toHaveAttribute('aria-selected', 'true');
+
+    await act(async () => {
+      fireEvent.click(visitsTab);
+    });
+    // Navigation must preserve the original case and full query string
+    expect(navigateMock).toHaveBeenCalledWith('/Patient/abc/Encounter?_count=20&patient=abc');
+  });
+
   test('allows middle click', async () => {
-    console.error = jest.fn(); // Suppress warning for "navigation not implemented" warning
+    console.error = vi.fn(); // Suppress warning for "navigation not implemented" warning
 
     setup();
 

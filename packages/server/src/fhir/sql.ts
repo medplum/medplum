@@ -12,7 +12,7 @@ import {
 import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
 import type { Client, Pool, PoolClient } from 'pg';
-import { getLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
@@ -30,12 +30,14 @@ export const ColumnType = {
   TIMESTAMP: 'timestamp',
   TEXT: 'text',
   TSTZRANGE: 'tstzrange',
+  NUMRANGE: 'numrange',
+  DATERANGE: 'daterange',
 } as const;
 export type ColumnType = (typeof ColumnType)[keyof typeof ColumnType];
 
 export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
 
-export type TransactionIsolationLevel = 'READ COMMITTED' | 'REPEATABLE READ' | 'SERIALIZABLE';
+export type TransactionIsolationLevel = 'REPEATABLE READ' | 'SERIALIZABLE';
 
 export const Operator = {
   '=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
@@ -265,6 +267,23 @@ export class Column implements Expression {
   }
 }
 
+/**
+ * Scalar subquery for comparison operands, e.g. `"col" > (SELECT MAX(x) FROM t)`.
+ */
+export class Subquery implements Expression {
+  readonly query: Expression;
+
+  constructor(query: Expression) {
+    this.query = query;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append('(');
+    sql.appendExpression(this.query);
+    sql.append(')');
+  }
+}
+
 export class Constant implements Expression {
   readonly value: string;
 
@@ -300,6 +319,19 @@ export class Negation implements Expression {
     sql.append('NOT (');
     sql.appendExpression(this.expression);
     sql.append(')');
+  }
+}
+
+export class IsNull implements Expression {
+  readonly expression: Expression;
+
+  constructor(expression: Expression) {
+    this.expression = expression;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.appendExpression(this.expression);
+    sql.append(' IS NULL');
   }
 }
 
@@ -515,6 +547,12 @@ export class SqlBuilder {
     return this;
   }
 
+  appendSql(builder: SqlBuilder): this {
+    this.sql.push(builder.toString());
+    this.values.push(...builder.getValues());
+    return this;
+  }
+
   appendIdentifier(str: string): this {
     this.sql.push('"', str, '"');
     return this;
@@ -545,6 +583,8 @@ export class SqlBuilder {
   param(value: any): this {
     if (value instanceof Column) {
       this.appendColumn(value);
+    } else if (value instanceof Subquery) {
+      this.appendExpression(value);
     } else if (value === null || value === undefined) {
       this.append('NULL');
     } else {
@@ -596,8 +636,8 @@ export class SqlBuilder {
     const sql = this.toString();
     let startTime = 0;
     if (this.debug) {
-      console.log('sql', sql);
-      console.log('values', this.values);
+      globalLogger.write(`sql ${sql}`);
+      globalLogger.write(`values ${JSON.stringify(this.values)}`);
       startTime = Date.now();
     }
     try {
@@ -605,7 +645,7 @@ export class SqlBuilder {
       if (this.debug) {
         const endTime = Date.now();
         const duration = endTime - startTime;
-        console.log(`result: ${result.rowCount ?? 0} rows (${duration} ms)`);
+        globalLogger.write(`result: ${result.rowCount ?? 0} rows (${duration} ms)`);
       }
 
       return { rowCount: result.rowCount ?? 0, rows: result.rows };
@@ -1046,17 +1086,22 @@ export class UpdateQuery extends BaseQuery {
 export class InsertQuery extends BaseQuery {
   private readonly values?: Record<string, any>[];
   private readonly query?: SelectQuery;
+  private readonly queryColumns?: string[];
   private returnColumns?: string[];
   private conflictColumns?: string[];
   private conflictCondition?: Condition;
   private ignoreConflict?: boolean;
 
-  constructor(tableName: string, values: Record<string, any>[] | SelectQuery) {
+  constructor(tableName: string, values: Record<string, any>[] | SelectQuery, queryColumns?: string[]) {
     super(tableName);
     if (Array.isArray(values)) {
       this.values = values;
+      if (queryColumns?.length) {
+        throw new Error('InsertQuery queryColumns are only valid for INSERT ... SELECT');
+      }
     } else {
       this.query = values;
+      this.queryColumns = queryColumns;
     }
   }
 
@@ -1086,6 +1131,9 @@ export class InsertQuery extends BaseQuery {
       this.appendColumns(sql, columnNames);
       this.appendAllValues(sql, columnNames);
     } else {
+      if (this.queryColumns?.length) {
+        this.appendColumns(sql, this.queryColumns);
+      }
       this.appendSubquery(sql);
     }
     this.appendMerge(sql);
@@ -1186,11 +1234,18 @@ export class InsertQuery extends BaseQuery {
 
 export class DeleteQuery extends BaseQuery {
   usingTables?: string[];
+  private returningColumns?: Column[];
 
   using(...tableNames: string[]): this {
     for (const table of tableNames) {
       this.usingTables = append(this.usingTables, table);
     }
+    return this;
+  }
+
+  returning(column: Column | string): this {
+    this.returningColumns ??= [];
+    this.returningColumns.push(getColumn(column, this.actualTableName));
     return this;
   }
 
@@ -1211,6 +1266,17 @@ export class DeleteQuery extends BaseQuery {
     }
 
     this.buildConditions(sql);
+    if (this.returningColumns?.length) {
+      sql.append(' RETURNING ');
+      let first = true;
+      for (const column of this.returningColumns) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendColumn(column);
+        first = false;
+      }
+    }
   }
 }
 

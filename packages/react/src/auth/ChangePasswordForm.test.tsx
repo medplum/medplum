@@ -58,7 +58,7 @@ describe('ChangePasswordForm', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('Renders form', () => {
@@ -71,7 +71,7 @@ describe('ChangePasswordForm', () => {
   });
 
   test('Submit success', async () => {
-    const onSuccess = jest.fn();
+    const onSuccess = vi.fn();
     const user = setup({ onSuccess });
 
     await user.type(screen.getByLabelText('Old password *'), 'orange');

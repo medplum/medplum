@@ -49,10 +49,11 @@ import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { clamp } from './operations/utils/parameters';
+import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
-import { getSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
 import type { Expression, Operator as SQL } from './sql';
 import {
   ArraySubquery,
@@ -251,6 +252,12 @@ function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequ
   } else {
     validateSearchResourceType(repo, searchRequest.resourceType);
   }
+  for (const include of searchRequest.include ?? EMPTY) {
+    validateSearchResourceType(repo, include.resourceType as ResourceType);
+  }
+  for (const include of searchRequest.revInclude ?? EMPTY) {
+    validateSearchResourceType(repo, include.resourceType as ResourceType);
+  }
 }
 
 /**
@@ -260,11 +267,9 @@ function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequ
  */
 function validateSearchResourceType(repo: Repository, resourceType: ResourceType): void {
   validateResourceType(resourceType);
-
   if (resourceType === 'Binary') {
     throw new OperationOutcomeError(badRequest('Cannot search on Binary resource type'));
   }
-
   if (!repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType)) {
     throw new OperationOutcomeError(forbidden);
   }
@@ -1031,14 +1036,34 @@ function buildSearchFilterExpression(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-
-  if (impl.searchStrategy === 'token-column') {
-    return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
-  } else if (impl.searchStrategy === 'lookup-table') {
-    return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+  switch (impl.searchStrategy) {
+    case SearchStrategies.TOKEN_COLUMN:
+      return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
+    case SearchStrategies.LOOKUP_TABLE:
+      return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+    case SearchStrategies.RANGE_COLUMN:
+      if (!repo.supportsRangeSearch()) {
+        return buildNormalSearchFilterExpression(
+          resourceType,
+          table,
+          param,
+          { ...impl, searchStrategy: 'column' },
+          filter
+        );
+      }
+      if (param.id === 'MeasureReport-period') {
+        return buildNormalSearchFilterExpression(
+          resourceType,
+          table,
+          param,
+          impl as unknown as ColumnSearchParameterImplementation,
+          filter
+        );
+      }
+      return buildRangeColumnsSearchFilter(resourceType, table, param, filter);
+    default:
+      return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
   }
-
-  return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
 }
 
 /**
@@ -1356,9 +1381,28 @@ function buildReferenceSearchFilter(
   }
   const column = new Column(table, impl.columnName);
   if (Array.isArray(values)) {
-    values = values.map((v) =>
-      !v.includes('/') && (impl.columnName === 'subject' || impl.columnName === 'patient') ? `Patient/${v}` : v
-    );
+    values = values.map((v) => {
+      if (v.includes('/')) {
+        return v;
+      }
+      // When the search parameter has a single target resource type (the spec's
+      // default for most reference params — see FHIR R4 §3.1.1.4.12), prepend
+      // that type so bare ids match the stored `Type/id` references. Gated on
+      // `isUUID` because Medplum stores its own resource ids as UUIDs; this
+      // avoids rewriting unrelated slashless values (e.g. URNs, identifiers).
+      if (impl.singleTargetType && isUUID(v)) {
+        return `${impl.singleTargetType}/${v}`;
+      }
+      // Back-compat: the `subject` and `patient` columns historically default
+      // to `Patient/` for bare values even when the underlying SearchParameter
+      // is multi-target (e.g. `Observation.subject` -> [Patient, Group,
+      // Device, Location]). Preserved verbatim to avoid breaking callers that
+      // rely on the implicit Patient assumption.
+      if (impl.columnName === 'subject' || impl.columnName === 'patient') {
+        return `Patient/${v}`;
+      }
+      return v;
+    });
   }
   let condition: Condition;
   if (impl.array) {
@@ -1556,9 +1600,15 @@ function addOrderByClause(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy === 'token-column') {
+  if (impl.searchStrategy === SearchStrategies.TOKEN_COLUMN) {
     addTokenColumnsOrderBy(builder, impl, sortRule);
-  } else if (impl.searchStrategy === 'lookup-table') {
+  } else if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
+    if (repo.supportsRangeSearch()) {
+      addRangeColumnsOrderBy(builder, impl, sortRule);
+    } else {
+      builder.orderBy(impl.columnName, sortRule.descending);
+    }
+  } else if (impl.searchStrategy === SearchStrategies.LOOKUP_TABLE) {
     impl.lookupTable.addOrderBy(builder, impl, resourceType, sortRule);
   } else {
     impl satisfies ColumnSearchParameterImplementation;
@@ -1658,6 +1708,7 @@ function buildChainedSearchUsingReferenceTable(
   param: ChainedSearchParameter
 ): Expression {
   let link = param.chain[0];
+  validateSearchResourceType(repo, link.targetType as ResourceType);
   let currentTable = nextChainedTable(link);
 
   // Set up subquery for EXISTS(), starting on the first link of the chain
@@ -1676,6 +1727,7 @@ function buildChainedSearchUsingReferenceTable(
   // Add joins to inner query for all subsequent chain links
   for (let i = 1; i < param.chain.length; i++) {
     link = param.chain[i];
+    validateSearchResourceType(repo, link.targetType as ResourceType);
     if (link.implementation.type === SearchParameterType.CANONICAL) {
       currentTable = linkCanonicalReference(innerQuery, currentTable, link);
     } else {
