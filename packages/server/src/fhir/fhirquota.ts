@@ -19,10 +19,12 @@ export interface FhirQuotaConfig {
   projectLimit: number;
 }
 
-export const READ_QUOTA_COST = 1;
-export const HISTORY_QUOTA_COST = 10;
-export const SEARCH_QUOTA_COST = 20;
-export const WRITE_QUOTA_COST = 100;
+export const FhirQuotaCost = {
+  READ: 1,
+  HISTORY: 10,
+  SEARCH: 20,
+  WRITE: 100,
+} as const;
 
 export function getFhirQuotaConfig(authState: AuthState): FhirQuotaConfig {
   const { project, userConfig } = authState;
