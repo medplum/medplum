@@ -7,6 +7,15 @@ import { randomUUID } from 'node:crypto';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { deployFissionBot } from './deploy';
+import { vi } from 'vitest';
+
+vi.mock('./utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./utils')>();
+  return {
+    ...actual,
+    deployFissionFunction: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 describe('Deploy Fission bots', () => {
   const app = express();
@@ -28,7 +37,7 @@ describe('Deploy Fission bots', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('Success', async () => {

@@ -10,8 +10,9 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, withTestContext } from '../../test.setup';
 import { getRepoForLogin } from '../accesspolicy';
+import { vi } from 'vitest';
 
-jest.mock('hibp');
+vi.mock('hibp');
 
 describe('Repository profile cache', () => {
   const usCorePatientProfile = JSON.parse(

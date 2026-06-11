@@ -14,9 +14,10 @@ import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
+import { vi, type Mock } from 'vitest';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
+vi.mock('hibp');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 const app = express();
 
@@ -45,10 +46,10 @@ describe('Project Admin routes', () => {
   });
 
   beforeEach(() => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    (fetch as unknown as Mock).mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(fetch as unknown as Mock, true);
   });
 
   test('Get project and promote admin', async () => {

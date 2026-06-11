@@ -13,7 +13,6 @@ import type { Binary } from '@medplum/fhirtypes';
 import { sdkStreamMixin } from '@smithy/util-stream';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import type { Request } from 'express';
 import { createHash } from 'node:crypto';
 import type internal from 'stream';
@@ -94,16 +93,16 @@ describe('Storage', () => {
     await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req);
 
     expect(mockS3Client.send.callCount).toBe(1);
-    expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
+    expect(mockS3Client.commandCalls(PutObjectCommand, {
       Bucket: 'foo',
       Key: 'binary/123/456',
       ContentType: ContentType.TEXT,
-    });
+    })).toHaveLength(1);
 
     // Read a file
     const stream = await storage.readBinary(binary);
     expect(stream).toBeDefined();
-    expect(mockS3Client).toHaveReceivedCommand(GetObjectCommand);
+    expect(mockS3Client.commandCalls(GetObjectCommand).length).toBeGreaterThan(0);
   });
 
   test('Missing metadata', async () => {
@@ -130,16 +129,16 @@ describe('Storage', () => {
 
     await storage.writeBinary(binary, undefined, undefined, req);
     expect(mockS3Client.send.callCount).toBe(1);
-    expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
+    expect(mockS3Client.commandCalls(PutObjectCommand, {
       Bucket: 'foo',
       Key: 'binary/123/456',
       ContentType: 'application/octet-stream',
-    });
+    })).toHaveLength(1);
 
     // Read a file
     const stream = await storage.readBinary(binary);
     expect(stream).toBeDefined();
-    expect(mockS3Client).toHaveReceivedCommand(GetObjectCommand);
+    expect(mockS3Client.commandCalls(GetObjectCommand).length).toBeGreaterThan(0);
   });
 
   test('Invalid file extension', async () => {
@@ -152,11 +151,11 @@ describe('Storage', () => {
     const stream = null as unknown as internal.Readable;
     try {
       await storage.writeBinary(binary, 'test.exe', ContentType.TEXT, stream);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect((err as Error).message).toStrictEqual('Invalid file extension');
     }
-    expect(mockS3Client).not.toHaveReceivedCommand(PutObjectCommand);
+    expect(mockS3Client.commandCalls(PutObjectCommand)).toHaveLength(0);
   });
 
   test('Invalid content type', async () => {
@@ -169,11 +168,11 @@ describe('Storage', () => {
     const stream = null as unknown as internal.Readable;
     try {
       await storage.writeBinary(binary, 'test.sh', 'application/x-sh', stream);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect((err as Error).message).toStrictEqual('Invalid content type');
     }
-    expect(mockS3Client).not.toHaveReceivedCommand(PutObjectCommand);
+    expect(mockS3Client.commandCalls(PutObjectCommand)).toHaveLength(0);
   });
 
   test('Copy S3 object', async () => {
@@ -201,11 +200,11 @@ describe('Storage', () => {
     await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req);
 
     expect(mockS3Client.send.callCount).toBe(1);
-    expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
+    expect(mockS3Client.commandCalls(PutObjectCommand, {
       Bucket: 'foo',
       Key: 'binary/123/456',
       ContentType: ContentType.TEXT,
-    });
+    })).toHaveLength(1);
     mockS3Client.reset();
 
     // Copy the object
@@ -219,11 +218,11 @@ describe('Storage', () => {
     await storage.copyBinary(binary, destinationBinary);
 
     expect(mockS3Client.send.callCount).toBe(1);
-    expect(mockS3Client).toReceiveCommandWith(CopyObjectCommand, {
+    expect(mockS3Client.commandCalls(CopyObjectCommand, {
       CopySource: 'foo/binary/123/456',
       Bucket: 'foo',
       Key: 'binary/789/012',
-    });
+    })).toHaveLength(1);
   });
 
   describe('SSE-C encryption', () => {
@@ -250,13 +249,13 @@ describe('Storage', () => {
 
       await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req);
 
-      expect(mockS3Client).toReceiveCommandWith(PutObjectCommand, {
+      expect(mockS3Client.commandCalls(PutObjectCommand, {
         Bucket: 'foo',
         Key: 'binary/123/456',
         SSECustomerAlgorithm: 'AES256',
         SSECustomerKey: testKey,
         SSECustomerKeyMD5: expectedMD5,
-      });
+      })).toHaveLength(1);
     });
 
     test('Read file includes SSE-C params', async () => {
@@ -269,13 +268,13 @@ describe('Storage', () => {
 
       await storage.readBinary(binary);
 
-      expect(mockS3Client).toReceiveCommandWith(GetObjectCommand, {
+      expect(mockS3Client.commandCalls(GetObjectCommand, {
         Bucket: 'foo',
         Key: 'binary/123/456',
         SSECustomerAlgorithm: 'AES256',
         SSECustomerKey: testKey,
         SSECustomerKeyMD5: expectedMD5,
-      });
+      })).toHaveLength(1);
     });
 
     test('Copy file includes SSE-C params for source and destination', async () => {
@@ -287,7 +286,7 @@ describe('Storage', () => {
 
       await storage.copyBinary(sourceBinary, destBinary);
 
-      expect(mockS3Client).toReceiveCommandWith(CopyObjectCommand, {
+      expect(mockS3Client.commandCalls(CopyObjectCommand, {
         CopySource: 'foo/binary/123/456',
         Bucket: 'foo',
         Key: 'binary/789/012',
@@ -297,7 +296,7 @@ describe('Storage', () => {
         CopySourceSSECustomerAlgorithm: 'AES256',
         CopySourceSSECustomerKey: testKey,
         CopySourceSSECustomerKeyMD5: expectedMD5,
-      });
+      })).toHaveLength(1);
     });
   });
 });

@@ -273,7 +273,7 @@ describe('Execute', () => {
 
   test('Submit HL7', async () => {
     const binaryStorage = getBinaryStorage();
-    const writeFileSpy = jest.spyOn(binaryStorage, 'writeFile');
+    const writeFileSpy = vi.spyOn(binaryStorage, 'writeFile');
 
     const text =
       'MSH|^~\\&|Main_HIS|XYZ_HOSPITAL|iFW|ABC_Lab|20160915003015||ACK|9B38584D|P|2.6.1|\r' +
@@ -822,7 +822,7 @@ describe('Execute', () => {
       ['systemEchoBot', 'linking'],
       ['systemEchoBot', 'own'],
     ])('Bot %s in %s project executes with correct accessToken', async (botName, whichProject) => {
-      const generateAccessTokenSpy = jest.spyOn(oathKeysModule, 'generateAccessToken');
+      const generateAccessTokenSpy = vi.spyOn(oathKeysModule, 'generateAccessToken');
       generateAccessTokenSpy.mockClear();
 
       // execute the bot in the appropriate project context

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { EMPTY } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
-import { createTransport } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
 import { sendEmailViaSes } from '../cloud/aws/email';
 import { getConfig } from '../config/loader';
@@ -90,6 +89,7 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
  * @param options - The nodemailer options.
  */
 async function sendEmailViaSmtp(smtpConfig: MedplumSmtpConfig, options: Mail.Options): Promise<void> {
+  const { createTransport } = await import('nodemailer');
   const transport = createTransport({
     host: smtpConfig.host,
     port: smtpConfig.port,

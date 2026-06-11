@@ -93,7 +93,11 @@ import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
 
-let internalFhirRouter: FhirRouter;
+let internalFhirRouter: FhirRouter | undefined;
+
+export function resetInternalFhirRouter(): void {
+  internalFhirRouter = undefined;
+}
 
 // OperationOutcome interceptor
 fhirRouter.use(function setupResponseInterceptors(req: Request, res: Response, next: NextFunction) {

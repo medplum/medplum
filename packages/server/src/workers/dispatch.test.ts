@@ -5,13 +5,13 @@ import { createReference } from '@medplum/core';
 import type { Bot, Patient } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDispatchJob } from './test-utils';
+import { vi } from 'vitest';
 
 describe('Dispatch Worker', () => {
   let botRepo: Repository;
@@ -55,8 +55,8 @@ describe('Dispatch Worker', () => {
     await findAndExecDispatchJob(bot, 'delete');
 
     const expectedName = `medplum-bot-lambda-${bot.id}`;
-    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: expectedName });
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 1);
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, { FunctionName: expectedName })).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(1);
   });
 
   test('does not interact with Lambda when Bot runtimeVersion is not awslambda', async () => {
@@ -71,7 +71,7 @@ describe('Dispatch Worker', () => {
     await withTestContext(() => botRepo.deleteResource('Bot', bot.id));
     await findAndExecDispatchJob(bot, 'delete');
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 0);
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(0);
   });
 
   test('does not interact with Lambda when a non-Bot resource is deleted', async () => {
@@ -85,7 +85,7 @@ describe('Dispatch Worker', () => {
     await withTestContext(() => botRepo.deleteResource('Patient', patient.id));
     await findAndExecDispatchJob(patient, 'delete');
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 0);
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(0);
   });
 
   test('does not interact with Lambda when interaction is not delete', async () => {
@@ -99,7 +99,7 @@ describe('Dispatch Worker', () => {
 
     await findAndExecDispatchJob(bot, 'create');
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 0);
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(0);
   });
 
   test('does not log error when Lambda does not exist (DeleteFunction throws ResourceNotFoundException)', async () => {
@@ -117,12 +117,12 @@ describe('Dispatch Worker', () => {
       .on(DeleteFunctionCommand)
       .rejects(new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' }));
 
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => undefined);
 
     await withTestContext(() => botRepo.deleteResource('Bot', bot.id));
     await expect(findAndExecDispatchJob(bot, 'delete')).resolves.toBeUndefined();
 
-    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: expectedName });
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, { FunctionName: expectedName })).toHaveLength(1);
     expect(errorSpy).not.toHaveBeenCalled();
 
     errorSpy.mockRestore();
@@ -141,7 +141,7 @@ describe('Dispatch Worker', () => {
 
     mockLambdaClient.on(DeleteFunctionCommand).rejects(new Error('Lambda blew up'));
 
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => undefined);
 
     await withTestContext(() => botRepo.deleteResource('Bot', bot.id));
     await expect(findAndExecDispatchJob(bot, 'delete')).resolves.toBeUndefined();

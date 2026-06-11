@@ -8,6 +8,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { globalLogger } from '../../logger';
 import { initTestAuth } from '../../test.setup';
+import { vi } from 'vitest';
 
 describe('$db-schema-diff', () => {
   const app = express();
@@ -17,7 +18,7 @@ describe('$db-schema-diff', () => {
     await initApp(app, config);
 
     // The migration script can log a lot sometimes
-    jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
   });
 
   afterAll(async () => {

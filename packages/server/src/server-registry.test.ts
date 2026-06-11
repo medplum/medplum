@@ -1,8 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { randomUUID } from 'crypto';
+import { vi } from 'vitest';
+
+const UUID = '00000000-0000-0000-0000-0000deadbeef';
+
+vi.mock('node:crypto', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:crypto')>();
+  return {
+    ...actual,
+    randomUUID: () => UUID,
+  };
+});
 import { heartbeat } from './heartbeat';
-import { getCacheRedis } from './redis';
+import * as redisModule from './redis';
 import * as serverRegistry from './server-registry';
 import {
   cleanupServerRegistryHeartbeatListener,
@@ -11,31 +21,30 @@ import {
   initServerRegistryHeartbeatListener,
 } from './server-registry';
 
-jest.mock('./redis');
-jest.mock('crypto');
-
-const UUID = '00000000-0000-0000-0000-0000deadbeef';
-
 describe('server-registry', () => {
   const mockRedis = {
-    setex: jest.fn(),
-    keys: jest.fn(),
-    mget: jest.fn(),
+    setex: vi.fn(),
+    keys: vi.fn(),
+    mget: vi.fn(),
   };
 
   const now = new Date('2023-01-15T10:00:00Z');
 
   beforeEach(() => {
-    jest.useFakeTimers();
-    jest.setSystemTime(now.getTime());
+    vi.useFakeTimers();
+    vi.setSystemTime(now.getTime());
 
-    (getCacheRedis as jest.Mock).mockReturnValue(mockRedis);
-    (randomUUID as jest.Mock).mockReturnValue(UUID);
+    vi.spyOn(redisModule, 'getCacheRedis').mockReturnValue(mockRedis as never);
+    mockRedis.setex.mockClear();
+    mockRedis.keys.mockClear();
+    mockRedis.mget.mockClear();
+    cleanupServerRegistryHeartbeatListener();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
-    jest.resetAllMocks();
+    cleanupServerRegistryHeartbeatListener();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   test('setServerRegistryPayload', async () => {
@@ -61,20 +70,21 @@ describe('server-registry', () => {
   });
 
   test('init and cleanup ServerRegistryHeartbeatListener', async () => {
-    const heartbeatAddListenerSpy = jest.spyOn(heartbeat, 'addEventListener');
-    const heartbeatRemoveListenerSpy = jest.spyOn(heartbeat, 'removeEventListener');
+    const heartbeatAddListenerSpy = vi.spyOn(heartbeat, 'addEventListener');
+    const heartbeatRemoveListenerSpy = vi.spyOn(heartbeat, 'removeEventListener');
 
-    await initServerRegistryHeartbeatListener();
+    initServerRegistryHeartbeatListener();
     expect(heartbeatAddListenerSpy).toHaveBeenCalledWith('heartbeat', expect.any(Function));
 
     heartbeatAddListenerSpy.mockClear();
 
     // Idempotent
-    await initServerRegistryHeartbeatListener();
+    initServerRegistryHeartbeatListener();
     expect(heartbeatAddListenerSpy).not.toHaveBeenCalled();
 
     // Heartbeat listener is called
     heartbeat.dispatchEvent({ type: 'heartbeat' });
+    await Promise.resolve();
     expect(mockRedis.setex).toHaveBeenCalledTimes(1);
 
     // Cleanup heartbeat

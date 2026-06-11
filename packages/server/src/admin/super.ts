@@ -29,7 +29,6 @@ import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { isValidTableName } from '../fhir/sql';
-import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { generateMigrationActions } from '../migrations/migrate';
 import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from '../migrations/migration-utils';
@@ -39,7 +38,7 @@ import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
-import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
+import { removeBullMQJobByKey } from '../workers/cron';
 import type { LambdaCleanerOptions } from '../workers/lambda-cleaner';
 import { addLambdaCleanerJobData } from '../workers/lambda-cleaner';
 import { addPostDeployMigrationJobData, prepareDynamicMigrationJobData } from '../workers/post-deploy-migration';
@@ -514,6 +513,7 @@ superAdminRouter.post(
     const startTime = Date.now();
     const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
     await systemRepo.getDatabaseClient(DatabaseMode.WRITER).query(query);
+    const { globalLogger } = await import('../logger');
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,
@@ -565,6 +565,7 @@ superAdminRouter.post(
       const startTime = Date.now();
       const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
       await systemRepo.getDatabaseClient(DatabaseMode.WRITER).query(query);
+      const { globalLogger } = await import('../logger');
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
         vacuum,
@@ -591,7 +592,9 @@ superAdminRouter.post('/reloadcron', async (req: Request, res: Response) => {
 
   await sendAsyncResponse(req, res, async () => {
     const startTime = Date.now();
-    await reloadCronBots();
+    const { reloadCronBots: reloadCronBotsFn } = await import('../workers/cron');
+    await reloadCronBotsFn();
+    const { globalLogger } = await import('../logger');
     globalLogger.info('[Super Admin]: Cron bots reloaded', {
       durationMs: Date.now() - startTime,
     });

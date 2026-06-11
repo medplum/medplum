@@ -12,9 +12,10 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
+import { vi, type Mock } from 'vitest';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
+vi.mock('hibp');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 const app = express();
 
@@ -36,10 +37,10 @@ describe('New user', () => {
   });
 
   beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    (fetch as unknown as Mock).mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(fetch as unknown as Mock, true);
     getConfig().recaptchaSecretKey = prevRecaptchaSecretKey;
   });
 
@@ -95,7 +96,7 @@ describe('New user', () => {
   });
 
   test('Incorrect recaptcha', async () => {
-    setupRecaptchaMock(fetch as unknown as jest.Mock, false);
+    setupRecaptchaMock(fetch as unknown as Mock, false);
 
     const res = await request(app)
       .post('/auth/newuser')
@@ -159,7 +160,7 @@ describe('New user', () => {
 
   test('Breached password', async () => {
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 1);
 
     const res = await request(app)
       .post('/auth/newuser')

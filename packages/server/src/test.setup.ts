@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { vi, type Mock } from 'vitest';
 import { createReference, getReferenceString, sleep } from '@medplum/core';
 import type {
   AccessPolicy,
@@ -33,10 +34,12 @@ import type { Repository } from './fhir/repo';
 import { getProjectSystemRepo, getShardSystemRepo } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { generateAccessToken } from './oauth/keys';
-import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
 // supertest v7 can cause websocket tests to hang without this
 setDefaultResultOrder('ipv4first');
+
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('bullmq', async () => await import('./__mocks__/bullmq'));
 
 export interface TestProjectOptions {
   project?: Partial<Project>;
@@ -211,6 +214,7 @@ export async function addTestUser(
 
   const { user, profile } = inviteResponse;
 
+  const { tryLogin } = await import('./oauth/utils');
   const login = await tryLogin({
     authMethod: 'password',
     email,
@@ -236,7 +240,7 @@ export async function addTestUser(
  * @param pwnedPassword - The pwnedPassword mock.
  * @param numPwns - The mock value to return. Zero is a safe password.
  */
-export function setupPwnedPasswordMock(pwnedPassword: jest.Mock, numPwns: number): void {
+export function setupPwnedPasswordMock(pwnedPassword: Mock, numPwns: number): void {
   pwnedPassword.mockImplementation(async () => numPwns);
 }
 
@@ -245,7 +249,7 @@ export function setupPwnedPasswordMock(pwnedPassword: jest.Mock, numPwns: number
  * @param fetch - The fetch mock.
  * @param success - Whether the mock should return a successful response.
  */
-export function setupRecaptchaMock(fetch: jest.Mock, success: boolean): void {
+export function setupRecaptchaMock(fetch: Mock, success: boolean): void {
   fetch.mockImplementation(() => ({
     status: 200,
     json: () => ({ success }),
@@ -303,11 +307,14 @@ export async function waitForAsyncJob(
       .get(new URL(contentLocation).pathname)
       .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    if (res.status !== 202) {
+    if (res.status === 200) {
       if (completionDelayMs > 0) {
         await sleep(completionDelayMs); // Buffer time to ensure that any remaining async processing has fully completed
       }
       return res.body as AsyncJob;
+    }
+    if (res.status !== 202 && res.status !== 429) {
+      throw new Error(`Async Job failed with status ${res.status}: ${JSON.stringify(res.body)}`);
     }
     await sleep(pollIntervalMs);
   }

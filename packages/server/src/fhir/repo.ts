@@ -73,7 +73,6 @@ import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import {
-  cleanupUserSubs,
   getUserActiveWebSocketSubscriptionCount,
   removeActiveSubscriptions,
   removeUserActiveWebSocketSubscriptions,
@@ -869,6 +868,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       try {
         await checkWebSocketSubscriptionLimit(project, author);
       } catch {
+        const { cleanupUserSubs } = await import('../pubsub');
         await cleanupUserSubs(author);
         await checkWebSocketSubscriptionLimit(project, author);
       }

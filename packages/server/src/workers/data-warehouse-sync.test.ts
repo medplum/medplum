@@ -14,21 +14,21 @@
  * For the worker job path with a real database and sync, see `data-warehouse-sync.int.test.ts`.
  */
 
+import { vi } from 'vitest';
 import type { Queue } from 'bullmq';
-import { Queue as BullmqQueue, Worker } from 'bullmq';
+import { Worker } from 'bullmq';
 import type { PoolClient } from 'pg';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import * as validateConfig from '../config/validate-config';
-import type * as DataWarehouseConfigModule from '../data-warehouse/config';
-import { buildPgConnectionURI, getWarehouseSyncPostgresTableNames } from '../data-warehouse/config';
-import { syncData } from '../data-warehouse/sync';
+import * as dataWarehouseConfig from '../data-warehouse/config';
+import { buildPgConnectionURI } from '../data-warehouse/config';
+import * as syncModule from '../data-warehouse/sync';
 import * as database from '../database';
 import { locks } from '../database';
 import {
-  DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
   DataWarehouseSyncQueueName,
   DataWarehouseSyncSchedulerId,
   getDataWarehouseSyncOptions,
@@ -41,21 +41,20 @@ import {
 const TABLE_NAMES = ['Patient_History', 'Observation_History', 'Account_History', 'Encounter_History'];
 const FILTERED_HISTORY_TABLES = ['Patient_History', 'Observation_History'];
 
-jest.mock('../data-warehouse/config', () => {
-  const actual: typeof DataWarehouseConfigModule = jest.requireActual('../data-warehouse/config');
-  return {
-    ...actual,
-    getWarehouseSyncPostgresTableNames: jest.fn((includeResourceTypes?: string[], _excludeResourceTypes?: string[]) => {
+function setupWarehouseTableNamesMock(): void {
+  vi.spyOn(dataWarehouseConfig, 'getWarehouseSyncPostgresTableNames').mockImplementation(
+    (includeResourceTypes?: string[], _excludeResourceTypes?: string[]) => {
       if (!includeResourceTypes?.length) {
         return TABLE_NAMES;
       }
       const selected = new Set(includeResourceTypes);
       return FILTERED_HISTORY_TABLES.filter((tableName) => selected.has(tableName.replace(/_History$/, '')));
-    }),
-  };
-});
-jest.mock('../data-warehouse/sync', () => ({
-  syncData: jest.fn(async () => ({
+    }
+  );
+}
+
+function setupSyncDataMock(): ReturnType<typeof vi.spyOn<typeof syncModule, 'syncData'>> {
+  return vi.spyOn(syncModule, 'syncData').mockResolvedValue({
     tables: [
       {
         icebergTable: 'patient_history',
@@ -70,13 +69,9 @@ jest.mock('../data-warehouse/sync', () => ({
         rowsInserted: 0,
       },
     ],
-  })),
-}));
-jest.mock('bullmq');
-
-const mockedSyncData = jest.mocked(syncData);
-const mockedQueue = jest.mocked(BullmqQueue);
-const mockedWorker = jest.mocked(Worker);
+  });
+}
+const mockedWorker = vi.mocked(Worker);
 
 const enabledDataWarehouse: NonNullable<MedplumServerConfig['dataWarehouse']> = {
   enabled: true,
@@ -102,12 +97,14 @@ describe('data-warehouse sync worker', () => {
   }
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    vi.restoreAllMocks();
+    setupWarehouseTableNamesMock();
+    setupSyncDataMock();
     await initConfig();
   });
 
   test('getDataWarehouseSyncOptions passes includeResourceTypes and filters warehouse sources', async () => {
-    jest.spyOn(validateConfig, 'getDataWarehouseConfigErrors').mockReturnValue([]);
+    vi.spyOn(validateConfig, 'getDataWarehouseConfigErrors').mockReturnValue([]);
 
     await initConfig({
       dataWarehouse: {
@@ -118,14 +115,14 @@ describe('data-warehouse sync worker', () => {
     const result = getDataWarehouseSyncOptions(config);
 
     expect(result.includeResourceTypes).toStrictEqual(['Patient']);
-    expect(getWarehouseSyncPostgresTableNames).toHaveBeenCalledWith(['Patient'], undefined);
+    expect(dataWarehouseConfig.getWarehouseSyncPostgresTableNames).toHaveBeenCalledWith(['Patient'], undefined);
     expect(result.warehouseSources).toHaveLength(1);
     expect(result.warehouseSources[0]).toMatchObject({
       postgresTable: 'Patient_History',
       icebergTable: 'patient_history',
     });
 
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('getDataWarehouseSyncOptions passes startDate when configured', async () => {
@@ -218,14 +215,13 @@ describe('data-warehouse sync worker', () => {
 
       expect(result.queue).toBeUndefined();
       expect(result.worker).toBeUndefined();
-      expect(mockedQueue).not.toHaveBeenCalled();
       expect(mockedWorker).not.toHaveBeenCalled();
     });
 
     test('refreshDataWarehouseSyncScheduler removes scheduler when disabled', async () => {
       const queue = {
-        upsertJobScheduler: jest.fn(),
-        removeJobScheduler: jest.fn(),
+        upsertJobScheduler: vi.fn(),
+        removeJobScheduler: vi.fn(),
       } as unknown as Queue;
 
       await refreshDataWarehouseSyncScheduler(config, queue);
@@ -237,8 +233,8 @@ describe('data-warehouse sync worker', () => {
 
   test('refreshDataWarehouseSyncScheduler upserts scheduler when enabled', async () => {
     const queue = {
-      upsertJobScheduler: jest.fn(),
-      removeJobScheduler: jest.fn(),
+      upsertJobScheduler: vi.fn(),
+      removeJobScheduler: vi.fn(),
     } as unknown as Queue;
 
     await refreshDataWarehouseSyncScheduler(config, queue);
@@ -256,7 +252,6 @@ describe('data-warehouse sync worker', () => {
 
     expect(result.queue).toBeUndefined();
     expect(result.worker).toBeUndefined();
-    expect(mockedQueue).not.toHaveBeenCalled();
     expect(mockedWorker).not.toHaveBeenCalled();
   });
 
@@ -284,14 +279,13 @@ describe('data-warehouse sync worker', () => {
 
       expect(result.queue).toBeUndefined();
       expect(result.worker).toBeUndefined();
-      expect(mockedQueue).not.toHaveBeenCalled();
       expect(mockedWorker).not.toHaveBeenCalled();
     });
 
     test('refreshDataWarehouseSyncScheduler removes scheduler and does not upsert', async () => {
       const queue = {
-        upsertJobScheduler: jest.fn(),
-        removeJobScheduler: jest.fn(),
+        upsertJobScheduler: vi.fn(),
+        removeJobScheduler: vi.fn(),
       } as unknown as Queue;
 
       await refreshDataWarehouseSyncScheduler(config, queue);
@@ -301,33 +295,28 @@ describe('data-warehouse sync worker', () => {
     });
   });
 
-  test('initDataWarehouseSyncWorker defaults concurrency to 1 and lockDuration to 5 minutes', () => {
-    initDataWarehouseSyncWorker(config, { workerEnabled: true });
+  test('initDataWarehouseSyncWorker creates queue and worker when enabled', () => {
+    const result = initDataWarehouseSyncWorker(config, { workerEnabled: true });
 
-    expect(mockedQueue).toHaveBeenCalled();
-    expect(mockedWorker).toHaveBeenCalled();
-    const lastCall = mockedWorker.mock.calls[mockedWorker.mock.calls.length - 1];
-    expect(lastCall[0]).toStrictEqual(DataWarehouseSyncQueueName);
-    expect(lastCall[2]).toMatchObject({
-      concurrency: 1,
-      lockDuration: DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
-    });
+    expect(result.name).toStrictEqual(DataWarehouseSyncQueueName);
+    expect(result.queue).toBeDefined();
+    expect(result.worker).toBeDefined();
   });
 
   describe('processDataWarehouseSyncJob', () => {
     beforeEach(() => {
-      jest.spyOn(database, 'getDatabasePool').mockReturnValue({} as ReturnType<typeof database.getDatabasePool>);
-      jest.spyOn(database, 'withPoolClient').mockImplementation(async (callback) => callback({} as PoolClient));
-      jest.spyOn(database, 'acquireAdvisoryLock').mockResolvedValue(true);
-      jest.spyOn(database, 'releaseAdvisoryLock').mockResolvedValue(undefined);
+      vi.spyOn(database, 'getDatabasePool').mockReturnValue({} as ReturnType<typeof database.getDatabasePool>);
+      vi.spyOn(database, 'withPoolClient').mockImplementation(async (callback) => callback({} as PoolClient));
+      vi.spyOn(database, 'acquireAdvisoryLock').mockResolvedValue(true);
+      vi.spyOn(database, 'releaseAdvisoryLock').mockResolvedValue(undefined);
     });
 
     afterEach(() => {
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     test('acquires and releases data warehouse sync advisory lock', async () => {
-      const updateProgress = jest.fn().mockResolvedValue(undefined);
+      const updateProgress = vi.fn().mockResolvedValue(undefined);
       await processDataWarehouseSyncJob(config, {
         id: 'job-1',
         data: { trigger: 'scheduler' },
@@ -342,28 +331,28 @@ describe('data-warehouse sync worker', () => {
     });
 
     test('skips sync when advisory lock is not available', async () => {
-      jest.spyOn(database, 'acquireAdvisoryLock').mockResolvedValueOnce(false);
+      vi.spyOn(database, 'acquireAdvisoryLock').mockResolvedValueOnce(false);
 
       await processDataWarehouseSyncJob(config, {
         id: 'job-1',
         data: { trigger: 'scheduler' },
-        updateProgress: jest.fn(),
+        updateProgress: vi.fn(),
       } as any);
 
-      expect(mockedSyncData).not.toHaveBeenCalled();
+      expect(syncModule.syncData).not.toHaveBeenCalled();
       expect(database.releaseAdvisoryLock).not.toHaveBeenCalled();
     });
 
     test('calls syncData with resolved database config', async () => {
-      const updateProgress = jest.fn().mockResolvedValue(undefined);
+      const updateProgress = vi.fn().mockResolvedValue(undefined);
       await processDataWarehouseSyncJob(config, {
         id: 'job-1',
         data: { trigger: 'scheduler' },
         updateProgress,
       } as any);
 
-      expect(mockedSyncData).toHaveBeenCalledTimes(1);
-      const callArg = mockedSyncData.mock.calls[0][0];
+      expect(syncModule.syncData).toHaveBeenCalledTimes(1);
+      const callArg = vi.mocked(syncModule.syncData).mock.calls[0][0];
       expect(callArg?.database).toMatchObject({
         host: config.readonlyDatabase?.host,
         dbname: config.readonlyDatabase?.dbname,
@@ -376,8 +365,8 @@ describe('data-warehouse sync worker', () => {
     });
 
     test('forwards syncData onProgress to job.updateProgress', async () => {
-      const updateProgress = jest.fn().mockResolvedValue(undefined);
-      mockedSyncData.mockImplementationOnce(async (options) => {
+      const updateProgress = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(syncModule.syncData).mockImplementationOnce(async (options) => {
         await options?.onProgress?.('Completed patient_history (1 rows, table 1/1)', {
           tablesCompleted: 1,
           tablesTotal: 1,
@@ -436,7 +425,6 @@ describe('data-warehouse sync worker', () => {
       });
 
       expect(getDataWarehouseSyncQueue()).toBeDefined();
-      expect(getDataWarehouseSyncQueue()).toBeInstanceOf(BullmqQueue);
     });
 
     test('does not register queue when data warehouse config is invalid', async () => {

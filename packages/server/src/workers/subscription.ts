@@ -36,13 +36,11 @@ import type {
 } from '@medplum/fhirtypes';
 import type { Job, MinimalJob, QueueBaseOptions } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
-import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
-import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
@@ -411,6 +409,7 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
+    const { WEBSOCKET_SUB_PUBLISH_CHANNEL } = await import('../constants');
     await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify({ resource, events: wsSubEvents }));
   }
 }
@@ -738,6 +737,7 @@ async function sendRestHook(
       projectId: subscription.meta?.project,
     });
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
+    const { default: fetch } = await import('node-fetch');
     const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
     fetchEndTime = Date.now();
     log.info('Received rest hook response', {

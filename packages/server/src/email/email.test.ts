@@ -4,11 +4,8 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { ContentType, getReferenceString } from '@medplum/core';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import { simpleParser } from 'mailparser';
-import type { Transporter } from 'nodemailer';
-import nodemailer from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
@@ -16,7 +13,22 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
-import { sendEmail } from './email';
+import { vi } from 'vitest';
+
+const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
+  const sendMail = vi.fn().mockResolvedValue({ messageId: '123' });
+  return {
+    mockSendMail: sendMail,
+    mockCreateTransport: vi.fn(() => ({ sendMail })),
+  };
+});
+
+vi.mock('nodemailer', () => ({
+  createTransport: mockCreateTransport,
+  default: { createTransport: mockCreateTransport },
+}));
+
+const { sendEmail } = await import('./email');
 
 describe('Email', () => {
   const systemRepo = getGlobalSystemRepo();
@@ -54,7 +66,7 @@ describe('Email', () => {
     });
 
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -79,7 +91,7 @@ describe('Email', () => {
     });
 
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -104,7 +116,7 @@ describe('Email', () => {
     });
 
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -130,7 +142,7 @@ describe('Email', () => {
       ],
     });
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -156,7 +168,7 @@ describe('Email', () => {
     });
 
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -173,7 +185,7 @@ describe('Email', () => {
     });
 
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -194,7 +206,7 @@ describe('Email', () => {
       text: 'Hello Alice',
     });
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -234,7 +246,7 @@ describe('Email', () => {
       ],
     });
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -263,7 +275,7 @@ describe('Email', () => {
     ).rejects.toThrow('Not found');
 
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Block file path', async () => {
@@ -282,7 +294,7 @@ describe('Email', () => {
     ).rejects.toThrow('Invalid email options: File access rejected for ./package.json');
 
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Catch invalid options', async () => {
@@ -301,7 +313,7 @@ describe('Email', () => {
     ).rejects.toThrow(/Invalid email options/);
 
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Send via SMTP', async () => {
@@ -313,9 +325,8 @@ describe('Email', () => {
       password: 'pass',
     };
 
-    const sendMail = jest.fn().mockResolvedValue({ messageId: '123' });
-    const createTransportSpy = jest.spyOn(nodemailer, 'createTransport');
-    createTransportSpy.mockReturnValue({ sendMail } as unknown as Transporter);
+    mockCreateTransport.mockClear();
+    mockSendMail.mockClear();
 
     const toAddresses = 'alice@example.com';
     await sendEmail(systemRepo, {
@@ -325,8 +336,8 @@ describe('Email', () => {
       text: 'Hello Alice',
     });
 
-    expect(createTransportSpy).toHaveBeenCalledTimes(1);
-    expect(sendMail).toHaveBeenCalledTimes(1);
+    expect(mockCreateTransport).toHaveBeenCalledTimes(1);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSESv2Client.send.callCount).toBe(0);
 
     config.smtp = undefined;

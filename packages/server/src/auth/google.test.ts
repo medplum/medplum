@@ -12,12 +12,13 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getUserByEmail } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
+import { vi } from 'vitest';
 
-jest.mock('jose', () => {
-  const original = jest.requireActual('jose');
+vi.mock('jose', async () => {
+  const original = await vi.importActual<typeof import('jose')>('jose');
   return {
     ...original,
-    jwtVerify: jest.fn((credential: string) => {
+    jwtVerify: vi.fn((credential: string) => {
       if (credential === 'invalid') {
         throw new Error('Verification failed');
       }

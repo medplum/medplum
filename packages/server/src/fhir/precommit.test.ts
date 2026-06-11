@@ -11,6 +11,7 @@ import { createTestProject, withTestContext } from '../test.setup';
 import { createBot } from './operations/botinit';
 import { deployBot } from './operations/deploy';
 import type { Repository } from './repo';
+import { vi, type MockInstance } from 'vitest';
 
 describe('FHIR Repo', () => {
   let project: WithId<Project>;
@@ -138,7 +139,7 @@ describe('FHIR Repo', () => {
     let profile: WithId<ProfileResource>;
     let accessPolicy: WithId<AccessPolicy>;
     let userConfig: WithId<UserConfiguration>;
-    let logSpy: jest.SpyInstance;
+    let logSpy: MockInstance;
 
     beforeAll(async () => {
       accessPolicy = await repo.createResource<AccessPolicy>({
@@ -161,11 +162,11 @@ describe('FHIR Repo', () => {
         },
       }));
 
-      logSpy = jest.spyOn(globalLogger, 'warn');
+      logSpy = vi.spyOn(globalLogger, 'warn');
     });
 
     afterEach(() => {
-      jest.clearAllMocks();
+      vi.clearAllMocks();
     });
 
     test('Checks ProjectMembership.profile', async () => {

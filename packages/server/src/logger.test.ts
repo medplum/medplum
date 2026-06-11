@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { LogLevel } from '@medplum/core';
 import { drainStdout, exitAfterStdoutDrain, globalLogger } from './logger';
+import { vi, type MockInstance } from 'vitest';
 
 describe('Global Logger', () => {
-  let writeSpy: jest.SpyInstance;
+  let writeSpy: MockInstance;
 
   beforeEach(() => {
-    writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -76,7 +77,7 @@ describe('Global Logger', () => {
 
   test('drainStdout is a no-op when stdout does not need draining', async () => {
     Object.defineProperty(process.stdout, 'writableNeedDrain', { value: false, configurable: true });
-    const onceSpy = jest.spyOn(process.stdout, 'once');
+    const onceSpy = vi.spyOn(process.stdout, 'once');
     await drainStdout();
     expect(onceSpy).not.toHaveBeenCalled();
     onceSpy.mockRestore();
@@ -84,7 +85,7 @@ describe('Global Logger', () => {
 
   test('drainStdout awaits the drain event when stdout needs draining', async () => {
     Object.defineProperty(process.stdout, 'writableNeedDrain', { value: true, configurable: true });
-    const onceSpy = jest.spyOn(process.stdout, 'once').mockImplementation((event: any, handler: any) => {
+    const onceSpy = vi.spyOn(process.stdout, 'once').mockImplementation((event: any, handler: any) => {
       if (event === 'drain') {
         setImmediate(handler);
       }
@@ -100,7 +101,7 @@ describe('Global Logger', () => {
 
   test('exitAfterStdoutDrain drains then exits with given code (default 1)', async () => {
     Object.defineProperty(process.stdout, 'writableNeedDrain', { value: false, configurable: true });
-    const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
 
     await exitAfterStdoutDrain();
     expect(exitSpy).toHaveBeenLastCalledWith(1);

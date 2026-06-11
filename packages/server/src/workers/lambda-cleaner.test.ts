@@ -11,7 +11,6 @@ import {
 } from '@aws-sdk/client-lambda';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import type { Job } from 'bullmq';
 import assert from 'node:assert';
 import { initAppServices, shutdownApp } from '../app';
@@ -104,16 +103,16 @@ describe('Lambda version cleanup worker', () => {
     expect(output.parameter?.find((p) => p.name === 'versionsNotFound')?.valueInteger).toBe(1);
     expect(output.parameter?.find((p) => p.name === 'versionsHasAlias')?.valueInteger).toBe(1);
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListAliasesCommand, 0);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 4);
-    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, {
+    expect(mockLambdaClient.commandCalls(ListAliasesCommand)).toHaveLength(0);
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(4);
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, {
       FunctionName: 'medplum-bot-lambda-a',
       Qualifier: '1',
-    });
-    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, {
+    })).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, {
       FunctionName: 'medplum-bot-lambda-b',
       Qualifier: '1',
-    });
+    })).toHaveLength(1);
   });
 
   test('cleanupLambdaVersions dry run does not delete', async () => {
@@ -155,6 +154,6 @@ describe('Lambda version cleanup worker', () => {
 
     // expect(summary.versionsPlanned).toBe(1);
     // expect(summary.versionsDeleted).toBe(0);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 0);
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(0);
   });
 });

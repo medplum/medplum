@@ -13,7 +13,6 @@ import {
 import type { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import fetch from 'node-fetch';
 import type { Readable } from 'node:stream';
 import { Pointer } from 'rfc6902';
 import { getConfig } from '../config/loader';
@@ -262,6 +261,7 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 
   try {
     log.info('Requesting content at: ' + url);
+    const { default: fetch } = await import('node-fetch');
     const response = await fetch(url, {
       headers,
     });

@@ -9,6 +9,7 @@ import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
 import { withTestContext } from '../test.setup';
 import { addVerboseQueueLogging, DefaultQueueRegistry, getWorkerBullmqConfig, isJobSuccessful } from './utils';
+import { vi } from 'vitest';
 
 describe('worker utils', () => {
   beforeAll(async () => {
@@ -145,7 +146,7 @@ describe('worker utils', () => {
         this.name = name;
       }
 
-      close = jest.fn();
+      close = vi.fn();
     }
 
     beforeEach(() => {
@@ -245,7 +246,7 @@ describe('worker utils', () => {
       const queue = { name: queueName } as Queue;
       const worker = new EventEmitter() as unknown as Worker;
 
-      const loggerInfoSpy = jest.spyOn(globalLogger, 'info').mockImplementation();
+      const loggerInfoSpy = vi.spyOn(globalLogger, 'info').mockImplementation();
 
       addVerboseQueueLogging<any>(queue, worker, (job) => ({ asyncJob: 'AsyncJob/' + job.data.asyncJobId }));
 

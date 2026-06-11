@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import type { AuditEvent, Bot, Observation, ProjectMembership } from '@medplum/fhirtypes';
-import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'node:crypto';
 import type { BotExecutionRequest } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
@@ -19,10 +18,10 @@ import {
 } from './auditevent';
 
 describe('AuditEvent utils', () => {
-  let writeSpy: jest.SpyInstance;
+  let writeSpy: MockInstance;
 
   beforeEach(() => {
-    writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
   });
 
   afterEach(() => {

@@ -2,16 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { MedplumServerConfig } from './types';
+import { vi } from 'vitest';
 
-jest.mock('../data-warehouse/config', () => ({
-  getWarehouseSyncPostgresTableNames: jest.fn(() => ['Patient_History', 'Observation_History', 'Account_History']),
+const { mockGetWarehouseSyncPostgresTableNames } = vi.hoisted(() => ({
+  mockGetWarehouseSyncPostgresTableNames: vi.fn(() => ['Patient_History', 'Observation_History', 'Account_History']),
 }));
 
-import {
-  getDataWarehouseConfigErrors,
-  isDataWarehouseSyncOperational,
-  warnInvalidDataWarehouseConfig,
-} from './validate-config';
+vi.mock('../data-warehouse/config', () => ({
+  getWarehouseSyncPostgresTableNames: mockGetWarehouseSyncPostgresTableNames,
+}));
+
+let getDataWarehouseConfigErrors: typeof import('./validate-config').getDataWarehouseConfigErrors;
+let isDataWarehouseSyncOperational: typeof import('./validate-config').isDataWarehouseSyncOperational;
+let warnInvalidDataWarehouseConfig: typeof import('./validate-config').warnInvalidDataWarehouseConfig;
+
+beforeAll(async () => {
+  vi.resetModules();
+  ({ getDataWarehouseConfigErrors, isDataWarehouseSyncOperational, warnInvalidDataWarehouseConfig } =
+    await import('./validate-config'));
+});
 
 function baseServerConfig(overrides?: Partial<MedplumServerConfig>): MedplumServerConfig {
   return {
@@ -275,7 +284,7 @@ describe('isDataWarehouseSyncOperational', () => {
 
 describe('warnInvalidDataWarehouseConfig', () => {
   test('does not log when configuration is valid', () => {
-    const logger = { warn: jest.fn() } as any;
+    const logger = { warn: vi.fn() } as any;
     warnInvalidDataWarehouseConfig(
       baseServerConfig({
         dataWarehouse: {
@@ -291,7 +300,7 @@ describe('warnInvalidDataWarehouseConfig', () => {
   });
 
   test('logs when enabled but invalid', () => {
-    const logger = { warn: jest.fn() } as any;
+    const logger = { warn: vi.fn() } as any;
     warnInvalidDataWarehouseConfig(
       baseServerConfig({
         dataWarehouse: { enabled: true, cron: '0 * * * *' },

@@ -10,6 +10,7 @@ import { loadTestConfig } from '../config/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { Repository } from './repo';
+import { vi } from 'vitest';
 
 const app = express();
 
@@ -53,7 +54,7 @@ describe('Job status', () => {
   test('completed', () =>
     withTestContext(async () => {
       const job = await asyncJobManager.init('http://example.com');
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       asyncJobManager.start(async () => {
         callback();
@@ -122,7 +123,7 @@ describe('Job status', () => {
   test('Cancel -- error (job already completed)', () =>
     withTestContext(async () => {
       const job = await asyncJobManager.init('http://example.com');
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       asyncJobManager.start(async () => {
         callback();

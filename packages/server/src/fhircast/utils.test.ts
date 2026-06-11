@@ -5,6 +5,7 @@ import type { OperationOutcome } from '@medplum/fhirtypes';
 import { loadTestConfig } from '../config/loader';
 import { closeRedis, getCacheRedis, initRedis } from '../redis';
 import { getTopicForUser } from './utils';
+import { vi } from 'vitest';
 
 describe('FHIRcast Utils', () => {
   beforeAll(async () => {
@@ -47,7 +48,7 @@ describe('FHIRcast Utils', () => {
       }
       const redis = getCacheRedis();
       const originalMulti = redis.multi;
-      const mockMulti = jest.fn(() => new MockCommander());
+      const mockMulti = vi.fn(() => new MockCommander());
       // @ts-expect-error Replacing multi with partial mock implementation
       redis.multi = mockMulti;
 
@@ -91,7 +92,7 @@ describe('FHIRcast Utils', () => {
       }
       const redis = getCacheRedis();
       const originalMulti = redis.multi;
-      const mockMulti = jest.fn(() => new MockCommander());
+      const mockMulti = vi.fn(() => new MockCommander());
       // @ts-expect-error Replacing multi with partial mock implementation
       redis.multi = mockMulti;
 

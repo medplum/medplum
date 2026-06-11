@@ -13,6 +13,7 @@ import * as storage from '../../storage/loader';
 import type { BinaryStorage } from '../../storage/types';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
+import { vi } from 'vitest';
 
 class MockBinaryStorage {
   private content: string;
@@ -60,7 +61,7 @@ describe('PackageRelease $install', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('Require semver version string', async () => {
@@ -151,7 +152,7 @@ describe('PackageRelease $install', () => {
 
     // Mock binary storage
     const mockBinaryStorage = new MockBinaryStorage(JSON.stringify(bundle));
-    jest.spyOn(storage, 'getBinaryStorage').mockImplementation(() => mockBinaryStorage as unknown as BinaryStorage);
+    vi.spyOn(storage, 'getBinaryStorage').mockImplementation(() => mockBinaryStorage as unknown as BinaryStorage);
 
     const res = await request(app)
       .post(`/fhir/R4/PackageRelease/${packageRelease.id}/$install`)
@@ -218,7 +219,7 @@ describe('PackageRelease $install', () => {
 
     // Mock binary storage
     const mockBinaryStorage = new MockBinaryStorage(JSON.stringify(malformedBundle));
-    jest.spyOn(storage, 'getBinaryStorage').mockImplementation(() => mockBinaryStorage as unknown as BinaryStorage);
+    vi.spyOn(storage, 'getBinaryStorage').mockImplementation(() => mockBinaryStorage as unknown as BinaryStorage);
 
     const res = await request(app)
       .post(`/fhir/R4/PackageRelease/${packageRelease.id}/$install`)

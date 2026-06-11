@@ -68,7 +68,7 @@ import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 import { loadStructureDefinitions } from './structure';
 
-jest.mock('hibp');
+vi.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
@@ -162,7 +162,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           resourceType: 'Patient',
           offset: 300,
         });
-        fail('Expected error');
+        expect.fail('Expected error');
       } catch (err) {
         expect(normalizeErrorString(err)).toStrictEqual('Search offset exceeds maximum (got 300, max 200)');
       }
@@ -195,10 +195,10 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
   );
 
   describe('getCount', () => {
-    let getDbClientSpy: jest.SpyInstance;
+    let getDbClientSpy: MockInstance;
 
     beforeEach(() => {
-      getDbClientSpy = jest.spyOn(repo, 'getDatabaseClient');
+      getDbClientSpy = vi.spyOn(repo, 'getDatabaseClient');
     });
 
     afterEach(() => {
@@ -1265,7 +1265,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             },
           ],
         });
-        fail('Expected error');
+        expect.fail('Expected error');
       } catch (err) {
         expect(normalizeErrorString(err)).toStrictEqual('Search filter value must be a string');
       }
@@ -1284,7 +1284,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             },
           ],
         });
-        fail('Expected error');
+        expect.fail('Expected error');
       } catch (err) {
         expect(normalizeErrorString(err)).toStrictEqual('Search filter value cannot contain null bytes');
       }
@@ -2303,7 +2303,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected=2023`
           )
         )
-      ).rejects.toThrow(new Error('Search chains longer than three links are not currently supported'));
+      ).rejects.toThrow('Search chains longer than three links are not currently supported');
     }));
 
   test.each([
@@ -2321,7 +2321,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
     ['Patient?_has:Observation:status=active', 'Invalid search chain: _has:Observation:status'],
   ])('Invalid chained search parameters: %s', (searchString: string, errorMsg: string) => {
     return withTestContext(async () =>
-      expect(repo.search(parseSearchRequest(searchString))).rejects.toStrictEqual(new Error(errorMsg))
+      expect(repo.search(parseSearchRequest(searchString))).rejects.toThrow(errorMsg)
     );
   });
 
@@ -5042,7 +5042,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       withTestContext(async () => {
         try {
           await repo.search({ resourceType: 'Patient', offset: 10, cursor: 'foo' });
-          fail('Expected error');
+          expect.fail('Expected error');
         } catch (err) {
           expect(normalizeErrorString(err)).toBe('Cannot use both offset and cursor');
         }
@@ -5320,9 +5320,9 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
   );
 
   describe('discourage sequential scans', () => {
-    let querySpy: jest.SpyInstance;
+    let querySpy: MockInstance;
     beforeEach(() => {
-      querySpy = jest.spyOn(repo.getDatabaseClient(DatabaseMode.READER), 'query');
+      querySpy = vi.spyOn(repo.getDatabaseClient(DatabaseMode.READER), 'query');
     });
 
     afterEach(() => {

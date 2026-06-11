@@ -6,25 +6,29 @@ import { main, runFromCli } from './index';
 import * as loggerModule from './logger';
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
+import { vi } from 'vitest';
 
 // This isn't really a mocked value, but it must be named that way to appease jest
 // If we followed the same mocking pattern as `database.test.ts`, this wouldn't be necessary
 const mockLatestVersion = getLatestPostDeployMigrationVersion();
 
-jest.mock('express', () => {
-  const original = jest.requireActual('express');
-  const listen = jest.fn(() => ({}));
+vi.mock('express', async (importOriginal) => {
+  const original = await importOriginal<typeof import('express')>();
+  const express = original.default ?? original;
+  const listen = vi.fn(() => ({}));
   const fn = (): any => {
-    const app = original();
+    const app = express();
     app.listen = listen;
     return app;
   };
-  fn.Router = original.Router;
-  fn.json = original.json;
-  fn.text = original.text;
-  fn.urlencoded = original.urlencoded;
-  fn.listen = listen;
-  return fn;
+  return {
+    ...original,
+    default: fn,
+    Router: original.Router,
+    json: original.json,
+    text: original.text,
+    urlencoded: original.urlencoded,
+  };
 });
 
 // to appease jest, the name must start with "mock"
@@ -33,8 +37,8 @@ const mockQueries = {
   GetDataVersionSql,
 };
 
-jest.mock('pg', () => {
-  const original = jest.requireActual('pg');
+vi.mock('pg', async () => {
+  const original = await vi.importActual<typeof import('pg')>('pg');
 
   class MockPoolClient {
     async query(sql: string): Promise<any> {
@@ -84,7 +88,7 @@ jest.mock('pg', () => {
 
 describe('Server', () => {
   test('Main', async () => {
-    const createServerSpy = jest.spyOn(http, 'createServer');
+    const createServerSpy = vi.spyOn(http, 'createServer');
     await main('file:test.config.json');
     expect(createServerSpy).toHaveBeenCalled();
     await shutdownApp();
@@ -118,7 +122,7 @@ describe('uncaughtException handler', () => {
   });
 
   test('drains stdout before calling process.exit(1)', async () => {
-    const exitDrainSpy = jest.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
+    const exitDrainSpy = vi.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
 
     await handler(new Error('kaboom'), 'uncaughtException');
 
@@ -129,7 +133,7 @@ describe('uncaughtException handler', () => {
   });
 
   test('does not call process.exit(1) on "Connection terminated unexpectedly"', async () => {
-    const exitDrainSpy = jest.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
+    const exitDrainSpy = vi.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
 
     await handler(new Error('Connection terminated unexpectedly'), 'uncaughtException');
 
@@ -139,7 +143,7 @@ describe('uncaughtException handler', () => {
   });
 
   test('does not call process.exit(1) on "Unexpected end of input"', async () => {
-    const exitDrainSpy = jest.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
+    const exitDrainSpy = vi.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
 
     await handler(new Error('Unexpected end of input'), 'uncaughtException');
 
@@ -151,8 +155,8 @@ describe('uncaughtException handler', () => {
 
 describe('runFromCli', () => {
   test('logs and exits via exitAfterStdoutDrain on startup error', async () => {
-    const exitDrainSpy = jest.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
-    const errorSpy = jest.spyOn(loggerModule.globalLogger, 'error').mockImplementation(() => undefined);
+    const exitDrainSpy = vi.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
+    const errorSpy = vi.spyOn(loggerModule.globalLogger, 'error').mockImplementation(() => undefined);
 
     await runFromCli(['node', 'index.ts', 'file:does-not-exist.config.json']);
 

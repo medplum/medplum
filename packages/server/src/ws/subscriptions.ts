@@ -11,16 +11,13 @@ import type { IncomingMessage } from 'node:http';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
 import { getConfig } from '../config/loader';
-import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import type { CacheEntry } from '../fhir/repository/resource-cache';
 import { getFullUrl } from '../fhir/response';
-import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { RewriteMode } from '../fhir/rewrite';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import type { MedplumAccessTokenClaims } from '../oauth/keys';
-import { verifyJwt } from '../oauth/keys';
-import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
 import {
   addUserActiveWebSocketSubscription,
@@ -111,12 +108,14 @@ async function setupSubscriptionHandler(): Promise<void> {
 
         let rewrittenBundle: Bundle;
         try {
+          const { getLoginForAccessToken } = await import('../oauth/utils');
           const repo = (await getLoginForAccessToken(undefined, subMetadata.rawToken))?.repo;
           if (!repo) {
             globalLogger.info('[WS] Unable to get login for the given access token', { subscriptionId });
             deadSubscriptionIds.push(subscriptionId);
             continue;
           }
+          const { rewriteAttachments } = await import('../fhir/rewrite');
           rewrittenBundle = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, bundle);
         } catch (err) {
           globalLogger.error('[WS] Error occurred while rewriting attachments', { err });
@@ -172,6 +171,7 @@ async function setupSubscriptionHandler(): Promise<void> {
       }
     }
   });
+  const { WEBSOCKET_SUB_PUBLISH_CHANNEL } = await import('../constants');
   await redisSubscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
 }
 
@@ -307,6 +307,7 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
   const verifyWsToken = async (token: string): Promise<WebSocketSubToken | undefined> => {
     let tokenPayload: JWTPayload;
     try {
+      const { verifyJwt } = await import('../oauth/keys');
       const { payload } = await verifyJwt(token);
       tokenPayload = payload;
     } catch (err) {

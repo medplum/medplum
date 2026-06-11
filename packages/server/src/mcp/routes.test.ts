@@ -1,5 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { vi } from 'vitest';
+
+// MCP fhir-request uses MedplumClient + node-fetch for in-process HTTP calls.
+vi.mock('node-fetch', async () => {
+  const actual = await vi.importActual<typeof import('node-fetch')>('node-fetch');
+  return { default: actual.default };
+});
+
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { Bundle, OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -40,11 +48,11 @@ describe('MCP Routes', () => {
   });
 
   afterAll(async () => {
-    await shutdownApp();
-    await new Promise<void>((resolve) => {
-      server.close(() => resolve());
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => (err ? reject(err) : resolve()));
     });
-  });
+    await shutdownApp();
+  }, 30_000);
 
   test('Unauthenticated streamable HTTP', async () => {
     const res = await request(app).get('/mcp/stream');
@@ -92,6 +100,7 @@ describe('MCP Routes', () => {
 
     await client.connect(transport);
 
+    try {
     const tools = await client.listTools();
     expect(tools).toMatchObject({
       tools: [{ name: 'search' }, { name: 'fetch' }, { name: 'fhir-request' }],
@@ -157,6 +166,8 @@ describe('MCP Routes', () => {
     const unknownMethodResult = await fhirRequest<OperationOutcome>('UNKNOWN', `Patient/${createResult.id}`);
     expect(unknownMethodResult.issue?.[0].severity).toBe('error');
 
-    await client.close();
+    } finally {
+      await client.close();
+    }
   });
 });

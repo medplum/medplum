@@ -3,6 +3,8 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { badRequest, createReference } from '@medplum/core';
 import type { Login, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -10,20 +12,22 @@ import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { tryLogin } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
+import { vi, type Mock } from 'vitest';
 
-jest.mock('@aws-sdk/client-sesv2');
-jest.mock('hibp');
-jest.mock('node-fetch');
+vi.mock('hibp');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 const app = express();
 
 describe('Set Password', () => {
+  let mockSESv2Client: AwsClientStub<SESv2Client>;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     config.emailProvider = 'awsses';
@@ -35,12 +39,18 @@ describe('Set Password', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
+
+    (fetch as unknown as Mock).mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(fetch as unknown as Mock, true);
+    getConfig().recaptchaSecretKey = 'testrecaptchasecretkey';
+  });
+
+  afterEach(() => {
+    mockSESv2Client.restore();
   });
 
   test('Success', async () => {
@@ -71,8 +81,7 @@ describe('Set Password', () => {
       recaptchaToken: 'xyz',
     });
     expect(res2.status).toBe(200);
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const userInfoRes1 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${res.accessToken}`);
     expect(userInfoRes1.status).toBe(200);
@@ -81,8 +90,8 @@ describe('Set Password', () => {
       email_verified: false,
     });
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    const parsed = await simpleParser(args?.Content?.Raw?.Data as Buffer);
     const content = parsed.text as string;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');
@@ -221,11 +230,10 @@ describe('Set Password', () => {
       recaptchaToken: 'xyz',
     });
     expect(res2.status).toBe(200);
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    const parsed = await simpleParser(args?.Content?.Raw?.Data as Buffer);
     const content = parsed.text as string;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');
@@ -256,11 +264,10 @@ describe('Set Password', () => {
       recaptchaToken: 'xyz',
     });
     expect(res2.status).toBe(200);
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    const parsed = await simpleParser(args?.Content?.Raw?.Data as Buffer);
     const content = parsed.text as string;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');
@@ -268,7 +275,7 @@ describe('Set Password', () => {
     const secret = paths.at(-1);
 
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 1);
 
     const res3 = await request(app).post('/auth/setpassword').type('json').send({
       id,

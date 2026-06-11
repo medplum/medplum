@@ -40,7 +40,7 @@ describe('Batch and Transaction processing', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterAll(async () => {
@@ -1531,7 +1531,7 @@ describe('Batch and Transaction processing', () => {
     queue.add.mockClear();
 
     let count = 0;
-    const consumeMock = jest.spyOn(RateLimiterRedis.prototype, 'consume').mockImplementation(async (key, _points) => {
+    const consumeMock = vi.spyOn(RateLimiterRedis.prototype, 'consume').mockImplementation(async (key, _points) => {
       count = (count + 1) % 3;
       if (!key.toString().includes(membership.id)) {
         // allowed

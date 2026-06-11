@@ -8,8 +8,9 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
+import { vi } from 'vitest';
 
-jest.mock('node-fetch');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 const app = express();
 
@@ -22,7 +23,7 @@ describe('StructureDefinition $expand-profile', () => {
       const sd = USCoreStructureDefinitions.find((sd) => sd.url === profileUrl);
 
       if (!sd) {
-        fail(`could not find structure definition for ${profileUrl}`);
+        expect.fail(`could not find structure definition for ${profileUrl}`);
       }
       const res = await request(app)
         .post(`/fhir/R4/StructureDefinition`)

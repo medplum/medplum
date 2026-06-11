@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { flatMapMax } from './array';
+import { vi } from 'vitest';
 
 describe('flatMapMax', () => {
   test('iterates only until `count` entries have been generated', () => {
     const arr = ['a', 'b', 'c', 'd'];
-    const cb = jest.fn(() => [0, 1, 2, 3, 4, 5]);
+    const cb = vi.fn(() => [0, 1, 2, 3, 4, 5]);
     flatMapMax(arr, cb, 8);
     expect(cb).toHaveBeenCalledTimes(2);
   });
@@ -38,7 +39,7 @@ describe('flatMapMax', () => {
 
   test('passes the remaining count to the mapper', () => {
     const arr = ['a', 'b', 'c', 'd'];
-    const cb = jest.fn(() => [0, 1, 2, 3, 4]);
+    const cb = vi.fn(() => [0, 1, 2, 3, 4]);
     flatMapMax(arr, cb, 8);
     expect(cb).toHaveBeenNthCalledWith(1, 'a', 0, 8);
     expect(cb).toHaveBeenNthCalledWith(2, 'b', 1, 3);

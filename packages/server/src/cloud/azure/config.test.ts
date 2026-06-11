@@ -1,16 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { SecretClient } from '@azure/keyvault-secrets';
-import { mockGetSecret } from '../../__mocks__/@azure/keyvault-secrets';
+import { mockGetSecret, SecretClient } from '@azure/keyvault-secrets';
 import type { MedplumServerConfig } from '../../config/types';
 import { loadAzureConfig } from './config';
-
-jest.mock('@azure/keyvault-secrets');
-jest.mock('@azure/identity');
+import { vi } from 'vitest';
 
 describe('Azure Config', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('loadAzureConfig', () => {

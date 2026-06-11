@@ -42,7 +42,7 @@ async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: System
 }
 
 async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository, version: number): Promise<void> {
-  const migration = getPostDeployMigration(version);
+  const migration = await getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
   const jobData = migration.prepareJobData(asyncJob);
   globalLogger.write(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
@@ -51,10 +51,10 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
 }
 
 describe('Seed', () => {
-  let loggerWriteSpy: jest.SpyInstance;
+  let loggerWriteSpy: MockInstance;
 
   beforeAll(async () => {
-    loggerWriteSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    loggerWriteSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
     const config = await loadTestConfig();
     config.database.runMigrations = true;

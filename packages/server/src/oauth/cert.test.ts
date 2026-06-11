@@ -3,6 +3,7 @@
 import { X509Certificate } from 'node:crypto';
 import { generateCaSignedCert, generateSelfSignedCert } from '../test.setup';
 import { validateCertExpiration, validateClientCert } from './cert';
+import { vi } from 'vitest';
 
 describe('Certificate validation', () => {
   describe('validateClientCert', () => {
@@ -136,7 +137,7 @@ describe('Certificate validation', () => {
       const x509 = new X509Certificate(cert);
 
       // Mock the validFrom date to be in the future
-      jest.spyOn(x509, 'validFrom', 'get').mockReturnValue(new Date(Date.now() + 1000 * 60 * 60).toISOString());
+      vi.spyOn(x509, 'validFrom', 'get').mockReturnValue(new Date(Date.now() + 1000 * 60 * 60).toISOString());
 
       expect(() => validateCertExpiration(x509)).toThrow('Certificate not yet active');
     });
@@ -146,7 +147,7 @@ describe('Certificate validation', () => {
       const x509 = new X509Certificate(cert);
 
       // Mock the validTo date to be in the past
-      jest.spyOn(x509, 'validTo', 'get').mockReturnValue(new Date(Date.now() - 1000 * 60 * 60).toISOString());
+      vi.spyOn(x509, 'validTo', 'get').mockReturnValue(new Date(Date.now() - 1000 * 60 * 60).toISOString());
 
       expect(() => validateCertExpiration(x509)).toThrow('Certificate expired on');
     });

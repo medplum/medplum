@@ -26,11 +26,8 @@ import type { MedplumServerConfig } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
-import * as rewriteModule from '../fhir/rewrite';
-import { RewriteMode } from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
-import * as oauthUtilsModule from '../oauth/utils';
 import * as pubsubModule from '../pubsub';
 import {
   addUserActiveWebSocketSubscription,
@@ -43,11 +40,42 @@ import {
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDispatchJob } from '../workers/test-utils';
 
-jest.mock('hibp');
-jest.mock('../constants', () => ({
-  ...jest.requireActual('../constants'),
+vi.mock('hibp');
+vi.mock('../constants', async () => ({
+  ...(await vi.importActual<typeof import('../constants')>('../constants')),
   WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:ws',
 }));
+
+const wsTestMocks = vi.hoisted(() => ({
+  mockRewriteAttachments: false,
+  mockGetLoginForAccessToken: false,
+}));
+
+vi.mock('../fhir/rewrite', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../fhir/rewrite')>();
+  return {
+    ...actual,
+    rewriteAttachments: async (...args: Parameters<typeof actual.rewriteAttachments>) => {
+      if (wsTestMocks.mockRewriteAttachments && args[0] === actual.RewriteMode.PRESIGNED_URL) {
+        throw new Error('Error rewriting attachments');
+      }
+      return actual.rewriteAttachments(...args);
+    },
+  };
+});
+
+vi.mock('../oauth/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../oauth/utils')>();
+  return {
+    ...actual,
+    getLoginForAccessToken: async (...args: Parameters<typeof actual.getLoginForAccessToken>) => {
+      if (wsTestMocks.mockGetLoginForAccessToken) {
+        return undefined;
+      }
+      return actual.getLoginForAccessToken(...args);
+    },
+  };
+});
 
 describe('WebSocket Subscription', () => {
   let config: MedplumServerConfig;
@@ -59,7 +87,7 @@ describe('WebSocket Subscription', () => {
   let patientSubscription: WithId<Subscription>;
 
   beforeAll(async () => {
-    jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
     app = express();
     config = await loadTestConfig();
     config.heartbeatEnabled = false;
@@ -340,7 +368,7 @@ describe('WebSocket Subscription', () => {
         .exec(async () => {
           const expectedMsg =
             /"level":"WARN".*\[WS\] Failed to retrieve subscription cache entry when unbinding from token/;
-          const writeMock = globalLogger.write as unknown as jest.Mock;
+          const writeMock = globalLogger.write as unknown as Mock;
           const deadline = Date.now() + 5000;
           while (
             Date.now() < deadline &&
@@ -893,7 +921,7 @@ describe('WebSocket Subscription', () => {
       expect(subscription).toBeDefined();
 
       // Mock verifyJwt to return a payload without login_id
-      const verifyJwtSpy = jest.spyOn(keysModule, 'verifyJwt').mockImplementation(async () => {
+      const verifyJwtSpy = vi.spyOn(keysModule, 'verifyJwt').mockImplementation(async () => {
         return {
           payload: {
             subscription_id: subscription.id,
@@ -931,7 +959,7 @@ describe('WebSocket Subscription', () => {
   test('Token failed to validate', () =>
     withTestContext(async () => {
       // Mock verifyJwt to throw an error
-      const verifyJwtSpy = jest.spyOn(keysModule, 'verifyJwt').mockImplementation(async () => {
+      const verifyJwtSpy = vi.spyOn(keysModule, 'verifyJwt').mockImplementation(async () => {
         throw new Error('Token validation failed');
       });
 
@@ -962,18 +990,8 @@ describe('WebSocket Subscription', () => {
 
   test('Error while rewriting attachments', () =>
     withTestContext(async () => {
-      // Don't mock rewriteAttachments until after the handshake
-      const originalRewriteAttachments = rewriteModule.rewriteAttachments;
-      let mockRewriteAttachments = false;
-      const rewriteAttachmentsSpy = jest
-        .spyOn(rewriteModule, 'rewriteAttachments')
-        .mockImplementation(async (...args) => {
-          if (mockRewriteAttachments && args[0] === RewriteMode.PRESIGNED_URL) {
-            throw new Error('Error rewriting attachments');
-          }
-          return originalRewriteAttachments(...args);
-        });
-      const globalLoggerErrorSpy = jest.spyOn(globalLogger, 'error');
+      wsTestMocks.mockRewriteAttachments = false;
+      const globalLoggerErrorSpy = vi.spyOn(globalLogger, 'error');
 
       const binary = await repo.createResource<Binary>({
         resourceType: 'Binary',
@@ -1032,7 +1050,7 @@ describe('WebSocket Subscription', () => {
         })
         // Add a new document reference for this project
         .exec(async () => {
-          mockRewriteAttachments = true;
+          wsTestMocks.mockRewriteAttachments = true;
 
           const documentRef = await repo.createResource<DocumentReference>({
             resourceType: 'DocumentReference',
@@ -1084,24 +1102,14 @@ describe('WebSocket Subscription', () => {
         }
       }
 
-      // Restore original implementations
-      rewriteAttachmentsSpy.mockRestore();
+      wsTestMocks.mockRewriteAttachments = false;
       globalLoggerErrorSpy.mockRestore();
     }));
 
   test('Undefined authState returned', () =>
     withTestContext(async () => {
-      const actualGetLoginForAccessToken = jest.requireActual('../oauth/utils').getLoginForAccessToken;
-      let mockGetLoginForAccessToken = false;
-      const getLoginForAccessTokenSpy = jest
-        .spyOn(oauthUtilsModule, 'getLoginForAccessToken')
-        .mockImplementation(async (...args) => {
-          if (mockGetLoginForAccessToken) {
-            return undefined;
-          }
-          return actualGetLoginForAccessToken(...args);
-        });
-      const globalLoggerInfoSpy = jest.spyOn(globalLogger, 'info');
+      wsTestMocks.mockGetLoginForAccessToken = false;
+      const globalLoggerInfoSpy = vi.spyOn(globalLogger, 'info');
 
       const binary = await repo.createResource<Binary>({
         resourceType: 'Binary',
@@ -1160,7 +1168,7 @@ describe('WebSocket Subscription', () => {
         })
         // Add a new document reference for this project
         .exec(async () => {
-          mockGetLoginForAccessToken = true;
+          wsTestMocks.mockGetLoginForAccessToken = true;
 
           const documentRef = await repo.createResource<DocumentReference>({
             resourceType: 'DocumentReference',
@@ -1198,23 +1206,13 @@ describe('WebSocket Subscription', () => {
         subscriptionId: expect.any(String),
       });
 
-      // Restore original implementations
-      getLoginForAccessTokenSpy.mockRestore();
+      wsTestMocks.mockGetLoginForAccessToken = false;
       globalLoggerInfoSpy.mockRestore();
     }));
 
   test('Dead subscription removed from active set when token fails to validate', () =>
     withTestContext(async () => {
-      const actualGetLoginForAccessToken = jest.requireActual('../oauth/utils').getLoginForAccessToken;
-      let mockGetLoginForAccessToken = false;
-      const getLoginForAccessTokenSpy = jest
-        .spyOn(oauthUtilsModule, 'getLoginForAccessToken')
-        .mockImplementation(async (...args) => {
-          if (mockGetLoginForAccessToken) {
-            return undefined;
-          }
-          return actualGetLoginForAccessToken(...args);
-        });
+      wsTestMocks.mockGetLoginForAccessToken = false;
 
       const binary = await repo.createResource<Binary>({
         resourceType: 'Binary',
@@ -1261,7 +1259,7 @@ describe('WebSocket Subscription', () => {
           });
         })
         .exec(async () => {
-          mockGetLoginForAccessToken = true;
+          wsTestMocks.mockGetLoginForAccessToken = true;
 
           const docRef = await repo.createResource<DocumentReference>({
             resourceType: 'DocumentReference',
@@ -1291,22 +1289,13 @@ describe('WebSocket Subscription', () => {
           await sleep(0);
         });
 
-      getLoginForAccessTokenSpy.mockRestore();
+      wsTestMocks.mockGetLoginForAccessToken = false;
     }));
 
   test('Dead subscription not notified on subsequent events after purge', () =>
     withTestContext(async () => {
-      const actualGetLoginForAccessToken = jest.requireActual('../oauth/utils').getLoginForAccessToken;
-      let mockGetLoginForAccessToken = false;
-      const getLoginForAccessTokenSpy = jest
-        .spyOn(oauthUtilsModule, 'getLoginForAccessToken')
-        .mockImplementation(async (...args) => {
-          if (mockGetLoginForAccessToken) {
-            return undefined;
-          }
-          return actualGetLoginForAccessToken(...args);
-        });
-      const globalLoggerInfoSpy = jest.spyOn(globalLogger, 'info');
+      wsTestMocks.mockGetLoginForAccessToken = false;
+      const globalLoggerInfoSpy = vi.spyOn(globalLogger, 'info');
 
       const binary = await repo.createResource<Binary>({
         resourceType: 'Binary',
@@ -1353,7 +1342,7 @@ describe('WebSocket Subscription', () => {
           });
         })
         .exec(async () => {
-          mockGetLoginForAccessToken = true;
+          wsTestMocks.mockGetLoginForAccessToken = true;
 
           // First event: triggers the dead subscription path
           const docRef = await repo.createResource<DocumentReference>({
@@ -1400,7 +1389,7 @@ describe('WebSocket Subscription', () => {
           await sleep(0);
         });
 
-      getLoginForAccessTokenSpy.mockRestore();
+      wsTestMocks.mockGetLoginForAccessToken = false;
       globalLoggerInfoSpy.mockRestore();
     }));
 
@@ -1867,7 +1856,7 @@ describe('WebSocket Subscription', () => {
         membershipId: randomUUID(),
       });
 
-      const cleanupSpy = jest.spyOn(pubsubModule, 'cleanupUserSubs');
+      const cleanupSpy = vi.spyOn(pubsubModule, 'cleanupUserSubs');
       try {
         await expect(
           limitRepo.createResource<Subscription>({

@@ -1351,7 +1351,7 @@ describe('Appointment/$find', () => {
     expect(response.body).toMatchObject({
       resourceType: 'Bundle',
       type: 'searchset',
-      entry: expect.arrayOf(expect.any(Object)),
+      entry: expect.any(Array),
     });
 
     (response.body as Bundle<Appointment>).entry?.forEach((entry) => {

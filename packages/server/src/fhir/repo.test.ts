@@ -50,7 +50,7 @@ import { TransactionIdleTracker } from './repository/transaction-idle-tracker';
 import { PostgresError, SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
-jest.mock('hibp');
+vi.mock('hibp');
 
 describe('FHIR Repo', () => {
   const globalSystemRepo = getGlobalSystemRepo();
@@ -108,7 +108,7 @@ describe('FHIR Repo', () => {
   test('Read resource with undefined id', async () => {
     try {
       await systemRepo.readResource('Patient', undefined as unknown as string);
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -118,7 +118,7 @@ describe('FHIR Repo', () => {
   test('Read resource with blank id', async () => {
     try {
       await systemRepo.readResource('Patient', '');
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -128,7 +128,7 @@ describe('FHIR Repo', () => {
   test('Read resource with invalid id', async () => {
     try {
       await systemRepo.readResource('Patient', 'x');
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -169,28 +169,28 @@ describe('FHIR Repo', () => {
   test('Repo read malformed reference', async () => {
     try {
       await systemRepo.readReference({ reference: undefined });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: '' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: '////' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: 'Patient/123/foo' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
@@ -424,7 +424,7 @@ describe('FHIR Repo', () => {
   test('Create Patient as ClientApplication with no author', () =>
     withTestContext(async () => {
       const { client, repo } = await createTestProject({ withClient: true, withRepo: true });
-      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
       try {
         const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
@@ -523,7 +523,7 @@ describe('FHIR Repo', () => {
         getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
       ).toBe(true);
 
-      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
       // Check that createResource, updateResource, and deleteResource all skip addBackgroundJobs.
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
@@ -620,7 +620,7 @@ describe('FHIR Repo', () => {
 
       try {
         await systemRepo.updateResource(rest);
-        fail('Should have thrown');
+        expect.fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(badRequest('Missing id'));
       }
@@ -716,7 +716,7 @@ describe('FHIR Repo', () => {
       const { repo: repo2 } = await createTestProject({ withRepo: true });
       try {
         await repo2.readResource('Patient', patient1.id);
-        fail('Should have thrown');
+        expect.fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
       }
@@ -775,7 +775,7 @@ describe('FHIR Repo', () => {
 
     try {
       await repo.reindexResource('Practitioner', randomUUID());
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
@@ -789,7 +789,7 @@ describe('FHIR Repo', () => {
       await repo.withTransaction(async (conn) => {
         await repo.reindexResources(conn, [patient]);
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
@@ -798,7 +798,7 @@ describe('FHIR Repo', () => {
   test('Reindex resource not found', async () => {
     try {
       await systemRepo.reindexResource('Practitioner', randomUUID());
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
@@ -812,11 +812,11 @@ describe('FHIR Repo', () => {
     });
 
     // rely on Patient having a search parameter with token-column strategy
-    const buildTokenColumnsSpy = jest.spyOn(tokenColumnModule, 'buildTokenColumns').mockImplementation(() => {
+    const buildTokenColumnsSpy = vi.spyOn(tokenColumnModule, 'buildTokenColumns').mockImplementation(() => {
       throw new Error('test error');
     });
     const logger = getLogger();
-    const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
 
     await expect(
       systemRepo.withTransaction(async (conn) => {
@@ -1398,7 +1398,7 @@ describe('FHIR Repo', () => {
   test('Retry after create should not execute post-commit hooks from rollback', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
-      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs');
+      const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs');
       const patients: WithId<Patient>[] = [];
       let shouldError = true;
 
@@ -1464,7 +1464,7 @@ describe('FHIR Repo', () => {
 
   test('Retry executes post-commit hook once from outer transaction', async () => {
     const repo = systemRepo;
-    const postCommit = jest.fn();
+    const postCommit = vi.fn();
     let shouldError = true;
 
     await repo.withTransaction(async () => {
@@ -1483,7 +1483,7 @@ describe('FHIR Repo', () => {
 
   test('Retry should not execute post-commit hook from rollback', async () => {
     const repo = systemRepo;
-    const postCommit = jest.fn();
+    const postCommit = vi.fn();
 
     await repo.withTransaction(async () => {
       try {
@@ -1502,14 +1502,14 @@ describe('FHIR Repo', () => {
   test('withTransaction releases connection when rollback fails on a dead backend', async () => {
     const { repo } = await createTestProject({ withRepo: true });
 
-    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
-    let querySpy: jest.SpyInstance | undefined;
-    let releaseSpy: jest.SpyInstance | undefined;
+    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    let querySpy: MockInstance | undefined;
+    let releaseSpy: MockInstance | undefined;
 
     await expect(
       repo.withTransaction(async (client) => {
-        querySpy = jest.spyOn(client, 'query').mockImplementation(() => {
+        querySpy = vi.spyOn(client, 'query').mockImplementation(() => {
           // Simulates a session killed by idle_in_transaction_session_timeout: every query
           // issued on the client — including the ROLLBACK the error handler sends — rejects.
           const terminationErr = Object.assign(new Error('terminating connection due to idle-in-transaction timeout'), {
@@ -1517,7 +1517,7 @@ describe('FHIR Repo', () => {
           });
           throw terminationErr;
         });
-        releaseSpy = jest.spyOn(client, 'release');
+        releaseSpy = vi.spyOn(client, 'release');
         await client.query('SELECT 1');
       })
     ).rejects.toThrow('terminating connection due to idle-in-transaction timeout');
@@ -1555,17 +1555,17 @@ describe('FHIR Repo', () => {
     'withTransaction does not record transaction idle metrics when threshold is %s',
     async (thresholdMs) => {
       const restoreThreshold = setIdleInTransactionLogThresholdMs(thresholdMs);
-      const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+      const query = vi.fn(async (_sql: string) => ({ rows: [] }));
       const client = {
         query,
-        release: jest.fn(),
+        release: vi.fn(),
       } as unknown as PoolClient;
       const repo = getShardSystemRepo(
         'test-shard',
         RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
       );
-      const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-      const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+      const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+      const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
       try {
         await repo.withTransaction(async (txClient) => {
@@ -1591,8 +1591,8 @@ describe('FHIR Repo', () => {
   test('withTransaction disables idle tracking for callback-style queries', async () => {
     const restoreThreshold = setIdleInTransactionLogThresholdMs(5);
     let now = 0;
-    const dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
-    const query = jest.fn((sql: string, callback?: (err: Error | undefined, result: { rows: any[] }) => void) => {
+    const dateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const query = vi.fn((sql: string, callback?: (err: Error | undefined, result: { rows: any[] }) => void) => {
       if (sql === 'SELECT 1' && callback) {
         now += 10;
         callback(undefined, { rows: [] });
@@ -1602,14 +1602,14 @@ describe('FHIR Repo', () => {
     });
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
-    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     try {
       await repo.withTransaction(async (txClient) => {
@@ -1632,18 +1632,18 @@ describe('FHIR Repo', () => {
   test('withTransaction logs and records high idle time in rolled back transaction', async () => {
     const restoreThreshold = setIdleInTransactionLogThresholdMs(0);
     let now = 0;
-    const dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
-    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const dateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const query = vi.fn(async (_sql: string) => ({ rows: [] }));
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
-    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     try {
       await expect(
@@ -1682,8 +1682,8 @@ describe('FHIR Repo', () => {
   test('withTransaction records outer transaction idle time across nested transactions', async () => {
     const restoreThreshold = setIdleInTransactionLogThresholdMs(50);
     let now = 0;
-    const dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
-    const query = jest.fn(async (sql: string) => {
+    const dateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const query = vi.fn(async (sql: string) => {
       if (sql === 'SELECT 1') {
         now += 25;
       }
@@ -1691,14 +1691,14 @@ describe('FHIR Repo', () => {
     });
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
-    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     try {
       await repo.withTransaction(async () => {
@@ -1767,10 +1767,10 @@ describe('FHIR Repo', () => {
 
   test('withStatementTimeout pins connection and discards it after callback', async () => {
     const { repo } = await createTestProject({ withRepo: true });
-    let releaseSpy: jest.SpyInstance | undefined;
+    let releaseSpy: MockInstance | undefined;
 
     await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
-      releaseSpy = jest.spyOn(client, 'release');
+      releaseSpy = vi.spyOn(client, 'release');
 
       await repo.withTransaction(async (txClient) => {
         expect(txClient).toBe(client);
@@ -1805,7 +1805,7 @@ describe('FHIR Repo', () => {
 
   test('withStatementTimeout prevents writer operations on a pinned reader connection', async () => {
     const { repo } = await createTestProject({ withRepo: true });
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
     try {
       await expect(
@@ -1823,20 +1823,20 @@ describe('FHIR Repo', () => {
   test('borrowed repository connections do not reacquire clients after forced release', async () => {
     const rollbackError = new Error('rollback failed');
     const client = {
-      query: jest.fn(async (query: string) => {
+      query: vi.fn(async (query: string) => {
         if (query === 'ROLLBACK') {
           throw rollbackError;
         }
         return { rows: [] };
       }),
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
-    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
     try {
       await expect(repo.withTransaction(async () => Promise.reject(new Error('work failed')))).rejects.toThrow(
@@ -1859,14 +1859,14 @@ describe('FHIR Repo', () => {
   test('withTransaction does not publish transaction state when BEGIN fails', async () => {
     const beginError = new Error('begin failed');
     const client = {
-      query: jest.fn(async () => Promise.reject(beginError)),
-      release: jest.fn(),
+      query: vi.fn(async () => Promise.reject(beginError)),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
     try {
       await expect(repo.withTransaction(async () => undefined)).rejects.toThrow('begin failed');
@@ -1883,10 +1883,10 @@ describe('FHIR Repo', () => {
   });
 
   test('withTransaction rejects nested isolation upgrades', async () => {
-    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const query = vi.fn(async (_sql: string) => ({ rows: [] }));
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
@@ -1903,10 +1903,10 @@ describe('FHIR Repo', () => {
   });
 
   test('withTransaction allows nested calls at a weaker isolation level', async () => {
-    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const query = vi.fn(async (_sql: string) => ({ rows: [] }));
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
@@ -1935,7 +1935,7 @@ describe('FHIR Repo', () => {
     const secondCallbackStarted = Promise.withResolvers<undefined>();
     const queries: string[] = [];
     let beginCount = 0;
-    const query = jest.fn(async (sql: string) => {
+    const query = vi.fn(async (sql: string) => {
       queries.push(sql);
       if (sql === 'BEGIN ISOLATION LEVEL REPEATABLE READ' && ++beginCount === 1) {
         // Pause the first BEGIN before beginTransaction can publish transactionDepth = 1.
@@ -1946,7 +1946,7 @@ describe('FHIR Repo', () => {
     });
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
@@ -1991,7 +1991,7 @@ describe('FHIR Repo', () => {
     const allowReleaseSavepoint = Promise.withResolvers<undefined>();
     const queries: string[] = [];
     let releaseSavepointCount = 0;
-    const query = jest.fn(async (sql: string) => {
+    const query = vi.fn(async (sql: string) => {
       queries.push(sql);
       if (sql === 'RELEASE SAVEPOINT sp2' && ++releaseSavepointCount === 1) {
         // Hold the inner commit in the database call before transactionDepth is decremented.
@@ -2002,7 +2002,7 @@ describe('FHIR Repo', () => {
     });
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
@@ -2051,7 +2051,7 @@ describe('FHIR Repo', () => {
     const allowRollbackSavepoint = Promise.withResolvers<undefined>();
     const queries: string[] = [];
     let rollbackSavepointCount = 0;
-    const query = jest.fn(async (sql: string) => {
+    const query = vi.fn(async (sql: string) => {
       queries.push(sql);
       if (sql === 'ROLLBACK TO SAVEPOINT sp2' && ++rollbackSavepointCount === 1) {
         // Hold the inner rollback in the database call before transactionDepth is decremented.
@@ -2062,13 +2062,13 @@ describe('FHIR Repo', () => {
     });
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
     try {
       const tx1 = repo
@@ -2121,13 +2121,13 @@ describe('FHIR Repo', () => {
 
   test('processing pre-commit callbacks does not deadlock a transaction', async () => {
     const queries: string[] = [];
-    const query = jest.fn(async (sql: string) => {
+    const query = vi.fn(async (sql: string) => {
       queries.push(sql);
       return { rows: [] };
     });
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
@@ -2162,8 +2162,8 @@ describe('FHIR Repo', () => {
 
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = systemRepo;
-    const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
-    const finalPostCommit = jest.fn();
+    const loggerErrorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const finalPostCommit = vi.fn();
 
     const error = new Error('Post-commit hook failed');
     const promise = repo.withTransaction(async () => {
@@ -2223,7 +2223,7 @@ describe('FHIR Repo', () => {
       }
 
       await repo.withTransaction(async (client) => {
-        const querySpy = jest.spyOn(client, 'query');
+        const querySpy = vi.spyOn(client, 'query');
         await repo.createResource(patient);
         const calls = querySpy.mock.calls;
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);

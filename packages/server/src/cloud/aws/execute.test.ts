@@ -13,6 +13,7 @@ import { getConfig, loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
 import { initTestAuth } from '../../test.setup';
 import { getLambdaFunctionName } from './execute';
+import { vi } from 'vitest';
 
 const app = express();
 let accessToken: string;
@@ -116,7 +117,7 @@ describe('Execute', () => {
 
   test('Submit HL7', async () => {
     const binaryStorage = getBinaryStorage();
-    const writeFileSpy = jest.spyOn(binaryStorage, 'writeFile');
+    const writeFileSpy = vi.spyOn(binaryStorage, 'writeFile');
 
     const text =
       'MSH|^~\\&|Main_HIS|XYZ_HOSPITAL|iFW|ABC_Lab|20160915003015||ACK|9B38584D|P|2.6.1|\r' +

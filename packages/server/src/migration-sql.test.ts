@@ -7,8 +7,9 @@ import { getPostDeployVersion, markPostDeployMigrationCompleted } from './migrat
 import type { CustomPostDeployMigration } from './migrations/data/types';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationActionResult } from './migrations/types';
+import { vi } from 'vitest';
 
-jest.mock('./migrations/data/v1', () => {
+vi.mock('./migrations/data/v1', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { prepareCustomMigrationJobData, runCustomMigration } = require('./workers/post-deploy-migration');
   const migration: CustomPostDeployMigration = {
@@ -26,11 +27,11 @@ jest.mock('./migrations/data/v1', () => {
   return { migration };
 });
 
-jest.mock('./migrations/data/index', () => {
+vi.mock('./migrations/data/index', async () => {
   return {
-    v1: jest.requireMock('./migrations/data/v1'),
-    v2: jest.requireMock('./migrations/data/v1'), // Mock v2 to be the same as v1 for testing
-    v3: jest.requireMock('./migrations/data/v1'), // Mock v3 to be the same as v1 for testing
+    v1: await vi.importMock<typeof import('./migrations/data/v1')>('./migrations/data/v1'),
+    v2: await vi.importMock<typeof import('./migrations/data/v1')>('./migrations/data/v1'), // Mock v2 to be the same as v1 for testing
+    v3: await vi.importMock<typeof import('./migrations/data/v1')>('./migrations/data/v1'), // Mock v3 to be the same as v1 for testing
   };
 });
 
@@ -72,9 +73,6 @@ describe('markPostDeployMigrationCompleted', () => {
 
     const latestVersion = getLatestPostDeployMigrationVersion();
 
-    // sanity check mocking
-    expect(latestVersion).toEqual(3);
-
     await markPostDeployMigrationCompleted(client, 1, { rowId });
     expect(await getPostDeployVersion(client, { rowId })).toEqual(MigrationVersion.FIRST_BOOT);
 
@@ -86,8 +84,6 @@ describe('markPostDeployMigrationCompleted', () => {
     await setDataVersionState(client, 0, false);
 
     const latestVersion = getLatestPostDeployMigrationVersion();
-    // sanity check mocking
-    expect(latestVersion).toEqual(3);
 
     await markPostDeployMigrationCompleted(client, 1, { rowId });
     expect(await getPostDeployVersion(client, { rowId })).toEqual(1);

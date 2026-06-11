@@ -20,7 +20,6 @@ import type {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import type { Handler, NextFunction, Request, Response } from 'express';
-import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
@@ -184,6 +183,7 @@ export async function verifyRecaptcha(secretKey: string, recaptchaToken: string)
     '&response=' +
     encodeURIComponent(recaptchaToken);
 
+  const { default: fetch } = await import('node-fetch');
   const response = await fetch(url, { method: 'POST' });
   const json = (await response.json()) as { success: boolean };
   return json.success;

@@ -12,6 +12,7 @@ import { globalLogger } from '../logger';
 import * as redis from '../redis';
 import { withTestContext } from '../test.setup';
 import { handleEchoConnection } from './echo';
+import { vi } from 'vitest';
 
 describe('Echo websocket', () => {
   let app: Express;
@@ -47,14 +48,14 @@ describe('Echo websocket', () => {
   test('Logs when subscribe rejects', () =>
     withTestContext(async () => {
       const subscribeError = new Error('Connection is closed.');
-      const subscriberSpy = jest.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
-        subscribe: jest.fn().mockRejectedValue(subscribeError),
-        on: jest.fn(),
-        disconnect: jest.fn(),
+      const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+        subscribe: vi.fn().mockRejectedValue(subscribeError),
+        on: vi.fn(),
+        disconnect: vi.fn(),
       } as any);
-      const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+      const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
 
-      const socket = { on: jest.fn(), send: jest.fn() } as unknown as WebSocket;
+      const socket = { on: vi.fn(), send: vi.fn() } as unknown as WebSocket;
 
       try {
         await expect(handleEchoConnection(socket)).resolves.toBeUndefined();

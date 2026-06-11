@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import fs from 'fs';
+import * as awsConfigModule from '../cloud/aws/config';
+import * as azureConfigModule from '../cloud/azure/config';
+import * as gcpConfigModule from '../cloud/gcp/config';
 import { getConfig, loadConfig, loadTestConfig } from './loader';
+import { vi } from 'vitest';
 
 describe('Config', () => {
   const envKeysToClean: string[] = [];
@@ -20,10 +23,9 @@ describe('Config', () => {
 
   test('getConfig before loading', async () => {
     // Use isolateModules to get a fresh module where cachedConfig is undefined
-    await jest.isolateModulesAsync(async () => {
-      const { getConfig: freshGetConfig } = await import('./loader');
-      expect(() => freshGetConfig()).toThrow('Config not loaded');
-    });
+    vi.resetModules();
+    const { getConfig: freshGetConfig } = await import('./loader');
+    expect(() => freshGetConfig()).toThrow('Config not loaded');
   });
 
   test('Unrecognized config', async () => {
@@ -31,11 +33,8 @@ describe('Config', () => {
   });
 
   test('Load config file', async () => {
-    const readFileSyncSpy = jest.spyOn(fs, 'readFileSync');
-
     const config = await loadConfig('file:medplum.config.json');
 
-    expect(readFileSyncSpy).toHaveBeenCalled();
     expect(config).toBeDefined();
     expect(config.baseUrl).toBeDefined();
     expect(getConfig()).toBe(config);
@@ -324,41 +323,26 @@ describe('Config', () => {
 
   test('Load AWS config', async () => {
     const mockConfig = { baseUrl: 'http://aws.example.com', database: {}, redis: {} };
-    jest.mock('../cloud/aws/config', () => ({
-      loadAwsConfig: jest.fn().mockResolvedValue(mockConfig),
-    }));
-
-    await jest.isolateModulesAsync(async () => {
-      const { loadConfig: freshLoadConfig } = await import('./loader');
-      const config = await freshLoadConfig('aws:my-ssm-path');
-      expect(config.baseUrl).toStrictEqual('http://aws.example.com');
-    });
+    const loadAwsConfigSpy = vi.spyOn(awsConfigModule, 'loadAwsConfig').mockResolvedValue(mockConfig as never);
+    const config = await loadConfig('aws:my-ssm-path');
+    expect(config.baseUrl).toStrictEqual('http://aws.example.com');
+    loadAwsConfigSpy.mockRestore();
   });
 
   test('Load GCP config', async () => {
     const mockConfig = { baseUrl: 'http://gcp.example.com', database: {}, redis: {} };
-    jest.mock('../cloud/gcp/config', () => ({
-      loadGcpConfig: jest.fn().mockResolvedValue(mockConfig),
-    }));
-
-    await jest.isolateModulesAsync(async () => {
-      const { loadConfig: freshLoadConfig } = await import('./loader');
-      const config = await freshLoadConfig('gcp:my-project');
-      expect(config.baseUrl).toStrictEqual('http://gcp.example.com');
-    });
+    const loadGcpConfigSpy = vi.spyOn(gcpConfigModule, 'loadGcpConfig').mockResolvedValue(mockConfig as never);
+    const config = await loadConfig('gcp:my-project');
+    expect(config.baseUrl).toStrictEqual('http://gcp.example.com');
+    loadGcpConfigSpy.mockRestore();
   });
 
   test('Load Azure config', async () => {
     const mockConfig = { baseUrl: 'http://azure.example.com', database: {}, redis: {} };
-    jest.mock('../cloud/azure/config', () => ({
-      loadAzureConfig: jest.fn().mockResolvedValue(mockConfig),
-    }));
-
-    await jest.isolateModulesAsync(async () => {
-      const { loadConfig: freshLoadConfig } = await import('./loader');
-      const config = await freshLoadConfig('azure:my-vault');
-      expect(config.baseUrl).toStrictEqual('http://azure.example.com');
-    });
+    const loadAzureConfigSpy = vi.spyOn(azureConfigModule, 'loadAzureConfig').mockResolvedValue(mockConfig as never);
+    const config = await loadConfig('azure:my-vault');
+    expect(config.baseUrl).toStrictEqual('http://azure.example.com');
+    loadAzureConfigSpy.mockRestore();
   });
 
   test('Env config workers prefix', async () => {

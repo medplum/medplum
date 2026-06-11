@@ -34,9 +34,7 @@ import type {
 import bcrypt from 'bcrypt';
 import type { Request } from 'express';
 import type { JWTPayload, VerifyOptions } from 'jose';
-import { jwtVerify } from 'jose';
 import type { RequestInit as FetchRequestInit } from 'node-fetch';
-import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
@@ -858,6 +856,7 @@ export async function getExternalUserInfo(
 
   let response;
   try {
+    const { default: fetch } = await import('node-fetch');
     response = await fetch(request.url, request.init);
   } catch (err: any) {
     log.warn('Error while verifying external auth code', err);
@@ -965,6 +964,7 @@ export async function verifyMultipleMatchingException(
   verifyOptions: VerifyOptions,
   client: ClientApplication
 ): Promise<ValidationAssertion> {
+  const { jwtVerify } = await import('jose');
   for await (const publicKey of publicKeys) {
     try {
       await jwtVerify(clientAssertion, publicKey, verifyOptions);

@@ -4,7 +4,6 @@ import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-sec
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import { getConfig, loadConfig } from '../../config/loader';
 
 describe('Config', () => {
@@ -62,7 +61,7 @@ describe('Config', () => {
     expect(config.database.ssl?.rejectUnauthorized).toStrictEqual(true);
     expect(config.database.ssl?.ca).toStrictEqual('DatabaseSslCa');
     expect(getConfig()).toBe(config);
-    expect(mockSSMClient).toReceiveCommand(GetParametersByPathCommand);
+    expect(mockSSMClient.commandCalls(GetParametersByPathCommand).length).toBeGreaterThan(0);
   });
 
   test('Load region AWS config', async () => {
@@ -71,12 +70,12 @@ describe('Config', () => {
     expect(config.baseUrl).toBeDefined();
     expect(config.port).toStrictEqual(8080);
     expect(getConfig()).toBe(config);
-    expect(mockSecretsManagerClient).toReceiveCommand(GetSecretValueCommand);
-    expect(mockSecretsManagerClient).toReceiveCommandWith(GetSecretValueCommand, {
+    expect(mockSecretsManagerClient.commandCalls(GetSecretValueCommand).length).toBeGreaterThan(0);
+    expect(mockSecretsManagerClient.commandCalls(GetSecretValueCommand, {
       SecretId: 'DatabaseSecretsArn',
-    });
-    expect(mockSecretsManagerClient).toReceiveCommandWith(GetSecretValueCommand, {
+    })).toHaveLength(1);
+    expect(mockSecretsManagerClient.commandCalls(GetSecretValueCommand, {
       SecretId: 'RedisSecretsArn',
-    });
+    })).toHaveLength(1);
   });
 });

@@ -12,9 +12,10 @@ import type { RegisterResponse } from '../../auth/register';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config/loader';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
+import { vi, type Mock } from 'vitest';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
+vi.mock('hibp');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 const app = express();
 
@@ -53,10 +54,10 @@ describe('Project $rate-limits operation', () => {
   });
 
   beforeEach(() => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    (fetch as unknown as Mock).mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(fetch as unknown as Mock, true);
   });
 
   test('Returns only active consumers when no membershipId specified', async () => {

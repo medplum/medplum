@@ -6,15 +6,16 @@ import type { PgResponseHookInformation } from '@opentelemetry/instrumentation-p
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { httpResponseHook, initOpenTelemetry, pgResponseHook, shutdownOpenTelemetry } from './instrumentation';
+import { vi, type MockInstance } from 'vitest';
 
 describe('Instrumentation', () => {
   const OLD_ENV = process.env;
-  let sdkSpy: jest.SpyInstance;
+  let sdkSpy: MockInstance;
 
   beforeEach(() => {
-    jest.resetModules();
+    vi.resetModules();
     process.env = { ...OLD_ENV };
-    sdkSpy = jest.spyOn(NodeSDK.prototype, 'start').mockImplementation(() => jest.fn());
+    sdkSpy = vi.spyOn(NodeSDK.prototype, 'start').mockImplementation(() => vi.fn());
   });
 
   afterAll(() => {
@@ -51,8 +52,8 @@ describe('Instrumentation', () => {
 
   test('HTTP response hook', async () => {
     const span = {
-      setAttribute: jest.fn(),
-      setStatus: jest.fn(),
+      setAttribute: vi.fn(),
+      setStatus: vi.fn(),
     } as unknown as Span;
 
     httpResponseHook(
@@ -67,7 +68,7 @@ describe('Instrumentation', () => {
 
   test('Postgres response hook', async () => {
     const span = {
-      setAttribute: jest.fn(),
+      setAttribute: vi.fn(),
     } as unknown as Span;
 
     pgResponseHook(span, { data: { rowCount: 21 } } as unknown as PgResponseHookInformation);
@@ -77,7 +78,7 @@ describe('Instrumentation', () => {
 
   test('Postgres response hook -- null rowCount', async () => {
     const span = {
-      setAttribute: jest.fn(),
+      setAttribute: vi.fn(),
     } as unknown as Span;
 
     pgResponseHook(span, { data: { rowCount: null } } as unknown as PgResponseHookInformation);

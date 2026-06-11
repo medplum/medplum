@@ -10,6 +10,7 @@ import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { Repository, SystemRepository } from './repo';
 import { PostgresError } from './sql';
+import { vi } from 'vitest';
 
 describe('FHIR Repo Transactions', () => {
   let repo: Repository;
@@ -349,7 +350,7 @@ describe('FHIR Repo Transactions', () => {
 
   test('Post-commit callback', () =>
     withTestContext(async () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       await repo.withTransaction(async () => {
         await repo.postCommit(async () => {
           callback();
@@ -361,7 +362,7 @@ describe('FHIR Repo Transactions', () => {
 
   test('Post-commit callback with rollback', () =>
     withTestContext(async () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       try {
         await repo.withTransaction(async () => {
           await repo.postCommit(async () => {
@@ -370,7 +371,7 @@ describe('FHIR Repo Transactions', () => {
           expect(callback).not.toHaveBeenCalled();
           throw new Error('Roll it back!');
         });
-        fail('Expected transaction to abort');
+        expect.fail('Expected transaction to abort');
       } catch (err) {
         expect(err).toBeDefined();
         expect(callback).not.toHaveBeenCalled();
@@ -379,8 +380,8 @@ describe('FHIR Repo Transactions', () => {
 
   test('Nested transaction post-commit', () =>
     withTestContext(async () => {
-      const cb1 = jest.fn();
-      const cb2 = jest.fn();
+      const cb1 = vi.fn();
+      const cb2 = vi.fn();
       await repo.withTransaction(async () => {
         await repo.postCommit(async () => {
           cb1();
@@ -400,7 +401,7 @@ describe('FHIR Repo Transactions', () => {
 
   test('getSystemRepo() shares parent post-commit state', () =>
     withTestContext(async () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       let calledBeforeCommit = false;
 
       await repo.withTransaction(async () => {
@@ -417,7 +418,7 @@ describe('FHIR Repo Transactions', () => {
       let queries: string[] = [];
 
       await repo.withTransaction(async (client) => {
-        const querySpy = jest.spyOn(client, 'query');
+        const querySpy = vi.spyOn(client, 'query');
         try {
           await repo.getSystemRepo().withTransaction(async () => undefined);
         } finally {
@@ -458,7 +459,7 @@ describe('FHIR Repo Transactions', () => {
 
   test('clone() does NOT share parent transaction state', () =>
     withTestContext(async () => {
-      const callbackFn = jest.fn();
+      const callbackFn = vi.fn();
       let patient: WithId<Patient> | undefined;
       await expect(
         repo.withTransaction(async () => {
@@ -579,7 +580,7 @@ describe('FHIR Repo Transactions', () => {
   test('Retry on conflict', () =>
     withTestContext(async () => {
       let returnValue: boolean | undefined;
-      const txFn = jest.fn(async (): Promise<boolean> => {
+      const txFn = vi.fn(async (): Promise<boolean> => {
         if (returnValue) {
           return returnValue;
         } else {
@@ -596,7 +597,7 @@ describe('FHIR Repo Transactions', () => {
   test('Only retry specific transaction conflict', () =>
     withTestContext(async () => {
       let returnValue: boolean | undefined;
-      const txFn = jest.fn(async (): Promise<boolean> => {
+      const txFn = vi.fn(async (): Promise<boolean> => {
         if (returnValue) {
           return returnValue;
         } else {
@@ -613,7 +614,7 @@ describe('FHIR Repo Transactions', () => {
   test('Do not retry combined transaction conflict and other errors', () =>
     withTestContext(async () => {
       let returnValue: boolean | undefined;
-      const txFn = jest.fn(async (): Promise<boolean> => {
+      const txFn = vi.fn(async (): Promise<boolean> => {
         if (returnValue) {
           return returnValue;
         } else {
@@ -631,7 +632,7 @@ describe('FHIR Repo Transactions', () => {
 
   test('Retry transaction only once before emitting failure', () =>
     withTestContext(async () => {
-      const txFn = jest.fn(async (): Promise<boolean> => {
+      const txFn = vi.fn(async (): Promise<boolean> => {
         // Emit transaction conflict (Postgres error code 40001)
         throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
       });
@@ -643,7 +644,7 @@ describe('FHIR Repo Transactions', () => {
   test('Retry nested transaction', () =>
     withTestContext(async () => {
       let returnValue: boolean | undefined;
-      const txFn = jest.fn(async (): Promise<boolean> => {
+      const txFn = vi.fn(async (): Promise<boolean> => {
         if (returnValue) {
           return returnValue;
         } else {
@@ -652,7 +653,7 @@ describe('FHIR Repo Transactions', () => {
           throw new OperationOutcomeError(conflict('transaction', PostgresError.SerializationFailure));
         }
       });
-      const outerTx = jest.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
+      const outerTx = vi.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
 
       await expect(repo.withTransaction(outerTx)).resolves.toStrictEqual(true);
       expect(txFn).toHaveBeenCalledTimes(2);
@@ -661,11 +662,11 @@ describe('FHIR Repo Transactions', () => {
 
   test('Retry nested transaction to failure', () =>
     withTestContext(async () => {
-      const txFn = jest.fn(async (): Promise<boolean> => {
+      const txFn = vi.fn(async (): Promise<boolean> => {
         // Emit transaction conflict (Postgres error code 40001)
         throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
       });
-      const outerTx = jest.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
+      const outerTx = vi.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
 
       await expect(repo.withTransaction(outerTx)).rejects.toThrow('transaction conflict');
       expect(txFn).toHaveBeenCalledTimes(2);
@@ -674,11 +675,11 @@ describe('FHIR Repo Transactions', () => {
 
   test('Nested transaction does not retry independently', () =>
     withTestContext(async () => {
-      const txFn = jest.fn(async (): Promise<boolean> => {
+      const txFn = vi.fn(async (): Promise<boolean> => {
         // Emit transaction conflict (Postgres error code 40001)
         throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
       });
-      const outerTx = jest.fn(async (): Promise<boolean> => {
+      const outerTx = vi.fn(async (): Promise<boolean> => {
         try {
           await repo.withTransaction(txFn);
           return true;

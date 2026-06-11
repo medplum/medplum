@@ -12,6 +12,7 @@ import { withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
 import type { AddressTableRow } from './address';
 import { AddressTable } from './address';
+import { vi } from 'vitest';
 
 describe('Address Lookup Table', () => {
   const systemRepo = getGlobalSystemRepo();
@@ -216,7 +217,7 @@ describe('Address Lookup Table', () => {
   );
 
   test('Purges related resource type', async () => {
-    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+    const db = { query: vi.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
 
     const table = new AddressTable();
     await table.purgeValuesBefore(db, 'Patient', '2024-01-01T00:00:00Z');
@@ -225,7 +226,7 @@ describe('Address Lookup Table', () => {
   });
 
   test('Does not purge unrelated resource type', async () => {
-    const db = { query: jest.fn() } as unknown as PoolClient;
+    const db = { query: vi.fn() } as unknown as PoolClient;
 
     const table = new AddressTable();
     await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');
@@ -409,7 +410,7 @@ describe('Address Lookup Table', () => {
   });
 
   test('Errors logged and rethrown', async () => {
-    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+    const db = { query: vi.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
     const table = new AddressTable();
     const r1: WithId<Patient> = {
       resourceType: 'Patient',
@@ -425,12 +426,12 @@ describe('Address Lookup Table', () => {
       ],
     };
 
-    const extractValuesSpy = jest.spyOn(table, 'extractValues').mockImplementation(() => {
+    const extractValuesSpy = vi.spyOn(table, 'extractValues').mockImplementation(() => {
       throw new Error('test error');
     });
 
     const logger = getLogger();
-    const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
 
     await expect(async () => table.batchIndexResources(db, [r1], false)).rejects.toThrow('test error');
     expect(extractValuesSpy).toHaveBeenCalledTimes(1);

@@ -21,12 +21,19 @@ import type {
   PostDeployJobData,
 } from './migrations/data/types';
 import * as migrateModule from './migrations/migrate';
-import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from './migrations/migration-utils';
+import * as migrationUtils from './migrations/migration-utils';
+import {
+  getPendingPostDeployMigration,
+  maybeStartPostDeployMigration,
+  MigrationDefinitionNotFoundError,
+} from './migrations/migration-utils';
+import * as migrationVersions from './migrations/migration-versions';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationAction, MigrationActionResult } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
 import { createTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
+import * as workers from './workers';
 import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
 import type { ReindexJobData } from './workers/reindex';
 import { getReindexQueue, prepareReindexJobData, ReindexJob } from './workers/reindex';
@@ -40,17 +47,14 @@ const mockValues = {
   postDeployVersion: DEFAULT_POST_DEPLOY_VERSION,
 };
 
-const mockGetPostDeployVersion = jest
-  .fn<ReturnType<typeof migrationSql.getPostDeployVersion>, Parameters<typeof migrationSql.getPostDeployVersion>>()
+const mockGetPostDeployVersion = vi
+  .fn<typeof migrationSql.getPostDeployVersion>()
   .mockImplementation(async () => {
     return mockValues.postDeployVersion;
   });
 
-const mockMarkPostDeployMigrationCompleted = jest
-  .fn<
-    ReturnType<typeof migrationSql.markPostDeployMigrationCompleted>,
-    Parameters<typeof migrationSql.markPostDeployMigrationCompleted>
-  >()
+const mockMarkPostDeployMigrationCompleted = vi
+  .fn<typeof migrationSql.markPostDeployMigrationCompleted>()
   .mockImplementation(async (_pool: Pool | PoolClient, dataVersion: number) => {
     if (!Number.isInteger(dataVersion)) {
       throw new Error('Invalid data version in mocked markPostDeployMigrationCompleted: ' + dataVersion);
@@ -58,9 +62,15 @@ const mockMarkPostDeployMigrationCompleted = jest
     return dataVersion;
   });
 
-jest.mock('./migrations/data/v1', () => {
-  const { prepareCustomMigrationJobData, runCustomMigration } = jest.requireActual('./workers/post-deploy-migration');
-  const migration: CustomPostDeployMigration = {
+const migrationMocks = vi.hoisted(() => ({
+  customMigration: undefined as CustomPostDeployMigration | undefined,
+}));
+
+vi.mock('./migrations/data/v1', async () => {
+  const { prepareCustomMigrationJobData, runCustomMigration } = await vi.importActual<
+    typeof import('./workers/post-deploy-migration')
+  >('./workers/post-deploy-migration');
+  migrationMocks.customMigration = {
     type: 'custom',
     prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
     run: function (repo, jobData) {
@@ -72,29 +82,45 @@ jest.mock('./migrations/data/v1', () => {
     },
   };
 
-  return { migration };
+  return { migration: migrationMocks.customMigration };
 });
 
-jest.mock('./migrations/data/index', () => {
-  return {
-    v1: jest.requireMock('./migrations/data/v1'),
-  };
+vi.mock('./migrations/data/index', async () => {
+  const v1 = await vi.importMock<typeof import('./migrations/data/v1')>('./migrations/data/v1');
+  return { v1 };
 });
 
-function getQueueAddSpy(): jest.MockedFunctionDeep<Queue<PostDeployJobData>['add']> {
+function mockQueueAddImplementation(queue: Queue | undefined): void {
+  if (!queue) {
+    return;
+  }
+  vi.mocked(queue.add).mockImplementation(async (jobName: string, jobData: unknown, options: unknown) => ({
+    id: '123',
+    name: jobName,
+    data: jobData,
+    opts: options,
+  }));
+}
+
+function restoreWorkerQueueMocks(): void {
+  mockQueueAddImplementation(queueRegistry.get(PostDeployMigrationQueueName));
+  mockQueueAddImplementation(getReindexQueue());
+}
+
+function getQueueAddSpy(): MockedFunction<Queue<PostDeployJobData>['add']> {
   const queue = queueRegistry.get<PostDeployJobData>(PostDeployMigrationQueueName);
   if (!queue) {
     throw new Error(`Job queue ${PostDeployMigrationQueueName} not available`);
   }
-  return jest.mocked(queue.add);
+  return vi.mocked(queue.add);
 }
 
-function getReindexQueueAddSpy(): jest.MockedFunctionDeep<Queue<ReindexJobData>['add']> {
+function getReindexQueueAddSpy(): MockedFunction<Queue<ReindexJobData>['add']> {
   const queue = getReindexQueue();
   if (!queue) {
     throw new Error(`Reindex job queue not available`);
   }
-  return jest.mocked(queue.add);
+  return vi.mocked(queue.add);
 }
 
 function setMigrationsConfig(preDeploy: boolean, postDeploy: boolean): void {
@@ -115,13 +141,40 @@ describe('Database migrations', () => {
   let systemRepo: SystemRepository;
 
   beforeAll(async () => {
-    jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    const { prepareCustomMigrationJobData, runCustomMigration } = await import('./workers/post-deploy-migration');
+    migrationMocks.customMigration = {
+      type: 'custom',
+      prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
+      run: function (repo, jobData) {
+        return runCustomMigration(repo, jobData, async () => {
+          const results: MigrationActionResult[] = [];
+          results.push({ name: 'nothing', durationMs: 5 });
+          return results;
+        });
+      },
+    };
 
-    jest.spyOn(migrationSql, 'getPostDeployVersion').mockImplementation(mockGetPostDeployVersion);
-    jest
+    vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+
+    vi.spyOn(migrationSql, 'getPostDeployVersion').mockImplementation(mockGetPostDeployVersion);
+    vi
       .spyOn(migrationSql, 'markPostDeployMigrationCompleted')
       .mockImplementation(mockMarkPostDeployMigrationCompleted);
-    jest.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
+    vi.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
+    vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1]);
+    vi.spyOn(migrationVersions, 'getLatestPostDeployMigrationVersion').mockReturnValue(1);
+    vi.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation(async (migrationNumber) => {
+      if (migrationNumber === 1 && migrationMocks.customMigration) {
+        return migrationMocks.customMigration;
+      }
+      throw new MigrationDefinitionNotFoundError(migrationNumber);
+    });
+
+    const originalInitWorkers = workers.initWorkers;
+    vi.spyOn(workers, 'initWorkers').mockImplementation((config) => {
+      originalInitWorkers(config);
+      restoreWorkerQueueMocks();
+    });
 
     systemRepo = getGlobalSystemRepo();
     await loadTestConfig();
@@ -133,7 +186,20 @@ describe('Database migrations', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    vi.spyOn(migrationSql, 'getPostDeployVersion').mockImplementation(mockGetPostDeployVersion);
+    vi
+      .spyOn(migrationSql, 'markPostDeployMigrationCompleted')
+      .mockImplementation(mockMarkPostDeployMigrationCompleted);
+    vi.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
+    vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1]);
+    vi.spyOn(migrationVersions, 'getLatestPostDeployMigrationVersion').mockReturnValue(1);
+    vi.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation(async (migrationNumber) => {
+      if (migrationNumber === 1 && migrationMocks.customMigration) {
+        return migrationMocks.customMigration;
+      }
+      throw new MigrationDefinitionNotFoundError(migrationNumber);
+    });
 
     // By default, disable both pre-deploy and post-deploy migrations
     setMigrationsConfig(false, false);
@@ -173,12 +239,12 @@ describe('Database migrations', () => {
       'Current version greater than or equal to required version and less than `requiredBefore` -- version %s',
       async (serverVersion) =>
         withTestContext(async () => {
-          const loggerInfoSpy = jest.spyOn(globalLogger, 'info');
+          const loggerInfoSpy = vi.spyOn(globalLogger, 'info');
 
           mockValues.serverVersion = serverVersion;
           mockValues.postDeployVersion = 0;
 
-          jest.spyOn(process, 'exit').mockImplementation(() => {
+          vi.spyOn(process, 'exit').mockImplementation(() => {
             throw new Error('Process exited with exit code 1');
           });
 
@@ -231,12 +297,13 @@ describe('Database migrations', () => {
   });
 
   describe('maybeStartPostDeployMigration -- pre-deploy migrations ran', () => {
-    let queueAddSpy: jest.SpyInstance;
+    let queueAddSpy: MockInstance;
 
     beforeEach(async () => {
       setMigrationsConfig(true, false);
 
       await initAppServices(getConfig());
+      restoreWorkerQueueMocks();
 
       queueAddSpy = getQueueAddSpy();
       queueAddSpy.mockClear();
@@ -413,6 +480,7 @@ describe('Database migrations', () => {
       setMigrationsConfig(true, false);
 
       await initAppServices(getConfig());
+      restoreWorkerQueueMocks();
     });
 
     afterEach(async () => {
@@ -518,7 +586,7 @@ describe('Database migrations', () => {
       });
 
       const reindexJob = new ReindexJob(systemRepo);
-      const searchSpy = jest.spyOn(systemRepo, 'search').mockResolvedValueOnce({
+      const searchSpy = vi.spyOn(systemRepo, 'search').mockResolvedValueOnce({
         resourceType: 'Bundle',
         type: 'searchset',
         entry: [],
@@ -597,8 +665,22 @@ describe('Database migrations', () => {
       });
     });
 
-    beforeEach(async () => {
-      jest.clearAllMocks();
+    beforeEach(() => {
+      vi.clearAllMocks();
+      vi.spyOn(migrationSql, 'getPostDeployVersion').mockImplementation(mockGetPostDeployVersion);
+      vi
+        .spyOn(migrationSql, 'markPostDeployMigrationCompleted')
+        .mockImplementation(mockMarkPostDeployMigrationCompleted);
+      vi.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
+      vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1]);
+      vi.spyOn(migrationVersions, 'getLatestPostDeployMigrationVersion').mockReturnValue(1);
+      vi.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation(async (migrationNumber) => {
+        if (migrationNumber === 1 && migrationMocks.customMigration) {
+          return migrationMocks.customMigration;
+        }
+        throw new MigrationDefinitionNotFoundError(migrationNumber);
+      });
+      restoreWorkerQueueMocks();
     });
 
     afterEach(async () => {
@@ -684,7 +766,7 @@ describe('Database migrations', () => {
 
     describe('Set data version', () => {
       beforeAll(async () => {
-        jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+        vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
       });
 
       test('Set data version -- Valid dataVersion', async () => {
@@ -713,10 +795,10 @@ describe('Database migrations', () => {
     });
 
     describe('Reconcile schema drift', () => {
-      let generateMigrationActionsSpy: jest.SpyInstance<ReturnType<typeof migrateModule.generateMigrationActions>>;
+      let generateMigrationActionsSpy: MockInstance<ReturnType<typeof migrateModule.generateMigrationActions>>;
 
       beforeEach(() => {
-        generateMigrationActionsSpy = jest.spyOn(migrateModule, 'generateMigrationActions');
+        generateMigrationActionsSpy = vi.spyOn(migrateModule, 'generateMigrationActions');
       });
 
       afterEach(() => {

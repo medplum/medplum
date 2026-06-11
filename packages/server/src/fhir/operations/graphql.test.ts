@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference, getReferenceString, isPopulated } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, isPopulated, sleep } from '@medplum/core';
 import type { Binary, Bundle, Encounter, Patient, Practitioner, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -13,6 +13,7 @@ import { getCacheRedis } from '../../redis';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 import * as searchFile from '../search';
+import { vi, type MockInstance } from 'vitest';
 
 const app = express();
 let practitioner: Practitioner;
@@ -129,7 +130,7 @@ describe('GraphQL', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -426,53 +427,107 @@ describe('GraphQL', () => {
     expect(res.body.data.EncounterList.length).toBe(1);
   });
 
-  test('Sort by _lastUpdated asc', async () => {
-    const res = await request(app)
-      .post('/fhir/R4/$graphql')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.JSON)
-      .send({
-        query: `
+  test('Sort by _lastUpdated asc', () =>
+    withTestContext(async () => {
+      const testProject = await createTestProject({ withAccessToken: true, withRepo: true });
+      const repo = testProject.repo;
+      const sortPatient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Sort'], family: 'Test' }],
+      });
+      const identifierSystem = 'http://example.com/graphql-sort-test';
+      const identifierValue = randomUUID();
+      const identifier = `${identifierSystem}|${identifierValue}`;
+
+      await repo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: { code: 'HH' },
+        subject: createReference(sortPatient),
+        identifier: [{ system: identifierSystem, value: identifierValue }],
+      });
+      await sleep(50);
+      await repo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: { code: 'HH' },
+        subject: createReference(sortPatient),
+        identifier: [{ system: identifierSystem, value: identifierValue }],
+      });
+
+      const res = await request(app)
+        .post('/fhir/R4/$graphql')
+        .set('Authorization', 'Bearer ' + testProject.accessToken)
+        .set('Content-Type', ContentType.JSON)
+        .send({
+          query: `
       {
-        EncounterList(_sort: "_lastUpdated") {
+        EncounterList(identifier: "${identifier}", _sort: "_lastUpdated") {
           id
           meta { lastUpdated }
         }
       }
     `,
+        });
+      expect(res.status, `GraphQL request failed: ${JSON.stringify(res.body)}`).toBe(200);
+      expect(res.body.data.EncounterList).toBeDefined();
+      expect(res.body.data.EncounterList.length).toBe(2);
+
+      const e1 = res.body.data.EncounterList[0];
+      const e2 = res.body.data.EncounterList[1];
+      expect(e1.meta.lastUpdated.localeCompare(e2.meta.lastUpdated)).toBeLessThanOrEqual(0);
+    }));
+
+  test('Sort by _lastUpdated desc', () =>
+    withTestContext(async () => {
+      const testProject = await createTestProject({ withAccessToken: true, withRepo: true });
+      const repo = testProject.repo;
+      const sortPatient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Sort'], family: 'Test' }],
       });
-    expect(res.status).toBe(200);
-    expect(res.body.data.EncounterList).toBeDefined();
-    expect(res.body.data.EncounterList.length >= 2).toBe(true);
+      const identifierSystem = 'http://example.com/graphql-sort-test';
+      const identifierValue = randomUUID();
+      const identifier = `${identifierSystem}|${identifierValue}`;
 
-    const e1 = res.body.data.EncounterList[0];
-    const e2 = res.body.data.EncounterList[1];
-    expect(e1.meta.lastUpdated.localeCompare(e2.meta.lastUpdated)).toBeLessThanOrEqual(0);
-  });
+      await repo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: { code: 'HH' },
+        subject: createReference(sortPatient),
+        identifier: [{ system: identifierSystem, value: identifierValue }],
+      });
+      await sleep(50);
+      await repo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: { code: 'HH' },
+        subject: createReference(sortPatient),
+        identifier: [{ system: identifierSystem, value: identifierValue }],
+      });
 
-  test('Sort by _lastUpdated desc', async () => {
-    const res = await request(app)
-      .post('/fhir/R4/$graphql')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.JSON)
-      .send({
-        query: `
+      const res = await request(app)
+        .post('/fhir/R4/$graphql')
+        .set('Authorization', 'Bearer ' + testProject.accessToken)
+        .set('Content-Type', ContentType.JSON)
+        .send({
+          query: `
       {
-        EncounterList(_sort: "-_lastUpdated") {
+        EncounterList(identifier: "${identifier}", _sort: "-_lastUpdated") {
           id
           meta { lastUpdated }
         }
       }
     `,
-      });
-    expect(res.status).toBe(200);
-    expect(res.body.data.EncounterList).toBeDefined();
-    expect(res.body.data.EncounterList.length >= 2).toBe(true);
+        });
+      expect(res.status, `GraphQL request failed: ${JSON.stringify(res.body)}`).toBe(200);
+      expect(res.body.data.EncounterList).toBeDefined();
+      expect(res.body.data.EncounterList.length).toBe(2);
 
-    const e1 = res.body.data.EncounterList[0];
-    const e2 = res.body.data.EncounterList[1];
-    expect(e1.meta.lastUpdated.localeCompare(e2.meta.lastUpdated)).toBeGreaterThanOrEqual(0);
-  });
+      const e1 = res.body.data.EncounterList[0];
+      const e2 = res.body.data.EncounterList[1];
+      expect(e1.meta.lastUpdated.localeCompare(e2.meta.lastUpdated)).toBeGreaterThanOrEqual(0);
+    }));
 
   test('Read resource by reference', async () => {
     const res = await request(app)
@@ -914,14 +969,14 @@ describe('GraphQL', () => {
       return res.body.data;
     }
 
-    let searchByReferenceSpy: jest.SpyInstance<ReturnType<typeof searchFile.searchByReferenceImpl>>;
+    let searchByReferenceSpy: MockInstance<ReturnType<typeof searchFile.searchByReferenceImpl>>;
 
     beforeEach(async () => {
-      searchByReferenceSpy = jest.spyOn(searchFile, 'searchByReferenceImpl');
+      searchByReferenceSpy = vi.spyOn(searchFile, 'searchByReferenceImpl');
     });
 
     afterEach(() => {
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     test('disabled without project setting', async () => {
@@ -1139,8 +1194,8 @@ describe('GraphQL', () => {
   });
 
   test('Uses reader instance when available', async () => {
-    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
 
     const res = await request(app)
       .post('/fhir/R4/$graphql')
@@ -1153,8 +1208,8 @@ describe('GraphQL', () => {
   });
 
   test('GraphQL in batch users writer', async () => {
-    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
 
     const batch: Bundle = {
       resourceType: 'Bundle',
@@ -1251,7 +1306,7 @@ describe('GraphQL', () => {
     expect(patRes.status).toBe(201);
 
     const redis = getCacheRedis();
-    const mgetSpy = jest.spyOn(redis, 'mget');
+    const mgetSpy = vi.spyOn(redis, 'mget');
 
     const res = await request(app)
       .post('/fhir/R4/$graphql')

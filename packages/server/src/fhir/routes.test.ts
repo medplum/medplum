@@ -11,6 +11,7 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
+import { vi } from 'vitest';
 
 const app = express();
 let accessToken: string;
@@ -56,7 +57,7 @@ describe('FHIR Routes', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -483,8 +484,8 @@ describe('FHIR Routes', () => {
 
   describe.each<['writer' | 'reader']>([['writer'], ['reader']])('On %s', (repoMode) => {
     test('Search', async () => {
-      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
       const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
       const res = await request(app)
@@ -502,8 +503,8 @@ describe('FHIR Routes', () => {
     });
 
     test('Search by POST', async () => {
-      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
       const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
       const res = await request(app)
@@ -525,8 +526,8 @@ describe('FHIR Routes', () => {
     });
 
     test('Search by POST with multiple includes', async () => {
-      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
       const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
       const res = await request(app)
@@ -573,8 +574,8 @@ describe('FHIR Routes', () => {
           });
         expect(res2.status).toBe(201);
 
-        const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-        const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+        const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+        const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
 
         const res3 = await request(app)
           .get('/fhir/R4?_type=Patient,Observation')

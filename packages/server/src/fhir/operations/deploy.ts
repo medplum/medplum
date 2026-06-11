@@ -13,12 +13,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Attachment, Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { isBotEnabled } from '../../bots/utils';
-import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
-import { deployLambdaStreaming } from '../../cloud/aws/deploystreaming';
-import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
-import { getBinaryStorage } from '../../storage/loader';
-import { readStreamToString } from '../../util/streams';
 import type { Repository } from '../repo';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
@@ -62,6 +57,9 @@ export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: strin
 
   let updatedBot: WithId<Bot> | undefined;
 
+  const { getBinaryStorage } = await import('../../storage/loader');
+  const { readStreamToString } = await import('../../util/streams');
+
   let codeToDeploy = code;
   if (code) {
     const contentType = ContentType.JAVASCRIPT;
@@ -94,6 +92,9 @@ export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: strin
 
   // Deploy the bot
   if (latestBot.runtimeVersion === 'awslambda') {
+    const { deployLambda, getLambdaTimeoutForBot } = await import('../../cloud/aws/deploy');
+    const { deployLambdaStreaming } = await import('../../cloud/aws/deploystreaming');
+
     if (latestBot.timeout === undefined) {
       latestBot = await repo.updateResource<Bot>({
         ...latestBot,
@@ -107,6 +108,7 @@ export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: strin
       await deployLambda(latestBot, codeToDeploy as string);
     }
   } else if (latestBot.runtimeVersion === 'fission') {
+    const { deployFissionBot } = await import('../../cloud/fission/deploy');
     await deployFissionBot(latestBot, codeToDeploy as string);
   }
 }

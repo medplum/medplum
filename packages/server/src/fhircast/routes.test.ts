@@ -14,6 +14,7 @@ import type { MedplumServerConfig } from '../config/types';
 import { getCacheRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { setTopicCurrentContext } from './utils';
+import { vi } from 'vitest';
 
 const STU2_BASE_ROUTE = '/fhircast/STU2';
 const STU3_BASE_ROUTE = '/fhircast/STU3';
@@ -236,7 +237,7 @@ describe('FHIRcast routes', () => {
     const mockFn = (() => {
       return mockCommander;
     }) as unknown as (commands?: unknown[][]) => ChainableCommander;
-    const redisMulti = jest.spyOn(redis, 'multi').mockImplementation(mockFn);
+    const redisMulti = vi.spyOn(redis, 'multi').mockImplementation(mockFn);
 
     mockCommander.setNextExecResult(null);
 
@@ -274,7 +275,7 @@ describe('FHIRcast routes', () => {
     const mockFn = (() => {
       return mockCommander;
     }) as unknown as (commands?: unknown[][]) => ChainableCommander;
-    const redisMulti = jest.spyOn(redis, 'multi').mockImplementation(mockFn);
+    const redisMulti = vi.spyOn(redis, 'multi').mockImplementation(mockFn);
 
     mockCommander.setNextExecResult([
       [null, 'OK'],

@@ -6,6 +6,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { corsOptions } from './cors';
+import { vi } from 'vitest';
 
 describe('CORS', () => {
   beforeEach(async () => {
@@ -17,7 +18,7 @@ describe('CORS', () => {
       header: () => undefined,
       path: '/',
     } as unknown as Request;
-    const callback = jest.fn();
+    const callback = vi.fn();
     corsOptions(req, callback);
     expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
@@ -27,7 +28,7 @@ describe('CORS', () => {
       header: () => undefined,
       path: '/fhir/R4/Patient',
     } as unknown as Request;
-    const callback = jest.fn();
+    const callback = vi.fn();
     corsOptions(req, callback);
     expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
@@ -37,7 +38,7 @@ describe('CORS', () => {
       header: () => 'http://localhost:3000',
       path: '/fhir/R4/Patient',
     } as unknown as Request;
-    const callback = jest.fn();
+    const callback = vi.fn();
     corsOptions(req, callback);
     expect(callback).toHaveBeenCalledWith(
       null,
@@ -50,7 +51,7 @@ describe('CORS', () => {
       header: () => 'http://localhost:3000',
       path: '/fhir/R4/Patient',
     } as unknown as Request;
-    const callback = jest.fn();
+    const callback = vi.fn();
     corsOptions(req, callback);
     expect(callback).toHaveBeenCalledWith(
       null,
@@ -64,7 +65,7 @@ describe('CORS', () => {
       header: () => 'https://example.com',
       path: '/fhir/R4/Patient',
     } as unknown as Request;
-    const callback = jest.fn();
+    const callback = vi.fn();
     corsOptions(req, callback);
     expect(callback).toHaveBeenCalledWith(
       null,
@@ -78,7 +79,7 @@ describe('CORS', () => {
       header: () => 'https://example.com',
       path: '/fhir/R4/Patient',
     } as unknown as Request;
-    const callback = jest.fn();
+    const callback = vi.fn();
     corsOptions(req, callback);
     expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
@@ -89,7 +90,7 @@ describe('CORS', () => {
       header: () => 'https://example.com',
       path: '/fhir/R4/Patient',
     } as unknown as Request;
-    const callback = jest.fn();
+    const callback = vi.fn();
     corsOptions(req, callback);
     expect(callback).toHaveBeenCalledWith(
       null,
@@ -103,7 +104,7 @@ describe('CORS', () => {
       header: () => 'https://example.com',
       path: '/fhir/R4/Patient',
     } as unknown as Request;
-    const callback = jest.fn();
+    const callback = vi.fn();
     corsOptions(req, callback);
     expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });

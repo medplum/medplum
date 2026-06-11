@@ -1,50 +1,54 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { PassThrough } from 'stream';
+import { PassThrough, Readable } from 'node:stream';
+import { vi } from 'vitest';
 
-/**
- * This is a Jest mock for the Google Cloud Storage client library.
- * It mocks the chain of calls from `new Storage()` down to the individual
- * file methods like `save`, `createWriteStream`, etc.
- */
-export const Storage = jest.fn().mockImplementation(() => ({
-  bucket: jest.fn().mockImplementation(() => ({
-    file: jest.fn().mockImplementation(() => ({
-      /**
-       * Mocks the `save` method used for writing strings/buffers.
-       * Since the implementation `await`s this call, we mock it
-       * to return a resolved promise.
-       */
-      save: jest.fn().mockResolvedValue(undefined),
+const fileStore = new Map<string, Buffer>();
 
-      /**
-       * Mocks the `copy` method used in the `copyFile` implementation.
-       * It returns a resolved promise to simulate a successful copy operation.
-       */
-      copy: jest.fn().mockResolvedValue(undefined),
+export function clearGcpStorageMock(): void {
+  fileStore.clear();
+}
 
-      /**
-       * Mocks the `createWriteStream` method used for writing streams.
-       * It returns a `PassThrough` stream, which is a simple readable
-       * and writable stream that's useful for testing stream piping.
-       */
-      createWriteStream: jest.fn().mockReturnValue(new PassThrough()),
+function getStoreKey(bucketName: string, key: string): string {
+  return `${bucketName}/${key}`;
+}
 
-      /**
-       * Mocks the `createReadStream` method.
-       * It returns a stream that immediately pushes a sample string and ends.
-       */
-      createReadStream: jest.fn().mockImplementation(() => {
-        const stream = new PassThrough();
-        stream.end('Hello, world!');
-        return stream;
-      }),
+function createMockFile(bucketName: string, key: string): {
+  save: ReturnType<typeof vi.fn>;
+  createWriteStream: ReturnType<typeof vi.fn>;
+  createReadStream: ReturnType<typeof vi.fn>;
+  copy: ReturnType<typeof vi.fn>;
+  getSignedUrl: ReturnType<typeof vi.fn>;
+} {
+  const storeKey = getStoreKey(bucketName, key);
 
-      /**
-       * Mocks `getSignedUrl` to return a predictable, fake URL.
-       * The actual GCS library returns an array where the first element is the URL.
-       */
-      getSignedUrl: jest.fn().mockResolvedValue(['https://example.com/signed-url']),
-    })),
-  })),
-}));
+  return {
+    save: vi.fn(async (data: string | Buffer) => {
+      fileStore.set(storeKey, Buffer.isBuffer(data) ? data : Buffer.from(data));
+    }),
+    createWriteStream: vi.fn(() => {
+      const chunks: Buffer[] = [];
+      const stream = new PassThrough();
+      stream.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+      stream.on('end', () => fileStore.set(storeKey, Buffer.concat(chunks)));
+      return stream;
+    }),
+    createReadStream: vi.fn(() => {
+      const data = fileStore.get(storeKey);
+      return Readable.from(data ?? []);
+    }),
+    copy: vi.fn(async (destinationFile: { name: string }) => {
+      const data = fileStore.get(storeKey);
+      if (data) {
+        fileStore.set(destinationFile.name, data);
+      }
+    }),
+    getSignedUrl: vi.fn(async () => [`https://storage.googleapis.com/${bucketName}/${key}?X-Goog-Signature=mock`]),
+  };
+}
+
+export const Storage = vi.fn(function Storage(this: { bucket: ReturnType<typeof vi.fn> }) {
+  this.bucket = vi.fn((bucketName: string) => ({
+    file: vi.fn((key: string) => createMockFile(bucketName, key)),
+  }));
+});

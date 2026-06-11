@@ -10,8 +10,9 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDownloadJob, mockFetchResponse } from './test-utils';
+import { vi, type Mock } from 'vitest';
 
-jest.mock('node-fetch');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 let repo: Repository;
 
@@ -28,7 +29,7 @@ describe('Download Worker', () => {
   });
 
   beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
+    (fetch as unknown as Mock).mockClear();
     getConfig().autoDownloadEnabled = true;
   });
 
@@ -51,7 +52,7 @@ describe('Download Worker', () => {
         body.push('foo');
         body.push(null);
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({
+        (fetch as unknown as Mock).mockImplementation(() => ({
           status: 200,
           headers: {
             get(name: string): string | undefined {
@@ -122,7 +123,7 @@ describe('Download Worker', () => {
       });
       expect(media).toBeDefined();
 
-      (fetch as unknown as jest.Mock)
+      (fetch as unknown as Mock)
         .mockImplementationOnce(() => mockFetchResponse(400, 'Bad Request'))
         .mockImplementationOnce(() => mockFetchResponse(200, ''));
 
@@ -145,7 +146,7 @@ describe('Download Worker', () => {
       });
       expect(media).toBeDefined();
 
-      (fetch as unknown as jest.Mock)
+      (fetch as unknown as Mock)
         .mockImplementationOnce(() => {
           throw new Error();
         })
@@ -405,7 +406,7 @@ describe('Download Worker', () => {
       body2.push('foo2');
       body2.push(null);
 
-      (fetch as unknown as jest.Mock).mockImplementation((url: string) =>
+      (fetch as unknown as Mock).mockImplementation((url: string) =>
         url === firstUrl
           ? {
               status: 200,

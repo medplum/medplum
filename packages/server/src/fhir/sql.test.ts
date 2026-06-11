@@ -28,7 +28,7 @@ import {
 
 describe('SqlBuilder', () => {
   beforeEach(() => {
-    jest.resetModules();
+    vi.resetModules();
   });
 
   describe('SelectQuery', () => {
@@ -343,7 +343,7 @@ describe('SqlBuilder', () => {
     });
 
     test('Debug mode', async () => {
-      const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+      const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
       const sql = new SqlBuilder();
       sql.debug = 'true';
@@ -351,7 +351,7 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable"');
 
       const conn = {
-        query: jest.fn(() => ({ rows: [] })),
+        query: vi.fn(() => ({ rows: [] })),
       } as unknown as Client;
 
       await sql.execute(conn);
@@ -360,7 +360,7 @@ describe('SqlBuilder', () => {
     });
 
     test('Empty insert is no-op', async () => {
-      const db = { query: jest.fn() } as unknown as PoolClient;
+      const db = { query: vi.fn() } as unknown as PoolClient;
       await expect(new InsertQuery('Patient', []).execute(db)).resolves.toStrictEqual([]);
       expect(db.query).not.toHaveBeenCalled();
     });
@@ -497,10 +497,10 @@ test('isValidColumnName', () => {
 });
 
 test('debug', async () => {
-  const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+  const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
   const conn = {
-    query: jest.fn(() => ({ rows: [] })),
+    query: vi.fn(() => ({ rows: [] })),
   } as unknown as Client;
 
   const query = new SelectQuery('MyTable').column('id');

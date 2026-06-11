@@ -12,8 +12,9 @@ import { createTestProject, withTestContext } from '../test.setup';
 import type { CronJobData } from './cron';
 import { convertTimingToCron, execBot, getCronQueue } from './cron';
 import { findAndExecDispatchJob } from './test-utils';
+import { vi } from 'vitest';
 
-jest.mock('node-fetch');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 describe('Cron Worker', () => {
   let botProject: Project;

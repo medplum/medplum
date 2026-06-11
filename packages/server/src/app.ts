@@ -35,7 +35,7 @@ import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
 import { sendOutcome } from './fhir/outcomes';
-import { fhirRouter } from './fhir/routes';
+import { fhirRouter, resetInternalFhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
 import { cleanupReservedDatabaseConnections, healthcheckHandler } from './healthcheck';
@@ -280,6 +280,7 @@ export async function shutdownApp(): Promise<void> {
   await closeDatabase();
   await closeRedis();
   closeRateLimiter();
+  resetInternalFhirRouter();
 
   // If binary storage is a temporary directory, delete it
   const binaryStorage = getConfig().binaryStorage;

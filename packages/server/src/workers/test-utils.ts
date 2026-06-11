@@ -4,10 +4,11 @@ import type { BackgroundJobInteraction } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import type { Resource, Subscription } from '@medplum/fhirtypes';
 import type { Job, Queue } from 'bullmq';
-import { UnrecoverableError } from '../__mocks__/bullmq';
+import { UnrecoverableError } from 'bullmq';
 import { execDispatchJob, getDispatchQueue } from './dispatch';
 import { execDownloadJob, getDownloadQueue } from './download';
 import { execSubscriptionJob, getSubscriptionQueue } from './subscription';
+import { vi, type Mock } from 'vitest';
 
 /**
  * Finds the dispatch job for the given resource and interaction, and executes it.
@@ -94,7 +95,7 @@ async function findAndExecJob(
     throw new Error('Queue not initialized');
   }
 
-  const jobData = (queue.add as jest.Mock).mock.calls.find(([_jobName, data]) => matchJob(data))?.[1];
+  const jobData = (queue.add as Mock).mock.calls.find(([_jobName, data]) => matchJob(data))?.[1];
   if (!jobData) {
     throw new Error('Job not found');
   }
@@ -107,7 +108,7 @@ async function findAndExecJob(
       id: 1 + attempt,
       data: jobData,
       attemptsMade: attempt,
-      changePriority: jest.fn(),
+      changePriority: vi.fn(),
     } as unknown as Job;
     result.push(job);
     try {
