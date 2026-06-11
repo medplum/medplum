@@ -158,6 +158,28 @@ describe('RetentionSweeper', () => {
     expect(queue.countByState().processed).toBe(1);
   });
 
+  test('start() runs a sweep immediately, not only after the first interval', () => {
+    const dayMs = 86_400_000;
+    seedRow(queue, 'processed', Date.now() - 100 * dayMs, 'STARTUP_SWEEP');
+    const sweeper = new RetentionSweeper({
+      queue,
+      log: createMockLogger(),
+      retentionDays: 7,
+      maxSizeMb: 1024,
+      erroredRetentionDays: 90,
+      sweepIntervalSecs: 3600,
+    });
+    sweeper.start();
+    try {
+      // sweep() has no internal awaits, so the startup sweep completes
+      // synchronously within start() — no need to wait for the interval.
+      expect(queue.countByState().processed).toBe(0);
+      expect(sweeper.getLastSweepAt()).not.toBeNull();
+    } finally {
+      sweeper.stop();
+    }
+  });
+
   test('start/stop are idempotent', () => {
     const sweeper = new RetentionSweeper({ queue, log: createMockLogger(), sweepIntervalSecs: 3600 });
     sweeper.start();

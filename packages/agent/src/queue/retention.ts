@@ -45,6 +45,9 @@ export interface SweepResult {
  *
  * Running periodically (not just on size pressure) keeps the DB tidy on agents
  * with low message volume, where size-driven sweeps would never fire.
+ *
+ * Fast WAL checkpointing between sweeps is NOT this class's job — the App runs
+ * {@link DurableQueue.checkpointWalIfDirty} on every agent heartbeat tick.
  */
 export class RetentionSweeper {
   private readonly queue: DurableQueue;
@@ -67,20 +70,28 @@ export class RetentionSweeper {
     this.intervalMs = (options.sweepIntervalSecs ?? DEFAULT_SWEEP_INTERVAL_SECS) * 1000;
   }
 
-  /** Starts the periodic sweep timer. No-op if already started. */
+  /** Starts the periodic sweep timer and runs one sweep right away. No-op if already started. */
   start(): void {
     if (this.timer) {
       return;
     }
-    this.timer = setInterval(() => {
-      this.sweep().catch((err) => {
-        this.log.error(`Retention sweep crashed: ${normalizeErrorString(err)}`);
-      });
-    }, this.intervalMs);
+    this.timer = setInterval(() => this.runSweep(), this.intervalMs);
     // Don't keep the event loop alive on this timer alone.
     if (typeof this.timer.unref === 'function') {
       this.timer.unref();
     }
+    // Sweep immediately: the interval alone would delay the first sweep a full
+    // interval (default 1h) after every process start, so an agent restarted
+    // more often than that would never enforce retention. The sweep schedule is
+    // in-memory only — there's no persisted "last swept at" to resume from.
+    this.runSweep();
+  }
+
+  /** Fire-and-forget wrapper around {@link RetentionSweeper.sweep} that logs failures. */
+  private runSweep(): void {
+    this.sweep().catch((err) => {
+      this.log.error(`Retention sweep crashed: ${normalizeErrorString(err)}`);
+    });
   }
 
   /** Stops the periodic sweep timer. */
@@ -164,12 +175,8 @@ export class RetentionSweeper {
       }
 
       // Phase 4: actually reclaim space. Without this, the WAL can hold deleted
-      // pages indefinitely on a low-traffic agent.
-      try {
-        db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
-      } catch (err) {
-        this.log.warn(`wal_checkpoint failed: ${normalizeErrorString(err)}`);
-      }
+      // pages indefinitely on a low-traffic agent. Best-effort; logs internally.
+      this.queue.checkpointWal();
 
       const result: SweepResult = {
         deletedProcessed,

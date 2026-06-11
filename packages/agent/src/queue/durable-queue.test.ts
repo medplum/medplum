@@ -313,6 +313,25 @@ describe('DurableQueue', () => {
     });
   });
 
+  test('checkpointWalIfDirty truncates the WAL after writes and no-ops when clean', () => {
+    for (let i = 0; i < 20; i++) {
+      queue.enqueue(makeEnqueueInput());
+    }
+    const walPath = `${dbPath}-wal`;
+    expect(statSync(walPath).size).toBeGreaterThan(0);
+
+    expect(queue.checkpointWalIfDirty()).toBe(true);
+    expect(statSync(walPath).size).toBe(0);
+
+    // Nothing written since the last checkpoint — skipped.
+    expect(queue.checkpointWalIfDirty()).toBe(false);
+
+    // A new write re-dirties the flag.
+    queue.enqueue(makeEnqueueInput());
+    expect(queue.checkpointWalIfDirty()).toBe(true);
+    expect(statSync(walPath).size).toBe(0);
+  });
+
   test('close() checkpoints the WAL even when another connection holds the DB open', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
     const { DatabaseSync } = require('node:sqlite') as typeof import('node:sqlite');

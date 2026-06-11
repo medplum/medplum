@@ -145,6 +145,7 @@ export class App {
   private durableQueue: DurableQueue | undefined;
   private retentionSweeper: RetentionSweeper | undefined;
   private leaseManager: QueueLeaseManager | undefined;
+  private queueCheckpointListener: (() => void) | undefined;
   // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
   // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
   // the PID before start()). An upgrading agent stays non-primary until it wins the PID from the
@@ -596,6 +597,7 @@ export class App {
     if (!args.durableQueueOn) {
       if (this.durableQueue) {
         this.log.info('durableQueue disabled — closing queue.');
+        this.removeQueueCheckpointListener();
         this.leaseManager?.stop();
         this.leaseManager = undefined;
         this.retentionSweeper?.stop();
@@ -616,6 +618,16 @@ export class App {
         this.durableQueue = undefined;
         return;
       }
+    }
+
+    // Flush the WAL on every heartbeat tick (same idiom as ChannelStatsTracker /
+    // Hl7ClientPool GC). SQLite only attempts checkpoints piggybacked on commits,
+    // so once traffic stops nothing else would drain the WAL until the hourly
+    // sweep or close(). checkpointWalIfDirty() is a no-op on an idle queue.
+    if (!this.queueCheckpointListener) {
+      const queue = this.durableQueue;
+      this.queueCheckpointListener = () => queue.checkpointWalIfDirty();
+      this.heartbeatEmitter.addEventListener('heartbeat', this.queueCheckpointListener);
     }
 
     // Start the lease manager — it'll attempt acquisition immediately and, on
@@ -642,6 +654,14 @@ export class App {
       sweepIntervalSecs: args.queueSweepIntervalSecs,
     });
     this.retentionSweeper.start();
+  }
+
+  /** Unsubscribes the WAL-checkpoint heartbeat listener, if registered. Idempotent. */
+  private removeQueueCheckpointListener(): void {
+    if (this.queueCheckpointListener) {
+      this.heartbeatEmitter.removeEventListener('heartbeat', this.queueCheckpointListener);
+      this.queueCheckpointListener = undefined;
+    }
   }
 
   /**
@@ -1069,6 +1089,7 @@ export class App {
 
     // Channels drain their own workers in stop() above, so by the time we get
     // here no worker is touching the DB and it's safe to tear down.
+    this.removeQueueCheckpointListener();
     if (this.retentionSweeper) {
       this.retentionSweeper.stop();
       this.retentionSweeper = undefined;

@@ -202,6 +202,53 @@ describe('Durable queue integration', () => {
     await app.stop();
   });
 
+  test('heartbeat ticks flush the WAL via checkpointWalIfDirty', async () => {
+    startMockServer(() => undefined);
+    const [endpoint] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const queuePath = join(dir, 'queue.sqlite');
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: queuePath },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.NONE);
+    await app.start();
+
+    // The startup sweep already checkpointed the open-time writes, so dirty the
+    // WAL with a fresh row — the state a burst of traffic leaves behind.
+    const queue = app.getDurableQueue() as DurableQueue;
+    queue.enqueue({
+      channelName: 'dq-test',
+      remote: '1.2.3.4:5000',
+      msgControlId: 'HB_CKPT',
+      msgType: 'ADT^A01',
+      body: Buffer.from('MSH|...'),
+      encoding: 'utf-8',
+      enhancedMode: 'standard',
+      callbackId: 'cb-hb-ckpt',
+      seqNo: null,
+      receivedAt: Date.now(),
+    });
+    const walPath = `${queuePath}-wal`;
+    expect(statSync(walPath).size).toBeGreaterThan(0);
+
+    // One heartbeat tick → the listener registered in reconcileDurableQueue
+    // runs checkpointWalIfDirty() and truncates the WAL.
+    app.heartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
+    expect(statSync(walPath).size).toBe(0);
+
+    await app.stop();
+  });
+
   test('stop() closes the durable queue and flushes the WAL even when a channel fails to stop', async () => {
     startMockServer(() => undefined);
     const [endpoint] = await createEndpointWithRandomPort(medplum, {

@@ -41,6 +41,12 @@ export class DurableQueue {
   private readonly log: ILogger;
   private readonly path: string;
   private closed = false;
+  // True when the WAL may contain frames not yet checkpointed into the main DB
+  // file. SQLite only attempts checkpoints piggybacked on commits, so once
+  // traffic stops nothing would ever drain the WAL — the App polls this on every
+  // heartbeat tick via checkpointWalIfDirty(). Starts true because open() itself
+  // writes (pragmas, migrations, lease).
+  private walDirty = true;
 
   // Prepared statements — created once at open(), reused for every call.
   // Names mirror the public methods that use them.
@@ -257,16 +263,47 @@ export class DurableQueue {
     // connection to the file. An upgrade-overlap peer or an operator's sqlite3
     // shell defeats that, so flush explicitly — a clean shutdown should always
     // leave a self-contained main DB file (e.g. for file-level backups).
-    try {
-      this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
-    } catch (err) {
-      this.log.warn(`wal_checkpoint on close failed: ${normalizeErrorString(err)}`);
-    }
+    this.checkpointWal();
     try {
       this.db.close();
     } catch (err) {
       this.log.warn(`Error while closing durable queue DB: ${normalizeErrorString(err)}`);
     }
+  }
+
+  /**
+   * Unconditionally runs a TRUNCATE checkpoint, folding the WAL into the main
+   * DB file and truncating the WAL to zero bytes. Best-effort: failures are
+   * logged, and an incomplete checkpoint (a peer connection pinning part of the
+   * WAL) leaves the dirty flag set so the next attempt retries.
+   * @returns True when the checkpoint fully completed.
+   */
+  checkpointWal(): boolean {
+    try {
+      const row = this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get() as { busy: number } | undefined;
+      if (row?.busy) {
+        return false;
+      }
+      this.walDirty = false;
+      return true;
+    } catch (err) {
+      this.log.warn(`wal_checkpoint failed: ${normalizeErrorString(err)}`);
+      return false;
+    }
+  }
+
+  /**
+   * Runs {@link DurableQueue.checkpointWal} only when writes have landed since
+   * the last completed checkpoint. Called by the App on every agent heartbeat
+   * tick so the WAL drains shortly after traffic stops instead of waiting for
+   * the next retention sweep or for close(). A no-op on an idle queue.
+   * @returns True when a checkpoint ran and fully completed.
+   */
+  checkpointWalIfDirty(): boolean {
+    if (this.closed || !this.walDirty) {
+      return false;
+    }
+    return this.checkpointWal();
   }
 
   /** @returns Filesystem path of the underlying SQLite file. */
@@ -304,6 +341,7 @@ export class DurableQueue {
         input.receivedAt,
         input.receivedAt
       );
+      this.walDirty = true;
       const id = Number(info.lastInsertRowid);
       const row = this.getById(id);
       if (!row) {
@@ -343,6 +381,7 @@ export class DurableQueue {
         input.seqNo,
         input.receivedAt
       );
+      this.walDirty = true;
       return this.getById(Number(info.lastInsertRowid));
     } catch (err) {
       this.log.warn(`enqueueRejected failed: ${normalizeErrorString(err)}`);
@@ -359,6 +398,9 @@ export class DurableQueue {
    */
   claimNext(channelName: string, now: number = Date.now()): InboundRow | null {
     const raw = this.claimNextStmt.get(now, channelName) as Record<string, SQLInputValue> | undefined;
+    if (raw) {
+      this.walDirty = true;
+    }
     return raw ? rowFromSql(raw) : null;
   }
 
@@ -390,6 +432,7 @@ export class DurableQueue {
    */
   recordServerResponse(id: number, statusCode: number | null, body: Buffer | string | null): void {
     this.recordServerResponseStmt.run(statusCode, body === null ? null : toBlob(body), id);
+    this.walDirty = true;
   }
 
   /**
@@ -399,6 +442,7 @@ export class DurableQueue {
    */
   markProcessed(id: number, now: number = Date.now()): void {
     this.markProcessedStmt.run(now, id);
+    this.walDirty = true;
   }
 
   /**
@@ -409,6 +453,7 @@ export class DurableQueue {
    */
   markErrored(id: number, error: string, now: number = Date.now()): void {
     this.markErroredStmt.run(now, error, id);
+    this.walDirty = true;
   }
 
   /**
@@ -420,6 +465,9 @@ export class DurableQueue {
    */
   recoverOnStartup(now: number = Date.now()): number {
     const info = this.recoverProcessingStmt.run(now);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+    }
     return Number(info.changes);
   }
 
@@ -485,6 +533,9 @@ export class DurableQueue {
   tryAcquireLease(holder: string, ttlMs: number, now: number = Date.now()): boolean {
     const expiresAt = now + ttlMs;
     const info = this.tryAcquireLeaseStmt.run(holder, now, expiresAt, holder, now);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+    }
     return Number(info.changes) > 0;
   }
 
@@ -499,6 +550,9 @@ export class DurableQueue {
    */
   heartbeatLease(holder: string, ttlMs: number, now: number = Date.now()): boolean {
     const info = this.heartbeatLeaseStmt.run(now + ttlMs, holder);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+    }
     return Number(info.changes) > 0;
   }
 
@@ -509,7 +563,10 @@ export class DurableQueue {
    * @param holder - The identifier of the lease to release.
    */
   releaseLease(holder: string): void {
-    this.releaseLeaseStmt.run(holder);
+    const info = this.releaseLeaseStmt.run(holder);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+    }
   }
 
   /**
