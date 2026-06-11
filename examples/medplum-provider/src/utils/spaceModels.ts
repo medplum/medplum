@@ -29,15 +29,16 @@ export const DEFAULT_MODELS: SpaceModelOption[] = [
  * @returns The list of model options to show in the model picker.
  */
 export function getProjectModels(medplum: MedplumClient): SpaceModelOption[] {
-  const valueString = medplum
-    .getProject()
-    ?.setting?.find((s) => s.name === AI_MODELS_SETTING)?.valueString;
+  const valueString = medplum.getProject()?.setting?.find((s) => s.name === AI_MODELS_SETTING)?.valueString;
   if (valueString) {
     try {
       const parsed = JSON.parse(valueString);
       if (Array.isArray(parsed)) {
         const models = parsed
-          .filter((m): m is { value: string; label?: unknown } => Boolean(m) && typeof m.value === 'string' && m.value.length > 0)
+          .filter(
+            (m): m is { value: string; label?: unknown } =>
+              Boolean(m) && typeof m.value === 'string' && m.value.length > 0
+          )
           .map((m) => ({ value: m.value, label: typeof m.label === 'string' && m.label ? m.label : m.value }));
         if (models.length > 0) {
           return models;

@@ -58,7 +58,12 @@ describe('getProjectModels', () => {
 
 describe('getDefaultModel', () => {
   test('returns first model value', () => {
-    expect(getDefaultModel([{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }])).toBe('a');
+    expect(
+      getDefaultModel([
+        { value: 'a', label: 'A' },
+        { value: 'b', label: 'B' },
+      ])
+    ).toBe('a');
   });
 
   test('falls back to built-in default when empty', () => {

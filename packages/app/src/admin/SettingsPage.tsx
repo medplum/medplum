@@ -50,8 +50,8 @@ export function SettingsPage(): JSX.Element {
       <Title>Project Settings</Title>
       <p>
         Use project settings to store non-sensitive configuration visible to all project users. For example, set
-        "aiModels" to a JSON array of {`{ "value", "label" }`} objects to control the models available in the Spaces
-        AI assistant.
+        "aiModels" to a JSON array of {`{ "value", "label" }`} objects to control the models available in the Spaces AI
+        assistant.
       </p>
       <ResourcePropertyInput
         property={getElementDefinition('Project', 'setting') as InternalSchemaElement}
