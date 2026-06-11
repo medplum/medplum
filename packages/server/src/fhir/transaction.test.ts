@@ -392,9 +392,9 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const patient = await repo.ensureInTransaction(async (txRepo) => {
         // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies scoped repo identity.
-        const alias = repo;
-        expect(txRepo).not.toBe(alias);
-        await expect(alias.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
+        expect(txRepo).not.toBe(repo);
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+        await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
           TRANSACTION_SCOPE_ERROR
         );
         return txRepo.createResource<Patient>({ resourceType: 'Patient' });
