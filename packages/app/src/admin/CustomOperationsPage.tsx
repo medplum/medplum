@@ -8,7 +8,6 @@ import {
   Code,
   Divider,
   Group,
-  JsonInput,
   Loader,
   NavLink,
   ScrollArea,
@@ -21,12 +20,13 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getExtension, normalizeErrorString } from '@medplum/core';
-import type { Bot, OperationDefinition, OperationDefinitionParameter, Parameters } from '@medplum/fhirtypes';
-import { MedplumLink, useMedplum } from '@medplum/react';
+import { createReference, getExtension, normalizeErrorString } from '@medplum/core';
+import type { Bot, OperationDefinition, OperationDefinitionParameter, Parameters, ProjectMembership, Resource, ResourceType } from '@medplum/fhirtypes';
+import { MedplumLink, ResourceInput, sendCommand, useMedplum } from '@medplum/react';
 import { IconExternalLink, IconPlayerPlay, IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CodeEditor } from '../resource/CodeEditor';
 
 const OPERATION_IMPLEMENTATION_EXTENSION =
   'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation';
@@ -51,19 +51,21 @@ export function CustomOperationsPage(): JSX.Element {
   const [selected, setSelected] = useState<OperationWithBot | undefined>();
   const [invokeLevel, setInvokeLevel] = useState<InvokeLevel>('system');
   const [resourceType, setResourceType] = useState<string>('');
-  const [instanceId, setInstanceId] = useState<string>('');
+  const [instanceResource, setInstanceResource] = useState<Resource | undefined>();
   const [paramValues, setParamValues] = useState<ParameterValue[]>([]);
   const [rawMode, setRawMode] = useState(false);
-  const [rawBody, setRawBody] = useState('');
+  const [onBehalfOf, setOnBehalfOf] = useState<ProjectMembership | undefined>();
   const [invoking, setInvoking] = useState(false);
-  const [result, setResult] = useState<string | undefined>();
+  const [responseValue, setResponseValue] = useState<string | undefined>();
   const [lastAuditEventId, setLastAuditEventId] = useState<string | undefined>();
 
+  const isAdmin = medplum.isProjectAdmin() || medplum.isSuperAdmin();
+
+  const rawBodyRef = useRef<HTMLIFrameElement>(null);
+  const responseRef = useRef<HTMLIFrameElement>(null);
+
   const baseUrl = useMemo(() => {
-    // Strip trailing slash
-    const base = medplum.fhirUrl('').toString().replace(/\/$/, '');
-    // base ends with /fhir/R4 — trim that to get the server root, then re-add
-    return base;
+    return medplum.fhirUrl('').toString().replace(/\/$/, '');
   }, [medplum]);
 
   const materializedUrl = useMemo(() => {
@@ -78,10 +80,9 @@ export function CustomOperationsPage(): JSX.Element {
     if (invokeLevel === 'type') {
       return `${baseUrl}/${rt}/$${code}`;
     }
-    // instance
-    const id = instanceId || '<id>';
+    const id = instanceResource?.id ?? '<id>';
     return `${baseUrl}/${rt}/${id}/$${code}`;
-  }, [selected, invokeLevel, resourceType, instanceId, baseUrl]);
+  }, [selected, invokeLevel, resourceType, instanceResource, baseUrl]);
 
   const loadOperations = useCallback(async () => {
     setLoading(true);
@@ -120,14 +121,13 @@ export function CustomOperationsPage(): JSX.Element {
 
   const selectOperation = useCallback((item: OperationWithBot) => {
     setSelected(item);
-    setResult(undefined);
+    setResponseValue(undefined);
     setLastAuditEventId(undefined);
-    setInstanceId('');
+    setInstanceResource(undefined);
     const op = item.operation;
     const rt = op.resource?.[0] ?? '';
     setResourceType(rt);
 
-    // Determine default level
     if (op.system) {
       setInvokeLevel('system');
     } else if (op.type) {
@@ -140,7 +140,6 @@ export function CustomOperationsPage(): JSX.Element {
 
     const inParams = (op.parameter ?? []).filter((p) => p.use === 'in');
     setParamValues(inParams.map((p) => ({ name: p.name ?? '', value: '' })));
-    setRawBody(JSON.stringify({ resourceType: 'Parameters', parameter: [] }, null, 2));
     setRawMode(false);
   }, []);
 
@@ -169,10 +168,19 @@ export function CustomOperationsPage(): JSX.Element {
       return;
     }
     setInvoking(true);
-    setResult(undefined);
+    setResponseValue(undefined);
     setLastAuditEventId(undefined);
     try {
-      const body: Parameters = rawMode ? JSON.parse(rawBody) : buildParameters();
+      let body: Parameters;
+      if (rawMode) {
+        const raw = await sendCommand<undefined, string>(rawBodyRef.current as HTMLIFrameElement, {
+          command: 'getValue',
+        });
+        body = JSON.parse(raw ?? '{}');
+      } else {
+        body = buildParameters();
+      }
+
       const op = selected.operation;
       const code = op.code ?? '';
       const rt = resourceType || (op.resource?.[0] ?? '');
@@ -183,13 +191,18 @@ export function CustomOperationsPage(): JSX.Element {
       } else if (invokeLevel === 'type') {
         url = medplum.fhirUrl(rt, `$${code}`).toString();
       } else {
-        url = medplum.fhirUrl(rt, instanceId, `$${code}`).toString();
+        url = medplum.fhirUrl(rt, instanceResource?.id ?? '', `$${code}`).toString();
       }
 
-      const response = await medplum.post(url, body, 'application/fhir+json');
-      setResult(JSON.stringify(response, null, 2));
+      const headers: HeadersInit = {};
+      if (onBehalfOf) {
+        headers['x-medplum-on-behalf-of'] = createReference(onBehalfOf).reference as string;
+      }
+      const response = await medplum.post(url, body, 'application/fhir+json', { headers });
+      const responseStr = JSON.stringify(response, null, 2);
+      setResponseValue(responseStr);
+      await sendCommand(responseRef.current as HTMLIFrameElement, { command: 'setValue', value: responseStr });
 
-      // Find the most recent AuditEvent for this bot
       const botId = selected.botReference.split('/')[1];
       const auditBundle = await medplum.searchResources('AuditEvent', {
         entity: `Bot/${botId}`,
@@ -202,14 +215,15 @@ export function CustomOperationsPage(): JSX.Element {
 
       showNotification({ color: 'green', message: 'Operation invoked successfully' });
     } catch (err) {
-      setResult(normalizeErrorString(err));
-      showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+      const msg = normalizeErrorString(err);
+      setResponseValue(msg);
+      await sendCommand(responseRef.current as HTMLIFrameElement, { command: 'setValue', value: msg });
+      showNotification({ color: 'red', message: msg, autoClose: false });
     } finally {
       setInvoking(false);
     }
-  }, [selected, medplum, rawMode, rawBody, buildParameters, invokeLevel, resourceType, instanceId]);
+  }, [selected, medplum, rawMode, buildParameters, invokeLevel, resourceType, instanceResource, onBehalfOf]);
 
-  // Which level toggles are available for the selected operation
   const availableLevels = useMemo(() => {
     if (!selected) {
       return [];
@@ -235,9 +249,11 @@ export function CustomOperationsPage(): JSX.Element {
     return selected.operation.resource.map((r) => ({ label: r, value: r }));
   }, [selected]);
 
+  const instanceResourceType = (resourceType || selected?.operation.resource?.[0]) as ResourceType | undefined;
+
   return (
     <Box style={{ display: 'flex', height: '100%', minHeight: 600 }}>
-      {/* Left sidebar — operation list */}
+      {/* Left sidebar */}
       <Box w={260} style={{ borderRight: '1px solid var(--mantine-color-default-border)', flexShrink: 0 }}>
         <Group p="xs" justify="space-between">
           <Text fw={600} size="sm">
@@ -292,7 +308,7 @@ export function CustomOperationsPage(): JSX.Element {
         )}
         {selected && (
           <Stack gap="md">
-            {/* Operation header */}
+            {/* Header */}
             <Group justify="space-between" align="flex-start">
               <Box>
                 <Title order={4}>{selected.operation.title ?? selected.operation.name}</Title>
@@ -303,28 +319,29 @@ export function CustomOperationsPage(): JSX.Element {
                 )}
               </Box>
               {selected.bot && (
-                <Group gap="xs">
-                  <MedplumLink to={`/Bot/${selected.bot.id}/editor`}>
-                    <Group gap={4}>
-                      <Text size="sm">{selected.bot.name}</Text>
-                      <IconExternalLink size={13} />
-                    </Group>
-                  </MedplumLink>
-                </Group>
+                <MedplumLink to={`/Bot/${selected.bot.id}/editor`}>
+                  <Group gap={4}>
+                    <Text size="sm">{selected.bot.name}</Text>
+                    <IconExternalLink size={13} />
+                  </Group>
+                </MedplumLink>
               )}
             </Group>
 
-            {/* Level toggle — only shown when more than one level is supported */}
+            {/* Level toggle */}
             {availableLevels.length > 1 && (
               <SegmentedControl
                 size="xs"
                 value={invokeLevel}
-                onChange={(v) => setInvokeLevel(v as InvokeLevel)}
+                onChange={(v) => {
+                  setInvokeLevel(v as InvokeLevel);
+                  setInstanceResource(undefined);
+                }}
                 data={availableLevels}
               />
             )}
 
-            {/* Resource type selector (when type or instance level) */}
+            {/* Resource type selector */}
             {(invokeLevel === 'type' || invokeLevel === 'instance') && resourceTypeOptions.length > 1 && (
               <Select
                 label="Resource type"
@@ -332,20 +349,51 @@ export function CustomOperationsPage(): JSX.Element {
                 w={200}
                 value={resourceType}
                 data={resourceTypeOptions}
-                onChange={(v) => setResourceType(v ?? '')}
+                onChange={(v) => {
+                  setResourceType(v ?? '');
+                  setInstanceResource(undefined);
+                }}
               />
             )}
 
-            {/* Instance ID input */}
-            {invokeLevel === 'instance' && (
+            {/* Instance resource typeahead */}
+            {invokeLevel === 'instance' && instanceResourceType && (
+              <ResourceInput
+                resourceType={instanceResourceType}
+                name="instanceId"
+                label="Resource instance"
+                placeholder={`Search ${instanceResourceType}…`}
+                onChange={(r) => setInstanceResource(r ?? undefined)}
+              />
+            )}
+
+            {/* Instance ID fallback when no resource type known */}
+            {invokeLevel === 'instance' && !instanceResourceType && (
               <TextInput
                 label="Resource ID"
                 size="xs"
                 w={300}
                 placeholder="e.g. 2e27c71e-30c8-4ceb-8c1c-5641e066c0a4"
-                value={instanceId}
-                onChange={(e) => setInstanceId(e.currentTarget.value)}
+                onChange={(e) =>
+                  setInstanceResource(e.currentTarget.value ? ({ id: e.currentTarget.value } as Resource) : undefined)
+                }
               />
+            )}
+
+            {/* On-behalf-of (admins only) */}
+            {isAdmin && (
+              <Box>
+                <ResourceInput<ProjectMembership>
+                  resourceType="ProjectMembership"
+                  name="onBehalfOf"
+                  label="On behalf of (optional)"
+                  placeholder="Search project membership…"
+                  onChange={(m) => setOnBehalfOf(m ?? undefined)}
+                />
+                <Text size="xs" c="dimmed" mt={4}>
+                  Sends <Code>x-medplum-on-behalf-of</Code> header. The operation runs as if invoked by that membership.
+                </Text>
+              </Box>
             )}
 
             {/* URL bar */}
@@ -413,14 +461,14 @@ export function CustomOperationsPage(): JSX.Element {
               </Group>
 
               {rawMode ? (
-                <JsonInput
-                  value={rawBody}
-                  onChange={setRawBody}
-                  autosize
-                  minRows={8}
-                  formatOnBlur
-                  placeholder='{"resourceType":"Parameters","parameter":[]}'
-                />
+                <Box style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 'var(--mantine-radius-sm)', overflow: 'hidden' }}>
+                  <CodeEditor
+                    iframeRef={rawBodyRef}
+                    language="json"
+                    defaultValue={JSON.stringify({ resourceType: 'Parameters', parameter: [] }, null, 2)}
+                    minHeight="240px"
+                  />
+                </Box>
               ) : (
                 <ParameterForm
                   params={(selected.operation.parameter ?? []).filter((p) => p.use === 'in')}
@@ -440,27 +488,32 @@ export function CustomOperationsPage(): JSX.Element {
               </Button>
             </Group>
 
-            {/* Result */}
-            {result !== undefined && (
-              <Box>
-                <Group justify="space-between" mb="xs">
-                  <Text fw={500} size="sm">
-                    Response
-                  </Text>
-                  {lastAuditEventId && (
-                    <MedplumLink to={`/AuditEvent/${lastAuditEventId}`}>
-                      <Group gap={4}>
-                        <Text size="xs">View AuditEvent</Text>
-                        <IconExternalLink size={12} />
-                      </Group>
-                    </MedplumLink>
-                  )}
-                </Group>
-                <JsonInput value={result} readOnly autosize minRows={6} />
+            {/* Response */}
+            <Box>
+              <Group justify="space-between" mb="xs">
+                <Text fw={500} size="sm">
+                  Response
+                </Text>
+                {lastAuditEventId && (
+                  <MedplumLink to={`/AuditEvent/${lastAuditEventId}`}>
+                    <Group gap={4}>
+                      <Text size="xs">View AuditEvent</Text>
+                      <IconExternalLink size={12} />
+                    </Group>
+                  </MedplumLink>
+                )}
+              </Group>
+              <Box style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 'var(--mantine-radius-sm)', overflow: 'hidden', opacity: responseValue === undefined ? 0.4 : 1 }}>
+                <CodeEditor
+                  iframeRef={responseRef}
+                  language="json"
+                  defaultValue={responseValue ?? '// Response will appear here after invoking'}
+                  minHeight="240px"
+                />
               </Box>
-            )}
+            </Box>
 
-            {/* Output parameter schema */}
+            {/* Output schema */}
             {(selected.operation.parameter ?? []).filter((p) => p.use === 'out').length > 0 && (
               <Box>
                 <Text fw={500} size="sm" mb="xs">
