@@ -47,7 +47,7 @@ describe('MfaPage', () => {
   });
 
   test('Disable -- success', async () => {
-    const getSpy = jest.spyOn(medplum, 'get');
+    const getSpy = vi.spyOn(medplum, 'get');
     const user = await setup();
 
     // Enter a code in the "token" field
@@ -84,7 +84,7 @@ describe('MfaPage', () => {
   });
 
   test('Disable -- failed', async () => {
-    const getSpy = jest.spyOn(medplum, 'get');
+    const getSpy = vi.spyOn(medplum, 'get');
     const user = await setup();
 
     // Enter a code in the "token" field
