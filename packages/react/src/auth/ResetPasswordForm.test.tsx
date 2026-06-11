@@ -63,7 +63,7 @@ describe('ResetPasswordForm', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('Renders form', async () => {
@@ -74,7 +74,7 @@ describe('ResetPasswordForm', () => {
   });
 
   test('Submit success', async () => {
-    const onSuccess = jest.fn();
+    const onSuccess = vi.fn();
     await setup({ onSuccess });
 
     await act(async () => {
@@ -92,7 +92,7 @@ describe('ResetPasswordForm', () => {
   });
 
   test('Shows sign in link when onSignIn provided', async () => {
-    const onSignIn = jest.fn();
+    const onSignIn = vi.fn();
     await setup({ onSignIn });
 
     expect(screen.getByText('Back to Sign In')).toBeInTheDocument();
@@ -105,7 +105,7 @@ describe('ResetPasswordForm', () => {
   });
 
   test('Shows register link when onRegister provided', async () => {
-    const onRegister = jest.fn();
+    const onRegister = vi.fn();
     await setup({ onRegister });
 
     expect(screen.getByText('Sign Up')).toBeInTheDocument();

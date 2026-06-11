@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter } from '@medplum/core';
 import { allOk, badRequest, concatUrls, createReference, Operator, resolveId } from '@medplum/core';
-import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { Project, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
@@ -71,23 +71,28 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
   const url = await resetPassword(systemRepo, user, 'reset', req.body.redirectUri);
 
   if (req.body.sendEmail !== false) {
-    await sendEmail(systemRepo, {
-      to: user.email,
-      subject: 'Medplum Password Reset',
-      text: [
-        'Someone requested to reset your Medplum password.',
-        '',
-        'Please click on the following link:',
-        '',
-        url,
-        '',
-        'If you received this in error, you can safely ignore it.',
-        '',
-        'Thank you,',
-        'Medplum',
-        '',
-      ].join('\n'),
-    });
+    const project = user.project ? await systemRepo.readReference<Project>(user.project) : undefined;
+    await sendEmail(
+      systemRepo,
+      {
+        to: user.email,
+        subject: 'Medplum Password Reset',
+        text: [
+          'Someone requested to reset your Medplum password.',
+          '',
+          'Please click on the following link:',
+          '',
+          url,
+          '',
+          'If you received this in error, you can safely ignore it.',
+          '',
+          'Thank you,',
+          'Medplum',
+          '',
+        ].join('\n'),
+      },
+      project
+    );
   }
 
   sendOutcome(res, allOk);

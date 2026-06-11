@@ -37,6 +37,7 @@ import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
+import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
 import * as otelModule from '../otel/otel';
@@ -2228,6 +2229,30 @@ describe('FHIR Repo', () => {
     }
 
     loggerErrorSpy.mockRestore();
+  });
+
+  test('Async quota delay is applied after transaction commit', async () => {
+    const { repo, project, client, login, membership } = await createTestProject({
+      withRepo: true,
+      withClient: true,
+      withAccessToken: true,
+    });
+    const userConfig: UserConfiguration = { resourceType: 'UserConfiguration' };
+
+    await runInAuthenticatedContext(
+      { project, profile: client, login, membership, userConfig },
+      undefined,
+      undefined,
+      { async: true },
+      async () => {
+        const startTime = Date.now();
+        await repo.withTransaction(async () => {
+          await repo.createResource({ resourceType: 'Patient' });
+          expect(Date.now() - startTime).toBeLessThan(100);
+        });
+        expect(Date.now() - startTime).toBeGreaterThan(100);
+      }
+    );
   });
 
   test('Handles resources with many entries stored in lookup table', async () =>

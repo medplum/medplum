@@ -105,7 +105,8 @@ type DefaultConfigKeys =
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
   | 'defaultFhirQuota'
-  | 'aiRealtimeTranscriptionUrl';
+  | 'aiRealtimeTranscriptionUrl'
+  | 'asyncDelayScaling';
 
 const integerKeys = new Set([
   'accurateCountThreshold',

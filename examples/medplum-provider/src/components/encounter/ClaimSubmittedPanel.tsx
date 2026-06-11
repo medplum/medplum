@@ -1,14 +1,29 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Box, Button, Card, Divider, Flex, Group, Stack, Text } from '@mantine/core';
+import { Badge, Box, Button, Card, Divider, Flex, Group, Loader, Stack, Text } from '@mantine/core';
 import { formatDateTime } from '@medplum/core';
 import type { ClaimResponse, Reference } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/react';
+import { useMedplum, useResource, useSearchOne } from '@medplum/react';
 import { IconExternalLink } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
+import { showErrorNotification } from '../../utils/notifications';
 
-const CANDID_CLAIM_BASE_URL = 'https://app-staging.joincandidhealth.com/claims/';
-const CANDID_IDENTIFIER_SYSTEM = 'https://candidhealth.com/encounter-id';
+// Identifier of the deployed bot that resolves a Candid Health claim portal URL.
+// The URL itself lives in the bot's secrets, so it is never hardcoded here.
+const CANDID_CLAIM_URL_BOT_IDENTIFIER = {
+  system: 'https://medplum.com/integrations/candid-health',
+  value: 'get-candid-claim-portal-url',
+};
+
+// Identifier the send-to-candid bot writes onto the ClaimResponse; its presence marks the
+// claim as a Candid claim and is what the URL bot reads to build the portal link.
+const CANDID_ENCOUNTER_ID_SYSTEM = 'https://candidhealth.com/encounter-id';
+
+interface GetCandidClaimUrlOutput {
+  encounterId: string;
+  url: string;
+}
 
 export interface ClaimSubmittedPanelProps {
   claimResponse: ClaimResponse | Reference<ClaimResponse>;
@@ -17,7 +32,61 @@ export interface ClaimSubmittedPanelProps {
 
 export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Element | null => {
   const { claimResponse, exportMenu } = props;
+  const medplum = useMedplum();
   const claimResponseResource = useResource(claimResponse);
+  // Only look up the bot; if it isn't deployed in this project the button never renders.
+  const [candidUrlBot] = useSearchOne('Bot', {
+    identifier: `${CANDID_CLAIM_URL_BOT_IDENTIFIER.system}|${CANDID_CLAIM_URL_BOT_IDENTIFIER.value}`,
+  });
+  const [candidClaimUrl, setCandidClaimUrl] = useState<string>();
+  const [candidUrlLoading, setCandidUrlLoading] = useState(false);
+
+  const botId = candidUrlBot?.id;
+  const isCandidClaimResponse = claimResponseResource?.identifier?.some(
+    (id) => id.system === CANDID_ENCOUNTER_ID_SYSTEM
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    if (!botId || !claimResponseResource || !isCandidClaimResponse) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCandidClaimUrl(undefined);
+      setCandidUrlLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    setCandidUrlLoading(true);
+
+    const resolveCandidClaimUrl = async (): Promise<void> => {
+      const result = (await medplum.executeBot(
+        botId,
+        claimResponseResource,
+        'application/fhir+json'
+      )) as GetCandidClaimUrlOutput;
+      if (active) {
+        setCandidClaimUrl(result?.url || undefined);
+      }
+    };
+
+    resolveCandidClaimUrl()
+      .catch((err) => {
+        if (active) {
+          showErrorNotification(err);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setCandidUrlLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [botId, claimResponseResource, isCandidClaimResponse, medplum]);
 
   if (!claimResponseResource) {
     return null;
@@ -26,9 +95,6 @@ export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Elemen
   const status = 'Submitted';
   const createdAt = claimResponseResource.created;
   const claimAmount = claimResponseResource.total?.reduce((sum, total) => sum + (total.amount?.value ?? 0), 0) ?? 0;
-  const candidEncounterId = claimResponseResource.identifier?.find(
-    (id) => id.system === CANDID_IDENTIFIER_SYSTEM
-  )?.value;
 
   return (
     <Card withBorder shadow="sm" p={0}>
@@ -58,14 +124,18 @@ export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Elemen
               </Text>
             )}
           </Box>
-          {candidEncounterId && (
-            <Button
-              variant="outline"
-              rightSection={<IconExternalLink size={14} />}
-              onClick={() => window.open(`${CANDID_CLAIM_BASE_URL}${candidEncounterId}`, '_blank')}
-            >
-              View Claim on Candid
-            </Button>
+          {candidUrlLoading ? (
+            <Loader size="sm" />
+          ) : (
+            candidClaimUrl && (
+              <Button
+                variant="outline"
+                rightSection={<IconExternalLink size={14} />}
+                onClick={() => window.open(candidClaimUrl, '_blank')}
+              >
+                View Claim on Candid
+              </Button>
+            )
           )}
         </Flex>
         <Divider />

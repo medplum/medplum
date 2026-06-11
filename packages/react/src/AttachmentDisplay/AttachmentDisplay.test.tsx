@@ -41,7 +41,7 @@ async function setup(args?: AttachmentDisplayProps): Promise<void> {
 
 describe('AttachmentDisplay', () => {
   beforeAll(async () => {
-    global.URL.createObjectURL = jest.fn(() => 'details');
+    global.URL.createObjectURL = vi.fn(() => 'details');
   });
 
   test('Renders empty', async () => {
