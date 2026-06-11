@@ -48,14 +48,14 @@ describe('MfaPage', () => {
 
   test('Add another method when one is available', async () => {
     // Simulate a user already enrolled in email MFA, with TOTP allowed but not yet enrolled.
-    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
       enrolled: true,
       enrolledMethods: ['email'],
       allowedMethods: ['totp', 'email'],
       enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
       enrollQrCode: 'data:image/png;base64,abc',
     });
-    const postSpy = jest.spyOn(medplum, 'post');
+    const postSpy = vi.spyOn(medplum, 'post');
     const user = await setup();
 
     // Already-enrolled view shows the existing method and an option to add TOTP
@@ -79,14 +79,14 @@ describe('MfaPage', () => {
 
   test('Remove a single factor', async () => {
     // Simulate a user enrolled in both methods so per-factor removal is offered.
-    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
       enrolled: true,
       enrolledMethods: ['totp', 'email'],
       allowedMethods: ['totp', 'email'],
       enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
       enrollQrCode: 'data:image/png;base64,abc',
     });
-    const postSpy = jest.spyOn(medplum, 'post');
+    const postSpy = vi.spyOn(medplum, 'post');
     const user = await setup();
 
     expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
@@ -188,12 +188,12 @@ describe('MfaPage', () => {
   test('Enroll with email-based MFA (email-only project)', async () => {
     // Email is the only allowed method, so the form leads straight to the
     // "enable email-based MFA" prompt.
-    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
       enrolled: false,
       enrolledMethods: [],
       allowedMethods: ['email'],
     });
-    const postSpy = jest.spyOn(medplum, 'post');
+    const postSpy = vi.spyOn(medplum, 'post');
     const user = await setup();
 
     expect(await screen.findByText('Set up email-based MFA')).toBeInTheDocument();
@@ -215,14 +215,14 @@ describe('MfaPage', () => {
   test('Choose email from the method chooser', async () => {
     // Both methods are allowed and the user is not yet enrolled, so a chooser
     // is presented first.
-    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
       enrolled: false,
       enrolledMethods: [],
       allowedMethods: ['totp', 'email'],
       enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
       enrollQrCode: 'data:image/png;base64,abc',
     });
-    const postSpy = jest.spyOn(medplum, 'post');
+    const postSpy = vi.spyOn(medplum, 'post');
     const user = await setup();
 
     expect(await screen.findByText('Set up multi-factor authentication')).toBeInTheDocument();
@@ -239,14 +239,14 @@ describe('MfaPage', () => {
 
   test('Choose authenticator from the method chooser', async () => {
     // Both methods allowed: selecting the authenticator reveals the TOTP/QR step.
-    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
       enrolled: false,
       enrolledMethods: [],
       allowedMethods: ['totp', 'email'],
       enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
       enrollQrCode: 'data:image/png;base64,abc',
     });
-    const postSpy = jest.spyOn(medplum, 'post');
+    const postSpy = vi.spyOn(medplum, 'post');
     const user = await setup();
 
     expect(await screen.findByText('Set up multi-factor authentication')).toBeInTheDocument();
@@ -267,14 +267,14 @@ describe('MfaPage', () => {
 
   test('Add email-based MFA when only authenticator is enrolled', async () => {
     // TOTP enrolled, email allowed but not yet enrolled.
-    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
       enrolled: true,
       enrolledMethods: ['totp'],
       allowedMethods: ['totp', 'email'],
       enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
       enrollQrCode: 'data:image/png;base64,abc',
     });
-    const postSpy = jest.spyOn(medplum, 'post');
+    const postSpy = vi.spyOn(medplum, 'post');
     const user = await setup();
 
     expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
@@ -294,13 +294,13 @@ describe('MfaPage', () => {
   test('Disable email-only MFA sends an email challenge', async () => {
     // Email is the only enrolled factor, so opening the disable dialog emails a
     // verification code and the form starts in email-code-entry mode.
-    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
       enrolled: true,
       enrolledMethods: ['email'],
       allowedMethods: ['email'],
       email: 'alice.smith@example.com',
     });
-    const postSpy = jest.spyOn(medplum, 'post');
+    const postSpy = vi.spyOn(medplum, 'post');
     const user = await setup();
 
     expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
@@ -328,7 +328,7 @@ describe('MfaPage', () => {
   test('Get a code by email instead during disable', async () => {
     // Both factors enrolled: the disable dialog leads with the authenticator
     // code but offers to email a code instead.
-    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
       enrolled: true,
       enrolledMethods: ['totp', 'email'],
       allowedMethods: ['totp', 'email'],
@@ -336,7 +336,7 @@ describe('MfaPage', () => {
       enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
       enrollQrCode: 'data:image/png;base64,abc',
     });
-    const postSpy = jest.spyOn(medplum, 'post');
+    const postSpy = vi.spyOn(medplum, 'post');
     const user = await setup();
 
     await user.click(screen.getByRole('button', { name: 'Disable MFA' }));
@@ -355,7 +355,7 @@ describe('MfaPage', () => {
   });
 
   test('Status fetch failure shows a notification', async () => {
-    const getSpy = jest.spyOn(medplum, 'get').mockRejectedValue(new Error('Network error'));
+    const getSpy = vi.spyOn(medplum, 'get').mockRejectedValue(new Error('Network error'));
     await setup();
 
     // The page stays blank (enrolled is undefined) and surfaces the error
@@ -367,7 +367,7 @@ describe('MfaPage', () => {
 
   test('Authenticator enrollment failure shows a notification', async () => {
     // Default mock: TOTP-only, not enrolled.
-    const postSpy = jest.spyOn(medplum, 'post').mockRejectedValue(new Error('Invalid authenticator code'));
+    const postSpy = vi.spyOn(medplum, 'post').mockRejectedValue(new Error('Invalid authenticator code'));
     const user = await setup();
 
     await user.type(await screen.findByLabelText('MFA code', { exact: false }), '123456');
@@ -382,13 +382,13 @@ describe('MfaPage', () => {
 
   test('Email challenge failure on disable shows a notification', async () => {
     // Email-only user: opening disable tries to email a code, which fails here.
-    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
       enrolled: true,
       enrolledMethods: ['email'],
       allowedMethods: ['email'],
       email: 'alice.smith@example.com',
     });
-    const postSpy = jest.spyOn(medplum, 'post').mockRejectedValue(new Error('Unable to send verification email'));
+    const postSpy = vi.spyOn(medplum, 'post').mockRejectedValue(new Error('Unable to send verification email'));
     const user = await setup();
 
     await user.click(screen.getByRole('button', { name: 'Disable MFA' }));
@@ -401,12 +401,12 @@ describe('MfaPage', () => {
   });
 
   test('Email enrollment failure shows a notification', async () => {
-    const getSpy = jest.spyOn(medplum, 'get').mockResolvedValue({
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
       enrolled: false,
       enrolledMethods: [],
       allowedMethods: ['email'],
     });
-    const postSpy = jest.spyOn(medplum, 'post').mockRejectedValue(new Error('Email service unavailable'));
+    const postSpy = vi.spyOn(medplum, 'post').mockRejectedValue(new Error('Email service unavailable'));
     const user = await setup();
 
     await user.click(await screen.findByRole('button', { name: 'Enable email-based MFA' }));
