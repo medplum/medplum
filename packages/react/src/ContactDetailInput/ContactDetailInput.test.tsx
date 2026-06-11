@@ -11,7 +11,7 @@ describe('ContactDetailInput', () => {
       <ContactDetailInput
         name="test"
         path="test"
-        onChange={jest.fn()}
+        onChange={vi.fn()}
         outcome={undefined}
         defaultValue={{ name: 'Foo', telecom: [{ system: 'email', value: 'abc@example.com' }] }}
       />

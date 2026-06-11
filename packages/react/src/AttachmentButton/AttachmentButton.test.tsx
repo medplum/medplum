@@ -101,7 +101,7 @@ describe('AttachmentButton', () => {
   });
 
   test('Error handling', async () => {
-    const errorFn = jest.fn();
+    const errorFn = vi.fn();
 
     setup(
       <AttachmentButton onUpload={console.log} onUploadError={errorFn}>

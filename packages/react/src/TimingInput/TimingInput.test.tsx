@@ -26,7 +26,7 @@ describe('TimingInput', () => {
   });
 
   test('Cancel', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     render(<TimingInput {...defaultProps} onChange={onChange} />);
     expect(screen.getByText('Edit')).toBeDefined();
@@ -44,7 +44,7 @@ describe('TimingInput', () => {
   });
 
   test('Add repeat', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     render(<TimingInput {...defaultProps} defaultValue={{}} onChange={onChange} />);
     expect(screen.getByText('Edit')).toBeDefined();
@@ -67,7 +67,7 @@ describe('TimingInput', () => {
   });
 
   test('Remove repeat', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     render(
       <TimingInput {...defaultProps} defaultValue={{ repeat: { period: 1, periodUnit: 'd' } }} onChange={onChange} />
@@ -92,7 +92,7 @@ describe('TimingInput', () => {
   });
 
   test('Change start', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     render(<TimingInput {...defaultProps} onChange={onChange} />);
     expect(screen.getByText('Edit')).toBeDefined();
@@ -115,7 +115,7 @@ describe('TimingInput', () => {
   });
 
   test('Change period', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     render(<TimingInput {...defaultProps} onChange={onChange} />);
     expect(screen.getByText('Edit')).toBeDefined();
@@ -142,7 +142,7 @@ describe('TimingInput', () => {
   });
 
   test('Change day of week', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     render(<TimingInput {...defaultProps} onChange={onChange} />);
     expect(screen.getByText('Edit')).toBeDefined();
@@ -191,7 +191,7 @@ describe('TimingInput', () => {
   });
 
   test('Change repeat.timeOfDay', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     render(<TimingInput {...defaultProps} onChange={onChange} />);
     expect(screen.getByText('Edit')).toBeDefined();
