@@ -49,8 +49,19 @@ const transactionBundle = {
 :::caution[Transaction Support]
 Transaction support requires the `transaction-bundles` feature flag to be enabled on your project. Contact Medplum to enable this feature.
 
+If the feature flag is not enabled, a bundle with `type: "transaction"` is processed as a `batch`. Entries execute independently with no atomicity guarantee, and the server does not return an error or warning. Verify the flag is enabled on your project before relying on transaction semantics.
+
 The transaction feature is currently in beta. You may experience `409 conflict` errors when attempting transactions. If this occurs, implement retry logic in your client to handle these errors and retry the transaction until it succeeds.
 :::
+
+### Transaction Limits
+
+Transactions are subject to the following limits. Exceeding either limit causes the entire transaction to be rejected with a `400 Bad Request` error.
+
+- A transaction may contain at most **50 update operations**.
+- A transaction that contains conditional operations (a conditional create using `ifNoneExist`, a conditional update, or a conditional delete) runs under serializable database isolation and is limited to **8 entries**.
+
+To keep a larger transaction out of serializable mode, resolve conditional lookups before submitting it: search for the target resources first, then use plain creates and updates with known IDs inside the transaction.
 
 ## How to Perform a Batch Request
 

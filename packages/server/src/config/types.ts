@@ -55,6 +55,8 @@ export interface MedplumServerConfig {
   backgroundJobsRedis?: MedplumRedisConfig;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
+  /** Allow projects to configure their own SMTP transport via Project.secret entries. Default is `true`. */
+  allowProjectSmtp?: boolean;
   bullmq?: MedplumBullmqConfig;
   googleClientId?: string;
   googleClientSecret?: string;
@@ -276,6 +278,8 @@ export interface MedplumSmtpConfig {
   port: number;
   username: string;
   password: string;
+  /** Use TLS when connecting. If not specified, inferred from `port === 465`. */
+  secure?: boolean;
 }
 
 export interface MedplumBullmqConfig {

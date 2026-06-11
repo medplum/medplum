@@ -25,7 +25,7 @@ function setup(): void {
 
 describe('ProjectAdminConfigPage', () => {
   beforeEach(() => {
-    jest.spyOn(medplum, 'isProjectAdmin').mockImplementation(() => true);
+    vi.spyOn(medplum, 'isProjectAdmin').mockImplementation(() => true);
   });
 
   test('Force set password', async () => {
@@ -47,7 +47,7 @@ describe('ProjectAdminConfigPage', () => {
   });
 
   test('Access denied', async () => {
-    jest.spyOn(medplum, 'isProjectAdmin').mockImplementationOnce(() => false);
+    vi.spyOn(medplum, 'isProjectAdmin').mockImplementationOnce(() => false);
     setup();
     expect(screen.getByText('Forbidden')).toBeInTheDocument();
   });

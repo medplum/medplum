@@ -24,7 +24,7 @@ function setup(): UserEvent {
 }
 
 describe('ResetPasswordPage', () => {
-  const grecaptchaResolved = jest.fn();
+  const grecaptchaResolved = vi.fn();
 
   beforeAll(() => {
     Object.defineProperty(globalThis, 'grecaptcha', {
@@ -41,11 +41,11 @@ describe('ResetPasswordPage', () => {
   });
 
   beforeEach(() => {
-    jest.resetModules();
+    vi.resetModules();
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('Renders', () => {
