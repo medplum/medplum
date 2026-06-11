@@ -66,6 +66,10 @@ const result = await medplum.executeBatch(convertToTransactionBundle(orderSetBun
 const pdId = result.entry?.find((e) => e.response?.location?.startsWith('PlanDefinition/'))?.response?.location?.split('/')[1];
 ```
 
+:::caution[Transaction behavior depends on the `transaction-bundles` project feature]
+If the `transaction-bundles` feature flag is not enabled on your project, the transaction bundle is silently processed as a batch. Entries execute independently with no atomicity, so a failed entry does not roll back the others and can leave a partial order set behind. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests) for details.
+:::
+
 <details>
 <summary>Example order set bundle (`PlanDefinition` + `ActivityDefinition`)</summary>
 
