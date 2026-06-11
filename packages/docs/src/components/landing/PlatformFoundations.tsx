@@ -18,7 +18,12 @@ export function PlatformFoundations(): JSX.Element {
     setActiveName((prev) => (prev === name ? null : name));
   };
   const step = (dir: 1 | -1): void => {
-    const next = activeIdx === -1 ? (dir === 1 ? 0 : FOUNDATIONS.length - 1) : (activeIdx + dir + FOUNDATIONS.length) % FOUNDATIONS.length;
+    const next =
+      activeIdx === -1
+        ? dir === 1
+          ? 0
+          : FOUNDATIONS.length - 1
+        : (activeIdx + dir + FOUNDATIONS.length) % FOUNDATIONS.length;
     setActiveName(FOUNDATIONS[next].name);
   };
 
@@ -27,8 +32,8 @@ export function PlatformFoundations(): JSX.Element {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionHeadline}>Foundations</h2>
         <p className={styles.sectionLead}>
-          The primitives that make the rest possible — eight building blocks sharing one FHIR data model. Every
-          workflow and app above sits on these. Select one to see where it lives in the architecture.
+          The primitives that make the rest possible — eight building blocks sharing one FHIR data model. Every workflow
+          and app above sits on these. Select one to see where it lives in the architecture.
         </p>
       </div>
 
