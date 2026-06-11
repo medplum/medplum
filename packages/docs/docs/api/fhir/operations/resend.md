@@ -76,7 +76,9 @@ curl 'https://api.medplum.com/fhir/R4/<resourceType>/<resourceId>/$resend' \
 
 ### Replay a specific historical version
 
-To replay a subscription using a specific past version of the resource (rather than the current version), pass `versionId`. The server will load that exact version, set `previous` to the version immediately preceding it in history, and evaluate subscriptions against that pair.
+To replay a subscription using a specific past version of the resource (rather than the current version), pass `versionId`. The server will load that exact version, set `%previous` to the version immediately preceding it in history, and evaluate subscriptions against that pair.
+
+Here, `%previous` refers to the prior-version resource exposed to [expression-based subscription criteria](/docs/subscriptions/subscription-extensions#expression-based-criteria), which diff `%previous` against `%current` to decide whether to fire.
 
 ```ts
 await medplum.post(medplum.fhirUrl('Patient', patientId, '$resend'), {
