@@ -9,7 +9,7 @@ import { getConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getLogger } from '../../logger';
 import type { PgQueryable, TransactionIsolationLevel } from '../sql';
-import { isRetryableTransactionError, normalizeDatabaseError } from '../sql';
+import { isPoolClient, isRetryableTransactionError, normalizeDatabaseError } from '../sql';
 import type { TransactionIdleStatus, TransactionIdleTrackerOptions } from './transaction-idle-tracker';
 import { TransactionIdleTracker } from './transaction-idle-tracker';
 
@@ -137,7 +137,35 @@ export class RepositoryConnection implements Disposable {
       current = current.parent;
     }
 
+    // A repo whose savepoint has been released remains valid only while the outer
+    // transaction is processing pre-commit or post-commit callbacks, since callbacks
+    // registered within the savepoint may run through the registering repo.
+    if (
+      writableScope.state === 'released' &&
+      this.currentScope.state !== 'committing' &&
+      this.currentScope.state !== 'post-commit'
+    ) {
+      throw new Error('Savepoint has been released; use the outer transaction-scoped repository');
+    }
+
     return writableScope;
+  }
+
+  /**
+   * Returns true if the scope or any of its ancestors has ended, meaning repositories
+   * bound to it can never become usable again.
+   * @param scope - The scope to check.
+   * @returns True if the scope is permanently ended.
+   */
+  isScopeEnded(scope: Scope): boolean {
+    let current: WritableScope | undefined = validateWritableScope(scope);
+    while (current) {
+      if (current.state === 'ended') {
+        return true;
+      }
+      current = current.parent;
+    }
+    return false;
   }
 
   /**
@@ -390,6 +418,11 @@ export class RepositoryConnection implements Disposable {
       this.assertCompatibleTransactionIsolationLevel(isolationLevel);
       const nextDepth = this.transactionDepth + 1;
       const client = await this.getConnection(DatabaseMode.WRITER);
+      if (!isPoolClient(client)) {
+        // A Pool masquerading as a client would run each transaction statement on a
+        // different physical connection
+        throw new Error('Transactions require a dedicated PoolClient');
+      }
       try {
         if (nextDepth === 1) {
           await client.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
@@ -627,15 +660,11 @@ export class RepositoryConnection implements Disposable {
 
   async postCommit(scope: Scope, fn: () => Promise<void>): Promise<void> {
     this.assertScope(scope);
-    if (this.currentScope.state === 'post-commit') {
-      // this constraint could be relaxed if we wanted to allow post-commit callbacks
-      // to add additional post-commit callbacks if there is a compelling reason to do so
-      // But from the lifecycle of a transaction, it's not clear why that would be sensible
-      // since post-commit callbacks are invoked after definitionally executed after committing
-      // the transaction.
-      throw new Error('Cannot add post-commit callback while processing post-commit callbacks');
-    }
-    if (this.currentScope !== this.rootScope) {
+    // Once the transaction has committed, there is nothing to defer until; invoke
+    // immediately like the no-transaction case below. This is what allows writes
+    // performed within post-commit callbacks (which register their own post-commit
+    // callbacks after their inner transaction ends) to work.
+    if (this.currentScope !== this.rootScope && this.currentScope.state !== 'post-commit') {
       this.currentScope.postCommitCallbacks.push(fn);
     } else {
       await this.invokePostCommitCallback(fn);

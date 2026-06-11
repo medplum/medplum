@@ -17,6 +17,16 @@ import type { ColumnSearchParameterImplementation } from './searchparameter';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
 
+/**
+ * The query signature overload from pg.ClientBase['query'] most often used:
+ * @example
+ * ```typescript
+ *   query<R extends QueryResultRow = any, I = any[]>(
+ *     queryTextOrConfig: string | QueryConfig<I>,
+ *     values?: QueryConfigValues<I>
+ *   ) => Promise<QueryResult<R>>;
+ * ```
+ */
 export type PgQueryable = Pick<Pool, 'query'> & Pick<PoolClient, 'query'>;
 
 export function setSqlDebug(value: string | undefined): void {

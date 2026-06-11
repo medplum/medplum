@@ -129,7 +129,7 @@ describe('FHIR Repo', () => {
   });
 
   test('Read AuditEvent after update', async () => {
-    const projectId = randomUUID();
+    const projectId = testProject.id;
     const resource = await systemRepo.createResource({ resourceType: 'Patient', meta: { project: projectId } });
     const data = createAuditEvent(
       RestfulOperationType,
