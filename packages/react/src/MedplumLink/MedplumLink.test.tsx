@@ -30,7 +30,7 @@ const medplum = new MedplumClient({
 function setup(ui: ReactElement): void {
   render(
     <MemoryRouter>
-      <MedplumProvider medplum={medplum} navigate={jest.fn()}>
+      <MedplumProvider medplum={medplum} navigate={vi.fn()}>
         {ui}
       </MedplumProvider>
     </MemoryRouter>
@@ -39,7 +39,7 @@ function setup(ui: ReactElement): void {
 
 describe('MedplumLink', () => {
   beforeEach(() => {
-    locationUtils.assign = jest.fn();
+    locationUtils.assign = vi.fn();
   });
 
   test('Renders', () => {
@@ -83,7 +83,7 @@ describe('MedplumLink', () => {
   });
 
   test('Handles click with onClick', () => {
-    const onClick = jest.fn();
+    const onClick = vi.fn();
     setup(
       <MedplumLink to="xyz" onClick={onClick}>
         test
