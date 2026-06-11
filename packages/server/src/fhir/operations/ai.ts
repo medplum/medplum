@@ -135,9 +135,12 @@ export async function aiOperation(
     return [badRequest('OpenAI API key not configured in project secrets')];
   }
 
-  const baseUrl = (
-    ctx.project.secret?.find((s) => s.name === 'OPENAI_BASE_URL')?.valueString ?? 'https://api.openai.com/v1'
-  ).replace(/\/+$/, '');
+  let baseUrl =
+    ctx.project.secret?.find((s) => s.name === 'OPENAI_BASE_URL')?.valueString ?? 'https://api.openai.com/v1';
+  // Strip any trailing slashes without a regex to avoid backtracking concerns
+  while (baseUrl.endsWith('/')) {
+    baseUrl = baseUrl.slice(0, -1);
+  }
 
   const params = parseInputParameters<AIOperationParameters>(operation, req);
   let messages: any[];
