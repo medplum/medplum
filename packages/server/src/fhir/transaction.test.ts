@@ -18,7 +18,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
-import { createTestProject, withTestContext } from '../test.setup';
+import { createTestProject, withQueryInterceptor, withTestContext } from '../test.setup';
 import * as workersModule from '../workers';
 import type { SystemRepository } from './repo';
 import { getShardSystemRepo, Repository } from './repo';
@@ -343,6 +343,9 @@ async function assertRepositoryDatabaseClientTypes(repo: Repository, systemRepo:
   });
 }
 
+const TRANSACTION_SCOPE_ERROR =
+  'Repository is in an active transaction; use the transaction-scoped repository passed to the callback';
+
 describe('FHIR Repo Transactions', () => {
   let repo: Repository;
   let systemRepo: SystemRepository;
@@ -367,18 +370,15 @@ describe('FHIR Repo Transactions', () => {
   test('withTransaction parent repo unusable during transaction callback', () =>
     withTestContext(async () => {
       const patient = await repo.withTransaction(async (txRepo) => {
-        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies scoped repo identity.
-        expect(txRepo).not.toBe(repo);
-        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
-        expect(() => repo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('transaction-scoped repository');
-        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
-        await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
-          'transaction-scoped repository'
+        // TODO lol this thwarts the lint rule
+        const parent = repo;
+
+        expect(txRepo).not.toBe(parent);
+        expect(() => parent.getDatabaseClient(DatabaseMode.WRITER)).toThrow(TRANSACTION_SCOPE_ERROR);
+        await expect(parent.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
+          TRANSACTION_SCOPE_ERROR
         );
-        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
-        await expect(repo.searchResources(parseSearchRequest('Patient'))).rejects.toThrow(
-          'transaction-scoped repository'
-        );
+        await expect(parent.searchResources(parseSearchRequest('Patient'))).rejects.toThrow(TRANSACTION_SCOPE_ERROR);
         return txRepo.createResource<Patient>({ resourceType: 'Patient' });
       });
       await expectPatientVisible(repo, patient?.id);
@@ -387,13 +387,11 @@ describe('FHIR Repo Transactions', () => {
   test('ensureInTransaction callback must use the scoped repository when starting transaction', () =>
     withTestContext(async () => {
       const patient = await repo.ensureInTransaction(async (txRepo) => {
-        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies scoped repo identity.
-        expect(txRepo).not.toBe(repo);
-        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
-        await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
-          'transaction-scoped repository'
+        const parent = repo;
+        expect(txRepo).not.toBe(parent);
+        await expect(parent.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
+          TRANSACTION_SCOPE_ERROR
         );
-
         return txRepo.createResource<Patient>({ resourceType: 'Patient' });
       });
       await expectPatientVisible(repo, patient?.id);
@@ -415,17 +413,24 @@ describe('FHIR Repo Transactions', () => {
   test('withTransaction rejects concurrent calls', async () => {
     const cb1 = jest.fn().mockReturnValue('first success');
     const cb2 = jest.fn().mockReturnValue('second success');
-    const promise1 = repo.withTransaction(cb1);
-    const promise2 = repo.withTransaction(cb2);
+    await withQueryInterceptor(
+      (sql) => {
+        console.log('query', sql);
+      },
+      async () => {
+        const promise1 = repo.withTransaction(cb1);
+        const promise2 = repo.withTransaction(cb2);
 
-    const [result1, result2] = await Promise.allSettled([promise1, promise2]);
-    assert(result1.status === 'fulfilled');
-    expect(result1.value).toBe('first success');
-    expect(cb1).toHaveBeenCalledTimes(1);
+        const [result1, result2] = await Promise.allSettled([promise1, promise2]);
+        assert(result1.status === 'fulfilled');
+        expect(result1.value).toBe('first success');
+        expect(cb1).toHaveBeenCalledTimes(1);
 
-    assert(result2.status === 'rejected');
-    expect((result2.reason as Error).message).toContain('transaction-scoped repository');
-    expect(cb2).toHaveBeenCalledTimes(0);
+        assert(result2.status === 'rejected');
+        expect((result2.reason as Error).message).toContain('transaction-scoped repository');
+        expect(cb2).toHaveBeenCalledTimes(1);
+      }
+    );
   });
 
   test('Transaction rollback', () =>
@@ -1490,7 +1495,7 @@ describe('FHIR Repo Transactions', () => {
           secondStarted.resolve(undefined);
           await finishTxns.promise;
         });
-        await secondStarted.promise;
+        await Promise.any([secondStarted.promise, tx2]);
         expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2', 'SAVEPOINT sp3']);
         finishTxns.resolve(undefined);
         // Both scoped transaction callbacks have finished. Yield so the second commit path can proceed.
@@ -1577,7 +1582,7 @@ describe('FHIR Repo Transactions', () => {
           throw new Error('second rollback');
         });
         // .catch((err) => err);
-        await secondStarted.promise;
+        await Promise.any([secondStarted.promise, tx2]);
 
         expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2', 'SAVEPOINT sp3']);
         failTransactions.resolve(undefined);

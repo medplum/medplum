@@ -267,7 +267,6 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
 export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirRepository implements Disposable {
   private readonly context: RepositoryContext;
   private readonly connection: RepositoryConnection;
-  // private readonly connectionToken: ScopeToken;
   private readonly connectionScope: Scope;
   private readonly ownsConnection: boolean;
   private closed = false;
@@ -301,14 +300,13 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
    */
   static readonly VERSION: number = 15;
 
-  constructor(context: RepositoryContext, connection?: RepositoryConnection) {
+  constructor(context: RepositoryContext, connection?: RepositoryConnection, scope?: Scope) {
     super();
     addSyntheticR4ProjectIfMissing(context);
     this.context = context;
     this.ownsConnection = connection === undefined;
     this.connection = connection ?? new RepositoryConnection();
-    // this.connectionToken = this.connection.getCurrentToken();
-    this.connectionScope = this.connection.getCurrentScope();
+    this.connectionScope = scope ?? this.connection.getCurrentScope();
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
@@ -330,10 +328,11 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
   /**
    * Creates a transaction-scoped repository that is valid for the duration of a the current transaction as well
    * as post-commit callbacks.
+   * @param scope - The scope of the transaction-scoped repository.
    * @returns A transaction-scoped repository that is valid for the duration of the current transaction as well
    * as post-commit callbacks.
    */
-  private createTransactionScopedRepo(): TransactionRepository & this {
+  private createTransactionScopedRepo(scope: Scope): TransactionRepository & this {
     if (!this.connection.isInTransaction()) {
       throw new Error('Not in transaction');
     }
@@ -341,9 +340,11 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     // use this.constructor to create the exact class, e.g. SystemRepository vs Repository, of the current instance.
     const RepositoryConstructor = this.constructor as new (
       context: RepositoryContext,
-      connection?: RepositoryConnection
+      connection?: RepositoryConnection,
+      scope?: Scope
     ) => this;
-    const txnScopedRepo = new RepositoryConstructor(this.context, this.connection) as TransactionRepository & this;
+    const txnScopedRepo = new RepositoryConstructor(this.context, this.connection, scope) as TransactionRepository &
+      this;
     return txnScopedRepo;
   }
 
@@ -364,9 +365,14 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
 
     let systemRepo: SystemRepository<TClient>;
     if (this.connection.hasConnection()) {
-      systemRepo = createSystemRepository<TClient>(this.shardId, this.connection, contextDefaults);
+      systemRepo = createSystemRepository<TClient>(
+        this.shardId,
+        this.connection,
+        this.connectionScope,
+        contextDefaults
+      );
     } else {
-      systemRepo = createSystemRepository<TClient>(this.shardId, undefined, contextDefaults);
+      systemRepo = createSystemRepository<TClient>(this.shardId, undefined, undefined, contextDefaults);
     }
     return systemRepo;
   }
@@ -375,7 +381,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     this.assertUsable();
     let repo: Repository<TClient>;
     if (this.connection.hasConnection()) {
-      repo = new Repository({ ...this.context, ...config }, this.connection);
+      repo = new Repository({ ...this.context, ...config }, this.connection, this.connectionScope);
     } else {
       repo = new Repository({ ...this.context, ...config });
     }
@@ -2221,14 +2227,17 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     options?: { serializable?: boolean }
   ): Promise<TResult> {
     this.assertUsable();
-    let txnScopedRepo: (TransactionRepository & this) | undefined;
-    return this.connection.withTransaction(async () => {
-      // create transaction-scoped repository within RepositoryConnection.withTransaction callback
-      // since the callback is only invoked after a sticky PoolClient is established to begin the
-      // transaction.
-      txnScopedRepo = this.createTransactionScopedRepo();
-      return callback(txnScopedRepo);
-    }, options);
+    return this.connection.withTransaction(
+      this.connectionScope,
+      async (txScope) => {
+        // create transaction-scoped repository within RepositoryConnection.withTransaction callback
+        // since the callback is only invoked after a sticky PoolClient is established to begin the
+        // transaction.
+        const txnScopedRepo = this.createTransactionScopedRepo(txScope);
+        return callback(txnScopedRepo);
+      },
+      options
+    );
   }
 
   async withStatementTimeout<TResult>(
@@ -2377,12 +2386,14 @@ type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJo
  * Creates a SystemRepository for the specified shard.
  * @param shardId - The shard ID.
  * @param connection - Optional repository connection for transaction support.
+ * @param connectionScope - Optional scope for the connection.
  * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository instance.
  */
 function createSystemRepository<TClient extends PgQueryable = PgQueryable>(
   shardId: string,
   connection?: RepositoryConnection,
+  connectionScope?: Scope,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository<TClient> {
   return new SystemRepository<TClient>(
@@ -2397,7 +2408,8 @@ function createSystemRepository<TClient extends PgQueryable = PgQueryable>(
       },
       // System repo does not have an associated Project; it can write to any
     },
-    connection
+    connection,
+    connectionScope
   );
 }
 
@@ -2431,7 +2443,7 @@ export function getGlobalSystemRepo(
   connection?: RepositoryConnection,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
-  return createSystemRepository(GLOBAL_SHARD_ID, connection, contextDefaults);
+  return createSystemRepository(GLOBAL_SHARD_ID, connection, undefined, contextDefaults);
 }
 
 /**
@@ -2448,7 +2460,7 @@ export function getShardSystemRepo(
   connection?: RepositoryConnection,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
-  return createSystemRepository(shardId, connection, contextDefaults);
+  return createSystemRepository(shardId, connection, undefined, contextDefaults);
 }
 
 /**
