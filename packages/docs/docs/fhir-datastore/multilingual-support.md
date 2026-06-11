@@ -1,0 +1,325 @@
+# Multilingual Support
+
+FHIR provides a standard mechanism for attaching translations to any string field in a resource: the
+[`translation` extension](http://hl7.org/fhir/StructureDefinition/translation). This lets you store the primary
+text of a field in one language while embedding translations for other languages directly inside the same resource,
+keeping all language variants together and avoiding the need to maintain separate per-language copies of your data.
+
+## How the Extension Works
+
+In FHIR JSON, every string primitive can have a "shadow" element — a sibling property prefixed with `_` — that
+carries extensions and metadata about that value. The `translation` extension is placed on this shadow element:
+
+```js
+{
+  // The primary (default) value of the field
+  "text": "What is your name?",
+
+  // Shadow element carrying translations for the same field
+  "_text": {
+    "extension": [
+      {
+        "url": "http://hl7.org/fhir/StructureDefinition/translation",
+        "extension": [
+          { "url": "lang", "valueCode": "es" },
+          { "url": "content", "valueString": "¿Cómo se llama?" }
+        ]
+      },
+      {
+        "url": "http://hl7.org/fhir/StructureDefinition/translation",
+        "extension": [
+          { "url": "lang", "valueCode": "fr" },
+          { "url": "content", "valueString": "Quel est votre nom ?" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Each repetition of the `translation` extension represents one translation, with two required sub-extensions:
+
+| Sub-extension | Type | Description |
+|---|---|---|
+| `lang` | `code` | BCP-47 language tag (e.g. `es`, `fr`, `zh-CN`, `pt-BR`) |
+| `content` | `string` | The translated text in the target language |
+
+The extension can appear on **any string or markdown primitive** in any FHIR resource.
+
+## Common Use Cases
+
+### Multilingual Questionnaires
+
+Patient-facing intake forms are one of the most common places to use the translation extension. Embedding all
+language variants in a single [`Questionnaire`](/docs/api/fhir/resources/questionnaire) resource keeps the form
+definition self-contained and ensures each question's translations stay synchronized with the primary text.
+
+```js
+{
+  "resourceType": "Questionnaire",
+  "status": "active",
+  "title": "Patient Intake",
+  "_title": {
+    "extension": [
+      {
+        "url": "http://hl7.org/fhir/StructureDefinition/translation",
+        "extension": [
+          { "url": "lang", "valueCode": "es" },
+          { "url": "content", "valueString": "Registro de paciente" }
+        ]
+      }
+    ]
+  },
+  "item": [
+    {
+      "linkId": "preferred-language",
+      "type": "choice",
+      "text": "What is your preferred language?",
+      "_text": {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/translation",
+            "extension": [
+              { "url": "lang", "valueCode": "es" },
+              { "url": "content", "valueString": "¿Cuál es su idioma preferido?" }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/translation",
+            "extension": [
+              { "url": "lang", "valueCode": "zh-CN" },
+              { "url": "content", "valueString": "您的首选语言是什么？" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### Translating Coding Display Strings
+
+The `display` field of a [`Coding`](/docs/api/fhir/datatypes/coding) can carry translations the same way. This is
+useful when your application renders coded values directly from a resource and needs to show the correct language to
+the end user:
+
+```js
+{
+  "resourceType": "Condition",
+  "subject": { "reference": "Patient/example" },
+  "code": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "44054006",
+        "display": "Diabetes mellitus type 2",
+        "_display": {
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/translation",
+              "extension": [
+                { "url": "lang", "valueCode": "es" },
+                { "url": "content", "valueString": "Diabetes mellitus tipo 2" }
+              ]
+            },
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/translation",
+              "extension": [
+                { "url": "lang", "valueCode": "fr" },
+                { "url": "content", "valueString": "Diabète sucré de type 2" }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "text": "Diabetes mellitus type 2"
+  },
+  "clinicalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+        "code": "active"
+      }
+    ]
+  }
+}
+```
+
+### Clinical Notes and Narrative Text
+
+Free-text fields like `Annotation.text` (used in `Condition.note`, `MedicationRequest.note`, etc.) and
+`Narrative.div` also support the pattern. Notes are commonly authored in the clinician's language and then
+translated for patient-facing portals:
+
+```js
+{
+  "resourceType": "Condition",
+  "subject": { "reference": "Patient/example" },
+  "note": [
+    {
+      "text": "Patient reports symptoms began three weeks ago.",
+      "_text": {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/translation",
+            "extension": [
+              { "url": "lang", "valueCode": "es" },
+              {
+                "url": "content",
+                "valueString": "El paciente reporta que los síntomas comenzaron hace tres semanas."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+## Reading Translations in Your Application
+
+### Extracting a Translation for a Known Language
+
+To display a translated value, pass the parent resource object and the field name. The function reads both
+`parent[elementName]` (the primary value) and `parent['_' + elementName]` (the shadow element) and returns the
+matching translation:
+
+```ts
+import { Extension } from '@medplum/fhirtypes';
+
+/**
+ * Returns the translation of a primitive string field for the given BCP-47 language tag,
+ * falling back to the primary value if no translation is found.
+ *
+ * @param parent - The parent FHIR object containing the field (e.g. a QuestionnaireItem).
+ * @param elementName - The name of the string field (e.g. 'text', 'display').
+ * @param lang - BCP-47 language tag to look up (e.g. 'es', 'fr', 'zh-CN').
+ */
+function getTranslation(
+  parent: Record<string, any>,
+  elementName: string,
+  lang: string
+): string | undefined {
+  const primaryValue = parent[elementName] as string | undefined;
+  const shadow = parent['_' + elementName] as { extension?: Extension[] } | undefined;
+
+  const translations = shadow?.extension?.filter(
+    (ext) => ext.url === 'http://hl7.org/fhir/StructureDefinition/translation'
+  );
+
+  for (const t of translations ?? []) {
+    const langExt = t.extension?.find((e) => e.url === 'lang');
+    const contentExt = t.extension?.find((e) => e.url === 'content');
+    if (langExt?.valueCode === lang && contentExt?.valueString) {
+      return contentExt.valueString;
+    }
+  }
+
+  return primaryValue;
+}
+```
+
+**Usage example** — rendering a Questionnaire item in the user's language:
+
+```ts
+const item = questionnaire.item?.[0];
+const userLang = 'es';
+
+const label = getTranslation(item, 'text', userLang);
+// → "¿Cómo se llama?" (falls back to "What is your name?" if no Spanish translation exists)
+```
+
+### Matching with BCP-47 Language Tags
+
+Language tags follow [BCP 47](https://www.rfc-editor.org/rfc/rfc5646) conventions. When matching, prefer an exact
+match first, then fall back to the base language if a region-specific variant is not found
+(e.g. try `pt-BR` first, then `pt`):
+
+```ts
+function getBestTranslation(
+  parent: Record<string, any>,
+  elementName: string,
+  lang: string
+): string | undefined {
+  const primaryValue = parent[elementName] as string | undefined;
+
+  // Try exact match first (e.g. 'pt-BR')
+  const exact = getTranslation(parent, elementName, lang);
+  if (exact !== primaryValue) return exact;
+
+  // Fall back to base language tag (e.g. 'pt')
+  const baseLang = lang.split('-')[0];
+  if (baseLang !== lang) {
+    return getTranslation(parent, elementName, baseLang);
+  }
+
+  return primaryValue;
+}
+```
+
+## Storing the Patient's Preferred Language
+
+Record a patient's preferred language on the [`Patient`](/docs/api/fhir/resources/patient) resource using the
+`communication` field. This is the standard FHIR way to track which language to use when communicating with a
+patient, and your application can use it to select the right translation at render time:
+
+```js
+{
+  "resourceType": "Patient",
+  "name": [{ "given": ["Maria"], "family": "Garcia" }],
+  "communication": [
+    {
+      "language": {
+        "coding": [
+          {
+            "system": "urn:ietf:bcp:47",
+            "code": "es",
+            "display": "Spanish"
+          }
+        ]
+      },
+      "preferred": true
+    }
+  ]
+}
+```
+
+## Relationship to CodeSystem Designations
+
+The `translation` extension and [`CodeSystem.designation`](/docs/terminology/medplum-terminology-services#internationalizing-codings)
+serve different purposes and are complementary:
+
+| Mechanism | Where it lives | Searchable? | Best for |
+|---|---|---|---|
+| `translation` extension | On individual resource fields (via `_fieldName`) | No — for display only | Translating free text, notes, questionnaire items, narrative, and `Coding.display` in a specific resource |
+| `CodeSystem.designation` + `ValueSet/$expand` | In the terminology server | Yes — `ValueSet/$expand?filter=...&displayLanguage=es` returns matching codes in the requested language | Translating standardized code display names system-wide; powering language-aware code lookups and typeaheads |
+
+**Key difference:** translations attached via the `translation` extension are invisible to FHIR search — they exist
+solely for rendering. If you need to search or match codes by their name in a given language (e.g. letting a
+clinician type "Diabetes" in Spanish to find the right SNOMED code), store those translations as
+`CodeSystem.designation` entries instead.
+
+For coded values, prefer managing translations centrally in `CodeSystem` designations so they are automatically
+available anywhere that code is used. Use the `translation` extension for free-text fields and for overriding or
+supplementing a code's display in the context of a specific resource.
+
+## Example App
+
+The [medplum-multilingual-demo](https://github.com/medplum/medplum/tree/main/examples/medplum-multilingual-demo)
+example app demonstrates all of the patterns on this page in a working React application:
+
+- A multilingual [`Questionnaire`](/docs/api/fhir/resources/questionnaire) with translated item text, submitted as a
+  [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) that records the language used
+- [`Condition`](/docs/api/fhir/resources/condition) resources with translated `Coding.display` strings
+- Reading [`Patient.communication`](/docs/api/fhir/resources/patient) to automatically select the patient's preferred language
+
+## Further Reading
+
+- [FHIR Translation Extension specification](http://hl7.org/fhir/StructureDefinition/translation)
+- [FHIR Internationalizing FHIR guidance](https://www.hl7.org/fhir/r4/languages.html)
+- [Medplum Terminology Services — Internationalizing Codings](/docs/terminology/medplum-terminology-services#internationalizing-codings)
+- [Questionnaire resource reference](/docs/api/fhir/resources/questionnaire)
+- [Patient resource reference](/docs/api/fhir/resources/patient)

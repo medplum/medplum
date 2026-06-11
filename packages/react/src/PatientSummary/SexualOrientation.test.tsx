@@ -21,14 +21,14 @@ describe('PatientSummary - SexualOrientation', () => {
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', async () => {
@@ -68,7 +68,7 @@ describe('PatientSummary - SexualOrientation', () => {
   });
 
   test('Click on resource', async () => {
-    const mockOnClickResource = jest.fn();
+    const mockOnClickResource = vi.fn();
     await setup(
       <SexualOrientation
         patient={HomerSimpson}
