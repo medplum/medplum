@@ -2,9 +2,42 @@
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import { IconArrowRight } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { CSSProperties, JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { HERO_HEADLINE, HERO_SUB } from '../../data/platform-content';
 import styles from './PlatformHero.module.css';
+
+/* The hero plays a three-beat story when scrolled into view:
+   1. the code "writes" (lines stagger in),
+   2. the patient is found (patient card slides in after the searchOne block),
+   3. the observation is published (vitals row lands + pulses after createResource).
+   Without JS, or with prefers-reduced-motion, everything renders static. */
+
+const CODE_LINES: JSX.Element[] = [
+  // prettier-ignore
+  <><span className={styles.cKeyword}>import</span>{' { '}<span className={styles.cClass}>MedplumClient</span>{' } '}<span className={styles.cKeyword}>from</span> <span className={styles.cString}>&apos;@medplum/core&apos;</span>;</>,
+  <>{' '}</>,
+  // prettier-ignore
+  <><span className={styles.cKeyword}>const</span> medplum = <span className={styles.cKeyword}>new</span> <span className={styles.cClass}>MedplumClient</span>();</>,
+  <>{' '}</>,
+  // prettier-ignore
+  <><span className={styles.cKeyword}>const</span> patient = <span className={styles.cKeyword}>await</span> medplum.<span className={styles.cMethod}>searchOne</span>(<span className={styles.cString}>&apos;Patient&apos;</span>, {'{'}</>,
+  // prettier-ignore
+  <>{'  '}identifier: <span className={styles.cString}>&apos;mrn-44218&apos;</span>,</>,
+  <>{'}'});</>,
+  <>{' '}</>,
+  // prettier-ignore
+  <><span className={styles.cKeyword}>await</span> medplum.<span className={styles.cMethod}>createResource</span>({'{'}</>,
+  // prettier-ignore
+  <>{'  '}resourceType: <span className={styles.cString}>&apos;Observation&apos;</span>,</>,
+  // prettier-ignore
+  <>{'  '}subject: {'{ '}reference: <span className={styles.cString}>`Patient/${'{'}</span>patient.id<span className={styles.cString}>{'}'}`</span>{' }'},</>,
+  // prettier-ignore
+  <>{'  '}code: {'{ '}text: <span className={styles.cString}>&apos;Systolic BP&apos;</span>{' }'},<span className={styles.cComment}> {'//'} LOINC 8480-6</span></>,
+  // prettier-ignore
+  <>{'  '}valueQuantity: {'{ '}value: <span className={styles.cNumber}>120</span>, unit: <span className={styles.cString}>&apos;mmHg&apos;</span>{' }'},</>,
+  <>{'}'});</>,
+];
 
 function CodeSnippetCard(): JSX.Element {
   return (
@@ -16,36 +49,15 @@ function CodeSnippetCard(): JSX.Element {
         <span className={styles.codeFilename}>medplum-client.ts</span>
       </div>
       <pre className={styles.codeBody}>
-        {/* prettier-ignore */}
-        <span className={styles.cKeyword}>import</span>
-        {' {'} <span className={styles.cClass}>MedplumClient</span>
-        {' }'} <span className={styles.cKeyword}>from</span>{' '}
-        <span className={styles.cString}>&apos;@medplum/core&apos;</span>;{'\n'}
-        {'\n'}
-        <span className={styles.cKeyword}>const</span> medplum {'= '}
-        <span className={styles.cKeyword}>new</span> <span className={styles.cClass}>MedplumClient</span>();{'\n'}
-        {'\n'}
-        <span className={styles.cKeyword}>const</span> patient {'= '}
-        <span className={styles.cKeyword}>await</span> medplum.
-        <span className={styles.cMethod}>searchOne</span>(<span className={styles.cString}>&apos;Patient&apos;</span>,{' '}
-        {'{'}
-        {'\n'}
-        {'  '}identifier: <span className={styles.cString}>&apos;mrn-44218&apos;</span>,{'\n'}
-        {'}'});{'\n'}
-        {'\n'}
-        <span className={styles.cKeyword}>await</span> medplum.
-        <span className={styles.cMethod}>createResource</span>({'({'}
-        {'\n'}
-        {'  '}resourceType: <span className={styles.cString}>&apos;Observation&apos;</span>,{'\n'}
-        {'  '}subject: {'{ '}reference: <span className={styles.cString}>`Patient/${'{'}</span>
-        patient.id<span className={styles.cString}>{'}'}`</span>
-        {' }'},{'\n'}
-        {'  '}code: {'{ '}text: <span className={styles.cString}>&apos;Systolic BP&apos;</span>
-        {' }'},{'\n'}
-        {'  '}valueQuantity: {'{ '}value: <span className={styles.cNumber}>120</span>, unit:{' '}
-        <span className={styles.cString}>&apos;mmHg&apos;</span>
-        {' }'},{'\n'}
-        {'}'});
+        {CODE_LINES.map((line, i) => (
+          <span
+            key={i}
+            className={styles.codeLine}
+            style={{ '--line-delay': `${i * 110}ms` } as CSSProperties}
+          >
+            {line}
+          </span>
+        ))}
       </pre>
     </div>
   );
@@ -69,7 +81,7 @@ function PatientHeaderCard(): JSX.Element {
         </div>
         <div>
           <div className={styles.fieldLabel}>Age</div>
-          <div className={styles.fieldValue}>33</div>
+          <div className={styles.fieldValue}>34</div>
         </div>
         <div>
           <div className={styles.fieldLabel}>Sex</div>
@@ -89,8 +101,36 @@ function PatientHeaderCard(): JSX.Element {
 }
 
 function HeroStack(): JSX.Element {
+  const stackRef = useRef<HTMLDivElement>(null);
+  const [play, setPlay] = useState(false);
+
+  useEffect(() => {
+    /* The animated parts are hidden by default in CSS (no JS-driven hiding, so no
+       hydration flash). Reduced-motion users see everything statically via the CSS
+       escape hatch; setting play here is harmless but skipping the observer is tidy. */
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setPlay(true);
+      return undefined;
+    }
+    const node = stackRef.current;
+    if (!node) {
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setPlay(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.35 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className={styles.stack}>
+    <div ref={stackRef} className={`${styles.stack} ${play ? styles.play : ''}`}>
       <div className={styles.glow} aria-hidden="true" />
       <div className={styles.codeEditorWrapper}>
         <CodeSnippetCard />

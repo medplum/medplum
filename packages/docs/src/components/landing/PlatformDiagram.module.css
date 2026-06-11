@@ -1,0 +1,194 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* Theme tokens consumed by the diagram's inline styles via var(--dg-*).
+   Light values here; dark overrides below. */
+.root {
+  --dg-purple: #9c36b5;
+  --dg-purple-soft: #d9a6e8;
+  --dg-purple-bg: #f2e4f7;
+  --dg-stripe: repeating-linear-gradient(135deg, #fbf1fe 0 3px, #ffffff 3px 6px);
+  --dg-border: #e5e5e5;
+  --dg-bg-gray: #f4f2ef;
+  --dg-bg: #ffffff;
+  --dg-text: #1f2937;
+  --dg-muted: #9ca3af;
+  --dg-line: #b7b7b7;
+  --dg-dot-fill: #ffffff;
+  --dg-dot-stroke: #b7b7b7;
+  --dg-sub: #4b5563;
+  --dg-dashed: #94a3b8;
+  --dg-hosted-bg: #862e9c;
+  --dg-panel: #ffffff;
+  --dg-chip-bg: #ffffff;
+  --dg-int-bg: #faf9f8;
+  --dg-int-pill-bg: #f3f4f6;
+  --dg-int-pill-border: #d1d5db;
+  --dg-panel-soft: #ffffff;
+  /* Highlight border color for selected/hovered foundations — deeper than the base
+     purple so the recolor reads even on already-purple-bordered cards. */
+  --dg-hl: #862e9c;
+}
+
+/* Dark mode follows an ELEVATION LADDER: the page is darkest, panels sit a step up,
+   cards a clear step above that, and icon chips lightest — separation comes from
+   lighter surfaces and lighter borders, since shadows are invisible on near-black. */
+[data-theme='dark'] .root {
+  --dg-purple: #c77dd6;
+  --dg-purple-soft: #8a4a9e;
+  --dg-purple-bg: #3b2846;
+  --dg-stripe: repeating-linear-gradient(135deg, #402c4b 0 3px, #2e2e33 3px 6px);
+  --dg-border: #50505a;
+  --dg-bg-gray: #2e2e33;
+  --dg-bg: #1b1b1d;
+  --dg-text: #f0f0f4;
+  --dg-muted: #9aa0aa;
+  --dg-line: #6e6e76;
+  --dg-dot-fill: #2a2a2e;
+  --dg-dot-stroke: #80808a;
+  --dg-sub: #b8bcc6;
+  --dg-dashed: #8a93a3;
+  --dg-hosted-bg: #9c36b5;
+  --dg-panel: #232327;
+  --dg-chip-bg: #37373e;
+  --dg-int-bg: #242429;
+  --dg-int-pill-bg: #33333a;
+  --dg-int-pill-border: #50505a;
+  --dg-panel-soft: #232327;
+  /* Dark highlight goes BRIGHTER than the base purple (toward white) so the
+     recolored border pops against dark surfaces. */
+  --dg-hl: #e6b8f2;
+}
+
+/* ---- interaction model ----
+   Focus is communicated by SPOTLIGHT: when a foundation is selected, the active
+   region(s) keep full strength (plus a ring + lift) while every other diagram
+   element dims and desaturates. Clickability at rest is communicated by numbered
+   markers (one per foundation, matching the numbered nav pills above the diagram).
+
+   A pseudo-element ring is used (not outline/box-shadow on the element) so it
+   (a) never conflicts with the inline box-shadow some cards set, and (b) sits
+   INSIDE the element via inset:0, so it is not clipped by the platform box's
+   overflow:hidden. It adds no layout offset, which keeps the ref-measured SVG
+   connectors aligned. */
+
+.clickable {
+  cursor: pointer;
+  position: relative;
+}
+
+/* CARDS highlight by RECOLORING THEIR OWN BORDER: each card's border color reads
+   var(--hl-border, <kind color>), and these rules set --hl-border on hover/active.
+   The highlight therefore has exactly the box's shape, corner radii, and dash
+   pattern — there is no separate ring to misalign. BANDS inside the platform box
+   (.regionBand) have only partial borders, so they use an inset ring instead;
+   they are rectangles clipped by the platform's rounded container, so the ring
+   follows the visible shape. The ::after carries only the tint. */
+.clickable::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: background-color 120ms ease;
+}
+
+.clickable {
+  transition: border-color 120ms ease, box-shadow 120ms ease, filter 200ms ease;
+}
+
+.clickable:hover,
+.clickable.peeked,
+.clickable.active {
+  --hl-border: var(--dg-hl);
+}
+
+.clickable:hover::after,
+.clickable.peeked::after {
+  background: rgba(156, 54, 181, 0.05);
+}
+
+.clickable.active {
+  box-shadow: 0 6px 22px -6px rgba(156, 54, 181, 0.45);
+}
+
+.clickable.active::after {
+  background: rgba(156, 54, 181, 0.07);
+}
+
+[data-theme='dark'] .clickable.active {
+  box-shadow: 0 6px 22px -6px rgba(199, 125, 214, 0.5);
+}
+
+[data-theme='dark'] .clickable.active::after {
+  background: rgba(199, 125, 214, 0.14);
+}
+
+/* Platform-interior bands: inset ring (their borders are partial, so recoloring
+   them would highlight only one edge). Placed after .clickable.active so the
+   ring replaces the drop glow, which would be clipped by the platform box anyway. */
+.regionBand:hover,
+.regionBand.peeked,
+.regionBand.active {
+  box-shadow: inset 0 0 0 2px var(--dg-purple);
+}
+
+/* Card base shadows (moved out of inline styles so the ring rules above can
+   override/compose; inline box-shadow would always win over a class). */
+.cardShadow {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.cardShadowDeep {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* ---- spotlight dimming ----
+   Filter-based (no opacity) so dimmed elements stay fully opaque — nothing shows
+   through them. Saturation is kept near full so Medplum-managed elements stay
+   properly purple even when not in focus; the dim reads through brightness/contrast.
+   Applied per leaf element (not containers) so an active card nested inside the
+   platform box is never dimmed by its parent. */
+.dimmable {
+  transition: filter 200ms ease;
+}
+
+.dimmed {
+  filter: saturate(0.9) contrast(0.95) brightness(1.04);
+}
+
+[data-theme='dark'] .dimmed {
+  filter: saturate(0.9) brightness(0.82);
+}
+
+/* ---- numbered foundation markers ----
+   One badge per foundation, on its primary region, matching the nav pill numbers. */
+.numBadge {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  z-index: 5;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: var(--dg-purple);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+/* Inside the platform's overflow:hidden box a badge can't hang over the edge —
+   keep it inside the region instead. */
+.numBadgeInset {
+  top: 6px;
+  left: 6px;
+}
+
+[data-theme='dark'] .numBadge {
+  color: #1b1b1d;
+}

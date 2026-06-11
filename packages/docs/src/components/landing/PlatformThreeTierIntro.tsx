@@ -1,46 +1,64 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { JSX } from 'react';
-import { FEATURED_APPS, FOUNDATIONS, TIER_INTRO_HEADLINE, TIER_INTRO_SUB } from '../../data/platform-content';
+import { FEATURED_APPS, TIER_INTRO_HEADLINE, TIER_INTRO_SUB } from '../../data/platform-content';
 import styles from './PlatformThreeTierIntro.module.css';
 
-const WORKFLOW_PILLS = [
-  'Intake',
-  'Scheduling',
-  'Charting',
-  'Diagnostics',
-  'Medications',
-  'Care Coordination',
-  'Billing',
-  'Messaging',
-];
-
-const WORKFLOW_SUPPORT_CHIPS = ['Platform Features', 'Integrations'];
-
+/* Comprehensive inventories with shortened labels — every workflow and foundation is
+   represented (full names live in the sections below). Each row is a click target
+   that jumps to its section; hovering reveals the tier's verb line. */
 const TIERS = [
   {
     key: 'apps',
     label: 'Apps',
+    verb: 'What you ship — yours, plus references to fork.',
     rowClass: styles.tierRowApps,
     stripeClass: styles.tierStripeApps,
-    items: ['Your custom apps', ...FEATURED_APPS.map((a) => a.name)],
+    items: ['Custom Apps', ...FEATURED_APPS.map((a) => a.name)],
   },
   {
     key: 'workflows',
     label: 'Workflows',
+    verb: 'What you build on — hard parts already solved.',
     rowClass: styles.tierRowWorkflows,
     stripeClass: styles.tierStripeWorkflows,
-    items: WORKFLOW_PILLS,
-    supportChips: WORKFLOW_SUPPORT_CHIPS,
+    items: [
+      'Intake',
+      'Scheduling',
+      'Charting',
+      'Diagnostics',
+      'Medications',
+      'Care Coordination',
+      'Messaging',
+      'Billing',
+    ],
   },
   {
     key: 'foundations',
     label: 'Foundations',
+    verb: 'What you build with — open source, standards-based.',
     rowClass: styles.tierRowFoundations,
     stripeClass: styles.tierStripeFoundations,
-    items: FOUNDATIONS.map((f) => f.name),
+    items: [
+      'FHIR Datastore',
+      'TypeScript SDK',
+      'React Storybook',
+      'Bots',
+      'Subscriptions',
+      'Medplum Bridge',
+      'Medplum Auth',
+      'Access Control',
+    ],
   },
 ];
+
+function jumpTo(id: string): void {
+  const el = document.getElementById(id);
+  if (el) {
+    const y = el.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  }
+}
 
 export function PlatformThreeTierIntro(): JSX.Element {
   return (
@@ -52,7 +70,13 @@ export function PlatformThreeTierIntro(): JSX.Element {
         </div>
         <div className={styles.panel}>
           {TIERS.map((tier) => (
-            <div key={tier.key} className={`${styles.tierRow} ${tier.rowClass}`}>
+            <button
+              key={tier.key}
+              type="button"
+              className={`${styles.tierRow} ${tier.rowClass}`}
+              onClick={() => jumpTo(tier.key)}
+              aria-label={`Jump to the ${tier.label} section`}
+            >
               <div className={`${styles.tierStripe} ${tier.stripeClass}`} />
               <div className={styles.tierLabel}>{tier.label}</div>
               <div className={styles.pills}>
@@ -61,18 +85,12 @@ export function PlatformThreeTierIntro(): JSX.Element {
                     {name}
                   </span>
                 ))}
-                {tier.supportChips && (
-                  <div className={styles.supportTray}>
-                    <span className={styles.supportTrayLabel}>Supported by</span>
-                    {tier.supportChips.map((chip) => (
-                      <span key={chip} className={styles.supportChip}>
-                        {chip}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
-            </div>
+              <div className={styles.rowReveal} aria-hidden="true">
+                <span className={styles.rowVerb}>{tier.verb}</span>
+                <span className={styles.rowArrow}>→</span>
+              </div>
+            </button>
           ))}
         </div>
       </div>

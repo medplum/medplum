@@ -4,7 +4,6 @@ import Layout from '@theme/Layout';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
 import { PlatformApps } from '../../components/landing/PlatformApps';
-import { PlatformArchitecture } from '../../components/landing/PlatformArchitecture';
 import { PlatformCta } from '../../components/landing/PlatformCta';
 import { PlatformFoundations } from '../../components/landing/PlatformFoundations';
 import { PlatformHero } from '../../components/landing/PlatformHero';
@@ -50,7 +49,6 @@ export default function ProductsPage(): JSX.Element {
         </section>
       </div>
 
-      <PlatformArchitecture />
       <PlatformCta />
     </Layout>
   );

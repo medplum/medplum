@@ -39,7 +39,7 @@ const APP_SCREENSHOTS: Record<string, AppScreenshot> = {
   },
   admin: {
     src: '/img/screenshots/app.medplum.png',
-    alt: 'app.medplum.com — Medplum admin and developer console',
+    alt: 'Medplum App — admin and developer console',
     zoom: '160%',
   },
 };
