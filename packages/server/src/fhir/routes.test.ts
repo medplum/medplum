@@ -482,6 +482,7 @@ describe('FHIR Routes', () => {
   });
 
   test('FHIRPath Patch resource success', async () => {
+    expect(testPatient.name?.[0]?.given).toStrictEqual(['Alice']);
     const res = await request(app)
       .patch(`/fhir/R4/Patient/${patientId}`)
       .set('Authorization', 'Bearer ' + accessToken)
