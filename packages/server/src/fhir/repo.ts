@@ -831,42 +831,60 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (rows.length === 0 || !rows[0].content) {
       return undefined;
     }
-    // Compare timestamps via numeric ms epoch. `new Date(x).getTime()` accepts
-    // both Date instances (which the pg driver currently returns for
-    // TIMESTAMPTZ columns) and ISO date strings (defensive against future
-    // driver/config changes), and yields a primitive number that is safe to
-    // compare with `===`. An invalid value would produce `NaN`, which would
-    // simply not match — we'd skip the warn but still return the first row,
-    // so this can't break the correctness of the prior-version lookup.
-    // Ambiguity arises in two cases:
-    //   1. The incoming resource and the chosen prior share `lastUpdated`,
-    //      so current-vs-prior ordering itself is nondeterministic.
-    //   2. Two or more candidate priors share `lastUpdated`, so which one is
-    //      "immediately prior" is nondeterministic.
+    this.warnIfAmbiguousPreviousVersion(resource, lastUpdated, rows);
+    return this.removeHiddenFields(JSON.parse(rows[0].content as string)) as T;
+  }
+
+  /**
+   * Logs a warning when the prior version returned by {@link readPreviousVersion}
+   * is not deterministically defined due to a `lastUpdated` tie.
+   *
+   * Ambiguity arises in two cases:
+   *   1. The incoming resource and the chosen prior share `lastUpdated`, so
+   *      current-vs-prior ordering itself is nondeterministic.
+   *   2. Two or more candidate priors share `lastUpdated`, so which one is
+   *      "immediately prior" is nondeterministic.
+   *
+   * Timestamps are compared via numeric ms epoch. `new Date(x).getTime()`
+   * accepts both Date instances (which the pg driver currently returns for
+   * TIMESTAMPTZ columns) and ISO date strings (defensive against future
+   * driver/config changes), and yields a primitive number safe to compare
+   * with `===`. An invalid value would produce `NaN`, which simply won't
+   * match — we'd skip the warn but the caller still returns the first row, so
+   * this can't break the correctness of the prior-version lookup.
+   * @param resource - The resource the lookup was performed from.
+   * @param lastUpdated - The `meta.lastUpdated` of the supplied resource.
+   * @param rows - Up to two candidate prior rows, ordered by `lastUpdated` desc.
+   */
+  private warnIfAmbiguousPreviousVersion<T extends Resource>(
+    resource: WithId<T>,
+    lastUpdated: string,
+    rows: { versionId: string; lastUpdated: string }[]
+  ): void {
     const incomingMs = new Date(lastUpdated).getTime();
     const firstMs = new Date(rows[0].lastUpdated).getTime();
     const secondMs = rows.length > 1 ? new Date(rows[1].lastUpdated).getTime() : undefined;
     const tiedWithIncoming = incomingMs === firstMs;
     const tiedAmongPriors = secondMs !== undefined && firstMs === secondMs;
-    if (tiedWithIncoming || tiedAmongPriors) {
-      // Rare (high-throughput writes within the same millisecond, or callers
-      // setting protected meta directly) but worth surfacing.
-      // Include all versionIds sharing the tied timestamp so the log reflects
-      // the actual ambiguity set, regardless of which case triggered it.
-      const tiedVersionIds = [
-        ...(tiedWithIncoming && resource.meta?.versionId ? [resource.meta.versionId] : []),
-        ...rows.filter((r) => new Date(r.lastUpdated).getTime() === firstMs).map((r) => r.versionId),
-      ];
-      getLogger().warn('readPreviousVersion: ambiguous prior version (lastUpdated tie)', {
-        resource: { reference: getReferenceString(resource) },
-        versionId: resource.meta?.versionId,
-        lastUpdated,
-        tiedWithIncoming,
-        tiedAmongPriors,
-        tiedVersionIds,
-      });
+    if (!tiedWithIncoming && !tiedAmongPriors) {
+      return;
     }
-    return this.removeHiddenFields(JSON.parse(rows[0].content as string)) as T;
+    // Rare (high-throughput writes within the same millisecond, or callers
+    // setting protected meta directly) but worth surfacing.
+    // Include all versionIds sharing the tied timestamp so the log reflects
+    // the actual ambiguity set, regardless of which case triggered it.
+    const tiedVersionIds = [
+      ...(tiedWithIncoming && resource.meta?.versionId ? [resource.meta.versionId] : []),
+      ...rows.filter((r) => new Date(r.lastUpdated).getTime() === firstMs).map((r) => r.versionId),
+    ];
+    getLogger().warn('readPreviousVersion: ambiguous prior version (lastUpdated tie)', {
+      resource: createReference(resource),
+      versionId: resource.meta?.versionId,
+      lastUpdated,
+      tiedWithIncoming,
+      tiedAmongPriors,
+      tiedVersionIds,
+    });
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
