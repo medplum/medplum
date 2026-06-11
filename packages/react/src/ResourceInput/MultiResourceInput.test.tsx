@@ -3,7 +3,15 @@
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MargeSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import {
+  act,
+  clickAutocompleteOption,
+  fireEvent,
+  render,
+  screen,
+  selectAutocompleteOption,
+  typeInAutocomplete,
+} from '../test-utils/render';
 import type { MultiResourceInputProps } from './MultiResourceInput';
 import { MultiResourceInput } from './MultiResourceInput';
 
@@ -19,14 +27,14 @@ function setup(args: MultiResourceInputProps): void {
 
 describe('MultiResourceInput', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', () => {
@@ -83,20 +91,12 @@ describe('MultiResourceInput', () => {
     });
 
     const input = screen.getByPlaceholderText('Test');
-
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Simpson' } });
-    });
-
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    expect(screen.getByText('Homer Simpson')).toBeDefined();
+    await typeInAutocomplete(input, 'Simpson');
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Call onChange with array when item is selected', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup({
       resourceType: 'Patient',
@@ -106,22 +106,8 @@ describe('MultiResourceInput', () => {
     });
 
     const input = screen.getByPlaceholderText('Test');
-
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Simpson' } });
-    });
-
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await typeInAutocomplete(input, 'Simpson');
+    await clickAutocompleteOption('Homer Simpson');
 
     expect(onChange).toHaveBeenCalled();
     const callArg = onChange.mock.calls[onChange.mock.calls.length - 1][0];
@@ -138,29 +124,14 @@ describe('MultiResourceInput', () => {
     });
 
     const input = screen.getByPlaceholderText('Test');
-
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Simpson' } });
-    });
-
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await selectAutocompleteOption(input, 'Simpson', 'Homer Simpson');
 
     // Input field is still shown because maxValues is uncapped
     expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
   });
 
   test('Clear all button calls onChange with empty array', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await act(async () => {
       setup({
@@ -204,22 +175,7 @@ describe('MultiResourceInput', () => {
     });
 
     const input = screen.getByPlaceholderText('Test');
-
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Simpson' } });
-    });
-
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await selectAutocompleteOption(input, 'Simpson', 'Homer Simpson');
 
     // After selecting one item with maxValues=1, the input field should no longer be shown
     expect(screen.queryByPlaceholderText('Test')).not.toBeInTheDocument();

@@ -9,15 +9,15 @@ import { MemoryRouter } from 'react-router';
 import { render, screen, waitFor } from '../../test-utils/render';
 import { NewTopicDialog } from './NewTopicDialog';
 
-const mockOnSubmit = jest.fn();
-const mockOnClose = jest.fn();
+const mockOnSubmit = vi.fn();
+const mockOnClose = vi.fn();
 
 describe('NewTopicDialog', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
     medplum = new MockClient();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const setup = (opened = true, subject?: Patient, allowPatientSelection?: boolean): void => {

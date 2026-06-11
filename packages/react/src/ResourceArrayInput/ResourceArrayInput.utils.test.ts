@@ -34,7 +34,7 @@ describe('assignValuesIntoSlices', () => {
       for (const url of profilesToLoad) {
         const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
         if (!sd) {
-          fail(`could not find structure definition for ${url}`);
+          expect.fail(`could not find structure definition for ${url}`);
         }
         loadDataType(sd);
       }
@@ -94,9 +94,8 @@ describe('assignValuesIntoSlices', () => {
         profileUrl,
       });
       if (!elementsContext) {
-        fail('elementsContext should be defined');
+        expect.fail('elementsContext should be defined');
       }
-
       const slices = await prepareSlices({
         medplum,
         property,
@@ -150,9 +149,8 @@ describe('assignValuesIntoSlices', () => {
         profileUrl,
       });
       if (!elementsContext) {
-        fail('elementsContext should be defined');
+        expect.fail('elementsContext should be defined');
       }
-
       const slices = await prepareSlices({
         medplum,
         property,
@@ -218,9 +216,8 @@ describe('assignValuesIntoSlices', () => {
       });
 
       if (!elementsContext) {
-        fail('elementsContext should be defined');
+        expect.fail('elementsContext should be defined');
       }
-
       const slices = await prepareSlices({
         medplum,
         property,

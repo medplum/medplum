@@ -54,7 +54,7 @@ describe('FhirPathDisplay', () => {
   });
 
   test('Handles malformed date', () => {
-    console.warn = jest.fn();
+    console.warn = vi.fn();
     render(
       <FhirPathDisplay
         resource={{

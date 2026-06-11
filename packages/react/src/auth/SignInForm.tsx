@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Document } from '../Document/Document';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
+import type { ChooseScopeFormProps } from './ChooseScopeForm';
 import { ChooseScopeForm } from './ChooseScopeForm';
 import { MfaEnrollForm } from './MfaEnrollForm';
 import type { MfaMethod } from './MfaForm';
@@ -26,6 +27,7 @@ export interface SignInFormProps extends BaseLoginRequest {
   readonly onRegister?: () => void;
   readonly onCode?: (code: string) => void;
   readonly children?: ReactNode;
+  readonly chooseScopeFormProps?: Omit<ChooseScopeFormProps, 'login' | 'scope' | 'handleAuthResponse'>;
 }
 
 /**
@@ -44,6 +46,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
   const {
     login: loginCode,
     chooseScopes,
+    chooseScopeFormProps,
     onSuccess,
     onForgotPassword,
     onRegister,
@@ -214,7 +217,14 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
         } else if (memberships) {
           return <ChooseProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
         } else if (props.chooseScopes) {
-          return <ChooseScopeForm login={login} scope={props.scope} handleAuthResponse={handleScopeResponse} />;
+          return (
+            <ChooseScopeForm
+              login={login}
+              scope={props.scope}
+              handleAuthResponse={handleScopeResponse}
+              {...chooseScopeFormProps}
+            />
+          );
         } else {
           return <div>Success</div>;
         }

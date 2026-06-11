@@ -20,6 +20,7 @@ export * from './AttachmentDisplay/AttachmentDisplay';
 export * from './AttachmentInput/AttachmentInput';
 export * from './auth/ChangePasswordForm';
 export * from './auth/MfaEnrollForm';
+export * from './auth/ChooseScopeForm';
 export * from './auth/MfaForm';
 export * from './auth/MfaVerificationForm';
 export * from './auth/RegisterForm';

@@ -50,7 +50,7 @@ globalSchema.types['ValueSet'] = {
   properties: {
     compose: valueSetComposeProperty,
   },
-} as unknown as TypeInfo;
+} as TypeInfo;
 
 globalSchema.types['ValueSetCompose'] = {
   display: 'Value Set Compose',
@@ -58,7 +58,7 @@ globalSchema.types['ValueSetCompose'] = {
     lockedDate: valueSetComposeLockedDateProperty,
     exclude: valueSetComposeExcludeProperty,
   },
-} as unknown as TypeInfo;
+} as TypeInfo;
 
 const medplum = new MockClient();
 
