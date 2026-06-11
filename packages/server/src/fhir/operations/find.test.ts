@@ -35,6 +35,7 @@ type AvailabilityOptions = {
   duration?: number;
   availability: SchedulingParametersExtensionExtension;
   timezone?: string;
+  alignmentTimezone?: string;
 };
 
 const fourDayWorkWeek = {
@@ -198,7 +199,7 @@ describe('Schedule/:id/$find', () => {
 
   function makeSchedulingExtension(availability: AvailabilityOptions[]): Extension[] {
     return availability.map((options) => {
-      const { availability, timezone, service, ...durations } = options;
+      const { availability, timezone, alignmentTimezone, service, ...durations } = options;
 
       const extension = {
         url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -213,6 +214,13 @@ describe('Schedule/:id/$find', () => {
         extension.extension.push({
           url: 'timezone',
           valueCode: timezone,
+        });
+      }
+
+      if (alignmentTimezone) {
+        extension.extension.push({
+          url: 'alignmentTimezone',
+          valueCode: alignmentTimezone,
         });
       }
 
@@ -1252,7 +1260,7 @@ describe('Appointment/$find', () => {
 
   function makeSchedulingExtension(availability: AvailabilityOptions[]): Extension[] {
     return availability.map((options) => {
-      const { availability, timezone, service, ...durations } = options;
+      const { availability, timezone, alignmentTimezone, service, ...durations } = options;
 
       const extension = {
         url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -1267,6 +1275,13 @@ describe('Appointment/$find', () => {
         extension.extension.push({
           url: 'timezone',
           valueCode: timezone,
+        });
+      }
+
+      if (alignmentTimezone) {
+        extension.extension.push({
+          url: 'alignmentTimezone',
+          valueCode: alignmentTimezone,
         });
       }
 
@@ -2022,5 +2037,44 @@ describe('Appointment/$find', () => {
         },
       ],
     });
+  });
+
+  test('alignmentTimezone anchors the slot grid to local midnight', async () => {
+    // America/Chicago in December is CST (UTC-6). The Chicago midnight grid with
+    // alignment=50 has grid starts at 10:00, 10:50, 11:40 CST within the 09:30-12:30
+    // availability window. UTC anchoring would give 09:50, 10:40, 11:30 CST instead.
+    const schedule = await makeSchedule(
+      [
+        {
+          service: genericVisit,
+          availability: fourDayWorkWeek,
+          duration: 40,
+          alignmentInterval: 50,
+          alignmentTimezone: 'America/Chicago',
+          timezone: 'America/Chicago',
+        },
+      ],
+      { actor: [createReference(practitioner)] }
+    );
+    // Search Monday December 1, 2025, 09:30-12:30 CST window.
+    const response = await makeRequest({
+      start: new Date('2025-12-01T09:30:00.000-06:00').toISOString(),
+      end: new Date('2025-12-01T12:30:00.000-06:00').toISOString(),
+      schedule: [`Schedule/${schedule.id}`],
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+    });
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      resourceType: 'Bundle',
+      type: 'searchset',
+    });
+
+    const startTimes = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+    expect(startTimes).toEqual([
+      new Date('2025-12-01T10:00:00.000-06:00').toISOString(),
+      new Date('2025-12-01T10:50:00.000-06:00').toISOString(),
+      new Date('2025-12-01T11:40:00.000-06:00').toISOString(),
+    ]);
   });
 });

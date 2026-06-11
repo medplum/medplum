@@ -63,6 +63,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -96,6 +97,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -124,6 +126,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -154,6 +157,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -182,6 +186,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -211,6 +216,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -239,6 +245,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -277,6 +284,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -319,6 +327,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -349,6 +358,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
