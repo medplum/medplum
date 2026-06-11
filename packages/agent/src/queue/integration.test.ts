@@ -18,10 +18,11 @@ import type { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { Server } from 'mock-socket';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from '../app';
+import type { Channel } from '../channel';
 import { createEndpointWithRandomPort } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 
@@ -199,6 +200,47 @@ describe('Durable queue integration', () => {
 
     await client.close();
     await app.stop();
+  });
+
+  test('stop() closes the durable queue and flushes the WAL even when a channel fails to stop', async () => {
+    startMockServer(() => undefined);
+    const [endpoint] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const queuePath = join(dir, 'queue.sqlite');
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: queuePath },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.NONE);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+    expect(queue).toBeDefined();
+
+    // Make the channel stop for real (so its port is released) but then throw,
+    // simulating the drain failures that previously skipped queue teardown.
+    const channel = app.channels.get('dq-test') as Channel;
+    const realStop = channel.stop.bind(channel);
+    vi.spyOn(channel, 'stop').mockImplementation(async () => {
+      await realStop();
+      throw new Error('simulated channel stop failure');
+    });
+
+    await app.stop();
+
+    // The queue DB was closed (any statement now throws) and the WAL was
+    // flushed into the main file (deleted on close, or truncated to zero).
+    expect(() => queue.countByState()).toThrow();
+    const walPath = `${queuePath}-wal`;
+    expect(existsSync(walPath) ? statSync(walPath).size : 0).toBe(0);
   });
 
   test('restart recovery: rows left in processing across process boundary become errored', async () => {

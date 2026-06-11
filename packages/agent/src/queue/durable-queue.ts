@@ -253,6 +253,15 @@ export class DurableQueue {
       return;
     }
     this.closed = true;
+    // SQLite only checkpoints + deletes the WAL on close when this is the last
+    // connection to the file. An upgrade-overlap peer or an operator's sqlite3
+    // shell defeats that, so flush explicitly — a clean shutdown should always
+    // leave a self-contained main DB file (e.g. for file-level backups).
+    try {
+      this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    } catch (err) {
+      this.log.warn(`wal_checkpoint on close failed: ${normalizeErrorString(err)}`);
+    }
     try {
       this.db.close();
     } catch (err) {

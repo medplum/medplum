@@ -80,6 +80,33 @@ async function execAsync(
   });
 }
 
+/** Upper bound on how long {@link App.stop} waits for clients/channels to drain. */
+const STOP_DRAIN_TIMEOUT_MS = 10_000;
+
+/**
+ * Resolves to `'timeout'` if `promise` doesn't settle within `ms`. The timer is
+ * cleared when the promise settles first, so the common path leaves nothing
+ * keeping the event loop alive.
+ * @param promise - The promise to wait on.
+ * @param ms - Maximum time to wait, in milliseconds.
+ * @returns The promise's value, or the literal `'timeout'`.
+ */
+function raceWithTimeout<T>(promise: Promise<T>, ms: number): Promise<T | 'timeout'> {
+  return new Promise<T | 'timeout'>((resolve, reject) => {
+    const timer = setTimeout(() => resolve('timeout'), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 export interface AppOptions {
   mainLogger?: ILogger;
   channelLogger?: ILogger;
@@ -1025,20 +1052,20 @@ export class App {
       this.webSocket = undefined;
     }
 
-    if (this.hl7Clients.size !== 0) {
-      const poolClosePromises = [];
-      for (const pool of this.hl7Clients.values()) {
-        poolClosePromises.push(pool.closeAll());
+    // Drain clients and channels with a bounded wait. The durable-queue teardown
+    // below must run no matter what happens here — skipping it leaves the WAL
+    // unflushed and the lease held until its TTL expires — so a hung or throwing
+    // stop must not be allowed to block shutdown indefinitely.
+    try {
+      const drained = await raceWithTimeout(this.drainForStop(), STOP_DRAIN_TIMEOUT_MS);
+      if (drained === 'timeout') {
+        this.log.warn(
+          `Timed out after ${STOP_DRAIN_TIMEOUT_MS}ms waiting for clients/channels to stop — proceeding with shutdown.`
+        );
       }
-      await Promise.all(poolClosePromises);
-      this.hl7Clients.clear();
+    } catch (err) {
+      this.log.error(`Error while stopping clients/channels: ${normalizeErrorString(err)}`);
     }
-
-    const channelStopPromises = [];
-    for (const channel of this.channels.values()) {
-      channelStopPromises.push(channel.stop());
-    }
-    await Promise.all(channelStopPromises);
 
     // Channels drain their own workers in stop() above, so by the time we get
     // here no worker is touching the DB and it's safe to tear down.
@@ -1058,6 +1085,41 @@ export class App {
     }
 
     this.log.info('Medplum service stopped successfully');
+  }
+
+  /**
+   * Closes all outbound HL7 client pools, then stops every channel. Factored out
+   * of {@link App.stop} so the whole drain can be raced against a single timeout.
+   *
+   * Uses allSettled rather than all: one channel failing to stop must not
+   * abandon the wait on its siblings — the durable-queue DB is closed right
+   * after this returns, so every channel that *can* drain must finish first.
+   */
+  private async drainForStop(): Promise<void> {
+    if (this.hl7Clients.size !== 0) {
+      const poolClosePromises = [];
+      for (const pool of this.hl7Clients.values()) {
+        poolClosePromises.push(pool.closeAll());
+      }
+      const poolResults = await Promise.allSettled(poolClosePromises);
+      for (const result of poolResults) {
+        if (result.status === 'rejected') {
+          this.log.error(`Error while closing HL7 client pool: ${normalizeErrorString(result.reason)}`);
+        }
+      }
+      this.hl7Clients.clear();
+    }
+
+    const channelStopPromises = [];
+    for (const channel of this.channels.values()) {
+      channelStopPromises.push(channel.stop());
+    }
+    const results = await Promise.allSettled(channelStopPromises);
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        this.log.error(`Error while stopping channel: ${normalizeErrorString(result.reason)}`);
+      }
+    }
   }
 
   /**

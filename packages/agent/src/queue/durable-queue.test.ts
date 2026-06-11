@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createMockLogger } from '../test-utils';
@@ -311,6 +311,30 @@ describe('DurableQueue', () => {
     test('getCurrentLease returns null when no lease has been acquired', () => {
       expect(queue.getCurrentLease()).toBeNull();
     });
+  });
+
+  test('close() checkpoints the WAL even when another connection holds the DB open', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+    const { DatabaseSync } = require('node:sqlite') as typeof import('node:sqlite');
+    for (let i = 0; i < 50; i++) {
+      queue.enqueue(makeEnqueueInput());
+    }
+    const walPath = `${dbPath}-wal`;
+    expect(statSync(walPath).size).toBeGreaterThan(0);
+
+    // A peer connection (upgrade overlap, operator's sqlite3 shell) suppresses
+    // SQLite's implicit last-connection checkpoint — close() must flush explicitly.
+    // The peer must touch the DB to attach to the WAL; an idle handle doesn't count.
+    const peer = new DatabaseSync(dbPath);
+    peer.exec('SELECT 1');
+    try {
+      queue.close();
+      expect(statSync(walPath).size).toBe(0);
+      const row = peer.prepare('SELECT COUNT(*) AS n FROM inbound_hl7_messages').get() as { n: number };
+      expect(row.n).toBe(50);
+    } finally {
+      peer.close();
+    }
   });
 
   test('isUniqueConstraintError detects the expected error shapes', () => {
