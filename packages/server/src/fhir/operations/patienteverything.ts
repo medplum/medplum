@@ -4,10 +4,12 @@ import type { SearchRequest, WithId } from '@medplum/core';
 import {
   allOk,
   append,
+  badRequest,
   flatMapFilter,
   getReferenceString,
   isReference,
   isResource,
+  OperationOutcomeError,
   Operator,
   sortStringArray,
 } from '@medplum/core';
@@ -24,6 +26,7 @@ import type {
   ResourceType,
 } from '@medplum/fhirtypes';
 import type { Readable } from 'node:stream';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
@@ -46,10 +49,9 @@ export interface PatientEverythingParameters {
   _offset?: number;
   _type?: ResourceType[];
   _inlineAttachments?: boolean;
-  _maxAttachmentSize?: number;
 }
 
-export const DEFAULT_MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024; // 10 MB
+export const PATIENT_EVERYTHING_INLINE_ATTACHMENTS_SETTING = 'patientEverythingInlineAttachments';
 
 // Patient everything operation.
 // https://hl7.org/fhir/operation-patient-everything.html
@@ -65,17 +67,20 @@ export async function patientEverythingHandler(req: FhirRequest): Promise<FhirRe
   const { id } = req.params;
   const params = parseInputParameters<PatientEverythingParameters>(operation, req);
 
-  // _inlineAttachments and _maxAttachmentSize are Medplum extensions not in the standard OperationDefinition
-  if (req.query?.['_inlineAttachments'] === 'true') {
+  // _inlineAttachments is a Medplum extension not in the standard OperationDefinition.
+  const inlineAttachmentsParam = req.query?.['_inlineAttachments'];
+  if (inlineAttachmentsParam === 'true') {
     params._inlineAttachments = true;
-  }
-  const maxSizeParam = req.query?.['_maxAttachmentSize'];
-  if (typeof maxSizeParam === 'string' && /^\d+$/.test(maxSizeParam)) {
-    params._maxAttachmentSize = parseInt(maxSizeParam, 10);
+  } else if (inlineAttachmentsParam === 'false') {
+    params._inlineAttachments = false;
+  } else if (inlineAttachmentsParam !== undefined) {
+    throw new OperationOutcomeError(badRequest("Invalid value for '_inlineAttachments'"));
   }
 
   // First read the patient to verify access
   const patient = await ctx.repo.readResource<Patient>('Patient', id);
+
+  params._inlineAttachments ??= isPatientEverythingInlineAttachmentsEnabled(ctx.repo);
 
   // Then read all of the patient data
   const bundle = await getPatientEverything(ctx.repo, patient, params);
@@ -120,11 +125,17 @@ export async function getPatientEverything(
   bundle.entry = removeDuplicateEntries(bundle.entry);
 
   if (params?._inlineAttachments) {
-    const maxBytes = params._maxAttachmentSize ?? DEFAULT_MAX_ATTACHMENT_SIZE;
-    await inlineDocumentReferenceAttachments(repo, bundle.entry, maxBytes);
+    await inlineDocumentReferenceAttachments(repo, bundle.entry, getConfig().inlineAttachmentsMaxTotalBytes);
   }
 
   return bundle;
+}
+
+function isPatientEverythingInlineAttachmentsEnabled(repo: Repository): boolean {
+  return (
+    repo.currentProject()?.setting?.find((s) => s.name === PATIENT_EVERYTHING_INLINE_ATTACHMENTS_SETTING)
+      ?.valueBoolean === true
+  );
 }
 
 export async function searchPatientCompartment(
@@ -226,7 +237,7 @@ function collectReferences(resource: any, foundReferences = new Set<string>()): 
  * with inline base64-encoded data. This transforms `attachment.url` into `attachment.data`.
  * @param repo - The repository for reading Binary resources.
  * @param entries - The bundle entries to process.
- * @param maxBytes - Max size for attachment to inline
+ * @param maxBytes - Max total size of attachments to inline
  */
 async function inlineDocumentReferenceAttachments(
   repo: Repository,
@@ -236,6 +247,9 @@ async function inlineDocumentReferenceAttachments(
   if (!entries) {
     return;
   }
+  let totalBytes = 0;
+  let inlinedCount = 0;
+  let skippedCount = 0;
   for (const entry of entries) {
     const resource = entry.resource;
     if (resource?.resourceType !== 'DocumentReference') {
@@ -254,6 +268,11 @@ async function inlineDocumentReferenceAttachments(
       if (!id) {
         continue;
       }
+      const remainingBytes = maxBytes - totalBytes;
+      if (remainingBytes <= 0) {
+        skippedCount++;
+        continue;
+      }
       try {
         let binary: Binary;
         if (versionId) {
@@ -262,9 +281,14 @@ async function inlineDocumentReferenceAttachments(
           binary = await repo.readResource<Binary>('Binary', id);
         }
         const stream = await getBinaryStorage().readBinary(binary);
-        const buffer = await readStreamToBufferWithLimit(stream, maxBytes);
+        const buffer = await readStreamToBufferWithLimit(stream, remainingBytes);
         if (buffer === null) {
-          getLogger().debug('Skipping attachment inline: exceeds _maxAttachmentSize', { binaryId: id, maxBytes });
+          skippedCount++;
+          getLogger().debug('Skipping attachment inline: exceeds remaining inline attachment budget', {
+            binaryId: id,
+            remainingBytes,
+            maxBytes,
+          });
           continue;
         }
         attachment.data = buffer.toString('base64');
@@ -272,11 +296,15 @@ async function inlineDocumentReferenceAttachments(
           attachment.contentType = binary.contentType;
         }
         delete attachment.url;
+        totalBytes += buffer.length;
+        inlinedCount++;
       } catch (err) {
+        skippedCount++;
         getLogger().debug('Error inlining DocumentReference attachment', { error: err });
       }
     }
   }
+  getLogger().debug('Finished inlining DocumentReference attachments', { inlinedCount, skippedCount, totalBytes });
 }
 
 /**

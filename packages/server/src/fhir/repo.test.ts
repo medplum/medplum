@@ -136,6 +136,73 @@ describe('FHIR Repo', () => {
     }
   });
 
+  test('Read Binary requires access to securityContext', async () => {
+    const patient = await withTestContext(() => globalSystemRepo.createResource<Patient>({ resourceType: 'Patient' }));
+    const binary = await withTestContext(() =>
+      globalSystemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: 'text/plain',
+        securityContext: createReference(patient),
+      })
+    );
+    const versionId = binary.meta?.versionId as string;
+
+    const repoWithoutPatientAccess = new Repository({
+      author: { reference: 'Practitioner/' + randomUUID() },
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Binary', interaction: ['read', 'vread'] }],
+      },
+    });
+
+    await expect(repoWithoutPatientAccess.readResource<Binary>('Binary', binary.id)).rejects.toThrow();
+    await expect(repoWithoutPatientAccess.readReference<Binary>(createReference(binary))).rejects.toThrow();
+    await expect(repoWithoutPatientAccess.readVersion<Binary>('Binary', binary.id, versionId)).rejects.toThrow();
+    const deniedReferences = await repoWithoutPatientAccess.readReferences<Binary>([createReference(binary)]);
+    expect(deniedReferences[0]).toBeInstanceOf(Error);
+
+    const repoWithPatientAccess = new Repository({
+      author: { reference: 'Practitioner/' + randomUUID() },
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Binary' }, { resourceType: 'Patient' }],
+      },
+    });
+
+    await expect(repoWithPatientAccess.readResource<Binary>('Binary', binary.id)).resolves.toMatchObject({
+      id: binary.id,
+    });
+    await expect(repoWithPatientAccess.readReference<Binary>(createReference(binary))).resolves.toMatchObject({
+      id: binary.id,
+    });
+  });
+
+  test('Read Binary rejects recursive securityContext', async () => {
+    const binary = await withTestContext(() =>
+      globalSystemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: 'text/plain',
+        data: Buffer.from('recursive security context').toString('base64'),
+      })
+    );
+    const recursiveBinary = await withTestContext(() =>
+      globalSystemRepo.updateResource<Binary>({
+        ...binary,
+        securityContext: createReference(binary),
+      })
+    );
+
+    const repo = new Repository({
+      author: { reference: 'Practitioner/' + randomUUID() },
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Binary' }],
+      },
+    });
+
+    await expect(repo.readResource<Binary>('Binary', recursiveBinary.id)).rejects.toThrow();
+  });
+
   test('Read invalid resource with `checkCacheOnly` set', async () => {
     await expect(systemRepo.readResource('Subscription', randomUUID(), { checkCacheOnly: true })).rejects.toThrow(
       new OperationOutcomeError(notFound)

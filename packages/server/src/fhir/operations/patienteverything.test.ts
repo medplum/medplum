@@ -16,9 +16,9 @@ import type {
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config/loader';
+import { getConfig, loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth } from '../../test.setup';
-import { searchPatientCompartment } from './patienteverything';
+import { PATIENT_EVERYTHING_INLINE_ATTACHMENTS_SETTING, searchPatientCompartment } from './patienteverything';
 
 const app = express();
 let accessToken: string;
@@ -216,23 +216,93 @@ describe('Patient Everything Operation', () => {
     expect(docRefWithout?.content?.[0]?.attachment?.url).toBeDefined();
     expect(docRefWithout?.content?.[0]?.attachment?.data).toBeUndefined();
 
-    // With _inlineAttachments=true, the attachment should be base64-encoded inline data
-    const withInline = await request(app)
-      .get(`/fhir/R4/Patient/${patient.id}/$everything?_inlineAttachments=true`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(withInline.status).toBe(200);
-    const bundleWith = withInline.body as Bundle;
-    const docRefWith = bundleWith.entry
-      ?.map((e) => e.resource)
-      .find((r): r is DocumentReference => r?.resourceType === 'DocumentReference');
-    expect(docRefWith?.content?.[0]?.attachment?.url).toBeUndefined();
-    expect(docRefWith?.content?.[0]?.attachment?.data).toBeDefined();
-    expect(Buffer.from(docRefWith?.content?.[0]?.attachment?.data ?? '', 'base64').toString('utf8')).toBe(
-      'Hello attachment'
-    );
+    const previousMaxTotal = getConfig().inlineAttachmentsMaxTotalBytes;
+    getConfig().inlineAttachmentsMaxTotalBytes = 1024;
+    try {
+      // With _inlineAttachments=true, the attachment should be base64-encoded inline data
+      const withInline = await request(app)
+        .get(`/fhir/R4/Patient/${patient.id}/$everything?_inlineAttachments=true`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(withInline.status).toBe(200);
+      const bundleWith = withInline.body as Bundle;
+      const docRefWith = bundleWith.entry
+        ?.map((e) => e.resource)
+        .find((r): r is DocumentReference => r?.resourceType === 'DocumentReference');
+      expect(docRefWith?.content?.[0]?.attachment?.url).toBeUndefined();
+      expect(docRefWith?.content?.[0]?.attachment?.data).toBeDefined();
+      expect(Buffer.from(docRefWith?.content?.[0]?.attachment?.data ?? '', 'base64').toString('utf8')).toBe(
+        'Hello attachment'
+      );
+    } finally {
+      getConfig().inlineAttachmentsMaxTotalBytes = previousMaxTotal;
+    }
   });
 
-  test('Skips inlining attachments that exceed _maxAttachmentSize', async () => {
+  test('Project setting enables inline DocumentReference attachments', async () => {
+    const previousMaxTotal = getConfig().inlineAttachmentsMaxTotalBytes;
+    getConfig().inlineAttachmentsMaxTotalBytes = 1024;
+    const { accessToken: projectAccessToken } = await createTestProject({
+      project: {
+        setting: [{ name: PATIENT_EVERYTHING_INLINE_ATTACHMENTS_SETTING, valueBoolean: true }],
+      },
+      withAccessToken: true,
+    });
+
+    const patientRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + projectAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Project'], family: 'Setting' }] } satisfies Patient);
+    expect(patientRes.status).toBe(201);
+    const patient = patientRes.body as Patient;
+
+    const binaryRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + projectAccessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('Project setting attachment');
+    expect(binaryRes.status).toBe(201);
+    const binary = binaryRes.body as Binary;
+
+    const docRefRes = await request(app)
+      .post('/fhir/R4/DocumentReference')
+      .set('Authorization', 'Bearer ' + projectAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        subject: createReference(patient),
+        content: [{ attachment: { url: binary.url, contentType: ContentType.TEXT } }],
+      } satisfies DocumentReference);
+    expect(docRefRes.status).toBe(201);
+
+    try {
+      const res = await request(app)
+        .get(`/fhir/R4/Patient/${patient.id}/$everything`)
+        .set('Authorization', 'Bearer ' + projectAccessToken);
+      expect(res.status).toBe(200);
+      const bundle = res.body as Bundle;
+      const docRef = findDocumentReference(bundle);
+      expect(docRef?.content?.[0]?.attachment?.url).toBeUndefined();
+      expect(Buffer.from(docRef?.content?.[0]?.attachment?.data ?? '', 'base64').toString('utf8')).toBe(
+        'Project setting attachment'
+      );
+
+      const optOutRes = await request(app)
+        .get(`/fhir/R4/Patient/${patient.id}/$everything?_inlineAttachments=false`)
+        .set('Authorization', 'Bearer ' + projectAccessToken);
+      expect(optOutRes.status).toBe(200);
+      const optOutDocRef = findDocumentReference(optOutRes.body as Bundle);
+      expect(optOutDocRef?.content?.[0]?.attachment?.url).toBeDefined();
+      expect(optOutDocRef?.content?.[0]?.attachment?.data).toBeUndefined();
+    } finally {
+      getConfig().inlineAttachmentsMaxTotalBytes = previousMaxTotal;
+    }
+  });
+
+  test('Skips inlining attachments after server total inline size is exhausted', async () => {
+    const previousMaxTotal = getConfig().inlineAttachmentsMaxTotalBytes;
+    getConfig().inlineAttachmentsMaxTotalBytes = 5;
     const patientRes = await request(app)
       .post('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -245,9 +315,17 @@ describe('Patient Everything Operation', () => {
       .post('/fhir/R4/Binary')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
-      .send('This content is too large to inline');
+      .send('12345');
     expect(binaryRes.status).toBe(201);
     const binary = binaryRes.body as Binary;
+
+    const secondBinaryRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('67890');
+    expect(secondBinaryRes.status).toBe(201);
+    const secondBinary = secondBinaryRes.body as Binary;
 
     const docRefRes = await request(app)
       .post('/fhir/R4/DocumentReference')
@@ -257,23 +335,35 @@ describe('Patient Everything Operation', () => {
         resourceType: 'DocumentReference',
         status: 'current',
         subject: createReference(patient),
-        content: [{ attachment: { url: binary.url, contentType: ContentType.TEXT } }],
+        content: [
+          { attachment: { url: binary.url, contentType: ContentType.TEXT } },
+          { attachment: { url: secondBinary.url, contentType: ContentType.TEXT } },
+        ],
       } satisfies DocumentReference);
     expect(docRefRes.status).toBe(201);
 
-    // With a 1-byte cap, the attachment should not be inlined — URL is preserved
-    const res = await request(app)
-      .get(`/fhir/R4/Patient/${patient.id}/$everything?_inlineAttachments=true&_maxAttachmentSize=1`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
-    const bundle = res.body as Bundle;
-    const docRef = bundle.entry
-      ?.map((e) => e.resource)
-      .find((r): r is DocumentReference => r?.resourceType === 'DocumentReference');
-    expect(docRef?.content?.[0]?.attachment?.url).toBeDefined();
-    expect(docRef?.content?.[0]?.attachment?.data).toBeUndefined();
+    try {
+      const res = await request(app)
+        .get(`/fhir/R4/Patient/${patient.id}/$everything?_inlineAttachments=true`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res.status).toBe(200);
+      const bundle = res.body as Bundle;
+      const docRef = findDocumentReference(bundle);
+      expect(docRef?.content?.[0]?.attachment?.url).toBeUndefined();
+      expect(Buffer.from(docRef?.content?.[0]?.attachment?.data ?? '', 'base64').toString('utf8')).toBe('12345');
+      expect(docRef?.content?.[1]?.attachment?.url).toBeDefined();
+      expect(docRef?.content?.[1]?.attachment?.data).toBeUndefined();
+    } finally {
+      getConfig().inlineAttachmentsMaxTotalBytes = previousMaxTotal;
+    }
   });
 });
+
+function findDocumentReference(bundle: Bundle): DocumentReference | undefined {
+  return bundle.entry
+    ?.map((e) => e.resource)
+    .find((r): r is DocumentReference => r?.resourceType === 'DocumentReference');
+}
 
 describe('searchPatientCompartment', () => {
   beforeEach(async () => {

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Checkbox, Group, NumberInput, SegmentedControl, Stack } from '@mantine/core';
+import { Checkbox, Group, SegmentedControl, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { ContentType, normalizeErrorString, resolveId } from '@medplum/core';
 import type { Patient, Reference } from '@medplum/fhirtypes';
@@ -58,7 +58,6 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
   const { patient } = props;
   const [format, setFormat] = useState('everything');
   const [inlineAttachments, setInlineAttachments] = useState(false);
-  const [maxAttachmentSizeMb, setMaxAttachmentSizeMb] = useState<number | string>(10);
 
   const handleSubmit = useCallback(
     async (data: Record<string, string>) => {
@@ -69,8 +68,6 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
 
       if (format === 'everything' && inlineAttachments) {
         url.searchParams.set('_inlineAttachments', 'true');
-        const maxBytes = Math.round(Number(maxAttachmentSizeMb) * 1024 * 1024);
-        url.searchParams.set('_maxAttachmentSize', String(maxBytes));
       }
 
       if (type) {
@@ -135,7 +132,7 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
         });
       }
     },
-    [medplum, patient, format, inlineAttachments, maxAttachmentSizeMb]
+    [medplum, patient, format, inlineAttachments]
   );
 
   return (
@@ -166,17 +163,6 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
                 checked={inlineAttachments}
                 onChange={(e) => setInlineAttachments(e.currentTarget.checked)}
               />
-              {inlineAttachments && (
-                <NumberInput
-                  label="Max attachment size (MB)"
-                  description="Attachments larger than this will keep their storage URL."
-                  value={maxAttachmentSizeMb}
-                  onChange={setMaxAttachmentSizeMb}
-                  min={1}
-                  step={1}
-                  w={240}
-                />
-              )}
             </Stack>
           </FormSection>
         )}

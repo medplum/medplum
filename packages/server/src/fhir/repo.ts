@@ -15,6 +15,7 @@ import {
   extractAccountReferences,
   forbidden,
   formatSearchQuery,
+  getReferenceString,
   getStatus,
   gone,
   isGone,
@@ -268,6 +269,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private readonly context: RepositoryContext;
   private readonly connection: RepositoryConnection;
   private readonly ownsConnection: boolean;
+  private readonly authorizingBinarySecurityContexts = new Set<string>();
   private closed = false;
 
   /**
@@ -501,7 +503,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       //   throw new OperationOutcomeError(notFound);
       // }
       if (this.canPerformInteraction(AccessPolicyInteraction.READ, cacheRecord.resource)) {
-        return cacheRecord.resource;
+        return this.authorizeBinarySecurityContext(cacheRecord.resource);
       }
     }
 
@@ -537,6 +539,22 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.setCacheEntry(resource);
     }
 
+    return this.authorizeBinarySecurityContext(resource);
+  }
+
+  private async authorizeBinarySecurityContext<T extends Resource>(resource: WithId<T>): Promise<WithId<T>> {
+    if (resource.resourceType === 'Binary' && resource.securityContext && !this.isSuperAdmin()) {
+      const reference = getReferenceString(resource);
+      if (this.authorizingBinarySecurityContexts.has(reference)) {
+        throw new OperationOutcomeError(notFound);
+      }
+      this.authorizingBinarySecurityContexts.add(reference);
+      try {
+        await this.readReference(resource.securityContext);
+      } finally {
+        this.authorizingBinarySecurityContexts.delete(reference);
+      }
+    }
     return resource;
   }
 
@@ -589,13 +607,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         if (!this.canPerformInteraction(AccessPolicyInteraction.READ, cacheEntry.resource)) {
           return new OperationOutcomeError(notFound);
         }
-        return cacheEntry.resource;
+        return this.authorizeBinarySecurityContext(cacheEntry.resource as WithId<Resource>);
       }
       return await this.readResourceFromDatabase(resourceType, id);
     } catch (err) {
       if (err instanceof OperationOutcomeError) {
         if (isNotFound(err.outcome) || isGone(err.outcome)) {
-          // Only return "not found" or "gone" errors
           return err;
         }
         // Other errors should be treated as database errors
@@ -754,7 +771,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(notFound);
       }
 
-      const result = this.removeHiddenFields(JSON.parse(rows[0].content as string));
+      const result = await this.authorizeBinarySecurityContext(
+        this.removeHiddenFields(JSON.parse(rows[0].content as string))
+      );
       const durationMs = Date.now() - startTime;
       this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });
       return result;
