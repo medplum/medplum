@@ -437,7 +437,7 @@ async function sendInviteEmail(
     ].join('\n');
   }
   try {
-    await sendEmail(systemRepo, options);
+    await sendEmail(systemRepo, options, request.project);
   } catch (err) {
     // A common error for new self-hosted Medplum servers is that SES is not configured.
     // A long time ago, we made the mistake of establishing a convention of HTTP 200 + OperationOutcome for this case.

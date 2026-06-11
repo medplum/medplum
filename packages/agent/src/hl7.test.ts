@@ -424,6 +424,106 @@ describe('HL7', () => {
     await app.stop();
   });
 
+  // Regression: in aaMode the agent sends the AA immediately and the cloud's
+  // app-level ACK is suppressed (never forwarded to the remote). The suppression
+  // path must still clear the pending RTT entry, otherwise every message lingers
+  // and is eventually GC'd with a "never got response" warning.
+  test('Send and receive -- aaMode clears pending RTT entry', async () => {
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        }
+
+        if (command.type === 'agent:transmit:request') {
+          const hl7Message = Hl7Message.parse(command.body);
+          const ackMessage = hl7Message.buildAck();
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:transmit:response',
+                channel: command.channel,
+                callback: command.callback,
+                remote: command.remote,
+                body: ackMessage.toString(),
+              })
+            )
+          );
+        }
+
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
+            )
+          );
+        }
+      });
+    });
+
+    const [aaEndpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: BASE_ENDPOINT.address + '?enhanced=aa',
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(aaEndpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    const client = new Hl7Client({
+      host: 'localhost',
+      port,
+    });
+
+    const response = await client.sendAndWait(
+      Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.5\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
+          'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+          'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
+      ),
+      { returnAck: ReturnAckCategory.FIRST }
+    );
+    // In aaMode the agent answers with an immediate application ACK (AA)
+    expect(response.getSegment('MSA')?.getComponent(1, 1)).toStrictEqual('AA');
+
+    // The cloud's app-level ACK is delivered asynchronously and suppressed at the
+    // agent; give it a moment to flow back and clear the pending entry.
+    const channel = app.channels.get('test') as AgentHl7Channel;
+    for (let i = 0; i < 10 && channel.stats.getPendingCount() > 0; i++) {
+      await sleep(20);
+    }
+
+    // Pending entry cleared, and the round-trip was recorded as a completed RTT sample
+    expect(channel.stats.getPendingCount()).toBe(0);
+    expect(channel.stats.getSampleCount()).toBe(1);
+
+    await client.close();
+    await app.stop();
+  });
+
   test('Send and receive -- enhanced mode + messagesPerMin', async () => {
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {

@@ -14,14 +14,14 @@ describe('ResourcePage', () => {
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      await vi.runOnlyPendingTimersAsync();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Not found', async () => {
@@ -52,7 +52,7 @@ describe('ResourcePage', () => {
 
     try {
       await medplum.readResource('Practitioner', practitioner.id);
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.id).toEqual('not-found');
@@ -112,7 +112,7 @@ describe('ResourcePage', () => {
     await setup('/Questionnaire/123/bots', medplum);
     expect(await screen.findByText('Connect to bot')).toBeInTheDocument();
 
-    const createResourceSpy = jest.spyOn(medplum, 'createResource');
+    const createResourceSpy = vi.spyOn(medplum, 'createResource');
 
     // Select "Test Bot" in the bot input field
 
@@ -125,7 +125,7 @@ describe('ResourcePage', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
     // Press the down arrow
@@ -170,12 +170,12 @@ describe('ResourcePage', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
   });
 
@@ -191,7 +191,7 @@ describe('ResourcePage', () => {
     await setup('/Questionnaire/123/bots', medplum);
     expect(await screen.findByText('Connect to bot')).toBeInTheDocument();
 
-    const createResourceSpy = jest.spyOn(medplum, 'createResource');
+    const createResourceSpy = vi.spyOn(medplum, 'createResource');
 
     // Select "Test Bot" in the bot input field
 
@@ -207,7 +207,7 @@ describe('ResourcePage', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
     // Press the down arrow
@@ -225,14 +225,14 @@ describe('ResourcePage', () => {
     });
 
     // We have to disable fake timers for the `selectOptions` to work
-    jest.useRealTimers();
+    vi.useRealTimers();
 
     await act(async () => {
       // Find the dropdown for interaction trigger
       await user.selectOptions(interactionDropdown, ['All Interactions']);
     });
 
-    jest.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
 
     // Click on "Connect"
     await act(async () => {
@@ -316,7 +316,7 @@ describe('ResourcePage', () => {
   });
 
   test('Left click on tab', async () => {
-    window.open = jest.fn();
+    window.open = vi.fn();
 
     await setup('/Practitioner/123/details');
 

@@ -98,7 +98,7 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
-import type { FhirRateLimiter } from './fhirquota';
+import { FhirQuotaCost } from './fhirquota';
 import { clamp } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
@@ -393,8 +393,22 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     this.connection.mode = mode;
   }
 
-  private rateLimiter(): FhirRateLimiter | undefined {
-    return this.isSuperAdmin() ? undefined : tryGetRequestContext()?.fhirRateLimiter;
+  async recordFhirQuota(points: number): Promise<void> {
+    const ctx = tryGetRequestContext();
+    const limiter = this.isSuperAdmin() ? undefined : ctx?.fhirRateLimiter;
+    if (ctx instanceof AuthenticatedRequestContext && ctx.isAsync) {
+      // Do not enforce rate limits in async context; instead, slow down the consumer
+      // in proportion to the weight of the operation being performed
+      const delay = points * getConfig().asyncDelayScaling;
+      if (this.connection.isInTransaction()) {
+        // Don't hold the transaction open, but shift the delay to after the transaction commits
+        await this.postCommit(() => sleep(delay));
+      } else {
+        await sleep(delay);
+      }
+    } else {
+      await limiter?.consume(points);
+    }
   }
 
   private resourceCap(): ResourceCap | undefined {
@@ -427,9 +441,9 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     return this.getSystemRepo().readResource<Project>('Project', projectId);
   }
 
-  override async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
+  async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
     this.assertUsable();
-    await this.rateLimiter()?.recordWrite();
+    await this.recordFhirQuota(FhirQuotaCost.WRITE);
     await this.resourceCap()?.created();
 
     if (options?.assignedId && resource.id && !this.context.superAdmin) {
@@ -474,13 +488,13 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     return randomUUID();
   }
 
-  override async readResource<T extends Resource>(
+  async readResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
     options?: ReadResourceOptions
   ): Promise<WithId<T>> {
     this.assertUsable();
-    await this.rateLimiter()?.recordRead();
+    await this.recordFhirQuota(FhirQuotaCost.READ);
 
     const startTime = Date.now();
     try {
@@ -562,9 +576,9 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     return resource;
   }
 
-  override async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
+  async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
     this.assertUsable();
-    await this.rateLimiter()?.recordRead(references.length);
+    await this.recordFhirQuota(references.length * FhirQuotaCost.READ);
     const cacheEntries = await this.getCacheEntries(references);
     const result: (WithId<T> | Error)[] = new Array(references.length);
 
@@ -628,7 +642,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     }
   }
 
-  override async readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>> {
+  async readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>> {
     this.assertUsable();
     let parts: [T['resourceType'], string];
     try {
@@ -656,7 +670,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     options?: ReadHistoryOptions
   ): Promise<Bundle<T>> {
     this.assertUsable();
-    await this.rateLimiter()?.recordHistory();
+    await this.recordFhirQuota(FhirQuotaCost.HISTORY);
     const startTime = Date.now();
     try {
       let resource: T | undefined = undefined;
@@ -749,13 +763,9 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     }
   }
 
-  override async readVersion<T extends Resource>(
-    resourceType: T['resourceType'],
-    id: string,
-    vid: string
-  ): Promise<WithId<T>> {
+  async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<WithId<T>> {
     this.assertUsable();
-    await this.rateLimiter()?.recordRead();
+    await this.recordFhirQuota(FhirQuotaCost.READ);
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
     try {
@@ -795,9 +805,9 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     }
   }
 
-  override async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
+  async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
     this.assertUsable();
-    await this.rateLimiter()?.recordWrite();
+    await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
     try {
@@ -1190,12 +1200,9 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     );
   }
 
-  override async deleteResource<T extends Resource = Resource>(
-    resourceType: T['resourceType'],
-    id: string
-  ): Promise<void> {
+  async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
     this.assertUsable();
-    await this.rateLimiter()?.recordWrite();
+    await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
     let resource: WithId<T>;
@@ -1282,14 +1289,14 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     }
   }
 
-  override async patchResource<T extends Resource>(
+  async patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
     patch: Operation[],
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
     this.assertUsable();
-    await this.rateLimiter()?.recordWrite();
+    await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
     try {
@@ -1410,12 +1417,12 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
   }
 
-  override async search<T extends Resource>(
+  async search<T extends Resource>(
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
     this.assertUsable();
-    await this.rateLimiter()?.recordSearch();
+    await this.recordFhirQuota(FhirQuotaCost.SEARCH);
 
     const startTime = Date.now();
     try {
@@ -1460,13 +1467,13 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     }
   }
 
-  override async searchByReference<T extends Resource>(
+  async searchByReference<T extends Resource>(
     searchRequest: SearchRequest<T>,
     referenceField: string,
     references: string[]
   ): Promise<Record<string, WithId<T>[]>> {
     this.assertUsable();
-    await this.rateLimiter()?.recordSearch(references.length);
+    await this.recordFhirQuota(references.length * FhirQuotaCost.SEARCH);
     const startTime = Date.now();
     try {
       const result = await searchByReferenceImpl(this, searchRequest, referenceField, references);
@@ -1490,17 +1497,17 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     }
   }
 
-  override async searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T> | undefined> {
+  async searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T> | undefined> {
     this.assertUsable();
     return super.searchOne(searchRequest);
   }
 
-  override async searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T>[]> {
+  async searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T>[]> {
     this.assertUsable();
     return super.searchResources(searchRequest);
   }
 
-  override async conditionalCreate<T extends Resource>(
+  async conditionalCreate<T extends Resource>(
     resource: T,
     search: SearchRequest<T>,
     options?: CreateResourceOptions
@@ -1509,7 +1516,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     return super.conditionalCreate(resource, search, options);
   }
 
-  override async conditionalUpdate<T extends Resource>(
+  async conditionalUpdate<T extends Resource>(
     resource: T,
     search: SearchRequest,
     options?: CreateResourceOptions & UpdateResourceOptions
@@ -1518,12 +1525,12 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     return super.conditionalUpdate(resource, search, options);
   }
 
-  override async conditionalDelete(search: SearchRequest): Promise<void> {
+  async conditionalDelete(search: SearchRequest): Promise<void> {
     this.assertUsable();
     return super.conditionalDelete(search);
   }
 
-  override async conditionalPatch(search: SearchRequest, patch: Operation[]): Promise<WithId<Resource>> {
+  async conditionalPatch(search: SearchRequest, patch: Operation[]): Promise<WithId<Resource>> {
     this.assertUsable();
     return super.conditionalPatch(search, patch);
   }
@@ -2222,7 +2229,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     return client as TClient;
   }
 
-  override async withTransaction<TResult>(
+  async withTransaction<TResult>(
     callback: (repo: TransactionRepository & this) => Promise<TResult>,
     options?: { serializable?: boolean }
   ): Promise<TResult> {

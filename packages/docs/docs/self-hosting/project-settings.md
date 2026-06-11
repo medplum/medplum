@@ -36,7 +36,7 @@ are:
 | `graphql-introspection`   | Allows potentially-expensive [GraphQL schema introspection](/docs/graphql) queries                                               |
 | `terminology`             | Enable full standards-compliant implementation for the [`ValueSet/$expand` operation](/docs/api/fhir/operations/valueset-expand) |
 | `websocket-subscriptions` | Allows setting up a [Subscription](/docs/subscriptions) over Websockets                                                          |
-| `transaction-bundles`     | Use strong database transaction isolation for `transaction` Bundles                                                              |
+| `transaction-bundles`     | Process `transaction` Bundles atomically. Without this flag, `transaction` Bundles are processed as batches. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests#transaction-limits) |
 
 ## Project system settings
 
@@ -55,3 +55,7 @@ The supported options that can be specified by a Super Admin in `Project.systemS
 | `enableFhirQuota`              | boolean | If true, the totalFhirQuota limit will be enforced, returning `429 Too Many Requests` errors when the limit is exceeded over a minute. Please note that as of `v4.1.6`, FHIR quotas are enabled by default.                               | true    |
 | `searchOnReader`               | boolean | If true, FHIR search requests (except in batch requests) are served by the reader database pool if available                                                                                                                              | false   |
 | `redactAuditEvents`            | boolean | If true, remove human-readable detail strings from AuditEvent resources saved to the database and logs                                                                                                                                    | false   |
+
+## Project SMTP
+
+Projects can send email through their own SMTP relay instead of the server-wide email provider, configured via `Project.secret` entries. See [Project SMTP](/docs/user-management/project-smtp) for the full configuration reference. Operators can disable this fleet-wide with the [`allowProjectSmtp`](/docs/self-hosting/server-config#allowprojectsmtp) server config setting.

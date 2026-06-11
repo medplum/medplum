@@ -34,7 +34,7 @@ import type {
   ResourceType,
   Subscription,
 } from '@medplum/fhirtypes';
-import type { AdvancedOptions, Job, MinimalJob, QueueBaseOptions } from 'bullmq';
+import type { Job, MinimalJob, QueueBaseOptions } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
@@ -156,18 +156,9 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
 
   const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
-    settings: {
-      backoffStrategy: (attemptsMade: number, type?: string, _err?: Error, _job?: MinimalJob) => {
-        if (type !== 'cappedExponential') {
-          throw new Error('Invalid backoff strategy for subscription queue');
-        }
-        const jitterFactor = 0.9 + 0.2 * Math.random(); // 90–110% of the calculated delay is applied
-        return Math.min(BASE_DELAY * Math.pow(2, attemptsMade - 1) * jitterFactor, MAX_DELAY);
-      },
-    } as AdvancedOptions,
     defaultJobOptions: {
       attempts: MAX_JOB_ATTEMPTS, // can be overridden in catchJobError() below
-      backoff: { type: 'cappedExponential' }, // see above
+      backoff: { type: 'cappedExponential' }, // see below
     },
   });
 
@@ -185,6 +176,15 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
       {
         ...defaultOptions,
         ...workerBullmq,
+        settings: {
+          backoffStrategy: (attemptsMade: number, type?: string, _err?: Error, _job?: MinimalJob) => {
+            if (type !== 'cappedExponential') {
+              throw new Error('Invalid backoff strategy for subscription queue');
+            }
+            const jitterFactor = 0.9 + 0.2 * Math.random(); // 90–110% of the calculated delay is applied
+            return Math.min(BASE_DELAY * Math.pow(2, attemptsMade - 1) * jitterFactor, MAX_DELAY);
+          },
+        },
       }
     );
     addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);

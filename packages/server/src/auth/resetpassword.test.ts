@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { createReference, getReferenceString, Operator, resolveId } from '@medplum/core';
-import type { DomainConfiguration, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { DomainConfiguration, Project, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
+import type { Transporter } from 'nodemailer';
+import nodemailer from 'nodemailer';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
@@ -166,6 +168,56 @@ describe('Reset Password', () => {
 
     const parsed = await simpleParser(args.Content.Raw.Data);
     expect(parsed.subject).toBe('Medplum Password Reset');
+  });
+
+  test('Project-scoped user uses project SMTP', async () => {
+    const email = `project-smtp-${randomUUID()}@example.com`;
+    const sendMail = jest.fn().mockResolvedValue({ messageId: '123' });
+    const createTransportSpy = jest.spyOn(nodemailer, 'createTransport');
+    createTransportSpy.mockReturnValue({ sendMail } as unknown as Transporter);
+
+    try {
+      const project = await withTestContext(async () => {
+        const project = await systemRepo.createResource<Project>({
+          resourceType: 'Project',
+          name: 'Project SMTP Reset Project',
+          secret: [
+            { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+            { name: 'smtpPort', valueInteger: 587 },
+            { name: 'smtpUsername', valueString: 'projectuser' },
+            { name: 'smtpPassword', valueString: 'projectpass' },
+            { name: 'smtpFromAddress', valueString: 'support@project.example.com' },
+          ],
+        });
+        await systemRepo.createResource<User>({
+          resourceType: 'User',
+          meta: { project: project.id },
+          firstName: 'Reset',
+          lastName: 'Reset',
+          email,
+          passwordHash: 'abc',
+          project: createReference(project),
+        });
+        return project;
+      });
+
+      const res = await request(app).post('/auth/resetpassword').type('json').send({
+        email,
+        projectId: project.id,
+        recaptchaToken: 'xyz',
+      });
+      expect(res.status).toBe(200);
+
+      expect(createTransportSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ host: 'smtp.project.example.com', port: 587 })
+      );
+      expect(sendMail).toHaveBeenCalledTimes(1);
+      expect(sendMail.mock.calls[0][0].from).toBe('support@project.example.com');
+      expect(SESv2Client).not.toHaveBeenCalled();
+      expect(SendEmailCommand).not.toHaveBeenCalled();
+    } finally {
+      createTransportSpy.mockRestore();
+    }
   });
 
   test('External auth', async () => {

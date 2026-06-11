@@ -9,6 +9,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
+import type { MockedFunction } from 'vitest';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
 import { ConfigureGINIndexesForm } from './ConfigureGINIndexesForm';
 
@@ -17,7 +18,7 @@ describe('ConfigureGINIndexesForm', () => {
   const defaultGinPendingListLimit = 5555;
   const availableTables = ['Foobar', 'Foobar_History', 'Foobar_References'];
   let response: Parameters;
-  let onResponse: jest.MockedFn<(response: Parameters) => void>;
+  let onResponse: MockedFunction<(response: Parameters) => void>;
 
   function setup(): void {
     render(
@@ -37,7 +38,7 @@ describe('ConfigureGINIndexesForm', () => {
   }
 
   beforeEach(() => {
-    onResponse = jest.fn();
+    onResponse = vi.fn();
 
     medplum = new MockClient();
     response = {
@@ -87,8 +88,8 @@ describe('ConfigureGINIndexesForm', () => {
         },
       ],
     };
-    jest.useFakeTimers();
-    jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
 
     medplum.router.add('POST', '$db-configure-indexes', async () => {
       return [allOk, response];
@@ -97,11 +98,11 @@ describe('ConfigureGINIndexesForm', () => {
 
   afterEach(async () => {
     await act(async () => notifications.clean());
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      await vi.runOnlyPendingTimersAsync();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test.each([
@@ -126,7 +127,7 @@ describe('ConfigureGINIndexesForm', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
     // Press the down arrow
