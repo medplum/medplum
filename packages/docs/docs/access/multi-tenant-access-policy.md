@@ -7,9 +7,9 @@ import TabItem from '@theme/TabItem';
 
 ## Overview
 
-
 ### What is a tenant?
-In healthcare applications, Practitioners often work across multiple organizational boundaries. A doctor might work at multiple clinics, a nurse might be part of several care teams, or a care coordinator might manage patients across different healthcare services. Each of these logical groupings represents a distinct **tenant** in your system: a collection of FHIR resources (Patients, Observations, Encounters, etc.) that make sense to be grouped together. 
+
+In healthcare applications, Practitioners often work across multiple organizational boundaries. A doctor might work at multiple clinics, a nurse might be part of several care teams, or a care coordinator might manage patients across different healthcare services. Each of these logical groupings represents a distinct **tenant** in your system: a collection of FHIR resources (Patients, Observations, Encounters, etc.) that make sense to be grouped together.
 
 Using this model will allow you to restrict Users' access to only the resources that are part of the tenant(s) that you assign them to. This diagram shows how your User's access is determined by the tenant(s) that you assign them to and the Patients that belong to those tenants.
 
@@ -21,18 +21,18 @@ flowchart TB
         U2[User 2]
         U3[User 3]
     end
-    
+
     subgraph Tenants["Tenants"]
         T1[Tenant]
         T2[Tenant]
     end
-    
+
     subgraph Patients["Patients"]
         P1[Patient A]
         P2[Patient B]
         P3[Patient C]
         P4[Patient D]
-        
+
         subgraph CR1["Patient A's Resources"]
             Obs1[Observations]
             Comm1[Communications]
@@ -40,7 +40,7 @@ flowchart TB
             Aller1[AllergyIntolerances]
             MedReq1[MedicationRequests]
         end
-        
+
         subgraph CR2["Patient B's Resources"]
             Obs2[Observations]
             Comm2[Communications]
@@ -48,7 +48,7 @@ flowchart TB
             Aller2[AllergyIntolerances]
             MedReq2[MedicationRequests]
         end
-        
+
         subgraph CR3["Patient C's Resources"]
             Obs3[Observations]
             Comm3[Communications]
@@ -56,7 +56,7 @@ flowchart TB
             Aller3[AllergyIntolerances]
             MedReq3[MedicationRequests]
         end
-        
+
         subgraph CR4["Patient D's Resources"]
             Obs4[Observations]
             Comm4[Communications]
@@ -64,23 +64,23 @@ flowchart TB
             Aller4[AllergyIntolerances]
             MedReq4[MedicationRequests]
         end
-        
+
         P1 --> CR1
         P2 --> CR2
         P3 --> CR3
         P4 --> CR4
     end
-    
+
     U1 --> T1
     U2 --> T1
     U2 --> T2
     U3 --> T2
-    
+
     T1 --> P1
     T1 --> P2
     T2 --> P3
     T2 --> P4
-    
+
     style Users fill:#e8f5e9
     style Tenants fill:#e1f5ff
     style Patients fill:#fff4e1
@@ -89,15 +89,14 @@ flowchart TB
     style CR3 fill:#fce4ec
     style CR4 fill:#fce4ec
 ```
-_User 1 can access Patient A and Patient B. User 2 can access all four Patients. User 3 can only access Patient C and Patient D._
 
+_User 1 can access Patient A and Patient B. User 2 can access all four Patients. User 3 can only access Patient C and Patient D._
 
 This guide walks you through implementing multi-tenant access control in a single Medplum project. You will learn which questions you need to answer to build your tenancy model and how to implement it. Here is an overview of the steps you will take:
 
 1. **Data Modeling**: How to represent tenants in FHIR using different resource types.
 2. **Assigning data to tenants**: How to label your FHIR resources with the tenant(s) they belong to.
 3. **User Registration & Management**: How to grant Users access to the tenant(s) they are enrolled in.
-
 
 ## Step 1: Modeling your tenants
 
@@ -135,7 +134,7 @@ graph TB
         Org2 --> PatOrg2
         Org2 --> PatOrgShared
     end
-    
+
     style UserOrg fill:#e8f5e9
     style PMOrg fill:#fff4e1
     style Org1 fill:#e1f5ff
@@ -167,7 +166,7 @@ graph TB
         HS2 --> PatHS2
         HS2 --> PatHSShared
     end
-    
+
     style UserHS fill:#e8f5e9
     style PMHS fill:#fff4e1
     style HS1 fill:#e1f5ff
@@ -235,7 +234,7 @@ Find other example enrollment methods [here](https://github.com/medplum/medplum-
 
 ### Understanding Compartments
 
-Compartments are an advanced FHIR concept that gives you a way to label a resource with a reference to a tenant that the resource belongs to. For example, this would be the basic structure of a Patient that belongs to a tenant __(Organization, HealthcareService, or CareTeam)__:
+Compartments are an advanced FHIR concept that gives you a way to label a resource with a reference to a tenant that the resource belongs to. For example, this would be the basic structure of a Patient that belongs to a tenant **(Organization, HealthcareService, or CareTeam)**:
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
@@ -245,10 +244,8 @@ Compartments are an advanced FHIR concept that gives you a way to label a resour
 {
   "resourceType": "Patient",
   "meta": {
-    "compartment": [
-      { "reference": "Organization/clinic-a" }
-    ]
-  },
+    "compartment": [{ "reference": "Organization/clinic-a" }]
+  }
   //...
 }
 ```
@@ -277,10 +274,8 @@ Compartments are an advanced FHIR concept that gives you a way to label a resour
 {
   "resourceType": "Patient",
   "meta": {
-    "compartment": [
-      { "reference": "CareTeam/diabetes-care-team" }
-    ]
-  },
+    "compartment": [{ "reference": "CareTeam/diabetes-care-team" }]
+  }
   //...
 }
 ```
@@ -291,7 +286,6 @@ Compartments are an advanced FHIR concept that gives you a way to label a resour
 ### Adding references to the meta.compartment field
 
 In all resources, the `meta.compartment` field is **readonly**. You cannot modify it directly. Instead, you need to use the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation to add references to the **meta.compartment** field.
-
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
@@ -306,10 +300,8 @@ This will update the **meta.compartment** field of the Patient resource to inclu
 {
   "resourceType": "Patient",
   "meta": {
-    "compartment": [
-      { "reference": "Organization/clinic-a" }
-    ]
-  },
+    "compartment": [{ "reference": "Organization/clinic-a" }]
+  }
   //...
 }
 ```
@@ -327,10 +319,8 @@ This will update the **meta.compartment** field of the Patient resource to inclu
 {
   "resourceType": "Patient",
   "meta": {
-    "compartment": [
-      { "reference": "HealthcareService/cardiology-service" }
-    ]
-  },
+    "compartment": [{ "reference": "HealthcareService/cardiology-service" }]
+  }
   //...
 }
 ```
@@ -348,13 +338,12 @@ This will update the **meta.compartment** field of the Patient resource to inclu
 {
   "resourceType": "Patient",
   "meta": {
-    "compartment": [
-      { "reference": "CareTeam/diabetes-care-team" }
-    ]
-  },
+    "compartment": [{ "reference": "CareTeam/diabetes-care-team" }]
+  }
   //...
 }
 ```
+
 </TabItem>
 </Tabs>
 
@@ -458,6 +447,8 @@ More specifically, it leverages [Parameterized Access Policies](/docs/access/acc
 
 Your AccessPolicy uses parameterized variables (like `%organization`, `%healthcare_service`, or `%care_team`) that get replaced at runtime with the tenant references from the user's ProjectMembership. These variables are used in the [compartment](/docs/access/access-policies#compartments) section and for [Criteria-based Access Control](/docs/access/access-policies#compartments).
 
+For new multi-tenant policies, prefer resource-level `criteria` with parameterized values instead of legacy top-level `AccessPolicy.compartment` rules. This makes each resource rule explicit and lets one policy template be reused across many `ProjectMembership.access` entries.
+
 In your design, you should decide which resource types you want to restrict access to within your tenants versus which resource types you want to allow access to.
 
 <Tabs groupId="tenant-type">
@@ -556,6 +547,7 @@ The User's `ProjectMembership` references their enrolled tenants via the `access
 You can assign a User to a tenant at **invite time** or **after they have been invited**.
 
 #### Invite `Practitioner` Users at Invite Time
+
 Invite `Practitioner` Users associated with their respective tenants via the [`/admin/invite` endpoint](/docs/api/project-admin/invite):
 
 <details>
@@ -568,6 +560,7 @@ Invite `Practitioner` Users associated with their respective tenants via the [`/
 </details>
 
 #### Assign `Practitioner` Users to a Tenant After Invite
+
 Here is an example method for updating a User's ProjectMembership to add a new tenant after the User already exists:
 
 <details>
@@ -704,7 +697,7 @@ By following these patterns, you can create flexible access control models that 
 
 <details>
   <summary>Example LLM Prompt: Recommending Tenanting Resources and Access Policies</summary>
-  Answer the questions in the below prompt, and copy and paste it into an LLM. 
+  Answer the questions in the below prompt, and copy and paste it into an LLM.
 
 <MedplumCodeBlock language="md" selectBlocks="tenanting-prompt">
   {ExampleCode}
