@@ -2366,7 +2366,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
   }
 
   isClosed(): boolean {
-    return this.closed;
+    return this.closed || this.connection.isScopeEnded(this.connectionScope);
   }
 
   private assertUsable(): void {
