@@ -372,15 +372,16 @@ describe('FHIR Repo Transactions', () => {
   test('withTransaction parent repo unusable during transaction callback', () =>
     withTestContext(async () => {
       const patient = await repo.withTransaction(async (txRepo) => {
-        // TODO lol this thwarts the lint rule
-        const parent = repo;
-
-        expect(txRepo).not.toBe(parent);
-        expect(() => parent.getDatabaseClient(DatabaseMode.WRITER)).toThrow(TRANSACTION_SCOPE_ERROR);
-        await expect(parent.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies scoped repo identity.
+        expect(txRepo).not.toBe(repo);
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+        expect(() => repo.getDatabaseClient(DatabaseMode.WRITER)).toThrow(TRANSACTION_SCOPE_ERROR);
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+        await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
           TRANSACTION_SCOPE_ERROR
         );
-        await expect(parent.searchResources(parseSearchRequest('Patient'))).rejects.toThrow(TRANSACTION_SCOPE_ERROR);
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+        await expect(repo.searchResources(parseSearchRequest('Patient'))).rejects.toThrow(TRANSACTION_SCOPE_ERROR);
         return txRepo.createResource<Patient>({ resourceType: 'Patient' });
       });
       await expectPatientVisible(repo, patient?.id);
@@ -389,9 +390,10 @@ describe('FHIR Repo Transactions', () => {
   test('ensureInTransaction callback must use the scoped repository when starting transaction', () =>
     withTestContext(async () => {
       const patient = await repo.ensureInTransaction(async (txRepo) => {
-        const parent = repo;
-        expect(txRepo).not.toBe(parent);
-        await expect(parent.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies scoped repo identity.
+        expect(txRepo).not.toBe(repo);
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+        await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
           TRANSACTION_SCOPE_ERROR
         );
         return txRepo.createResource<Patient>({ resourceType: 'Patient' });

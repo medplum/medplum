@@ -38,6 +38,16 @@ ruleTester.run('no-transaction-callback-invoking-repo', rule, {
         ');',
       ].join('\n'),
     },
+    {
+      // Declaring a shadowing variable from the callback repo is fine; only the
+      // initializer of a declaration counts as a reference, not the declared name
+      code: [
+        'repo.withTransaction(async (txRepo) => {',
+        '  const repo = txRepo;',
+        '  return repo.createResource(resource);',
+        '});',
+      ].join('\n'),
+    },
   ],
   invalid: [
     {
@@ -61,6 +71,25 @@ ruleTester.run('no-transaction-callback-invoking-repo', rule, {
         'repo.withTransaction(async (txRepo) =>',
         '  repo.withTransaction(async (nestedRepo) => nestedRepo.createResource(resource))',
         ');',
+      ].join('\n'),
+      errors: [{ messageId: 'useCallbackRepo' }],
+    },
+    {
+      // Aliasing the invoking repo inside the callback is flagged at the alias declaration
+      code: [
+        'repo.withTransaction(async (txRepo) => {',
+        '  const parent = repo;',
+        '  return parent.createResource(resource);',
+        '});',
+      ].join('\n'),
+      errors: [{ messageId: 'useCallbackRepo' }],
+    },
+    {
+      code: [
+        'ctx.repo.withTransaction(async (txRepo) => {',
+        '  const parent = ctx.repo;',
+        '  return parent.createResource(resource);',
+        '});',
       ].join('\n'),
       errors: [{ messageId: 'useCallbackRepo' }],
     },

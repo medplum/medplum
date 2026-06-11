@@ -1,6 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+/**
+ * Flags uses of the repository that a `withTransaction`/`ensureInTransaction` callback was
+ * invoked on from inside that callback, including aliasing it (`const parent = repo`).
+ * Callback code must use the transaction-scoped repository passed as the callback parameter;
+ * the invoking repository is locked for the duration of the transaction and throws at runtime.
+ *
+ * This rule is fast feedback for the common cases, not the enforcement mechanism. The
+ * runtime scope guard in RepositoryConnection.assertScope() is authoritative. Known blind
+ * spots, deliberately left uncovered because closing them requires transitive variable
+ * resolution that is not worth the complexity:
+ * - Aliases created before the callback: `const r = repo; repo.withTransaction(() => r.foo())`
+ * - Reassignment through a mutable binding: `let r; r = repo;`
+ * - The repo escaping through a function argument, property, or field, e.g. the
+ *   `this.repo` swap in BatchProcessor.withRepo() in fhir-router's batch.ts
+ */
 const transactionMethodNames = new Set(['withTransaction', 'ensureInTransaction']);
 const ignoredTraversalKeys = new Set([
   'comments',
@@ -81,8 +96,11 @@ function create(context) {
       case 'MetaProperty':
       case 'RestElement':
       case 'TSTypeReference':
-      case 'VariableDeclarator':
         return false;
+      case 'VariableDeclarator':
+        // The declared name is not a reference, but the initializer is:
+        // `const alias = repo` reads the repo to create an alias for it
+        return parent.init === node;
       case 'AssignmentPattern':
         return parent.right === node;
       case 'ClassDeclaration':
