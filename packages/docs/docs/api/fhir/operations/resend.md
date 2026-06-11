@@ -20,7 +20,7 @@ When a subscription notification fails or you need to reprocess a resource throu
 - **Debugging Subscriptions**: Test subscription logic during development by manually triggering notifications
 - **Data Synchronization**: Force re-sync of specific resources to external systems after fixing integration issues
 - **Selective Replay**: Re-trigger a specific subscription for a resource instead of all subscriptions
-- **Historical Replay**: Replay a notification against a specific historical `versionId` so subscription handlers that diff `previous` against `current` see the same state as the original event, even if the resource has since been updated
+- **Historical Replay**: Replay a notification against a specific historical `versionId` so subscription handlers that diff `%previous` against `%current` see the same state as the original event, even if the resource has since been updated
 - **Integration Testing**: Verify that subscriptions fire correctly without creating new test data
 
 :::note[Admin Required]
@@ -36,7 +36,7 @@ The operation takes an optional `option` parameter, which is an object containin
 | `verbose`      | Indicates if verbose logging should be enabled.                                                                                                                                                                                                                                                                                      | `boolean`                                | `false`       |
 | `interaction`  | [`Subscriptions`](/docs/api/fhir/resources/subscription) can be configured to trigger only when a resource is created or deleted as opposed to any update. This option allows you to specify which interaction type will be sent.                                                                                                    | `update` &#124; `create` &#124; `delete` | `update`      |
 | `subscription` | A specific [`Subscription`](/docs/api/fhir/resources/subscription) to trigger, formatted as `Subscription/<id>`. If left undefined, all [`Subscriptions`](/docs/api/fhir/resources/subscription) will be triggered.                                                                                                                  | `string`                                 | `undefined`   |
-| `versionId`    | Resend subscriptions for a specific historical version of the resource instead of the current version. When set, the `previous` passed to subscription evaluation is the version immediately prior to this one in history (if any). Useful for replaying a failed notification when the resource has since been updated.     | `string`                                 | `undefined`   |
+| `versionId`    | Resend subscriptions for a specific historical version of the resource instead of the current version. When set, the `%previous` passed to subscription evaluation is the version immediately prior to this one in history (if any). Useful for replaying a failed notification when the resource has since been updated.     | `string`                                 | `undefined`   |
 
 ## Invoke the `$resend` operation
 
