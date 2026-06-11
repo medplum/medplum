@@ -58,6 +58,7 @@ import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { DurableQueue } from './queue/durable-queue';
+import type { ChannelQueueWorker } from './queue/worker';
 import { QueueLeaseManager } from './queue/lease-manager';
 import { RetentionSweeper } from './queue/retention';
 import { getCurrentStats, updateStat } from './stats';
@@ -345,6 +346,9 @@ export class App {
       if (!this.shutdown && this.live) {
         this.live = false;
         this.log.info('WebSocket closed');
+        // Give in-flight queue dispatches whose transmit request never hit the
+        // wire a chance to return to `queued` instead of timing out into `errored`.
+        this.forEachChannelWorker((worker) => worker.onWebSocketDisconnect());
       }
     });
 
@@ -361,6 +365,9 @@ export class App {
           case 'agent:connect:response':
             this.live = true;
             this.startWebSocketWorker();
+            // Wake the channel queue workers — their loops idle (without
+            // claiming rows) while the connection is down.
+            this.forEachChannelWorker((worker) => worker.notify());
             this.log.info('Successfully connected to Medplum server');
             break;
           case 'agent:heartbeat:request':
@@ -1166,6 +1173,45 @@ export class App {
   addToWebSocketQueue(message: AgentMessage): void {
     this.webSocketQueue.push(message);
     this.startWebSocketWorker();
+  }
+
+  /** @returns True when the agent WebSocket is connected and the server has acknowledged the connect request. */
+  isLive(): boolean {
+    return this.live;
+  }
+
+  /**
+   * Removes a not-yet-sent `agent:transmit:request` from the WebSocket queue.
+   *
+   * Used by {@link ChannelQueueWorker.onWebSocketDisconnect} to decide whether
+   * an in-flight row can be safely requeued: a request still in this queue
+   * provably never reached the server. A request not found here was either
+   * already written to the socket or is mid-send — both ambiguous, so the
+   * caller must treat `false` as "may have been delivered".
+   * @param callbackId - The `callback` ID of the transmit request to remove.
+   * @returns True if the request was found and removed before being sent.
+   */
+  removeUnsentTransmit(callbackId: string): boolean {
+    const index = this.webSocketQueue.findIndex(
+      (msg) => msg.type === 'agent:transmit:request' && msg.callback === callbackId
+    );
+    if (index === -1) {
+      return false;
+    }
+    this.webSocketQueue.splice(index, 1);
+    return true;
+  }
+
+  /**
+   * Invokes `fn` for every channel that currently has a durable-queue worker running.
+   * @param fn - Callback applied to each running {@link ChannelQueueWorker}.
+   */
+  private forEachChannelWorker(fn: (worker: ChannelQueueWorker) => void): void {
+    for (const channel of this.channels.values()) {
+      if (channel instanceof AgentHl7Channel && channel.worker) {
+        fn(channel.worker);
+      }
+    }
   }
 
   addToHl7Queue(message: AgentMessage): void {

@@ -17,17 +17,44 @@ import { ChannelQueueWorker } from './worker';
  * Stub App used by worker tests. Only the surface the worker touches is implemented;
  * everything else is intentionally absent so a slipped dependency surfaces as a clear
  * runtime error rather than silent behavior.
- * @returns A minimal App stub plus the array of WS messages captured from it.
+ *
+ * `sent` plays the role of the real App's `webSocketQueue`: messages the stub has
+ * accepted but (since the stub never sends) that remain "unsent" for the purposes
+ * of `removeUnsentTransmit`. Tests that need to simulate a request that already
+ * went out on the wire can clear/splice `sent` directly.
+ * @param options - Stub options.
+ * @param options.live - Initial `live` state (defaults to true).
+ * @returns A minimal App stub, the captured WS messages, and a setter for the live flag.
  */
-function makeStubApp(): { app: App; sent: AgentMessage[] } {
+function makeStubApp(options?: { live?: boolean }): {
+  app: App;
+  sent: AgentMessage[];
+  setLive: (live: boolean) => void;
+} {
   const sent: AgentMessage[] = [];
+  let live = options?.live ?? true;
   const stub = {
     agentId: 'agent-test',
+    isLive: () => live,
     addToWebSocketQueue: (msg: AgentMessage) => {
       sent.push(msg);
     },
+    removeUnsentTransmit: (callbackId: string) => {
+      const index = sent.findIndex((msg) => msg.type === 'agent:transmit:request' && msg.callback === callbackId);
+      if (index === -1) {
+        return false;
+      }
+      sent.splice(index, 1);
+      return true;
+    },
   };
-  return { app: stub as unknown as App, sent };
+  return {
+    app: stub as unknown as App,
+    sent,
+    setLive: (value: boolean) => {
+      live = value;
+    },
+  };
 }
 
 function enqueueOne(queue: DurableQueue, callbackId: string, body: string = 'MSH|^~\\&|...|2.5\r'): InboundRow {
@@ -251,6 +278,115 @@ describe('ChannelQueueWorker', () => {
     });
     expect(queue.countByState().queued).toBe(1);
   });
+
+  test('rows stay queued while the WebSocket is not live, then drain on reconnect', async () => {
+    const r = enqueueOne(queue, 'OFFLINE1');
+    const { app, sent, setLive } = makeStubApp({ live: false });
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      responseTimeoutMs: 100,
+      idlePollMs: 10,
+    });
+    worker.start();
+
+    // Give the loop several ticks — nothing should be claimed or dispatched,
+    // and crucially nothing should time out into `errored`.
+    await sleepMs(100);
+    expect(queue.getById(r.id)?.state).toBe(MessageState.QUEUED);
+    expect(queue.getById(r.id)?.attemptCount).toBe(0);
+    expect(sent).toHaveLength(0);
+    expect(worker.hasInFlight()).toBe(false);
+
+    // Reconnect: the row dispatches and completes normally.
+    setLive(true);
+    worker.notify();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    await worker.stop();
+  });
+
+  test('disconnect with the transmit request still unsent requeues the row', async () => {
+    const r = enqueueOne(queue, 'REQUEUE1');
+    const { app, setLive } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      responseTimeoutMs: 100,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    expect(queue.getById(r.id)?.state).toBe(MessageState.PROCESSING);
+
+    // Connection drops before the request left the WS queue.
+    setLive(false);
+    worker.onWebSocketDisconnect();
+
+    expect(worker.hasInFlight()).toBe(false);
+    expect(queue.getById(r.id)?.state).toBe(MessageState.QUEUED);
+    // The dispatch never left the process, so it doesn't count as an attempt.
+    expect(queue.getById(r.id)?.attemptCount).toBe(0);
+
+    // Outlive the original response timeout — the row must NOT become errored.
+    await sleepMs(150);
+    expect(queue.getById(r.id)?.state).toBe(MessageState.QUEUED);
+
+    // Reconnect: the same row is re-claimed and completes.
+    setLive(true);
+    worker.notify();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    await worker.stop();
+  });
+
+  test('disconnect after the transmit request was sent leaves the row to the response timeout', async () => {
+    const r = enqueueOne(queue, 'SENT1');
+    const { app, sent, setLive } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      responseTimeoutMs: 50,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+
+    // Simulate the request having gone out on the wire: it's no longer in the
+    // WS queue, so removeUnsentTransmit can't find it.
+    sent.length = 0;
+    setLive(false);
+    worker.onWebSocketDisconnect();
+
+    // Ambiguous delivery — the worker must not requeue; the timeout errors it.
+    expect(worker.hasInFlight()).toBe(true);
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.ERRORED, 2000);
+    expect(queue.getById(r.id)?.lastError).toContain('Timed out');
+    await worker.stop();
+  });
+
+  test('onWebSocketDisconnect with nothing in flight is a no-op', () => {
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+    });
+    expect(() => worker.onWebSocketDisconnect()).not.toThrow();
+  });
 });
 
 /**
@@ -274,4 +410,10 @@ async function waitFor(predicate: () => boolean, timeoutMs: number = 1000): Prom
 
 function lastCallback(worker: ChannelQueueWorker): string | undefined {
   return (worker as unknown as { pending?: { row: InboundRow } }).pending?.row.callbackId;
+}
+
+async function sleepMs(ms: number): Promise<void> {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }

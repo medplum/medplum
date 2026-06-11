@@ -59,6 +59,7 @@ export class DurableQueue {
   private readonly recordServerResponseStmt: StatementSync;
   private readonly markProcessedStmt: StatementSync;
   private readonly markErroredStmt: StatementSync;
+  private readonly requeueStmt: StatementSync;
   private readonly recoverProcessingStmt: StatementSync;
   private readonly listQueuedIdsForChannelStmt: StatementSync;
   private readonly countByStateStmt: StatementSync;
@@ -167,6 +168,18 @@ export class DurableQueue {
              errored_at = ?,
              last_error = ?
        WHERE id = ?
+    `);
+
+    // Undo of claimNext for a dispatch that provably never left the process
+    // (the transmit request was still sitting in the in-memory WS queue when
+    // the connection dropped). The attempt_count decrement keeps the counter
+    // meaning "times the message could have reached the server".
+    this.requeueStmt = this.db.prepare(`
+      UPDATE inbound_hl7_messages
+         SET state = 'queued',
+             processing_started_at = NULL,
+             attempt_count = MAX(0, attempt_count - 1)
+       WHERE id = ? AND state = 'processing'
     `);
 
     this.recoverProcessingStmt = this.db.prepare(`
@@ -454,6 +467,24 @@ export class DurableQueue {
   markErrored(id: number, error: string, now: number = Date.now()): void {
     this.markErroredStmt.run(now, error, id);
     this.walDirty = true;
+  }
+
+  /**
+   * Returns a `processing` row to `queued` — used when the WS connection drops
+   * before the in-flight transmit request was ever written to the socket, so
+   * retrying on reconnect carries no duplicate-delivery risk. Because the row
+   * keeps its original id and claims are ordered by id, the row goes back to
+   * the front of its channel's FIFO.
+   * @param id - Row primary key.
+   * @returns True if the row was requeued; false if it was not in `processing`.
+   */
+  requeue(id: number): boolean {
+    const info = this.requeueStmt.run(id);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
   }
 
   /**

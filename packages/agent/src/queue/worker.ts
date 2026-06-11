@@ -44,6 +44,17 @@ interface PendingResponse {
 }
 
 /**
+ * Sentinel rejection used when an in-flight row was returned to `queued` by
+ * {@link ChannelQueueWorker.onWebSocketDisconnect} — tells {@link ChannelQueueWorker.process}
+ * the row already has its final (non-errored) state and needs no further handling.
+ */
+class RowRequeuedError extends Error {
+  constructor() {
+    super('row requeued after WebSocket disconnect');
+  }
+}
+
+/**
  * Per-channel serial worker that drains the durable queue.
  *
  * One running tick at a time per channel — exactly the per-channel ordering
@@ -158,8 +169,43 @@ export class ChannelQueueWorker {
     return this.pending !== undefined;
   }
 
+  /**
+   * Called from `app.ts` when the agent WebSocket closes. If the in-flight
+   * row's `agent:transmit:request` is still sitting unsent in the app's WS
+   * queue, the server provably never saw it — remove it and return the row to
+   * `queued` so it retries on reconnect instead of timing out into `errored`.
+   *
+   * If the request already went out on the wire, the outcome is ambiguous (the
+   * server may have processed it and the response was lost), so we leave the
+   * pending dispatch alone and let the response timeout mark it `errored`.
+   */
+  onWebSocketDisconnect(): void {
+    const pending = this.pending;
+    if (!pending) {
+      return;
+    }
+    if (!this.app.removeUnsentTransmit(pending.row.callbackId)) {
+      return;
+    }
+    clearTimeout(pending.timeout);
+    this.pending = undefined;
+    this.queue.requeue(pending.row.id);
+    this.log.info(
+      `Row id=${pending.row.id} (control id=${pending.row.msgControlId ?? 'n/a'}) requeued: WebSocket disconnected before transmit was sent`
+    );
+    pending.reject(new RowRequeuedError());
+  }
+
   private async loop(): Promise<void> {
     while (!this.stopping) {
+      // Don't claim while the server connection is down — a dispatch started
+      // now would only sit in the in-memory WS queue until the response timer
+      // errored it. Rows stay durably `queued` and drain on reconnect (§9);
+      // app.ts notifies us when the connection comes back.
+      if (!this.app.isLive()) {
+        await this.waitForWork();
+        continue;
+      }
       const row = this.queue.claimNext(this.channelName);
       if (!row) {
         await this.waitForWork();
@@ -174,6 +220,11 @@ export class ChannelQueueWorker {
     try {
       response = await this.dispatch(row);
     } catch (err) {
+      if (err instanceof RowRequeuedError) {
+        // onWebSocketDisconnect already returned the row to `queued`; the loop's
+        // liveness gate keeps it there until the connection comes back.
+        return;
+      }
       this.queue.markErrored(row.id, normalizeErrorString(err));
       this.log.error(
         `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) errored during dispatch: ${normalizeErrorString(err)}`

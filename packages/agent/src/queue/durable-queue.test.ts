@@ -106,6 +106,31 @@ describe('DurableQueue', () => {
     expect(queue.claimNext('nonexistent')).toBeNull();
   });
 
+  test('requeue returns a processing row to queued at the front of the FIFO', () => {
+    const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'A', msgControlId: 'RQ1' }));
+    const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'A', msgControlId: 'RQ2' }));
+    if (r1.kind !== 'inserted' || r2.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+
+    const claimed = queue.claimNext('A');
+    expect(claimed?.id).toBe(r1.row.id);
+    expect(claimed?.attemptCount).toBe(1);
+
+    expect(queue.requeue(r1.row.id)).toBe(true);
+    const requeued = queue.getById(r1.row.id);
+    expect(requeued?.state).toBe(MessageState.QUEUED);
+    expect(requeued?.attemptCount).toBe(0);
+    expect(requeued?.processingStartedAt).toBeNull();
+
+    // Original id means original FIFO position: r1 is claimed again before r2.
+    expect(queue.claimNext('A')?.id).toBe(r1.row.id);
+
+    // requeue only applies to processing rows.
+    expect(queue.requeue(r2.row.id)).toBe(false);
+    expect(queue.getById(r2.row.id)?.state).toBe(MessageState.QUEUED);
+  });
+
   test('markProcessed and markErrored set timestamps correctly', () => {
     const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS1' }));
     if (r.kind !== 'inserted') {

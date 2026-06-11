@@ -464,8 +464,8 @@ Notes:
 - **One worker per channel**, owned by `AgentHl7Channel`. Started in `start()`, stopped in `stop()`. Channel close drains its worker before closing the TCP server.
 - **Cross-process correlation by `callback_id`**, not by message control ID — the server echoes whatever `callback` we send. We mint a UUID-based callback per row, indexed.
 - **WS dispatch is queued** (not synchronous) — `addToWebSocketQueue` still drives the existing `webSocketQueue` for actual transport. The durable queue is the *source of truth*; the in-memory WS queue is just a fan-out buffer that gets re-filled from SQLite on restart for `queued` rows.
-- **On WS reconnect** while a row is `processing`, the row stays in `processing`. The agent re-sends the `agent:transmit:request` on next worker tick if `pendingResponse` hasn't resolved within a configurable retry window (default 60s). The server is idempotent on `callback` — duplicate sends with the same callback should not double-execute bots. (Server-side idempotency is an existing concern, not introduced here; we document the assumption.)
-- **Backpressure**: when the WS is disconnected, the worker pauses (it can still claim a row, but won't dispatch until `app.live === true`). Rows accumulate in `queued` — that's exactly the point.
+- **On WS disconnect** while a row is `processing`, the worker checks whether its `agent:transmit:request` is still sitting unsent in the in-memory WS queue. If it is, the server provably never saw it — the request is removed and the row is returned to `queued` (`DurableQueue.requeue`, which also un-counts the attempt), so it retries on reconnect with zero duplicate-delivery risk. If the request already went out on the wire, delivery is ambiguous (the server may have processed it and the response was lost) and the row is left to the response timeout → `errored` — same conservative stance as `recoverOnStartup`.
+- **Backpressure**: while the WS is disconnected (`app.isLive() === false`), the worker loop idles without claiming rows — no dispatch is started, no response timer runs. Rows accumulate in `queued` — that's exactly the point. On `agent:connect:response` the app notifies every channel worker so draining starts immediately.
 
 ### 9.1 Wiring server responses back to rows
 
@@ -628,7 +628,8 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 `worker.test.ts`:
 - Single-channel happy path: enqueue 5 → worker processes in order → all `processed`.
 - Server returns 4xx → row goes to `errored`, worker proceeds to next.
-- Server response delayed past WS reconnect → worker re-dispatches; first response wins (later duplicates ignored by callback-not-found).
+- WS not live → worker idles without claiming; rows stay `queued` and drain on reconnect.
+- WS disconnect with the transmit request still unsent → row requeued (attempt un-counted); after the request was sent → left to the response timeout → `errored`.
 - Source ACK send fails (`sendToRemote` returns false) → row → `errored`.
 - Worker stop drains in-flight (waits for pending deferred to settle or timeout, then stops claiming).
 
@@ -681,7 +682,7 @@ Backward compatibility:
 | Synchronous SQLite on main thread → tail latency under load | Bench enqueue p99 in soak test. If unacceptable, move queue to a Worker Thread with a `MessagePort` interface (designed-in by keeping `DurableQueue` behind a narrow interface). |
 | Disk fills with `errored` rows | Hard floor on `errored` retention + alert log when DB > 80% of `queueRetentionMaxMb`. |
 | Source retries (same MSH.10) after legitimate prior success | `duplicateBehavior=idempotent` (default) replays prior ACK; no double-forwarding. |
-| At-least-once delivery to server (re-send after WS reconnect with same callback) | Document for downstream bots; rely on bots being idempotent (existing concern). Future: callback-keyed dedupe in server. |
+| Ambiguous delivery (request sent, connection dropped before response) | Not retried automatically — row goes to `errored` for operator review, same stance as `recoverOnStartup`. Only provably-unsent requests are requeued on disconnect. Future: callback-keyed dedupe in server would allow safe auto-retry. |
 | DB corruption | WAL + `PRAGMA synchronous=NORMAL` is durable across our crash. For HW power-loss, operators can set `synchronous=FULL` via the `queueSqliteSyncMode` setting (added if requested) at a throughput cost. |
 | Loss of `errored` rows surfaced to nobody | Stats endpoint reports `countsByState.errored`; documented in operator runbook. Future: emit an `agent:error` WS message when a row first transitions to `errored`. |
 
