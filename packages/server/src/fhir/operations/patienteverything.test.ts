@@ -18,7 +18,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth } from '../../test.setup';
-import { PATIENT_EVERYTHING_INLINE_ATTACHMENTS_SETTING, searchPatientCompartment } from './patienteverything';
+import { searchPatientCompartment } from './patienteverything';
 
 const app = express();
 let accessToken: string;
@@ -243,7 +243,7 @@ describe('Patient Everything Operation', () => {
     getConfig().inlineAttachmentsMaxTotalBytes = 1024;
     const { accessToken: projectAccessToken } = await createTestProject({
       project: {
-        setting: [{ name: PATIENT_EVERYTHING_INLINE_ATTACHMENTS_SETTING, valueBoolean: true }],
+        setting: [{ name: 'patientEverythingInlineAttachments', valueBoolean: true }],
       },
       withAccessToken: true,
     });

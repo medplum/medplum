@@ -177,7 +177,7 @@ describe('FHIR Repo', () => {
     });
   });
 
-  test('Read Binary rejects recursive securityContext', async () => {
+  test('Write Binary rejects Binary securityContext', async () => {
     const binary = await withTestContext(() =>
       globalSystemRepo.createResource<Binary>({
         resourceType: 'Binary',
@@ -185,22 +185,13 @@ describe('FHIR Repo', () => {
         data: Buffer.from('recursive security context').toString('base64'),
       })
     );
-    const recursiveBinary = await withTestContext(() =>
+
+    await expect(
       globalSystemRepo.updateResource<Binary>({
         ...binary,
         securityContext: createReference(binary),
       })
-    );
-
-    const repo = new Repository({
-      author: { reference: 'Practitioner/' + randomUUID() },
-      accessPolicy: {
-        resourceType: 'AccessPolicy',
-        resource: [{ resourceType: 'Binary' }],
-      },
-    });
-
-    await expect(repo.readResource<Binary>('Binary', recursiveBinary.id)).rejects.toThrow();
+    ).rejects.toThrow('Binary.securityContext cannot reference another Binary');
   });
 
   test('Read invalid resource with `checkCacheOnly` set', async () => {

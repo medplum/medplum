@@ -4,12 +4,10 @@ import type { SearchRequest, WithId } from '@medplum/core';
 import {
   allOk,
   append,
-  badRequest,
   flatMapFilter,
   getReferenceString,
   isReference,
   isResource,
-  OperationOutcomeError,
   Operator,
   sortStringArray,
 } from '@medplum/core';
@@ -51,8 +49,6 @@ export interface PatientEverythingParameters {
   _inlineAttachments?: boolean;
 }
 
-export const PATIENT_EVERYTHING_INLINE_ATTACHMENTS_SETTING = 'patientEverythingInlineAttachments';
-
 // Patient everything operation.
 // https://hl7.org/fhir/operation-patient-everything.html
 
@@ -68,19 +64,10 @@ export async function patientEverythingHandler(req: FhirRequest): Promise<FhirRe
   const params = parseInputParameters<PatientEverythingParameters>(operation, req);
 
   // _inlineAttachments is a Medplum extension not in the standard OperationDefinition.
-  const inlineAttachmentsParam = req.query?.['_inlineAttachments'];
-  if (inlineAttachmentsParam === 'true') {
-    params._inlineAttachments = true;
-  } else if (inlineAttachmentsParam === 'false') {
-    params._inlineAttachments = false;
-  } else if (inlineAttachmentsParam !== undefined) {
-    throw new OperationOutcomeError(badRequest("Invalid value for '_inlineAttachments'"));
-  }
+  params._inlineAttachments = isPatientEverythingInlineAttachmentsEnabled(req, ctx.repo);
 
   // First read the patient to verify access
   const patient = await ctx.repo.readResource<Patient>('Patient', id);
-
-  params._inlineAttachments ??= isPatientEverythingInlineAttachmentsEnabled(ctx.repo);
 
   // Then read all of the patient data
   const bundle = await getPatientEverything(ctx.repo, patient, params);
@@ -131,10 +118,12 @@ export async function getPatientEverything(
   return bundle;
 }
 
-function isPatientEverythingInlineAttachmentsEnabled(repo: Repository): boolean {
+function isPatientEverythingInlineAttachmentsEnabled(req: FhirRequest, repo: Repository): boolean {
+  if (req.query?.['_inlineAttachments'] !== undefined) {
+    return req.query['_inlineAttachments'] === 'true';
+  }
   return (
-    repo.currentProject()?.setting?.find((s) => s.name === PATIENT_EVERYTHING_INLINE_ATTACHMENTS_SETTING)
-      ?.valueBoolean === true
+    repo.currentProject()?.setting?.find((s) => s.name === 'patientEverythingInlineAttachments')?.valueBoolean === true
   );
 }
 

@@ -15,7 +15,6 @@ import {
   extractAccountReferences,
   forbidden,
   formatSearchQuery,
-  getReferenceString,
   getStatus,
   gone,
   isGone,
@@ -269,7 +268,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private readonly context: RepositoryContext;
   private readonly connection: RepositoryConnection;
   private readonly ownsConnection: boolean;
-  private readonly authorizingBinarySecurityContexts = new Set<string>();
   private closed = false;
 
   /**
@@ -544,16 +542,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   private async authorizeBinarySecurityContext<T extends Resource>(resource: WithId<T>): Promise<WithId<T>> {
     if (resource.resourceType === 'Binary' && resource.securityContext && !this.isSuperAdmin()) {
-      const reference = getReferenceString(resource);
-      if (this.authorizingBinarySecurityContexts.has(reference)) {
+      if (resource.securityContext.reference?.startsWith('Binary/')) {
         throw new OperationOutcomeError(notFound);
       }
-      this.authorizingBinarySecurityContexts.add(reference);
-      try {
-        await this.readReference(resource.securityContext);
-      } finally {
-        this.authorizingBinarySecurityContexts.delete(reference);
-      }
+      await this.readReference(resource.securityContext);
     }
     return resource;
   }
@@ -607,12 +599,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         if (!this.canPerformInteraction(AccessPolicyInteraction.READ, cacheEntry.resource)) {
           return new OperationOutcomeError(notFound);
         }
-        return this.authorizeBinarySecurityContext(cacheEntry.resource as WithId<Resource>);
+        return await this.authorizeBinarySecurityContext(cacheEntry.resource as WithId<Resource>);
       }
       return await this.readResourceFromDatabase(resourceType, id);
     } catch (err) {
       if (err instanceof OperationOutcomeError) {
         if (isNotFound(err.outcome) || isGone(err.outcome)) {
+          // Only return "not found" or "gone" errors
           return err;
         }
         // Other errors should be treated as database errors
@@ -832,6 +825,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return resource;
   }
 
+  private validateBinarySecurityContext(resource: Resource): void {
+    if (resource.resourceType === 'Binary' && resource.securityContext?.reference?.startsWith('Binary/')) {
+      throw new OperationOutcomeError(badRequest('Binary.securityContext cannot reference another Binary'));
+    }
+  }
+
   private async updateResourceImpl<T extends Resource>(
     resource: T,
     create: boolean,
@@ -839,6 +838,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   ): Promise<WithId<T>> {
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
     let validatedResource = this.checkResourcePermissions(resource, interaction);
+    this.validateBinarySecurityContext(validatedResource);
     const { resourceType, id } = validatedResource;
 
     const preCommitResult = await preCommitValidation(this, validatedResource, 'update');
@@ -848,6 +848,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       preCommitResult.id === validatedResource.id
     ) {
       validatedResource = this.checkResourcePermissions(preCommitResult, interaction);
+      this.validateBinarySecurityContext(validatedResource);
     }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
