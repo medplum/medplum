@@ -20,7 +20,7 @@ function setup(url: string): void {
 
 describe('SetPasswordPage', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   test('Renders', () => {
@@ -83,7 +83,7 @@ describe('SetPasswordPage', () => {
     });
 
     await act(async () => {
-      await jest.runAllTimersAsync();
+      await vi.runAllTimersAsync();
     });
 
     expect(screen.getByText('Invalid password')).toBeInTheDocument();

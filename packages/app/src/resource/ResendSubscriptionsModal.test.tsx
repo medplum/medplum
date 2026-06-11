@@ -14,15 +14,15 @@ describe('ResendSubscriptionsModal', () => {
   let medplum: MockClient;
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     medplum = new MockClient();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      await vi.runOnlyPendingTimersAsync();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   function setup(props: ResendSubscriptionsModalProps): void {
@@ -39,18 +39,18 @@ describe('ResendSubscriptionsModal', () => {
   });
 
   test('Closed', async () => {
-    setup({ resource: undefined, opened: false, onClose: jest.fn() });
+    setup({ resource: undefined, opened: false, onClose: vi.fn() });
     expect(screen.queryByText('Resend Subscriptions')).toBeNull();
   });
 
   test('Submit no options', async () => {
-    const resendCallback = jest.fn(async (_arg: FhirRequest) => [allOk, {} as Resource] as FhirResponse);
+    const resendCallback = vi.fn(async (_arg: FhirRequest) => [allOk, {} as Resource] as FhirResponse);
     medplum.router.router.add('POST', ':resourceType/:id/$resend', resendCallback);
 
     setup({
       resource: HomerSimpson,
       opened: true,
-      onClose: jest.fn(),
+      onClose: vi.fn(),
     });
 
     expect(await screen.findByText('Resend Subscriptions')).toBeInTheDocument();
@@ -78,13 +78,13 @@ describe('ResendSubscriptionsModal', () => {
       channel: { type: 'rest-hook', endpoint: 'http://example.com' },
     });
 
-    const resendCallback = jest.fn(async (_arg: FhirRequest) => [allOk, {} as Resource] as FhirResponse);
+    const resendCallback = vi.fn(async (_arg: FhirRequest) => [allOk, {} as Resource] as FhirResponse);
     medplum.router.router.add('POST', ':resourceType/:id/$resend', resendCallback);
 
     setup({
       resource: HomerSimpson,
       opened: true,
-      onClose: jest.fn(),
+      onClose: vi.fn(),
     });
 
     expect(await screen.findByText('Resend Subscriptions')).toBeInTheDocument();
@@ -103,7 +103,7 @@ describe('ResendSubscriptionsModal', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
     // Press the down arrow
@@ -134,13 +134,13 @@ describe('ResendSubscriptionsModal', () => {
   });
 
   test('Handle error', async () => {
-    const resendCallback = jest.fn(async () => [badRequest('Dummy error')] as FhirResponse);
+    const resendCallback = vi.fn(async () => [badRequest('Dummy error')] as FhirResponse);
     medplum.router.router.add('POST', ':resourceType/:id/$resend', resendCallback);
 
     setup({
       resource: HomerSimpson,
       opened: true,
-      onClose: jest.fn(),
+      onClose: vi.fn(),
     });
 
     expect(await screen.findByText('Resend Subscriptions')).toBeInTheDocument();

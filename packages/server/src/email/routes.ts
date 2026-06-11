@@ -29,6 +29,6 @@ emailRouter.post('/send', sendEmailValidator, async (req: Request, res: Response
   }
 
   // Use the user repository to enforce permission checks on email attachments
-  await sendEmail(ctx.repo, req.body);
+  await sendEmail(ctx.repo, req.body, ctx.project);
   sendOutcome(res, allOk);
 });
