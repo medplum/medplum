@@ -3,7 +3,7 @@
 import { allOk, badRequest, isUUID } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Subscription } from '@medplum/fhirtypes';
-import { requireSuperAdmin } from '../../admin/super';
+import { requireSuperAdmin } from '../../context';
 import { getActiveSubsKey } from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
 import type { CacheEntry } from '../repository/resource-cache';

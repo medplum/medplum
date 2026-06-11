@@ -21,8 +21,8 @@ import type {
   StructureDefinition,
   ValueSet,
 } from '@medplum/fhirtypes';
-import { requireSuperAdmin } from '../../admin/super';
 import { r4ProjectId } from '../../constants';
+import { requireSuperAdmin } from '../../context';
 import { globalLogger } from '../../logger';
 import type { Repository, SystemRepository } from '../repo';
 import { parseInputParameters } from './utils/parameters';

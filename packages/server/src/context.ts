@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { Logger, OperationOutcomeError, badRequest, isUUID, parseLogLevel } from '@medplum/core';
+import { Logger, OperationOutcomeError, badRequest, forbidden, isUUID, parseLogLevel } from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -274,4 +274,12 @@ function getResourceCap(authState: AuthState, logger?: Logger): ResourceCap | un
   return authState.membership && projectLimit
     ? new ResourceCap(getRateLimitRedis(), authState, projectLimit, logger ?? globalLogger)
     : undefined;
+}
+
+export function requireSuperAdmin(): AuthenticatedRequestContext {
+  const ctx = getAuthenticatedContext();
+  if (!ctx.project.superAdmin) {
+    throw new OperationOutcomeError(forbidden);
+  }
+  return ctx;
 }

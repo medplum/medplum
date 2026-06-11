@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { requireSuperAdmin } from '../../admin/super';
+import { requireSuperAdmin } from '../../context';
 import { getShardSystemRepo } from '../repo';
 import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { isValidColumnName, isValidTableName } from '../sql';
