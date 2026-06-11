@@ -28,11 +28,12 @@ import {
 } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useEffect, useRef, useState } from 'react';
-import { ChatInput, DEFAULT_MODEL } from '../../pages/spaces/ChatInput';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChatInput } from '../../pages/spaces/ChatInput';
 import type { Message } from '../../types/spaces';
 import { showErrorNotification } from '../../utils/notifications';
 import { processMessage } from '../../utils/spaceMessaging';
+import { getDefaultModel, getProjectModels } from '../../utils/spaceModels';
 import { loadConversationMessages } from '../../utils/spacePersistence';
 import { ComponentPreview } from './ComponentPreview';
 import { HistoryList } from './HistoryList';
@@ -52,10 +53,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const { topic: topicRef, onNewTopic, onSelectedItem, onAdd } = props;
   const medplum = useMedplum();
   const topic = useResource(topicRef);
+  const models = useMemo(() => getProjectModels(medplum), [medplum]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
+  const [selectedModel, setSelectedModel] = useState(() => getDefaultModel(models));
   const [hasStarted, setHasStarted] = useState(false);
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
   const [currentTopicId, setCurrentTopicId] = useState(topic?.id);
@@ -587,6 +589,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
               onKeyDown={handleKeyDown}
               onSend={handleSend}
               loading={loading}
+              models={models}
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
               backgroundColor="transparent"

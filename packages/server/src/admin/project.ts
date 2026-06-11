@@ -68,10 +68,21 @@ projectAdminRouter.get('/:projectId', async (req: Request, res: Response) => {
     project: {
       id: project.id,
       name: project.name,
+      setting: project.setting,
       secret: project.secret,
       site: project.site,
     },
   });
+});
+
+projectAdminRouter.post('/:projectId/settings', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const result = await ctx.repo.updateResource({
+    ...ctx.project,
+    setting: req.body,
+  });
+
+  res.json(result);
 });
 
 projectAdminRouter.post('/:projectId/secrets', async (req: Request, res: Response) => {

@@ -32,7 +32,8 @@ const operation = makeOperationDefinition(
         min: 1,
         max: '1',
         type: 'string',
-        documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)',
+        documentation:
+          'Model to use (e.g., gpt-4, gpt-3.5-turbo). Any OpenAI-compatible model name is accepted when OPENAI_BASE_URL points to a LiteLLM proxy.',
       },
       {
         name: 'tools',
@@ -134,6 +135,10 @@ export async function aiOperation(
     return [badRequest('OpenAI API key not configured in project secrets')];
   }
 
+  const baseUrl = (
+    ctx.project.secret?.find((s) => s.name === 'OPENAI_BASE_URL')?.valueString ?? 'https://api.openai.com/v1'
+  ).replace(/\/+$/, '');
+
   const params = parseInputParameters<AIOperationParameters>(operation, req);
   let messages: any[];
   try {
@@ -166,7 +171,7 @@ export async function aiOperation(
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    await streamAIToClient(messages, apiKey, params.model, tools, res, {
+    await streamAIToClient(messages, apiKey, baseUrl, params.model, tools, res, {
       temperature: params.temperature,
     });
     res.end();
@@ -176,7 +181,7 @@ export async function aiOperation(
   }
 
   try {
-    const result = (await callAI(messages, apiKey, params.model, tools, false, {
+    const result = (await callAI(messages, apiKey, baseUrl, params.model, tools, false, {
       temperature: params.temperature,
     })) as {
       content: string | null;
@@ -194,6 +199,7 @@ export async function aiOperation(
  * Note: Tool calls are not supported in streaming mode.
  * @param messages - The conversation messages
  * @param apiKey - OpenAI API key
+ * @param baseUrl - Base URL of the OpenAI-compatible API (no trailing slash)
  * @param model - Model to use
  * @param tools - Optional tools array (ignored in streaming mode)
  * @param res - Express response to write SSE data to
@@ -202,13 +208,14 @@ export async function aiOperation(
 export async function streamAIToClient(
   messages: any[],
   apiKey: string,
+  baseUrl: string,
   model: string,
   tools: any[] | undefined,
   res: ExpressResponse,
   options?: AICallOptions
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const response = (await callAI(messages, apiKey, model, tools, true, options)) as Response;
+  const response = (await callAI(messages, apiKey, baseUrl, model, tools, true, options)) as Response;
   if (!response.body) {
     throw new Error('No response body available for streaming');
   }
@@ -307,6 +314,7 @@ function buildParametersResponse(result: { content: string | null; tool_calls: a
  * Calls OpenAI API with optional streaming support.
  * @param messages - The conversation messages
  * @param apiKey - OpenAI API key
+ * @param baseUrl - Base URL of the OpenAI-compatible API (no trailing slash)
  * @param model - Model to use
  * @param tools - Optional tools array
  * @param stream - Whether to enable streaming
@@ -316,6 +324,7 @@ function buildParametersResponse(result: { content: string | null; tool_calls: a
 export async function callAI(
   messages: any[],
   apiKey: string,
+  baseUrl: string,
   model: string,
   tools?: any[],
   stream = false,
@@ -337,7 +346,7 @@ export async function callAI(
     requestBody.tool_choice = 'auto';
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
