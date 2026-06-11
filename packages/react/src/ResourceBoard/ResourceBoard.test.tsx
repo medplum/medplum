@@ -102,9 +102,7 @@ describe('ResourceBoard', () => {
   test('shows default empty detail state when nothing selected', async () => {
     medplum.search = vi.fn().mockResolvedValue(bundleOf(comm('a', 'Alpha')));
     await setup({});
-    await waitFor(() =>
-      expect(screen.getByText('Select an item from the list to view details')).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText('Select an item from the list to view details')).toBeInTheDocument());
   });
 
   test('shows custom empty detail state', async () => {

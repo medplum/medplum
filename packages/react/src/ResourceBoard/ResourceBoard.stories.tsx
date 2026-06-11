@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Paper, Text, Tooltip } from '@mantine/core';
 import type { Communication } from '@medplum/fhirtypes';
-import { IconPlus } from '@tabler/icons-react';
 import type { Meta } from '@storybook/react';
+import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { Document } from '../Document/Document';
