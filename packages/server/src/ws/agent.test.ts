@@ -14,6 +14,7 @@ import type { BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
+import * as redisModule from '../redis';
 import { getCacheRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
 
@@ -454,6 +455,37 @@ describe('Agent WebSockets', () => {
       version: MEDPLUM_VERSION,
       lastUpdated: expect.any(String),
     });
+  });
+
+  test('Logs when updating agent status fails on disconnect', async () => {
+    const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+    // Simulate Redis being unavailable (e.g. closing during shutdown) so the disconnect
+    // status update rejects -- the close handler must catch it, not leak the rejection
+    const cacheSpy = jest.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
+      get: jest.fn().mockRejectedValue(new Error('Connection is closed.')),
+      set: jest.fn(),
+    } as any);
+
+    try {
+      await request(server).ws('/ws/agent').close().expectClosed();
+
+      // The close handler updates status asynchronously; wait for the failure to be logged
+      for (let i = 0; i < 10; i++) {
+        if (
+          errorSpy.mock.calls.some((call) => call[0] === '[Agent]: Failed to update agent status on disconnect')
+        ) {
+          break;
+        }
+        await sleep(20);
+      }
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Agent]: Failed to update agent status on disconnect',
+        expect.objectContaining({ error: 'Connection is closed.' })
+      );
+    } finally {
+      cacheSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
   });
 
   test('Ping IP', async () => {

@@ -11,6 +11,8 @@ import WebSocket from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { globalLogger } from '../logger';
+import * as redisModule from '../redis';
 import { withTestContext } from '../test.setup';
 import { closeWebSockets } from './routes';
 
@@ -150,6 +152,32 @@ describe('WebSocket shutdown', () => {
     await rawClosedPromise;
 
     await shutdownApp();
+  });
+
+  test('A handler that throws closes the socket with 1011 Internal Error', async () => {
+    const { port } = await initTestApp();
+    const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+    // The echo handler grabs a Redis subscriber before its own try/catch, so a throw here
+    // surfaces to the connection listener, which must close the socket with 1011
+    const subscriberSpy = jest.spyOn(redisModule, 'getPubSubRedisSubscriber').mockImplementation(() => {
+      throw new Error('Redis unavailable');
+    });
+
+    try {
+      const ws = new WebSocket(`ws://localhost:${port}/ws/echo`);
+      const code = await new Promise<number>((resolve) => {
+        ws.on('close', (closeCode) => resolve(closeCode));
+      });
+      expect(code).toBe(1011);
+      expect(errorSpy).toHaveBeenCalledWith(
+        'WebSocket connection handler error',
+        expect.objectContaining({ path: 'echo' })
+      );
+    } finally {
+      subscriberSpy.mockRestore();
+      errorSpy.mockRestore();
+      await shutdownApp();
+    }
   });
 
   test('A new app can serve WebSockets after a timed-out shutdown', async () => {
