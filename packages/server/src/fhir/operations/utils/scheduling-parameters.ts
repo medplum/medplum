@@ -149,6 +149,11 @@ function durationToMinutes(extension: WithPath<Extension>): number {
   if (value === undefined) {
     throw new OperationOutcomeError(badRequest('Got duration without value', getPath(extension)));
   }
+
+  if (value < 0) {
+    throw new OperationOutcomeError(badRequest('Got duration with negative value', getPath(extension)));
+  }
+
   switch (unit) {
     case 'wk':
       return value * 60 * 24 * 7;
