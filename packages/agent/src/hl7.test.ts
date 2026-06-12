@@ -3045,11 +3045,7 @@ describe('resolveRetryPolicy', () => {
 
   test('guaranteedDelivery conflicts with autoRetry=false — warn and ignore guaranteedDelivery', () => {
     const logger = createMockLogger();
-    const policy = resolveRetryPolicy(
-      {},
-      new URLSearchParams('autoRetry=false&guaranteedDelivery=true'),
-      logger
-    );
+    const policy = resolveRetryPolicy({}, new URLSearchParams('autoRetry=false&guaranteedDelivery=true'), logger);
     expect(policy.enabled).toBe(false);
     expect(policy.guaranteedDelivery).toBe(false);
     expect(logger.warn).toHaveBeenCalledWith(
@@ -3071,11 +3067,7 @@ describe('resolveRetryPolicy', () => {
 
   test('guaranteedDelivery with an explicit maxAttempts=0 is not a conflict', () => {
     const logger = createMockLogger();
-    const policy = resolveRetryPolicy(
-      { maxAttempts: 0 },
-      new URLSearchParams('guaranteedDelivery=true'),
-      logger
-    );
+    const policy = resolveRetryPolicy({ maxAttempts: 0 }, new URLSearchParams('guaranteedDelivery=true'), logger);
     expect(policy.guaranteedDelivery).toBe(true);
     expect(policy.maxAttempts).toBe(0);
     expect(logger.warn).not.toHaveBeenCalled();

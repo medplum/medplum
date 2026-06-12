@@ -528,8 +528,7 @@ export class App {
     // RetryPolicy in configureHl7ServerAndConnections.
     this.channelRetrySettings = {
       enabled: agent?.setting?.find((setting) => setting.name === 'channelAutoRetry')?.valueBoolean,
-      guaranteedDelivery: agent?.setting?.find((setting) => setting.name === 'channelGuaranteedDelivery')
-        ?.valueBoolean,
+      guaranteedDelivery: agent?.setting?.find((setting) => setting.name === 'channelGuaranteedDelivery')?.valueBoolean,
       baseDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBaseDelayMs')?.valueInteger,
       maxDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxDelayMs')?.valueInteger,
       maxAttempts: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxAttempts')?.valueInteger,
