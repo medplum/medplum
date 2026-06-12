@@ -12,7 +12,7 @@ import { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
 import { MessageState, QueueErrorCode } from './types';
 import type { RetryPolicy } from './worker';
-import { ChannelQueueWorker, computeRetryDelayMs } from './worker';
+import { ChannelQueueWorker, computeRetryDelayMs, DEFAULT_RETRY_POLICY } from './worker';
 
 /**
  * Stub App used by worker tests. Only the surface the worker touches is implemented;
@@ -135,7 +135,7 @@ describe('ChannelQueueWorker', () => {
     await worker.stop();
   });
 
-  test('server >= 400 marks the row errored and proceeds to the next', async () => {
+  test('server >= 400 with auto-retry opted out marks the row errored and proceeds to the next', async () => {
     const r1 = enqueueOne(queue, 'E1');
     const r2 = enqueueOne(queue, 'E2');
     const { app } = makeStubApp();
@@ -147,6 +147,8 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck: () => true,
       idlePollMs: 10,
+      // Auto-retry defaults to ON; this test covers the explicit opt-out path.
+      retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
     });
     worker.start();
 
@@ -155,7 +157,6 @@ describe('ChannelQueueWorker', () => {
 
     await waitFor(() => queue.getById(r1.id)?.state === MessageState.ERRORED);
     expect(queue.getById(r1.id)?.lastError).toContain('503');
-    // Default policy is auto-retry OFF — even a retryable code goes straight to errored.
     expect(queue.getById(r1.id)?.errorCode).toBe(QueueErrorCode.ServerError);
 
     await waitFor(() => worker.hasInFlight() && r2.callbackId === lastCallback(worker));
@@ -395,6 +396,7 @@ describe('ChannelQueueWorker', () => {
     // Multiplier 1 keeps every backoff at baseDelayMs so test timing stays flat.
     const fastRetryPolicy: RetryPolicy = {
       enabled: true,
+      guaranteedDelivery: false,
       baseDelayMs: 20,
       maxDelayMs: 100,
       maxAttempts: 3,
@@ -517,6 +519,134 @@ describe('ChannelQueueWorker', () => {
       await worker.stop();
     });
 
+    describe('guaranteed delivery', () => {
+      const guaranteedPolicy: RetryPolicy = { ...fastRetryPolicy, guaranteedDelivery: true, maxAttempts: 0 };
+
+      function makeAckBody(ackCode: string, controlId: string = 'X1'): string {
+        return `MSH|^~\\&|MEDPLUM|MEDPLUM|TEST|TEST|20240101000000||ACK|${controlId}|P|2.5.1\rMSA|${ackCode}|${controlId}`;
+      }
+
+      test('response timeout is retried until upstream answers', async () => {
+        const r = enqueueOne(queue, 'GD-TIMEOUT');
+        const { app } = makeStubApp();
+        const worker = new ChannelQueueWorker({
+          channelName: 'ch1',
+          app,
+          queue,
+          log: createMockLogger(),
+          sendAck: () => true,
+          responseTimeoutMs: 50,
+          idlePollMs: 10,
+          retryPolicy: guaranteedPolicy,
+        });
+        worker.start();
+
+        // The first dispatch times out — ambiguous, but guaranteed mode retries it.
+        await waitFor(() => queue.getById(r.id)?.errorCode === QueueErrorCode.ResponseTimeout, 2000);
+        expect(queue.getById(r.id)?.state).toBe(MessageState.QUEUED);
+
+        // Answer the next dispatch definitively.
+        await waitFor(() => worker.hasInFlight(), 2000);
+        worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AA')));
+        await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+        await worker.stop();
+      });
+
+      test('HTTP 4xx without a definitive ACK is retried', async () => {
+        const r = enqueueOne(queue, 'GD-400');
+        const { app } = makeStubApp();
+        const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 0 });
+        worker.start();
+
+        await waitFor(() => worker.hasInFlight());
+        worker.onServerResponse(makeResponse(r.callbackId, 400, 'not an hl7 ack'));
+        await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED);
+        expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
+
+        await waitFor(() => worker.hasInFlight(), 2000);
+        worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AA')));
+        await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+        expect(queue.getById(r.id)?.attemptCount).toBe(2);
+        await worker.stop();
+      });
+
+      test.each(['AR', 'CR'])('upstream %s is a definitive reject — terminal, no retry', async (ackCode) => {
+        const r = enqueueOne(queue, `GD-${ackCode}`);
+        const { app } = makeStubApp();
+        const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 0 });
+        worker.start();
+
+        await waitFor(() => worker.hasInFlight());
+        worker.onServerResponse(makeResponse(r.callbackId, 400, makeAckBody(ackCode)));
+        await waitFor(() => queue.getById(r.id)?.state === MessageState.ERRORED);
+        expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.UpstreamRejected);
+        expect(queue.getById(r.id)?.attemptCount).toBe(1);
+        await worker.stop();
+      });
+
+      test('upstream AE retries until a definitive AA arrives', async () => {
+        const r = enqueueOne(queue, 'GD-AE');
+        const { app } = makeStubApp();
+        const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 0 });
+        worker.start();
+
+        await waitFor(() => worker.hasInFlight());
+        worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AE')));
+        await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED);
+        expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.UpstreamError);
+
+        await waitFor(() => worker.hasInFlight(), 2000);
+        worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AA')));
+        await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+        await worker.stop();
+      });
+
+      test('ACK delivery failure stays terminal — upstream already accepted the message', async () => {
+        const r = enqueueOne(queue, 'GD-ACKFAIL');
+        const { app } = makeStubApp();
+        const worker = makeWorker(app, () => false, { guaranteedDelivery: true, maxAttempts: 0 });
+        worker.start();
+
+        await waitFor(() => worker.hasInFlight());
+        worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AA')));
+        await waitFor(() => queue.getById(r.id)?.state === MessageState.ERRORED);
+        expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.AckDeliveryFailed);
+        await worker.stop();
+      });
+
+      test('worker stop schedules a retry instead of erroring the in-flight row', async () => {
+        const r = enqueueOne(queue, 'GD-STOP');
+        const { app } = makeStubApp();
+        const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 0 });
+        worker.start();
+
+        await waitFor(() => worker.hasInFlight());
+        await worker.stop();
+
+        expect(queue.getById(r.id)?.state).toBe(MessageState.QUEUED);
+        expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.WorkerStopped);
+      });
+
+      test('explicit maxAttempts caps guaranteed-mode retries', async () => {
+        const r = enqueueOne(queue, 'GD-CAP');
+        const { app } = makeStubApp();
+        const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 2 });
+        worker.start();
+
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          await waitFor(() => worker.hasInFlight(), 2000);
+          worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AE')));
+          await waitFor(() => queue.getById(r.id)?.state !== MessageState.PROCESSING);
+        }
+
+        const final = queue.getById(r.id);
+        expect(final?.state).toBe(MessageState.ERRORED);
+        expect(final?.errorCode).toBe(QueueErrorCode.UpstreamError);
+        expect(final?.lastError).toContain('2 attempts exhausted');
+        await worker.stop();
+      });
+    });
+
     test('setRetryPolicy applies to subsequent failures', async () => {
       const r = enqueueOne(queue, 'SWAP1');
       const { app } = makeStubApp();
@@ -540,6 +670,7 @@ describe('ChannelQueueWorker', () => {
 describe('computeRetryDelayMs', () => {
   const policy: RetryPolicy = {
     enabled: true,
+    guaranteedDelivery: false,
     baseDelayMs: 1000,
     maxDelayMs: 60_000,
     maxAttempts: 0,

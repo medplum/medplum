@@ -227,26 +227,30 @@ States, exhaustively:
 
 If the worker crashes between server response and successfully sending the app-level ACK, on next startup the row is in `processing` and goes to `errored`. The recovery row preserves `server_response_body` and `server_status_code` if they were written, so an operator can manually replay the ACK if needed.
 
-### 4.1 Auto-retry (schema v2)
+### 4.1 Auto-retry (schema v2) and guaranteed delivery (schema v3)
 
 Every post-commit failure is classified at the failure site with a `QueueErrorCode` (stored in `error_code` — never derived by parsing `last_error`):
 
-| Code | Class | Meaning |
-|---|---|---|
-| `server-error` | transient (retryable) | server returned 5xx |
-| `server-rate-limited` | transient (retryable) | server returned 429 |
-| `response-timeout` | ambiguous (not retryable) | timed out waiting for the server response; delivery unknown |
-| `interrupted` | ambiguous (not retryable) | row found in `processing` at startup |
-| `worker-stopped` | ambiguous (not retryable) | in-flight dispatch cancelled by worker shutdown |
-| `dispatch-failed` | ambiguous (not retryable) | dispatch failed for an unclassified reason |
-| `server-rejected` | permanent (never retryable) | server returned non-429 4xx — the message itself was rejected |
-| `ack-delivery-failed` | permanent (never retryable) | server processed the message (2xx); re-dispatching would duplicate |
+| Code | Normal mode | Guaranteed mode | Meaning |
+|---|---|---|---|
+| `server-error` | retryable | retryable | server returned 5xx |
+| `server-rate-limited` | retryable | retryable | server returned 429 |
+| `response-timeout` | terminal | retryable | timed out waiting for the server response; delivery unknown |
+| `interrupted` | terminal | requeued at startup | row found in `processing` at startup |
+| `worker-stopped` | terminal | retryable | in-flight dispatch cancelled by worker shutdown |
+| `dispatch-failed` | terminal | retryable | dispatch failed for an unclassified reason |
+| `server-rejected` | terminal | retryable | server returned non-429 4xx with no definitive HL7 ACK |
+| `upstream-error` | n/a | retryable | upstream answered MSA-1 of AE/CE (application/commit error) |
+| `upstream-rejected` | terminal | terminal | upstream answered MSA-1 of AR/CR — definitive reject |
+| `ack-delivery-failed` | terminal | terminal | upstream accepted the message; only the ACK to the source failed — re-dispatching would duplicate |
 
-When the channel's retry policy is enabled (`autoRetry` URL param / `channelAutoRetry` agent setting, see §7) and the code is in `RETRYABLE_ERROR_CODES` with attempts remaining, `ChannelQueueWorker.handleFailure` calls `DurableQueue.scheduleRetry`: the row returns to `queued` with `next_attempt_at = now + min(maxDelayMs, baseDelayMs * multiplier^(attempt-1))`. Otherwise the row goes to `errored` (terminal, operator replay), with `error_code` recorded either way.
+**Normal mode** (`autoRetry`, on by default): only the guaranteed-safe codes in `RETRYABLE_ERROR_CODES` retry — a retry can never cause duplicate delivery. Ambiguous codes stay terminal until the server supports callback-keyed dedupe.
 
-Retries are **head-of-line blocking**: `claimNext` still selects the lowest-id `queued` row but returns nothing while that head row's `next_attempt_at` is in the future, so younger rows cannot skip ahead — preserving the per-channel FIFO guarantee (§1.1). A poison message blocks its channel only until `maxAttempts` exhausts. `attempt_count` keeps its meaning ("times the message could have reached the server"); `scheduleRetry` does not touch it because `claimNext` already counted the attempt.
+**Guaranteed-delivery mode** (`guaranteedDelivery`, opt-in): the channel keeps dispatching until upstream gives a definitive HL7 answer for the message — MSA-1 of AA/CA (→ `processed`) or AR/CR (→ `errored`) — accepting duplicate-delivery risk on the way. The worker parses MSA-1 from the server response body; AE/CE and all transport/HTTP failures retry. The channel's setting is snapshotted onto each row at intake (`guaranteed_delivery` column, schema v3) so `recoverOnStartup` — which runs before channel policies are resolved — requeues interrupted guaranteed rows instead of erroring them: the guarantee survives restarts. Requires `autoRetry`; `guaranteedDelivery` with `autoRetry=false` warns and is ignored. It implies `maxAttempts = 0` (unlimited); an explicitly configured nonzero `autoRetryMaxAttempts` conflicts — we warn and respect the cap, at which point delivery is no longer strictly guaranteed.
 
-Ambiguous codes stay non-retryable until the server supports callback-keyed dedupe, at which point `response-timeout` could move into the retryable set.
+On a retry decision, `ChannelQueueWorker.handleFailure` calls `DurableQueue.scheduleRetry`: the row returns to `queued` with `next_attempt_at = now + min(maxDelayMs, baseDelayMs * multiplier^(attempt-1))`. Otherwise the row goes to `errored` (terminal, operator replay), with `error_code` recorded either way.
+
+Retries are **head-of-line blocking**: `claimNext` still selects the lowest-id `queued` row but returns nothing while that head row's `next_attempt_at` is in the future, so younger rows cannot skip ahead — preserving the per-channel FIFO guarantee (§1.1). A poison message blocks its channel only until `maxAttempts` exhausts (indefinitely in guaranteed mode — that is the contract). `attempt_count` keeps its meaning ("times the message could have reached the server"); `scheduleRetry` does not touch it because `claimNext` already counted the attempt.
 
 ---
 
@@ -371,10 +375,11 @@ Existing `Agent.setting[]` array continues to be the project-settings carrier. N
 | `queueRetentionMaxMb` | `valueInteger` | `512` | Soft cap on DB size. When exceeded, sweeper deletes oldest `processed` first, then oldest `errored` (with safeguard: minimum 30 days `errored` retention regardless of size cap). |
 | `queueErroredRetentionDays` | `valueInteger` | `90` | Floor for `errored` retention. |
 | `queueSweepIntervalSecs` | `valueInteger` | `3600` | How often the retention sweeper runs. |
-| `channelAutoRetry` | `valueBoolean` | `false` | Agent-wide default for auto-retry of retryable dispatch failures (§4.1). |
+| `channelAutoRetry` | `valueBoolean` | `true` | Agent-wide default for auto-retry of retryable dispatch failures (§4.1). On by default; set `false` to opt out. |
+| `channelGuaranteedDelivery` | `valueBoolean` | `false` | Agent-wide default for guaranteed-delivery mode (§4.1). Requires auto-retry. |
 | `channelAutoRetryBaseDelayMs` | `valueInteger` | `1000` | Delay before the first retry. |
 | `channelAutoRetryMaxDelayMs` | `valueInteger` | `60000` | Cap on the computed backoff delay. |
-| `channelAutoRetryMaxAttempts` | `valueInteger` | `10` | Total dispatch attempts before a retryable failure becomes terminal; `0` = retry indefinitely. |
+| `channelAutoRetryMaxAttempts` | `valueInteger` | `10` (`0` when guaranteed) | Total dispatch attempts before a retryable failure becomes terminal; `0` = retry indefinitely. |
 | `channelAutoRetryBackoffMultiplier` | `valueDecimal` | `2` | Exponential base; `1` = fixed-interval retry. |
 
 Per-channel URL query parameters (parsed in `configureHl7ServerAndConnections`, like existing `enhanced`, `encoding`, etc.):
@@ -382,7 +387,8 @@ Per-channel URL query parameters (parsed in `configureHl7ServerAndConnections`, 
 | Param | Values | Default | Meaning |
 |---|---|---|---|
 | `duplicateBehavior` | `reject` \| `idempotent` | `idempotent` | What to do when a row with the same `(channel, MSH.10)` is still in `queued` or `processing`. `reject` sends `CR` (enhanced) / `AR` (aaMode) and inserts a `nacked` row; `idempotent` returns the prior stored ACK (or a synthetic AA) and does not re-insert. |
-| `autoRetry` | `true` \| `false` | agent setting | Per-channel override of `channelAutoRetry`. Auto-retry requires the durable queue; enabling it with the queue off logs a warning and has no effect. |
+| `autoRetry` | `true` \| `false` | agent setting | Per-channel override of `channelAutoRetry`. Auto-retry requires the durable queue; configuring it explicitly with the queue off logs a warning and has no effect. |
+| `guaranteedDelivery` | `true` \| `false` | agent setting | Per-channel override of `channelGuaranteedDelivery` (§4.1). Conflicts: `autoRetry=false` wins (warn, ignore guaranteedDelivery); explicit nonzero `autoRetryMaxAttempts` wins over the implied unlimited attempts (warn, respect the cap). |
 | `autoRetryBaseDelayMs` | number ≥ 1 | agent setting | Per-channel override of `channelAutoRetryBaseDelayMs`. |
 | `autoRetryMaxDelayMs` | number ≥ 1 | agent setting | Per-channel override of `channelAutoRetryMaxDelayMs`. |
 | `autoRetryMaxAttempts` | number ≥ 0 | agent setting | Per-channel override of `channelAutoRetryMaxAttempts`; `0` = retry indefinitely. |
@@ -715,7 +721,7 @@ Backward compatibility:
 | Synchronous SQLite on main thread → tail latency under load | Bench enqueue p99 in soak test. If unacceptable, move queue to a Worker Thread with a `MessagePort` interface (designed-in by keeping `DurableQueue` behind a narrow interface). |
 | Disk fills with `errored` rows | Hard floor on `errored` retention + alert log when DB > 80% of `queueRetentionMaxMb`. |
 | Source retries (same MSH.10) after legitimate prior success | `duplicateBehavior=idempotent` (default) replays prior ACK; no double-forwarding. |
-| Ambiguous delivery (request sent, connection dropped before response) | Not retried automatically — row goes to `errored` for operator review, same stance as `recoverOnStartup`. Only provably-unsent requests are requeued on disconnect. Future: callback-keyed dedupe in server would allow safe auto-retry. |
+| Ambiguous delivery (request sent, connection dropped before response) | Normal mode: not retried — row goes to `errored` for operator review, same stance as `recoverOnStartup`; only provably-unsent requests are requeued on disconnect. Guaranteed-delivery mode (§4.1): retried, duplication risk accepted. Future: callback-keyed dedupe in server would allow safe auto-retry everywhere. |
 | DB corruption | WAL + `PRAGMA synchronous=NORMAL` is durable across our crash. For HW power-loss, operators can set `synchronous=FULL` via the `queueSqliteSyncMode` setting (added if requested) at a throughput cost. |
 | Loss of `errored` rows surfaced to nobody | Stats endpoint reports `countsByState.errored`; documented in operator runbook. Future: emit an `agent:error` WS message when a row first transitions to `errored`. |
 

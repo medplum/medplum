@@ -87,6 +87,15 @@ export const MIGRATIONS: readonly Migration[] = [
       ALTER TABLE inbound_hl7_messages ADD COLUMN next_attempt_at INTEGER;
     `,
   },
+  {
+    version: 3,
+    sql: `
+      -- Guaranteed-delivery support: snapshot of the channel's guaranteedDelivery
+      -- setting at intake time. Rows with 1 are requeued (not errored) when found
+      -- in 'processing' at startup, so the delivery guarantee survives restarts.
+      ALTER TABLE inbound_hl7_messages ADD COLUMN guaranteed_delivery INTEGER NOT NULL DEFAULT 0;
+    `,
+  },
 ];
 
 /**

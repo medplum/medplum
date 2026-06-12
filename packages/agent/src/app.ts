@@ -528,6 +528,8 @@ export class App {
     // RetryPolicy in configureHl7ServerAndConnections.
     this.channelRetrySettings = {
       enabled: agent?.setting?.find((setting) => setting.name === 'channelAutoRetry')?.valueBoolean,
+      guaranteedDelivery: agent?.setting?.find((setting) => setting.name === 'channelGuaranteedDelivery')
+        ?.valueBoolean,
       baseDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBaseDelayMs')?.valueInteger,
       maxDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxDelayMs')?.valueInteger,
       maxAttempts: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxAttempts')?.valueInteger,
@@ -702,9 +704,11 @@ export class App {
     if (!queue) {
       return;
     }
-    const promoted = queue.recoverOnStartup();
-    if (promoted > 0) {
-      this.log.info(`Acquired queue lease — promoted ${promoted} interrupted row(s) to errored.`);
+    const { errored, requeued } = queue.recoverOnStartup();
+    if (errored > 0 || requeued > 0) {
+      this.log.info(
+        `Acquired queue lease — promoted ${errored} interrupted row(s) to errored, requeued ${requeued} guaranteed-delivery row(s).`
+      );
     }
     // Tell every HL7 channel to start its worker now that we're leader.
     for (const channel of this.channels.values()) {

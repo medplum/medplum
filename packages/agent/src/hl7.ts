@@ -270,9 +270,19 @@ export class AgentHl7Channel extends BaseChannel {
     // Per-channel auto-retry policy: endpoint URL params override agent-wide
     // channelAutoRetry* settings, field by field. The worker outlives config
     // reloads, so push the new policy at it if it's already running.
-    this.retryPolicy = resolveRetryPolicy(this.app.getChannelRetrySettings(), address.searchParams, this.log);
-    if (this.retryPolicy.enabled && !queueOn) {
-      this.log.warn('autoRetry is enabled but the durable queue is off; auto-retry has no effect without it');
+    const retrySettings = this.app.getChannelRetrySettings();
+    this.retryPolicy = resolveRetryPolicy(retrySettings, address.searchParams, this.log);
+    // autoRetry defaults to on, so the queue-off warning would otherwise fire for
+    // every legacy channel — only warn when retry behavior was explicitly asked for.
+    const retryExplicitlyConfigured =
+      address.searchParams.has('autoRetry') ||
+      address.searchParams.has('guaranteedDelivery') ||
+      retrySettings.enabled !== undefined ||
+      retrySettings.guaranteedDelivery !== undefined;
+    if (this.retryPolicy.enabled && !queueOn && retryExplicitlyConfigured) {
+      this.log.warn(
+        'autoRetry/guaranteedDelivery is configured but the durable queue is off; auto-retry has no effect without it'
+      );
     }
     this.worker?.setRetryPolicy(this.retryPolicy);
     for (const connection of this.connections.values()) {
@@ -285,6 +295,10 @@ export class AgentHl7Channel extends BaseChannel {
 
   getDuplicateBehavior(): DuplicateBehavior {
     return this.duplicateBehavior;
+  }
+
+  getRetryPolicy(): RetryPolicy {
+    return this.retryPolicy;
   }
 
   private handleNewConnection(connection: Hl7Connection): void {
@@ -421,6 +435,7 @@ export class AgentHl7ChannelConnection {
         callbackId,
         seqNo,
         receivedAt,
+        guaranteedDelivery: this.channel.getRetryPolicy().guaranteedDelivery,
       });
     } catch (err) {
       const reason = `storage error: ${normalizeErrorString(err)}`;
@@ -624,10 +639,18 @@ export function parseDuplicateBehavior(rawValue: string | undefined, logger: ILo
  * Resolves the effective auto-retry policy for a channel.
  *
  * Per-field precedence: endpoint URL query param (`autoRetry`,
- * `autoRetryBaseDelayMs`, `autoRetryMaxDelayMs`, `autoRetryMaxAttempts`,
- * `autoRetryBackoffMultiplier`) → agent-wide `channelAutoRetry*` setting →
+ * `guaranteedDelivery`, `autoRetryBaseDelayMs`, `autoRetryMaxDelayMs`,
+ * `autoRetryMaxAttempts`, `autoRetryBackoffMultiplier`) → agent-wide
+ * `channelAutoRetry*` / `channelGuaranteedDelivery` setting →
  * {@link DEFAULT_RETRY_POLICY}. Invalid values warn and fall through to the
  * next layer, mirroring the other channel URL params.
+ *
+ * Cross-field rules:
+ * - `guaranteedDelivery` requires auto-retry: when autoRetry resolves to
+ *   false, guaranteedDelivery is ignored with a warning.
+ * - `guaranteedDelivery` implies unlimited attempts (`maxAttempts = 0`). An
+ *   explicitly configured nonzero `autoRetryMaxAttempts` conflicts: we warn
+ *   and respect the explicit cap — delivery is then no longer guaranteed.
  * @param agentDefaults - Agent-wide settings (undefined fields = not configured).
  * @param params - The endpoint URL's query params.
  * @param logger - Logger used to emit warnings on invalid values.
@@ -638,8 +661,36 @@ export function resolveRetryPolicy(
   params: URLSearchParams,
   logger: ILogger
 ): RetryPolicy {
+  const enabled =
+    parseRetryBoolParam(params.get('autoRetry'), 'autoRetry', logger) ??
+    agentDefaults.enabled ??
+    DEFAULT_RETRY_POLICY.enabled;
+
+  let guaranteedDelivery =
+    parseRetryBoolParam(params.get('guaranteedDelivery'), 'guaranteedDelivery', logger) ??
+    agentDefaults.guaranteedDelivery ??
+    DEFAULT_RETRY_POLICY.guaranteedDelivery;
+  if (guaranteedDelivery && !enabled) {
+    logger.warn('guaranteedDelivery=true conflicts with autoRetry=false; ignoring guaranteedDelivery.');
+    guaranteedDelivery = false;
+  }
+
+  // "Explicit" = configured via param or agent setting, as opposed to the
+  // built-in default — only an explicit cap conflicts with guaranteedDelivery.
+  const explicitMaxAttempts =
+    parseRetryNumberParam(params.get('autoRetryMaxAttempts'), 'autoRetryMaxAttempts', 0, logger) ??
+    agentDefaults.maxAttempts;
+  let maxAttempts = explicitMaxAttempts ?? (guaranteedDelivery ? 0 : DEFAULT_RETRY_POLICY.maxAttempts);
+  if (guaranteedDelivery && explicitMaxAttempts !== undefined && explicitMaxAttempts > 0) {
+    logger.warn(
+      `guaranteedDelivery retries indefinitely, but autoRetryMaxAttempts=${explicitMaxAttempts} was explicitly configured; respecting autoRetryMaxAttempts — delivery is no longer guaranteed once attempts are exhausted.`
+    );
+    maxAttempts = explicitMaxAttempts;
+  }
+
   const policy: RetryPolicy = {
-    enabled: parseRetryBoolParam(params.get('autoRetry'), 'autoRetry', logger) ?? agentDefaults.enabled ?? false,
+    enabled,
+    guaranteedDelivery,
     baseDelayMs:
       parseRetryNumberParam(params.get('autoRetryBaseDelayMs'), 'autoRetryBaseDelayMs', 1, logger) ??
       agentDefaults.baseDelayMs ??
@@ -648,10 +699,7 @@ export function resolveRetryPolicy(
       parseRetryNumberParam(params.get('autoRetryMaxDelayMs'), 'autoRetryMaxDelayMs', 1, logger) ??
       agentDefaults.maxDelayMs ??
       DEFAULT_RETRY_POLICY.maxDelayMs,
-    maxAttempts:
-      parseRetryNumberParam(params.get('autoRetryMaxAttempts'), 'autoRetryMaxAttempts', 0, logger) ??
-      agentDefaults.maxAttempts ??
-      DEFAULT_RETRY_POLICY.maxAttempts,
+    maxAttempts,
     backoffMultiplier:
       parseRetryNumberParam(params.get('autoRetryBackoffMultiplier'), 'autoRetryBackoffMultiplier', 1, logger) ??
       agentDefaults.backoffMultiplier ??

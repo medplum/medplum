@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { AgentTransmitResponse, ILogger } from '@medplum/core';
-import { ContentType, normalizeErrorString, sleep } from '@medplum/core';
+import { ContentType, Hl7Message, normalizeErrorString, sleep } from '@medplum/core';
 import type { App } from '../app';
 import type { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
-import { QueueError, QueueErrorCode, RETRYABLE_ERROR_CODES } from './types';
+import { GUARANTEED_TERMINAL_CODES, QueueError, QueueErrorCode, RETRYABLE_ERROR_CODES } from './types';
 
 /**
  * Maximum time we wait for the Medplum server to respond to an
@@ -20,12 +20,22 @@ export const DEFAULT_WORKER_IDLE_POLL_MS = 250;
 /**
  * Per-channel auto-retry policy, resolved from endpoint query params layered
  * over agent settings (see `configureHl7ServerAndConnections` in hl7.ts).
- * Only failures whose {@link QueueErrorCode} is in {@link RETRYABLE_ERROR_CODES}
- * are ever retried, regardless of this policy.
+ *
+ * In normal mode only failures whose {@link QueueErrorCode} is in
+ * {@link RETRYABLE_ERROR_CODES} (guaranteed-safe: cannot duplicate) are retried.
+ * In guaranteed-delivery mode every failure retries — duplication risk accepted —
+ * except the definitive upstream answers in {@link GUARANTEED_TERMINAL_CODES}.
  */
 export interface RetryPolicy {
-  /** Master switch. When false, every failure is terminal (today's behavior). */
+  /** Master switch. On by default; opt out via the autoRetry URL param / channelAutoRetry agent setting. */
   enabled: boolean;
+  /**
+   * Keep retrying until upstream gives a definitive answer for the message
+   * (MSA-1 of AA/CA → processed, AR/CR → errored), even across failures that
+   * could cause duplicate delivery. Requires `enabled`; policy resolution
+   * forces this off (with a warning) when autoRetry is disabled.
+   */
+  guaranteedDelivery: boolean;
   /** Delay before the first retry. */
   baseDelayMs: number;
   /** Cap on the computed backoff delay. */
@@ -37,7 +47,8 @@ export interface RetryPolicy {
 }
 
 export const DEFAULT_RETRY_POLICY: RetryPolicy = {
-  enabled: false,
+  enabled: true,
+  guaranteedDelivery: false,
   baseDelayMs: 1_000,
   maxDelayMs: 60_000,
   maxAttempts: 10,
@@ -59,7 +70,7 @@ export interface ChannelQueueWorkerOptions {
   app: App;
   queue: DurableQueue;
   log: ILogger;
-  /** Auto-retry policy; default {@link DEFAULT_RETRY_POLICY} (disabled). */
+  /** Auto-retry policy; default {@link DEFAULT_RETRY_POLICY} (enabled, safe-codes only). */
   retryPolicy?: RetryPolicy;
   /** Override for unit tests; default {@link DEFAULT_WORKER_RESPONSE_TIMEOUT_MS}. */
   responseTimeoutMs?: number;
@@ -191,11 +202,10 @@ export class ChannelQueueWorker {
 
   /**
    * Stops the dispatch loop. Cancels any in-flight dispatch by rejecting its
-   * pending response Promise; the row stays in `processing` and will be
-   * promoted to `errored` by {@link DurableQueue.recoverOnStartup} on the
-   * next startup. That's the right semantic — we don't know whether the
-   * server actually processed the message, so an operator has to decide
-   * whether to replay.
+   * pending response Promise with `worker-stopped` — an ambiguous outcome (we
+   * don't know whether the server processed the message). Normal channels mark
+   * the row `errored` for operator review; guaranteed-delivery channels
+   * schedule a retry so the row resumes after restart.
    */
   async stop(): Promise<void> {
     if (!this.running) {
@@ -285,7 +295,37 @@ export class ChannelQueueWorker {
     this.queue.recordServerResponse(row.id, response.statusCode ?? null, response.body ?? null);
 
     const statusCode = response.statusCode ?? 0;
-    if (statusCode >= 400) {
+    if (this.retryPolicy.guaranteedDelivery) {
+      // Guaranteed delivery: the upstream HL7 ACK code is the source of truth.
+      // AA/CA → delivered (fall through to the success path); AR/CR → definitive
+      // reject (terminal); anything else — AE/CE, an HTTP failure with no
+      // parseable ACK — keeps retrying until upstream answers definitively.
+      const ackCode = parseAckCode(response.body);
+      if (ackCode === 'AR' || ackCode === 'CR') {
+        this.handleFailure(
+          row,
+          QueueErrorCode.UpstreamRejected,
+          `Upstream rejected the message (${ackCode}): ${response.body ?? ''}`
+        );
+        return;
+      }
+      if (ackCode === 'AE' || ackCode === 'CE') {
+        this.handleFailure(
+          row,
+          QueueErrorCode.UpstreamError,
+          `Upstream returned an error ACK (${ackCode}): ${response.body ?? ''}`
+        );
+        return;
+      }
+      if (ackCode !== 'AA' && ackCode !== 'CA' && statusCode >= 400) {
+        this.handleFailure(
+          row,
+          classifyStatusCode(statusCode),
+          `Server returned ${statusCode}: ${response.body ?? ''}`
+        );
+        return;
+      }
+    } else if (statusCode >= 400) {
       this.handleFailure(row, classifyStatusCode(statusCode), `Server returned ${statusCode}: ${response.body ?? ''}`);
       return;
     }
@@ -324,7 +364,10 @@ export class ChannelQueueWorker {
   private handleFailure(row: InboundRow, code: QueueErrorCode, message: string): void {
     const rowDesc = `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'})`;
     const policy = this.retryPolicy;
-    if (policy.enabled && RETRYABLE_ERROR_CODES.has(code)) {
+    const retryable = policy.guaranteedDelivery
+      ? !GUARANTEED_TERMINAL_CODES.has(code)
+      : RETRYABLE_ERROR_CODES.has(code);
+    if (policy.enabled && retryable) {
       const attemptsRemain = policy.maxAttempts === 0 || row.attemptCount < policy.maxAttempts;
       if (attemptsRemain) {
         const delayMs = computeRetryDelayMs(policy, row.attemptCount);
@@ -392,6 +435,25 @@ export class ChannelQueueWorker {
  * @param statusCode - HTTP-style status code from the server response (≥ 400).
  * @returns The classification for this failure.
  */
+/**
+ * Extracts the MSA-1 acknowledgment code from an HL7 ACK body, if there is one.
+ * Used in guaranteed-delivery mode, where the upstream ACK code — not the HTTP
+ * status — decides whether the message is settled. Anything unparseable returns
+ * undefined and the caller falls back to status-code handling.
+ * @param body - The server response body (expected to be an HL7 ACK message).
+ * @returns The uppercased MSA-1 value (e.g. 'AA', 'AE', 'AR', 'CA', 'CE', 'CR'), or undefined.
+ */
+function parseAckCode(body: string | undefined): string | undefined {
+  if (!body) {
+    return undefined;
+  }
+  try {
+    return Hl7Message.parse(body).getSegment('MSA')?.getField(1)?.toString()?.toUpperCase() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function classifyStatusCode(statusCode: number): QueueErrorCode {
   if (statusCode === 429) {
     return QueueErrorCode.ServerRateLimited;

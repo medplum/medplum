@@ -219,7 +219,7 @@ describe('DurableQueue', () => {
       throw new Error('expected inserted');
     }
     queue.claimNext('I');
-    expect(queue.recoverOnStartup()).toBe(1);
+    expect(queue.recoverOnStartup()).toEqual({ errored: 1, requeued: 0 });
     const recovered = queue.getById(r.row.id);
     expect(recovered?.state).toBe(MessageState.ERRORED);
     expect(recovered?.errorCode).toBe(QueueErrorCode.Interrupted);
@@ -288,8 +288,8 @@ describe('DurableQueue', () => {
     }
     queue.claimNext('P'); // P → processing
 
-    const promoted = queue.recoverOnStartup(1700000000000);
-    expect(promoted).toBe(1);
+    const result = queue.recoverOnStartup(1700000000000);
+    expect(result).toEqual({ errored: 1, requeued: 0 });
     expect(queue.getById(prow.row.id)?.state).toBe(MessageState.ERRORED);
     expect(queue.getById(prow.row.id)?.lastError).toContain('interrupted');
     if (qrow.kind !== 'inserted') {
@@ -298,7 +298,32 @@ describe('DurableQueue', () => {
     expect(queue.getById(qrow.row.id)?.state).toBe(MessageState.QUEUED);
 
     // Re-running is a no-op now that no rows are in processing.
-    expect(queue.recoverOnStartup()).toBe(0);
+    expect(queue.recoverOnStartup()).toEqual({ errored: 0, requeued: 0 });
+  });
+
+  test('recoverOnStartup requeues guaranteed-delivery rows instead of erroring them', () => {
+    const guaranteed = queue.enqueue(
+      makeEnqueueInput({ channelName: 'G', msgControlId: 'GD1', guaranteedDelivery: true })
+    );
+    const normal = queue.enqueue(makeEnqueueInput({ channelName: 'N', msgControlId: 'NORM1' }));
+    if (guaranteed.kind !== 'inserted' || normal.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    expect(guaranteed.row.guaranteedDelivery).toBe(true);
+    expect(normal.row.guaranteedDelivery).toBe(false);
+    queue.claimNext('G');
+    queue.claimNext('N');
+
+    expect(queue.recoverOnStartup()).toEqual({ errored: 1, requeued: 1 });
+
+    const recovered = queue.getById(guaranteed.row.id);
+    expect(recovered?.state).toBe(MessageState.QUEUED);
+    expect(recovered?.errorCode).toBe(QueueErrorCode.Interrupted);
+    expect(recovered?.nextAttemptAt).toBeNull();
+    // Immediately claimable again — the guarantee survives the restart.
+    expect(queue.claimNext('G')?.id).toBe(guaranteed.row.id);
+
+    expect(queue.getById(normal.row.id)?.state).toBe(MessageState.ERRORED);
   });
 
   test('enqueueRejected creates a nacked audit row with last_error and ack_sent_to_source=1', () => {

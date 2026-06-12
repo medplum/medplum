@@ -164,7 +164,9 @@ describe('Durable queue integration', () => {
           remote: cmd.remote,
           callback: cmd.callback,
           contentType: ContentType.TEXT,
-          statusCode: 500,
+          // 400, not 500: a 5xx is transient and the default policy now
+          // auto-retries it, so the row would sit in `queued` instead of `errored`.
+          statusCode: 400,
           body: 'server boom',
         }) satisfies AgentTransmitResponse
     );

@@ -69,6 +69,7 @@ export class DurableQueue {
   private readonly scheduleRetryStmt: StatementSync;
   private readonly requeueStmt: StatementSync;
   private readonly recoverProcessingStmt: StatementSync;
+  private readonly recoverProcessingGuaranteedStmt: StatementSync;
   private readonly listQueuedIdsForChannelStmt: StatementSync;
   private readonly countByStateStmt: StatementSync;
   private readonly channelDepthStmt: StatementSync;
@@ -104,9 +105,9 @@ export class DurableQueue {
       INSERT INTO inbound_hl7_messages (
         channel_name, remote, msg_control_id, msg_type, body, encoding,
         enhanced_mode, state, attempt_count, callback_id,
-        seq_no, received_at, committed_at
+        seq_no, received_at, committed_at, guaranteed_delivery
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?, ?
       )
     `);
 
@@ -219,7 +220,21 @@ export class DurableQueue {
              errored_at = ?,
              last_error = COALESCE(last_error, 'interrupted: process restart while processing'),
              error_code = COALESCE(error_code, '${QueueErrorCodeValues.Interrupted}')
-       WHERE state = 'processing'
+       WHERE state = 'processing' AND guaranteed_delivery = 0
+    `);
+
+    // Guaranteed-delivery counterpart of the recovery sweep: the operator asked
+    // us to keep trying until upstream gives a definitive answer, so an
+    // interrupted row goes back to the head of its channel's FIFO (duplication
+    // risk accepted) instead of parking in `errored`.
+    this.recoverProcessingGuaranteedStmt = this.db.prepare(`
+      UPDATE inbound_hl7_messages
+         SET state = 'queued',
+             processing_started_at = NULL,
+             next_attempt_at = NULL,
+             last_error = 'interrupted: process restart while processing',
+             error_code = '${QueueErrorCodeValues.Interrupted}'
+       WHERE state = 'processing' AND guaranteed_delivery = 1
     `);
 
     this.listQueuedIdsForChannelStmt = this.db.prepare(`
@@ -384,7 +399,8 @@ export class DurableQueue {
         input.callbackId,
         input.seqNo,
         input.receivedAt,
-        input.receivedAt
+        input.receivedAt,
+        input.guaranteedDelivery ? 1 : 0
       );
       this.walDirty = true;
       const id = Number(info.lastInsertRowid);
@@ -547,18 +563,23 @@ export class DurableQueue {
   }
 
   /**
-   * Promotes every `processing` row to `errored`. Runs once at startup so that
-   * rows interrupted mid-dispatch surface for operator review instead of being
-   * silently retried (§10).
+   * Startup sweep over rows interrupted mid-dispatch (still in `processing`).
+   *
+   * Non-guaranteed rows are promoted to `errored` so they surface for operator
+   * review instead of being silently retried (§10) — delivery is ambiguous and
+   * those channels haven't accepted duplication risk. Guaranteed-delivery rows
+   * are returned to `queued` so the channel keeps trying until upstream gives a
+   * definitive answer (§4.1).
    * @param now - Override for `errored_at` (for tests).
-   * @returns The number of rows promoted.
+   * @returns Counts of rows promoted to `errored` and requeued, respectively.
    */
-  recoverOnStartup(now: number = Date.now()): number {
-    const info = this.recoverProcessingStmt.run(now);
-    if (Number(info.changes) > 0) {
+  recoverOnStartup(now: number = Date.now()): { errored: number; requeued: number } {
+    const errored = Number(this.recoverProcessingStmt.run(now).changes);
+    const requeued = Number(this.recoverProcessingGuaranteedStmt.run().changes);
+    if (errored > 0 || requeued > 0) {
       this.walDirty = true;
     }
-    return Number(info.changes);
+    return { errored, requeued };
   }
 
   /**
@@ -705,6 +726,7 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     enhancedMode: (raw.enhanced_mode as 'standard' | 'aaMode' | null) ?? null,
     state: raw.state as MessageState,
     attemptCount: raw.attempt_count as number,
+    guaranteedDelivery: (raw.guaranteed_delivery as number) === 1,
     callbackId: raw.callback_id as string,
     serverResponseBody:
       raw.server_response_body === null || raw.server_response_body === undefined

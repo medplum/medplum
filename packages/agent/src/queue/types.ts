@@ -55,6 +55,10 @@ export const QueueErrorCode = {
   ServerRejected: 'server-rejected',
   /** Permanent: server processed the message (2xx) but the ACK could not be delivered to the source. */
   AckDeliveryFailed: 'ack-delivery-failed',
+  /** Permanent: upstream answered with a definitive HL7 reject (MSA-1 of AR or CR). */
+  UpstreamRejected: 'upstream-rejected',
+  /** Upstream answered with an HL7 application/commit error (MSA-1 of AE or CE) — retried only in guaranteed-delivery mode. */
+  UpstreamError: 'upstream-error',
 } as const;
 export type QueueErrorCode = (typeof QueueErrorCode)[keyof typeof QueueErrorCode];
 
@@ -67,6 +71,19 @@ export type QueueErrorCode = (typeof QueueErrorCode)[keyof typeof QueueErrorCode
 export const RETRYABLE_ERROR_CODES: ReadonlySet<QueueErrorCode> = new Set<QueueErrorCode>([
   QueueErrorCode.ServerError,
   QueueErrorCode.ServerRateLimited,
+]);
+
+/**
+ * Codes that stop retries even in guaranteed-delivery mode, which otherwise
+ * retries every failure (duplication risk accepted). Both represent a
+ * definitive upstream answer for the message:
+ * - `AckDeliveryFailed`: upstream accepted it (AA/CA, 2xx) — only the ACK back
+ *   to the source failed; re-dispatching would duplicate.
+ * - `UpstreamRejected`: upstream definitively rejected it (AR/CR).
+ */
+export const GUARANTEED_TERMINAL_CODES: ReadonlySet<QueueErrorCode> = new Set<QueueErrorCode>([
+  QueueErrorCode.AckDeliveryFailed,
+  QueueErrorCode.UpstreamRejected,
 ]);
 
 /** An Error carrying its {@link QueueErrorCode} from the failure site to the retry decision. */
@@ -106,6 +123,7 @@ export interface InboundRow {
   enhancedMode: EnhancedModeColumn;
   state: MessageState;
   attemptCount: number;
+  guaranteedDelivery: boolean;
   callbackId: string;
   serverResponseBody: Buffer | null;
   serverStatusCode: number | null;
@@ -133,6 +151,13 @@ export interface EnqueueInput {
   callbackId: string;
   seqNo: number | null;
   receivedAt: number;
+  /**
+   * Snapshot of the channel's guaranteed-delivery setting at intake time.
+   * Stored on the row so `recoverOnStartup` (which runs before channel
+   * policies are resolved) knows whether to requeue or error an interrupted
+   * row. Defaults to false.
+   */
+  guaranteedDelivery?: boolean;
 }
 
 /** Input payload for {@link DurableQueue.enqueueRejected}. */
