@@ -6,7 +6,8 @@ import type { PgResponseHookInformation } from '@opentelemetry/instrumentation-p
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { httpResponseHook, initOpenTelemetry, pgResponseHook, shutdownOpenTelemetry } from './instrumentation';
-import { vi, type MockInstance } from 'vitest';
+import { vi  } from 'vitest';
+import type {MockInstance} from 'vitest';
 
 describe('Instrumentation', () => {
   const OLD_ENV = process.env;

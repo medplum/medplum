@@ -3842,7 +3842,7 @@ describe('Subscription Worker Event Handling', () => {
     };
     mockBullmq.Worker.mockImplementation(function MockWorker() {
       return mockWorker;
-    } as unknown as typeof Worker);
+    });
     // Now import the subscription worker init function
 
     vi.spyOn(globalLogger, 'info').mockImplementation(() => {});

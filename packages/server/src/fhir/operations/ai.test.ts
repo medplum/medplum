@@ -7,7 +7,8 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth } from '../../test.setup';
-import { vi, type Mock } from 'vitest';
+import { vi  } from 'vitest';
+import type {Mock} from 'vitest';
 
 const app = express();
 let accessToken: string;

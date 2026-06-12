@@ -19,7 +19,8 @@ import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { SelectQuery } from '../fhir/sql';
 import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
-import { vi, type Mock } from 'vitest';
+import { vi  } from 'vitest';
+import type {Mock} from 'vitest';
 
 vi.mock('hibp');
 vi.mock('node-fetch', () => ({ default: vi.fn() }));

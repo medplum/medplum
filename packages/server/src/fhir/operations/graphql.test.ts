@@ -13,7 +13,8 @@ import { getCacheRedis } from '../../redis';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 import * as searchFile from '../search';
-import { vi, type MockInstance } from 'vitest';
+import { vi  } from 'vitest';
+import type {MockInstance} from 'vitest';
 
 const app = express();
 let practitioner: Practitioner;

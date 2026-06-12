@@ -14,7 +14,8 @@ import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
-import { vi, type Mock } from 'vitest';
+import { vi  } from 'vitest';
+import type {Mock} from 'vitest';
 
 vi.mock('hibp');
 vi.mock('node-fetch', () => ({ default: vi.fn() }));

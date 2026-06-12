@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { vi, type Mock } from 'vitest';
+import { vi  } from 'vitest';
+import type {Mock} from 'vitest';
 import { createReference, getReferenceString, sleep } from '@medplum/core';
 import type {
   AccessPolicy,
@@ -39,7 +40,7 @@ import { requestContextStore } from './request-context-store';
 setDefaultResultOrder('ipv4first');
 
 vi.mock('node-fetch', () => ({ default: vi.fn() }));
-vi.mock('bullmq', async () => await import('./__mocks__/bullmq'));
+vi.mock('bullmq', async () => import('./__mocks__/bullmq'));
 
 export interface TestProjectOptions {
   project?: Partial<Project>;

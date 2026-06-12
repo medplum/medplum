@@ -179,7 +179,7 @@ describe('Reset Password', () => {
     const email = `project-smtp-${randomUUID()}@example.com`;
     const sendMail = jest.fn().mockResolvedValue({ messageId: '123' });
     const createTransportSpy = jest.spyOn(nodemailer, 'createTransport');
-    createTransportSpy.mockReturnValue({ sendMail } as unknown as Transporter);
+    createTransportSpy.mockReturnValue({ sendMail });
 
     try {
       const project = await withTestContext(async () => {

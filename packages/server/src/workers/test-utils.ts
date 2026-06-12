@@ -8,7 +8,8 @@ import { UnrecoverableError } from 'bullmq';
 import { execDispatchJob, getDispatchQueue } from './dispatch';
 import { execDownloadJob, getDownloadQueue } from './download';
 import { execSubscriptionJob, getSubscriptionQueue } from './subscription';
-import { vi, type Mock } from 'vitest';
+import { vi  } from 'vitest';
+import type {Mock} from 'vitest';
 
 /**
  * Finds the dispatch job for the given resource and interaction, and executes it.

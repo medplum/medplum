@@ -39,7 +39,8 @@ import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext
 import { validateClientCert } from './cert';
 import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './utils';
-import { vi, type Mock } from 'vitest';
+import { vi  } from 'vitest';
+import type {Mock} from 'vitest';
 
 const joseMockState = vi.hoisted(() => ({ count: 0 }));
 

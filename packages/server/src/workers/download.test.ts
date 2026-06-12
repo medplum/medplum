@@ -10,7 +10,8 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDownloadJob, mockFetchResponse } from './test-utils';
-import { vi, type Mock } from 'vitest';
+import { vi  } from 'vitest';
+import type {Mock} from 'vitest';
 
 vi.mock('node-fetch', () => ({ default: vi.fn() }));
 

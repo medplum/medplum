@@ -20,7 +20,8 @@ import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
-import { vi, type Mock } from 'vitest';
+import { vi  } from 'vitest';
+import type {Mock} from 'vitest';
 
 vi.mock('hibp');
 vi.mock('node-fetch', () => ({ default: vi.fn() }));

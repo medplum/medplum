@@ -14,7 +14,8 @@ import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
-import { vi, type Mock } from 'vitest';
+import { vi  } from 'vitest';
+import type {Mock} from 'vitest';
 
 vi.mock('hibp');
 vi.mock('node-fetch', () => ({ default: vi.fn() }));

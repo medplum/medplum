@@ -5,7 +5,8 @@ import request from 'supertest';
 import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import * as otel from './otel/otel';
-import { vi, type MockInstance } from 'vitest';
+import { vi  } from 'vitest';
+import type {MockInstance} from 'vitest';
 
 const app = express();
 

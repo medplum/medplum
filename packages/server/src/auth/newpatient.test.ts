@@ -11,7 +11,8 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
-import { vi, type Mock } from 'vitest';
+import { vi  } from 'vitest';
+import type {Mock} from 'vitest';
 
 vi.mock('hibp');
 vi.mock('node-fetch', () => ({ default: vi.fn() }));

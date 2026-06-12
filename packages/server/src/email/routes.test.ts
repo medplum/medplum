@@ -98,7 +98,7 @@ describe('Email API Routes', () => {
   test('Send email via project SMTP', async () => {
     const sendMail = jest.fn().mockResolvedValue({ messageId: '123' });
     const createTransportSpy = jest.spyOn(nodemailer, 'createTransport');
-    createTransportSpy.mockReturnValue({ sendMail } as unknown as Transporter);
+    createTransportSpy.mockReturnValue({ sendMail });
 
     try {
       const accessToken = await initTestAuth({

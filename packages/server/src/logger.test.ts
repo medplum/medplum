@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { LogLevel } from '@medplum/core';
 import { drainStdout, exitAfterStdoutDrain, globalLogger } from './logger';
-import { vi, type MockInstance } from 'vitest';
+import { vi  } from 'vitest';
+import type {MockInstance} from 'vitest';
 
 describe('Global Logger', () => {
   let writeSpy: MockInstance;

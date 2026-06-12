@@ -14,7 +14,8 @@ import { loadTestConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
-import { vi, type Mock } from 'vitest';
+import { vi  } from 'vitest';
+import type {Mock} from 'vitest';
 
 vi.mock('node-fetch', () => ({ default: vi.fn() }));
 

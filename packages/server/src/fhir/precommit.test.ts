@@ -11,7 +11,8 @@ import { createTestProject, withTestContext } from '../test.setup';
 import { createBot } from './operations/botinit';
 import { deployBot } from './operations/deploy';
 import type { Repository } from './repo';
-import { vi, type MockInstance } from 'vitest';
+import { vi  } from 'vitest';
+import type {MockInstance} from 'vitest';
 
 describe('FHIR Repo', () => {
   let project: WithId<Project>;
