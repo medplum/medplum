@@ -41,6 +41,13 @@ function initAgentHeartbeat(): void {
   }
 }
 
+export function stopAgentHeartbeat(): void {
+  if (agentHeartbeatHandler) {
+    heartbeat.removeEventListener('heartbeat', agentHeartbeatHandler);
+    agentHeartbeatHandler = undefined;
+  }
+}
+
 /**
  * Handles a new WebSocket connection to the agent service.
  * The agent service executes a bot and returns the result.
@@ -118,11 +125,21 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
   socket.on(
     'close',
     AsyncLocalStorage.bind(async () => {
+      // Release connection resources before the async status update, so that a failed
+      // update (e.g. Redis already closing during shutdown) cannot leak the heartbeat
+      // listener or the Redis subscriber
       agentWebSockets.delete(socket);
-      await updateAgentStatus(AgentConnectionState.DISCONNECTED);
       heartbeat.removeEventListener('heartbeat', heartbeatHandler);
       redisSubscriber?.disconnect();
       redisSubscriber = undefined;
+      try {
+        await updateAgentStatus(AgentConnectionState.DISCONNECTED);
+      } catch (err) {
+        globalLogger.error('[Agent]: Failed to update agent status on disconnect', {
+          agentId,
+          error: normalizeErrorString(err),
+        });
+      }
       agentId = undefined;
     })
   );
