@@ -30,6 +30,7 @@ export type Scope = object & { readonly _brand: 'scope' };
 type WritableScope = {
   readonly _brand: 'scope';
   parent?: WritableScope;
+  /** See {@link RepositoryConnection.withTransaction} for the state machine and what each state means. */
   state: 'active' | 'released' | 'committing' | 'post-commit' | 'ended';
   preCommitCallbacks: (() => Promise<void>)[];
   postCommitCallbacks: (() => Promise<void>)[];
@@ -286,6 +287,108 @@ export class RepositoryConnection implements Disposable {
     }
   }
 
+  /**
+   * Runs `callback` inside a database transaction, retrying the outermost transaction on
+   * retryable errors such as serialization failures. Nested calls become savepoints within
+   * the outer transaction.
+   *
+   * ## Scope-based usability model
+   *
+   * Several `Repository` facades may share one `RepositoryConnection`, and therefore one
+   * PoolClient. Which of them is allowed to issue queries at any given moment is tracked with
+   * `Scope` tokens: each repository is bound to the scope that was current when it was created,
+   * and every database operation first passes that token to `assertScope()`. Scopes form a chain:
+   * the root scope lives as long as the connection, and each `withTransaction` call pushes a child
+   * scope (`BEGIN` for the outermost, `SAVEPOINT` when nested) that becomes the current scope
+   * until that transaction level finishes.
+   *
+   * A repository may use the connection when its scope IS the current scope. A repository bound to
+   * an ANCESTOR of the current scope is locked out: its transaction level is suspended while the
+   * inner one runs, and letting it query would silently execute statements inside the inner
+   * transaction. This is why the repo that invoked `withTransaction` throws when used inside the
+   * callback — the callback must use the transaction-scoped repo/scope it was given.
+   * (`Repository.withTransaction` layers on this method by constructing a transaction-scoped
+   * `Repository` bound to the new scope and passing it to the application callback.)
+   *
+   * ## Scope states
+   *
+   * - `active` — this transaction level is live; repositories bound to it may query.
+   * - `committing` — outermost scope only: the callback returned and pre-commit callbacks are
+   *   running. `COMMIT` has not been issued yet, so queries still run inside the transaction.
+   * - `post-commit` — `COMMIT` succeeded and post-commit callbacks are running; queries now run
+   *   outside any transaction.
+   * - `released` — nested scope whose `RELEASE SAVEPOINT` succeeded. Its work now belongs to the
+   *   parent, and its pre/post-commit callbacks were hoisted to the parent. Repositories bound to
+   *   it are invalid, EXCEPT while the outermost scope is `committing`/`post-commit`, so that
+   *   hoisted callbacks can still run through the repository that registered them.
+   * - `ended` — terminal: the level was rolled back, or the outer transaction fully finished.
+   *   A scope is also permanently dead once any of its ancestors is `ended`.
+   *
+   * ```
+   *               callback returned             COMMIT
+   *  ┌────────┐   (outermost only)   ┌────────────┐ succeeded ┌─────────────┐
+   *  │ active │ ────────────────────▶│ committing │ ─────────▶│ post-commit │
+   *  └────────┘  pre-commit cbs run  └────────────┘           └─────────────┘
+   *    │    │                              │                        │
+   *    │    │ RELEASE SAVEPOINT            │ pre-commit cb threw    │ post-commit
+   *    │    │ (nested only)                │ → ROLLBACK             │ cbs done
+   *    │    ▼                              ▼                        ▼
+   *    │  ┌──────────┐               ┌───────────────────────────────────────┐
+   *    │  │ released │               │                 ended                 │
+   *    │  └──────────┘               │ (terminal; a scope is also dead once  │
+   *    └────────────────────────────▶│        any ancestor has ended)        │
+   *      ROLLBACK [TO SAVEPOINT]     └───────────────────────────────────────┘
+   * ```
+   *
+   * ## Scenario: outer repo locked during the callback, tx repo expires after it
+   *
+   * ```ts
+   * // scopes: root▶                                  repo ✓
+   * await repo.withTransaction(async (txRepo) => {    // BEGIN; scope tx1 pushed
+   *   // scopes: root ── tx1▶                         repo ✗   txRepo ✓
+   *   await txRepo.updateResource(r);                 // ✓ runs inside the transaction
+   *   await repo.readResource('Patient', id);         // ✗ "Repository is in an active transaction"
+   * });
+   * // callback returned: tx1 active → committing (pre-commit cbs) → COMMIT
+   * //   → post-commit (post-commit cbs) → ended; current scope pops back to root
+   * // scopes: root▶                                  repo ✓   txRepo ✗ "The transaction has ended"
+   * ```
+   *
+   * ## Scenario: nested transaction — a scope going valid → invalid → dead
+   *
+   * ```ts
+   * await repo.withTransaction(async (txRepo) => {     // BEGIN;          root ── tx1▶
+   *   await txRepo.withTransaction(async (inner) => {  // SAVEPOINT sp2;  root ── tx1 ── tx2▶
+   *     await inner.createResource(r);                 // ✓
+   *     await txRepo.searchResources(q);               // ✗ tx1 is suspended while tx2 runs
+   *   });                                              // RELEASE SAVEPOINT; tx2 → released; root ── tx1▶
+   *   await txRepo.searchResources(q);                 // ✓ tx1 is current again
+   *   await inner.searchResources(q);                  // ✗ "Savepoint has been released"
+   * });                                                // COMMIT; tx1 → ended; tx2 dead with it
+   * ```
+   *
+   * Note the `released` exception: pre/post-commit callbacks registered through `inner` were
+   * hoisted to `tx1` when the savepoint was released. They run while `tx1` is
+   * `committing`/`post-commit`, and during those two phases `assertScope` lets the released `tx2`
+   * through so those callbacks can use the repository that registered them.
+   *
+   * ## Errors and retries
+   *
+   * If the callback (or a pre-commit callback) throws, the transaction level is rolled back
+   * (`ROLLBACK`, or `ROLLBACK TO SAVEPOINT` when nested), the scope becomes `ended`, and the error
+   * propagates. For the outermost transaction, retryable errors cause the whole callback to re-run
+   * after a backoff — with a FRESH scope and therefore a fresh transaction-scoped repo. Never
+   * capture a transaction-scoped repository or scope outside the callback: it expires when the
+   * attempt ends, and each retry gets a new one.
+   *
+   * @param scope - Token of the caller initiating the transaction; must still be valid. It becomes
+   *   the parent of the new transaction scope and is locked until that transaction finishes.
+   * @param callback - Work to run inside the transaction. Receives the new (now current) scope;
+   *   all database work in the callback must present this scope, not the parent.
+   * @param options - Optional transaction settings.
+   * @param options.serializable - Use `SERIALIZABLE` isolation instead of `REPEATABLE READ`.
+   * @returns The callback's return value, after the transaction level commits.
+   */
   async withTransaction<TResult>(
     scope: Scope,
     callback: (txScope: Scope) => Promise<TResult>,

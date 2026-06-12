@@ -300,6 +300,13 @@ export class Repository extends FhirRepository implements Disposable {
    */
   static readonly VERSION: number = 15;
 
+  /**
+   * Constructs a new Repository instance.
+   * @param context - The context of the repository.
+   * @param connection - (optional) The connection to use for the repository. See
+   * {@link RepositoryConnection.withTransaction} for more details.
+   * @param scope - (optional) The repository connection scope to use for the repository.
+   */
   constructor(context: RepositoryContext, connection?: RepositoryConnection, scope?: Scope) {
     super();
     addSyntheticR4ProjectIfMissing(context);
