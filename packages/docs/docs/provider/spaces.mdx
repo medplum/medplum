@@ -237,7 +237,7 @@ The dropdown contents are driven by a project setting named `aiModels`, so admin
 ]
 ```
 
-When `aiModels` is unset or empty, the UI falls back to a built-in default list (see [`spaceModels.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/utils/spaceModels.ts)). Combined with the `OPENAI_BASE_URL` project secret on [`$ai`](/docs/ai/ai-operation), this lets you point Spaces at a LiteLLM proxy and expose that proxy's model names to users.
+When `aiModels` is unset or empty, the UI falls back to a built-in default list (see [`spaceModels.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/utils/spaceModels.ts)). Combined with the `LLM_BASE_URL` project secret on [`$ai`](/docs/ai/ai-operation), this lets you point Spaces at a LiteLLM proxy and expose that proxy's model names to users.
 
 :::caution[Model names must match your LiteLLM config]
 When routing through a LiteLLM proxy, each `value` must exactly match a `model_name` alias defined in the proxy's `config.yaml` – that field is LiteLLM's routing key. Neither the UI nor `$ai` validates the value; an unrecognized name surfaces as a failed AI call at request time, not a save error. The `label` is cosmetic. Keep the `aiModels` list in sync with the proxy config when you add or rename models.

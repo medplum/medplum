@@ -580,7 +580,7 @@ describe('AI Operation', () => {
         features: ['ai'],
         secret: [
           { name: 'OPENAI_API_KEY', valueString: 'sk-litellm-key' },
-          { name: 'OPENAI_BASE_URL', valueString: 'https://litellm.example.com/v1' },
+          { name: 'LLM_BASE_URL', valueString: 'https://litellm.example.com/v1' },
         ],
       },
     });
@@ -626,7 +626,7 @@ describe('AI Operation', () => {
         features: ['ai'],
         secret: [
           { name: 'OPENAI_API_KEY', valueString: 'sk-litellm-key' },
-          { name: 'OPENAI_BASE_URL', valueString: 'https://litellm.example.com/v1/' },
+          { name: 'LLM_BASE_URL', valueString: 'https://litellm.example.com/v1/' },
         ],
       },
     });

@@ -33,7 +33,7 @@ const operation = makeOperationDefinition(
         max: '1',
         type: 'string',
         documentation:
-          'Model to use (e.g., gpt-4, gpt-3.5-turbo). Any OpenAI-compatible model name is accepted when OPENAI_BASE_URL points to a LiteLLM proxy.',
+          'Model to use (e.g., gpt-4, gpt-3.5-turbo). Any OpenAI-compatible model name is accepted when LLM_BASE_URL points to a LiteLLM proxy.',
       },
       {
         name: 'tools',
@@ -136,7 +136,7 @@ export async function aiOperation(
   }
 
   let baseUrl =
-    ctx.project.secret?.find((s) => s.name === 'OPENAI_BASE_URL')?.valueString ?? 'https://api.openai.com/v1';
+    ctx.project.secret?.find((s) => s.name === 'LLM_BASE_URL')?.valueString ?? 'https://api.openai.com/v1';
   // Strip any trailing slashes without a regex to avoid backtracking concerns
   while (baseUrl.endsWith('/')) {
     baseUrl = baseUrl.slice(0, -1);
@@ -192,7 +192,7 @@ export async function aiOperation(
     };
     return buildParametersResponse(result);
   } catch (error) {
-    return [badRequest('Failed to call OpenAI API: ' + (error as Error).message)];
+    return [badRequest('Failed to call AI API: ' + (error as Error).message)];
   }
 }
 
