@@ -19,21 +19,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
-
-const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
-  const sendMail = vi.fn().mockResolvedValue({ messageId: '123' });
-  return {
-    mockSendMail: sendMail,
-    mockCreateTransport: vi.fn(() => ({ sendMail })),
-  };
-});
-
-vi.mock('nodemailer', () => ({
-  createTransport: mockCreateTransport,
-  default: { createTransport: mockCreateTransport },
-}));
-
-const { sendEmail } = await import('./email');
+import { sendEmail } from './email';
 
 describe('Email', () => {
   const systemRepo = getGlobalSystemRepo();
@@ -330,22 +316,26 @@ describe('Email', () => {
       password: 'pass',
     };
 
-    mockCreateTransport.mockClear();
-    mockSendMail.mockClear();
+    const sendMail = vi.fn().mockResolvedValue({ messageId: '123' });
+    const createTransportSpy = vi.spyOn(nodemailer, 'createTransport');
+    createTransportSpy.mockReturnValue({ sendMail } as unknown as nodemailer.Transporter);
 
-    const toAddresses = 'alice@example.com';
-    await sendEmail(systemRepo, {
-      to: toAddresses,
-      cc: 'bob@example.com',
-      subject: 'Hello',
-      text: 'Hello Alice',
-    });
+    try {
+      const toAddresses = 'alice@example.com';
+      await sendEmail(systemRepo, {
+        to: toAddresses,
+        cc: 'bob@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+      });
 
-    expect(mockCreateTransport).toHaveBeenCalledTimes(1);
-    expect(mockSendMail).toHaveBeenCalledTimes(1);
-    expect(mockSESv2Client.send.callCount).toBe(0);
-
-    config.smtp = undefined;
+      expect(createTransportSpy).toHaveBeenCalledTimes(1);
+      expect(sendMail).toHaveBeenCalledTimes(1);
+      expect(mockSESv2Client.send.callCount).toBe(0);
+    } finally {
+      createTransportSpy.mockRestore();
+      config.smtp = undefined;
+    }
   });
 
   describe('Project SMTP', () => {

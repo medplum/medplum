@@ -129,7 +129,8 @@ describe('Email API Routes', () => {
       );
       expect(sendMail).toHaveBeenCalledTimes(1);
       expect(sendMail.mock.calls[0][0].from).toBe('support@project.example.com');
-      expect(SESv2Client).toHaveBeenCalledTimes(0);
+      expect(mockSESv2Client.send.callCount).toBe(0);
+      expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
     } finally {
       createTransportSpy.mockRestore();
     }

@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { EMPTY, normalizeErrorString } from '@medplum/core';
 import type { Binary, Project } from '@medplum/fhirtypes';
-import { createTransport } from 'nodemailer';
+import nodemailer from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
 import { sendEmailViaSes } from '../cloud/aws/email';
 import { getConfig } from '../config/loader';
@@ -100,7 +100,7 @@ async function sendEmailViaSmtp(
   options: Mail.Options,
   projectId?: string
 ): Promise<void> {
-  const transport = createTransport({
+  const transport = nodemailer.createTransport({
     host: smtpConfig.host,
     port: smtpConfig.port,
     secure: smtpConfig.secure,
