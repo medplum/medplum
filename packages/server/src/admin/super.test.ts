@@ -9,25 +9,36 @@ import type * as Pg from 'pg';
 import request from 'supertest';
 import type { MockedFunction, MockInstance } from 'vitest';
 import { vi } from 'vitest';
-import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
-import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
 import { loadTestConfig } from '../config/loader';
-import { Repository } from '../fhir/repo';
+import type * as RepoModule from '../fhir/repo';
+
+type RepositoryType = RepoModule.Repository;
+
+// Keep in sync with Repository.VERSION in fhir/repo.ts
+const REPOSITORY_VERSION = 15;
+
+let Repository: typeof RepoModule.Repository;
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
-import * as migrationVersions from '../migrations/migration-versions';
-import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
-import type { CronJobData } from '../workers/cron';
-import { getCronQueue } from '../workers/cron';
-import type { LambdaCleanerJobData } from '../workers/lambda-cleaner';
-import { getLambdaCleanerQueue } from '../workers/lambda-cleaner';
-import type { ReindexJobData } from '../workers/reindex';
-import { getReindexQueue } from '../workers/reindex';
+import type * as CronModule from '../workers/cron';
+import type * as LambdaCleanerModule from '../workers/lambda-cleaner';
+import type * as ReindexModule from '../workers/reindex';
+
+type CronJobData = CronModule.CronJobData;
+type LambdaCleanerJobData = LambdaCleanerModule.LambdaCleanerJobData;
+type ReindexJobData = ReindexModule.ReindexJobData;
+
+let getCronQueue: typeof CronModule.getCronQueue;
+let getLambdaCleanerQueue: typeof LambdaCleanerModule.getLambdaCleanerQueue;
+let getReindexQueue: typeof ReindexModule.getReindexQueue;
+
+// Keep in sync with LAMBDA_NAME_REGEX_PATTERN in cloud/aws/deploy.ts
+const LAMBDA_NAME_REGEX_PATTERN =
+  '^medplum-bot-lambda-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 
 const mockPgMaintenanceQueries: string[] = [];
 
@@ -145,22 +156,27 @@ const mockRebuildR4StructureDefinitions = rebuildR4StructureDefinitions as Mocke
 >;
 const mockRebuildR4SearchParameters = rebuildR4SearchParameters as MockedFunction<typeof rebuildR4SearchParameters>;
 
-vi.mock('../migrations/data', async () => {
-  return {
-    v1: await vi.importMock('../migrations/data/v1'),
-    v2: await vi.importMock('../migrations/data/v2'),
-    v3: await vi.importMock('../migrations/data/v2'),
-  };
-});
+// Stub migration modules instead of vi.importMock to avoid loading workers/reindex → fhir/repo
+// during test file initialization, which breaks workers/index under Vitest ESM.
+vi.mock('../migrations/data/index', () => ({
+  v1: { migration: { type: 'reindex' } },
+  v2: { migration: { type: 'custom' } },
+  v3: { migration: { type: 'custom' } },
+}));
 
 describe('Super Admin routes', () => {
   let processStdoutWriteSpy: MockInstance;
   beforeAll(async () => {
     processStdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const config = await loadTestConfig();
+    const { initApp } = await import('../app');
     await initApp(app, config);
+    ({ getCronQueue } = await import('../workers/cron'));
+    ({ getLambdaCleanerQueue } = await import('../workers/lambda-cleaner'));
+    ({ getReindexQueue } = await import('../workers/reindex'));
+    ({ Repository } = await import('../fhir/repo'));
 
-    let repo: Repository;
+    let repo: RepositoryType;
     ({ project, repo } = await createTestProject({ withClient: true, superAdmin: true, withRepo: true }));
 
     const normalProject = await createTestProject();
@@ -219,6 +235,7 @@ describe('Super Admin routes', () => {
       scope: 'openid',
     });
 
+    const { generateAccessToken } = await import('../oauth/keys');
     adminAccessToken = await generateAccessToken({
       login_id: login1.id,
       sub: user1.id,
@@ -237,6 +254,7 @@ describe('Super Admin routes', () => {
   });
 
   afterAll(async () => {
+    const { shutdownApp } = await import('../app');
     await shutdownApp();
     processStdoutWriteSpy.mockRestore();
   });
@@ -439,7 +457,7 @@ describe('Super Admin routes', () => {
   });
 
   test.each([
-    ['outdated', undefined, Repository.VERSION - 1],
+    ['outdated', undefined, REPOSITORY_VERSION - 1],
     ['specific', '0', 0],
     ['all', undefined, undefined],
   ])('Reindex with %s %s', async (reindexType, maxResourceVersion, expectedMaxResourceVersion) => {
@@ -472,11 +490,11 @@ describe('Super Admin routes', () => {
     ['foobar', undefined, 'reindexType must be "outdated", "all", or "specific"'],
     ['outdated', '0', 'maxResourceVersion should only be specified when reindexType is "specific"'],
     ['all', '0', 'maxResourceVersion should only be specified when reindexType is "specific"'],
-    ['specific', undefined, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
-    ['specific', -1, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
-    ['specific', Repository.VERSION, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
-    ['specific', '1.1', `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
-    ['specific', '9999999', `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+    ['specific', undefined, `maxResourceVersion must be an integer from 0 to ${REPOSITORY_VERSION - 1}`],
+    ['specific', -1, `maxResourceVersion must be an integer from 0 to ${REPOSITORY_VERSION - 1}`],
+    ['specific', REPOSITORY_VERSION, `maxResourceVersion must be an integer from 0 to ${REPOSITORY_VERSION - 1}`],
+    ['specific', '1.1', `maxResourceVersion must be an integer from 0 to ${REPOSITORY_VERSION - 1}`],
+    ['specific', '9999999', `maxResourceVersion must be an integer from 0 to ${REPOSITORY_VERSION - 1}`],
   ])('Reindex with invalid args %s %s', async (reindexType, maxResourceVersion, expectedError) => {
     const queue = getReindexQueue() as any;
     queue.add.mockClear();
@@ -865,8 +883,9 @@ describe('Super Admin routes', () => {
 
   test('Set password success', async () => {
     const email = `alice${randomUUID()}@example.com`;
+    const { registerNew } = await import('../auth/register');
 
-    await withTestContext(() =>
+    await withTestContext(async () =>
       registerNew({
         firstName: 'Alice',
         lastName: 'Smith',
@@ -979,6 +998,7 @@ describe('Super Admin routes', () => {
 
   describe('/migrations', () => {
     test('Migrate', async () => {
+      const migrationVersions = await import('../migrations/migration-versions');
       const versionsSpy = vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1, 2, 3]);
       try {
         const res1 = await request(app)
