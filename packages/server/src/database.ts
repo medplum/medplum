@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
-import type { Pool, PoolClient, PoolConfig } from 'pg';
+import type { PoolClient, PoolConfig } from 'pg';
+import { Pool } from 'pg';
 import * as semver from 'semver';
 import type { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
 import { globalLogger } from './logger';
@@ -83,9 +84,8 @@ function initPoolConfig(
 
 async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | undefined): Promise<Pool> {
   const poolConfig = initPoolConfig(config, proxyEndpoint);
-  const { Pool: PoolConstructor } = await import('pg');
 
-  const pool = new PoolConstructor(poolConfig);
+  const pool = new Pool(poolConfig);
 
   pool.on('error', (err) => {
     globalLogger.error('Database connection error', err);

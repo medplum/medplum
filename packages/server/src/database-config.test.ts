@@ -1,137 +1,79 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type * as NodeStream from 'node:stream';
+import { deepClone } from '@medplum/core';
 import type * as Pg from 'pg';
 import { vi } from 'vitest';
+import { loadConfig, loadTestConfig } from './config/loader';
+import type { MedplumDatabaseSslConfig } from './config/types';
+import { closeDatabase, escapePgOptionsArg, getDefaultStatementTimeout, initDatabase } from './database';
+import { globalLogger } from './logger';
+import { GetDataVersionSql, GetVersionSql } from './migration-sql';
+import { getLatestPostDeployMigrationVersion, getPreDeployMigrationVersions } from './migrations/migration-versions';
 
-const dbConfigTestState = vi.hoisted(() => ({
-  advisoryLockResponse: true,
+const preDeployVersion = getPreDeployMigrationVersions().length;
+const latestVersion = getLatestPostDeployMigrationVersion();
+
+const { poolConfigs, mockState } = vi.hoisted(() => ({
   poolConfigs: [] as Pg.PoolConfig[],
+  mockState: { advisoryLockResponse: true },
 }));
 
+const mockQueries = {
+  GetVersionSql,
+  GetDataVersionSql,
+};
+
 vi.mock('pg', async () => {
-  const { EventEmitter } = await import('node:events');
-  const { Duplex, Readable, Writable } = await import('node:stream');
-  type ReadableStream = NodeStream.Readable;
-  type WritableStream = NodeStream.Writable;
-  const { GetDataVersionSql, GetVersionSql } = await import('./migration-sql');
-  const { getLatestPostDeployMigrationVersion, getPreDeployMigrationVersions } =
-    await import('./migrations/migration-versions');
-  const preDeployVersion = getPreDeployMigrationVersions().length;
-  const latestVersion = getLatestPostDeployMigrationVersion();
   const original = await vi.importActual<typeof Pg>('pg');
-  type ClientBase = Pg.ClientBase;
-  type Pool = Pg.Pool;
-  type PoolClient = Pg.PoolClient;
-  type PoolConfig = Pg.PoolConfig;
-  type QueryConfig<I = any[]> = Pg.QueryConfig<I>;
-  type QueryResult<R extends Pg.QueryResultRow = Pg.QueryResultRow> = Pg.QueryResult<R>;
-  type QueryResultRow = Pg.QueryResultRow;
 
-  class MockPoolClient extends Duplex implements PoolClient {
-    release(): void {}
-    async connect(): Promise<ClientBase> {
-      return this;
-    }
-    async query<R extends QueryResultRow = any, I = any[]>(sql: string | QueryConfig<I>): Promise<QueryResult<R>> {
-      const result: QueryResult<R> = {
-        command: '',
-        rowCount: null,
-        oid: -1,
-        fields: [],
-        rows: [],
-      };
+  class MockPoolClient {
+    async query(sql: string): Promise<{ rows: Record<string, unknown>[] }> {
       if (sql === 'SELECT pg_try_advisory_lock($1)') {
-        result.rows = [{ pg_try_advisory_lock: dbConfigTestState.advisoryLockResponse } as unknown as R];
+        return { rows: [{ pg_try_advisory_lock: mockState.advisoryLockResponse }] };
       }
-      if (sql === GetVersionSql) {
-        result.rows = [{ version: preDeployVersion } as unknown as R];
+      if (sql === mockQueries.GetVersionSql) {
+        return { rows: [{ version: preDeployVersion }] };
       }
-      if (sql === GetDataVersionSql) {
-        result.rows = [{ dataVersion: latestVersion } as unknown as R];
+      if (sql === mockQueries.GetDataVersionSql) {
+        return { rows: [{ dataVersion: latestVersion }] };
       }
+      return { rows: [] };
+    }
 
-      return result;
+    release(): void {
+      // Nothing to do
     }
-    copyFrom(_queryText: string): WritableStream {
-      return new Writable();
-    }
-    copyTo(_queryText: string): ReadableStream {
-      return new Readable();
-    }
-    pauseDrain(): void {}
-    resumeDrain(): void {}
-    escapeIdentifier(_str: string): string {
-      return '';
-    }
-    escapeLiteral(_str: string): string {
-      return '';
-    }
-    getTypeParser(): any {
-      return undefined;
-    }
-    setTypeParser(): void {}
   }
 
-  class MockPool extends EventEmitter implements Pool {
-    expiredCount: number;
-    ending: boolean;
-    ended: boolean;
-    options: Pg.PoolOptions;
-
-    constructor(config?: PoolConfig) {
-      super();
+  class MockPool {
+    constructor(config?: Pg.PoolConfig) {
       if (config) {
-        dbConfigTestState.poolConfigs.push(config);
+        poolConfigs.push(config);
       }
-      this.expiredCount = 0;
-      this.ending = false;
-      this.ended = false;
-      this.options = {
-        max: -1,
-        maxUses: -1,
-        allowExitOnIdle: false,
-        maxLifetimeSeconds: -1,
-        idleTimeoutMillis: -1,
-      };
     }
 
-    totalCount = -1;
-    idleCount = -1;
-    waitingCount = -1;
-    async connect(): Promise<PoolClient> {
+    async connect(): Promise<MockPoolClient> {
       return new MockPoolClient();
     }
-    on(): this {
-      return this;
+
+    async query(sql: string): Promise<{ rows: Record<string, unknown>[] }> {
+      return (await this.connect()).query(sql);
     }
-    async end(): Promise<void> {}
-    async query(): Promise<QueryResult> {
-      return {
-        command: '',
-        rowCount: null,
-        oid: -1,
-        fields: [],
-        rows: [],
-      };
+
+    on(): void {
+      // Nothing to do
+    }
+
+    async end(): Promise<void> {
+      // Nothing to do
     }
   }
 
   return {
     ...original,
     Pool: MockPool,
-    default: {
-      ...original.default,
-      Pool: MockPool,
-    },
   };
 });
-
-import { deepClone } from '@medplum/core';
-import { loadConfig, loadTestConfig } from './config/loader';
-import type { MedplumDatabaseSslConfig } from './config/types';
-import { closeDatabase, escapePgOptionsArg, getDefaultStatementTimeout, initDatabase } from './database';
-import { globalLogger } from './logger';
 
 describe('Database config', () => {
   beforeAll(() => {
@@ -145,8 +87,8 @@ describe('Database config', () => {
   });
 
   beforeEach(() => {
-    dbConfigTestState.advisoryLockResponse = true;
-    dbConfigTestState.poolConfigs = [];
+    mockState.advisoryLockResponse = true;
+    poolConfigs.length = 0;
   });
 
   afterEach(async () => {
@@ -169,8 +111,8 @@ describe('Database config', () => {
     databaseConfig.ssl = sslConfig;
 
     await initDatabase(configCopy);
-    expect(dbConfigTestState.poolConfigs).toHaveLength(1);
-    expect(dbConfigTestState.poolConfigs[0]).toEqual(
+    expect(poolConfigs).toHaveLength(1);
+    expect(poolConfigs[0]).toEqual(
       expect.objectContaining({
         host: databaseConfig.host,
         port: databaseConfig.port,
@@ -194,8 +136,8 @@ describe('Database config', () => {
     const databaseConfig = configCopy.database;
 
     await initDatabase(configCopy);
-    expect(dbConfigTestState.poolConfigs).toHaveLength(1);
-    expect(dbConfigTestState.poolConfigs[0]).toEqual(
+    expect(poolConfigs).toHaveLength(1);
+    expect(poolConfigs[0]).toEqual(
       expect.objectContaining({
         host: configCopy.databaseProxyEndpoint,
         port: databaseConfig.port,
@@ -208,7 +150,7 @@ describe('Database config', () => {
   });
 
   test('Cannot acquire migration lock', async () => {
-    dbConfigTestState.advisoryLockResponse = false;
+    mockState.advisoryLockResponse = false;
     const config = await loadTestConfig();
     config.database.runMigrations = true;
     const initDBPromise = initDatabase(config);
@@ -222,7 +164,7 @@ describe('Database config', () => {
     const config = await loadTestConfig();
     config.database.disableConnectionConfiguration = false;
     await initDatabase(config);
-    expect(dbConfigTestState.poolConfigs[0]).toEqual(
+    expect(poolConfigs[0]).toEqual(
       expect.objectContaining({
         options: `-c statement_timeout=60000 -c default_transaction_isolation=repeatable\\ read -c idle_in_transaction_session_timeout=30000`,
       })
@@ -234,7 +176,7 @@ describe('Database config', () => {
     config.database.disableConnectionConfiguration = false;
     config.database.queryTimeout = 5000;
     await initDatabase(config);
-    expect(dbConfigTestState.poolConfigs[0]).toEqual(
+    expect(poolConfigs[0]).toEqual(
       expect.objectContaining({
         options: `-c statement_timeout=5000 -c default_transaction_isolation=repeatable\\ read -c idle_in_transaction_session_timeout=30000`,
       })
@@ -246,7 +188,7 @@ describe('Database config', () => {
     config.database.queryTimeout = 12345;
     config.database.disableConnectionConfiguration = true;
     await initDatabase(config);
-    expect(dbConfigTestState.poolConfigs[0]).toEqual(
+    expect(poolConfigs[0]).toEqual(
       expect.objectContaining({
         options: undefined,
       })

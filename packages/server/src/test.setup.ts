@@ -27,16 +27,17 @@ import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import type { ServerInviteResponse } from './admin/invite';
+import type { RequestContext } from './context';
 import type { MedplumRedisConfig } from './config/types';
-import { RequestContext } from './context';
-// `fhir/repo`, `fhir/accesspolicy`, and `admin/invite` are dynamically imported below.
-// A static import here would load `workers/subscription` (via `fhir/repo`) while this
-// setup file is still initializing. Vitest hoists `vi.mock` per file, not across
-// setupFiles and test files, so modules that import `node-fetch` or `../constants`
-// statically would bind to the wrong mock instances before test files register theirs.
+// `fhir/repo`, `fhir/accesspolicy`, `admin/invite`, `oauth/keys`, and `context` are dynamically imported below.
+// Static imports here would load `workers/subscription` (via `fhir/repo`) or `database` (via `oauth/keys` /
+// `context`) while setupFiles still run. Vitest hoists `vi.mock` per file, not across setupFiles and test
+// files, so modules that import `node-fetch`, `../constants`, or `pg` statically would bind to the wrong
+// instances before test files register their mocks.
 import type { Repository } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
-import { generateAccessToken } from './oauth/keys';
+// Dynamically imported below. A static import would load `fhir/repo` → `database` → `pg`
+// while setupFiles run, before per-test-file `vi.mock('pg')` is registered.
 import { requestContextStore } from './request-context-store';
 // supertest v7 can cause websocket tests to hang without this
 setDefaultResultOrder('ipv4first');
@@ -156,6 +157,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
         scope,
       });
 
+      const { generateAccessToken } = await import('./oauth/keys');
       accessToken = await generateAccessToken({
         login_id: login.id,
         sub: client.id,
@@ -239,6 +241,7 @@ export async function addTestUser(
     projectId: project.id,
   });
 
+  const { generateAccessToken } = await import('./oauth/keys');
   const accessToken = await generateAccessToken({
     login_id: login.id,
     sub: user.id,
@@ -336,6 +339,10 @@ export async function waitForAsyncJob(
 const DEFAULT_TEST_CONTEXT = { requestId: 'test-request-id', traceId: 'test-trace-id' };
 export function withTestContext<T>(fn: () => T, ctx?: { requestId?: string; traceId?: string }): T {
   const defaults = ctx ?? DEFAULT_TEST_CONTEXT;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { RequestContext } = require('./context') as {
+    RequestContext: new (requestId: string, traceId: string) => RequestContext;
+  };
   const context = new RequestContext(defaults.requestId ?? '', defaults.traceId ?? '');
   return requestContextStore.run(context, fn);
 }
