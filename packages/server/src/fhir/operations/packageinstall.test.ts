@@ -49,7 +49,6 @@ class MockBinaryStorage {
   }
 }
 
-
 describe('PackageRelease $install', () => {
   const app = express();
   let project: WithId<Project>;
@@ -305,7 +304,10 @@ describe('PackageRelease $install', () => {
       extension.push({ url: PackageReleaseSetupBotUrl, valueString: options.setupBot });
     }
     if (options?.implProject) {
-      extension.push({ url: PackageReleaseImplProjectUrl, valueReference: { reference: 'Project/' + options.implProject } });
+      extension.push({
+        url: PackageReleaseImplProjectUrl,
+        valueReference: { reference: 'Project/' + options.implProject },
+      });
     }
     const release = await withTestContext(() =>
       systemRepo.createResource<PackageRelease>({
@@ -461,7 +463,9 @@ describe('PackageRelease $install', () => {
     const installations = await searchInstallations('12.0.0');
     expect(installations).toHaveLength(1);
     expect(installations[0].status).toBe('installed');
-    expect(installations[0].extension?.find((e) => e.url === PackageInstallationConfigHashUrl)?.valueString).toBeDefined();
+    expect(
+      installations[0].extension?.find((e) => e.url === PackageInstallationConfigHashUrl)?.valueString
+    ).toBeDefined();
   });
 
   test('Concurrent in-flight install returns 409', async () => {

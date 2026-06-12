@@ -150,7 +150,14 @@ export async function packageInstallHandler(
   const skipStage1 = decision.skipStage1;
 
   // Mark the record `installing` for the duration of this attempt.
-  let installation = await upsertInstalling(systemRepo, existing, project, packageRelease, membership.profile, configHash);
+  let installation = await upsertInstalling(
+    systemRepo,
+    existing,
+    project,
+    packageRelease,
+    membership.profile,
+    configHash
+  );
 
   let phase: InstallErrorPhase = skipStage1 ? 'setup-bot' : 'stage-1';
   let stage1Result: Bundle | undefined;
@@ -189,10 +196,7 @@ type ReconcileDecision = { respond: FhirResponse } | { skipStage1: boolean };
 
 // Decides how a re-invoke should proceed based on the existing PackageInstallation
 // state (RFC §`$install` state-aware behavior).
-function planReconciliation(
-  existing: WithId<PackageInstallation> | undefined,
-  configHash: string
-): ReconcileDecision {
+function planReconciliation(existing: WithId<PackageInstallation> | undefined, configHash: string): ReconcileDecision {
   if (!existing) {
     return { skipStage1: false };
   }
@@ -294,7 +298,11 @@ async function runStage2(
 // Appends the shared impl `Project` to the calling `Project.link` if the
 // PackageRelease declares one. Idempotent — a second call with the link already
 // present is a no-op. Runs with system privileges (Ticket 0b resolution).
-async function linkImplProject(systemRepo: FhirRepository, project: WithId<Project>, packageRelease: PackageRelease): Promise<void> {
+async function linkImplProject(
+  systemRepo: FhirRepository,
+  project: WithId<Project>,
+  packageRelease: PackageRelease
+): Promise<void> {
   const implProjectRef = getExtensionValue(packageRelease, PackageReleaseImplProjectUrl) as
     | Reference<Project>
     | undefined;
@@ -445,9 +453,7 @@ function collectMissingRequired(
 // Secrets are included so a rotated key produces a different hash, but the hash
 // itself is safe to store (it is never a secret store).
 function computeConfigHash(settings: InstallSettings): string {
-  const canonical = JSON.stringify(
-    Object.fromEntries(Object.entries(settings).sort(([a], [b]) => a.localeCompare(b)))
-  );
+  const canonical = JSON.stringify(Object.fromEntries(Object.entries(settings).sort(([a], [b]) => a.localeCompare(b))));
   return createHash('sha256').update(canonical).digest('hex');
 }
 
