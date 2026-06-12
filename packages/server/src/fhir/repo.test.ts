@@ -700,7 +700,7 @@ describe('FHIR Repo', () => {
       expect(patched.identifier?.at(0)?.value).toStrictEqual('123');
     }));
 
-  test('Patch resource with FHIRPath Path body', () =>
+  test('Patch resource with FHIRPath Patch body', () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
@@ -722,6 +722,44 @@ describe('FHIR Repo', () => {
         ],
       });
       expect(patched.name?.[0]?.given).toStrictEqual(['Jan']);
+    }));
+
+  test('Patch resource with empty FHIRPath Patch body', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(patient.resourceType, patient.id, {
+        resourceType: 'Parameters',
+        // Invalid patch body: patch operation with unknown type
+        parameter: [
+          {
+            name: 'operation',
+            part: [
+              { name: 'type', valueCode: 'unsupported' },
+              { name: 'path', valueString: 'Patient' },
+            ],
+          },
+        ],
+      });
+      // Resource should be returned unaltered, since invalid operation was ignored
+      expect(patched.meta?.versionId).toStrictEqual(patient.meta?.versionId);
+    }));
+
+  test('Patch resource with invalid FHIRPath Patch body', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(patient.resourceType, patient.id, {
+        resourceType: 'Parameters',
+      });
+      // Resource should be returned unaltered
+      expect(patched.meta?.versionId).toStrictEqual(patient.meta?.versionId);
     }));
 
   test('Compartment permissions', () =>

@@ -517,7 +517,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.readResourceFromDatabase(resourceType, id);
   }
 
-  private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
+  private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<WithId<T>> {
     if (!isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
@@ -1273,6 +1273,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
             patch.parameter
           );
           fhirpathPatchTypedValue(toTypedValue(resource), params.operation as FhirPathPatch[]);
+        } else {
+          return resource; // No patch present, return unmodified
         }
 
         const result = await this.updateResourceImpl(resource, false, options);
