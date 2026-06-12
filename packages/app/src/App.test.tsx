@@ -8,10 +8,10 @@ import { App } from './App';
 import type { UserEvent } from './test-utils/render';
 import { act, render, screen, userEvent } from './test-utils/render';
 
-const navigateMock = jest.fn();
+const navigateMock = vi.fn();
 
 async function setup(url = '/'): Promise<UserEvent> {
-  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
   await act(async () => {
     render(
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
@@ -29,14 +29,14 @@ async function setup(url = '/'): Promise<UserEvent> {
 
 describe('App', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      await vi.runOnlyPendingTimersAsync();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Click logo', async () => {
@@ -93,7 +93,7 @@ describe('App', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
     // Press the down arrow

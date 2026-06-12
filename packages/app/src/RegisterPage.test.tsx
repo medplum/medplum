@@ -43,7 +43,7 @@ describe('RegisterPage', () => {
 
   test('Renders', async () => {
     const medplum = new MockClient();
-    medplum.getProfile = jest.fn(() => undefined) as any;
+    medplum.getProfile = vi.fn(() => undefined);
     await setup(medplum);
     expect(screen.getByRole('button', { name: 'Register Account' })).toBeInTheDocument();
   });
@@ -56,8 +56,8 @@ describe('RegisterPage', () => {
 
   test('Submit success', async () => {
     const medplum = new MockClient();
-    medplum.getProfile = jest.fn(() => undefined) as any;
-    medplum.startNewUser = jest.fn(() => Promise.resolve({ login: '1' }));
+    medplum.getProfile = vi.fn(() => undefined);
+    medplum.startNewUser = vi.fn(() => Promise.resolve({ login: '1' }));
     const user = await setup(medplum);
 
     Object.defineProperty(global, 'grecaptcha', {
@@ -87,8 +87,8 @@ describe('RegisterPage', () => {
     getConfig().registerEnabled = false;
 
     const medplum = new MockClient();
-    medplum.getProfile = jest.fn(() => undefined) as any;
-    medplum.startNewUser = jest.fn(() => Promise.resolve({ login: '1' }));
+    medplum.getProfile = vi.fn(() => undefined);
+    medplum.startNewUser = vi.fn(() => Promise.resolve({ login: '1' }));
     await setup(medplum);
 
     expect(screen.getByText('New projects are disabled on this server.')).toBeInTheDocument();

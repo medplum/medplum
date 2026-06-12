@@ -22,6 +22,7 @@ The most important custom resource types are:
 - `Project` - represents a project which contains other resources
 - `ProjectMembership` - link between a `User` and a `Project` which also defines `AccessPolicy` and `UserConfiguration`
 - `Login` - an authentication event and session state
+- `IdentityProvider` - server-scoped external identity provider configuration
 
 ## Server Maintenance
 
