@@ -299,7 +299,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                       </Menu>
                     </Flex>
                     <Divider />
-                    <Flex direction="column" style={{ flex: 1 }} h="100%">
+                    <Flex direction="column" style={{ flex: 1, minHeight: 0 }}>
                       <ThreadChat
                         key={`${getReferenceString(selectedThread)}`}
                         title={'Messages'}

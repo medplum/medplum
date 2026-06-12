@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
-import { act, fireEvent, render, screen } from '../../test-utils/render';
+import { act, fireEvent, render, screen, userEvent } from '../../test-utils/render';
 import type { BaseChatProps } from './BaseChat';
 import { BaseChat } from './BaseChat';
 
@@ -21,6 +21,18 @@ const homerReferenceStr = getReferenceString(homerReference);
 const drAliceReference = createReference(DrAliceSmith);
 const drAliceReferenceStr = getReferenceString(drAliceReference);
 const HOMER_DR_ALICE_CHAT_QUERY = `sender=${homerReferenceStr},${drAliceReferenceStr}&recipient=${homerReferenceStr},${drAliceReferenceStr}`;
+
+const SMSWRIT_MEDIUM: Communication['medium'] = [
+  {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+        code: 'SMSWRIT',
+        display: 'SMS Written',
+      },
+    ],
+  },
+];
 
 async function createCommunication(
   medplum: MockClient,
@@ -917,5 +929,120 @@ describe('BaseChat', () => {
     expect(await screen.findByText('First message with no sent date')).toBeInTheDocument();
     expect(screen.getByText('Second message with no sent date')).toBeInTheDocument();
     expect(screen.getByText('Third message with no sent date')).toBeInTheDocument();
+  });
+
+  test('SMS SegmentedControl shows when sendSmsMessage is provided and hides when not', async () => {
+    const { rerender } = await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      sendSmsMessage: jest.fn().mockResolvedValue(undefined),
+      smsPatientHasPhone: true,
+    });
+
+    expect(screen.getByRole('radio', { name: 'Chat' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Text Message' })).toBeInTheDocument();
+
+    await rerender({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+    });
+
+    expect(screen.queryByRole('radio', { name: 'Chat' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Text Message' })).not.toBeInTheDocument();
+  });
+
+  test('Selecting Text Message mode routes message to sendSmsMessage', async () => {
+    const sendMessage = jest.fn();
+    const sendSmsMessage = jest.fn().mockResolvedValue(undefined);
+
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage,
+      sendSmsMessage,
+      smsPatientHasPhone: true,
+    });
+
+    // Mantine 8 renders the radio as visually hidden with a sibling <label> linked via htmlFor.
+    // Click the label (what the user sees) to activate the radio.
+    const smsRadio = screen.getByRole('radio', { name: 'Text Message' });
+    await userEvent.click(document.querySelector(`label[for="${smsRadio.id}"]`) as HTMLElement);
+
+    const chatInput = screen.getByPlaceholderText('Type a message...');
+    act(() => {
+      fireEvent.change(chatInput, { target: { value: 'Hello via SMS!' } });
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /send message/i }));
+    });
+
+    expect(sendSmsMessage).toHaveBeenCalledWith('Hello via SMS!');
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  test('Text Message option is disabled in SegmentedControl when smsPatientHasPhone is false', async () => {
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      sendSmsMessage: jest.fn(),
+      smsPatientHasPhone: false,
+    });
+
+    expect(screen.getByRole('radio', { name: 'Text Message' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'Chat' })).not.toBeDisabled();
+  });
+
+  test('"Text Message" badge renders on SMSWRIT-medium bubbles but not regular ones', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await createCommunication(medplum, {
+      medium: SMSWRIT_MEDIUM,
+      payload: [{ contentString: 'SMS bubble' }],
+    });
+    await createCommunication(medplum, {
+      payload: [{ contentString: 'Chat bubble' }],
+    });
+
+    await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
+
+    expect(await screen.findByText('SMS bubble')).toBeInTheDocument();
+    expect(screen.getByText('Chat bubble')).toBeInTheDocument();
+
+    expect(screen.getAllByText('Text Message').length).toBeGreaterThan(0);
+  });
+
+  test('SMS delivery status text appears under outgoing SMS bubbles', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    // in-progress → no entry in SMS_DELIVERY_LABELS → "Sending..."
+    await createCommunication(medplum, {
+      medium: SMSWRIT_MEDIUM,
+      status: 'in-progress',
+      payload: [{ contentString: 'Sending message' }],
+    });
+    // completed → "Delivered"
+    await createCommunication(medplum, {
+      medium: SMSWRIT_MEDIUM,
+      status: 'completed',
+      payload: [{ contentString: 'Delivered message' }],
+    });
+    // stopped → "Delivery failed"
+    await createCommunication(medplum, {
+      medium: SMSWRIT_MEDIUM,
+      status: 'stopped',
+      payload: [{ contentString: 'Failed message' }],
+    });
+
+    await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
+
+    expect(await screen.findByText('Sending message')).toBeInTheDocument();
+    expect(screen.getByText('Sending...')).toBeInTheDocument();
+    expect(screen.getByText('Delivered')).toBeInTheDocument();
+    expect(screen.getByText('Delivery failed')).toBeInTheDocument();
   });
 });

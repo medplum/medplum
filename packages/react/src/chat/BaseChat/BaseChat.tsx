@@ -10,7 +10,7 @@ import {
   Paper,
   Popover,
   ScrollArea,
-  SegmentedControl,
+  Select,
   Skeleton,
   Stack,
   Text,
@@ -309,14 +309,25 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     prevCommunicationsRef.current = communications;
   }, [communications]);
 
+  // When the viewport height changes after the initial scroll (e.g. the channel selector
+  // appears async), re-pin to bottom if we were already within 60px of it.
   useEffect(() => {
-    if (scrollToBottomRef.current) {
+    if (parentRect.height > 0 && !firstScrollRef.current && scrollAreaRef.current) {
+      const { scrollHeight, scrollTop, clientHeight } = scrollAreaRef.current;
+      if (scrollHeight - scrollTop - clientHeight < 60) {
+        scrollToBottomRef.current = true;
+      }
+    }
+  }, [parentRect.height]);
+
+  useEffect(() => {
+    if (scrollToBottomRef.current && parentRect.height > 0) {
       if (scrollAreaRef.current?.scrollTo) {
         scrollAreaRef.current.scrollTo({
           top: scrollAreaRef.current.scrollHeight,
           // We want to skip scrolling through the whole chat on initial load,
           // Then every time after we will do the "smooth scroll"
-          ...(firstScrollRef.current ? { duration: 0 } : { behavior: 'smooth' }),
+          ...(firstScrollRef.current ? { behavior: 'instant' } : { behavior: 'smooth' }),
         });
         firstScrollRef.current = false;
         scrollToBottomRef.current = false;
@@ -422,17 +433,20 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       </div>
       <div className={classes.chatInputContainer}>
         {sendSmsMessage && (
-          <Group mb={4}>
-            <SegmentedControl
-              size="xs"
-              data={[
-                { label: 'Chat', value: 'chat' },
-                { label: 'Text Message', value: 'sms', disabled: !smsPatientHasPhone },
-              ]}
-              value={smsMode ? 'sms' : 'chat'}
-              onChange={(val) => setSmsModeSelected(val === 'sms')}
-            />
-          </Group>
+          <Select
+            mb={4}
+            size="xs"
+            classNames={{ input: classes.chatChannelSelectInput }}
+            data={[
+              { label: 'Chat', value: 'chat' },
+              { label: 'Text Message', value: 'sms', disabled: !smsPatientHasPhone },
+            ]}
+            value={smsMode ? 'sms' : 'chat'}
+            onChange={(val) => setSmsModeSelected(val === 'sms')}
+            allowDeselect={false}
+            w={120}
+            comboboxProps={{ withinPortal: true }}
+          />
         )}
         {(pendingFile || pendingDocRef) && (
           <Group className={classes.chatPendingFile} gap={4} align="center" wrap="nowrap">
