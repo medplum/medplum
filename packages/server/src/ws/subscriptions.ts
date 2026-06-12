@@ -335,7 +335,7 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
       return;
     }
 
-    if (!redisSubscriber) {
+    if (!redisSubscriber || redisSubscriber.status === 'end') {
       await setupSubscriptionHandler();
     }
     const cacheEntryStr = await redis.get(`Subscription/${verifiedToken.subscription_id}`);
@@ -656,6 +656,13 @@ export async function markInMemorySubscriptionsInactive(
         globalLogger.debug('Attempted to remove user subscription tracking when Redis is closed');
       }
     }
+  }
+}
+
+export function closeWebSocketSubscriptionHandler(): void {
+  if (redisSubscriber) {
+    redisSubscriber.disconnect();
+    redisSubscriber = undefined;
   }
 }
 

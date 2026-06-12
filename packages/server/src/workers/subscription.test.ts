@@ -1992,6 +1992,9 @@ describe('Subscription Worker', () => {
     type EventNotificationArgs<T extends Resource> = [T, string, SubEventsOptions];
     type WsSubMessage = { resource: Resource; events: [string, SubEventsOptions][] };
 
+    // ws/subscriptions.test.ts loads workers/subscription.ts first with its own mocked channel.
+    const WS_SUBSCRIPTIONS_TEST_CHANNEL = 'medplum:subscriptions:r4:websockets:test:ws';
+
     let subscriber: Redis;
     let resolveExpected: ((args: EventNotificationArgs<Resource>) => void) | undefined;
     let rejectNotExpected: ((err: Error) => void) | undefined;
@@ -2017,14 +2020,18 @@ describe('Subscription Worker', () => {
       // Vitest applies per-file mocks after setupFiles, so subscription.ts may bind the
       // production channel before this test file's mock is registered. Listen on both.
       const actualConstants = await vi.importActual<typeof Constants>('../constants');
-      await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
-      if (actualConstants.WEBSOCKET_SUB_PUBLISH_CHANNEL !== WEBSOCKET_SUB_PUBLISH_CHANNEL) {
-        await subscriber.subscribe(actualConstants.WEBSOCKET_SUB_PUBLISH_CHANNEL);
+      const channels = new Set([
+        WEBSOCKET_SUB_PUBLISH_CHANNEL,
+        WS_SUBSCRIPTIONS_TEST_CHANNEL,
+        actualConstants.WEBSOCKET_SUB_PUBLISH_CHANNEL,
+      ]);
+      for (const channel of channels) {
+        await subscriber.subscribe(channel);
       }
     });
 
     afterAll(async () => {
-      await subscriber.quit();
+      subscriber.disconnect();
     });
 
     async function assertNoWsNotifications(timeoutMs?: number): Promise<void> {
