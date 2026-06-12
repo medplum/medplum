@@ -12,6 +12,5 @@
     { "path": "../definitions" },
     { "path": "../fhir-router" }
   ],
-  "include": ["src/**/*.ts", "src/**/*.json"],
-  "exclude": ["src/**/*.test.ts", "src/**/__mocks__/**", "src/**/test-utils.ts", "src/test.setup.ts"]
+  "include": ["src/**/*.ts", "src/**/*.json"]
 }
