@@ -24,7 +24,7 @@ import type {
 import { r4ProjectId } from '../../constants';
 import { requireSuperAdmin } from '../../context';
 import { globalLogger } from '../../logger';
-import type { Repository, SystemRepository } from '../repo';
+import type { Repository } from '../repo';
 import { parseInputParameters } from './utils/parameters';
 
 const op = getDefinitionResource<OperationDefinition>(
@@ -127,21 +127,24 @@ async function processTerminologyDefinitionEntry(
 }
 
 async function replaceExisting<T extends Resource & { url?: string }>(
-  systemRepo: SystemRepository,
+  repo: Repository,
   resource: T,
   projectId: string
 ): Promise<WithId<T>> {
+  const systemRepo = repo.getSystemRepo();
   return systemRepo.withTransaction(async () => {
-    const bundle = await systemRepo.search({
-      resourceType: resource.resourceType,
-      filters: [
-        { code: 'url', operator: Operator.EQUALS, value: resource.url as string },
-        { code: '_project', operator: Operator.EQUALS, value: projectId },
-      ],
-    });
-    for (const entry of bundle.entry ?? EMPTY) {
-      const existing = entry.resource as WithId<T>;
-      await systemRepo.deleteResource(existing.resourceType, existing.id);
+    if (resource.url) {
+      const bundle = await systemRepo.search({
+        resourceType: resource.resourceType,
+        filters: [
+          { code: 'url', operator: Operator.EQUALS, value: resource.url },
+          { code: '_project', operator: Operator.EQUALS, value: projectId },
+        ],
+      });
+      for (const entry of bundle.entry ?? EMPTY) {
+        const existing = entry.resource as WithId<T>;
+        await systemRepo.deleteResource(existing.resourceType, existing.id);
+      }
     }
     return systemRepo.createResource(cleanSeedResource(resource));
   });
@@ -171,7 +174,7 @@ async function processBaseDefinitions(files: string[], callback: (entry: BundleE
 }
 
 /**
- * Check if a given type should be rebuilt; if no types are specifed, then any are included.
+ * Check if a given type should be rebuilt; if no types are specified, then any are included.
  * @param types - The list of types to include, or `undefined` for all types
  * @param target  - The type to check for inclusion
  * @returns Whether the type should be rebuilt.
