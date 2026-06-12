@@ -326,26 +326,23 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
   }
 
   /**
-   * Creates a transaction-scoped repository that is valid for the duration of a the current transaction as well
-   * as post-commit callbacks.
-   * @param scope - The scope of the transaction-scoped repository.
-   * @returns A transaction-scoped repository that is valid for the duration of the current transaction as well
+   * Creates a repository with the same RepositoryContext and RepositoryConnection as the current repository for
+   * provided transaction scope. The current repository's connection must already be in a transaction.
+   * @param scope - The scope of the repository.
+   * @returns A repository with the same context as the current repository, but valid for the duration of the current transaction as well
    * as post-commit callbacks.
    */
   private createTransactionScopedRepo(scope: Scope): TransactionRepository & this {
     if (!this.connection.isInTransaction()) {
       throw new Error('Not in transaction');
     }
-
-    // use this.constructor to create the exact class, e.g. SystemRepository vs Repository, of the current instance.
+    // use this.constructor to create the same concrete class, e.g. SystemRepository vs Repository, as this instance.
     const RepositoryConstructor = this.constructor as new (
       context: RepositoryContext,
       connection?: RepositoryConnection,
       scope?: Scope
     ) => this;
-    const txnScopedRepo = new RepositoryConstructor(this.context, this.connection, scope) as TransactionRepository &
-      this;
-    return txnScopedRepo;
+    return new RepositoryConstructor(this.context, this.connection, scope) as TransactionRepository & this;
   }
 
   get shardId(): string {
@@ -1497,44 +1494,6 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     }
   }
 
-  async searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T> | undefined> {
-    this.assertUsable();
-    return super.searchOne(searchRequest);
-  }
-
-  async searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T>[]> {
-    this.assertUsable();
-    return super.searchResources(searchRequest);
-  }
-
-  async conditionalCreate<T extends Resource>(
-    resource: T,
-    search: SearchRequest<T>,
-    options?: CreateResourceOptions
-  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
-    this.assertUsable();
-    return super.conditionalCreate(resource, search, options);
-  }
-
-  async conditionalUpdate<T extends Resource>(
-    resource: T,
-    search: SearchRequest,
-    options?: CreateResourceOptions & UpdateResourceOptions
-  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
-    this.assertUsable();
-    return super.conditionalUpdate(resource, search, options);
-  }
-
-  async conditionalDelete(search: SearchRequest): Promise<void> {
-    this.assertUsable();
-    return super.conditionalDelete(search);
-  }
-
-  async conditionalPatch(search: SearchRequest, patch: Operation[]): Promise<WithId<Resource>> {
-    this.assertUsable();
-    return super.conditionalPatch(search, patch);
-  }
-
   /**
    * Adds filters to ignore soft-deleted resources.
    * @param builder - The select query builder.
@@ -2258,9 +2217,9 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     return this.connection.withStatementTimeout(options, callback);
   }
 
-  async preCommit(fn: (repo: this) => void | Promise<void>): Promise<void> {
+  async preCommit(fn: () => void | Promise<void>): Promise<void> {
     this.assertUsable();
-    return this.connection.preCommit(this.connectionScope, async () => fn(this));
+    return this.connection.preCommit(this.connectionScope, async () => fn());
   }
 
   async postCommit(fn: () => void | Promise<void>): Promise<void> {

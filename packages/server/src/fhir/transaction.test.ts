@@ -1496,11 +1496,11 @@ describe('FHIR Repo Transactions', () => {
 
     const result = await Promise.race([
       repo.withTransaction(async (txRepo) => {
-        await txRepo.preCommit(async (commitRepo) => {
+        await txRepo.preCommit(async () => {
           // Pre-commit callbacks are allowed to start their own nested transaction.
           // If the outer commit held connectionStateLock while running callbacks, this nested
           // transaction would wait for the lock while the outer commit waited for the callback.
-          await commitRepo.withTransaction(precommit);
+          await txRepo.withTransaction(precommit);
         });
         return 'completed';
       }),

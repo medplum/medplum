@@ -48,6 +48,33 @@ ruleTester.run('no-transaction-callback-invoking-repo', rule, {
         '});',
       ].join('\n'),
     },
+    {
+      // `this` inside a nested non-arrow function is a different binding
+      code: [
+        'this.repo.withTransaction(async (txRepo) => {',
+        '  emitter.on("done", function () {',
+        '    this.repo.createResource(resource);',
+        '  });',
+        '});',
+      ].join('\n'),
+    },
+    {
+      // `this` inside a nested class method is a different binding
+      code: [
+        'this.repo.withTransaction(async (txRepo) => {',
+        '  class Helper {',
+        '    run() {',
+        '      return this.repo.createResource(resource);',
+        '    }',
+        '  }',
+        '  return new Helper().run();',
+        '});',
+      ].join('\n'),
+    },
+    {
+      // A non-arrow callback rebinds `this`, so the invoking repo is unreachable inside it
+      code: 'this.repo.withTransaction(async function (txRepo) { return this.repo.createResource(resource); });',
+    },
   ],
   invalid: [
     {
@@ -89,6 +116,28 @@ ruleTester.run('no-transaction-callback-invoking-repo', rule, {
         'ctx.repo.withTransaction(async (txRepo) => {',
         '  const parent = ctx.repo;',
         '  return parent.createResource(resource);',
+        '});',
+      ].join('\n'),
+      errors: [{ messageId: 'useCallbackRepo' }],
+    },
+    {
+      // Arrow functions inherit `this`, so the invoking repo is still reachable
+      code: [
+        'this.repo.withTransaction(async (txRepo) => {',
+        '  const run = () => this.repo.createResource(resource);',
+        '  return run();',
+        '});',
+      ].join('\n'),
+      errors: [{ messageId: 'useCallbackRepo' }],
+    },
+    {
+      // Identifier resolution is unaffected by `this` rebinding in nested functions
+      code: [
+        'repo.withTransaction(async (txRepo) => {',
+        '  function helper() {',
+        '    return repo.createResource(resource);',
+        '  }',
+        '  return helper();',
         '});',
       ].join('\n'),
       errors: [{ messageId: 'useCallbackRepo' }],

@@ -15,8 +15,18 @@
  * - Reassignment through a mutable binding: `let r; r = repo;`
  * - The repo escaping through a function argument, property, or field, e.g. the
  *   `this.repo` swap in BatchProcessor.withRepo() in fhir-router's batch.ts
+ * - When the invoking repo is reached through `this`, the rule stops descending at
+ *   constructs that rebind `this` (non-arrow functions, classes), so a computed class
+ *   member key that evaluates with the outer `this` is missed
  */
 const transactionMethodNames = new Set(['withTransaction', 'ensureInTransaction']);
+const thisRebindingNodeTypes = new Set([
+  'ClassDeclaration',
+  'ClassExpression',
+  'FunctionDeclaration',
+  'FunctionExpression',
+  'StaticBlock',
+]);
 const ignoredTraversalKeys = new Set([
   'comments',
   'decorators',
@@ -195,9 +205,13 @@ function create(context) {
   /**
    * @param node - The AST node.
    * @param callback - The visitor callback.
+   * @param skipThisRebinding - Whether to stop descending at nodes that rebind `this`.
    */
-  function visit(node, callback) {
+  function visit(node, callback, skipThisRebinding = false) {
     if (callback(node)) {
+      return;
+    }
+    if (skipThisRebinding && thisRebindingNodeTypes.has(node.type)) {
       return;
     }
 
@@ -208,13 +222,28 @@ function create(context) {
       if (Array.isArray(value)) {
         for (const child of value) {
           if (child?.type) {
-            visit(child, callback);
+            visit(child, callback, skipThisRebinding);
           }
         }
       } else if (value?.type) {
-        visit(value, callback);
+        visit(value, callback, skipThisRebinding);
       }
     }
+  }
+
+  /**
+   * @param node - The AST node.
+   * @returns True if the expression contains a `this` or `super` reference.
+   */
+  function usesThisBinding(node) {
+    let found = false;
+    visit(node, (candidate) => {
+      if (candidate.type === 'ThisExpression' || candidate.type === 'Super') {
+        found = true;
+      }
+      return found;
+    });
+    return found;
   }
 
   return {
@@ -235,21 +264,31 @@ function create(context) {
         return;
       }
 
-      visit(callback.body, (candidate) => {
-        if (!isSameExpression(invokingRepo, candidate)) {
-          return false;
-        }
+      const repoUsesThis = usesThisBinding(invokingRepo);
+      if (repoUsesThis && callback.type === 'FunctionExpression') {
+        // A non-arrow callback rebinds `this`, so the invoking repo is unreachable inside it
+        return;
+      }
 
-        context.report({
-          node: candidate,
-          messageId: 'useCallbackRepo',
-          data: {
-            methodName,
-            repoName: sourceCode.getText(invokingRepo),
-          },
-        });
-        return true;
-      });
+      visit(
+        callback.body,
+        (candidate) => {
+          if (!isSameExpression(invokingRepo, candidate)) {
+            return false;
+          }
+
+          context.report({
+            node: candidate,
+            messageId: 'useCallbackRepo',
+            data: {
+              methodName,
+              repoName: sourceCode.getText(invokingRepo),
+            },
+          });
+          return true;
+        },
+        repoUsesThis
+      );
     },
   };
 }
