@@ -10,7 +10,6 @@ import type {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import type { PoolClient } from 'pg';
 import type { Designation, ImportedProperty } from '../operations/codesystemimport';
 import { importCodeSystem } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
@@ -44,7 +43,7 @@ export class CodingTable extends LookupTable {
   }
 
   async batchIndexResources<T extends Resource>(
-    client: PoolClient,
+    client: PgQueryable,
     resources: WithId<T>[],
     create: boolean
   ): Promise<void> {

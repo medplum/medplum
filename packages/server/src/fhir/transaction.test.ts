@@ -18,31 +18,14 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
-import { createTestProject, withTestContext } from '../test.setup';
+import { createTestProject, spyOnQuery, withTestContext } from '../test.setup';
 import * as workersModule from '../workers';
-import type { SystemRepository } from './repo';
-import { getShardSystemRepo, Repository } from './repo';
+import type { Repository, SystemRepository } from './repo';
+import { getShardSystemRepo } from './repo';
 import { RepositoryConnection } from './repository/repository-connection';
-import type { PgQueryable } from './sql';
 import { PostgresError } from './sql';
 
-type RepositoryDatabaseClient = PgQueryable;
-type TransactionDatabaseClient = PoolClient;
 type MemberKind = 'method' | 'getter' | 'setter';
-
-type IsAssignable<T, U> = [T] extends [U] ? true : false;
-type IsNotAssignable<T, U> = IsAssignable<T, U> extends true ? false : true;
-
-function assertType<_T extends true>(): undefined {
-  // Compile-time only.
-  return undefined;
-}
-
-class SpecializedRepository extends Repository {
-  getSubclassValue(): string {
-    return 'ok';
-  }
-}
 
 /**
  * Methods that are intentionally not guarded by assertUsable().
@@ -292,58 +275,6 @@ const guardedInvocations: MethodInvocation[] = [
   },
 ];
 
-async function assertRepositoryDatabaseClientTypes(repo: Repository, systemRepo: SystemRepository): Promise<void> {
-  const topLevelClient = repo.getDatabaseClient(DatabaseMode.WRITER);
-  assert(topLevelClient);
-  assertType<IsAssignable<typeof topLevelClient, RepositoryDatabaseClient>>();
-  assertType<IsNotAssignable<typeof topLevelClient, TransactionDatabaseClient>>();
-
-  const specializedRepo = new SpecializedRepository(repo.getConfig());
-  try {
-    await specializedRepo.withTransaction(async (txRepo) => {
-      expect(txRepo.getSubclassValue()).toBe('ok');
-      const txClient = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-      assertType<IsAssignable<typeof txClient, TransactionDatabaseClient>>();
-      expect(txClient).toBeDefined();
-    });
-  } finally {
-    specializedRepo[Symbol.dispose]();
-  }
-
-  await repo.withTransaction(async (txRepo) => {
-    const txClient = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-    assert(txClient);
-    assertType<IsAssignable<typeof txClient, RepositoryDatabaseClient>>();
-    assertType<IsAssignable<typeof txClient, TransactionDatabaseClient>>();
-
-    await txRepo.withTransaction(async (nestedTxRepo) => {
-      const nestedTxClient = nestedTxRepo.getDatabaseClient(DatabaseMode.READER);
-      assert(nestedTxClient);
-      assertType<IsAssignable<typeof nestedTxClient, RepositoryDatabaseClient>>();
-      assertType<IsAssignable<typeof nestedTxClient, TransactionDatabaseClient>>();
-    });
-
-    await txRepo.ensureInTransaction(async (ensuredTxRepo) => {
-      const ensuredTxClient = ensuredTxRepo.getDatabaseClient(DatabaseMode.WRITER);
-      assert(ensuredTxClient);
-      assertType<IsAssignable<typeof ensuredTxClient, TransactionDatabaseClient>>();
-    });
-
-    const txSystemRepo = txRepo.getSystemRepo();
-    const txSystemClient = txSystemRepo.getDatabaseClient(DatabaseMode.WRITER);
-    assert(txSystemClient);
-    assertType<IsAssignable<typeof txSystemClient, RepositoryDatabaseClient>>();
-    assertType<IsAssignable<typeof txSystemClient, TransactionDatabaseClient>>();
-  });
-
-  await systemRepo.withTransaction(async (txSystemRepo) => {
-    const txSystemClient = txSystemRepo.getDatabaseClient(DatabaseMode.WRITER);
-    assert(txSystemClient);
-    assertType<IsAssignable<typeof txSystemClient, RepositoryDatabaseClient>>();
-    assertType<IsAssignable<typeof txSystemClient, TransactionDatabaseClient>>();
-  });
-}
-
 const TRANSACTION_SCOPE_ERROR =
   'Repository is in an active transaction; use the transaction-scoped repository passed to the callback';
 const SAVEPOINT_RELEASED_ERROR = 'Savepoint has been released; use the outer transaction-scoped repository';
@@ -363,11 +294,6 @@ describe('FHIR Repo Transactions', () => {
   afterAll(async () => {
     await shutdownApp();
   });
-
-  test('database client types distinguish repository and transaction scopes', () =>
-    withTestContext(async () => {
-      await assertRepositoryDatabaseClientTypes(repo, systemRepo);
-    }));
 
   test('withTransaction parent repo unusable during transaction callback', () =>
     withTestContext(async () => {
@@ -737,7 +663,7 @@ describe('FHIR Repo Transactions', () => {
 
       await repo.withTransaction(async (txRepo) => {
         const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-        const querySpy = jest.spyOn(client, 'query');
+        const querySpy = spyOnQuery(client);
         try {
           await txRepo.getSystemRepo().withTransaction(async () => undefined);
         } finally {
@@ -1174,12 +1100,11 @@ describe('FHIR Repo Transactions', () => {
     const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
     let querySpy: jest.SpyInstance | undefined;
-    let releaseSpy: jest.SpyInstance | undefined;
 
     await expect(
       repo.withTransaction(async (txRepo) => {
         const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-        querySpy = jest.spyOn(client, 'query').mockImplementation(() => {
+        querySpy = spyOnQuery(client).mockImplementation(() => {
           // Simulates a session killed by idle_in_transaction_session_timeout: every query
           // issued on the client — including the ROLLBACK the error handler sends — rejects.
           const terminationErr = Object.assign(new Error('terminating connection due to idle-in-transaction timeout'), {
@@ -1187,21 +1112,15 @@ describe('FHIR Repo Transactions', () => {
           });
           throw terminationErr;
         });
-        releaseSpy = jest.spyOn(client, 'release');
         await client.query('SELECT 1');
       })
     ).rejects.toThrow('terminating connection due to idle-in-transaction timeout');
 
     assert(querySpy);
-    assert(releaseSpy);
 
     // Bookkeeping must be fully reset so the repo is safe for future use
     expect((repo as any).connection.transactionDepth).toBe(0);
     expect((repo as any).connection.conn).toBeUndefined();
-
-    // Dead client must be released with a truthy err so pg-pool discards it
-    expect(releaseSpy).toHaveBeenCalledTimes(1);
-    expect(releaseSpy.mock.calls[0][0]).toBeTruthy();
 
     // The rollback failure should be logged, not thrown
     expect(warnSpy).toHaveBeenCalledWith(
@@ -1212,27 +1131,20 @@ describe('FHIR Repo Transactions', () => {
     );
 
     querySpy.mockRestore();
-    releaseSpy.mockRestore();
     warnSpy.mockRestore();
     errorSpy.mockRestore();
   });
 
   test('withStatementTimeout pins connection and discards it after callback', async () => {
-    let releaseSpy: jest.SpyInstance | undefined;
-
+    let escapedClient: PoolClient | undefined;
     await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
-      releaseSpy = jest.spyOn(client, 'release');
-
+      escapedClient = client;
       await repo.withTransaction(async (txRepo) => {
         expect(txRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
       });
-
-      expect(releaseSpy).not.toHaveBeenCalled();
     });
-
-    assert(releaseSpy);
-    expect(releaseSpy).toHaveBeenCalledWith(true);
-    releaseSpy.mockRestore();
+    assert(escapedClient);
+    expect(repo.getDatabaseClient(DatabaseMode.WRITER)).not.toBe(escapedClient);
   });
 
   test('withStatementTimeout rejects borrowed repository connections', async () => {

@@ -12,7 +12,6 @@ import type {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import type { PoolClient } from 'pg';
 import type { PgQueryable } from '../sql';
 import { DeleteQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
@@ -119,7 +118,7 @@ export class HumanNameTable extends LookupTable {
   }
 
   async batchIndexResources<T extends Resource>(
-    client: PoolClient,
+    client: PgQueryable,
     resources: WithId<T>[],
     create: boolean,
     resourceBatchSize?: number

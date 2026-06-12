@@ -23,6 +23,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type internal from 'node:stream';
+import type { QueryConfigValues, QueryResult, QueryResultRow } from 'pg';
 import { Client as PgClient } from 'pg';
 import request from 'supertest';
 import type { ServerInviteResponse } from './admin/invite';
@@ -33,6 +34,7 @@ import { getRepoForLogin } from './fhir/accesspolicy';
 import type { Repository } from './fhir/repo';
 import { getProjectSystemRepo, getShardSystemRepo } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
+import type { PgQueryable } from './fhir/sql';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
@@ -609,4 +611,19 @@ export async function withQueryInterceptor<T>(
   } finally {
     spy.mockRestore();
   }
+}
+
+/**
+ * Convenience function to spy on the `query` method of the given `client: PgQueryable` returning
+ * the spy cast to the `query` overload signature commonly used in the codebase.
+ * @param client - The client to spy on.
+ * @returns The spy instance.
+ */
+export function spyOnQuery<R extends QueryResultRow = any, I = any[]>(
+  client: PgQueryable
+): jest.SpyInstance<Promise<QueryResult<R>>, [string, QueryConfigValues<I>]> {
+  return jest.spyOn(client, 'query') as unknown as jest.SpyInstance<
+    Promise<QueryResult<R>>,
+    [string, QueryConfigValues<I>]
+  >;
 }

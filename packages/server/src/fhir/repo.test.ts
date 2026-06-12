@@ -39,7 +39,7 @@ import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
-import { bundleContains, createTestProject, withTestContext } from '../test.setup';
+import { bundleContains, createTestProject, spyOnQuery, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
@@ -1420,7 +1420,7 @@ describe('FHIR Repo', () => {
       let finishedTransaction = false;
       await repo.withTransaction(async (txRepo) => {
         const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-        const querySpy = jest.spyOn(client, 'query');
+        const querySpy = spyOnQuery(client);
         await txRepo.createResource(patient);
         const calls = querySpy.mock.calls;
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);

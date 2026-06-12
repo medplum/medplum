@@ -3,7 +3,6 @@
 import type { WithId } from '@medplum/core';
 import { formatAddress } from '@medplum/core';
 import type { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import type { PoolClient } from 'pg';
 import type { PgQueryable } from '../sql';
 import { DeleteQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
@@ -148,7 +147,7 @@ export class AddressTable extends LookupTable {
   }
 
   async batchIndexResources<T extends Resource>(
-    client: PoolClient,
+    client: PgQueryable,
     resources: WithId<T>[],
     create: boolean,
     resourceBatchSize?: number

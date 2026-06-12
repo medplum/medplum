@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
-import type { PoolClient } from 'pg';
 import { importConceptMap } from '../operations/conceptmapimport';
 import type { PgQueryable } from '../sql';
 import { Column, Condition, Conjunction } from '../sql';
@@ -34,7 +33,7 @@ export class ConceptMappingTable extends LookupTable {
   }
 
   async batchIndexResources<T extends Resource>(
-    client: PoolClient,
+    client: PgQueryable,
     resources: WithId<T>[],
     create: boolean
   ): Promise<void> {

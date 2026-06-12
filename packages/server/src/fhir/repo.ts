@@ -264,7 +264,7 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirRepository implements Disposable {
+export class Repository extends FhirRepository implements Disposable {
   private readonly context: RepositoryContext;
   private readonly connection: RepositoryConnection;
   private readonly connectionScope: Scope;
@@ -332,7 +332,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
    * @returns A repository with the same context as the current repository, but valid for the duration of the current transaction as well
    * as post-commit callbacks.
    */
-  private createTransactionScopedRepo(scope: Scope): TransactionRepository & this {
+  private createTransactionScopedRepo(scope: Scope): this {
     if (!this.connection.isInTransaction()) {
       throw new Error('Not in transaction');
     }
@@ -342,7 +342,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
       connection?: RepositoryConnection,
       scope?: Scope
     ) => this;
-    return new RepositoryConstructor(this.context, this.connection, scope) as TransactionRepository & this;
+    return new RepositoryConstructor(this.context, this.connection, scope);
   }
 
   get shardId(): string {
@@ -354,29 +354,24 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
    * This reuses the same DB connection, if one exists, to stay within the same transaction.
    * @returns a SystemRepository for the same shard as this repository.
    */
-  getSystemRepo(): SystemRepository<TClient> {
+  getSystemRepo(): SystemRepository {
     this.assertUsable();
     const contextDefaults: SystemRepositoryContextDefaults = {
       skipBackgroundJobs: this.context.skipBackgroundJobs,
     };
 
-    let systemRepo: SystemRepository<TClient>;
+    let systemRepo: SystemRepository;
     if (this.connection.hasConnection()) {
-      systemRepo = createSystemRepository<TClient>(
-        this.shardId,
-        this.connection,
-        this.connectionScope,
-        contextDefaults
-      );
+      systemRepo = createSystemRepository(this.shardId, this.connection, this.connectionScope, contextDefaults);
     } else {
-      systemRepo = createSystemRepository<TClient>(this.shardId, undefined, undefined, contextDefaults);
+      systemRepo = createSystemRepository(this.shardId, undefined, undefined, contextDefaults);
     }
     return systemRepo;
   }
 
-  withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository<TClient> {
+  withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository {
     this.assertUsable();
-    let repo: Repository<TClient>;
+    let repo: Repository;
     if (this.connection.hasConnection()) {
       repo = new Repository({ ...this.context, ...config }, this.connection, this.connectionScope);
     } else {
@@ -1044,10 +1039,9 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
    */
   private async writeToDatabase<T extends WithId<Resource>>(resource: T, create: boolean): Promise<void> {
     await this.ensureInTransaction(async (txRepo) => {
-      const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-      await txRepo.writeResource(client, resource);
-      await txRepo.writeResourceVersion(client, resource);
-      await txRepo.writeLookupTables(client, resource, create);
+      await txRepo.writeResource(resource);
+      await txRepo.writeResourceVersion(resource);
+      await txRepo.writeLookupTables(resource, create);
     });
   }
 
@@ -1149,9 +1143,8 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     }
 
     await this.ensureInTransaction(async (txRepo) => {
-      const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-      await txRepo.batchWriteLookupTables(client, resources, false);
-      await txRepo.batchWriteResources(client, resources);
+      await txRepo.batchWriteLookupTables(resources, false);
+      await txRepo.batchWriteResources(resources);
     });
   }
 
@@ -1639,19 +1632,19 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
    * Writes the resource to the resource table.
    * This builds all search parameter columns.
    * This does *not* write the version to the history table.
-   * @param client - The database client inside the transaction.
    * @param resource - The resource.
    */
-  protected async writeResource(client: PoolClient, resource: Resource): Promise<void> {
+  protected async writeResource(resource: Resource): Promise<void> {
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     const row = buildResourceRow(resource, Repository.VERSION);
     await new InsertQuery(resource.resourceType, [row]).mergeOnConflict().execute(client);
   }
 
-  protected async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
+  protected async batchWriteResources(resources: Resource[]): Promise<void> {
     if (!resources.length) {
       return;
     }
-
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     await new InsertQuery(
       resources[0].resourceType,
       resources.map((r) => buildResourceRow(r, Repository.VERSION))
@@ -1662,14 +1655,14 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
 
   /**
    * Writes a version of the resource to the resource history table.
-   * @param client - The database client inside the transaction.
    * @param resource - The resource.
    */
-  protected async writeResourceVersion(client: PoolClient, resource: Resource): Promise<void> {
+  protected async writeResourceVersion(resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = stringify(resource);
 
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     await new InsertQuery(resourceType + '_History', [
       {
         id: resource.id,
@@ -1736,21 +1729,18 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
 
   /**
    * Writes resources values to the lookup tables.
-   * @param client - The database client inside the transaction.
    * @param resource - The resource to index.
    * @param create - If true, then the resource is being created.
    */
-  protected async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
+  protected async writeLookupTables(resource: WithId<Resource>, create: boolean): Promise<void> {
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(client, resource, create);
     }
   }
 
-  protected async batchWriteLookupTables<T extends Resource>(
-    client: PoolClient,
-    resources: WithId<T>[],
-    create: boolean
-  ): Promise<void> {
+  protected async batchWriteLookupTables<T extends Resource>(resources: WithId<T>[], create: boolean): Promise<void> {
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     for (const lookupTable of lookupTables) {
       await lookupTable.batchIndexResources(client, resources, create);
     }
@@ -2182,14 +2172,13 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
    * @param mode - The database mode.
    * @returns The database client.
    */
-  getDatabaseClient(mode: DatabaseMode): TClient {
+  getDatabaseClient(mode: DatabaseMode): PgQueryable {
     this.assertUsable();
-    const client = this.connection.getDatabaseClient(this.connectionScope, mode);
-    return client as TClient;
+    return this.connection.getDatabaseClient(this.connectionScope, mode);
   }
 
   async withTransaction<TResult>(
-    callback: (repo: TransactionRepository & this) => Promise<TResult>,
+    callback: (repo: this) => Promise<TResult>,
     options?: { serializable?: boolean }
   ): Promise<TResult> {
     this.assertUsable();
@@ -2305,12 +2294,10 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
     await deleteResourceCacheEntries(resourceType, ids);
   }
 
-  async ensureInTransaction<TResult>(
-    callback: (repo: TransactionRepository & this) => Promise<TResult>
-  ): Promise<TResult> {
+  async ensureInTransaction<TResult>(callback: (repo: this) => Promise<TResult>): Promise<TResult> {
     this.assertUsable();
     if (this.connection.isInTransaction()) {
-      return callback(this as TransactionRepository & this);
+      return callback(this);
     }
 
     return this.withTransaction(callback);
@@ -2343,8 +2330,7 @@ export class Repository<TClient extends PgQueryable = PgQueryable> extends FhirR
   }
 }
 
-export type TransactionRepository = Repository<PoolClient>;
-export class SystemRepository<TClient extends PgQueryable = PgQueryable> extends Repository<TClient> {}
+export class SystemRepository extends Repository {}
 
 type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJobs'>;
 
@@ -2356,13 +2342,13 @@ type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJo
  * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository instance.
  */
-function createSystemRepository<TClient extends PgQueryable = PgQueryable>(
+function createSystemRepository(
   shardId: string,
   connection?: RepositoryConnection,
   connectionScope?: Scope,
   contextDefaults?: SystemRepositoryContextDefaults
-): SystemRepository<TClient> {
-  return new SystemRepository<TClient>(
+): SystemRepository {
+  return new SystemRepository(
     {
       ...contextDefaults,
       shardId,
