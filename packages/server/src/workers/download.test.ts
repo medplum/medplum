@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import type { Mock } from 'vitest';
+import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
@@ -16,14 +17,12 @@ let repo: Repository;
 describe('Download Worker', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    const { initAppServices } = await import('../app');
     await initAppServices(config);
 
     repo = (await createTestProject({ withRepo: true })).repo;
   });
 
   afterAll(async () => {
-    const { shutdownApp } = await import('../app');
     await shutdownApp();
   });
 

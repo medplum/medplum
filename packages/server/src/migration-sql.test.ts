@@ -8,24 +8,27 @@ import { getPostDeployVersion, markPostDeployMigrationCompleted } from './migrat
 import type { CustomPostDeployMigration } from './migrations/data/types';
 import type * as MigrationDataV1 from './migrations/data/v1';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
-import type { MigrationActionResult } from './migrations/types';
+import type * as PostDeployMigration from './workers/post-deploy-migration';
 
-vi.mock('./migrations/data/v1', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { prepareCustomMigrationJobData, runCustomMigration } = require('./workers/post-deploy-migration');
-  const migration: CustomPostDeployMigration = {
+const migrationMocks = vi.hoisted(() => ({
+  customMigration: undefined as CustomPostDeployMigration | undefined,
+}));
+
+vi.mock('./migrations/data/v1', async () => {
+  const { prepareCustomMigrationJobData, runCustomMigration } = await vi.importActual<typeof PostDeployMigration>(
+    './workers/post-deploy-migration'
+  );
+  migrationMocks.customMigration = {
     type: 'custom',
     prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
-    run: function (repo, jobData) {
-      return runCustomMigration(repo, jobData, async () => {
-        const results: MigrationActionResult[] = [];
+    run: function (repo, job, jobData) {
+      return runCustomMigration(repo, job, jobData, async (_client, results) => {
         results.push({ name: 'nothing', durationMs: 5 });
-        return results;
       });
     },
   };
 
-  return { migration };
+  return { migration: migrationMocks.customMigration };
 });
 
 vi.mock('./migrations/data/index', async () => {
