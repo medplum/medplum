@@ -1962,6 +1962,12 @@ describe('Subscription Heartbeat', () => {
     await shutdownApp();
   });
 
+  beforeEach(() => {
+    // subscriptions.ts keeps a module-level pub/sub subscriber that outlives individual
+    // WebSocket connections. Reset it between tests so each test starts from a clean state.
+    cleanupR4SubscriptionResources();
+  });
+
   test('Heartbeat received after binding to token', () =>
     withTestContext(async () => {
       // Create subscription to watch patient
@@ -2030,6 +2036,89 @@ describe('Subscription Heartbeat', () => {
         })
         .close()
         .expectClosed();
+    }));
+
+  test('Recreates Redis subscriber when prior subscriber connection ends', () =>
+    withTestContext(async () => {
+      const subscriberSpy = jest.spyOn(redisModule, 'getPubSubRedisSubscriber');
+
+      try {
+        // First bind lazily creates the shared Redis subscriber for WebSocket fan-out.
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'websocket',
+          },
+        });
+
+        const res = await request(server)
+          .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+          .set('Authorization', 'Bearer ' + accessToken);
+
+        const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+
+        await request(server)
+          .ws('/ws/subscriptions-r4')
+          .sendJson({ type: 'bind-with-token', payload: { token } })
+          .expectJson((actual) => {
+            expect(actual).toMatchObject({
+              resourceType: 'Bundle',
+              type: 'history',
+            });
+          })
+          .close()
+          .expectClosed();
+
+        expect(subscriberSpy).toHaveBeenCalledTimes(1);
+        const firstSubscriber = subscriberSpy.mock.results[0].value;
+
+        // Simulate the pub/sub connection dropping. The `end` listener in
+        // setupSubscriptionHandler should clear the module reference so the next bind
+        // can call getPubSubRedisSubscriber again.
+        await new Promise<void>((resolve) => {
+          firstSubscriber.once('end', resolve);
+          firstSubscriber.disconnect();
+        });
+
+        // Use a second subscription so the rebind has a fresh cache entry. Closing the
+        // first socket runs onDisconnect, which removes the binding token from Redis.
+        const secondSubscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'websocket',
+          },
+        });
+
+        const secondRes = await request(server)
+          .get(`/fhir/R4/Subscription/${secondSubscription.id}/$get-ws-binding-token`)
+          .set('Authorization', 'Bearer ' + accessToken);
+
+        const secondToken = (secondRes.body as Parameters).parameter?.[0]?.valueString as string;
+
+        // A new WebSocket bind after the subscriber ended should recreate the connection.
+        await request(server)
+          .ws('/ws/subscriptions-r4')
+          .sendJson({ type: 'bind-with-token', payload: { token: secondToken } })
+          .expectJson((actual) => {
+            expect(actual).toMatchObject({
+              resourceType: 'Bundle',
+              type: 'history',
+            });
+          })
+          .close()
+          .expectClosed();
+
+        expect(subscriberSpy).toHaveBeenCalledTimes(2);
+        expect(firstSubscriber).not.toBe(subscriberSpy.mock.results[1].value);
+      } finally {
+        subscriberSpy.mockRestore();
+      }
     }));
 
   test('Heartbeat not received before binding to token', () =>
