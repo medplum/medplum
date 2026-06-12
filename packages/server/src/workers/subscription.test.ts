@@ -35,7 +35,6 @@ import type { Redis } from 'ioredis';
 import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
 import type { Mock, MockInstance } from 'vitest';
-import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type * as Constants from '../constants';
@@ -46,7 +45,6 @@ import { Repository } from '../fhir/repo';
 import { setResourceCacheEntry } from '../fhir/repository/resource-cache';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
-import * as otelModule from '../otel/otel';
 import {
   addUserActiveWebSocketSubscription,
   getActiveSubscriptions,
@@ -68,9 +66,15 @@ import {
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
 import * as workerUtils from './utils';
 
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
-vi.mock('../constants', async () => ({
-  ...(await vi.importActual<typeof Constants>('../constants')),
+vi.mock('../constants', () => ({
+  r4ProjectId: '161452d9-43b7-5c29-aa7b-c85680fa45c6',
+  syntheticR4Project: {
+    resourceType: 'Project',
+    id: '161452d9-43b7-5c29-aa7b-c85680fa45c6',
+    name: 'FHIR R4',
+    exportedResourceType: ['StructureDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter'],
+  },
+  systemResourceProjectId: '65897e4f-7add-55f3-9b17-035b5a4e6d52',
   WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:worker',
 }));
 const mockBullmq = vi.mocked(bullmqModule);
@@ -84,10 +88,12 @@ describe('Subscription Worker', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    const { initAppServices } = await import('../app');
     await initAppServices(config);
   });
 
   afterAll(async () => {
+    const { shutdownApp } = await import('../app');
     await shutdownApp();
   });
 
@@ -2008,7 +2014,13 @@ describe('Subscription Worker', () => {
           rejectNotExpected = undefined;
         }
       });
+      // Vitest applies per-file mocks after setupFiles, so subscription.ts may bind the
+      // production channel before this test file's mock is registered. Listen on both.
+      const actualConstants = await vi.importActual<typeof Constants>('../constants');
       await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
+      if (actualConstants.WEBSOCKET_SUB_PUBLISH_CHANNEL !== WEBSOCKET_SUB_PUBLISH_CHANNEL) {
+        await subscriber.subscribe(actualConstants.WEBSOCKET_SUB_PUBLISH_CHANNEL);
+      }
     });
 
     afterAll(async () => {
@@ -3850,6 +3862,7 @@ describe('Subscription Worker Event Handling', () => {
     vi.spyOn(globalLogger, 'info').mockImplementation(() => {});
 
     // Mock the logger and metrics functions
+    const otelModule = await import('../otel/otel');
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     // Initialize the subscription worker with mock config

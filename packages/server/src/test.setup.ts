@@ -27,19 +27,29 @@ import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import type { ServerInviteResponse } from './admin/invite';
-import { inviteUser } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
 import { RequestContext } from './context';
-import { getRepoForLogin } from './fhir/accesspolicy';
+// `fhir/repo`, `fhir/accesspolicy`, and `admin/invite` are dynamically imported below.
+// A static import here would load `workers/subscription` (via `fhir/repo`) while this
+// setup file is still initializing. Vitest hoists `vi.mock` per file, not across
+// setupFiles and test files, so modules that import `node-fetch` or `../constants`
+// statically would bind to the wrong mock instances before test files register theirs.
 import type { Repository } from './fhir/repo';
-import { getProjectSystemRepo, getShardSystemRepo } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { generateAccessToken } from './oauth/keys';
 import { requestContextStore } from './request-context-store';
 // supertest v7 can cause websocket tests to hang without this
 setDefaultResultOrder('ipv4first');
 
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+// Share one `node-fetch` mock between setup and test files so `subscription.ts` and
+// tests configure the same `vi.fn()` instance.
+const { mockFetch } = vi.hoisted(() => ({
+  mockFetch: vi.fn(),
+}));
+
+vi.mock('node-fetch', () => ({ default: mockFetch }));
+
+export { mockFetch };
 vi.mock('bullmq', async () => import('./__mocks__/bullmq'));
 
 export interface TestProjectOptions {
@@ -70,6 +80,8 @@ export type TestProjectResult<T extends TestProjectOptions> = {
 export async function createTestProject<T extends StrictTestProjectOptions<T> = TestProjectOptions>(
   options?: T
 ): Promise<TestProjectResult<T>> {
+  const { getRepoForLogin } = await import('./fhir/accesspolicy');
+  const { getShardSystemRepo } = await import('./fhir/repo');
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an optional input parameter
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
@@ -191,6 +203,7 @@ export async function addTestUser(
   const resourceType = options?.resourceType ?? 'Practitioner';
 
   if (accessPolicy) {
+    const { getProjectSystemRepo } = await import('./fhir/repo');
     const systemRepo = await getProjectSystemRepo(project);
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
       ...accessPolicy,
@@ -200,6 +213,7 @@ export async function addTestUser(
 
   const email = randomUUID() + '@example.com';
   const password = randomUUID();
+  const { inviteUser } = await import('./admin/invite');
   const inviteResponse = await inviteUser({
     project,
     email,
