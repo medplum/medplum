@@ -72,6 +72,8 @@ Spaces requires the `ai` and `bots` features on your Medplum project. Both are d
 
 The Provider app's Spaces page short-circuits if either feature is missing, and the `$ai` operation rejects the request server-side if `ai` is not enabled.
 
+The optional `ai-realtime` feature enables voice input in the chat UI. See [Voice Input](#voice-input) below.
+
 ### Configure The OpenAI API Key
 
 Add your OpenAI key as a project secret named `OPENAI_API_KEY`. The `$ai` operation reads it from the project on every call and forwards it to OpenAI's chat completions endpoint. It is never sent to the client.
@@ -239,6 +241,16 @@ When `aiModels` is unset or empty, the UI falls back to a built-in default list 
 
 :::caution[Model names must match your LiteLLM config]
 When routing through a LiteLLM proxy, each `value` must exactly match a `model_name` alias defined in the proxy's `config.yaml` – that field is LiteLLM's routing key. Neither the UI nor `$ai` validates the value; an unrecognized name surfaces as a failed AI call at request time, not a save error. The `label` is cosmetic. Keep the `aiModels` list in sync with the proxy config when you add or rename models.
+:::
+
+### Voice Input
+
+When the `ai-realtime` feature is enabled on the project, a microphone button appears in the chat input. Users can click it to dictate their message instead of typing. The speech is transcribed using `gpt-4o-transcribe` and submitted as a normal text message — the bots and agent loop are unaffected by whether the input arrived via keyboard or voice.
+
+Without `ai-realtime`, the microphone button is still visible in the Provider UI but is disabled with a tooltip explaining that the feature is not active. To enable it, add `ai-realtime` to the project's feature list. Contact info@medplum.com to have the feature enabled on your account.
+
+:::note
+Voice input is transcription-only (speech to text). Spaces does not support text-to-speech output.
 :::
 
 ## Customizing System Prompts
