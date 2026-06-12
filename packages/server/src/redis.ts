@@ -162,8 +162,7 @@ export function getPubSubRedisSubscriber(): RedisWithoutDuplicate & { quit: neve
   if (!sourceInstance) {
     throw new Error('Redis not initialized');
   }
-  // Subscribers cannot run INFO during ioredis ready checks after reconnecting in pub/sub mode.
-  const subscriber = (sourceInstance as Redis).duplicate({ enableReadyCheck: false });
+  const subscriber = (sourceInstance as Redis).duplicate();
   redisInstances.pubSub.subscribers ??= new Set();
   redisInstances.pubSub.subscribers.add(subscriber);
 

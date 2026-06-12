@@ -13,7 +13,7 @@ import { handleAgentConnection } from './agent';
 import { handleAiRealtimeConnection } from './ai-realtime';
 import { handleEchoConnection, initEchoHeartbeat, stopEchoHeartbeat } from './echo';
 import { handleFhircastConnection, initFhircastHeartbeat, stopFhircastHeartbeat } from './fhircast';
-import { closeWebSocketSubscriptionHandler, handleR4SubscriptionConnection } from './subscriptions';
+import { handleR4SubscriptionConnection } from './subscriptions';
 
 const handlerMap = new Map<string, (socket: WebSocket, request: IncomingMessage) => Promise<void>>();
 handlerMap.set('echo', handleEchoConnection);
@@ -105,7 +105,6 @@ function getWebSocketPath(path: string): string {
 export async function closeWebSockets(): Promise<void> {
   stopFhircastHeartbeat();
   stopEchoHeartbeat();
-  closeWebSocketSubscriptionHandler();
 
   if (wsServer) {
     wsServer.close();
