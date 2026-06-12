@@ -75,8 +75,14 @@ let subscriptionMessagesSent = 0;
 let subscriptionMessagesReceived = 0;
 
 async function setupSubscriptionHandler(): Promise<void> {
-  redisSubscriber = getPubSubRedisSubscriber();
-  redisSubscriber.on('message', async (channel: string, events: string) => {
+  const subscriber = getPubSubRedisSubscriber();
+  redisSubscriber = subscriber;
+  subscriber.on('end', () => {
+    if (redisSubscriber === subscriber) {
+      redisSubscriber = undefined;
+    }
+  });
+  subscriber.on('message', async (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
     const subEventPayload = JSON.parse(events) as V1SubEventPayload | V2SubEventPayload;
     let resource: WithId<Resource>;
@@ -172,7 +178,7 @@ async function setupSubscriptionHandler(): Promise<void> {
       }
     }
   });
-  await redisSubscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
+  await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
 }
 
 function isV1SubEventPayload(candidate: unknown): candidate is V1SubEventPayload {
@@ -655,6 +661,13 @@ export async function markInMemorySubscriptionsInactive(
         globalLogger.debug('Attempted to remove user subscription tracking when Redis is closed');
       }
     }
+  }
+}
+
+export function closeWebSocketSubscriptionHandler(): void {
+  if (redisSubscriber) {
+    redisSubscriber.disconnect();
+    redisSubscriber = undefined;
   }
 }
 
