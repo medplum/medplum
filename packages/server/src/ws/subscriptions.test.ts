@@ -40,6 +40,7 @@ import {
   publish,
   setActiveSubscription,
 } from '../pubsub';
+import * as redisModule from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDispatchJob } from '../workers/test-utils';
 
@@ -2028,6 +2029,66 @@ describe('Subscription Heartbeat', () => {
         })
         .close()
         .expectClosed();
+    }));
+
+  test('Recreates Redis subscriber when prior subscriber connection ends', () =>
+    withTestContext(async () => {
+      const subscriberSpy = jest.spyOn(redisModule, 'getPubSubRedisSubscriber');
+
+      try {
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'websocket',
+          },
+        });
+
+        const res = await request(server)
+          .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+          .set('Authorization', 'Bearer ' + accessToken);
+
+        const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+
+        await request(server)
+          .ws('/ws/subscriptions-r4')
+          .sendJson({ type: 'bind-with-token', payload: { token } })
+          .expectJson((actual) => {
+            expect(actual).toMatchObject({
+              resourceType: 'Bundle',
+              type: 'history',
+            });
+          })
+          .close()
+          .expectClosed();
+
+        expect(subscriberSpy).toHaveBeenCalledTimes(1);
+        const firstSubscriber = subscriberSpy.mock.results[0].value;
+
+        await new Promise<void>((resolve) => {
+          firstSubscriber.once('end', resolve);
+          firstSubscriber.disconnect();
+        });
+
+        await request(server)
+          .ws('/ws/subscriptions-r4')
+          .sendJson({ type: 'bind-with-token', payload: { token } })
+          .expectJson((actual) => {
+            expect(actual).toMatchObject({
+              resourceType: 'Bundle',
+              type: 'history',
+            });
+          })
+          .close()
+          .expectClosed();
+
+        expect(subscriberSpy).toHaveBeenCalledTimes(2);
+        expect(firstSubscriber).not.toBe(subscriberSpy.mock.results[1].value);
+      } finally {
+        subscriberSpy.mockRestore();
+      }
     }));
 
   test('Heartbeat not received before binding to token', () =>
