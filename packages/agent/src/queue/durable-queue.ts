@@ -6,8 +6,15 @@ import { normalizeErrorString } from '@medplum/core';
 import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
 import { runMigrations } from './schema';
-import type { EnqueueInput, EnqueueRejectedInput, EnqueueResult, InboundRow, MessageState } from './types';
-import { MessageState as MessageStateValues } from './types';
+import type {
+  EnqueueInput,
+  EnqueueRejectedInput,
+  EnqueueResult,
+  InboundRow,
+  MessageState,
+  QueueErrorCode,
+} from './types';
+import { MessageState as MessageStateValues, QueueErrorCode as QueueErrorCodeValues } from './types';
 
 export interface DurableQueueOptions {
   /** Filesystem path to the SQLite DB file. */
@@ -59,6 +66,7 @@ export class DurableQueue {
   private readonly recordServerResponseStmt: StatementSync;
   private readonly markProcessedStmt: StatementSync;
   private readonly markErroredStmt: StatementSync;
+  private readonly scheduleRetryStmt: StatementSync;
   private readonly requeueStmt: StatementSync;
   private readonly recoverProcessingStmt: StatementSync;
   private readonly listQueuedIdsForChannelStmt: StatementSync;
@@ -125,17 +133,25 @@ export class DurableQueue {
     // processing in the same statement so concurrent workers can't double-claim.
     // node:sqlite is synchronous and the agent is single-process, so RETURNING is
     // enough — no advisory locking needed.
+    //
+    // The next_attempt_at predicate sits on the OUTER update, not the inner
+    // select, on purpose: a head row waiting out its retry backoff blocks the
+    // whole channel (claim returns null) instead of letting younger rows skip
+    // ahead. Head-of-line blocking is what preserves the per-channel FIFO
+    // ordering guarantee (§1.1) across retries.
     this.claimNextStmt = this.db.prepare(`
       UPDATE inbound_hl7_messages
          SET state = 'processing',
              processing_started_at = ?,
-             attempt_count = attempt_count + 1
+             attempt_count = attempt_count + 1,
+             next_attempt_at = NULL
        WHERE id = (
          SELECT id FROM inbound_hl7_messages
           WHERE channel_name = ? AND state = 'queued'
           ORDER BY id ASC
           LIMIT 1
        )
+       AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
        RETURNING *
     `);
 
@@ -166,8 +182,23 @@ export class DurableQueue {
       UPDATE inbound_hl7_messages
          SET state = 'errored',
              errored_at = ?,
-             last_error = ?
+             last_error = ?,
+             error_code = ?
        WHERE id = ?
+    `);
+
+    // Auto-retry transition: processing → queued with a future next_attempt_at.
+    // The row keeps its id, so it stays at the head of its channel's FIFO; the
+    // claim statement won't hand it out again until the backoff elapses.
+    // attempt_count is NOT touched here — claimNext already counted the attempt.
+    this.scheduleRetryStmt = this.db.prepare(`
+      UPDATE inbound_hl7_messages
+         SET state = 'queued',
+             processing_started_at = NULL,
+             last_error = ?,
+             error_code = ?,
+             next_attempt_at = ?
+       WHERE id = ? AND state = 'processing'
     `);
 
     // Undo of claimNext for a dispatch that provably never left the process
@@ -186,7 +217,8 @@ export class DurableQueue {
       UPDATE inbound_hl7_messages
          SET state = 'errored',
              errored_at = ?,
-             last_error = COALESCE(last_error, 'interrupted: process restart while processing')
+             last_error = COALESCE(last_error, 'interrupted: process restart while processing'),
+             error_code = COALESCE(error_code, '${QueueErrorCodeValues.Interrupted}')
        WHERE state = 'processing'
     `);
 
@@ -405,12 +437,17 @@ export class DurableQueue {
   /**
    * Atomically claims the next `queued` row for `channelName`, flipping it to
    * `processing` and bumping `attempt_count`.
+   *
+   * Returns `null` when the channel queue is empty AND when the head row is a
+   * scheduled retry whose `next_attempt_at` has not elapsed — the channel
+   * blocks (head-of-line) rather than claiming a younger row out of order.
    * @param channelName - The channel to claim from.
-   * @param now - Override the timestamp written to `processing_started_at` (for tests).
-   * @returns The claimed row, or `null` if the channel queue is empty.
+   * @param now - Override the timestamp written to `processing_started_at` and
+   *              compared against `next_attempt_at` (for tests).
+   * @returns The claimed row, or `null` if no row is currently claimable.
    */
   claimNext(channelName: string, now: number = Date.now()): InboundRow | null {
-    const raw = this.claimNextStmt.get(now, channelName) as Record<string, SQLInputValue> | undefined;
+    const raw = this.claimNextStmt.get(now, channelName, now) as Record<string, SQLInputValue> | undefined;
     if (raw) {
       this.walDirty = true;
     }
@@ -462,11 +499,33 @@ export class DurableQueue {
    * Terminal transition: row failed somewhere after commit.
    * @param id - Row primary key.
    * @param error - Human-readable error string, written to `last_error`.
+   * @param errorCode - Machine-readable classification, written to `error_code`.
    * @param now - Override for `errored_at` (for tests).
    */
-  markErrored(id: number, error: string, now: number = Date.now()): void {
-    this.markErroredStmt.run(now, error, id);
+  markErrored(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+    this.markErroredStmt.run(now, error, errorCode, id);
     this.walDirty = true;
+  }
+
+  /**
+   * Auto-retry transition: returns a `processing` row to `queued`, scheduled to
+   * become claimable at `nextAttemptAt`. Because the row keeps its id and claims
+   * are ordered by id, it sits at the head of its channel's FIFO and blocks
+   * younger rows until it either succeeds or exhausts its attempts — preserving
+   * per-channel ordering across retries.
+   * @param id - Row primary key.
+   * @param error - Human-readable error string, written to `last_error`.
+   * @param errorCode - Machine-readable classification, written to `error_code`.
+   * @param nextAttemptAt - Earliest timestamp (ms) at which the row may be claimed again.
+   * @returns True if the row was rescheduled; false if it was not in `processing`.
+   */
+  scheduleRetry(id: number, error: string, errorCode: QueueErrorCode, nextAttemptAt: number): boolean {
+    const info = this.scheduleRetryStmt.run(error, errorCode, nextAttemptAt, id);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -654,6 +713,8 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     serverStatusCode: (raw.server_status_code as number | null) ?? null,
     ackSentToSource: (raw.ack_sent_to_source as number) === 1,
     lastError: (raw.last_error as string | null) ?? null,
+    errorCode: (raw.error_code as QueueErrorCode | null) ?? null,
+    nextAttemptAt: (raw.next_attempt_at as number | null) ?? null,
     seqNo: (raw.seq_no as number | null) ?? null,
     receivedAt: raw.received_at as number,
     committedAt: (raw.committed_at as number | null) ?? null,

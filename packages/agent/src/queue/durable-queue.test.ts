@@ -6,7 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createMockLogger } from '../test-utils';
 import { DurableQueue, isUniqueConstraintError } from './durable-queue';
-import { MessageState } from './types';
+import { MIGRATIONS } from './schema';
+import { MessageState, QueueErrorCode } from './types';
 
 function makeEnqueueInput(
   overrides: Partial<Parameters<DurableQueue['enqueue']>[0]> = {}
@@ -47,6 +48,36 @@ describe('DurableQueue', () => {
     // Calling open() again on the same path is a no-op for migrations (idempotency).
     const q2 = DurableQueue.open({ path: dbPath, log: createMockLogger() });
     q2.close();
+  });
+
+  test('migrates a v1 database in place, preserving existing rows', () => {
+    // Build a DB that only has migration v1 applied, with one row in it.
+    const v1Path = join(dir, 'v1.sqlite');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+    const { DatabaseSync } = require('node:sqlite') as typeof import('node:sqlite');
+    const rawDb = new DatabaseSync(v1Path);
+    rawDb.exec(MIGRATIONS[0].sql);
+    rawDb.prepare('INSERT INTO _schema (version, applied_at) VALUES (1, ?)').run(Date.now());
+    rawDb
+      .prepare(
+        `INSERT INTO inbound_hl7_messages (
+           channel_name, remote, body, state, callback_id, received_at
+         ) VALUES ('ch1', 'r', x'4d5348', 'queued', 'cb-v1', ?)`
+      )
+      .run(Date.now());
+    rawDb.close();
+
+    // Re-opening through DurableQueue applies v2; the old row reads back with
+    // the new columns as nulls and is still claimable.
+    const upgraded = DurableQueue.open({ path: v1Path, log: createMockLogger() });
+    try {
+      const claimed = upgraded.claimNext('ch1');
+      expect(claimed?.callbackId).toBe('cb-v1');
+      expect(claimed?.errorCode).toBeNull();
+      expect(claimed?.nextAttemptAt).toBeNull();
+    } finally {
+      upgraded.close();
+    }
   });
 
   test('enqueue inserts a queued row and round-trips a binary body', () => {
@@ -131,6 +162,69 @@ describe('DurableQueue', () => {
     expect(queue.getById(r2.row.id)?.state).toBe(MessageState.QUEUED);
   });
 
+  test('scheduleRetry returns a processing row to queued with next_attempt_at and error metadata', () => {
+    const r = queue.enqueue(makeEnqueueInput({ channelName: 'R', msgControlId: 'RTY1' }));
+    if (r.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    const claimed = queue.claimNext('R');
+    expect(claimed?.attemptCount).toBe(1);
+
+    const nextAttemptAt = Date.now() + 60_000;
+    expect(queue.scheduleRetry(r.row.id, 'Server returned 503', QueueErrorCode.ServerError, nextAttemptAt)).toBe(true);
+
+    const rescheduled = queue.getById(r.row.id);
+    expect(rescheduled?.state).toBe(MessageState.QUEUED);
+    expect(rescheduled?.lastError).toBe('Server returned 503');
+    expect(rescheduled?.errorCode).toBe(QueueErrorCode.ServerError);
+    expect(rescheduled?.nextAttemptAt).toBe(nextAttemptAt);
+    expect(rescheduled?.processingStartedAt).toBeNull();
+    // Unlike requeue, the attempt still counts — it reached the server.
+    expect(rescheduled?.attemptCount).toBe(1);
+
+    // scheduleRetry only applies to processing rows.
+    expect(queue.scheduleRetry(r.row.id, 'again', QueueErrorCode.ServerError, nextAttemptAt)).toBe(false);
+  });
+
+  test('claimNext honors next_attempt_at and blocks the channel head-of-line', () => {
+    const now = Date.now();
+    const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'R', msgControlId: 'HOL1' }));
+    const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'R', msgControlId: 'HOL2' }));
+    if (r1.kind !== 'inserted' || r2.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    queue.claimNext('R', now);
+    queue.scheduleRetry(r1.row.id, 'Server returned 503', QueueErrorCode.ServerError, now + 5000);
+
+    // Head row is backing off: nothing claimable — including r2, which must NOT
+    // skip ahead of r1 (per-channel FIFO ordering).
+    expect(queue.claimNext('R', now)).toBeNull();
+    expect(queue.claimNext('R', now + 4999)).toBeNull();
+
+    // Once the backoff elapses, the retried row comes out first, with
+    // next_attempt_at cleared and attempt_count bumped.
+    const reclaimed = queue.claimNext('R', now + 5000);
+    expect(reclaimed?.id).toBe(r1.row.id);
+    expect(reclaimed?.attemptCount).toBe(2);
+    expect(reclaimed?.nextAttemptAt).toBeNull();
+
+    // And the channel resumes normal FIFO behind it.
+    queue.markProcessed(r1.row.id);
+    expect(queue.claimNext('R', now + 5000)?.id).toBe(r2.row.id);
+  });
+
+  test('recoverOnStartup stamps interrupted error code on recovered rows', () => {
+    const r = queue.enqueue(makeEnqueueInput({ channelName: 'I', msgControlId: 'INT1' }));
+    if (r.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    queue.claimNext('I');
+    expect(queue.recoverOnStartup()).toBe(1);
+    const recovered = queue.getById(r.row.id);
+    expect(recovered?.state).toBe(MessageState.ERRORED);
+    expect(recovered?.errorCode).toBe(QueueErrorCode.Interrupted);
+  });
+
   test('markProcessed and markErrored set timestamps correctly', () => {
     const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS1' }));
     if (r.kind !== 'inserted') {
@@ -151,9 +245,10 @@ describe('DurableQueue', () => {
       throw new Error('expected inserted');
     }
     queue.claimNext(r2.row.channelName);
-    queue.markErrored(r2.row.id, 'boom', 1700000000123);
+    queue.markErrored(r2.row.id, 'boom', QueueErrorCode.ServerRejected, 1700000000123);
     expect(queue.getById(r2.row.id)?.state).toBe(MessageState.ERRORED);
     expect(queue.getById(r2.row.id)?.lastError).toBe('boom');
+    expect(queue.getById(r2.row.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
     expect(queue.getById(r2.row.id)?.erroredAt).toBe(1700000000123);
 
     // First row still processed, unaffected.
@@ -226,7 +321,7 @@ describe('DurableQueue', () => {
     queue.claimNext(a.row.channelName); // a → processing
     queue.markProcessed(a.row.id);
     queue.claimNext(b.row.channelName); // b → processing
-    queue.markErrored(b.row.id, 'x');
+    queue.markErrored(b.row.id, 'x', QueueErrorCode.ServerRejected);
     queue.enqueueRejected({ ...makeEnqueueInput({ msgControlId: 'CB-N' }), lastError: 'dup' });
 
     expect(queue.countByState()).toEqual({

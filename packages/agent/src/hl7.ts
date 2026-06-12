@@ -18,7 +18,8 @@ import { ChannelStatsTracker } from './channel-stats-tracker';
 import type { DurableQueue } from './queue/durable-queue';
 import type { InboundRow } from './queue/types';
 import { DuplicateBehavior } from './queue/types';
-import { ChannelQueueWorker } from './queue/worker';
+import type { RetryPolicy } from './queue/worker';
+import { ChannelQueueWorker, DEFAULT_RETRY_POLICY } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 
 /**
@@ -50,6 +51,7 @@ export class AgentHl7Channel extends BaseChannel {
   private assignSeqNo: boolean = false;
   private lastSeqNo = -1;
   private duplicateBehavior: DuplicateBehavior = DuplicateBehavior.IDEMPOTENT;
+  private retryPolicy: RetryPolicy = DEFAULT_RETRY_POLICY;
   worker: ChannelQueueWorker | undefined;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
@@ -126,6 +128,7 @@ export class AgentHl7Channel extends BaseChannel {
       app: this.app,
       queue,
       log: this.log,
+      retryPolicy: this.retryPolicy,
       sendAck: (response) => this.sendToRemote(response),
     });
     this.worker.start();
@@ -263,6 +266,15 @@ export class AgentHl7Channel extends BaseChannel {
     this.server.setEnhancedMode(enhancedMode);
     this.server.setMessagesPerMin(messagesPerMin);
     const queueOn = this.app.getDurableQueue() !== undefined;
+
+    // Per-channel auto-retry policy: endpoint URL params override agent-wide
+    // channelAutoRetry* settings, field by field. The worker outlives config
+    // reloads, so push the new policy at it if it's already running.
+    this.retryPolicy = resolveRetryPolicy(this.app.getChannelRetrySettings(), address.searchParams, this.log);
+    if (this.retryPolicy.enabled && !queueOn) {
+      this.log.warn('autoRetry is enabled but the durable queue is off; auto-retry has no effect without it');
+    }
+    this.worker?.setRetryPolicy(this.retryPolicy);
     for (const connection of this.connections.values()) {
       connection.hl7Connection.setEncoding(encoding);
       connection.hl7Connection.setEnhancedMode(enhancedMode);
@@ -606,6 +618,90 @@ export function parseDuplicateBehavior(rawValue: string | undefined, logger: ILo
   }
   logger.warn(`Invalid duplicateBehavior value '${rawValue}'; expected 'reject' or 'idempotent'. Using idempotent.`);
   return DuplicateBehavior.IDEMPOTENT;
+}
+
+/**
+ * Resolves the effective auto-retry policy for a channel.
+ *
+ * Per-field precedence: endpoint URL query param (`autoRetry`,
+ * `autoRetryBaseDelayMs`, `autoRetryMaxDelayMs`, `autoRetryMaxAttempts`,
+ * `autoRetryBackoffMultiplier`) → agent-wide `channelAutoRetry*` setting →
+ * {@link DEFAULT_RETRY_POLICY}. Invalid values warn and fall through to the
+ * next layer, mirroring the other channel URL params.
+ * @param agentDefaults - Agent-wide settings (undefined fields = not configured).
+ * @param params - The endpoint URL's query params.
+ * @param logger - Logger used to emit warnings on invalid values.
+ * @returns The resolved policy.
+ */
+export function resolveRetryPolicy(
+  agentDefaults: Partial<RetryPolicy>,
+  params: URLSearchParams,
+  logger: ILogger
+): RetryPolicy {
+  const policy: RetryPolicy = {
+    enabled: parseRetryBoolParam(params.get('autoRetry'), 'autoRetry', logger) ?? agentDefaults.enabled ?? false,
+    baseDelayMs:
+      parseRetryNumberParam(params.get('autoRetryBaseDelayMs'), 'autoRetryBaseDelayMs', 1, logger) ??
+      agentDefaults.baseDelayMs ??
+      DEFAULT_RETRY_POLICY.baseDelayMs,
+    maxDelayMs:
+      parseRetryNumberParam(params.get('autoRetryMaxDelayMs'), 'autoRetryMaxDelayMs', 1, logger) ??
+      agentDefaults.maxDelayMs ??
+      DEFAULT_RETRY_POLICY.maxDelayMs,
+    maxAttempts:
+      parseRetryNumberParam(params.get('autoRetryMaxAttempts'), 'autoRetryMaxAttempts', 0, logger) ??
+      agentDefaults.maxAttempts ??
+      DEFAULT_RETRY_POLICY.maxAttempts,
+    backoffMultiplier:
+      parseRetryNumberParam(params.get('autoRetryBackoffMultiplier'), 'autoRetryBackoffMultiplier', 1, logger) ??
+      agentDefaults.backoffMultiplier ??
+      DEFAULT_RETRY_POLICY.backoffMultiplier,
+  };
+  // The URL params are validated above, but agent-level settings arrive unchecked —
+  // clamp so misconfigured settings degrade to sane values instead of, e.g., a
+  // negative delay scheduling retries in the past.
+  policy.baseDelayMs = Math.max(1, policy.baseDelayMs);
+  policy.maxAttempts = Math.max(0, Math.floor(policy.maxAttempts));
+  policy.backoffMultiplier = Math.max(1, policy.backoffMultiplier);
+  if (policy.maxDelayMs < policy.baseDelayMs) {
+    logger.warn(
+      `autoRetryMaxDelayMs (${policy.maxDelayMs}) is less than autoRetryBaseDelayMs (${policy.baseDelayMs}); using autoRetryBaseDelayMs as the cap.`
+    );
+    policy.maxDelayMs = policy.baseDelayMs;
+  }
+  return policy;
+}
+
+function parseRetryBoolParam(rawValue: string | null, name: string, logger: ILogger): boolean | undefined {
+  if (rawValue === null) {
+    return undefined;
+  }
+  const normalized = rawValue.toLowerCase();
+  if (normalized === 'true') {
+    return true;
+  }
+  if (normalized === 'false') {
+    return false;
+  }
+  logger.warn(`Invalid ${name} value '${rawValue}'; expected 'true' or 'false'. Ignoring.`);
+  return undefined;
+}
+
+function parseRetryNumberParam(
+  rawValue: string | null,
+  name: string,
+  min: number,
+  logger: ILogger
+): number | undefined {
+  if (rawValue === null) {
+    return undefined;
+  }
+  const value = Number(rawValue);
+  if (!Number.isFinite(value) || value < min) {
+    logger.warn(`Invalid ${name} value '${rawValue}'; expected a number >= ${min}. Ignoring.`);
+    return undefined;
+  }
+  return value;
 }
 
 /**

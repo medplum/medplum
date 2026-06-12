@@ -36,8 +36,10 @@ import {
   APP_LEVEL_ACK_MODES,
   parseAppLevelAckMode,
   parseEnhancedMode,
+  resolveRetryPolicy,
   shouldSendAppLevelAck,
 } from './hl7';
+import { DEFAULT_RETRY_POLICY } from './queue/worker';
 import { createEndpointWithRandomPort, createMockLogger, getFreePort } from './test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
@@ -2777,6 +2779,7 @@ describe('AgentHl7Channel application-level ACK gating', () => {
       },
       getAgentConfig: vi.fn(),
       getDurableQueue: vi.fn().mockReturnValue(undefined),
+      getChannelRetrySettings: vi.fn().mockReturnValue({}),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;
@@ -2940,6 +2943,74 @@ describe('parseEnhancedMode', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       "Invalid enhanced value 'invalid'; expected 'true' or 'aa'. Using standard mode (enhanced mode disabled)."
     );
+  });
+});
+
+describe('resolveRetryPolicy', () => {
+  test('returns the built-in defaults (disabled) with no params and no agent settings', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({}, new URLSearchParams(), logger);
+    expect(policy).toStrictEqual(DEFAULT_RETRY_POLICY);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('agent settings override defaults, endpoint params override agent settings, per field', () => {
+    const logger = createMockLogger();
+    const agentDefaults = { enabled: true, baseDelayMs: 5000, maxAttempts: 4 };
+    const params = new URLSearchParams('autoRetryBaseDelayMs=250&autoRetryBackoffMultiplier=1.5');
+    const policy = resolveRetryPolicy(agentDefaults, params, logger);
+    expect(policy).toStrictEqual({
+      enabled: true, // from agent setting
+      baseDelayMs: 250, // endpoint param wins over agent setting
+      maxDelayMs: DEFAULT_RETRY_POLICY.maxDelayMs, // built-in default
+      maxAttempts: 4, // from agent setting
+      backoffMultiplier: 1.5, // from endpoint param
+    });
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('autoRetry=false on the endpoint disables retry even when the agent setting enables it', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({ enabled: true }, new URLSearchParams('autoRetry=false'), logger);
+    expect(policy.enabled).toBe(false);
+  });
+
+  test('invalid param values warn and fall through to the next layer', () => {
+    const logger = createMockLogger();
+    const params = new URLSearchParams('autoRetry=yes&autoRetryBaseDelayMs=fast&autoRetryMaxAttempts=-1');
+    const policy = resolveRetryPolicy({ baseDelayMs: 3000 }, params, logger);
+    expect(policy.enabled).toBe(false);
+    expect(policy.baseDelayMs).toBe(3000);
+    expect(policy.maxAttempts).toBe(DEFAULT_RETRY_POLICY.maxAttempts);
+    expect(logger.warn).toHaveBeenCalledWith("Invalid autoRetry value 'yes'; expected 'true' or 'false'. Ignoring.");
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Invalid autoRetryBaseDelayMs value 'fast'; expected a number >= 1. Ignoring."
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Invalid autoRetryMaxAttempts value '-1'; expected a number >= 0. Ignoring."
+    );
+  });
+
+  test('clamps out-of-range agent settings and raises maxDelayMs to baseDelayMs', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy(
+      { enabled: true, baseDelayMs: 30_000, maxDelayMs: 10_000, backoffMultiplier: 0.5 },
+      new URLSearchParams(),
+      logger
+    );
+    expect(policy.backoffMultiplier).toBe(1);
+    expect(policy.maxDelayMs).toBe(30_000);
+    expect(logger.warn).toHaveBeenCalledWith(
+      'autoRetryMaxDelayMs (10000) is less than autoRetryBaseDelayMs (30000); using autoRetryBaseDelayMs as the cap.'
+    );
+  });
+
+  test('maxAttempts=0 (retry indefinitely) is accepted from the endpoint param', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({}, new URLSearchParams('autoRetry=true&autoRetryMaxAttempts=0'), logger);
+    expect(policy.enabled).toBe(true);
+    expect(policy.maxAttempts).toBe(0);
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 });
 

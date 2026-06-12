@@ -60,7 +60,7 @@ import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFil
 import { DurableQueue } from './queue/durable-queue';
 import { QueueLeaseManager } from './queue/lease-manager';
 import { RetentionSweeper } from './queue/retention';
-import type { ChannelQueueWorker } from './queue/worker';
+import type { ChannelQueueWorker, RetryPolicy } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
@@ -144,6 +144,9 @@ export class App {
   private config: Agent | undefined;
   private lastHeartbeatSentTime: number = -1;
   private durableQueue: DurableQueue | undefined;
+  // Agent-wide channelAutoRetry* settings; fields left undefined fall through to
+  // DEFAULT_RETRY_POLICY when channels resolve their per-channel policy.
+  private channelRetrySettings: Partial<RetryPolicy> = {};
   private retentionSweeper: RetentionSweeper | undefined;
   private leaseManager: QueueLeaseManager | undefined;
   private queueCheckpointListener: (() => void) | undefined;
@@ -520,6 +523,18 @@ export class App {
       (setting) => setting.name === 'queueSweepIntervalSecs'
     )?.valueInteger;
 
+    // Agent-wide auto-retry defaults. Channels layer their endpoint URL params
+    // (autoRetry, autoRetryBaseDelayMs, ...) over these when resolving their
+    // RetryPolicy in configureHl7ServerAndConnections.
+    this.channelRetrySettings = {
+      enabled: agent?.setting?.find((setting) => setting.name === 'channelAutoRetry')?.valueBoolean,
+      baseDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBaseDelayMs')?.valueInteger,
+      maxDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxDelayMs')?.valueInteger,
+      maxAttempts: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxAttempts')?.valueInteger,
+      backoffMultiplier: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBackoffMultiplier')
+        ?.valueDecimal,
+    };
+
     // If the keepAlive setting changed, we need to reset the pools we have
     if (this.keepAlive !== keepAlive) {
       const results = await Promise.allSettled(Array.from(this.hl7Clients.values()).map((pool) => pool.closeAll()));
@@ -724,6 +739,11 @@ export class App {
   /** @returns The opened {@link DurableQueue}, or undefined when the queue setting is off. */
   getDurableQueue(): DurableQueue | undefined {
     return this.durableQueue;
+  }
+
+  /** @returns The agent-wide channelAutoRetry* settings, used as per-channel policy defaults. */
+  getChannelRetrySettings(): Partial<RetryPolicy> {
+    return this.channelRetrySettings;
   }
 
   getStats(): AgentStats {

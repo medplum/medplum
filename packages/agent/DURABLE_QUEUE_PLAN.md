@@ -217,15 +217,36 @@ States, exhaustively:
 
 | State | Set when | Set by | Terminal? |
 |---|---|---|---|
-| `queued` | row inserted, before WS send | `DurableQueue.enqueue` | no |
+| `queued` | row inserted, before WS send; OR a retryable failure was scheduled for auto-retry (`next_attempt_at` set, see §4.1) | `DurableQueue.enqueue`, `DurableQueue.scheduleRetry` | no |
 | `processing` | worker has claimed it and dispatched `agent:transmit:request` | `ChannelQueueWorker.claimNext` | no |
 | `processed` | server returned 2xx and the app-level ACK was successfully written to the source socket | `ChannelQueueWorker.markProcessed` | yes |
-| `errored` | server returned 4xx/5xx, or local error during processing, or row was found in `processing` on startup (interrupted) | `ChannelQueueWorker.markErrored` + `DurableQueue.recoverOnStartup` | yes (no auto-retry) |
+| `errored` | server returned 4xx/5xx, or local error during processing, or row was found in `processing` on startup (interrupted) — and the failure was not retryable (or retry attempts were exhausted / auto-retry is off) | `ChannelQueueWorker.markErrored` + `DurableQueue.recoverOnStartup` | yes |
 | `nacked` | the row was rejected at intake (DB error, duplicate-reject, malformed) before it ever queued — only used for audit when we *can* still INSERT the row but want to mark "we told the source NACK" | `DurableQueue.enqueueRejected` | yes |
 
 `nacked` is distinct from `errored`. `errored` rows have a `committed_at` (we successfully ACKed CA, then later failed downstream). `nacked` rows have `ack_sent_to_source=1` with a non-AA code and no `committed_at` — they exist for forensics but were never told to the sender as committed.
 
 If the worker crashes between server response and successfully sending the app-level ACK, on next startup the row is in `processing` and goes to `errored`. The recovery row preserves `server_response_body` and `server_status_code` if they were written, so an operator can manually replay the ACK if needed.
+
+### 4.1 Auto-retry (schema v2)
+
+Every post-commit failure is classified at the failure site with a `QueueErrorCode` (stored in `error_code` — never derived by parsing `last_error`):
+
+| Code | Class | Meaning |
+|---|---|---|
+| `server-error` | transient (retryable) | server returned 5xx |
+| `server-rate-limited` | transient (retryable) | server returned 429 |
+| `response-timeout` | ambiguous (not retryable) | timed out waiting for the server response; delivery unknown |
+| `interrupted` | ambiguous (not retryable) | row found in `processing` at startup |
+| `worker-stopped` | ambiguous (not retryable) | in-flight dispatch cancelled by worker shutdown |
+| `dispatch-failed` | ambiguous (not retryable) | dispatch failed for an unclassified reason |
+| `server-rejected` | permanent (never retryable) | server returned non-429 4xx — the message itself was rejected |
+| `ack-delivery-failed` | permanent (never retryable) | server processed the message (2xx); re-dispatching would duplicate |
+
+When the channel's retry policy is enabled (`autoRetry` URL param / `channelAutoRetry` agent setting, see §7) and the code is in `RETRYABLE_ERROR_CODES` with attempts remaining, `ChannelQueueWorker.handleFailure` calls `DurableQueue.scheduleRetry`: the row returns to `queued` with `next_attempt_at = now + min(maxDelayMs, baseDelayMs * multiplier^(attempt-1))`. Otherwise the row goes to `errored` (terminal, operator replay), with `error_code` recorded either way.
+
+Retries are **head-of-line blocking**: `claimNext` still selects the lowest-id `queued` row but returns nothing while that head row's `next_attempt_at` is in the future, so younger rows cannot skip ahead — preserving the per-channel FIFO guarantee (§1.1). A poison message blocks its channel only until `maxAttempts` exhausts. `attempt_count` keeps its meaning ("times the message could have reached the server"); `scheduleRetry` does not touch it because `claimNext` already counted the attempt.
+
+Ambiguous codes stay non-retryable until the server supports callback-keyed dedupe, at which point `response-timeout` could move into the retryable set.
 
 ---
 
@@ -350,12 +371,24 @@ Existing `Agent.setting[]` array continues to be the project-settings carrier. N
 | `queueRetentionMaxMb` | `valueInteger` | `512` | Soft cap on DB size. When exceeded, sweeper deletes oldest `processed` first, then oldest `errored` (with safeguard: minimum 30 days `errored` retention regardless of size cap). |
 | `queueErroredRetentionDays` | `valueInteger` | `90` | Floor for `errored` retention. |
 | `queueSweepIntervalSecs` | `valueInteger` | `3600` | How often the retention sweeper runs. |
+| `channelAutoRetry` | `valueBoolean` | `false` | Agent-wide default for auto-retry of retryable dispatch failures (§4.1). |
+| `channelAutoRetryBaseDelayMs` | `valueInteger` | `1000` | Delay before the first retry. |
+| `channelAutoRetryMaxDelayMs` | `valueInteger` | `60000` | Cap on the computed backoff delay. |
+| `channelAutoRetryMaxAttempts` | `valueInteger` | `10` | Total dispatch attempts before a retryable failure becomes terminal; `0` = retry indefinitely. |
+| `channelAutoRetryBackoffMultiplier` | `valueDecimal` | `2` | Exponential base; `1` = fixed-interval retry. |
 
 Per-channel URL query parameters (parsed in `configureHl7ServerAndConnections`, like existing `enhanced`, `encoding`, etc.):
 
 | Param | Values | Default | Meaning |
 |---|---|---|---|
 | `duplicateBehavior` | `reject` \| `idempotent` | `idempotent` | What to do when a row with the same `(channel, MSH.10)` is still in `queued` or `processing`. `reject` sends `CR` (enhanced) / `AR` (aaMode) and inserts a `nacked` row; `idempotent` returns the prior stored ACK (or a synthetic AA) and does not re-insert. |
+| `autoRetry` | `true` \| `false` | agent setting | Per-channel override of `channelAutoRetry`. Auto-retry requires the durable queue; enabling it with the queue off logs a warning and has no effect. |
+| `autoRetryBaseDelayMs` | number ≥ 1 | agent setting | Per-channel override of `channelAutoRetryBaseDelayMs`. |
+| `autoRetryMaxDelayMs` | number ≥ 1 | agent setting | Per-channel override of `channelAutoRetryMaxDelayMs`. |
+| `autoRetryMaxAttempts` | number ≥ 0 | agent setting | Per-channel override of `channelAutoRetryMaxAttempts`; `0` = retry indefinitely. |
+| `autoRetryBackoffMultiplier` | number ≥ 1 | agent setting | Per-channel override of `channelAutoRetryBackoffMultiplier`. |
+
+Auto-retry resolution is per-field: endpoint URL param → agent `channelAutoRetry*` setting → built-in default (see `resolveRetryPolicy` in `hl7.ts`). Invalid values warn and fall through to the next layer.
 
 `Agent.setting` is the established pattern (see memory `[[feedback_project_settings_pattern]]`).
 

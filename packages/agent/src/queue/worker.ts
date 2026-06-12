@@ -6,6 +6,7 @@ import { ContentType, normalizeErrorString, sleep } from '@medplum/core';
 import type { App } from '../app';
 import type { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
+import { QueueError, QueueErrorCode, RETRYABLE_ERROR_CODES } from './types';
 
 /**
  * Maximum time we wait for the Medplum server to respond to an
@@ -16,11 +17,50 @@ export const DEFAULT_WORKER_RESPONSE_TIMEOUT_MS = 60_000;
 /** Polling delay when the queue is empty (in addition to wake-on-notify). */
 export const DEFAULT_WORKER_IDLE_POLL_MS = 250;
 
+/**
+ * Per-channel auto-retry policy, resolved from endpoint query params layered
+ * over agent settings (see `configureHl7ServerAndConnections` in hl7.ts).
+ * Only failures whose {@link QueueErrorCode} is in {@link RETRYABLE_ERROR_CODES}
+ * are ever retried, regardless of this policy.
+ */
+export interface RetryPolicy {
+  /** Master switch. When false, every failure is terminal (today's behavior). */
+  enabled: boolean;
+  /** Delay before the first retry. */
+  baseDelayMs: number;
+  /** Cap on the computed backoff delay. */
+  maxDelayMs: number;
+  /** Total dispatch attempts before a retryable failure becomes terminal. 0 = retry indefinitely. */
+  maxAttempts: number;
+  /** Exponential base: delay = baseDelayMs * backoffMultiplier^(attempt-1). 1 = fixed interval. */
+  backoffMultiplier: number;
+}
+
+export const DEFAULT_RETRY_POLICY: RetryPolicy = {
+  enabled: false,
+  baseDelayMs: 1_000,
+  maxDelayMs: 60_000,
+  maxAttempts: 10,
+  backoffMultiplier: 2,
+};
+
+/**
+ * @param policy - The channel's retry policy.
+ * @param failedAttemptCount - How many dispatch attempts have failed so far (≥ 1).
+ * @returns Backoff delay before the next attempt, in milliseconds.
+ */
+export function computeRetryDelayMs(policy: RetryPolicy, failedAttemptCount: number): number {
+  const exponent = Math.max(0, failedAttemptCount - 1);
+  return Math.min(policy.maxDelayMs, policy.baseDelayMs * policy.backoffMultiplier ** exponent);
+}
+
 export interface ChannelQueueWorkerOptions {
   channelName: string;
   app: App;
   queue: DurableQueue;
   log: ILogger;
+  /** Auto-retry policy; default {@link DEFAULT_RETRY_POLICY} (disabled). */
+  retryPolicy?: RetryPolicy;
   /** Override for unit tests; default {@link DEFAULT_WORKER_RESPONSE_TIMEOUT_MS}. */
   responseTimeoutMs?: number;
   /** Override for unit tests; default {@link DEFAULT_WORKER_IDLE_POLL_MS}. */
@@ -77,6 +117,7 @@ export class ChannelQueueWorker {
   private readonly responseTimeoutMs: number;
   private readonly idlePollMs: number;
   private readonly sendAck: ChannelQueueWorkerOptions['sendAck'];
+  private retryPolicy: RetryPolicy;
 
   private running = false;
   private stopping = false;
@@ -94,7 +135,18 @@ export class ChannelQueueWorker {
     this.responseTimeoutMs = options.responseTimeoutMs ?? DEFAULT_WORKER_RESPONSE_TIMEOUT_MS;
     this.idlePollMs = options.idlePollMs ?? DEFAULT_WORKER_IDLE_POLL_MS;
     this.sendAck = options.sendAck;
+    this.retryPolicy = options.retryPolicy ?? DEFAULT_RETRY_POLICY;
     this.wakeSignal = makeWakeSignal();
+  }
+
+  /**
+   * Replaces the retry policy. Called on channel config reloads — the worker
+   * outlives `reloadConfig`, so policy changes are pushed rather than re-read.
+   * Applies to the next failure; an already-scheduled retry keeps its delay.
+   * @param policy - The newly resolved policy.
+   */
+  setRetryPolicy(policy: RetryPolicy): void {
+    this.retryPolicy = policy;
   }
 
   /** Starts the dispatch loop. No-op if already started. */
@@ -154,7 +206,7 @@ export class ChannelQueueWorker {
       const pending = this.pending;
       clearTimeout(pending.timeout);
       this.pending = undefined;
-      pending.reject(new Error('worker stopping'));
+      pending.reject(new QueueError(QueueErrorCode.WorkerStopped, 'worker stopping'));
     }
     // Wake the loop so it observes `stopping`.
     this.notify();
@@ -225,10 +277,8 @@ export class ChannelQueueWorker {
         // liveness gate keeps it there until the connection comes back.
         return;
       }
-      this.queue.markErrored(row.id, normalizeErrorString(err));
-      this.log.error(
-        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) errored during dispatch: ${normalizeErrorString(err)}`
-      );
+      const code = err instanceof QueueError ? err.code : QueueErrorCode.DispatchFailed;
+      this.handleFailure(row, code, normalizeErrorString(err));
       return;
     }
 
@@ -236,9 +286,7 @@ export class ChannelQueueWorker {
 
     const statusCode = response.statusCode ?? 0;
     if (statusCode >= 400) {
-      const msg = `Server returned ${statusCode}: ${response.body ?? ''}`;
-      this.queue.markErrored(row.id, msg);
-      this.log.warn(`Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) errored: ${msg}`);
+      this.handleFailure(row, classifyStatusCode(statusCode), `Server returned ${statusCode}: ${response.body ?? ''}`);
       return;
     }
 
@@ -246,16 +294,53 @@ export class ChannelQueueWorker {
     try {
       ackOk = this.sendAck(response, row);
     } catch (err) {
-      this.queue.markErrored(row.id, `ACK delivery threw: ${normalizeErrorString(err)}`);
+      // The server already processed the message (2xx); only the ACK back to the
+      // source failed. Never re-dispatched — that would double-process server-side.
+      this.handleFailure(row, QueueErrorCode.AckDeliveryFailed, `ACK delivery threw: ${normalizeErrorString(err)}`);
       return;
     }
 
     if (!ackOk) {
-      this.queue.markErrored(row.id, 'ACK delivery to source failed');
+      this.handleFailure(row, QueueErrorCode.AckDeliveryFailed, 'ACK delivery to source failed');
       return;
     }
 
+    if (row.attemptCount > 1) {
+      this.log.info(
+        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) succeeded after ${row.attemptCount} attempts`
+      );
+    }
     this.queue.markProcessed(row.id);
+  }
+
+  /**
+   * Single decision point for every post-commit failure: schedule a retry when
+   * the error code is retryable and the policy allows it, otherwise mark the
+   * row `errored` (terminal, operator replay).
+   * @param row - The row that failed; `attemptCount` reflects the attempt that just failed.
+   * @param code - Classification attached at the failure site.
+   * @param message - Human-readable error, written to `last_error` either way.
+   */
+  private handleFailure(row: InboundRow, code: QueueErrorCode, message: string): void {
+    const rowDesc = `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'})`;
+    const policy = this.retryPolicy;
+    if (policy.enabled && RETRYABLE_ERROR_CODES.has(code)) {
+      const attemptsRemain = policy.maxAttempts === 0 || row.attemptCount < policy.maxAttempts;
+      if (attemptsRemain) {
+        const delayMs = computeRetryDelayMs(policy, row.attemptCount);
+        if (this.queue.scheduleRetry(row.id, message, code, Date.now() + delayMs)) {
+          const attemptDesc = `attempt ${row.attemptCount + 1}${policy.maxAttempts > 0 ? `/${policy.maxAttempts}` : ''}`;
+          this.log.warn(`${rowDesc} failed (${code}), retrying in ${delayMs}ms (${attemptDesc}): ${message}`);
+          return;
+        }
+        // Row was no longer in `processing` (e.g. raced with shutdown recovery) —
+        // fall through to the terminal transition, which is a no-op for the same reason.
+      } else {
+        message = `${message} (${row.attemptCount} attempts exhausted)`;
+      }
+    }
+    this.queue.markErrored(row.id, message, code);
+    this.log.error(`${rowDesc} errored (${code}): ${message}`);
   }
 
   private async dispatch(row: InboundRow): Promise<AgentTransmitResponse> {
@@ -264,7 +349,12 @@ export class ChannelQueueWorker {
         if (this.pending?.row.id === row.id) {
           this.pending = undefined;
         }
-        reject(new Error(`Timed out after ${this.responseTimeoutMs}ms waiting for server response`));
+        reject(
+          new QueueError(
+            QueueErrorCode.ResponseTimeout,
+            `Timed out after ${this.responseTimeoutMs}ms waiting for server response`
+          )
+        );
       }, this.responseTimeoutMs);
       // node's setTimeout returns a Timeout that keeps the event loop alive by default;
       // .unref() prevents the worker from holding the process open during shutdown drains.
@@ -293,6 +383,23 @@ export class ChannelQueueWorker {
     // the loop still makes progress.
     await Promise.race([wake.promise, sleep(this.idlePollMs)]);
   }
+}
+
+/**
+ * Maps a server HTTP status to a {@link QueueErrorCode}: 5xx and 429 are
+ * transient (retryable); any other 4xx means the server rejected the message
+ * itself, which no retry can fix.
+ * @param statusCode - HTTP-style status code from the server response (≥ 400).
+ * @returns The classification for this failure.
+ */
+function classifyStatusCode(statusCode: number): QueueErrorCode {
+  if (statusCode === 429) {
+    return QueueErrorCode.ServerRateLimited;
+  }
+  if (statusCode >= 500) {
+    return QueueErrorCode.ServerError;
+  }
+  return QueueErrorCode.ServerRejected;
 }
 
 function makeWakeSignal(): { promise: Promise<void>; resolve: () => void } {

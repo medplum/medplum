@@ -77,6 +77,16 @@ export const MIGRATIONS: readonly Migration[] = [
       ) STRICT;
     `,
   },
+  {
+    version: 2,
+    sql: `
+      -- Auto-retry support: machine-readable failure classification plus the
+      -- earliest timestamp at which a retry-scheduled 'queued' row may be
+      -- claimed again. Both NULL for rows that have never failed.
+      ALTER TABLE inbound_hl7_messages ADD COLUMN error_code TEXT;
+      ALTER TABLE inbound_hl7_messages ADD COLUMN next_attempt_at INTEGER;
+    `,
+  },
 ];
 
 /**

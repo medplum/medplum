@@ -22,6 +22,63 @@ export const MessageState = {
 } as const;
 export type MessageState = (typeof MessageState)[keyof typeof MessageState];
 
+/**
+ * Machine-readable classification attached to every post-commit failure.
+ *
+ * Codes are attached at the failure site (the worker knows which path failed),
+ * stored in the `error_code` column, and checked against
+ * {@link RETRYABLE_ERROR_CODES} when auto-retry is enabled — never derived by
+ * parsing `last_error` strings.
+ *
+ * Classes:
+ * - Transient (retryable): the failure says nothing about the message itself,
+ *   so a later attempt can succeed.
+ * - Ambiguous (not retryable): the request may have reached the server, so
+ *   re-dispatching risks duplicate processing. Operator review required.
+ * - Permanent (not retryable): retrying can never help, or would actively
+ *   cause duplicate server-side processing.
+ */
+export const QueueErrorCode = {
+  /** Transient: server returned 5xx. */
+  ServerError: 'server-error',
+  /** Transient: server returned 429. */
+  ServerRateLimited: 'server-rate-limited',
+  /** Ambiguous: timed out waiting for the server response; delivery unknown. */
+  ResponseTimeout: 'response-timeout',
+  /** Ambiguous: row was in `processing` when the agent restarted. */
+  Interrupted: 'interrupted',
+  /** Ambiguous: in-flight dispatch was cancelled by worker shutdown. */
+  WorkerStopped: 'worker-stopped',
+  /** Ambiguous: dispatch failed for an unclassified reason; delivery unknown. */
+  DispatchFailed: 'dispatch-failed',
+  /** Permanent: server returned 4xx (other than 429) — the message was rejected. */
+  ServerRejected: 'server-rejected',
+  /** Permanent: server processed the message (2xx) but the ACK could not be delivered to the source. */
+  AckDeliveryFailed: 'ack-delivery-failed',
+} as const;
+export type QueueErrorCode = (typeof QueueErrorCode)[keyof typeof QueueErrorCode];
+
+/**
+ * The set of {@link QueueErrorCode} values eligible for auto-retry. Membership
+ * here means "a later attempt can succeed and cannot duplicate work" —
+ * ambiguous-delivery codes stay out until the server supports callback-keyed
+ * dedupe.
+ */
+export const RETRYABLE_ERROR_CODES: ReadonlySet<QueueErrorCode> = new Set<QueueErrorCode>([
+  QueueErrorCode.ServerError,
+  QueueErrorCode.ServerRateLimited,
+]);
+
+/** An Error carrying its {@link QueueErrorCode} from the failure site to the retry decision. */
+export class QueueError extends Error {
+  readonly code: QueueErrorCode;
+
+  constructor(code: QueueErrorCode, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
 /** Per-channel intake policy for duplicate MSH.10 collisions. See §7 of the plan. */
 export const DuplicateBehavior = {
   REJECT: 'reject',
@@ -54,6 +111,8 @@ export interface InboundRow {
   serverStatusCode: number | null;
   ackSentToSource: boolean;
   lastError: string | null;
+  errorCode: QueueErrorCode | null;
+  nextAttemptAt: number | null;
   seqNo: number | null;
   receivedAt: number;
   committedAt: number | null;

@@ -10,8 +10,9 @@ import type { App } from '../app';
 import { createMockLogger } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
-import { MessageState } from './types';
-import { ChannelQueueWorker } from './worker';
+import { MessageState, QueueErrorCode } from './types';
+import type { RetryPolicy } from './worker';
+import { ChannelQueueWorker, computeRetryDelayMs } from './worker';
 
 /**
  * Stub App used by worker tests. Only the surface the worker touches is implemented;
@@ -154,6 +155,8 @@ describe('ChannelQueueWorker', () => {
 
     await waitFor(() => queue.getById(r1.id)?.state === MessageState.ERRORED);
     expect(queue.getById(r1.id)?.lastError).toContain('503');
+    // Default policy is auto-retry OFF — even a retryable code goes straight to errored.
+    expect(queue.getById(r1.id)?.errorCode).toBe(QueueErrorCode.ServerError);
 
     await waitFor(() => worker.hasInFlight() && r2.callbackId === lastCallback(worker));
     worker.onServerResponse(makeResponse(r2.callbackId, 200));
@@ -386,6 +389,179 @@ describe('ChannelQueueWorker', () => {
       sendAck: () => true,
     });
     expect(() => worker.onWebSocketDisconnect()).not.toThrow();
+  });
+
+  describe('auto-retry', () => {
+    // Multiplier 1 keeps every backoff at baseDelayMs so test timing stays flat.
+    const fastRetryPolicy: RetryPolicy = {
+      enabled: true,
+      baseDelayMs: 20,
+      maxDelayMs: 100,
+      maxAttempts: 3,
+      backoffMultiplier: 1,
+    };
+
+    function makeWorker(app: App, sendAck: () => boolean, policy?: Partial<RetryPolicy>): ChannelQueueWorker {
+      return new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck,
+        responseTimeoutMs: 5000,
+        idlePollMs: 10,
+        retryPolicy: { ...fastRetryPolicy, ...policy },
+      });
+    }
+
+    test('server 5xx schedules a retry and the row succeeds on the next attempt', async () => {
+      const r = enqueueOne(queue, 'RETRY1');
+      const { app } = makeStubApp();
+      const worker = makeWorker(app, () => true);
+      worker.start();
+
+      await waitFor(() => worker.hasInFlight());
+      const before = Date.now();
+      worker.onServerResponse(makeResponse(r.callbackId, 503, 'service down'));
+
+      // The row returns to queued (not errored) with retry metadata.
+      await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED);
+      const scheduled = queue.getById(r.id);
+      expect(scheduled?.errorCode).toBe(QueueErrorCode.ServerError);
+      expect(scheduled?.lastError).toContain('503');
+      expect(scheduled?.nextAttemptAt).toBeGreaterThanOrEqual(before + fastRetryPolicy.baseDelayMs);
+
+      // After the backoff, the worker re-claims the same row; succeed it.
+      await waitFor(() => worker.hasInFlight(), 2000);
+      worker.onServerResponse(makeResponse(r.callbackId, 200));
+      await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+      expect(queue.getById(r.id)?.attemptCount).toBe(2);
+      await worker.stop();
+    });
+
+    test('429 is retryable; other 4xx is terminal with server-rejected', async () => {
+      const r429 = enqueueOne(queue, 'RL1');
+      const r400 = enqueueOne(queue, 'BAD1');
+      const { app } = makeStubApp();
+      const worker = makeWorker(app, () => true);
+      worker.start();
+
+      await waitFor(() => worker.hasInFlight() && lastCallback(worker) === r429.callbackId);
+      worker.onServerResponse(makeResponse(r429.callbackId, 429, 'slow down'));
+      await waitFor(() => queue.getById(r429.id)?.state === MessageState.QUEUED);
+      expect(queue.getById(r429.id)?.errorCode).toBe(QueueErrorCode.ServerRateLimited);
+
+      // The retrying row blocks the channel head-of-line; satisfy it first.
+      await waitFor(() => worker.hasInFlight() && lastCallback(worker) === r429.callbackId, 2000);
+      worker.onServerResponse(makeResponse(r429.callbackId, 200));
+      await waitFor(() => queue.getById(r429.id)?.state === MessageState.PROCESSED);
+
+      // A non-429 4xx never retries, even with the policy enabled.
+      await waitFor(() => worker.hasInFlight() && lastCallback(worker) === r400.callbackId, 2000);
+      worker.onServerResponse(makeResponse(r400.callbackId, 400, 'bad message'));
+      await waitFor(() => queue.getById(r400.id)?.state === MessageState.ERRORED);
+      expect(queue.getById(r400.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
+      await worker.stop();
+    });
+
+    test('a retryable failure becomes terminal once maxAttempts is exhausted', async () => {
+      const r = enqueueOne(queue, 'EXHAUST1');
+      const { app } = makeStubApp();
+      const worker = makeWorker(app, () => true, { maxAttempts: 2 });
+      worker.start();
+
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        await waitFor(() => worker.hasInFlight(), 2000);
+        worker.onServerResponse(makeResponse(r.callbackId, 503, 'still down'));
+        await waitFor(() => queue.getById(r.id)?.state !== MessageState.PROCESSING);
+      }
+
+      const final = queue.getById(r.id);
+      expect(final?.state).toBe(MessageState.ERRORED);
+      expect(final?.attemptCount).toBe(2);
+      expect(final?.errorCode).toBe(QueueErrorCode.ServerError);
+      expect(final?.lastError).toContain('2 attempts exhausted');
+      await worker.stop();
+    });
+
+    test('ACK delivery failure is never retried — the server already processed the message', async () => {
+      const r = enqueueOne(queue, 'ACKFAIL1');
+      const { app } = makeStubApp();
+      const worker = makeWorker(app, () => false);
+      worker.start();
+
+      await waitFor(() => worker.hasInFlight());
+      worker.onServerResponse(makeResponse(r.callbackId, 200));
+      await waitFor(() => queue.getById(r.id)?.state === MessageState.ERRORED);
+      expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.AckDeliveryFailed);
+      expect(queue.getById(r.id)?.attemptCount).toBe(1);
+      await worker.stop();
+    });
+
+    test('response timeout is ambiguous and not retried even with the policy enabled', async () => {
+      const r = enqueueOne(queue, 'AMBIG1');
+      const { app } = makeStubApp();
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        responseTimeoutMs: 50,
+        idlePollMs: 10,
+        retryPolicy: fastRetryPolicy,
+      });
+      worker.start();
+      await waitFor(() => queue.getById(r.id)?.state === MessageState.ERRORED, 2000);
+      expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+      await worker.stop();
+    });
+
+    test('setRetryPolicy applies to subsequent failures', async () => {
+      const r = enqueueOne(queue, 'SWAP1');
+      const { app } = makeStubApp();
+      const worker = makeWorker(app, () => true, { enabled: false });
+      worker.setRetryPolicy(fastRetryPolicy);
+      worker.start();
+
+      await waitFor(() => worker.hasInFlight());
+      worker.onServerResponse(makeResponse(r.callbackId, 503, 'down'));
+      await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED);
+      expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ServerError);
+
+      await waitFor(() => worker.hasInFlight(), 2000);
+      worker.onServerResponse(makeResponse(r.callbackId, 200));
+      await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+      await worker.stop();
+    });
+  });
+});
+
+describe('computeRetryDelayMs', () => {
+  const policy: RetryPolicy = {
+    enabled: true,
+    baseDelayMs: 1000,
+    maxDelayMs: 60_000,
+    maxAttempts: 0,
+    backoffMultiplier: 2,
+  };
+
+  test('grows exponentially from baseDelayMs', () => {
+    expect(computeRetryDelayMs(policy, 1)).toBe(1000);
+    expect(computeRetryDelayMs(policy, 2)).toBe(2000);
+    expect(computeRetryDelayMs(policy, 3)).toBe(4000);
+    expect(computeRetryDelayMs(policy, 5)).toBe(16000);
+  });
+
+  test('caps at maxDelayMs', () => {
+    expect(computeRetryDelayMs(policy, 7)).toBe(60_000);
+    expect(computeRetryDelayMs(policy, 50)).toBe(60_000);
+  });
+
+  test('multiplier 1 gives a fixed interval', () => {
+    const fixed = { ...policy, backoffMultiplier: 1 };
+    expect(computeRetryDelayMs(fixed, 1)).toBe(1000);
+    expect(computeRetryDelayMs(fixed, 10)).toBe(1000);
   });
 });
 
