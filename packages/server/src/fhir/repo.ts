@@ -7,6 +7,7 @@ import {
   allOk,
   append,
   badRequest,
+  catalogResourceTypes,
   deepClone,
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
@@ -1461,8 +1462,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const projectIds = [this.context.projects[0].id]; // Always include the first project
 
-    if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
-      // If the resource type is a project admin resource, only include the current project (the first project)
+    if (
+      resourceType !== 'Project' &&
+      projectAdminResourceTypes.includes(resourceType) &&
+      !catalogResourceTypes.includes(resourceType)
+    ) {
+      // If the resource type is a project admin resource, only include the current project (the first project).
+      // Catalog resource types (Package, PackageRelease) are exempt: they describe a deployment-wide,
+      // read-only package catalog and fall through to the link + exportedResourceType logic below so that
+      // a project admin can browse/install packages published in a linked catalog project.
       return projectIds;
     }
 

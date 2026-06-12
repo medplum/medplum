@@ -21,6 +21,9 @@ import type {
   Login,
   OperationOutcome,
   Organization,
+  Package,
+  PackageInstallation,
+  PackageRelease,
   Patient,
   Practitioner,
   Project,
@@ -2137,6 +2140,96 @@ describe('FHIR Repo', () => {
       await expect(repo.readResource<Patient>('Patient', linkedPatient.id)).rejects.toThrow(
         new OperationOutcomeError(notFound)
       );
+    }));
+
+  test('Catalog resource types are readable from a linked project', () =>
+    withTestContext(async () => {
+      // A catalog project publishes Package/PackageRelease and exports them so
+      // linked customer projects can browse and install (option 1: link + export).
+      const { project: catalogProject } = await createTestProject({
+        project: { exportedResourceType: ['Package', 'PackageRelease'] },
+      });
+      const catalogRepo = await getProjectSystemRepo(catalogProject);
+
+      const pkg = await catalogRepo.createResource<Package>({
+        resourceType: 'Package',
+        meta: { project: catalogProject.id },
+        status: 'active',
+        name: 'Catalog Package',
+        author: { reference: 'Organization/' + randomUUID() },
+      });
+      const release = await catalogRepo.createResource<PackageRelease>({
+        resourceType: 'PackageRelease',
+        meta: { project: catalogProject.id },
+        package: createReference(pkg),
+        version: '1.0.0',
+        content: { contentType: 'application/fhir+json', url: `Binary/${randomUUID()}` },
+      });
+      // An installation lives in the catalog project but must NOT leak cross-project.
+      const catalogInstall = await catalogRepo.createResource<PackageInstallation>({
+        resourceType: 'PackageInstallation',
+        meta: { project: catalogProject.id },
+        package: createReference(pkg),
+        packageRelease: createReference(release),
+        version: '1.0.0',
+        status: 'installed',
+        installedBy: { reference: 'ClientApplication/' + randomUUID() },
+      });
+
+      // Customer project links to the catalog project; the membership is a project admin.
+      const { repo: customerRepo } = await createTestProject({
+        project: { link: [{ project: createReference(catalogProject) }] },
+        membership: { admin: true },
+        withRepo: true,
+      });
+
+      // Catalog Package/PackageRelease are readable and searchable cross-project.
+      const readPkg = await customerRepo.readResource<Package>('Package', pkg.id);
+      expect(readPkg.id).toStrictEqual(pkg.id);
+      const readRelease = await customerRepo.readResource<PackageRelease>('PackageRelease', release.id);
+      expect(readRelease.id).toStrictEqual(release.id);
+
+      const packages = await customerRepo.searchResources<Package>({ resourceType: 'Package' });
+      expect(packages.map((p) => p.id)).toContain(pkg.id);
+      const releases = await customerRepo.searchResources<PackageRelease>({ resourceType: 'PackageRelease' });
+      expect(releases.map((r) => r.id)).toContain(release.id);
+
+      // PackageInstallation is a project-admin resource that is NOT a catalog type, so it
+      // stays scoped to the owning project even across a link.
+      await expect(
+        customerRepo.readResource<PackageInstallation>('PackageInstallation', catalogInstall.id)
+      ).rejects.toThrow(new OperationOutcomeError(notFound));
+      const installs = await customerRepo.searchResources<PackageInstallation>({ resourceType: 'PackageInstallation' });
+      expect(installs.map((i) => i.id)).not.toContain(catalogInstall.id);
+    }));
+
+  test('Catalog resource types are not readable cross-project without export', () =>
+    withTestContext(async () => {
+      // Without exportedResourceType (and without listing the catalog types), a linked
+      // project must not expose its Packages — link alone is insufficient.
+      const { project: catalogProject } = await createTestProject({
+        project: { exportedResourceType: ['Organization'] },
+      });
+      const catalogRepo = await getProjectSystemRepo(catalogProject);
+      const pkg = await catalogRepo.createResource<Package>({
+        resourceType: 'Package',
+        meta: { project: catalogProject.id },
+        status: 'active',
+        name: 'Unexported Catalog Package',
+        author: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const { repo: customerRepo } = await createTestProject({
+        project: { link: [{ project: createReference(catalogProject) }] },
+        membership: { admin: true },
+        withRepo: true,
+      });
+
+      await expect(customerRepo.readResource<Package>('Package', pkg.id)).rejects.toThrow(
+        new OperationOutcomeError(notFound)
+      );
+      const packages = await customerRepo.searchResources<Package>({ resourceType: 'Package' });
+      expect(packages.map((p) => p.id)).not.toContain(pkg.id);
     }));
 
   test('Project.exportedResourceType allows resources in primary project', () =>

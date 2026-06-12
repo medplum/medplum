@@ -7,6 +7,7 @@ import type {
   Bundle,
   Extension,
   OperationOutcome,
+  Package,
   PackageInstallation,
   PackageRelease,
   Project,
@@ -186,6 +187,94 @@ describe('PackageRelease $install', () => {
     expect(installations.length).toBe(1);
     expect(installations[0].status).toBe('installed');
     expect(installations[0].version).toBe('1.0.0');
+  });
+
+  test('Project admin can browse and install a release from a linked catalog project', async () => {
+    const systemRepo = getGlobalSystemRepo();
+
+    // Catalog project publishes the package and exports the catalog types (option 1: link + export).
+    const { project: catalogProject } = await createTestProject({
+      project: { exportedResourceType: ['Package', 'PackageRelease'] },
+    });
+
+    // Customer project links to the catalog and authenticates as a project admin.
+    const customer = await createTestProject({
+      withAccessToken: true,
+      membership: { admin: true },
+      project: { link: [{ project: createReference(catalogProject) }] },
+    });
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      meta: { project: customer.project.id },
+      type: 'transaction',
+      entry: [
+        {
+          resource: { resourceType: 'Patient', name: [{ given: ['Catalog'], family: 'Install' }] },
+          request: { method: 'POST', url: 'Patient' },
+        },
+      ],
+    };
+
+    // Package, Binary, and PackageRelease all live in the catalog project.
+    const pkg = await withTestContext(() =>
+      systemRepo.createResource<Package>({
+        resourceType: 'Package',
+        meta: { project: catalogProject.id },
+        status: 'active',
+        name: 'Linked Catalog Package',
+        author: { reference: 'Organization/' + randomUUID() },
+      })
+    );
+    const binary = await withTestContext(() =>
+      systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        meta: { project: catalogProject.id },
+        contentType: ContentType.FHIR_JSON,
+      })
+    );
+    const packageRelease = await withTestContext(() =>
+      systemRepo.createResource<PackageRelease>({
+        resourceType: 'PackageRelease',
+        meta: { project: catalogProject.id },
+        package: createReference(pkg),
+        version: '1.0.0',
+        content: { contentType: ContentType.FHIR_JSON, url: `Binary/${binary.id}` },
+      })
+    );
+
+    const mockBinaryStorage = new MockBinaryStorage(JSON.stringify(bundle));
+    jest.spyOn(storage, 'getBinaryStorage').mockImplementation(() => mockBinaryStorage as unknown as BinaryStorage);
+
+    // Browse: the customer admin can read the catalog release cross-link.
+    const browse = await request(app)
+      .get(`/fhir/R4/PackageRelease/${packageRelease.id}`)
+      .set('Authorization', 'Bearer ' + customer.accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send();
+    expect(browse.status).toBe(200);
+
+    // Install: $install succeeds even though the release + Binary live in the catalog project.
+    const res = await request(app)
+      .post(`/fhir/R4/PackageRelease/${packageRelease.id}/$install`)
+      .set('Authorization', 'Bearer ' + customer.accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/PackageInstallation?version=1.0.0`)
+      .set('Authorization', 'Bearer ' + customer.accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send();
+    expect(res2.status).toBe(200);
+    const installations = res2.body.entry?.map((e: any) => e.resource) as PackageInstallation[];
+    expect(installations?.length).toBe(1);
+    expect(installations[0].status).toBe('installed');
+    // PackageInstallation is not a catalog type, so it stays scoped to the caller's
+    // project. Finding it via the customer's own admin token proves the install record
+    // landed in the customer project, not the catalog.
+    expect(installations[0].packageRelease?.reference).toBe(`PackageRelease/${packageRelease.id}`);
   });
 
   test('Error handling when bundle processing fails', async () => {

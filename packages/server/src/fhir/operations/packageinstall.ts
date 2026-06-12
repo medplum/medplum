@@ -122,11 +122,16 @@ export async function packageInstallHandler(
   }
 
   const { id } = req.params;
+  // Caller-scoped read is the authorization gate: a project admin can only reach a
+  // PackageRelease in their own project or in a linked catalog project that exports
+  // it (see catalogResourceTypes / Project.exportedResourceType).
   const packageRelease = await repo.readResource<PackageRelease>('PackageRelease', id);
 
   // Load the install Bundle (Stage 1 content) and validate the optional settings
   // body against the bundled config Questionnaire *before* mutating any state.
-  const bundle = await readPackageBundle(repo, packageRelease);
+  // The Bundle is stored as a Binary, which cannot be exported cross-project, so it
+  // is read via systemRepo now that the caller has proven access to the release.
+  const bundle = await readPackageBundle(systemRepo, packageRelease);
   const settings = parseSettings(req.body);
   const questionnaire = findQuestionnaire(bundle);
   if (questionnaire) {
