@@ -8,6 +8,9 @@ import express from 'express';
 import { simpleParser } from 'mailparser';
 import request from 'supertest';
 import { vi } from 'vitest';
+import { initApp, shutdownApp } from '../app';
+import { loadTestConfig } from '../config/loader';
+import { initTestAuth } from '../test.setup';
 
 const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
   const mockSendMail = vi.fn().mockResolvedValue({ messageId: '123' });
@@ -19,9 +22,6 @@ vi.mock('nodemailer', () => ({
   createTransport: mockCreateTransport,
   default: { createTransport: mockCreateTransport },
 }));
-import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
-import { initTestAuth } from '../test.setup';
 
 const app = express();
 
@@ -110,17 +110,17 @@ describe('Email API Routes', () => {
     mockSendMail.mockClear();
 
     const accessToken = await initTestAuth({
-        membership: { admin: true },
-        project: {
-          secret: [
-            { name: 'smtpHost', valueString: 'smtp.project.example.com' },
-            { name: 'smtpPort', valueInteger: 587 },
-            { name: 'smtpUsername', valueString: 'projectuser' },
-            { name: 'smtpPassword', valueString: 'projectpass' },
-            { name: 'smtpFromAddress', valueString: 'support@project.example.com' },
-          ],
-        },
-      });
+      membership: { admin: true },
+      project: {
+        secret: [
+          { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+          { name: 'smtpPort', valueInteger: 587 },
+          { name: 'smtpUsername', valueString: 'projectuser' },
+          { name: 'smtpPassword', valueString: 'projectpass' },
+          { name: 'smtpFromAddress', valueString: 'support@project.example.com' },
+        ],
+      },
+    });
     const res = await request(app)
       .post(`/email/v1/send`)
       .set('Authorization', 'Bearer ' + accessToken)

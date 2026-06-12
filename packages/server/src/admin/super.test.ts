@@ -11,13 +11,6 @@ import type { MockedFunction, MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import type * as RepoModule from '../fhir/repo';
-
-type RepositoryType = RepoModule.Repository;
-
-// Keep in sync with Repository.VERSION in fhir/repo.ts
-const REPOSITORY_VERSION = 15;
-
-let Repository: typeof RepoModule.Repository;
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
@@ -28,6 +21,13 @@ import type * as CronModule from '../workers/cron';
 import type * as LambdaCleanerModule from '../workers/lambda-cleaner';
 import type * as ReindexModule from '../workers/reindex';
 
+type RepositoryType = RepoModule.Repository;
+
+// Keep in sync with Repository.VERSION in fhir/repo.ts
+const REPOSITORY_VERSION = 15;
+
+let Repository: typeof RepoModule.Repository;
+
 type CronJobData = CronModule.CronJobData;
 type LambdaCleanerJobData = LambdaCleanerModule.LambdaCleanerJobData;
 type ReindexJobData = ReindexModule.ReindexJobData;
@@ -37,8 +37,7 @@ let getLambdaCleanerQueue: typeof LambdaCleanerModule.getLambdaCleanerQueue;
 let getReindexQueue: typeof ReindexModule.getReindexQueue;
 
 // Keep in sync with LAMBDA_NAME_REGEX_PATTERN in cloud/aws/deploy.ts
-const LAMBDA_NAME_REGEX_PATTERN =
-  '^medplum-bot-lambda-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+const LAMBDA_NAME_REGEX_PATTERN = '^medplum-bot-lambda-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 
 const mockPgMaintenanceQueries: string[] = [];
 

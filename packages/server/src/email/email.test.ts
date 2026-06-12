@@ -11,6 +11,13 @@ import { simpleParser } from 'mailparser';
 import type Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
 import { vi } from 'vitest';
+import { initAppServices, shutdownApp } from '../app';
+import { getConfig, loadTestConfig } from '../config/loader';
+import { getGlobalSystemRepo } from '../fhir/repo';
+import { globalLogger } from '../logger';
+import { getBinaryStorage } from '../storage/loader';
+import { withTestContext } from '../test.setup';
+import { sendEmail } from './email';
 
 const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
   const mockSendMail = vi.fn().mockResolvedValue({ messageId: '123' });
@@ -22,13 +29,6 @@ vi.mock('nodemailer', () => ({
   createTransport: mockCreateTransport,
   default: { createTransport: mockCreateTransport },
 }));
-import { initAppServices, shutdownApp } from '../app';
-import { getConfig, loadTestConfig } from '../config/loader';
-import { getGlobalSystemRepo } from '../fhir/repo';
-import { globalLogger } from '../logger';
-import { getBinaryStorage } from '../storage/loader';
-import { withTestContext } from '../test.setup';
-import { sendEmail } from './email';
 
 describe('Email', () => {
   const systemRepo = getGlobalSystemRepo();

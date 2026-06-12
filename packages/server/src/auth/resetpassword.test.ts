@@ -189,28 +189,28 @@ describe('Reset Password', () => {
     mockSendMail.mockClear();
 
     const project = await withTestContext(async () => {
-        const project = await systemRepo.createResource<Project>({
-          resourceType: 'Project',
-          name: 'Project SMTP Reset Project',
-          secret: [
-            { name: 'smtpHost', valueString: 'smtp.project.example.com' },
-            { name: 'smtpPort', valueInteger: 587 },
-            { name: 'smtpUsername', valueString: 'projectuser' },
-            { name: 'smtpPassword', valueString: 'projectpass' },
-            { name: 'smtpFromAddress', valueString: 'support@project.example.com' },
-          ],
-        });
-        await systemRepo.createResource<User>({
-          resourceType: 'User',
-          meta: { project: project.id },
-          firstName: 'Reset',
-          lastName: 'Reset',
-          email,
-          passwordHash: 'abc',
-          project: createReference(project),
-        });
-        return project;
+      const project = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'Project SMTP Reset Project',
+        secret: [
+          { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+          { name: 'smtpPort', valueInteger: 587 },
+          { name: 'smtpUsername', valueString: 'projectuser' },
+          { name: 'smtpPassword', valueString: 'projectpass' },
+          { name: 'smtpFromAddress', valueString: 'support@project.example.com' },
+        ],
       });
+      await systemRepo.createResource<User>({
+        resourceType: 'User',
+        meta: { project: project.id },
+        firstName: 'Reset',
+        lastName: 'Reset',
+        email,
+        passwordHash: 'abc',
+        project: createReference(project),
+      });
+      return project;
+    });
 
     const res = await request(app).post('/auth/resetpassword').type('json').send({
       email,
