@@ -915,7 +915,7 @@ This Schedule will use the default availability for the "Follow-Up" service (Mon
       "extension": [
         "url": "https://medplum.com/fhir/service-type-reference",
         "valueReference": {
-          "reference": "HealthcareService/new-patient-visit,
+          "reference": "HealthcareService/new-patient-visit",
           "display": "New Patient Visit"
         }
       ]
@@ -931,7 +931,7 @@ This Schedule will use the default availability for the "Follow-Up" service (Mon
       "extension": [
         "url": "https://medplum.com/fhir/service-type-reference",
         "valueReference": {
-          "reference": "HealthcareService/follow-up,
+          "reference": "HealthcareService/follow-up",
           "display": "Follow-up Visit"
         }
       ]
