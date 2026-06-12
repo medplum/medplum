@@ -3,12 +3,14 @@
 import type { PaperProps } from '@mantine/core';
 import {
   ActionIcon,
+  Badge,
   Group,
   LoadingOverlay,
   Menu,
   Paper,
   Popover,
   ScrollArea,
+  SegmentedControl,
   Skeleton,
   Stack,
   Text,
@@ -36,6 +38,11 @@ import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';
 import { DocumentPicker } from './DocumentPicker';
+
+const SMS_DELIVERY_LABELS: Partial<Record<string, string>> = {
+  completed: 'Delivered',
+  stopped: 'Delivery failed',
+};
 
 /**
  * Returns the URL only when its scheme is http or https, blocking javascript: / data: XSS vectors.
@@ -120,6 +127,10 @@ export interface BaseChatProps extends PaperProps {
   readonly uploadEnabled?: boolean;
   readonly attachmentSubjectRef?: Reference;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
+  /** If provided, a channel selector appears above the input allowing the user to send via SMS. */
+  readonly sendSmsMessage?: (message: string) => Promise<void>;
+  /** When true, the SMS option in the channel selector is disabled (e.g. patient has no phone number on file). */
+  readonly smsPatientHasPhone?: boolean;
 }
 
 /**
@@ -145,6 +156,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     uploadEnabled = false,
     attachmentSubjectRef,
     onViewInDocuments,
+    sendSmsMessage,
+    smsPatientHasPhone,
     ...paperProps
   } = props;
   const medplum = useMedplum();
@@ -156,6 +169,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 
   const [profile, setProfile] = useState(medplum.getProfile());
   const [reconnecting, setReconnecting] = useState(false);
+  const [smsModeSelected, setSmsModeSelected] = useState(false);
+  const smsMode = smsModeSelected && !!sendSmsMessage;
   const [loading, setLoading] = useState(true);
   const [pendingFile, setPendingFile] = useState<File | undefined>(undefined);
   const [pendingDocRef, setPendingDocRef] = useState<DocumentReference | undefined>(undefined);
@@ -240,6 +255,18 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         return;
       }
       const message = formData.message?.trim() ?? '';
+
+      if (smsMode) {
+        if (!message) {
+          return;
+        }
+        if (inputRef.current) {
+          inputRef.current.value = '';
+        }
+        sendSmsMessage?.(message).catch(console.error);
+        return;
+      }
+
       if (!message && !pendingFile && !pendingDocRef) {
         return;
       }
@@ -254,7 +281,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       setPendingDocRef(undefined);
       scrollToBottomRef.current = true;
     },
-    [inputDisabled, sendMessage, pendingFile, pendingDocRef]
+    [inputDisabled, smsMode, sendSmsMessage, sendMessage, pendingFile, pendingDocRef]
   );
 
   // Disabled because we can make sure this will trigger an update when local profile !== medplum.getProfile()
@@ -394,6 +421,19 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         )}
       </div>
       <div className={classes.chatInputContainer}>
+        {sendSmsMessage && (
+          <Group mb={4}>
+            <SegmentedControl
+              size="xs"
+              data={[
+                { label: 'Chat', value: 'chat' },
+                { label: 'Text Message', value: 'sms', disabled: !smsPatientHasPhone },
+              ]}
+              value={smsMode ? 'sms' : 'chat'}
+              onChange={(val) => setSmsModeSelected(val === 'sms')}
+            />
+          </Group>
+        )}
         {(pendingFile || pendingDocRef) && (
           <Group className={classes.chatPendingFile} gap={4} align="center" wrap="nowrap">
             {pendingDocRef ? <IconFileText size="0.75rem" /> : <IconPaperclip size="0.75rem" />}
@@ -516,23 +556,36 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
   const sentTime = new Date(communication.sent ?? -1);
   const seenTime = new Date(communication.received ?? -1);
   const senderResource = useResource(communication.sender);
+  const isSms = communication.medium?.some((m) => m.coding?.some((c) => c.code === 'SMSWRIT'));
   return (
     <div className={classes.chatBubbleOuterWrap}>
-      <Text
-        fz="xs"
+      <Group
+        gap={6}
         mb="xs"
-        fw={500}
-        className={alignment === 'right' ? classes.chatBubbleNameRight : undefined}
-        aria-label="Sender name"
+        justify={alignment === 'right' ? 'flex-end' : 'flex-start'}
+        align="center"
+        wrap="nowrap"
       >
-        {senderResource ? getDisplayString(senderResource) : '[Unknown sender]'}
-        &nbsp;&middot;&nbsp;
-        <Text span c="dimmed" fz="xs">
-          {Number.isNaN(sentTime.getTime())
-            ? ''
-            : sentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+        <Text
+          fz="xs"
+          fw={500}
+          className={alignment === 'right' ? classes.chatBubbleNameRight : undefined}
+          aria-label="Sender name"
+        >
+          {senderResource ? getDisplayString(senderResource) : '[Unknown sender]'}
+          &nbsp;&middot;&nbsp;
+          <Text span c="dimmed" fz="xs">
+            {Number.isNaN(sentTime.getTime())
+              ? ''
+              : sentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+          </Text>
         </Text>
-      </Text>
+        {isSms && (
+          <Badge size="xs" variant="light" color="blue">
+            Text Message
+          </Badge>
+        )}
+      </Group>
       <div
         className={
           alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
@@ -549,6 +602,11 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
           Delivered {seenTime.getHours()}:{seenTime.getMinutes().toString().length === 1 ? '0' : ''}
           {seenTime.getMinutes()}
         </div>
+      )}
+      {isSms && alignment === 'right' && (
+        <Text fz="xs" c="dimmed" ta="right">
+          {SMS_DELIVERY_LABELS[communication.status ?? ''] ?? 'Sending...'}
+        </Text>
       )}
     </div>
   );

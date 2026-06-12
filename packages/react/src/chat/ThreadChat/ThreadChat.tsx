@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
-import type { Communication, CommunicationPayload, DocumentReference, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
+import type { Communication, CommunicationPayload, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
+import type { TwilioSmsSender } from '@medplum/react-hooks';
+import { useMedplum, useMedplumProfile, usePrevious, useTwilioSms } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseChat } from '../BaseChat/BaseChat';
+
+const VALID_SMS_SENDER_TYPES = new Set(['Practitioner', 'Organization', 'PractitionerRole']);
 
 export interface ThreadChatProps {
   readonly thread: Communication;
@@ -25,9 +28,38 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
   const profile = useMedplumProfile();
   const prevThreadId = usePrevious(thread?.id);
   const [communications, setCommunications] = useState<Communication[]>([]);
+  const [patient, setPatient] = useState<Patient | undefined>();
+
+  useEffect(() => {
+    if (!thread.subject) {
+      return;
+    }
+    medplum
+      .readReference(thread.subject)
+      .then((r) => {
+        if (r.resourceType === 'Patient') {
+          setPatient(r);
+        }
+      })
+      .catch(console.error);
+  }, [medplum, thread.subject]);
+
+  const smsSender = useMemo(
+    () =>
+      profile && VALID_SMS_SENDER_TYPES.has(profile.resourceType)
+        ? createReference(profile as TwilioSmsSender)
+        : undefined,
+    [profile]
+  );
 
   const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
   const threadRef = useMemo(() => createReference(thread), [thread]);
+
+  const { sendSms, twilioAvailable, patientHasPhone } = useTwilioSms({
+    patient: patient ?? { resourceType: 'Patient' },
+    sender: smsSender,
+    threadRef,
+  });
 
   useEffect(() => {
     if (thread?.id !== prevThreadId) {
@@ -122,6 +154,8 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
       onError={onError}
       attachmentSubjectRef={thread.subject}
       onViewInDocuments={onViewInDocuments}
+      sendSmsMessage={twilioAvailable && patient ? sendSms : undefined}
+      smsPatientHasPhone={patientHasPhone}
     />
   );
 }

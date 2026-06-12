@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Communication, OperationDefinition, Patient } from '@medplum/fhirtypes';
+import type { Communication, OperationDefinition, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, renderHook } from '@testing-library/react';
 import type { JSX, ReactNode } from 'react';
@@ -31,6 +31,20 @@ const MOCK_OPERATION_DEF: OperationDefinition & { id: string } = {
   system: false,
   type: true,
   instance: true,
+};
+
+const PATIENT_EMAIL_ONLY: Patient = {
+  resourceType: 'Patient',
+  id: 'patient-3',
+  telecom: [{ system: 'email', value: 'patient@example.com' }],
+};
+
+const MOCK_SENDER_REF: Reference<Practitioner> = {
+  reference: 'Practitioner/practitioner-1',
+};
+
+const MOCK_THREAD_REF: Reference<Communication> = {
+  reference: 'Communication/thread-1',
 };
 
 const MOCK_SENT_COMMUNICATION: Communication = {
@@ -71,7 +85,6 @@ describe('useTwilioSms', () => {
     expect(result.current.twilioAvailable).toBe(false);
     expect(result.current.sending).toBe(false);
     expect(result.current.error).toBeUndefined();
-    expect(result.current.deliveryStatus).toBeUndefined();
   });
 
   test('twilioAvailable becomes true when OperationDefinition is found', async () => {
@@ -167,65 +180,86 @@ describe('useTwilioSms', () => {
     expect(result.current.sending).toBe(false);
   });
 
-  test('deliveryStatus reflects the status of the sent Communication', async () => {
+  test('sendSms clears error state on retry', async () => {
     vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
-    vi.spyOn(medplum, 'post').mockResolvedValue(MOCK_SENT_COMMUNICATION);
+    const postSpy = vi.spyOn(medplum, 'post');
+    postSpy.mockRejectedValueOnce(new Error('Twilio API error'));
+    postSpy.mockResolvedValueOnce(MOCK_SENT_COMMUNICATION);
     const { result } = renderHook(() => useTwilioSms({ patient: TEST_PATIENT }), { wrapper });
 
     await act(async () => {
-      await result.current.sendSms('Hello!');
+      await result.current.sendSms('Hello!').catch(() => undefined);
     });
+    expect(result.current.error?.message).toBe('Twilio API error');
 
-    expect(result.current.deliveryStatus).toBe('in-progress');
+    await act(async () => {
+      await result.current.sendSms('Hello again!');
+    });
+    expect(result.current.error).toBeUndefined();
   });
 
-  test('deliveryStatus updates to completed via subscription event', async () => {
+  test('sendSms includes sender in body when provided', async () => {
     vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
-    vi.spyOn(medplum, 'post').mockResolvedValue(MOCK_SENT_COMMUNICATION);
-    const { result } = renderHook(() => useTwilioSms({ patient: TEST_PATIENT }), { wrapper });
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue(MOCK_SENT_COMMUNICATION);
+    const { result } = renderHook(
+      () => useTwilioSms({ patient: TEST_PATIENT, sender: MOCK_SENDER_REF }),
+      { wrapper }
+    );
 
     await act(async () => {
       await result.current.sendSms('Hello!');
     });
 
-    const updatedCommunication: Communication = { ...MOCK_SENT_COMMUNICATION, status: 'completed' };
-
-    await act(async () => {
-      medplum.getSubscriptionManager().emitEventForCriteria<'message'>(`Communication?_id=${MOCK_SENT_COMMUNICATION.id}`, {
-        type: 'message',
-        payload: {
-          resourceType: 'Bundle',
-          type: 'history',
-          entry: [{ resource: updatedCommunication }],
-        },
-      });
-    });
-
-    expect(result.current.deliveryStatus).toBe('completed');
+    const [, body] = postSpy.mock.calls[0] as [URL, Communication];
+    expect(body.sender).toEqual(MOCK_SENDER_REF);
   });
 
-  test('deliveryStatus updates to stopped on failed delivery', async () => {
+  test('sendSms omits sender from body when not provided', async () => {
     vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
-    vi.spyOn(medplum, 'post').mockResolvedValue(MOCK_SENT_COMMUNICATION);
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue(MOCK_SENT_COMMUNICATION);
     const { result } = renderHook(() => useTwilioSms({ patient: TEST_PATIENT }), { wrapper });
 
     await act(async () => {
       await result.current.sendSms('Hello!');
     });
 
-    const failedCommunication: Communication = { ...MOCK_SENT_COMMUNICATION, status: 'stopped' };
+    const [, body] = postSpy.mock.calls[0] as [URL, Communication];
+    expect(body.sender).toBeUndefined();
+  });
+
+  test('sendSms includes threadRef as partOf when provided', async () => {
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue(MOCK_SENT_COMMUNICATION);
+    const { result } = renderHook(
+      () => useTwilioSms({ patient: TEST_PATIENT, threadRef: MOCK_THREAD_REF }),
+      { wrapper }
+    );
 
     await act(async () => {
-      medplum.getSubscriptionManager().emitEventForCriteria<'message'>(`Communication?_id=${MOCK_SENT_COMMUNICATION.id}`, {
-        type: 'message',
-        payload: {
-          resourceType: 'Bundle',
-          type: 'history',
-          entry: [{ resource: failedCommunication }],
-        },
-      });
+      await result.current.sendSms('Hello!');
     });
 
-    expect(result.current.deliveryStatus).toBe('stopped');
+    const [, body] = postSpy.mock.calls[0] as [URL, Communication];
+    expect(body.partOf).toEqual([MOCK_THREAD_REF]);
+  });
+
+  test('sendSms omits partOf when threadRef not provided', async () => {
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue(MOCK_SENT_COMMUNICATION);
+    const { result } = renderHook(() => useTwilioSms({ patient: TEST_PATIENT }), { wrapper });
+
+    await act(async () => {
+      await result.current.sendSms('Hello!');
+    });
+
+    const [, body] = postSpy.mock.calls[0] as [URL, Communication];
+    expect(body.partOf).toBeUndefined();
+  });
+
+  test('patientHasPhone is false when patient has only non-phone telecom', () => {
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
+    const { result } = renderHook(() => useTwilioSms({ patient: PATIENT_EMAIL_ONLY }), { wrapper });
+
+    expect(result.current.patientHasPhone).toBe(false);
   });
 });
