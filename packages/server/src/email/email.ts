@@ -95,7 +95,11 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
  * @param options - The nodemailer options.
  * @param projectId - Optional project ID when using project-level SMTP configuration.
  */
-async function sendEmailViaSmtp(smtpConfig: MedplumSmtpConfig, options: Mail.Options): Promise<void> {
+async function sendEmailViaSmtp(
+  smtpConfig: MedplumSmtpConfig,
+  options: Mail.Options,
+  projectId?: string
+): Promise<void> {
   const transport = createTransport({
     host: smtpConfig.host,
     port: smtpConfig.port,
