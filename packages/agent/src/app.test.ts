@@ -361,6 +361,11 @@ describe('App', () => {
             socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
           }
         }
+        // Keep answering heartbeats so that, once we're live, the connection stays up and the
+        // final liveness assertion isn't racing against the missed-heartbeat reconnect.
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+        }
       });
     });
 
@@ -374,19 +379,29 @@ describe('App', () => {
     app.heartbeatPeriod = 100;
     await app.start();
 
-    // Wait for the first connect request, which goes unanswered
-    while (state.connectRequestCount < 1) {
+    // Bail out of the polling loops after this long so a regression fails on the assertions below
+    // (with a useful message) instead of hanging until the whole test times out.
+    const WAIT_TIMEOUT_MS = 5000;
+
+    // Wait for the first connect request, which goes unanswered -- the agent is stuck
+    // open-but-not-live
+    let deadline = Date.now() + WAIT_TIMEOUT_MS;
+    while (state.connectRequestCount < 1 && Date.now() < deadline) {
       await sleep(50);
     }
+    expect(state.connectRequestCount).toBeGreaterThanOrEqual(1);
+    expect(app.getStats().live).toBe(false);
 
-    // The agent should notice it never became live and force a reconnect,
-    // which re-sends the connect request -- this time we answer it
+    // The agent should notice it never became live and force a reconnect, which re-sends the
+    // connect request -- this time we answer it, so the agent should fully recover to live
     state.respondToConnect = true;
-    while (state.connectRequestCount < 2) {
+    deadline = Date.now() + WAIT_TIMEOUT_MS;
+    while (!app.getStats().live && Date.now() < deadline) {
       await sleep(50);
     }
 
     expect(state.connectRequestCount).toBeGreaterThanOrEqual(2);
+    expect(app.getStats().live).toBe(true);
 
     await app.stop();
     mockServer.stop();
