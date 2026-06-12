@@ -42,6 +42,7 @@ import {
 } from '../pubsub';
 import * as redisModule from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
+import { closeWebSocketSubscriptionHandler } from './subscriptions';
 import { findAndExecDispatchJob } from '../workers/test-utils';
 
 jest.mock('hibp');
@@ -1959,6 +1960,10 @@ describe('Subscription Heartbeat', () => {
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  beforeEach(() => {
+    closeWebSocketSubscriptionHandler();
   });
 
   test('Heartbeat received after binding to token', () =>
