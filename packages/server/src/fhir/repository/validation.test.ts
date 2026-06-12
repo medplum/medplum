@@ -6,12 +6,12 @@ import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import assert from 'node:assert';
 import { resolve } from 'path';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
 import { getGlobalSystemRepo } from '../repo';
-import { vi } from 'vitest';
 
 vi.mock('hibp');
 

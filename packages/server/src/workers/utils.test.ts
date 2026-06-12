@@ -4,12 +4,12 @@ import type { Subscription } from '@medplum/fhirtypes';
 import type { Job, Worker } from 'bullmq';
 import { Queue } from 'bullmq';
 import EventEmitter from 'node:events';
+import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
 import { withTestContext } from '../test.setup';
 import { addVerboseQueueLogging, DefaultQueueRegistry, getWorkerBullmqConfig, isJobSuccessful } from './utils';
-import { vi } from 'vitest';
 
 describe('worker utils', () => {
   beforeAll(async () => {

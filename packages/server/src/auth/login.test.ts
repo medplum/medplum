@@ -1,17 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import type { WithId } from '@medplum/core';
 import { createReference, LOINC } from '@medplum/core';
 import type { ClientApplication, Project } from '@medplum/fhirtypes';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -20,8 +22,6 @@ import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 
 vi.mock('hibp');
 vi.mock('node-fetch', () => ({ default: vi.fn() }));

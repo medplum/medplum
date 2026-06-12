@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { vi } from 'vitest';
 import type * as NodeFetch from 'node-fetch';
+import { vi } from 'vitest';
 
 // MCP fhir-request uses MedplumClient + node-fetch for in-process HTTP calls.
 vi.mock('node-fetch', async () => {
@@ -102,71 +102,70 @@ describe('MCP Routes', () => {
     await client.connect(transport);
 
     try {
-    const tools = await client.listTools();
-    expect(tools).toMatchObject({
-      tools: [{ name: 'search' }, { name: 'fetch' }, { name: 'fhir-request' }],
-    });
+      const tools = await client.listTools();
+      expect(tools).toMatchObject({
+        tools: [{ name: 'search' }, { name: 'fetch' }, { name: 'fhir-request' }],
+      });
 
-    const searchToolResult = await client.callTool({ name: 'search', arguments: { query: 'example' } });
-    expect(searchToolResult).toBeDefined();
+      const searchToolResult = await client.callTool({ name: 'search', arguments: { query: 'example' } });
+      expect(searchToolResult).toBeDefined();
 
-    const fetchToolResult = await client.callTool({ name: 'fetch', arguments: { id: 'example-id' } });
-    expect(fetchToolResult).toBeDefined();
+      const fetchToolResult = await client.callTool({ name: 'fetch', arguments: { id: 'example-id' } });
+      expect(fetchToolResult).toBeDefined();
 
-    // Convenience method to make FHIR requests
-    async function fhirRequest<T>(method: string, path: string, body?: any): Promise<T> {
-      const mcpResult = (await client.callTool({
-        name: 'fhir-request',
-        arguments: { method, path, body },
-      })) as any;
-      const json = mcpResult.content?.[0]?.text;
-      try {
-        return JSON.parse(json);
-      } catch (err) {
-        return normalizeOperationOutcome(err) as T;
+      // Convenience method to make FHIR requests
+      async function fhirRequest<T>(method: string, path: string, body?: any): Promise<T> {
+        const mcpResult = (await client.callTool({
+          name: 'fhir-request',
+          arguments: { method, path, body },
+        })) as any;
+        const json = mcpResult.content?.[0]?.text;
+        try {
+          return JSON.parse(json);
+        } catch (err) {
+          return normalizeOperationOutcome(err) as T;
+        }
       }
-    }
 
-    // 1. create
-    const createResult = await fhirRequest<Patient>('POST', 'Patient', {
-      resourceType: 'Patient',
-      name: [{ family: 'Doe', given: ['John'] }],
-    });
-    expect(createResult.resourceType).toBe('Patient');
+      // 1. create
+      const createResult = await fhirRequest<Patient>('POST', 'Patient', {
+        resourceType: 'Patient',
+        name: [{ family: 'Doe', given: ['John'] }],
+      });
+      expect(createResult.resourceType).toBe('Patient');
 
-    // 2. read
-    const readResult = await fhirRequest<Patient>('GET', `Patient/${createResult.id}`);
-    expect(readResult.id).toBe(createResult.id);
+      // 2. read
+      const readResult = await fhirRequest<Patient>('GET', `Patient/${createResult.id}`);
+      expect(readResult.id).toBe(createResult.id);
 
-    // 3. update
-    const updateResult = await fhirRequest<Patient>('PUT', `Patient/${createResult.id}`, {
-      ...createResult,
-      address: [{ line: ['123 Main St'], city: 'Springfield', state: 'IL', postalCode: '62701' }],
-    });
-    expect(updateResult.address).toBeDefined();
-    expect(updateResult.address?.[0].line).toEqual(['123 Main St']);
+      // 3. update
+      const updateResult = await fhirRequest<Patient>('PUT', `Patient/${createResult.id}`, {
+        ...createResult,
+        address: [{ line: ['123 Main St'], city: 'Springfield', state: 'IL', postalCode: '62701' }],
+      });
+      expect(updateResult.address).toBeDefined();
+      expect(updateResult.address?.[0].line).toEqual(['123 Main St']);
 
-    // 4. patch
-    const patchedResult = await fhirRequest<Patient>('PATCH', `Patient/${updateResult.id}`, [
-      { op: 'test', path: '/meta/versionId', value: updateResult.meta?.versionId },
-      { op: 'add', path: '/telecom', value: [{ system: 'phone', value: '555-1234' }] },
-    ]);
-    expect(patchedResult.telecom).toBeDefined();
-    expect(patchedResult.telecom?.[0].value).toBe('555-1234');
+      // 4. patch
+      const patchedResult = await fhirRequest<Patient>('PATCH', `Patient/${updateResult.id}`, [
+        { op: 'test', path: '/meta/versionId', value: updateResult.meta?.versionId },
+        { op: 'add', path: '/telecom', value: [{ system: 'phone', value: '555-1234' }] },
+      ]);
+      expect(patchedResult.telecom).toBeDefined();
+      expect(patchedResult.telecom?.[0].value).toBe('555-1234');
 
-    // 5. search
-    const searchResult = await fhirRequest<Bundle<Patient>>('GET', 'Patient');
-    expect(searchResult.resourceType);
-    expect(searchResult.entry?.some((e) => e.resource?.id === createResult.id)).toBeTruthy();
+      // 5. search
+      const searchResult = await fhirRequest<Bundle<Patient>>('GET', 'Patient');
+      expect(searchResult.resourceType);
+      expect(searchResult.entry?.some((e) => e.resource?.id === createResult.id)).toBeTruthy();
 
-    // 6. delete
-    const deleteResult = await fhirRequest<OperationOutcome>('DELETE', `Patient/${createResult.id}`);
-    expect(deleteResult.id).toBe('ok');
+      // 6. delete
+      const deleteResult = await fhirRequest<OperationOutcome>('DELETE', `Patient/${createResult.id}`);
+      expect(deleteResult.id).toBe('ok');
 
-    // 7. unknown method
-    const unknownMethodResult = await fhirRequest<OperationOutcome>('UNKNOWN', `Patient/${createResult.id}`);
-    expect(unknownMethodResult.issue?.[0].severity).toBe('error');
-
+      // 7. unknown method
+      const unknownMethodResult = await fhirRequest<OperationOutcome>('UNKNOWN', `Patient/${createResult.id}`);
+      expect(unknownMethodResult.issue?.[0].severity).toBe('error');
     } finally {
       await client.close();
     }

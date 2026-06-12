@@ -5,13 +5,13 @@ import { formatFamilyName, formatGivenName, formatHumanName, Operator } from '@m
 import type { HumanName, Patient, Practitioner, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import type { PoolClient } from 'pg';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { bundleContains, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
 import type { HumanNameTableRow } from './humanname';
 import { getHumanNameSortValue, HumanNameTable } from './humanname';
-import { vi } from 'vitest';
 
 describe('HumanName Lookup Table', () => {
   const systemRepo = getGlobalSystemRepo();

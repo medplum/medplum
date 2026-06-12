@@ -13,7 +13,10 @@ function getStoreKey(bucketName: string, key: string): string {
   return `${bucketName}/${key}`;
 }
 
-function createMockFile(bucketName: string, key: string): {
+function createMockFile(
+  bucketName: string,
+  key: string
+): {
   save: ReturnType<typeof vi.fn>;
   createWriteStream: ReturnType<typeof vi.fn>;
   createReadStream: ReturnType<typeof vi.fn>;

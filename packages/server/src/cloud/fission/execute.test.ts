@@ -4,13 +4,13 @@ import type { WithId } from '@medplum/core';
 import type { Bot, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth } from '../../test.setup';
 import { executeFissionBot } from './execute';
 import type * as FissionUtils from './utils';
-import { vi } from 'vitest';
 
 const { mockExecuteFissionFunction } = vi.hoisted(() => ({
   mockExecuteFissionFunction: vi.fn(),

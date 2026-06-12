@@ -8,17 +8,17 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import { simpleParser } from 'mailparser';
+import nodemailer from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
+import type { Mock, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
-import { vi } from 'vitest';
-import type { Mock, MockInstance } from 'vitest';
-import nodemailer from 'nodemailer';
 
 const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
   const sendMail = vi.fn().mockResolvedValue({ messageId: '123' });

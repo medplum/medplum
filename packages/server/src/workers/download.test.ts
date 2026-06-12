@@ -5,13 +5,13 @@ import type { DocumentReference, Media } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDownloadJob, mockFetchResponse } from './test-utils';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 
 vi.mock('node-fetch', () => ({ default: vi.fn() }));
 

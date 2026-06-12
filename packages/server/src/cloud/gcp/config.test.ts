@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { vi } from 'vitest';
 import { mockAccessSecretVersion } from '../../__mocks__/@google-cloud/secret-manager';
 import type { MedplumServerConfig } from '../../config/types';
 import { loadGcpConfig } from './config';
-import { vi } from 'vitest';
 
 describe('GCP Config', () => {
   beforeEach(() => {

@@ -6,11 +6,11 @@ import type { Login, Patient, StructureDefinition, UserConfiguration } from '@me
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, withTestContext } from '../../test.setup';
 import { getRepoForLogin } from '../accesspolicy';
-import { vi } from 'vitest';
 
 vi.mock('hibp');
 

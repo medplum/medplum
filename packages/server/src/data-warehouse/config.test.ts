@@ -4,8 +4,8 @@
 import type * as MedplumCore from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import pgConnectionString from 'pg-connection-string';
-import type * as DataWarehouseConfig from './config';
 import { vi } from 'vitest';
+import type * as DataWarehouseConfig from './config';
 
 const { mockGetResourceTypes } = vi.hoisted(() => ({
   mockGetResourceTypes: vi.fn((): ResourceType[] => ['Patient', 'Observation', 'Account', 'AuditEvent']),

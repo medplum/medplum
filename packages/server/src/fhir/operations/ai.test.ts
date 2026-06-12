@@ -4,11 +4,11 @@ import { ContentType } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth } from '../../test.setup';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 
 const app = express();
 let accessToken: string;

@@ -13,14 +13,14 @@ import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { Readable } from 'stream';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { SelectQuery } from '../fhir/sql';
 import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 
 vi.mock('hibp');
 vi.mock('node-fetch', () => ({ default: vi.fn() }));

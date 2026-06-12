@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type * as Express from 'express';
 import http from 'node:http';
+import type * as Pg from 'pg';
+import { vi } from 'vitest';
 import { shutdownApp } from './app';
 import { main, runFromCli } from './index';
 import * as loggerModule from './logger';
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
-import type * as Express from 'express';
-import type * as Pg from 'pg';
-import { vi } from 'vitest';
 
 // This isn't really a mocked value, but it must be named that way to appease jest
 // If we followed the same mocking pattern as `database.test.ts`, this wouldn't be necessary
@@ -17,7 +17,7 @@ const mockLatestVersion = getLatestPostDeployMigrationVersion();
 vi.mock('express', async (importOriginal) => {
   const original = await importOriginal<typeof Express>();
   const express = original.default ?? original;
-  const listen = vi.fn(() => ({} as http.Server));
+  const listen = vi.fn(() => ({}) as http.Server);
   const fn = (): any => {
     const app = express();
     app.listen = listen;

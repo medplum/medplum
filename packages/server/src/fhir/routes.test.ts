@@ -6,12 +6,12 @@ import type { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fh
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
-import { vi } from 'vitest';
 
 const app = express();
 let accessToken: string;

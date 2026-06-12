@@ -6,6 +6,8 @@ import type { Queue } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
+import type { MockedFunction, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
@@ -13,11 +15,11 @@ import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
+import { getPostDeployMigrationVersions } from '../migrations/migration-versions';
 import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
-import { getPostDeployMigrationVersions } from '../migrations/migration-versions';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import type { CronJobData } from '../workers/cron';
 import * as cronWorkers from '../workers/cron';
@@ -26,8 +28,6 @@ import type { LambdaCleanerJobData } from '../workers/lambda-cleaner';
 import { getLambdaCleanerQueue } from '../workers/lambda-cleaner';
 import type { ReindexJobData } from '../workers/reindex';
 import { getReindexQueue } from '../workers/reindex';
-import { vi } from 'vitest';
-import type { MockedFunction, MockInstance } from 'vitest';
 
 vi.mock('../seeds/valuesets');
 vi.mock('../seeds/structuredefinitions');
@@ -41,9 +41,7 @@ const mockRebuildR4ValueSets = rebuildR4ValueSets as MockedFunction<typeof rebui
 const mockRebuildR4StructureDefinitions = rebuildR4StructureDefinitions as MockedFunction<
   typeof rebuildR4StructureDefinitions
 >;
-const mockRebuildR4SearchParameters = rebuildR4SearchParameters as MockedFunction<
-  typeof rebuildR4SearchParameters
->;
+const mockRebuildR4SearchParameters = rebuildR4SearchParameters as MockedFunction<typeof rebuildR4SearchParameters>;
 
 describe('Super Admin routes', () => {
   let processStdoutWriteSpy: MockInstance;

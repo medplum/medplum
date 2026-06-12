@@ -4,6 +4,8 @@ import { badRequest, ContentType, getReferenceString, unsupportedMediaType } fro
 import type { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
+import type { Mock, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { inviteUser } from './admin/invite';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
@@ -13,8 +15,6 @@ import { globalLogger } from './logger';
 import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
 import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
-import { vi } from 'vitest';
-import type { Mock, MockInstance } from 'vitest';
 
 describe('App', () => {
   let stdOutSpy: MockInstance;

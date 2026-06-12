@@ -4,6 +4,7 @@ import type { Express } from 'express';
 import express from 'express';
 import type { Server } from 'node:http';
 import request from 'superwstest';
+import { vi } from 'vitest';
 import type { WebSocket } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -12,7 +13,6 @@ import { globalLogger } from '../logger';
 import * as redis from '../redis';
 import { withTestContext } from '../test.setup';
 import { handleEchoConnection } from './echo';
-import { vi } from 'vitest';
 
 describe('Echo websocket', () => {
   let app: Express;

@@ -5,6 +5,8 @@ import type { Binary, Bundle, Encounter, Patient, Practitioner, Resource, Servic
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config/loader';
@@ -13,8 +15,6 @@ import { getCacheRedis } from '../../redis';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 import * as searchFile from '../search';
-import { vi  } from 'vitest';
-import type {MockInstance} from 'vitest';
 
 const app = express();
 let practitioner: Practitioner;

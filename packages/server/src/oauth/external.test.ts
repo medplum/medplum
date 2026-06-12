@@ -7,14 +7,14 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 
 vi.mock('node-fetch', () => ({ default: vi.fn() }));
 

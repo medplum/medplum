@@ -20,6 +20,7 @@ import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import request from 'supertest';
+import type { Mock } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
@@ -30,7 +31,6 @@ import {
   setupRecaptchaMock,
   withTestContext,
 } from '../../test.setup';
-import type { Mock } from 'vitest';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { createProject } from './projectinit';
 

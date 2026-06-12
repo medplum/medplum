@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../../app';
 import { loadTestConfig } from '../../../config/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../../test.setup';
 import { getGlobalSystemRepo, Repository } from '../../repo';
 import { AsyncJobExecutor } from './asyncjobexecutor';
-import { vi } from 'vitest';
 
 describe('AsyncJobExecutor', () => {
   const app = express();

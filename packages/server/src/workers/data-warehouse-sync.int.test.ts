@@ -18,6 +18,7 @@ import type { Job } from 'bullmq';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import * as dataWarehouseConfig from '../data-warehouse/config';
@@ -25,7 +26,6 @@ import { toIcebergTableName } from '../data-warehouse/config';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import type { DataWarehouseSyncJobData } from './data-warehouse-sync';
 import { processDataWarehouseSyncJob } from './data-warehouse-sync';
-import { vi } from 'vitest';
 
 /** Isolated history table in medplum_test so we do not collide with real FHIR history tables. */
 const HISTORY_TABLE = 'DwWorkerSyncIntTest_history';

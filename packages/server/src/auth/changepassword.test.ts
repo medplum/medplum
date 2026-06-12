@@ -6,12 +6,12 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 
 vi.mock('hibp');
 vi.mock('node-fetch', () => ({ default: vi.fn() }));

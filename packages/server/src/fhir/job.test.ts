@@ -5,12 +5,12 @@ import type { AsyncJob } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { Repository } from './repo';
-import { vi } from 'vitest';
 
 const app = express();
 

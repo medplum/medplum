@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { vi } from 'vitest';
 import type { MedplumServerConfig } from './types';
 import type * as ValidateConfig from './validate-config';
-import { vi } from 'vitest';
 
 const { mockGetWarehouseSyncPostgresTableNames } = vi.hoisted(() => ({
   mockGetWarehouseSyncPostgresTableNames: vi.fn(() => ['Patient_History', 'Observation_History', 'Account_History']),

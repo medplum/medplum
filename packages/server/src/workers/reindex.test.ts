@@ -391,8 +391,7 @@ describe('Reindex Worker', () => {
 
       const reindexJob = new ReindexJob(systemRepo);
       const processIterationSpy = vi.spyOn(reindexJob, 'processIteration');
-      vi
-        .spyOn(systemRepo, 'search')
+      vi.spyOn(systemRepo, 'search')
         .mockRejectedValueOnce(new Error('Transient error 1'))
         .mockRejectedValueOnce(new Error('Transient error 2'));
 
@@ -445,8 +444,7 @@ describe('Reindex Worker', () => {
 
       const reindexJob = new ReindexJob(systemRepo);
       const processIterationSpy = vi.spyOn(reindexJob, 'processIteration');
-      vi
-        .spyOn(systemRepo, 'search')
+      vi.spyOn(systemRepo, 'search')
         .mockRejectedValueOnce(new Error('Persistent error'))
         .mockRejectedValueOnce(new Error('Persistent error'));
 
@@ -1086,8 +1084,7 @@ describe('Job cancellation', () => {
       vi.spyOn(systemRepo, 'updateResource').mockReturnValueOnce(error);
       // Simulate job being cancelled in the middle of the worker execution, after the initial status check
       // but before the job would update the resource itself
-      vi
-        .spyOn(systemRepo, 'readResource')
+      vi.spyOn(systemRepo, 'readResource')
         .mockReturnValueOnce(Promise.resolve(originalJob))
         .mockReturnValueOnce(Promise.resolve(cancelledJob));
 

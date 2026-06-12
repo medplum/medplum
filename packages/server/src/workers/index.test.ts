@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
 import { addBackgroundJobs, closeWorkers, initWorkers } from '.';
 import { loadTestConfig } from '../config/loader';
 import type { WorkerName } from '../config/types';
@@ -16,7 +17,6 @@ import * as dispatchModule from './dispatch';
 import * as downloadModule from './download';
 import * as subscriptionModule from './subscription';
 import { queueRegistry } from './utils';
-import { vi } from 'vitest';
 
 describe('Workers', () => {
   beforeAll(() => {

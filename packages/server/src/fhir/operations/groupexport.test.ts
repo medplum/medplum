@@ -4,6 +4,7 @@ import { ContentType } from '@medplum/core';
 import type { BulkDataExportOutput, Group, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
@@ -12,7 +13,6 @@ import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } fro
 import { getGlobalSystemRepo } from '../repo';
 import { groupExportResources } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
-import { vi } from 'vitest';
 
 describe('Group Export', () => {
   const app = express();

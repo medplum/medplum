@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { flatMapMax } from './array';
 import { vi } from 'vitest';
+import { flatMapMax } from './array';
 
 describe('flatMapMax', () => {
   test('iterates only until `count` entries have been generated', () => {

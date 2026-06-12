@@ -3,6 +3,8 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { createReference, getReferenceString } from '@medplum/core';
 import type { AccessPolicy, Patient, Project, Subscription, UserConfiguration } from '@medplum/fhirtypes';
+import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -11,8 +13,6 @@ import { createTestProject, withTestContext } from '../test.setup';
 import { createBot } from './operations/botinit';
 import { deployBot } from './operations/deploy';
 import type { Repository } from './repo';
-import { vi  } from 'vitest';
-import type {MockInstance} from 'vitest';
 
 describe('FHIR Repo', () => {
   let project: WithId<Project>;

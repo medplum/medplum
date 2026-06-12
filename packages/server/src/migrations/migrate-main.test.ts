@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { vi } from 'vitest';
 import type * as NodeFs from 'node:fs';
+import { vi } from 'vitest';
 
 const manifestState = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports

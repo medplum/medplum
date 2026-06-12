@@ -5,11 +5,11 @@ import { ContentType } from '@medplum/core';
 import type { Resource, Subscription } from '@medplum/fhirtypes';
 import type { Job, Queue } from 'bullmq';
 import { UnrecoverableError } from 'bullmq';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { execDispatchJob, getDispatchQueue } from './dispatch';
 import { execDownloadJob, getDownloadQueue } from './download';
 import { execSubscriptionJob, getSubscriptionQueue } from './subscription';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 
 /**
  * Finds the dispatch job for the given resource and interaction, and executes it.

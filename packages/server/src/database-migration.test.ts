@@ -3,13 +3,13 @@
 import type { WithId } from '@medplum/core';
 import { allOk, badRequest, createReference, getReferenceString, parseSearchRequest } from '@medplum/core';
 import type { AsyncJob, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import type { Queue, Job } from 'bullmq';
-import { vi } from 'vitest';
-import type { MockedFunction, MockInstance } from 'vitest';
+import type { Job, Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import type { Pool, PoolClient } from 'pg';
 import request from 'supertest';
+import type { MockedFunction, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
@@ -22,6 +22,7 @@ import type {
   CustomPostDeployMigrationJobData,
   PostDeployJobData,
 } from './migrations/data/types';
+import type * as MigrationDataV1 from './migrations/data/v1';
 import * as migrateModule from './migrations/migrate';
 import * as migrationUtils from './migrations/migration-utils';
 import {
@@ -36,12 +37,11 @@ import { generateAccessToken } from './oauth/keys';
 import { createTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
 import * as workers from './workers';
-import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
 import type * as PostDeployMigration from './workers/post-deploy-migration';
+import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
 import type { ReindexJobData } from './workers/reindex';
 import { getReindexQueue, prepareReindexJobData, ReindexJob } from './workers/reindex';
 import { queueRegistry } from './workers/utils';
-import type * as MigrationDataV1 from './migrations/data/v1';
 
 const DEFAULT_SERVER_VERSION = '3.3.0';
 const DEFAULT_POST_DEPLOY_VERSION = 0;
@@ -51,11 +51,9 @@ const mockValues = {
   postDeployVersion: DEFAULT_POST_DEPLOY_VERSION,
 };
 
-const mockGetPostDeployVersion = vi
-  .fn<typeof migrationSql.getPostDeployVersion>()
-  .mockImplementation(async () => {
-    return mockValues.postDeployVersion;
-  });
+const mockGetPostDeployVersion = vi.fn<typeof migrationSql.getPostDeployVersion>().mockImplementation(async () => {
+  return mockValues.postDeployVersion;
+});
 
 const mockMarkPostDeployMigrationCompleted = vi
   .fn<typeof migrationSql.markPostDeployMigrationCompleted>()
@@ -71,9 +69,9 @@ const migrationMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('./migrations/data/v1', async () => {
-  const { prepareCustomMigrationJobData, runCustomMigration } = await vi.importActual<
-    typeof PostDeployMigration
-  >('./workers/post-deploy-migration');
+  const { prepareCustomMigrationJobData, runCustomMigration } = await vi.importActual<typeof PostDeployMigration>(
+    './workers/post-deploy-migration'
+  );
   migrationMocks.customMigration = {
     type: 'custom',
     prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
@@ -96,13 +94,14 @@ function mockQueueAddImplementation(queue: Queue | undefined): void {
   if (!queue) {
     return;
   }
-  vi.mocked(queue.add).mockImplementation(async (jobName, jobData, options) =>
-    ({
-      id: '123',
-      name: jobName,
-      data: jobData,
-      opts: options,
-    }) as Job
+  vi.mocked(queue.add).mockImplementation(
+    async (jobName, jobData, options) =>
+      ({
+        id: '123',
+        name: jobName,
+        data: jobData,
+        opts: options,
+      }) as Job
   );
 }
 
@@ -159,9 +158,7 @@ describe('Database migrations', () => {
     vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
     vi.spyOn(migrationSql, 'getPostDeployVersion').mockImplementation(mockGetPostDeployVersion);
-    vi
-      .spyOn(migrationSql, 'markPostDeployMigrationCompleted')
-      .mockImplementation(mockMarkPostDeployMigrationCompleted);
+    vi.spyOn(migrationSql, 'markPostDeployMigrationCompleted').mockImplementation(mockMarkPostDeployMigrationCompleted);
     vi.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
     vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1]);
     vi.spyOn(migrationVersions, 'getLatestPostDeployMigrationVersion').mockReturnValue(1);
@@ -190,9 +187,7 @@ describe('Database migrations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(migrationSql, 'getPostDeployVersion').mockImplementation(mockGetPostDeployVersion);
-    vi
-      .spyOn(migrationSql, 'markPostDeployMigrationCompleted')
-      .mockImplementation(mockMarkPostDeployMigrationCompleted);
+    vi.spyOn(migrationSql, 'markPostDeployMigrationCompleted').mockImplementation(mockMarkPostDeployMigrationCompleted);
     vi.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
     vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1]);
     vi.spyOn(migrationVersions, 'getLatestPostDeployMigrationVersion').mockReturnValue(1);
@@ -670,9 +665,9 @@ describe('Database migrations', () => {
     beforeEach(() => {
       vi.clearAllMocks();
       vi.spyOn(migrationSql, 'getPostDeployVersion').mockImplementation(mockGetPostDeployVersion);
-      vi
-        .spyOn(migrationSql, 'markPostDeployMigrationCompleted')
-        .mockImplementation(mockMarkPostDeployMigrationCompleted);
+      vi.spyOn(migrationSql, 'markPostDeployMigrationCompleted').mockImplementation(
+        mockMarkPostDeployMigrationCompleted
+      );
       vi.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
       vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1]);
       vi.spyOn(migrationVersions, 'getLatestPostDeployMigrationVersion').mockReturnValue(1);

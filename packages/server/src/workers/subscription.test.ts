@@ -30,13 +30,15 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import type { Job } from 'bullmq';
 import * as bullmqModule from 'bullmq';
+import { UnrecoverableError } from 'bullmq';
 import type { Redis } from 'ioredis';
 import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
-import { UnrecoverableError } from 'bullmq';
+import type { Mock, MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import type * as Constants from '../constants';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
@@ -64,8 +66,6 @@ import {
   recordSubscriptionFailure,
 } from './subscription-failure-tracker';
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
-import type { Mock, MockInstance } from 'vitest';
-import type * as Constants from '../constants';
 import * as workerUtils from './utils';
 
 vi.mock('node-fetch', () => ({ default: vi.fn() }));

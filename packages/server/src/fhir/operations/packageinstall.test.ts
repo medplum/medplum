@@ -7,13 +7,13 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import * as storage from '../../storage/loader';
 import type { BinaryStorage } from '../../storage/types';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
-import { vi } from 'vitest';
 
 class MockBinaryStorage {
   private content: string;

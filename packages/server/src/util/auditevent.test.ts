@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import type { AuditEvent, Bot, Observation, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
+import type { MockInstance } from 'vitest';
 import type { BotExecutionRequest } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import { globalLogger } from '../logger';
@@ -16,7 +17,6 @@ import {
   ReadInteraction,
   RestfulOperationType,
 } from './auditevent';
-import type { MockInstance } from 'vitest';
 
 describe('AuditEvent utils', () => {
   let writeSpy: MockInstance;

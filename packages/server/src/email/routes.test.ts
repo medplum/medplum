@@ -8,10 +8,10 @@ import express from 'express';
 import { simpleParser } from 'mailparser';
 import nodemailer from 'nodemailer';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { initTestAuth } from '../test.setup';
-import { vi } from 'vitest';
 
 const app = express();
 

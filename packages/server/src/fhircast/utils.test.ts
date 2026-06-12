@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, generateId } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import { closeRedis, getCacheRedis, initRedis } from '../redis';
 import { getTopicForUser } from './utils';
-import { vi } from 'vitest';
 
 describe('FHIRcast Utils', () => {
   beforeAll(async () => {

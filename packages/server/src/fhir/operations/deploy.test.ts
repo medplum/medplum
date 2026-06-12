@@ -6,16 +6,16 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import stream from 'node:stream';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
+import type * as AwsDeploy from '../../cloud/aws/deploy';
 import { DEFAULT_LAMBDA_TIMEOUT } from '../../cloud/aws/deploy';
 import { loadTestConfig } from '../../config/loader';
 import * as storage from '../../storage/loader';
 import type { BinaryStorage } from '../../storage/types';
 import { initTestAuth, withTestContext } from '../../test.setup';
 import * as streamUtils from '../../util/streams';
-import type * as AwsDeploy from '../../cloud/aws/deploy';
-import { vi } from 'vitest';
 
 const deployMocks = vi.hoisted(() => ({
   getLambdaTimeoutForBot: vi.fn(),
@@ -140,7 +140,6 @@ describe('Deploy', () => {
   });
 
   test('Deploy bot with code parameter', async () => {
-
     const code = `
       export async function handler() {
         console.log('input', input);

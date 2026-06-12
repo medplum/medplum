@@ -7,10 +7,10 @@ import type { KeyLike } from 'jose';
 import { CompactSign, exportJWK, generateKeyPair } from 'jose';
 import { deflateRawSync } from 'node:zlib';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
-import { vi } from 'vitest';
 
 const app = express();
 let accessToken: string;

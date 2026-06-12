@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { vi } from 'vitest';
 import type * as NodeCrypto from 'node:crypto';
+import { vi } from 'vitest';
+import { heartbeat } from './heartbeat';
+import * as redisModule from './redis';
+import * as serverRegistry from './server-registry';
+import {
+  cleanupServerRegistryHeartbeatListener,
+  getClusterStatus,
+  getRegisteredServers,
+  initServerRegistryHeartbeatListener,
+} from './server-registry';
 
 const UUID = '00000000-0000-0000-0000-0000deadbeef';
 
@@ -12,15 +21,6 @@ vi.mock('node:crypto', async (importOriginal) => {
     randomUUID: () => UUID,
   };
 });
-import { heartbeat } from './heartbeat';
-import * as redisModule from './redis';
-import * as serverRegistry from './server-registry';
-import {
-  cleanupServerRegistryHeartbeatListener,
-  getClusterStatus,
-  getRegisteredServers,
-  initServerRegistryHeartbeatListener,
-} from './server-registry';
 
 describe('server-registry', () => {
   const mockRedis = {

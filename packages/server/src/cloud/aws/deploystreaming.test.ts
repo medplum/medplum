@@ -164,12 +164,16 @@ describe('Deploy Streaming', () => {
     expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
     expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
     expect(mockLambdaClient.commandCalls(CreateFunctionCommand)).toHaveLength(1);
-    expect(mockLambdaClient.commandCalls(GetFunctionCommand, {
-      FunctionName: name,
-    })).toHaveLength(2);
-    expect(mockLambdaClient.commandCalls(CreateFunctionCommand, {
-      FunctionName: name,
-    })).toHaveLength(1);
+    expect(
+      mockLambdaClient.commandCalls(GetFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(2);
+    expect(
+      mockLambdaClient.commandCalls(CreateFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(1);
 
     // Verify that this was uploaded as a CJS zip file with streaming wrapper
     const createCall = mockLambdaClient.commandCalls(CreateFunctionCommand)[0];

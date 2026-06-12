@@ -54,6 +54,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import assert from 'node:assert';
+import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
@@ -67,7 +68,6 @@ import type { TokenColumnSearchParameterImplementation } from './searchparameter
 import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 import { loadStructureDefinitions } from './structure';
-import type { MockInstance } from 'vitest';
 
 vi.mock('hibp');
 
@@ -2321,9 +2321,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
     ],
     ['Patient?_has:Observation:status=active', 'Invalid search chain: _has:Observation:status'],
   ])('Invalid chained search parameters: %s', (searchString: string, errorMsg: string) => {
-    return withTestContext(async () =>
-      expect(repo.search(parseSearchRequest(searchString))).rejects.toThrow(errorMsg)
-    );
+    return withTestContext(async () => expect(repo.search(parseSearchRequest(searchString))).rejects.toThrow(errorMsg));
   });
 
   test('Chained search with modifier', () =>

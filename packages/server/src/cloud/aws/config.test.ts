@@ -71,11 +71,15 @@ describe('Config', () => {
     expect(config.port).toStrictEqual(8080);
     expect(getConfig()).toBe(config);
     expect(mockSecretsManagerClient.commandCalls(GetSecretValueCommand).length).toBeGreaterThan(0);
-    expect(mockSecretsManagerClient.commandCalls(GetSecretValueCommand, {
-      SecretId: 'DatabaseSecretsArn',
-    })).toHaveLength(1);
-    expect(mockSecretsManagerClient.commandCalls(GetSecretValueCommand, {
-      SecretId: 'RedisSecretsArn',
-    })).toHaveLength(1);
+    expect(
+      mockSecretsManagerClient.commandCalls(GetSecretValueCommand, {
+        SecretId: 'DatabaseSecretsArn',
+      })
+    ).toHaveLength(1);
+    expect(
+      mockSecretsManagerClient.commandCalls(GetSecretValueCommand, {
+        SecretId: 'RedisSecretsArn',
+      })
+    ).toHaveLength(1);
   });
 });

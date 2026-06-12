@@ -5,9 +5,9 @@ import { SpanStatusCode } from '@opentelemetry/api';
 import type { PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import type { IncomingMessage, ServerResponse } from 'http';
+import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { httpResponseHook, initOpenTelemetry, pgResponseHook, shutdownOpenTelemetry } from './instrumentation';
-import { vi  } from 'vitest';
-import type {MockInstance} from 'vitest';
 
 describe('Instrumentation', () => {
   const OLD_ENV = process.env;

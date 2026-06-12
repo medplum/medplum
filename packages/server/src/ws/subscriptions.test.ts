@@ -7,8 +7,8 @@ import type {
   Bundle,
   BundleEntry,
   DocumentReference,
-  Login,
   Parameters as FhirParameters,
+  Login,
   Patient,
   Project,
   ProjectMembership,
@@ -20,14 +20,18 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import request from 'superwstest';
+import type { Mock } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import type * as Constants from '../constants';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
+import type * as FhirRewrite from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
+import type * as OauthUtils from '../oauth/utils';
 import * as pubsubModule from '../pubsub';
 import {
   addUserActiveWebSocketSubscription,
@@ -38,11 +42,7 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import { createTestProject, withTestContext } from '../test.setup';
-import type { Mock } from 'vitest';
 import { findAndExecDispatchJob } from '../workers/test-utils';
-import type * as Constants from '../constants';
-import type * as FhirRewrite from '../fhir/rewrite';
-import type * as OauthUtils from '../oauth/utils';
 
 vi.mock('hibp');
 vi.mock('../constants', async () => ({

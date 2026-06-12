@@ -174,12 +174,16 @@ describe('Deploy', () => {
     expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
     expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
     expect(mockLambdaClient.commandCalls(CreateFunctionCommand)).toHaveLength(1);
-    expect(mockLambdaClient.commandCalls(GetFunctionCommand, {
-      FunctionName: name,
-    })).toHaveLength(2);
-    expect(mockLambdaClient.commandCalls(CreateFunctionCommand, {
-      FunctionName: name,
-    })).toHaveLength(1);
+    expect(
+      mockLambdaClient.commandCalls(GetFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(2);
+    expect(
+      mockLambdaClient.commandCalls(CreateFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(1);
 
     // Verify that this was uploaded as a CJS zip file
     const createCall = mockLambdaClient.commandCalls(CreateFunctionCommand)[0];
@@ -262,12 +266,16 @@ describe('Deploy', () => {
     expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
     expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
     expect(mockLambdaClient.commandCalls(CreateFunctionCommand)).toHaveLength(1);
-    expect(mockLambdaClient.commandCalls(GetFunctionCommand, {
-      FunctionName: name,
-    })).toHaveLength(2);
-    expect(mockLambdaClient.commandCalls(CreateFunctionCommand, {
-      FunctionName: name,
-    })).toHaveLength(1);
+    expect(
+      mockLambdaClient.commandCalls(GetFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(2);
+    expect(
+      mockLambdaClient.commandCalls(CreateFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(1);
     mockLambdaClient.resetHistory();
 
     // Step 3: Simulate releasing a new version of the lambda layer
@@ -394,22 +402,26 @@ describe('Deploy', () => {
     expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
     expect(mockLambdaClient.commandCalls(GetFunctionConfigurationCommand)).toHaveLength(1);
     expect(mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand)).toHaveLength(1);
-    expect(mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand, {
-      FunctionName: getLambdaNameForBot(bot),
-      Role: getConfig().botLambdaRoleArn,
-      Runtime: LAMBDA_RUNTIME,
-      Handler: LAMBDA_HANDLER,
-      Layers: [TEST_LAYER_ARN],
-      Timeout: 15,
-    })[1 - 1]).toBeDefined();
-    expect(mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand)[1 - 1].args[0].input).toEqual(expect.objectContaining({
-      FunctionName: getLambdaNameForBot(bot),
-      Role: getConfig().botLambdaRoleArn,
-      Runtime: LAMBDA_RUNTIME,
-      Handler: LAMBDA_HANDLER,
-      Layers: [TEST_LAYER_ARN],
-      Timeout: 15,
-    }));
+    expect(
+      mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand, {
+        FunctionName: getLambdaNameForBot(bot),
+        Role: getConfig().botLambdaRoleArn,
+        Runtime: LAMBDA_RUNTIME,
+        Handler: LAMBDA_HANDLER,
+        Layers: [TEST_LAYER_ARN],
+        Timeout: 15,
+      })[1 - 1]
+    ).toBeDefined();
+    expect(mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand)[1 - 1].args[0].input).toEqual(
+      expect.objectContaining({
+        FunctionName: getLambdaNameForBot(bot),
+        Role: getConfig().botLambdaRoleArn,
+        Runtime: LAMBDA_RUNTIME,
+        Handler: LAMBDA_HANDLER,
+        Layers: [TEST_LAYER_ARN],
+        Timeout: 15,
+      })
+    );
 
     mockLambdaClient.resetHistory();
 
@@ -585,9 +597,15 @@ describe('Deploy', () => {
     await waitFor(async () => {
       expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(3);
     });
-    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, { FunctionName: name, Qualifier: '3' })).toHaveLength(1);
-    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, { FunctionName: name, Qualifier: '2' })).toHaveLength(1);
-    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, { FunctionName: name, Qualifier: '1' })).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, { FunctionName: name, Qualifier: '3' })).toHaveLength(
+      1
+    );
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, { FunctionName: name, Qualifier: '2' })).toHaveLength(
+      1
+    );
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, { FunctionName: name, Qualifier: '1' })).toHaveLength(
+      1
+    );
   });
 
   test('Cleanup tolerates DeleteFunction errors', async () => {

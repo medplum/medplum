@@ -7,6 +7,8 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
@@ -14,8 +16,6 @@ import { loadTestConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 
 vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
@@ -205,9 +205,7 @@ describe('Token Exchange', () => {
         body: JSON.stringify({ idToken: 'firebase-token' }),
       })
     );
-    expect(new URL((fetch as unknown as Mock).mock.calls.at(-1)?.[0]).searchParams.get('key')).toBe(
-      'test-api-key'
-    );
+    expect(new URL((fetch as unknown as Mock).mock.calls.at(-1)?.[0]).searchParams.get('key')).toBe('test-api-key');
   });
 
   test('Missing projectId success', async () => {

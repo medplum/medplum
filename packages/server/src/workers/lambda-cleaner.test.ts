@@ -105,14 +105,18 @@ describe('Lambda version cleanup worker', () => {
 
     expect(mockLambdaClient.commandCalls(ListAliasesCommand)).toHaveLength(0);
     expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(4);
-    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, {
-      FunctionName: 'medplum-bot-lambda-a',
-      Qualifier: '1',
-    })).toHaveLength(1);
-    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, {
-      FunctionName: 'medplum-bot-lambda-b',
-      Qualifier: '1',
-    })).toHaveLength(1);
+    expect(
+      mockLambdaClient.commandCalls(DeleteFunctionCommand, {
+        FunctionName: 'medplum-bot-lambda-a',
+        Qualifier: '1',
+      })
+    ).toHaveLength(1);
+    expect(
+      mockLambdaClient.commandCalls(DeleteFunctionCommand, {
+        FunctionName: 'medplum-bot-lambda-b',
+        Qualifier: '1',
+      })
+    ).toHaveLength(1);
   });
 
   test('cleanupLambdaVersions dry run does not delete', async () => {

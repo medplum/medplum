@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 import { createReference, getReferenceString, sleep } from '@medplum/core';
 import type {
   AccessPolicy,
@@ -26,6 +24,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type internal from 'node:stream';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import type { ServerInviteResponse } from './admin/invite';
 import { inviteUser } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';

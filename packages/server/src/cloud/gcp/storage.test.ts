@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { clearGcpStorageMock } from '../../__mocks__/@google-cloud/storage';
 import type { Binary } from '@medplum/fhirtypes';
 import { PassThrough } from 'stream';
-import { GoogleCloudStorage } from './storage';
 import { vi } from 'vitest';
+import { clearGcpStorageMock } from '../../__mocks__/@google-cloud/storage';
+import { GoogleCloudStorage } from './storage';
 
 describe('Integration Tests for GoogleCloudStorage', () => {
   const testStorageString = 'your-project-id:your-test-bucket';

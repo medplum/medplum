@@ -4,11 +4,11 @@ import { ContentType } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { globalLogger } from '../../logger';
 import { initTestAuth } from '../../test.setup';
-import { vi } from 'vitest';
 
 describe('$db-schema-diff', () => {
   const app = express();

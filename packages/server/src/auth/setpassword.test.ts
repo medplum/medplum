@@ -11,6 +11,8 @@ import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
@@ -18,8 +20,6 @@ import { generateSecret } from '../oauth/keys';
 import { tryLogin } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 
 vi.mock('hibp');
 vi.mock('node-fetch', () => ({ default: vi.fn() }));

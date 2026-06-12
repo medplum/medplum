@@ -5,13 +5,13 @@ import { createReference } from '@medplum/core';
 import type { Bot, Patient } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDispatchJob } from './test-utils';
-import { vi } from 'vitest';
 
 describe('Dispatch Worker', () => {
   let botRepo: Repository;

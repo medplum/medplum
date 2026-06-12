@@ -4,6 +4,7 @@ import { ContentType } from '@medplum/core';
 import type { BulkDataExportOutput, Observation } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
@@ -12,7 +13,6 @@ import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } fro
 import { getGlobalSystemRepo } from '../repo';
 import { exportResourceType, exportResources } from './export';
 import { BulkExporter } from './utils/bulkexporter';
-import { vi } from 'vitest';
 
 describe('Export', () => {
   const app = express();

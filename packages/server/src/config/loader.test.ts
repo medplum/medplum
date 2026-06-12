@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { vi } from 'vitest';
 import * as awsConfigModule from '../cloud/aws/config';
 import * as azureConfigModule from '../cloud/azure/config';
 import * as gcpConfigModule from '../cloud/gcp/config';
 import { getConfig, loadConfig, loadTestConfig } from './loader';
-import { vi } from 'vitest';
 
 describe('Config', () => {
   const envKeysToClean: string[] = [];

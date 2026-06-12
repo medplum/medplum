@@ -5,12 +5,12 @@ import { OperationOutcomeError, Operator, conflict, notFound, parseSearchRequest
 import type { Patient } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { Repository, SystemRepository } from './repo';
 import { PostgresError } from './sql';
-import { vi } from 'vitest';
 
 describe('FHIR Repo Transactions', () => {
   let repo: Repository;

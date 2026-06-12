@@ -8,12 +8,12 @@ import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
 import { initTestAuth } from '../../test.setup';
 import { getLambdaFunctionName } from './execute';
-import { vi } from 'vitest';
 
 const app = express();
 let accessToken: string;

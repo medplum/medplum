@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { X509Certificate } from 'node:crypto';
+import { vi } from 'vitest';
 import { generateCaSignedCert, generateSelfSignedCert } from '../test.setup';
 import { validateCertExpiration, validateClientCert } from './cert';
-import { vi } from 'vitest';
 
 describe('Certificate validation', () => {
   describe('validateClientCert', () => {

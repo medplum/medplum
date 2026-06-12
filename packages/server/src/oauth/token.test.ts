@@ -1,6 +1,35 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import * as MedplumCore from '@medplum/core';
+import type {
+  AccessPolicy,
+  ClientApplication,
+  Login,
+  Project,
+  ProjectMembership,
+  Reference,
+  SmartAppLaunch,
+} from '@medplum/fhirtypes';
+import express from 'express';
+import type * as Jose from 'jose';
+import { decodeJwt, generateKeyPair, jwtVerify, SignJWT } from 'jose';
+import fetch from 'node-fetch';
+import { createHash, randomUUID, X509Certificate } from 'node:crypto';
+import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
+import { createClient } from '../admin/client';
+import { inviteUser } from '../admin/invite';
+import { initApp, shutdownApp } from '../app';
+import { setPassword } from '../auth/setpassword';
+import { loadTestConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
+import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
+import { validateClientCert } from './cert';
+import { generateSecret, verifyJwt } from './keys';
+import { hashCode } from './utils';
 
 const {
   ContentType,
@@ -16,35 +45,6 @@ const {
 } = MedplumCore;
 
 type WithId<T> = MedplumCore.WithId<T>;
-import type {
-  AccessPolicy,
-  ClientApplication,
-  Login,
-  Project,
-  ProjectMembership,
-  Reference,
-  SmartAppLaunch,
-} from '@medplum/fhirtypes';
-import express from 'express';
-import { decodeJwt, generateKeyPair, jwtVerify, SignJWT } from 'jose';
-import fetch from 'node-fetch';
-import { createHash, randomUUID, X509Certificate } from 'node:crypto';
-import request from 'supertest';
-import { createClient } from '../admin/client';
-import { inviteUser } from '../admin/invite';
-import { initApp, shutdownApp } from '../app';
-import { setPassword } from '../auth/setpassword';
-import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
-import type { SystemRepository } from '../fhir/repo';
-import { getProjectSystemRepo } from '../fhir/repo';
-import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
-import { validateClientCert } from './cert';
-import { generateSecret, verifyJwt } from './keys';
-import { hashCode } from './utils';
-import type * as Jose from 'jose';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 
 const joseMockState = vi.hoisted(() => ({ count: 0 }));
 

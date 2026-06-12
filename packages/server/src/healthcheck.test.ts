@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import express from 'express';
 import request from 'supertest';
+import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import * as otel from './otel/otel';
-import { vi  } from 'vitest';
-import type {MockInstance} from 'vitest';
 
 const app = express();
 

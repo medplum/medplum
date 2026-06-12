@@ -3,10 +3,10 @@
 import type { Request } from 'express';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { corsOptions } from './cors';
-import { vi } from 'vitest';
 
 describe('CORS', () => {
   beforeEach(async () => {

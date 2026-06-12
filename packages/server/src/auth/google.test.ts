@@ -3,7 +3,9 @@
 import type { Practitioner, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import type * as Jose from 'jose';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
@@ -12,8 +14,6 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getUserByEmail } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
-import type * as Jose from 'jose';
-import { vi } from 'vitest';
 
 vi.mock('jose', async () => {
   const original = await vi.importActual<typeof Jose>('jose');

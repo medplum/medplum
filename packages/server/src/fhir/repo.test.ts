@@ -34,6 +34,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
 import type { PoolClient } from 'pg';
+import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
@@ -49,7 +50,6 @@ import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Reposito
 import { RepositoryConnection } from './repository/repository-connection';
 import { TransactionIdleTracker } from './repository/transaction-idle-tracker';
 import { PostgresError, SelectQuery } from './sql';
-import type { MockInstance } from 'vitest';
 import * as tokenColumnModule from './token-column';
 
 vi.mock('hibp');

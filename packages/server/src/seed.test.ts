@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Project } from '@medplum/fhirtypes';
+import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
@@ -18,7 +19,6 @@ import {
 } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import { seedDatabase } from './seed';
-import type { MockInstance } from 'vitest';
 import { withTestContext } from './test.setup';
 
 async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: SystemRepository): Promise<void> {

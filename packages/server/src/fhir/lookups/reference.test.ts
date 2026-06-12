@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import type { Observation, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
@@ -10,7 +11,6 @@ import { getGlobalSystemRepo } from '../repo';
 import { lookupTables } from '../searchparameter';
 import type { ReferenceTableRow } from './reference';
 import { ReferenceTable } from './reference';
-import { vi } from 'vitest';
 
 describe('ReferenceTable', () => {
   const systemRepo = getGlobalSystemRepo();

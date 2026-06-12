@@ -8,14 +8,14 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { createUser } from '../../auth/newuser';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
-import { vi  } from 'vitest';
-import type {Mock} from 'vitest';
 
 vi.mock('hibp');
 vi.mock('node-fetch', () => ({ default: vi.fn() }));
