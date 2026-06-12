@@ -26,6 +26,16 @@ export class LayeredDict<const T extends Record<string, unknown> = {}> {
   }
 
   /**
+   * Create a LayeredDict with a single initial layer.
+   *
+   * @param layer - the initial layer
+   * @returns a new LayeredDict
+   */
+  static from<L extends Layer>(layer: L): LayeredDict<Merge<{}, L>> {
+    return new LayeredDict<Merge<{}, L>>([layer], { ...layer });
+  }
+
+  /**
    * Create a new LayeredDict with an Override layer applied on top of this
    *
    * @param layer - the overrides to add to the dictionary

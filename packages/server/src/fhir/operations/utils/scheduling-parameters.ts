@@ -337,7 +337,7 @@ export function getHealthcareServiceSchedulingParameters(
     getPath(healthcareService)
   );
 
-  let result: LayeredDict<ServiceSchedulingParameters> = LayeredDict.empty().addLayer(defaultsLayer);
+  let result: LayeredDict<ServiceSchedulingParameters> = LayeredDict.from(defaultsLayer);
 
   // HealthcareService stores availability in a native field, read it from there.
   // Note: explicitly setting this field to an empty array makes this default to "never" available.

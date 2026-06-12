@@ -42,7 +42,7 @@ const service: WithId<HealthcareService> = {
 
 describe('resolveAvailability', () => {
   const layered = (sp: SchedulingParameters): LayeredDict<SchedulingParameters> =>
-    LayeredDict.empty().addLayer(withPath(sp, 'test'));
+    LayeredDict.from(withPath(sp, 'test'));
 
   test('having multiple days and times', async () => {
     const schedulingParameters = layered({

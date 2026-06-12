@@ -102,6 +102,16 @@ describe('types', () => {
     refined.get('duration') satisfies undefined;
   });
 
+  test('from() returns the value type from the layer, not unknown', () => {
+    const dict = LayeredDict.from(withPath({ duration: 30 }, 'HS/1'));
+    dict.get('duration') satisfies number;
+  });
+
+  test('from() requires a WithPath-annotated object', () => {
+    // @ts-expect-error plain objects must be wrapped with withPath() before passing to from()
+    LayeredDict.from({ duration: 30 });
+  });
+
   test('flatten() returns the merged type', () => {
     const dict = LayeredDict.empty()
       .addLayer(withPath({ duration: 30 }, 'HS/1'))
@@ -111,6 +121,34 @@ describe('types', () => {
 });
 
 describe('LayeredDict', () => {
+  describe('from()', () => {
+    test('get() returns the value from the layer', () => {
+      const dict = LayeredDict.from(withPath({ duration: 30 }, 'HealthcareService/1'));
+      expect(dict.get('duration')).toBe(30);
+    });
+
+    test('getPath() returns the path of the layer', () => {
+      const dict = LayeredDict.from(withPath({ duration: 30 }, 'HealthcareService/1'));
+      expect(dict.getPath('duration')).toBe('HealthcareService/1');
+    });
+
+    test('is equivalent to empty().addLayer()', () => {
+      const layer = withPath({ duration: 30 }, 'HealthcareService/1');
+      const via_from = LayeredDict.from(layer);
+      const via_empty = LayeredDict.empty().addLayer(layer);
+      expect(via_from.flatten()).toMatchObject(via_empty.flatten());
+      expect(via_from.getPath('duration')).toBe(via_empty.getPath('duration'));
+    });
+
+    test('can be further composed with addLayer()', () => {
+      const dict = LayeredDict.from(withPath({ duration: 30 }, 'HealthcareService/1')).addLayer(
+        withPath({ duration: 60 }, 'Schedule/2')
+      );
+      expect(dict.get('duration')).toBe(60);
+      expect(dict.getPath('duration')).toBe('Schedule/2');
+    });
+  });
+
   describe('addLayer()', () => {
     test('returns a new instance', () => {
       const base = LayeredDict.empty();
