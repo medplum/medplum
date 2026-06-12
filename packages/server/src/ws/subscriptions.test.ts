@@ -42,8 +42,8 @@ import {
 } from '../pubsub';
 import * as redisModule from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
-import { closeWebSocketSubscriptionHandler } from './subscriptions';
 import { findAndExecDispatchJob } from '../workers/test-utils';
+import { closeWebSocketSubscriptionHandler } from './subscriptions';
 
 jest.mock('hibp');
 jest.mock('../constants', () => ({
