@@ -3,9 +3,9 @@
 import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
 import type { Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import type { Queue } from 'bullmq';
-import type * as Pg from 'pg';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import type * as Pg from 'pg';
 import request from 'supertest';
 import type { MockedFunction, MockInstance } from 'vitest';
 import { vi } from 'vitest';
@@ -143,9 +143,7 @@ const mockRebuildR4ValueSets = rebuildR4ValueSets as MockedFunction<typeof rebui
 const mockRebuildR4StructureDefinitions = rebuildR4StructureDefinitions as MockedFunction<
   typeof rebuildR4StructureDefinitions
 >;
-const mockRebuildR4SearchParameters = rebuildR4SearchParameters as MockedFunction<
-  typeof rebuildR4SearchParameters
->;
+const mockRebuildR4SearchParameters = rebuildR4SearchParameters as MockedFunction<typeof rebuildR4SearchParameters>;
 
 vi.mock('../migrations/data', async () => {
   return {
@@ -981,9 +979,7 @@ describe('Super Admin routes', () => {
 
   describe('/migrations', () => {
     test('Migrate', async () => {
-      const versionsSpy = vi
-        .spyOn(migrationVersions, 'getPostDeployMigrationVersions')
-        .mockReturnValue([1, 2, 3]);
+      const versionsSpy = vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1, 2, 3]);
       try {
         const res1 = await request(app)
           .get('/admin/super/migrations')
