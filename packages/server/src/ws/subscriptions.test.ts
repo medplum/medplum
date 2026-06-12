@@ -2102,8 +2102,7 @@ describe('Subscription Heartbeat', () => {
             let subActive = false;
             while (!subActive) {
               await sleep(0);
-              subActive =
-                (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription.id}`)) === 1;
+              subActive = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription.id}`)) === 1;
             }
             // A non-JSON payload must be logged and ignored, not crash the redis message handler
             await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, 'not-valid-json{');
