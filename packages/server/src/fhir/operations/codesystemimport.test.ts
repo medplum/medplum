@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, EMPTY } from '@medplum/core';
-import type { CodeSystem } from '@medplum/fhirtypes';
+import type { CodeSystem, ValueSet } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -324,6 +325,95 @@ describe('CodeSystem $import', () => {
     const coding = await assertCodeExists(snomed.id, '37931006');
     expect(coding.isSynonym).toBe(false);
   });
+
+  test('Attaches imported properties to primary coding instead of synonym', async () => {
+    const resCreate = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: snomed.url },
+          { name: 'concept', valueCoding: { code: '12345', display: 'Test code' } },
+          {
+            name: 'designation',
+            part: [
+              { name: 'code', valueCode: '12345' },
+              { name: 'value', valueString: 'Test designation' },
+            ],
+          },
+        ],
+      });
+    expect(resCreate.status).toStrictEqual(200);
+
+    const resUpsert = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: snomed.url },
+          { name: 'concept', valueCoding: { code: '12345', display: 'Test code' } },
+        ],
+      });
+    expect(resUpsert.status).toStrictEqual(200);
+
+    const resProperty = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: snomed.url },
+          {
+            name: 'property',
+            part: [
+              { name: 'code', valueCode: '12345' },
+              { name: 'property', valueCode: 'parent' },
+              { name: 'value', valueString: '98765' },
+            ],
+          },
+        ],
+      });
+    expect(resProperty.status).toStrictEqual(200);
+
+    const coding = await assertCodeExists(snomed.id, '12345');
+    const result = await assertPropertyExists(snomed.id, '12345', 'parent', '98765');
+    expect(result.codingId).toStrictEqual(coding.id); // Property should be attached to primary coding row
+
+    const resValueSet = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        url: 'http://example.com/ValueSet/' + randomUUID(),
+        status: 'active',
+        compose: {
+          include: [
+            {
+              system: snomed.url,
+              filter: [{ property: 'parent', op: '=', value: '98765' }],
+            },
+          ],
+        },
+      });
+    expect(resValueSet.status).toStrictEqual(201);
+    const valueSet = resValueSet.body as ValueSet;
+
+    const resExpand = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${valueSet.url}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send();
+    expect(resExpand.status).toStrictEqual(200);
+    const expanded = resExpand.body as ValueSet;
+    console.log(JSON.stringify(expanded.expansion));
+    expect(expanded.expansion?.contains).toHaveLength(1);
+  });
 });
 
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {
@@ -360,6 +450,7 @@ async function assertPropertyExists(
   );
 
   const results = await query
+    .column(new Column(codingTable, 'id', undefined, 'codingId'))
     .column('value')
     .column('target')
     .where(new Column(codingTable, 'system'), '=', system)
