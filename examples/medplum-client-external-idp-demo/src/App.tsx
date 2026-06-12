@@ -18,7 +18,7 @@ export function App(): JSX.Element | null {
 
   // If signed in, navigate to the home page. Otherwise, redirect to the Sign in page
   return (
-    <AppShell logo={<Logo size={24} />} resourceTypeSearchDisabled={true}>
+    <AppShell logo={<Logo size={28} wordmark />} resourceTypeSearchDisabled={true}>
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route

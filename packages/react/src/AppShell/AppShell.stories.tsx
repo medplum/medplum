@@ -30,7 +30,7 @@ export function Basic(): JSX.Element {
   return (
     <div className={classes.root}>
       <AppShell
-        logo={<Logo size={24} />}
+        logo={<Logo size={28} wordmark />}
         version="your.version"
         menus={[
           {
@@ -58,7 +58,7 @@ export function LongMenu(): JSX.Element {
   return (
     <div className={classes.root}>
       <AppShell
-        logo={<Logo size={24} />}
+        logo={<Logo size={28} wordmark />}
         version="your.version"
         menus={Array(100).fill({
           title: 'My Menu',
@@ -84,7 +84,7 @@ export function DisabledSearch(): JSX.Element {
   return (
     <div className={classes.root}>
       <AppShell
-        logo={<Logo size={24} />}
+        logo={<Logo size={28} wordmark />}
         version="your.version"
         menus={Array(100).fill({
           title: 'My Menu',
@@ -111,7 +111,7 @@ export function DisabledResourceNavigator(): JSX.Element {
   return (
     <div className={classes.root}>
       <AppShell
-        logo={<Logo size={24} />}
+        logo={<Logo size={28} wordmark />}
         version="your.version"
         menus={Array(100).fill({
           title: 'My Menu',
@@ -140,7 +140,7 @@ export function NotificationIcons(): JSX.Element {
   return (
     <div className={classes.root}>
       <AppShell
-        logo={<Logo size={24} />}
+        logo={<Logo size={28} wordmark />}
         version="your.version"
         menus={[
           {

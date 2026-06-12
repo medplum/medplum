@@ -69,6 +69,13 @@
     text-decoration: none;
   }
 
+  & svg:global(.medplum-logo) {
+    flex: 0 0 auto;
+    width: 106px;
+    height: 23px;
+    max-width: none;
+  }
+
   & svg:global(.tabler-icon) {
     color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
     stroke-width: 2;
@@ -192,7 +199,6 @@
 .addBookmarkLink {
   margin-top: 40px;
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
-
 
   & svg:global(.tabler-icon) {
     color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));

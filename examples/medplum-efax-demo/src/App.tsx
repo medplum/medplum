@@ -19,7 +19,7 @@ export function App(): JSX.Element {
   }
 
   return (
-    <AppShell logo={<Logo size={24} />} menus={menus}>
+    <AppShell logo={<Logo size={28} wordmark />} menus={menus}>
       <Suspense fallback={<Loading />}>
         <Routes>
           {profile ? (

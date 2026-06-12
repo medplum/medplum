@@ -97,7 +97,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
         {props.logo && (
           <MantineAppShell.Section px="xs" pt="xs" pb="4px">
             <UnstyledButton
-              className={classes.logoButton}
+              className={classes.link}
               onClick={props.navbarToggle}
               aria-expanded={opened}
               aria-controls="navbar"

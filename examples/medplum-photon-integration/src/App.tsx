@@ -28,7 +28,7 @@ export function App(): JSX.Element | null {
   return (
     <photon-client id={getConfig().photonClientId} org={getConfig().photonOrgId} dev-mode="true" auto-login="true">
       <AppShell
-        logo={<Logo size={24} />}
+        logo={<Logo size={28} wordmark />}
         menus={[
           {
             title: 'My Links',
