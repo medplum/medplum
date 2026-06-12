@@ -71,7 +71,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['json', 'text'],
       reportsDirectory: 'coverage',
-      include: ['src/**/*'],
+      include: ['src/**/*.ts'],
       exclude: [
         'src/__mocks__/**',
         'src/migrations/migrate-main.ts',
