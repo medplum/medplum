@@ -2033,7 +2033,7 @@ describe('Subscription Heartbeat', () => {
 
   test('Recreates Redis subscriber when prior subscriber connection ends', () =>
     withTestContext(async () => {
-      const subscriberSpy = jest.spyOn(redisModule, 'getPubSubRedisSubscriber');
+      const subscriberSpy = vi.spyOn(redisModule, 'getPubSubRedisSubscriber');
 
       try {
         // First bind lazily creates the shared Redis subscriber for WebSocket fan-out.
@@ -2051,7 +2051,7 @@ describe('Subscription Heartbeat', () => {
           .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
           .set('Authorization', 'Bearer ' + accessToken);
 
-        const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+        const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
 
         await request(server)
           .ws('/ws/subscriptions-r4')
@@ -2092,7 +2092,7 @@ describe('Subscription Heartbeat', () => {
           .get(`/fhir/R4/Subscription/${secondSubscription.id}/$get-ws-binding-token`)
           .set('Authorization', 'Bearer ' + accessToken);
 
-        const secondToken = (secondRes.body as Parameters).parameter?.[0]?.valueString as string;
+        const secondToken = (secondRes.body as FhirParameters).parameter?.[0]?.valueString as string;
 
         // A new WebSocket bind after the subscriber ended should recreate the connection.
         await request(server)
