@@ -1,0 +1,10 @@
+.alphaBanner {
+  background-color: light-dark(var(--mantine-color-violet-1), var(--mantine-color-violet-9));
+  color: light-dark(var(--mantine-color-dark-8), var(--mantine-color-gray-3));
+}
+
+.alphaPill {
+  background-color: light-dark(var(--mantine-color-violet-4), var(--mantine-color-violet-2));
+  color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
+  font-weight: 600;
+}

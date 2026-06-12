@@ -4,10 +4,8 @@ import type { WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
-  ContentType,
   created,
   createReference,
-  encodeBase64,
   getReferenceString,
   isOk,
   normalizeErrorString,
@@ -16,15 +14,11 @@ import {
   Operator,
   parseSearchRequest,
   preconditionFailed,
-  toTypedValue,
 } from '@medplum/core';
 import type {
   Binary,
   BundleEntry,
-  DocumentReference,
-  ElementDefinition,
   Login,
-  Observation,
   OperationOutcome,
   Organization,
   Patient,
@@ -35,37 +29,27 @@ import type {
   ResearchDefinition,
   ResourceType,
   ServiceRequest,
-  StructureDefinition,
   User,
   UserConfiguration,
-  ValueSet,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
-import { readFileSync } from 'fs';
-import assert from 'node:assert';
-import { resolve } from 'path';
+import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../app';
-import type { RegisterRequest } from '../auth/register';
-import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
-import type { ArrayColumnPaddingConfig, MedplumServerConfig } from '../config/types';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { runInAuthenticatedContext } from '../context';
+import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
+import * as otelModule from '../otel/otel';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
-import type { ColumnValue } from './repo';
-import {
-  compareColumnValues,
-  getGlobalSystemRepo,
-  getProjectSystemRepo,
-  getShardSystemRepo,
-  Repository,
-  setTypedPropertyValue,
-} from './repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
+import { RepositoryConnection } from './repository/repository-connection';
+import { TransactionIdleTracker } from './repository/transaction-idle-tracker';
 import { PostgresError, SelectQuery } from './sql';
+import * as tokenColumnModule from './token-column';
 
 jest.mock('hibp');
 
@@ -75,10 +59,6 @@ describe('FHIR Repo', () => {
 
   let testProjectRepo: Repository;
   let systemRepo: Repository;
-
-  const usCorePatientProfile = JSON.parse(
-    readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
-  ) as StructureDefinition;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -101,6 +81,15 @@ describe('FHIR Repo', () => {
   afterAll(async () => {
     await shutdownApp();
   });
+
+  function setIdleInTransactionLogThresholdMs(thresholdMs: number | undefined): () => void {
+    const config = getConfig();
+    const previousThresholdMs = config.idleInTransactionLogThresholdMs;
+    config.idleInTransactionLogThresholdMs = thresholdMs;
+    return () => {
+      config.idleInTransactionLogThresholdMs = previousThresholdMs;
+    };
+  }
 
   test('getRepoForLogin', async () => {
     await expect(
@@ -713,23 +702,7 @@ describe('FHIR Repo', () => {
 
   test('Compartment permissions', () =>
     withTestContext(async () => {
-      const registration1: RegisterRequest = {
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      };
-
-      const result1 = await registerNew(registration1);
-      expect(result1.profile).toBeDefined();
-
-      const repo1 = await getRepoForLogin({
-        project: result1.project,
-        membership: result1.membership,
-        login: result1.login,
-        userConfig: {} as UserConfiguration,
-      });
+      const { repo: repo1 } = await createTestProject({ withRepo: true });
       const patient1 = await repo1.createResource<Patient>({
         resourceType: 'Patient',
       });
@@ -741,23 +714,7 @@ describe('FHIR Repo', () => {
       expect(patient2).toBeDefined();
       expect(patient2.id).toStrictEqual(patient1.id);
 
-      const registration2: RegisterRequest = {
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      };
-
-      const result2 = await registerNew(registration2);
-      expect(result2.profile).toBeDefined();
-
-      const repo2 = await getRepoForLogin({
-        project: result2.project,
-        membership: result2.membership,
-        login: result2.login,
-        userConfig: {} as UserConfiguration,
-      });
+      const { repo: repo2 } = await createTestProject({ withRepo: true });
       try {
         await repo2.readResource('Patient', patient1.id);
         fail('Should have thrown');
@@ -855,7 +812,8 @@ describe('FHIR Repo', () => {
       identifier: [{ system: 'https://example.com/', value: 'some-value' }],
     });
 
-    const buildColumnSpy = jest.spyOn(Repository.prototype as any, 'buildColumn').mockImplementation(() => {
+    // rely on Patient having a search parameter with token-column strategy
+    const buildTokenColumnsSpy = jest.spyOn(tokenColumnModule, 'buildTokenColumns').mockImplementation(() => {
       throw new Error('test error');
     });
     const logger = getLogger();
@@ -871,7 +829,7 @@ describe('FHIR Repo', () => {
       err: expect.any(Error),
     });
 
-    buildColumnSpy.mockRestore();
+    buildTokenColumnsSpy.mockRestore();
     errorSpy.mockRestore();
   });
 
@@ -987,14 +945,182 @@ describe('FHIR Repo', () => {
       expect(patient2.id).toStrictEqual(patient1.id);
     }));
 
-  test('expungeResource forbidden', async () => {
-    // Try to expunge as a regular user
-    await expect(testProjectRepo.expungeResource('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
+  describe('expungeResource and expungeResources', () => {
+    async function createPatient(repo: Repository): Promise<WithId<Patient>> {
+      return repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Expunge'], family: randomUUID() }],
+      });
+    }
+
+    async function createPatients(repo: Repository, count: number): Promise<WithId<Patient>[]> {
+      const patients: WithId<Patient>[] = [];
+      for (let i = 0; i < count; i++) {
+        patients.push(await createPatient(repo));
+      }
+      return patients;
+    }
+
+    async function countRows(tableName: string, id: string): Promise<number> {
+      const query = new SelectQuery(tableName).column('id').where('id', '=', id);
+      return (await query.execute(systemRepo.getDatabaseClient(DatabaseMode.READER))).length;
+    }
+
+    async function expectPatientExpunged(patient: WithId<Patient>): Promise<void> {
+      await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow();
+      expect(await countRows('Patient', patient.id)).toStrictEqual(0);
+      expect(await countRows('Patient_History', patient.id)).toStrictEqual(0);
+    }
+
+    async function expectPatientPresent(patient: WithId<Patient>): Promise<void> {
+      expect((await systemRepo.readResource('Patient', patient.id)).id).toStrictEqual(patient.id);
+      expect(await countRows('Patient', patient.id)).toStrictEqual(1);
+      expect(await countRows('Patient_History', patient.id)).toBeGreaterThan(0);
+    }
+
+    async function expectPatientsExpunged(...patients: WithId<Patient>[]): Promise<void> {
+      for (const patient of patients) {
+        await expectPatientExpunged(patient);
+      }
+    }
+
+    async function expectPatientsPresent(...patients: WithId<Patient>[]): Promise<void> {
+      for (const patient of patients) {
+        await expectPatientPresent(patient);
+      }
+    }
+
+    async function expectExpungeResult(
+      expunge: () => Promise<void>,
+      forbidden: boolean,
+      expunged: WithId<Patient>[],
+      present: WithId<Patient>[] = []
+    ): Promise<void> {
+      if (forbidden) {
+        await expect(expunge()).rejects.toThrow();
+        await expectPatientsPresent(...expunged, ...present);
+      } else {
+        await expunge();
+        await expectPatientsExpunged(...expunged);
+        await expectPatientsPresent(...present);
+      }
+    }
+
+    type ExpungeAccessCase = {
+      name: string;
+      createRepo: () => Promise<Repository>;
+      forbidden?: boolean;
+      canExpungeOtherProject?: boolean;
+    };
+
+    const expungeAccessCases: ExpungeAccessCase[] = [
+      {
+        name: 'Super Admin',
+        createRepo: async () => (await createTestProject({ withRepo: true, superAdmin: true })).repo,
+        canExpungeOtherProject: true,
+      },
+      {
+        name: 'Project Admin',
+        createRepo: async () => (await createTestProject({ withRepo: true, membership: { admin: true } })).repo,
+        canExpungeOtherProject: false,
+      },
+      {
+        name: 'Non-admin user',
+        createRepo: async () => (await createTestProject({ withRepo: true })).repo,
+        forbidden: true,
+      },
+    ];
+
+    describe.each(expungeAccessCases)('$name', ({ createRepo, forbidden, canExpungeOtherProject }) => {
+      test('expungeResource in own project', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const [patient, untouchedPatient] = await createPatients(repo, 2);
+
+          await expectExpungeResult(
+            () => repo.expungeResource('Patient', patient.id),
+            Boolean(forbidden),
+            [patient],
+            [untouchedPatient]
+          );
+        }));
+
+      test('expungeResources in own project', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const [patient1, patient2, untouchedPatient] = await createPatients(repo, 3);
+
+          await expectExpungeResult(
+            () => repo.expungeResources('Patient', [patient1.id, patient2.id]),
+            Boolean(forbidden),
+            [patient1, patient2],
+            [untouchedPatient]
+          );
+        }));
+
+      test('expungeResource in another project', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const { repo: otherProjectRepo } = await createTestProject({ withRepo: true });
+          const [ownPatient] = await createPatients(repo, 1);
+          const [otherProjectPatient] = await createPatients(otherProjectRepo, 1);
+
+          let expungedPatients: WithId<Patient>[];
+          let presentPatients: WithId<Patient>[];
+          if (canExpungeOtherProject) {
+            expungedPatients = [otherProjectPatient];
+            presentPatients = [ownPatient];
+          } else {
+            expungedPatients = [];
+            presentPatients = [ownPatient, otherProjectPatient];
+          }
+          await expectExpungeResult(
+            () => repo.expungeResource('Patient', otherProjectPatient.id),
+            Boolean(forbidden),
+            expungedPatients,
+            presentPatients
+          );
+        }));
+
+      test('expungeResources with own-project and other-project IDs', async () =>
+        withTestContext(async () => {
+          const repo = await createRepo();
+          const { repo: otherProjectRepo } = await createTestProject({ withRepo: true });
+          const [ownPatient, untouchedPatient] = await createPatients(repo, 2);
+          const [otherProjectPatient] = await createPatients(otherProjectRepo, 1);
+
+          let expungedPatients: WithId<Patient>[];
+          let presentPatients: WithId<Patient>[];
+          if (canExpungeOtherProject) {
+            expungedPatients = [ownPatient, otherProjectPatient];
+            presentPatients = [untouchedPatient];
+          } else {
+            expungedPatients = [ownPatient];
+            presentPatients = [untouchedPatient, otherProjectPatient];
+          }
+          await expectExpungeResult(
+            () => repo.expungeResources('Patient', [ownPatient.id, otherProjectPatient.id]),
+            Boolean(forbidden),
+            expungedPatients,
+            presentPatients
+          );
+        }));
+    });
   });
 
-  test('expungeResources forbidden', async () => {
-    // Try to expunge as a regular user
-    await expect(testProjectRepo.expungeResources('Patient', [new Date().toISOString()])).rejects.toThrow('Forbidden');
+  test('Expunge too many IDs', async () => {
+    await expect(
+      systemRepo.expungeResources(
+        'Patient',
+        Array.from({ length: 10000 }, () => randomUUID())
+      )
+    ).resolves.toBeUndefined();
+    await expect(
+      systemRepo.expungeResources(
+        'Patient',
+        Array.from({ length: 10001 }, () => randomUUID())
+      )
+    ).rejects.toThrow('Expunge request contains too many IDs');
   });
 
   test('Purge forbidden', async () => {
@@ -1039,183 +1165,6 @@ describe('FHIR Repo', () => {
 
   test('Malformed client assigned ID', async () => {
     await expect(systemRepo.updateResource({ resourceType: 'Patient', id: '123' })).rejects.toThrow('Invalid id');
-  });
-
-  test('Profile validation', async () =>
-    withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: true });
-
-      const profile = { ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() };
-      const patient: Patient = {
-        resourceType: 'Patient',
-        meta: {
-          profile: [profile.url],
-        },
-        identifier: [
-          {
-            system: 'http://example.com/patient-id',
-            value: 'foo',
-          },
-        ],
-        name: [
-          {
-            given: ['Alex'],
-            family: 'Baker',
-          },
-        ],
-        // Missing gender property is required by profile
-      };
-
-      await expect(repo.createResource(patient)).resolves.toBeTruthy();
-      await repo.createResource(profile);
-      await expect(repo.createResource(patient)).rejects.toThrow(
-        new Error('Missing required property (Patient.gender)')
-      );
-    }));
-
-  test('Profile update', async () =>
-    withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: true });
-
-      const profile = await repo.createResource({
-        ...usCorePatientProfile,
-        url: 'urn:uuid:' + randomUUID(),
-      });
-
-      const patient: Patient = {
-        resourceType: 'Patient',
-        meta: { profile: [profile.url] },
-        identifier: [{ system: 'http://example.com/patient-id', value: 'foo' }],
-        name: [{ given: ['Alex'], family: 'Baker' }],
-        gender: 'male',
-      };
-
-      // Create the patient
-      // This should succeed
-      await expect(repo.createResource(patient)).resolves.toBeTruthy();
-
-      // Now update the profile to make "address" a required field
-      await repo.updateResource<StructureDefinition>({
-        ...profile,
-        snapshot: {
-          ...profile.snapshot,
-          element: profile.snapshot?.element?.map((e) => {
-            if (e.path === 'Patient.address') {
-              return {
-                ...e,
-                min: 1,
-              };
-            }
-            return e;
-          }) as ElementDefinition[],
-        },
-      });
-
-      // Now try to create another patient without an address
-      // This should fail
-      await expect(repo.createResource(patient)).rejects.toThrow(
-        new Error('Missing required property (Patient.address)')
-      );
-    }));
-
-  describe('Update resource with terminology validation', () => {
-    const patient: Patient = {
-      resourceType: 'Patient',
-      identifier: [{ use: 'usual', system: 'urn:oid:1.2.36.146.595.217.0.1', value: '12345' }],
-      active: true,
-      name: [
-        { use: 'official', family: 'Chalmers', given: ['Peter', 'James'] },
-        { use: 'usual', given: ['Jim'] },
-        { use: 'maiden', family: 'Windsor', given: ['Peter', 'James'] },
-      ],
-      telecom: [
-        { use: 'home', system: 'url', value: 'http://example.com' },
-        { system: 'phone', value: '(03) 5555 6473', use: 'work', rank: 1 },
-        { system: 'phone', value: '(03) 3410 5613', use: 'mobile', rank: 2 },
-        { system: 'phone', value: '(03) 5555 8834', use: 'old' },
-      ],
-      gender: 'male',
-      birthDate: '1974-12-25',
-      address: [{ use: 'home', type: 'both', text: '534 Erewhon St PeasantVille, Rainbow, Vic  3999' }],
-      contact: [
-        {
-          name: { use: 'usual', family: 'du Marché', given: ['Bénédicte'] },
-          telecom: [{ system: 'phone', value: '+33 (237) 998327', use: 'home' }],
-          address: { use: 'home', type: 'both', line: ['534 Erewhon St'], city: 'PleasantVille', postalCode: '3999' },
-          gender: 'female',
-        },
-      ],
-      communication: [{ language: { coding: [{ system: 'urn:ietf:bcp:47', code: 'en' }] } }],
-    };
-
-    let repo: Repository;
-    let profile: StructureDefinition;
-    beforeAll(async () => {
-      const result = await createTestProject({ withRepo: true, project: { features: ['validate-terminology'] } });
-      repo = result.repo;
-
-      // Create modified US Core Patient profile to have 'required' binding for communication.language
-      const modifiedPatientProfile = JSON.parse(
-        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
-      ) as StructureDefinition;
-
-      const commLang = modifiedPatientProfile.snapshot?.element.find((e) => e.id === 'Patient.communication.language');
-      assert(commLang?.binding?.valueSet === 'http://hl7.org/fhir/us/core/ValueSet/simple-language');
-      assert(commLang.binding.strength === 'extensible');
-      commLang.binding.strength = 'required';
-
-      profile = await repo.createResource({
-        ...modifiedPatientProfile,
-        url: 'urn:uuid:' + randomUUID(),
-      });
-
-      // Create a ValueSet for the US Core Patient profile that includes only 'en' as a valid language
-      await repo.createResource<ValueSet>({
-        resourceType: 'ValueSet',
-        url: 'http://hl7.org/fhir/us/core/ValueSet/simple-language',
-        expansion: {
-          timestamp: new Date().toISOString(),
-          contains: [
-            {
-              system: 'urn:ietf:bcp:47',
-              code: 'en',
-            },
-          ],
-        },
-        status: 'active',
-      });
-    });
-    test('Valid patient without any profiles', async () =>
-      withTestContext(async () => {
-        await expect(repo.createResource(patient)).resolves.toBeDefined();
-      }));
-
-    test('Invalid gender', async () =>
-      withTestContext(async () => {
-        await expect(
-          repo.createResource({ ...patient, gender: 'enby' as unknown as Patient['gender'] })
-        ).rejects.toThrow(
-          `Value "enby" did not satisfy terminology binding http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1 (Patient.gender)`
-        );
-      }));
-
-    test('Valid patient with US Core Patient profile', async () =>
-      withTestContext(async () => {
-        await expect(repo.createResource({ ...patient, meta: { profile: [profile.url] } })).resolves.toBeDefined();
-      }));
-
-    test('Invalid patient with US Core Patient profile (communication.language not in ValueSet)', async () =>
-      withTestContext(async () => {
-        await expect(
-          repo.createResource({
-            ...patient,
-            meta: { profile: [profile.url] },
-            communication: [{ language: { coding: [{ system: 'urn:ietf:bcp:47', code: 'fr' }] } }],
-          })
-        ).rejects.toThrow(
-          `Value {"coding":[{"system":"urn:ietf:bcp:47","code":"fr"}]} did not satisfy terminology binding http://hl7.org/fhir/us/core/ValueSet/simple-language (Patient.communication[0].language)`
-        );
-      }));
   });
 
   test('Conditional update', () =>
@@ -1292,215 +1241,6 @@ describe('FHIR Repo', () => {
       await systemRepo.deleteResource(patient.resourceType, patient.id);
       await expect(systemRepo.deleteResource(patient.resourceType, patient.id)).resolves.toBeUndefined();
     }));
-
-  describe('Array column padding', () => {
-    let prevConfig: string | undefined;
-    beforeEach(() => {
-      const config = getConfig();
-      prevConfig = config.arrayColumnPadding && JSON.stringify(config.arrayColumnPadding);
-    });
-
-    afterEach(() => {
-      if (prevConfig) {
-        const config = getConfig();
-        config.arrayColumnPadding = JSON.parse(prevConfig);
-      }
-    });
-
-    const ENSURE_PADDING: ArrayColumnPaddingConfig = {
-      m: 1,
-      lambda: 300,
-      statisticsTarget: 1,
-    };
-
-    test.each([
-      ['no config', undefined, false], // off by default
-      [
-        'no resourceType array',
-        {
-          identifier: {
-            config: ENSURE_PADDING,
-          },
-        },
-        true,
-      ],
-      [
-        'resourceType in the resourceType array',
-        {
-          identifier: {
-            resourceType: ['Patient', 'Observation'],
-            config: ENSURE_PADDING,
-          },
-        },
-        true,
-      ],
-      [
-        'resourceType NOT in the resourceType array',
-        {
-          identifier: {
-            resourceType: ['Patient'],
-            config: ENSURE_PADDING,
-          },
-        },
-        false,
-      ],
-      [
-        'array with entry with no resourceType array in second element',
-        {
-          identifier: [
-            {
-              resourceType: ['Task'],
-              config: ENSURE_PADDING,
-            },
-            {
-              config: ENSURE_PADDING,
-            },
-          ],
-        },
-        true,
-      ],
-      [
-        'array with resourceType in second entry resourceType array',
-        {
-          identifier: [
-            {
-              resourceType: ['Patient'],
-              config: ENSURE_PADDING,
-            },
-            {
-              resourceType: ['Task', 'Observation'],
-              config: ENSURE_PADDING,
-            },
-          ],
-        },
-        true,
-      ],
-      [
-        'array with resourceType NOT in any resourceType array',
-        {
-          identifier: [
-            {
-              resourceType: ['Patient'],
-              config: ENSURE_PADDING,
-            },
-            {
-              resourceType: ['Task'],
-              config: ENSURE_PADDING,
-            },
-          ],
-        },
-        false,
-      ],
-    ])('with %s', async (_desc, arrayColumnPadding: MedplumServerConfig['arrayColumnPadding'] | undefined, shouldPad) =>
-      withTestContext(async () => {
-        const config = getConfig();
-        if (arrayColumnPadding) {
-          config.arrayColumnPadding = arrayColumnPadding;
-        }
-        const res = await systemRepo.createResource<Observation>({
-          resourceType: 'Observation',
-          status: 'unknown',
-          code: { coding: [{ system: 'http://loinc.org', code: '72166-2', display: 'Test Observation' }] },
-        });
-
-        const db = getDatabasePool(DatabaseMode.READER);
-        const results = await db.query('SELECT "__identifier" FROM "Observation" WHERE "id" = $1', [res.id]);
-        if (shouldPad) {
-          expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
-        } else {
-          expect(results.rows).toStrictEqual([{ __identifier: [] }]);
-        }
-
-        // deleted rows also get padded
-        await systemRepo.deleteResource(res.resourceType, res.id);
-
-        if (shouldPad) {
-          expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
-        } else {
-          expect(results.rows).toStrictEqual([{ __identifier: [] }]);
-        }
-      })
-    );
-  });
-
-  describe('Array column value sorting', () => {
-    test('stores multi-valued reference column in sorted order (DocumentReference.author)', () =>
-      withTestContext(async () => {
-        const authorRefs = [
-          'Practitioner/zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz',
-          'Patient/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-          'Practitioner/11111111-1111-1111-1111-111111111111',
-        ];
-        const expected = [...authorRefs].sort(compareColumnValues);
-
-        const doc = await systemRepo.createResource<DocumentReference>({
-          resourceType: 'DocumentReference',
-          status: 'current',
-          content: [{ attachment: { url: 'https://example.com/doc.pdf' } }],
-          author: [{ reference: authorRefs[0] }, { reference: authorRefs[1] }, { reference: authorRefs[2] }],
-        });
-
-        const db = getDatabasePool(DatabaseMode.READER);
-        const results = await db.query('SELECT "author" FROM "DocumentReference" WHERE "id" = $1', [doc.id]);
-        expect(results.rows).toStrictEqual([{ author: expected }]);
-      }));
-
-    test('same reference values in different resource order yield identical stored array', () =>
-      withTestContext(async () => {
-        const a = 'Patient/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-        const b = 'Practitioner/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
-        const expected = [a, b].sort(compareColumnValues);
-
-        const doc1 = await systemRepo.createResource<DocumentReference>({
-          resourceType: 'DocumentReference',
-          status: 'current',
-          content: [{ attachment: { url: 'https://example.com/a.pdf' } }],
-          author: [{ reference: b }, { reference: a }],
-        });
-        const doc2 = await systemRepo.createResource<DocumentReference>({
-          resourceType: 'DocumentReference',
-          status: 'current',
-          content: [{ attachment: { url: 'https://example.com/b.pdf' } }],
-          author: [{ reference: a }, { reference: b }],
-        });
-
-        const db = getDatabasePool(DatabaseMode.READER);
-        const r1 = await db.query('SELECT "author" FROM "DocumentReference" WHERE "id" = $1', [doc1.id]);
-        const r2 = await db.query('SELECT "author" FROM "DocumentReference" WHERE "id" = $1', [doc2.id]);
-        expect(r1.rows).toStrictEqual([{ author: expected }]);
-        expect(r2.rows).toStrictEqual([{ author: expected }]);
-      }));
-
-    test('stores multi-valued quantity column in sorted order (Observation.component)', () =>
-      withTestContext(async () => {
-        const values = [100.5, 3.14, 42];
-        const expected = [...values].sort(compareColumnValues);
-
-        const obs = await systemRepo.createResource<Observation>({
-          resourceType: 'Observation',
-          status: 'final',
-          code: { text: 'component quantity sort test' },
-          component: [
-            {
-              code: { text: 'first' },
-              valueQuantity: { value: values[0], unit: '1', system: 'http://unitsofmeasure.org', code: '1' },
-            },
-            {
-              code: { text: 'second' },
-              valueQuantity: { value: values[1], unit: '1', system: 'http://unitsofmeasure.org', code: '1' },
-            },
-            {
-              code: { text: 'third' },
-              valueQuantity: { value: values[2], unit: '1', system: 'http://unitsofmeasure.org', code: '1' },
-            },
-          ],
-        });
-
-        const db = getDatabasePool(DatabaseMode.READER);
-        const results = await db.query('SELECT "componentValueQuantity" FROM "Observation" WHERE "id" = $1', [obs.id]);
-        expect(results.rows).toStrictEqual([{ componentValueQuantity: expected }]);
-      }));
-  });
 
   test('Conditional reference resolution', async () =>
     withTestContext(async () => {
@@ -1600,40 +1340,6 @@ describe('FHIR Repo', () => {
       await expect(systemRepo.createResource(serviceRequest)).rejects.toThrow(/^Expected single .*?performerType\)$/);
     }));
 
-  test('Project default profiles', async () =>
-    withTestContext(async () => {
-      const { repo } = await createTestProject({
-        withClient: true,
-        withRepo: true,
-        project: {
-          defaultProfile: [
-            { resourceType: 'Observation', profile: ['http://hl7.org/fhir/StructureDefinition/vitalsigns'] },
-          ],
-        },
-      });
-
-      const observation: Observation = {
-        resourceType: 'Observation',
-        status: 'final',
-        category: [
-          { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },
-        ],
-        code: { text: 'Strep test' },
-        effectiveDateTime: '2024-02-13T14:34:56Z',
-        valueBoolean: true,
-      };
-
-      await expect(systemRepo.createResource(observation)).resolves.toBeDefined();
-      await expect(repo.createResource(observation)).rejects.toThrow('Missing required property (Observation.subject)');
-
-      observation.subject = { identifier: { value: randomUUID() } };
-      await expect(repo.createResource(observation)).resolves.toMatchObject<Partial<Observation>>({
-        meta: expect.objectContaining({
-          profile: ['http://hl7.org/fhir/StructureDefinition/vitalsigns'],
-        }),
-      });
-    }));
-
   test('Prevents setting Project compartments', async () =>
     withTestContext(async () => {
       const { repo, project } = await createTestProject({ withRepo: true });
@@ -1651,24 +1357,6 @@ describe('FHIR Repo', () => {
       expect(results).toHaveLength(0);
     }));
 
-  test('setTypedValue', () => {
-    const patient: Patient = {
-      resourceType: 'Patient',
-      photo: [
-        {
-          contentType: 'image/png',
-          url: 'https://example.com/photo.png',
-        },
-        {
-          contentType: 'image/png',
-          data: 'base64data',
-        },
-      ],
-    };
-
-    setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
-    expect(patient.photo?.[1].contentType).toStrictEqual('image/jpeg');
-  });
   async function getProjectIdColumn(id: string): Promise<string | null> {
     const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
     const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
@@ -1706,66 +1394,6 @@ describe('FHIR Repo', () => {
       });
       expect(user3.meta?.project).toBeUndefined();
       expect(await getProjectIdColumn(user3.id)).toStrictEqual(systemResourceProjectId);
-    }));
-
-  test('Handles caching of profile from linked project', async () =>
-    withTestContext(async () => {
-      const { membership, project } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      });
-
-      const { membership: membership2, project: project2 } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      });
-      const updatedProject = await globalSystemRepo.updateResource({
-        ...project,
-        link: [{ project: createReference(project2) }],
-      });
-
-      const repo2 = await getRepoForLogin({
-        login: {} as Login,
-        membership: membership2,
-        project: project2,
-        userConfig: {} as UserConfiguration,
-      });
-      const profile = await repo2.createResource({ ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() });
-
-      const patientJson: Patient = {
-        resourceType: 'Patient',
-        meta: {
-          profile: [profile.url],
-        },
-      };
-
-      // Resource upload should fail with profile linked
-      let repo = await getRepoForLogin({
-        login: {} as Login,
-        membership,
-        project: updatedProject,
-        userConfig: {} as UserConfiguration,
-      });
-      await expect(repo.createResource(patientJson)).rejects.toThrow(/Missing required property/);
-
-      // Unlink Project and verify that profile is not cached; resource upload should succeed without access to profile
-      const unlinkedProject = await systemRepo.updateResource({
-        ...updatedProject,
-        link: undefined,
-      });
-      repo = await getRepoForLogin({
-        login: {} as Login,
-        membership,
-        project: unlinkedProject,
-        userConfig: {} as UserConfiguration,
-      });
-      await expect(repo.createResource(patientJson)).resolves.toBeDefined();
     }));
 
   test('Retry after create should not execute post-commit hooks from rollback', () =>
@@ -1903,8 +1531,8 @@ describe('FHIR Repo', () => {
     }
 
     // Bookkeeping must be fully reset so the repo is safe for future use
-    expect((repo as any).transactionDepth).toBe(0);
-    expect((repo as any).conn).toBeUndefined();
+    expect((repo as any).connection.transactionDepth).toBe(0);
+    expect((repo as any).connection.conn).toBeUndefined();
 
     // Dead client must be released with a truthy err so pg-pool discards it
     expect(releaseSpy).toHaveBeenCalledTimes(1);
@@ -1922,6 +1550,615 @@ describe('FHIR Repo', () => {
     releaseSpy.mockRestore();
     warnSpy.mockRestore();
     errorSpy.mockRestore();
+  });
+
+  test.each([undefined, -1] as (number | undefined)[])(
+    'withTransaction does not record transaction idle metrics when threshold is %s',
+    async (thresholdMs) => {
+      const restoreThreshold = setIdleInTransactionLogThresholdMs(thresholdMs);
+      const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+      const client = {
+        query,
+        release: jest.fn(),
+      } as unknown as PoolClient;
+      const repo = getShardSystemRepo(
+        'test-shard',
+        RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+      );
+      const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+      const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+
+      try {
+        await repo.withTransaction(async (txClient) => {
+          await txClient.query('SELECT 1');
+        });
+
+        expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
+          'BEGIN ISOLATION LEVEL REPEATABLE READ',
+          'SELECT 1',
+          'COMMIT',
+        ]);
+        expect(client.query).toBe(query);
+        expect(warnSpy).not.toHaveBeenCalledWith(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, expect.anything());
+        expect(recordHistogramValueSpy).not.toHaveBeenCalled();
+      } finally {
+        restoreThreshold();
+        warnSpy.mockRestore();
+        recordHistogramValueSpy.mockRestore();
+      }
+    }
+  );
+
+  test('withTransaction disables idle tracking for callback-style queries', async () => {
+    const restoreThreshold = setIdleInTransactionLogThresholdMs(5);
+    let now = 0;
+    const dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
+    const query = jest.fn((sql: string, callback?: (err: Error | undefined, result: { rows: any[] }) => void) => {
+      if (sql === 'SELECT 1' && callback) {
+        now += 10;
+        callback(undefined, { rows: [] });
+        return undefined;
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+
+    try {
+      await repo.withTransaction(async (txClient) => {
+        await new Promise<void>((resolve, reject) => {
+          txClient.query('SELECT 1', (err) => (err ? reject(err) : resolve()));
+        });
+      });
+
+      expect(client.query).toBe(query);
+      expect(warnSpy).not.toHaveBeenCalledWith(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, expect.anything());
+      expect(recordHistogramValueSpy).not.toHaveBeenCalled();
+    } finally {
+      restoreThreshold();
+      dateNowSpy.mockRestore();
+      warnSpy.mockRestore();
+      recordHistogramValueSpy.mockRestore();
+    }
+  });
+
+  test('withTransaction logs and records high idle time in rolled back transaction', async () => {
+    const restoreThreshold = setIdleInTransactionLogThresholdMs(0);
+    let now = 0;
+    const dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
+    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+
+    try {
+      await expect(
+        repo.withTransaction(async () => {
+          now += 10;
+          throw new Error('work failed');
+        })
+      ).rejects.toThrow('work failed');
+
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_TOTAL_METRIC_NAME, 10, {
+        attributes: { attempt: 0, serializable: false, status: 'rolled_back' },
+        options: { unit: 'ms' },
+      });
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_MAX_METRIC_NAME, 10, {
+        attributes: { attempt: 0, serializable: false, status: 'rolled_back' },
+        options: { unit: 'ms' },
+      });
+      expect(warnSpy).toHaveBeenCalledWith(
+        TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG,
+        expect.objectContaining({
+          totalIdleMs: 10,
+          maxIdleMs: 10,
+          queryCount: 1,
+          status: 'rolled_back',
+          transactionDurationMs: 10,
+        })
+      );
+    } finally {
+      restoreThreshold();
+      dateNowSpy.mockRestore();
+      warnSpy.mockRestore();
+      recordHistogramValueSpy.mockRestore();
+    }
+  });
+
+  test('withTransaction records outer transaction idle time across nested transactions', async () => {
+    const restoreThreshold = setIdleInTransactionLogThresholdMs(50);
+    let now = 0;
+    const dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
+    const query = jest.fn(async (sql: string) => {
+      if (sql === 'SELECT 1') {
+        now += 25;
+      }
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+
+    try {
+      await repo.withTransaction(async () => {
+        now += 30;
+        await repo.withTransaction(async (txClient) => {
+          now += 20;
+          await txClient.query('SELECT 1');
+        });
+        now += 10;
+      });
+
+      expect(recordHistogramValueSpy).not.toHaveBeenCalled();
+      expect(warnSpy).not.toHaveBeenCalledWith(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, expect.anything());
+
+      now = 0;
+      query.mockClear();
+
+      await repo.withTransaction(async () => {
+        now += 20;
+        await repo.withTransaction(async (txClient) => {
+          now += 5;
+          await txClient.query('SELECT 1');
+        });
+        now += 50;
+      });
+
+      expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
+        'BEGIN ISOLATION LEVEL REPEATABLE READ',
+        'SAVEPOINT sp2',
+        'SELECT 1',
+        'RELEASE SAVEPOINT sp2',
+        'COMMIT',
+      ]);
+      expect(recordHistogramValueSpy).toHaveBeenCalledTimes(2);
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_TOTAL_METRIC_NAME, 75, {
+        attributes: { attempt: 0, serializable: false, status: 'committed' },
+        options: { unit: 'ms' },
+      });
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_MAX_METRIC_NAME, 50, {
+        attributes: { attempt: 0, serializable: false, status: 'committed' },
+        options: { unit: 'ms' },
+      });
+      expect(warnSpy).toHaveBeenCalledWith(
+        TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG,
+        expect.objectContaining({
+          attempt: 0,
+          totalIdleMs: 75,
+          maxIdleMs: 50,
+          queryCount: 4,
+          queryDurationMs: 25,
+          serializable: false,
+          status: 'committed',
+          thresholdMs: 50,
+          transactionAttempts: 2,
+          transactionDurationMs: 100,
+        })
+      );
+      expect(client.query).toBe(query);
+    } finally {
+      restoreThreshold();
+      dateNowSpy.mockRestore();
+      warnSpy.mockRestore();
+      recordHistogramValueSpy.mockRestore();
+    }
+  });
+
+  test('withStatementTimeout pins connection and discards it after callback', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+    let releaseSpy: jest.SpyInstance | undefined;
+
+    await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
+      releaseSpy = jest.spyOn(client, 'release');
+
+      await repo.withTransaction(async (txClient) => {
+        expect(txClient).toBe(client);
+      });
+
+      expect(releaseSpy).not.toHaveBeenCalled();
+    });
+
+    expect(releaseSpy).toHaveBeenCalledWith(true);
+    releaseSpy?.mockRestore();
+  });
+
+  test('withStatementTimeout rejects borrowed repository connections', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+
+    await repo.withTransaction(async () => {
+      await expect(repo.getSystemRepo().withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
+        'borrowed repository connection'
+      );
+    });
+  });
+
+  test('withStatementTimeout rejects active transactions', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+
+    await repo.withTransaction(async () => {
+      await expect(repo.withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
+        'active transaction'
+      );
+    });
+  });
+
+  test('withStatementTimeout prevents writer operations on a pinned reader connection', async () => {
+    const { repo } = await createTestProject({ withRepo: true });
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(
+        repo.withStatementTimeout({ timeoutMs: 0, mode: DatabaseMode.READER }, async () => {
+          // The timeout wrapper pins one physical reader client. A nested transaction
+          // must not silently reuse that reader client for writer work.
+          await repo.withTransaction(async () => undefined);
+        })
+      ).rejects.toThrow('reader database connection');
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('borrowed repository connections do not reacquire clients after forced release', async () => {
+    const rollbackError = new Error('rollback failed');
+    const client = {
+      query: jest.fn(async (query: string) => {
+        if (query === 'ROLLBACK') {
+          throw rollbackError;
+        }
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(repo.withTransaction(async () => Promise.reject(new Error('work failed')))).rejects.toThrow(
+        'work failed'
+      );
+
+      // The repository only borrowed this PoolClient, so it drops its local reference
+      // after the fatal rollback path but never releases a client it does not own.
+      expect(client.release).not.toHaveBeenCalled();
+
+      await expect(repo.withTransaction(async () => undefined)).rejects.toThrow(
+        'Borrowed repository connection is no longer available'
+      );
+    } finally {
+      warnSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('withTransaction does not publish transaction state when BEGIN fails', async () => {
+    const beginError = new Error('begin failed');
+    const client = {
+      query: jest.fn(async () => Promise.reject(beginError)),
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(repo.withTransaction(async () => undefined)).rejects.toThrow('begin failed');
+
+      // BEGIN never succeeded, so the in-memory state must not claim an active
+      // transaction or hold callback frames for one.
+      expect((repo as any).connection.transactionDepth).toBe(0);
+      expect((repo as any).connection.callbackStack).toHaveLength(0);
+      expect((repo as any).connection.hasConnection()).toBe(false);
+      expect(client.release).not.toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('withTransaction rejects nested isolation upgrades', async () => {
+    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+
+    await repo.withTransaction(async () => {
+      await expect(repo.withTransaction(async () => undefined, { serializable: true })).rejects.toThrow(
+        'Cannot start SERIALIZABLE transaction inside active REPEATABLE READ transaction'
+      );
+    });
+
+    expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'COMMIT']);
+  });
+
+  test('withTransaction allows nested calls at a weaker isolation level', async () => {
+    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+
+    await repo.withTransaction(
+      async () => {
+        await repo.withTransaction(async () => undefined);
+      },
+      { serializable: true }
+    );
+
+    expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
+      'BEGIN ISOLATION LEVEL SERIALIZABLE',
+      'SAVEPOINT sp2',
+      'RELEASE SAVEPOINT sp2',
+      'COMMIT',
+    ]);
+  });
+
+  test('withTransactionStateLock serializes concurrent transaction begins', async () => {
+    const beginIssued = Promise.withResolvers<undefined>();
+    const allowBegin = Promise.withResolvers<undefined>();
+    const finishFirstTransaction = Promise.withResolvers<undefined>();
+    const secondCallbackStarted = Promise.withResolvers<undefined>();
+    const queries: string[] = [];
+    let beginCount = 0;
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      if (sql === 'BEGIN ISOLATION LEVEL REPEATABLE READ' && ++beginCount === 1) {
+        // Pause the first BEGIN before beginTransaction can publish transactionDepth = 1.
+        beginIssued.resolve(undefined);
+        await allowBegin.promise;
+      }
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+
+    const tx1 = repo.withTransaction(async () => {
+      await finishFirstTransaction.promise;
+    });
+    await beginIssued.promise;
+
+    // Start a second transaction while the first transaction is suspended in BEGIN. Without the state
+    // lock, this second call can observe transactionDepth = 0 and incorrectly issue another BEGIN.
+    const tx2 = repo.withTransaction(async () => {
+      secondCallbackStarted.resolve(undefined);
+    });
+    // Let the second transaction run any queued promise continuations. If it is not blocked by the
+    // lock, it will append its own SQL before this assertion.
+    await allowPendingMicrotasks();
+
+    // The second begin must wait until the first BEGIN has completed and published transactionDepth.
+    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ']);
+
+    allowBegin.resolve(undefined);
+    await secondCallbackStarted.promise;
+    finishFirstTransaction.resolve(undefined);
+    await Promise.all([tx1, tx2]);
+
+    expect(queries).toStrictEqual([
+      'BEGIN ISOLATION LEVEL REPEATABLE READ',
+      'SAVEPOINT sp2',
+      'RELEASE SAVEPOINT sp2',
+      'COMMIT',
+    ]);
+  });
+
+  test('withTransactionStateLock serializes concurrent transaction commits', async () => {
+    const firstStarted = Promise.withResolvers<undefined>();
+    const secondStarted = Promise.withResolvers<undefined>();
+    const finishTransactions = Promise.withResolvers<undefined>();
+    const releaseSavepointIssued = Promise.withResolvers<undefined>();
+    const allowReleaseSavepoint = Promise.withResolvers<undefined>();
+    const queries: string[] = [];
+    let releaseSavepointCount = 0;
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      if (sql === 'RELEASE SAVEPOINT sp2' && ++releaseSavepointCount === 1) {
+        // Hold the inner commit in the database call before transactionDepth is decremented.
+        releaseSavepointIssued.resolve(undefined);
+        await allowReleaseSavepoint.promise;
+      }
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+
+    const tx1 = repo.withTransaction(async () => {
+      firstStarted.resolve(undefined);
+      await secondStarted.promise;
+      await finishTransactions.promise;
+    });
+    await firstStarted.promise;
+
+    const tx2 = repo.withTransaction(async () => {
+      secondStarted.resolve(undefined);
+      await finishTransactions.promise;
+    });
+    await secondStarted.promise;
+
+    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2']);
+    finishTransactions.resolve(undefined);
+    await releaseSavepointIssued.promise;
+    // Both transaction callbacks have finished. Yield so the second commit path can attempt to run;
+    // it must not issue COMMIT until the first RELEASE SAVEPOINT has decremented transactionDepth.
+    await allowPendingMicrotasks();
+
+    // The other commit path must wait until transactionDepth is decremented after RELEASE SAVEPOINT.
+    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2', 'RELEASE SAVEPOINT sp2']);
+
+    allowReleaseSavepoint.resolve(undefined);
+    await Promise.all([tx1, tx2]);
+
+    expect(queries).toStrictEqual([
+      'BEGIN ISOLATION LEVEL REPEATABLE READ',
+      'SAVEPOINT sp2',
+      'RELEASE SAVEPOINT sp2',
+      'COMMIT',
+    ]);
+  });
+
+  test('withTransactionStateLock serializes concurrent transaction rollbacks', async () => {
+    const firstStarted = Promise.withResolvers<undefined>();
+    const secondStarted = Promise.withResolvers<undefined>();
+    const failTransactions = Promise.withResolvers<undefined>();
+    const rollbackSavepointIssued = Promise.withResolvers<undefined>();
+    const allowRollbackSavepoint = Promise.withResolvers<undefined>();
+    const queries: string[] = [];
+    let rollbackSavepointCount = 0;
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      if (sql === 'ROLLBACK TO SAVEPOINT sp2' && ++rollbackSavepointCount === 1) {
+        // Hold the inner rollback in the database call before transactionDepth is decremented.
+        rollbackSavepointIssued.resolve(undefined);
+        await allowRollbackSavepoint.promise;
+      }
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      const tx1 = repo
+        .withTransaction(async () => {
+          firstStarted.resolve(undefined);
+          await secondStarted.promise;
+          await failTransactions.promise;
+          throw new Error('first rollback');
+        })
+        .catch((err) => err);
+      await firstStarted.promise;
+
+      const tx2 = repo
+        .withTransaction(async () => {
+          secondStarted.resolve(undefined);
+          await failTransactions.promise;
+          throw new Error('second rollback');
+        })
+        .catch((err) => err);
+      await secondStarted.promise;
+
+      expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2']);
+      failTransactions.resolve(undefined);
+      await rollbackSavepointIssued.promise;
+      // Both transaction callbacks have failed. Yield so the second rollback path can attempt to run;
+      // it must not issue ROLLBACK until the savepoint rollback has updated transactionDepth.
+      await allowPendingMicrotasks();
+
+      // The other rollback path must wait until transactionDepth is decremented after ROLLBACK TO SAVEPOINT.
+      expect(queries).toStrictEqual([
+        'BEGIN ISOLATION LEVEL REPEATABLE READ',
+        'SAVEPOINT sp2',
+        'ROLLBACK TO SAVEPOINT sp2',
+      ]);
+
+      allowRollbackSavepoint.resolve(undefined);
+      const results = await Promise.all([tx1, tx2]);
+
+      expect(results).toEqual([expect.any(Error), expect.any(Error)]);
+      expect(queries).toStrictEqual([
+        'BEGIN ISOLATION LEVEL REPEATABLE READ',
+        'SAVEPOINT sp2',
+        'ROLLBACK TO SAVEPOINT sp2',
+        'ROLLBACK',
+      ]);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('processing pre-commit callbacks does not deadlock a transaction', async () => {
+    const queries: string[] = [];
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = getShardSystemRepo(
+      'test-shard',
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+    );
+
+    const result = await Promise.race([
+      repo
+        .withTransaction(async () => {
+          await repo.preCommit(async () => {
+            // Pre-commit callbacks are allowed to start their own nested transaction.
+            // If the outer commit held transactionStateLock while running callbacks, this nested
+            // transaction would wait for the lock while the outer commit waited for the callback.
+            await repo.withTransaction(async () => undefined);
+          });
+        })
+        .then(() => 'completed'),
+      new Promise((resolve) => {
+        // The broken implementation deadlocks, so the race gives the test a bounded failure mode.
+        setTimeout(() => resolve('timed out'), 100);
+      }),
+    ]);
+
+    expect(result).toBe('completed');
+    expect(queries).toStrictEqual([
+      'BEGIN ISOLATION LEVEL REPEATABLE READ',
+      'SAVEPOINT sp2',
+      'RELEASE SAVEPOINT sp2',
+      'COMMIT',
+    ]);
   });
 
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
@@ -1968,6 +2205,30 @@ describe('FHIR Repo', () => {
     }
 
     loggerErrorSpy.mockRestore();
+  });
+
+  test('Async quota delay is applied after transaction commit', async () => {
+    const { repo, project, client, login, membership } = await createTestProject({
+      withRepo: true,
+      withClient: true,
+      withAccessToken: true,
+    });
+    const userConfig: UserConfiguration = { resourceType: 'UserConfiguration' };
+
+    await runInAuthenticatedContext(
+      { project, profile: client, login, membership, userConfig },
+      undefined,
+      undefined,
+      { async: true },
+      async () => {
+        const startTime = Date.now();
+        await repo.withTransaction(async () => {
+          await repo.createResource({ resourceType: 'Patient' });
+          expect(Date.now() - startTime).toBeLessThan(100);
+        });
+        expect(Date.now() - startTime).toBeGreaterThan(100);
+      }
+    );
   });
 
   test('Handles resources with many entries stored in lookup table', async () =>
@@ -2068,30 +2329,13 @@ describe('FHIR Repo', () => {
         withRepo: true,
       });
 
-      const regRequest: RegisterRequest = {
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      };
-
-      const regResult = await registerNew(regRequest);
-      let project = regResult.project;
-
-      // add linkedProject to `Project.link`
-      project = await globalSystemRepo.updateResource({
-        ...project,
-        link: [{ project: createReference(linkedProject) }],
+      const { project, repo } = await createTestProject({
+        project: { link: [{ project: createReference(linkedProject) }] },
+        membership: { admin: true },
+        withRepo: true,
       });
 
-      const repo = await getRepoForLogin({
-        project,
-        membership: regResult.membership,
-        login: regResult.login,
-        userConfig: {} as UserConfiguration,
-      });
-
+      // Creating via linkedRepo warms the Redis cache for this resource.
       const linkedOrg = await linkedRepo.createResource<Organization>({
         resourceType: 'Organization',
         name: 'Linked Organization',
@@ -2128,52 +2372,12 @@ describe('FHIR Repo', () => {
       expect(orgs.length).toStrictEqual(2);
       expect(orgs.map((p) => p.id)).toContain(org.id);
       expect(orgs.map((p) => p.id)).toContain(linkedOrg.id);
-    }));
 
-  test('Project.exportedResourceType enforced on cached reads', () =>
-    withTestContext(async () => {
       // Regression: a non-exported resource in a linked project should not be
       // readable even when it is present in the Redis cache. Previously,
       // canPerformInteraction only checked project-compartment membership and
       // ignored the linked project's `exportedResourceType`, so the cache path
       // bypassed the filter enforced by addProjectFilters in SQL.
-      const { project: linkedProject, repo: linkedRepo } = await createTestProject({
-        project: { exportedResourceType: ['Organization'] },
-        withRepo: true,
-      });
-
-      const regRequest: RegisterRequest = {
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      };
-
-      const regResult = await registerNew(regRequest);
-      let project = regResult.project;
-      project = await globalSystemRepo.updateResource({
-        ...project,
-        link: [{ project: createReference(linkedProject) }],
-      });
-
-      const repo = await getRepoForLogin({
-        project,
-        membership: regResult.membership,
-        login: regResult.login,
-        userConfig: {} as UserConfiguration,
-      });
-
-      // Creating via linkedRepo warms the Redis cache for this resource.
-      const linkedOrg = await linkedRepo.createResource<Organization>({
-        resourceType: 'Organization',
-        name: 'Linked Organization',
-      });
-      const linkedPatient = await linkedRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Linked'], family: 'Patient' }],
-        managingOrganization: createReference(linkedOrg),
-      });
 
       // Exported type: should still be readable from the linked project.
       const readOrg = await repo.readResource<Organization>('Organization', linkedOrg.id);
@@ -2203,188 +2407,43 @@ describe('FHIR Repo', () => {
       expect(readPatient.id).toStrictEqual(patient.id);
     }));
 
-  test('Binary writes no search parameter columns', () =>
-    withTestContext(async () => {
-      const { project, repo } = await createTestProject({ withClient: true, withRepo: true });
-      const buildResourceRowSpy = jest.spyOn(Repository.prototype as any, 'buildResourceRow');
-      const binary = await repo.createResource<Binary>({
-        resourceType: 'Binary',
-        contentType: ContentType.TEXT,
-        data: encodeBase64('this is some test data'),
-        meta: {
-          tag: [{ system: 'https://example.com', code: 'tag' }],
-          security: [{ system: 'https://example.com', code: 'security' }],
-        },
-      });
-      expect(binary).toBeDefined();
-      expect(binary.id).toBeDefined();
+  test('constructor and clone add the synthetic R4 project only once to shared context', () => {
+    const project: WithId<Project> = {
+      resourceType: 'Project',
+      id: randomUUID(),
+    };
+    const context = {
+      projects: [project],
+      author: {
+        reference: 'Practitioner/' + randomUUID(),
+      },
+    };
 
-      expect(buildResourceRowSpy).toHaveBeenCalledTimes(1);
-      const binaryRow = buildResourceRowSpy.mock.results[0].value as Record<string, any>;
+    const repo = new Repository(context);
+    const clonedRepo = repo.clone();
 
-      expect(binaryRow).toStrictEqual({
-        id: binary.id,
-        lastUpdated: expect.any(String),
-        deleted: false,
-        projectId: project.id,
-        content: expect.any(String),
-        __version: Repository.VERSION,
-      });
+    // Repository construction mutates the shared context in place, but repeated
+    // construction from that context must not append duplicate synthetic projects.
+    expect(context.projects.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
+    expect(repo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
+    expect(clonedRepo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
+  });
 
-      buildResourceRowSpy.mockRestore();
-    }));
-
-  test('clone() uses provided connection', async () =>
+  test('clone does not share the same connection as the original repository', async () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
 
-      // Clone without connection argument - should use original connection
-      const clonedRepo1 = repo.clone();
-      expect(clonedRepo1).toBeInstanceOf(Repository);
-      expect(clonedRepo1.getDatabaseClient(DatabaseMode.READER)).toBe(repo.getDatabaseClient(DatabaseMode.READER));
-
-      // Clone with explicit connection argument
-      const pool = getDatabasePool(DatabaseMode.READER);
-      const client = await pool.connect();
-      try {
-        const clonedRepo2 = repo.clone(client);
-        expect(clonedRepo2).toBeInstanceOf(Repository);
-        expect(clonedRepo2.getDatabaseClient(DatabaseMode.READER)).toBe(client);
-        expect(clonedRepo2.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
-      } finally {
-        client.release();
-      }
+      let checked = false;
+      await repo.withTransaction(async (client) => {
+        // starting a transaction will have pinned a connection to `repo`.
+        // so ensure that cloning after that pinning does not propagate the pinned connection
+        // to the cloned repository.
+        const clonedRepo1 = repo.clone();
+        expect(clonedRepo1.getDatabaseClient(DatabaseMode.WRITER)).not.toBe(client);
+        checked = true;
+      });
+      expect(checked).toBe(true);
     }));
-});
-
-describe('compareColumnValues', () => {
-  describe('returns 0 when a === b', () => {
-    test.each<[ColumnValue, ColumnValue]>([
-      [null, null],
-      [undefined, undefined],
-      ['Patient/1', 'Patient/1'],
-      ['https://example.org/fhir/Patient/abc', 'https://example.org/fhir/Patient/abc'],
-      ['', ''],
-      [' ', ' '],
-      [0, 0],
-      [-0, 0],
-      [3.14, 3.14],
-      [-100, -100],
-      [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER],
-      [Number.MIN_SAFE_INTEGER, Number.MIN_SAFE_INTEGER],
-      [true, true],
-      [false, false],
-    ])('compareColumnValues(%p, %p) === 0', (a, b) => {
-      expect(compareColumnValues(a, b)).toBe(0);
-    });
-  });
-
-  describe('returns 1 when a is null or undefined and b is defined', () => {
-    test.each<[ColumnValue, ColumnValue]>([
-      [null, 'x'],
-      [undefined, 'x'],
-      [null, ''],
-      [undefined, ''],
-      [null, ' '],
-      [undefined, 'Patient/1'],
-      [null, 0],
-      [undefined, 0],
-      [null, -1],
-      [undefined, 3.14],
-      [undefined, Number.NaN],
-      [null, Number.POSITIVE_INFINITY],
-      [undefined, Number.MIN_SAFE_INTEGER],
-      [null, false],
-      [undefined, true],
-    ])('compareColumnValues(%p, %p) === 1', (a, b) => {
-      expect(compareColumnValues(a, b)).toBe(1);
-    });
-  });
-
-  describe('null and undefined are equal', () => {
-    test.each<[ColumnValue, ColumnValue, 0]>([
-      [null, undefined, 0],
-      [undefined, null, 0],
-    ])('compareColumnValues(%p, %p) === %s', (a, b, expected) => {
-      expect(compareColumnValues(a, b)).toBe(expected);
-    });
-  });
-
-  describe('returns -1 when b is null or undefined and a is defined', () => {
-    test.each<[ColumnValue, ColumnValue]>([
-      ['x', null],
-      ['x', undefined],
-      ['', null],
-      ['Patient/1', undefined],
-      [0, null],
-      [0, undefined],
-      [-1, undefined],
-      [3.14, null],
-      [Number.NaN, null],
-      [Number.POSITIVE_INFINITY, undefined],
-      [false, null],
-      [true, undefined],
-    ])('compareColumnValues(%p, %p) === -1', (a, b) => {
-      expect(compareColumnValues(a, b)).toBe(-1);
-    });
-  });
-
-  describe('returns a - b when both operands are numbers', () => {
-    test.each<[number, number, number]>([
-      [1, 2, -1],
-      [2, 1, 1],
-      [0, -1, 1],
-      [-1, -2, 1],
-      [-1, 1, -2],
-      [100, 50, 50],
-      [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER - 1, 1],
-      [Number.MIN_SAFE_INTEGER, Number.MIN_SAFE_INTEGER + 1, -1],
-      [0, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY],
-      [Number.POSITIVE_INFINITY, 0, Number.POSITIVE_INFINITY],
-      [Number.NEGATIVE_INFINITY, 0, Number.NEGATIVE_INFINITY],
-      [0, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY],
-    ])('compareColumnValues(%p, %p) === %p', (a, b, expected) => {
-      expect(compareColumnValues(a, b)).toBe(expected);
-    });
-
-    test('NaN arithmetic and negative minus positive infinity', () => {
-      expect(compareColumnValues(Number.NaN, 1)).toBeNaN();
-      expect(compareColumnValues(1, Number.NaN)).toBeNaN();
-      expect(compareColumnValues(Number.NaN, Number.NaN)).toBeNaN();
-      expect(compareColumnValues(Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY)).toBe(Number.NEGATIVE_INFINITY);
-    });
-  });
-
-  describe('returns Number(a) - Number(b) when both operands are booleans', () => {
-    test.each<[boolean, boolean, number]>([
-      [false, true, -1],
-      [true, false, 1],
-    ])('compareColumnValues(%p, %p) === %p', (a, b, expected) => {
-      expect(compareColumnValues(a, b)).toBe(expected);
-    });
-  });
-
-  describe('uses String(a).localeCompare(String(b)) when types are not both number or both boolean', () => {
-    test.each<[ColumnValue, ColumnValue]>([
-      ['apple', 'banana'],
-      ['banana', 'apple'],
-      ['', 'z'],
-      ['a', 'Z'],
-      ['prefix', 'prefixLonger'],
-      ['Observation/10', 'Observation/2'],
-      [1, '2'],
-      [0, '0'],
-      [-5, '5'],
-      [true, 'false'],
-      [false, '0'],
-      [1, true],
-      [0, false],
-      [false, 0],
-      [true, 1],
-    ])('compareColumnValues(%p, %p) matches localeCompare', (a, b) => {
-      expect(compareColumnValues(a, b)).toBe(String(a).localeCompare(String(b)));
-    });
-  });
 });
 
 function shuffleString(s: string): string {
@@ -2397,4 +2456,13 @@ function shuffleString(s: string): string {
     arr[j] = temp;
   }
   return arr.join('');
+}
+
+// Some transaction race tests need to make a negative assertion: a competing async path has had a
+// chance to resume, but it must not issue SQL while the transaction state lock is held.
+async function allowPendingMicrotasks(): Promise<void> {
+  // Yield twice so already-queued promise continuations, and continuations queued by those
+  // continuations, can run far enough to issue SQL if the lock is missing.
+  await Promise.resolve();
+  await Promise.resolve();
 }

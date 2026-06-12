@@ -34,12 +34,13 @@ import type {
   ResourceType,
   Subscription,
 } from '@medplum/fhirtypes';
-import type { Job, QueueBaseOptions } from 'bullmq';
-import { Queue, Worker } from 'bullmq';
+import type { Job, MinimalJob, QueueBaseOptions } from 'bullmq';
+import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
+import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
@@ -81,7 +82,8 @@ const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 
 /**
  * The upper limit on the number of times a job can be attempted.
- * Using exponential backoff, 19 attempts is about 73 hours (2^18 seconds).
+ * Using exponential backoff capped at 8 hours delay, 19 attempts takes ~72-80 hours (10 attempts to reach ~5 hours delay + 9 attempts spaced 8 hours apart).
+ * Jitter is applied, and may cause the actual delay to vary up to 10% from the calculated delay.
  */
 const MAX_JOB_ATTEMPTS = 19;
 
@@ -98,6 +100,12 @@ const DEFAULT_ATTEMPTS = 4;
  * before dropping the job.
  */
 const MAX_PREAMBLE_ATTEMPTS = MAX_JOB_ATTEMPTS;
+
+/** Base retry delay, set at 20 seconds. */
+const BASE_DELAY = 20_000;
+
+/** Maximum delay between retries, set at 8 hours. */
+const MAX_DELAY = 8 * 60 * 60_000;
 
 /*
  * The subscription worker inspects every resource change,
@@ -149,11 +157,8 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
   const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
-      attempts: MAX_JOB_ATTEMPTS, // 1 second * 2^18 = 73 hours
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
-      },
+      attempts: MAX_JOB_ATTEMPTS, // can be overridden in catchJobError() below
+      backoff: { type: 'cappedExponential' }, // see below
     },
   });
 
@@ -171,6 +176,15 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
       {
         ...defaultOptions,
         ...workerBullmq,
+        settings: {
+          backoffStrategy: (attemptsMade: number, type?: string, _err?: Error, _job?: MinimalJob) => {
+            if (type !== 'cappedExponential') {
+              throw new Error('Invalid backoff strategy for subscription queue');
+            }
+            const jitterFactor = 0.9 + 0.2 * Math.random(); // 90–110% of the calculated delay is applied
+            return Math.min(BASE_DELAY * Math.pow(2, attemptsMade - 1) * jitterFactor, MAX_DELAY);
+          },
+        },
       }
     );
     addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
@@ -717,11 +731,20 @@ async function sendRestHook(
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }
   try {
-    log.info('Sending rest hook to: ' + url);
+    validateRestHookUrl(url);
+    log.info('Sending rest hook', {
+      url,
+      subscriptionId: subscription.id,
+      projectId: subscription.meta?.project,
+    });
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
     fetchEndTime = Date.now();
-    log.info('Received rest hook status: ' + response.status);
+    log.info('Received rest hook response', {
+      status: response.status,
+      subscriptionId: subscription.id,
+      projectId: subscription.meta?.project,
+    });
     const success = isJobSuccessful(subscription, response.status);
     await createSubscriptionAuditEvent(
       systemRepo,
@@ -737,7 +760,11 @@ async function sendRestHook(
     }
   } catch (ex) {
     fetchEndTime = Date.now();
-    log.info('Subscription exception: ' + ex);
+    log.info('Subscription exception', {
+      err: ex,
+      subscriptionId: subscription.id,
+      projectId: subscription.meta?.project,
+    });
     await createSubscriptionAuditEvent(
       systemRepo,
       resource,
@@ -753,13 +780,32 @@ async function sendRestHook(
   recordHistogramValue('medplum.subscription.restHookFetchDuration', fetchDurationMs / 1000);
   log.info('Subscription rest hook fetch duration', {
     fetchDurationMs,
-    subscription: subscription.id,
-    project: subscription?.meta?.project,
+    subscriptionId: subscription.id,
+    projectId: subscription?.meta?.project,
   });
 
   if (error) {
     throw error;
   }
+}
+
+function validateRestHookUrl(url: string): void {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    throw new Error('Invalid rest-hook URL: must be an absolute HTTPS URL');
+  }
+
+  if (parsedUrl.protocol === 'https:') {
+    return;
+  }
+
+  if (parsedUrl.protocol === 'http:' && getConfig().allowInsecureRestHookUrl) {
+    return;
+  }
+
+  throw new Error('Invalid rest-hook URL: HTTPS is required unless allowInsecureRestHookUrl is enabled');
 }
 
 /**
@@ -883,25 +929,25 @@ async function catchJobError(
     getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
       ?.valueInteger ?? DEFAULT_ATTEMPTS;
 
-  if (job.attemptsMade < maxJobAttempts) {
-    globalLogger.debug(`Retrying job due to error: ${err}`);
-
-    // Lower the job priority
-    // "Note that the priorities go from 1 to 2 097 152, where a lower number is always a higher priority than higher numbers."
-    // "Jobs without a `priority`` assigned will get the most priority."
-    // See: https://docs.bullmq.io/guide/jobs/prioritized
-    await job.changePriority({ priority: 1 + job.attemptsMade });
-
-    throw err;
+  if (job.attemptsMade >= maxJobAttempts) {
+    // All retries exhausted - record as a final failure for auto-disable tracking
+    globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
+    const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
+    const result = await recordSubscriptionFailure(subscription.id, triggers);
+    if (result) {
+      await autoDisableSubscription(systemRepo, result.trigger, subscription, result.failureCount);
+    }
+    // Throw a special error type to force BullMQ to move the job to failed state, instead of retrying again
+    throw new UnrecoverableError(err instanceof Error ? err.message : 'Subscription exhausted available retries');
   }
 
-  // All retries exhausted - record as a final failure for auto-disable tracking
-  globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
-  const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
-  const result = await recordSubscriptionFailure(subscription.id, triggers);
-  if (result) {
-    await autoDisableSubscription(systemRepo, result.trigger, subscription, result.failureCount);
-  }
+  globalLogger.debug(`Retrying job due to error: ${err}`);
+  // Lower the job priority
+  // "Note that the priorities go from 1 to 2 097 152, where a lower number is always a higher priority than higher numbers."
+  // "Jobs without a `priority`` assigned will get the most priority."
+  // See: https://docs.bullmq.io/guide/jobs/prioritized
+  await job.changePriority({ priority: 1 + job.attemptsMade });
+  throw err; // Will retry, using the BullMQ backoff strategy defined above
 }
 
 async function autoDisableSubscription(

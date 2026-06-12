@@ -20,6 +20,7 @@ import type { ColumnSearchParameterImplementation, SearchParameterImplementation
 import { getSearchParameterImplementation } from '../fhir/searchparameter';
 import type { SqlFunctionDefinition } from '../fhir/sql';
 import { getSearchParamColumnType, TokenArrayToTextFn } from '../fhir/sql';
+import { globalLogger } from '../logger';
 import * as fns from './migrate-functions';
 import {
   ColumnNameAbbreviations,
@@ -364,6 +365,8 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
   }
 }
 
+const dateTimeRangeTypes: readonly SearchParameterType[] = [SearchParameterType.DATETIME, SearchParameterType.PERIOD];
+const numericRangeTypes: readonly SearchParameterType[] = [SearchParameterType.NUMBER, SearchParameterType.QUANTITY];
 function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
@@ -379,6 +382,31 @@ function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnD
 
       return columns;
     }
+    case 'range-column':
+      if (impl.type === SearchParameterType.DATE) {
+        return [
+          { name: impl.rangeColumnName, type: impl.array ? 'DATEMULTIRANGE' : 'DATERANGE' },
+          { name: impl.sortColumnName, type: 'DATE' },
+          // Keep original column during migration
+          getColumnDefinition(impl as unknown as ColumnSearchParameterImplementation),
+        ];
+      } else if (dateTimeRangeTypes.includes(impl.type)) {
+        return [
+          { name: impl.rangeColumnName, type: impl.array ? 'TSTZMULTIRANGE' : 'TSTZRANGE' },
+          { name: impl.sortColumnName, type: 'TIMESTAMPTZ' },
+          // Keep original column during migration
+          getColumnDefinition(impl as unknown as ColumnSearchParameterImplementation),
+        ];
+      } else if (numericRangeTypes.includes(impl.type)) {
+        return [
+          { name: impl.rangeColumnName, type: impl.array ? 'NUMMULTIRANGE' : 'NUMRANGE' },
+          { name: impl.sortColumnName, type: 'NUMERIC' },
+          // Keep original column during migration
+          getColumnDefinition(impl as unknown as ColumnSearchParameterImplementation),
+        ];
+      } else {
+        throw new Error('Unsupported range column type: ' + impl.type);
+      }
     case 'column':
       return [getColumnDefinition(impl)];
     case 'lookup-table': {
@@ -397,8 +425,8 @@ function getSearchParameterIndexes(
   impl: SearchParameterImplementation
 ): IndexDefinition[] {
   switch (impl.searchStrategy) {
-    case 'token-column': {
-      const indexes: IndexDefinition[] = [
+    case 'token-column':
+      return [
         { columns: [impl.tokenColumnName], indexType: 'gin' },
         {
           columns: [
@@ -410,7 +438,19 @@ function getSearchParameterIndexes(
           indexType: 'gin',
         },
       ];
-
+    case 'range-column': {
+      const indexes: IndexDefinition[] = [
+        // legacy index prior to range-column search strategy
+        { columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' },
+        {
+          columns: [impl.rangeColumnName, { expression: impl.sortColumnName, name: 'sorted' }],
+          indexType: 'gist',
+        },
+      ];
+      // legacy index prior to range-column search strategy
+      if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {
+        indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
+      }
       return indexes;
     }
     case 'column': {
@@ -420,12 +460,8 @@ function getSearchParameterIndexes(
       }
       return indexes;
     }
-    case 'lookup-table': {
-      if (impl.sortColumnName) {
-        return [{ columns: [impl.sortColumnName], indexType: 'btree' }];
-      }
-      return [];
-    }
+    case 'lookup-table':
+      return impl.sortColumnName ? [{ columns: [impl.sortColumnName], indexType: 'btree' }] : [];
     default:
       throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
   }
@@ -1209,9 +1245,8 @@ function generateIndexesActions(
 
   for (const startIndex of startTable.indexes) {
     if (!matchedIndexes.has(startIndex)) {
-      console.log(
-        `[${startTable.name}] Existing index should not exist:`,
-        startIndex.indexdef || JSON.stringify(startIndex)
+      globalLogger.info(
+        `[${startTable.name}] Existing index should not exist: ${startIndex.indexdef || JSON.stringify(startIndex)}`
       );
       if (options?.dropUnmatchedIndexes) {
         const indexName = parseIndexName(startIndex.indexdef ?? '');
@@ -1223,7 +1258,7 @@ function generateIndexesActions(
   return actions;
 }
 
-function generateConstraintsActions(startTable: TableDefinition, targetTable: TableDefinition): PhasalMigration {
+export function generateConstraintsActions(startTable: TableDefinition, targetTable: TableDefinition): PhasalMigration {
   const actions: PhasalMigration = {
     preDeploy: [],
     postDeploy: [],
@@ -1254,9 +1289,8 @@ function generateConstraintsActions(startTable: TableDefinition, targetTable: Ta
 
   for (const startConstraint of startTable.constraints ?? EMPTY) {
     if (!matchedConstraints.has(startConstraint)) {
-      console.log(
-        `[${startTable.name}] Existing constraint should not exist:`,
-        startConstraint.expression || JSON.stringify(startConstraint)
+      globalLogger.info(
+        `[${startTable.name}] Existing constraint should not exist: ${startConstraint.expression || JSON.stringify(startConstraint)}`
       );
     }
   }

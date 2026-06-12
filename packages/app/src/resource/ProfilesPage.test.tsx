@@ -22,7 +22,7 @@ describe('ProfilesPage', () => {
       loadedProfileUrls.push(sd.url);
       loadDataType(sd);
     }
-    medplum.requestProfileSchema = jest.fn((profileUrl) => {
+    medplum.requestProfileSchema = vi.fn((profileUrl) => {
       if (loadedProfileUrls.includes(profileUrl)) {
         return Promise.resolve();
       } else {

@@ -3,7 +3,7 @@
 import { loadDataType } from '@medplum/core';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, selectAutocompleteOption, typeInAutocomplete } from '../test-utils/render';
 import type { ReferenceInputProps } from './ReferenceInput';
 import { ReferenceInput } from './ReferenceInput';
 
@@ -19,14 +19,14 @@ function setup(args: ReferenceInputProps): void {
 
 describe('ReferenceInput', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty property', () => {
@@ -99,32 +99,13 @@ describe('ReferenceInput', () => {
     });
 
     const input = screen.getByPlaceholderText('Test');
-
-    // Enter "Simpson"
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Simpson' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await selectAutocompleteOption(input, 'Simpson', 'Homer Simpson');
 
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Call onChange', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup({
       name: 'foo',
@@ -139,26 +120,7 @@ describe('ReferenceInput', () => {
     });
 
     const input = screen.getByPlaceholderText('Test');
-
-    // Enter "Simpson"
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Simpson' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await selectAutocompleteOption(input, 'Simpson', 'Homer Simpson');
 
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(onChange).toHaveBeenCalled();
@@ -205,18 +167,11 @@ describe('ReferenceInput', () => {
     expect(screen.queryByDisplayValue(FishPatientProfileSD.url)).toBeNull();
     expect(screen.getByDisplayValue('Fish Patient')).toBeInTheDocument();
 
-    // Enter "B"
-    await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('My placeholder'), { target: { value: 'B' } });
-    });
-
-    // Wait for the autocomplete timeout
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
+    const placeholderInput = screen.getByPlaceholderText('My placeholder');
+    await typeInAutocomplete(placeholderInput, 'B');
 
     // Blinky is a fish, Bart is not
-    expect(screen.queryByText('Blinky')).toBeInTheDocument();
+    expect(await screen.findByText('Blinky')).toBeInTheDocument();
     expect(screen.queryByText('Bart Simpson')).toBeNull();
 
     // Select "Patient" resource type
@@ -226,16 +181,15 @@ describe('ReferenceInput', () => {
 
     // Refocus the input; "B" still as the last value
     await act(async () => {
-      fireEvent.focus(screen.getByPlaceholderText('My placeholder'));
+      fireEvent.focus(placeholderInput);
     });
 
-    // Wait for the autocomplete timeout
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
 
     // Now that Patient is selected, both fish and non-fish are shown
-    expect(screen.getByText('Bart Simpson')).toBeInTheDocument();
+    expect(await screen.findByText('Bart Simpson')).toBeInTheDocument();
     expect(screen.getByText('Blinky')).toBeInTheDocument();
   });
 });

@@ -16,6 +16,7 @@ import { mfaRouter } from './mfa';
 import { newPatientHandler, newPatientValidator } from './newpatient';
 import { newProjectHandler, newProjectValidator } from './newproject';
 import { newUserHandler, newUserValidator } from './newuser';
+import { preAuthorizeHandler, preAuthorizeValidator } from './preauthorize';
 import { profileHandler, profileValidator } from './profile';
 import { resetPasswordHandler, resetPasswordValidator } from './resetpassword';
 import { revokeHandler, revokeValidator } from './revoke';
@@ -43,6 +44,7 @@ authRouter.post('/verifyemail', verifyEmailValidator, verifyEmailHandler);
 authRouter.post('/google', googleValidator, googleHandler);
 authRouter.post('/exchange', exchangeValidator, exchangeHandler);
 authRouter.post('/revoke', authenticateRequest, revokeValidator, revokeHandler);
+authRouter.post('/preauthorize', authenticateRequest, preAuthorizeValidator, preAuthorizeHandler);
 authRouter.get('/login/:login', statusValidator, statusHandler);
 authRouter.get('/clientinfo/:clientId', clientInfoHandler);
 

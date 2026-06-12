@@ -18,7 +18,6 @@ To use Medplum Provider, you'll need a Medplum account.
 2. Navigate to Medplum Provider at [provider.medplum.com](http://provider.medplum.com) and sign in with the same credentials
 3. After signing in, review the "[Get Started](http://provider.medplum.com/getstarted)" page to import sample data and more
 
-
 Occasionally, you may need to use the Medplum App for administrative and other tasks which we note explicitly in this documentation.
 
 ## Using Medplum Provider
@@ -47,9 +46,23 @@ The following sections outline the primary functionality of the Medplum Provider
 - [Documenting Visits](./provider/visits#documenting-visits)
 - [Setting Up Care Templates (via Medplum App)](./provider/visits#setting-up-care-templates-via-medplum-app)
 
+#### [Tasks](./provider/tasks)
+
+- [Creating a Task](./provider/tasks#creating-a-task)
+- [Updating a Task](./provider/tasks#updating-a-task)
+- [Deleting a Task](./provider/tasks#deleting-a-task)
+- [Adding a Task Note](./provider/tasks#adding-a-task-note)
+- [Filtering Tasks](./provider/tasks#filtering-tasks)
+
+#### [Spaces](./provider/spaces)
+
+- [How Spaces Works](./provider/spaces#how-spaces-works)
+- [Prerequisites](./provider/spaces#prerequisites)
+- [The Agent Loop](./provider/spaces#the-agent-loop)
+- [Customizing System Prompts](./provider/spaces#customizing-system-prompts)
+
 #### Documentation Coming Soon:
 
-- Tasks
 - Messages
 - Labs
 - Medications

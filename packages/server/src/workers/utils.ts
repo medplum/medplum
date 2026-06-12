@@ -125,7 +125,7 @@ export interface WorkerInitializerOptions {
 export type WorkerInitializer = (
   config: MedplumServerConfig,
   options?: WorkerInitializerOptions
-) => { queue: Queue; worker: Worker | undefined; name: string };
+) => { queue: Queue | undefined; worker: Worker | undefined; name: string };
 
 export interface QueueRegistry {
   add(name: string, queue: Queue, worker: Worker | undefined): void;
@@ -214,7 +214,7 @@ function getFinishedJobFieldsForLogging(job: Job): Record<string, string | numbe
 export function addVerboseQueueLogging<TDataType>(
   queue: Queue,
   worker: Worker,
-  getJobDataLoggingFields?: (job: Job<TDataType>) => Record<string, string | number | undefined>
+  getJobDataLoggingFields?: (job: Job<TDataType>) => Record<string, string | number | boolean | undefined>
 ): void {
   worker.on('active', (job, prev) => {
     globalLogger.info(`${queue.name} worker: active`, {

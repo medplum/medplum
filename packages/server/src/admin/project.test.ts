@@ -157,7 +157,9 @@ describe('Project Admin routes', () => {
       })
     );
 
-    const bobRegistration = await addTestUser(aliceRegistration.project, { resourceType: 'AccessPolicy' });
+    const bobRegistration = await addTestUser(aliceRegistration.project, {
+      accessPolicy: { resourceType: 'AccessPolicy' },
+    });
 
     // Try to access Alice's project using Alices's access token
     // Should succeed
@@ -580,7 +582,9 @@ describe('Project Admin routes', () => {
   test('Set password access denied', async () => {
     // Create test user in project
     const testProjectUser = await addTestUser(testProjectAdmin.project, {
-      resourceType: 'AccessPolicy',
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+      },
     });
 
     // Try to set password using user's access token

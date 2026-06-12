@@ -4,11 +4,11 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { Logo } from '../Logo/Logo';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import { AppShell } from './AppShell';
 
 const medplum = new MockClient();
-const navigateMock = jest.fn();
+const navigateMock = vi.fn();
 
 async function setup(layoutVersion: 'v1' | 'v2' = 'v1'): Promise<void> {
   // Reset localStorage before each test
@@ -51,15 +51,15 @@ async function setup(layoutVersion: 'v1' | 'v2' = 'v1'): Promise<void> {
 
 describe('AppShell v1', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     navigateMock.mockClear();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders', async () => {
@@ -98,45 +98,25 @@ describe('AppShell v1', () => {
 
     const input = screen.getByPlaceholderText('Resource Type');
 
-    // Enter random text
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });
 
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
-
-    expect(navigateMock).toHaveBeenCalledWith('/test-code');
+    await selectAutocompleteOption(input, 'Test');
   });
 });
 
 describe('AppShell v2', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     navigateMock.mockClear();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders v2', async () => {

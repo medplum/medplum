@@ -48,14 +48,14 @@ describe('PatientSummary - Insurance', () => {
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty when no coverages', async () => {
@@ -249,7 +249,7 @@ describe('PatientSummary - Insurance', () => {
   });
 
   test('Calls onClickResource when coverage item is clicked', async () => {
-    const mockOnClickResource = jest.fn();
+    const mockOnClickResource = vi.fn();
     const activeCoverages: Coverage[] = [
       {
         resourceType: 'Coverage',
@@ -359,5 +359,25 @@ describe('PatientSummary - Insurance', () => {
     await setup(<CoverageItem coverage={coverages} organization={mockInsuranceOrg} />);
 
     expect(screen.getByText('Blue Cross Blue Shield')).toBeInTheDocument();
+  });
+
+  test('Filters out self-pay coverages', async () => {
+    const coverages: Coverage[] = [
+      {
+        resourceType: 'Coverage',
+        id: 'coverage-1',
+        status: 'active',
+        beneficiary: createReference(HomerSimpson),
+        payor: [createReference(mockInsuranceOrg)],
+        subscriberId: '123456789',
+        type: {
+          coding: [{ code: 'SELFPAY' }],
+        },
+      },
+    ];
+
+    await setup(<Insurance coverages={coverages} />);
+
+    expect(screen.queryByText('Coverage-1')).not.toBeInTheDocument();
   });
 });

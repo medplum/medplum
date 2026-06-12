@@ -12,6 +12,7 @@ import { MemberDetailsPage } from './admin/MemberDetailsPage';
 import { ProjectAdminConfigPage } from './admin/ProjectAdminConfigPage';
 import { ProjectDetailsPage } from './admin/ProjectDetailsPage';
 import { ProjectPage } from './admin/ProjectPage';
+import { RateLimitsPage } from './admin/RateLimitsPage';
 import { SecretsPage } from './admin/SecretsPage';
 import { SitesPage } from './admin/SitesPage';
 import { SuperAdminAsyncDashboardPage } from './admin/SuperAdminAsyncJobPage';
@@ -58,6 +59,7 @@ import { ResourceVersionPage } from './resource/ResourceVersionPage';
 import { SubscriptionsPage } from './resource/SubscriptionsPage';
 import { TimelinePage } from './resource/TimelinePage';
 import { ToolsPage } from './resource/ToolsPage';
+import { UpdateEmailPage } from './resource/UpdateEmailPage';
 import { SecurityPage } from './SecurityPage';
 import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
@@ -102,6 +104,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="project" element={<ProjectDetailsPage />} />
           <Route path="secrets" element={<SecretsPage />} />
           <Route path="sites" element={<SitesPage />} />
+          <Route path="rate-limits" element={<RateLimitsPage />} />
         </Route>
         <Route path="/lab/assays" element={<AssaysPage />} />
         <Route path="/lab/panels" element={<PanelsPage />} />
@@ -142,6 +145,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="timeline" element={<TimelinePage />} />
           <Route path="tools" element={<ToolsPage />} />
+          <Route path="email" element={<UpdateEmailPage />} />
           <Route path="payload" element={<CommunicationPayloadPage />} />
           <Route path="profiles" element={<ProfilesPage />} />
           <Route path="accounts" element={<AccountsPage />} />

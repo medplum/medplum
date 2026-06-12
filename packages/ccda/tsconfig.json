@@ -3,7 +3,7 @@
   "compilerOptions": {
     "composite": true,
     "module": "esnext",
-    "types": ["jest"],
+    "types": ["node", "vitest/globals"],
     "lib": ["esnext", "dom"],
     "rootDir": "src",
     "outDir": "dist/types",

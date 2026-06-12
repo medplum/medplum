@@ -17,6 +17,7 @@ import {
 import type { Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react';
 import {
+  IconArrowDown,
   IconArrowLeft,
   IconCode,
   IconLayoutSidebarLeftCollapse,
@@ -27,7 +28,7 @@ import {
 } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChatInput, DEFAULT_MODEL } from '../../pages/spaces/ChatInput';
 import type { Message } from '../../types/spaces';
 import { showErrorNotification } from '../../utils/notifications';
@@ -35,6 +36,7 @@ import { processMessage } from '../../utils/spaceMessaging';
 import { loadConversationMessages } from '../../utils/spacePersistence';
 import { ComponentPreview } from './ComponentPreview';
 import { HistoryList } from './HistoryList';
+import { Markdown } from './Markdown';
 import { ResourceBox } from './ResourceBox';
 import { ResourcePanel } from './ResourcePanel';
 import classes from './SpacesInbox.module.css';
@@ -66,11 +68,12 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [streamingComponentCode, setStreamingComponentCode] = useState<string | undefined>();
   const [componentPanelOpen, setComponentPanelOpen] = useState(false);
   const [componentPreview, setComponentPreview] = useState<{ code: string; resources?: string[] } | undefined>();
-  const [expandedResponses, setExpandedResponses] = useState(new Set<number>());
+  const [expandedResponses, setExpandedResponses] = useState(new Set<string>());
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
   const loadVersionRef = useRef(0);
-  const componentStreamOpenedRef = useRef(false);
+  const isAtBottomRef = useRef(true);
 
   // Load conversation when topic changes
   useEffect(() => {
@@ -90,6 +93,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
             return;
           }
           setMessages([...loadedMessages]);
+          isAtBottomRef.current = true;
+          setShowScrollButton(false);
           setCurrentTopicId(topicId);
           setHasStarted(true);
           setSelectedResource(undefined);
@@ -118,28 +123,49 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;
-    if (viewport && hasStarted) {
+    if (viewport && hasStarted && isAtBottomRef.current) {
       viewport.scrollTo({
         top: viewport.scrollHeight,
-        behavior: 'smooth',
+        behavior: 'auto',
       });
     }
-  }, [messages, hasStarted, streamingContent]);
+  }, [messages, hasStarted, streamingContent, loading, currentFhirRequest, streamingComponentCode]);
 
   // Scroll again after loading finishes to show resources
   useEffect(() => {
     const viewport = scrollViewportRef.current;
-    if (viewport && hasStarted && !loading) {
+    if (viewport && hasStarted && !loading && isAtBottomRef.current) {
       const timer = setTimeout(() => {
         viewport.scrollTo({
           top: viewport.scrollHeight,
-          behavior: 'smooth',
+          behavior: 'auto',
         });
       }, 300);
       return () => clearTimeout(timer);
     }
     return undefined;
   }, [loading, hasStarted]);
+
+  // Track whether the user is scrolled to the bottom; pause autoscroll otherwise
+  const handleScrollPositionChange = (): void => {
+    const viewport = scrollViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+    const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    const atBottom = distanceFromBottom < 100;
+    isAtBottomRef.current = atBottom;
+    setShowScrollButton(!atBottom);
+  };
+
+  const scrollToBottom = (): void => {
+    const viewport = scrollViewportRef.current;
+    if (viewport) {
+      viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+    }
+    isAtBottomRef.current = true;
+    setShowScrollButton(false);
+  };
 
   const handleSelectTopic = async (selectedTopicId: string): Promise<void> => {
     loadVersionRef.current++;
@@ -151,6 +177,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         return;
       }
       setMessages([...loadedMessages]);
+      isAtBottomRef.current = true;
+      setShowScrollButton(false);
       setCurrentTopicId(selectedTopicId);
       setHasStarted(true);
       setSelectedResource(undefined);
@@ -167,8 +195,12 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     }
   };
 
-  const handleSend = async (): Promise<void> => {
-    if (!input.trim()) {
+  const handleSend = async (overrideInput?: string): Promise<void> => {
+    if (isSendingRef.current) {
+      return;
+    }
+    const text = (overrideInput ?? input).trim();
+    if (!text) {
       return;
     }
 
@@ -177,9 +209,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       setHasStarted(true);
     }
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { role: 'user', content: text };
     const currentMessages = [...messages, userMessage];
     setMessages(currentMessages);
+    isAtBottomRef.current = true;
+    setShowScrollButton(false);
     setInput('');
     setCurrentFhirRequest(undefined);
     setStreamingContent(undefined);
@@ -187,12 +221,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setLoading(true);
     isSendingRef.current = true;
     loadVersionRef.current++;
-    componentStreamOpenedRef.current = false;
 
     try {
       const result = await processMessage({
         medplum,
-        input,
+        input: text,
         userMessage,
         currentMessages,
         currentTopicId,
@@ -206,13 +239,16 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           setStreamingContent((prev) => (prev ?? '') + chunk);
           setCurrentFhirRequest(undefined);
         },
+        onComponentStart: () => {
+          // Show the "Generating component..." card and open the preview panel
+          // immediately, before FHIR data is fetched and the first chunk arrives.
+          setSelectedResource(undefined);
+          setSelectedResources(undefined);
+          setComponentPanelOpen(true);
+          setStreamingComponentCode('');
+          setCurrentFhirRequest(undefined);
+        },
         onComponentStreamChunk: (chunk) => {
-          if (!componentStreamOpenedRef.current) {
-            setSelectedResource(undefined);
-            setSelectedResources(undefined);
-            setComponentPanelOpen(true);
-            componentStreamOpenedRef.current = true;
-          }
           setStreamingComponentCode((prev) => (prev ?? '') + chunk);
           setCurrentFhirRequest(undefined);
         },
@@ -247,19 +283,31 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     }
   };
 
-  const toggleResponse = (index: number): void => {
+  const toggleResponse = (id: string): void => {
     setExpandedResponses((prev) => {
       const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
+      if (next.has(id)) {
+        next.delete(id);
       } else {
-        next.add(index);
+        next.add(id);
       }
       return next;
     });
   };
 
   const visibleMessages = messages.filter((m) => m.role !== 'system');
+
+  // Map each tool response to the tool call that produced it, so each request can
+  // be rendered together with its matching response.
+  const toolResponsesByCallId = useMemo(() => {
+    const map = new Map<string, Message>();
+    for (const message of messages) {
+      if (message.role === 'tool' && message.tool_call_id) {
+        map.set(message.tool_call_id, message);
+      }
+    }
+    return map;
+  }, [messages]);
 
   return (
     <>
@@ -312,14 +360,19 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
               </Text>
             </div>
           ) : (
-            <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
+            <ScrollArea
+              style={{ flex: 1 }}
+              offsetScrollbars
+              viewportRef={scrollViewportRef}
+              onScrollPositionChange={handleScrollPositionChange}
+            >
               <Stack gap="xl" p="xs">
                 {visibleMessages.map((message, index) => {
-                  // FHIR tool call — show method + path
+                  // FHIR tool calls — show each request paired with its response
                   if (message.role === 'assistant' && message.tool_calls && !message.content) {
                     return (
                       <div key={index} className={cx(classes.messageWrapper, classes.assistantMessage)}>
-                        <Stack gap={6}>
+                        <Stack gap="md">
                           {message.tool_calls.map((tc, tcIdx) => {
                             let args: { method?: string; path?: string } | undefined;
                             try {
@@ -330,31 +383,58 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                             } catch {
                               /* ignore */
                             }
-                            if (args) {
-                              return (
-                                <Group
-                                  key={tcIdx}
-                                  gap="xs"
-                                  align="center"
-                                  wrap="nowrap"
-                                  className={classes.toolCallGroup}
-                                >
-                                  <Badge
-                                    size="sm"
-                                    color={getMethodColor(args.method)}
-                                    variant="filled"
-                                    className={classes.toolCallBadge}
-                                  >
-                                    {args.method ?? 'CALL'}
-                                  </Badge>
-                                  <Code className={classes.toolCallPath}>{args.path ?? tc.function.name}</Code>
-                                </Group>
-                              );
+
+                            const response = tc.id ? toolResponsesByCallId.get(tc.id) : undefined;
+                            const responseKey = tc.id ?? `${index}-${tcIdx}`;
+                            const isExpanded = expandedResponses.has(responseKey);
+                            let prettyContent = response?.content ?? '';
+                            try {
+                              prettyContent = JSON.stringify(JSON.parse(response?.content ?? ''), null, 2);
+                            } catch {
+                              /* use raw */
                             }
+
                             return (
-                              <Text key={tcIdx} size="xs" c="dimmed" fs="italic">
-                                Unable to parse tool call
-                              </Text>
+                              <Stack key={responseKey} gap={6}>
+                                {args ? (
+                                  <Group gap="xs" align="flex-start" wrap="nowrap" className={classes.toolCallGroup}>
+                                    <Badge
+                                      size="sm"
+                                      color={getMethodColor(args.method)}
+                                      variant="filled"
+                                      className={classes.toolCallBadge}
+                                    >
+                                      {args.method ?? 'CALL'}
+                                    </Badge>
+                                    <Code className={classes.toolCallPath}>{args.path ?? tc.function.name}</Code>
+                                  </Group>
+                                ) : (
+                                  <Text size="xs" c="dimmed" fs="italic">
+                                    Unable to parse tool call
+                                  </Text>
+                                )}
+                                {response && (
+                                  <>
+                                    <Group
+                                      gap="xs"
+                                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                                      onClick={() => toggleResponse(responseKey)}
+                                    >
+                                      <Text size="xs" fw={500} c="dimmed">
+                                        Response
+                                      </Text>
+                                      <Text size="xs" c="dimmed">
+                                        {isExpanded ? '▲' : '▼'}
+                                      </Text>
+                                    </Group>
+                                    <Collapse in={isExpanded}>
+                                      <Code block className={classes.toolResponseCode}>
+                                        {prettyContent}
+                                      </Code>
+                                    </Collapse>
+                                  </>
+                                )}
+                              </Stack>
                             );
                           })}
                         </Stack>
@@ -362,36 +442,9 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                     );
                   }
 
-                  // Tool response — collapsible JSON
+                  // Tool responses are rendered inline with their request above
                   if (message.role === 'tool') {
-                    const isExpanded = expandedResponses.has(index);
-                    let prettyContent = message.content ?? '';
-                    try {
-                      prettyContent = JSON.stringify(JSON.parse(message.content ?? ''), null, 2);
-                    } catch {
-                      /* use raw */
-                    }
-                    return (
-                      <div key={index} className={cx(classes.messageWrapper, classes.assistantMessage)}>
-                        <Group
-                          gap="xs"
-                          style={{ cursor: 'pointer', userSelect: 'none' }}
-                          onClick={() => toggleResponse(index)}
-                        >
-                          <Text size="xs" fw={500} c="dimmed">
-                            Response
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            {isExpanded ? '▲' : '▼'}
-                          </Text>
-                        </Group>
-                        <Collapse in={isExpanded}>
-                          <Code block className={classes.toolResponseCode}>
-                            {prettyContent}
-                          </Code>
-                        </Collapse>
-                      </div>
-                    );
+                    return null;
                   }
 
                   // Standard user / assistant messages
@@ -405,7 +458,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                     >
                       {message.content && (
                         <div className={classes.messageContent}>
-                          <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                          {message.role === 'assistant' ? (
+                            <Markdown>{message.content}</Markdown>
+                          ) : (
+                            <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                          )}
                         </div>
                       )}
                       {message.componentCode && (
@@ -480,7 +537,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                 {loading && (
                   <div className={cx(classes.messageWrapper, classes.assistantMessage)}>
                     <div className={classes.messageContent}>
-                      {streamingContent && <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>}
+                      {streamingContent && <Markdown>{streamingContent}</Markdown>}
                       {!streamingContent && currentFhirRequest && (
                         <Text size="sm" c="dimmed" fs="italic">
                           Executing {currentFhirRequest}...
@@ -522,6 +579,20 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         </div>
 
         <div className={classes.inputArea}>
+          {hasStarted && showScrollButton && (
+            <div className={classes.scrollToBottomWrapper}>
+              <ActionIcon
+                variant="default"
+                radius="xl"
+                size="lg"
+                className={classes.scrollToBottomButton}
+                onClick={scrollToBottom}
+                aria-label="Scroll to bottom"
+              >
+                <IconArrowDown size={14} />
+              </ActionIcon>
+            </div>
+          )}
           <div className={classes.inputWrapper}>
             <ChatInput
               input={input}

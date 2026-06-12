@@ -65,7 +65,7 @@ Based on the availability defined in the previous step, we can now find availabl
 
 | Operation | Description | Status |
 | --------- | ----------- | ------ |
-| [`$find`](/docs/scheduling/schedule-find) | Find available appointment slots | **Alpha** |
+| [`$find`](/docs/scheduling/appointment-find) | Find available appointment slots | **Alpha** |
 
 ---
 
@@ -75,9 +75,10 @@ Once a desired slot has been found, the appointment booking process can be handl
 
 | Operation | Description | Status |
 | --------- | ----------- | ------ |
-| [`$book`](/docs/scheduling/appointment-book) | Book an appointment | **Alpha** |
-| `$hold` | Temporarily hold a slot | **In Development** |
-| `$cancel` | Cancel an appointment | **In Development** |
+| [`$book`](/docs/scheduling/appointment-book) | Book an appointment in one step | **Alpha** |
+| [`$hold`](/docs/scheduling/appointment-hold) | Temporarily hold a slot | **Alpha** |
+| [`$confirm`](/docs/scheduling/appointment-confirm) | Confirm a held appointment | **Alpha** |
+| [`$cancel`](/docs/scheduling/appointment-cancel) | Cancel an appointment | **Alpha** |
 
 ---
 
@@ -95,7 +96,7 @@ Once a desired slot has been found, the appointment booking process can be handl
 
 Scheduling can be built in FHIR in many different ways. The key design decisions in Meduplum's specific scheduling FHIR model are:
 
-- **Recurring availability does not require pre-generated slots**: Synthetic[`Slot`](/docs/api/fhir/resources/slot) resources are **computed on-demand** by [`$find`](/docs/scheduling/schedule-find) as drafted resources that are not persisted in the datastore until an Appointment is booked. This means you don't need to maintain a bulk set of Slot resources across a planning horizon.
+- **Recurring availability does not require pre-generated slots**: Synthetic[`Slot`](/docs/api/fhir/resources/slot) resources are **computed on-demand** by [`$find`](/docs/scheduling/appointment-find) as drafted resources that are not persisted in the datastore until an Appointment is booked. This means you don't need to maintain a bulk set of Slot resources across a planning horizon.
 :::note[]
 Available Slots can still be persisted for one time availability.
 :::

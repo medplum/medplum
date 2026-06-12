@@ -29,18 +29,23 @@ async function createStructureDefinitionsForBundle(
 
     if (resource.resourceType === 'StructureDefinition' && resource.name) {
       globalLogger.debug('StructureDefinition: ' + resource.name);
-      const result = await systemRepo.createResource<StructureDefinition>({
-        ...resource,
-        meta: {
-          ...resource.meta,
-          project: r4ProjectId,
-          lastUpdated: undefined,
-          versionId: undefined,
-        },
-        text: undefined,
-        differential: undefined,
-      });
-      globalLogger.debug('Created: ' + result.id);
+      try {
+        const result = await systemRepo.createResource<StructureDefinition>({
+          ...resource,
+          meta: {
+            ...resource.meta,
+            project: r4ProjectId,
+            lastUpdated: undefined,
+            versionId: undefined,
+          },
+          text: undefined,
+          differential: undefined,
+        });
+        globalLogger.debug('Created: ' + result.id);
+      } catch (error) {
+        globalLogger.error('Error seeding StructureDefinition', { name: resource.name, error });
+        throw error;
+      }
     }
   }
 }

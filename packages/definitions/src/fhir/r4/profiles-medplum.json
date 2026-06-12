@@ -1050,6 +1050,36 @@
             }
           },
           {
+            "id" : "ClientApplication.grantType",
+            "path" : "ClientApplication.grantType",
+            "definition" : "Optional OAuth grant type for the client application. This specifies the allowed grant types for the client application.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.grantType",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "ClientApplication.responseType",
+            "path" : "ClientApplication.responseType",
+            "definition" : "Optional OAuth response type for the client application. This specifies the allowed response types for the client application.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.responseType",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "ClientApplication.defaultScope",
             "path" : "ClientApplication.defaultScope",
             "definition" : "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
@@ -1729,7 +1759,7 @@
           {
             "id" : "ProjectMembership.accessPolicy",
             "path" : "ProjectMembership.accessPolicy",
-            "definition" : "The access policy for the user within the project memebership.",
+            "definition" : "The access policy for the user within the project membership.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -1828,7 +1858,7 @@
           {
             "id" : "ProjectMembership.userConfiguration",
             "path" : "ProjectMembership.userConfiguration",
-            "definition" : "The user configuration for the user within the project memebership such as menu links, saved searches, and features.",
+            "definition" : "The user configuration for the user within the project membership such as menu links, saved searches, and features.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -2683,6 +2713,21 @@
             }
           },
           {
+            "id" : "Login.preAuthorizedCodeHash",
+            "path" : "Login.preAuthorizedCodeHash",
+            "definition" : "The hash of the pre-authorized code used to obtain OAuth Pre-Authorized Code Grant.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "Login.preAuthorizedCodeHash",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Login.authTime",
             "path" : "Login.authTime",
             "definition" : "Time when the End-User authentication occurred.",
@@ -2802,6 +2847,21 @@
             }],
             "base" : {
               "path" : "Login.mfaVerified",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Login.expiresAt",
+            "path" : "Login.expiresAt",
+            "definition" : "The time at which a token will expire for this login.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "instant"
+            }],
+            "base" : {
+              "path" : "Login.expiresAt",
               "min" : 0,
               "max" : "1"
             }
@@ -5309,6 +5369,42 @@
             }
           },
           {
+            "id" : "IdentityProvider.userInfoMode",
+            "path" : "IdentityProvider.userInfoMode",
+            "short" : "Optional userinfo mode. Defaults to standard OIDC userinfo semantics.",
+            "definition" : "Optional userinfo mode. Defaults to standard OIDC userinfo semantics.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/identity-provider-user-info-mode|4.0.1"
+            },
+            "base" : {
+              "path" : "IdentityProvider.userInfoMode",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.userInfoApiKey",
+            "path" : "IdentityProvider.userInfoApiKey",
+            "short" : "Optional API key used by custom userinfo modes such as Google Cloud Identity Platform.",
+            "definition" : "Optional API key used by custom userinfo modes such as Google Cloud Identity Platform.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "IdentityProvider.userInfoApiKey",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "IdentityProvider.clientId",
             "path" : "IdentityProvider.clientId",
             "definition" : "External Identity Provider client ID.",
@@ -5368,6 +5464,46 @@
               "path" : "IdentityProvider.useSubject",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.identitySource",
+            "path" : "IdentityProvider.identitySource",
+            "short" : "External credential field used to identify the user.",
+            "definition" : "External credential field used to identify the user.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "IdentityProvider.identitySource",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/identity-provider-identity-source|4.0.1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.identityMappingMode",
+            "path" : "IdentityProvider.identityMappingMode",
+            "short" : "Medplum identity mapping target.",
+            "definition" : "Medplum identity mapping target.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "IdentityProvider.identityMappingMode",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/identity-provider-identity-mapping-mode|4.0.1"
             }
           }
         ]

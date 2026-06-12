@@ -118,7 +118,8 @@ AsyncJobs are created by various long-running operations:
 1. **Bulk FHIR Export** - `$export` operations
 2. **Project Expunge** - `$expunge` with `everything=true`
 3. **Reindex Operations** - `$reindex` operations
-4. **Other Async Operations** - Various operations that run asynchronously
+4. **Asynchronous FHIR batches** - `POST` to the FHIR base with `Prefer: respond-async` (see [Processing asynchronous bundles](/docs/fhir-datastore/processing-async-bundles))
+5. **Other Async Operations** - Various operations that run asynchronously
 
 ### Example: Cancel a Bulk Export
 

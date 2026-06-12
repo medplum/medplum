@@ -11,7 +11,7 @@ describe('ContactPointInput', () => {
       <ContactPointInput
         name="test"
         path="test"
-        onChange={jest.fn()}
+        onChange={vi.fn()}
         outcome={undefined}
         defaultValue={{ system: 'email', value: 'abc@example.com' }}
       />

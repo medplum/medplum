@@ -167,7 +167,7 @@ describe('BaseChat', () => {
   });
 
   test('Sending a message', async () => {
-    const sendMessage = jest.fn();
+    const sendMessage = vi.fn();
 
     await setup({
       title: 'Test Chat',
@@ -187,7 +187,7 @@ describe('BaseChat', () => {
   });
 
   test('`onMessageReceived` called on incoming message', async () => {
-    const onMessageReceived = jest.fn();
+    const onMessageReceived = vi.fn();
 
     await setup({
       title: 'Test Chat',
@@ -216,7 +216,7 @@ describe('BaseChat', () => {
   });
 
   test('`onMessageReceived` not called on outgoing message', async () => {
-    const onMessageReceived = jest.fn();
+    const onMessageReceived = vi.fn();
 
     await setup({
       title: 'Test Chat',
@@ -242,8 +242,8 @@ describe('BaseChat', () => {
   });
 
   test('`onMessageUpdated` called on incoming message update', async () => {
-    const onMessageReceived = jest.fn();
-    const onMessageUpdated = jest.fn();
+    const onMessageReceived = vi.fn();
+    const onMessageUpdated = vi.fn();
 
     await setup({
       title: 'Test Chat',
@@ -450,7 +450,7 @@ describe('BaseChat', () => {
       title: 'Test Chat',
       query: HOMER_DR_ALICE_CHAT_QUERY,
       sendMessage: () => undefined,
-      onError: jest.fn(),
+      onError: vi.fn(),
     };
 
     await Promise.all([
@@ -596,7 +596,7 @@ describe('BaseChat', () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
     medplum.setSubscriptionManager(defaultSubManager);
 
-    const mockScrollTo = jest.fn();
+    const mockScrollTo = vi.fn();
     Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
       value: mockScrollTo,
       writable: true,
@@ -777,7 +777,7 @@ describe('BaseChat', () => {
   });
 
   test('onViewInDocuments called when View in Documents clicked', async () => {
-    const onViewInDocuments = jest.fn();
+    const onViewInDocuments = vi.fn();
     const medplum = new MockClient({ profile: DrAliceSmith });
     medplum.setSubscriptionManager(defaultSubManager);
 
@@ -808,7 +808,7 @@ describe('BaseChat', () => {
   });
 
   test('Download opens new tab with safe https URL', async () => {
-    const mockOpen = jest.spyOn(window, 'open').mockReturnValue(null);
+    const mockOpen = vi.spyOn(window, 'open').mockReturnValue(null);
     const medplum = new MockClient({ profile: DrAliceSmith });
     medplum.setSubscriptionManager(defaultSubManager);
 
@@ -831,7 +831,7 @@ describe('BaseChat', () => {
   });
 
   test('Download blocked for non-http URLs', async () => {
-    const mockOpen = jest.spyOn(window, 'open').mockReturnValue(null);
+    const mockOpen = vi.spyOn(window, 'open').mockReturnValue(null);
     const medplum = new MockClient({ profile: DrAliceSmith });
     medplum.setSubscriptionManager(defaultSubManager);
 
