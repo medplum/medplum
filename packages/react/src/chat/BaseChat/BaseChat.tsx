@@ -279,7 +279,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       sendMessage(message, pendingFile, pendingDocRef);
       setPendingFile(undefined);
       setPendingDocRef(undefined);
-      scrollToBottomRef.current = true;
     },
     [inputDisabled, smsMode, sendSmsMessage, sendMessage, pendingFile, pendingDocRef]
   );
@@ -295,45 +294,40 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   });
 
   const [parentRef, parentRect] = useResizeObserver<HTMLDivElement>();
+  const scrollContentRef = useRef<HTMLDivElement>(null);
 
   const communicationsRef = useRef(communications);
   communicationsRef.current = communications;
-  const prevCommunicationsRef = useRef(communications);
-
-  const scrollToBottomRef = useRef(true);
 
   useEffect(() => {
-    if (communications !== prevCommunicationsRef.current) {
-      scrollToBottomRef.current = true;
+    if (!scrollAreaRef.current || parentRect.height === 0) {
+      return;
     }
-    prevCommunicationsRef.current = communications;
-  }, [communications]);
+    scrollAreaRef.current.scrollTo({
+      top: scrollAreaRef.current.scrollHeight,
+      behavior: firstScrollRef.current ? 'instant' : 'smooth',
+    });
+    firstScrollRef.current = false;
+  }, [communications, parentRect.height]);
 
-  // When the viewport height changes after the initial scroll (e.g. the channel selector
-  // appears async), re-pin to bottom if we were already within 60px of it.
+  // Re-pin to bottom when content grows (e.g. attachment previews loading in),
+  // but only if we were already near the bottom.
   useEffect(() => {
-    if (parentRect.height > 0 && !firstScrollRef.current && scrollAreaRef.current) {
-      const { scrollHeight, scrollTop, clientHeight } = scrollAreaRef.current;
+    const content = scrollContentRef.current;
+    const viewport = scrollAreaRef.current;
+    if (!content || !viewport) return;
+
+    const observer = new ResizeObserver(() => {
+      if (firstScrollRef.current) return;
+      const { scrollHeight, scrollTop, clientHeight } = viewport;
       if (scrollHeight - scrollTop - clientHeight < 60) {
-        scrollToBottomRef.current = true;
+        viewport.scrollTo({ top: scrollHeight, behavior: 'smooth' });
       }
-    }
-  }, [parentRect.height]);
+    });
 
-  useEffect(() => {
-    if (scrollToBottomRef.current && parentRect.height > 0) {
-      if (scrollAreaRef.current?.scrollTo) {
-        scrollAreaRef.current.scrollTo({
-          top: scrollAreaRef.current.scrollHeight,
-          // We want to skip scrolling through the whole chat on initial load,
-          // Then every time after we will do the "smooth scroll"
-          ...(firstScrollRef.current ? { behavior: 'instant' } : { behavior: 'smooth' }),
-        });
-        firstScrollRef.current = false;
-        scrollToBottomRef.current = false;
-      }
-    }
-  });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [loading]);
 
   const myLastDeliveredId = useMemo<string>(() => {
     let i = communications.length;
@@ -383,6 +377,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
               visible={loading || reconnecting}
               style={{ width: parentRect.width, height: parentRect.height, position: 'absolute', zIndex: 1 }}
             />
+            <div ref={scrollContentRef}>
             {communications.map((c, i) => {
               const prevCommunication = i > 0 ? communications[i - 1] : undefined;
               const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
@@ -428,6 +423,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                 </Stack>
               );
             })}
+            </div>
           </ScrollArea>
         )}
       </div>
