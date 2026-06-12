@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { vi } from 'vitest';
+import type * as NodeFetch from 'node-fetch';
 
 // MCP fhir-request uses MedplumClient + node-fetch for in-process HTTP calls.
 vi.mock('node-fetch', async () => {
-  const actual = await vi.importActual<typeof import('node-fetch')>('node-fetch');
+  const actual = await vi.importActual<typeof NodeFetch>('node-fetch');
   return { default: actual.default };
 });
 

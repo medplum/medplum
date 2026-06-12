@@ -49,6 +49,7 @@ import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Reposito
 import { RepositoryConnection } from './repository/repository-connection';
 import { TransactionIdleTracker } from './repository/transaction-idle-tracker';
 import { PostgresError, SelectQuery } from './sql';
+import type { MockInstance } from 'vitest';
 import * as tokenColumnModule from './token-column';
 
 vi.mock('hibp');

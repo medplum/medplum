@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { vi } from 'vitest';
+import type * as NodeCrypto from 'node:crypto';
 
 const UUID = '00000000-0000-0000-0000-0000deadbeef';
 
 vi.mock('node:crypto', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:crypto')>();
+  const actual = await importOriginal<typeof NodeCrypto>();
   return {
     ...actual,
     randomUUID: () => UUID,

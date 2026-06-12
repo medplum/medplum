@@ -35,9 +35,11 @@ import { createTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
 import * as workers from './workers';
 import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
+import type * as PostDeployMigration from './workers/post-deploy-migration';
 import type { ReindexJobData } from './workers/reindex';
 import { getReindexQueue, prepareReindexJobData, ReindexJob } from './workers/reindex';
 import { queueRegistry } from './workers/utils';
+import type * as MigrationDataV1 from './migrations/data/v1';
 
 const DEFAULT_SERVER_VERSION = '3.3.0';
 const DEFAULT_POST_DEPLOY_VERSION = 0;
@@ -68,7 +70,7 @@ const migrationMocks = vi.hoisted(() => ({
 
 vi.mock('./migrations/data/v1', async () => {
   const { prepareCustomMigrationJobData, runCustomMigration } = await vi.importActual<
-    typeof import('./workers/post-deploy-migration')
+    typeof PostDeployMigration
   >('./workers/post-deploy-migration');
   migrationMocks.customMigration = {
     type: 'custom',
@@ -86,7 +88,7 @@ vi.mock('./migrations/data/v1', async () => {
 });
 
 vi.mock('./migrations/data/index', async () => {
-  const v1 = await vi.importMock<typeof import('./migrations/data/v1')>('./migrations/data/v1');
+  const v1 = await vi.importMock<typeof MigrationDataV1>('./migrations/data/v1');
   return { v1 };
 });
 

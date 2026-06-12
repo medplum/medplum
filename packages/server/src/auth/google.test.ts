@@ -12,10 +12,11 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getUserByEmail } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
+import type * as Jose from 'jose';
 import { vi } from 'vitest';
 
 vi.mock('jose', async () => {
-  const original = await vi.importActual<typeof import('jose')>('jose');
+  const original = await vi.importActual<typeof Jose>('jose');
   return {
     ...original,
     jwtVerify: vi.fn((credential: string) => {

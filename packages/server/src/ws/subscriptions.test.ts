@@ -39,10 +39,13 @@ import {
 } from '../pubsub';
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDispatchJob } from '../workers/test-utils';
+import type * as Constants from '../constants';
+import type * as FhirRewrite from '../fhir/rewrite';
+import type * as OauthUtils from '../oauth/utils';
 
 vi.mock('hibp');
 vi.mock('../constants', async () => ({
-  ...(await vi.importActual<typeof import('../constants')>('../constants')),
+  ...(await vi.importActual<typeof Constants>('../constants')),
   WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:ws',
 }));
 
@@ -52,7 +55,7 @@ const wsTestMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../fhir/rewrite', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../fhir/rewrite')>();
+  const actual = await importOriginal<typeof FhirRewrite>();
   return {
     ...actual,
     rewriteAttachments: async (...args: Parameters<typeof actual.rewriteAttachments>) => {
@@ -65,7 +68,7 @@ vi.mock('../fhir/rewrite', async (importOriginal) => {
 });
 
 vi.mock('../oauth/utils', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../oauth/utils')>();
+  const actual = await importOriginal<typeof OauthUtils>();
   return {
     ...actual,
     getLoginForAccessToken: async (...args: Parameters<typeof actual.getLoginForAccessToken>) => {

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { vi } from 'vitest';
+import type * as NodeFs from 'node:fs';
 
 const manifestState = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -26,7 +27,7 @@ const manifestState = vi.hoisted(() => {
 });
 
 vi.mock('node:fs', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:fs')>();
+  const actual = await importOriginal<typeof NodeFs>();
   return {
     ...actual,
     readFileSync: vi.fn((path, options) => {

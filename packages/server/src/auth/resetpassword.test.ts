@@ -10,7 +10,6 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
-import type { Transporter } from 'nodemailer';
 import nodemailer from 'nodemailer';
 import request from 'supertest';
 import type { Mock } from 'vitest';

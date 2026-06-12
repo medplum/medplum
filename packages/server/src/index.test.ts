@@ -6,6 +6,8 @@ import { main, runFromCli } from './index';
 import * as loggerModule from './logger';
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
+import type * as Express from 'express';
+import type * as Pg from 'pg';
 import { vi } from 'vitest';
 
 // This isn't really a mocked value, but it must be named that way to appease jest
@@ -13,7 +15,7 @@ import { vi } from 'vitest';
 const mockLatestVersion = getLatestPostDeployMigrationVersion();
 
 vi.mock('express', async (importOriginal) => {
-  const original = await importOriginal<typeof import('express')>();
+  const original = await importOriginal<typeof Express>();
   const express = original.default ?? original;
   const listen = vi.fn(() => ({}));
   const fn = (): any => {
@@ -38,7 +40,7 @@ const mockQueries = {
 };
 
 vi.mock('pg', async () => {
-  const original = await vi.importActual<typeof import('pg')>('pg');
+  const original = await vi.importActual<typeof Pg>('pg');
 
   class MockPoolClient {
     async query(sql: string): Promise<any> {

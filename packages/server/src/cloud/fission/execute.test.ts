@@ -9,6 +9,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth } from '../../test.setup';
 import { executeFissionBot } from './execute';
+import type * as FissionUtils from './utils';
 import { vi } from 'vitest';
 
 const { mockExecuteFissionFunction } = vi.hoisted(() => ({
@@ -16,7 +17,7 @@ const { mockExecuteFissionFunction } = vi.hoisted(() => ({
 }));
 
 vi.mock('./utils', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./utils')>();
+  const actual = await importOriginal<typeof FissionUtils>();
   return {
     ...actual,
     executeFissionFunction: mockExecuteFissionFunction,

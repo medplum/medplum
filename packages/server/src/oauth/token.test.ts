@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
-import {
+import * as MedplumCore from '@medplum/core';
+
+const {
   ContentType,
   createReference,
   encodeBase64,
@@ -12,7 +13,9 @@ import {
   OAuthTokenType,
   parseJWTPayload,
   parseSearchRequest,
-} from '@medplum/core';
+} = MedplumCore;
+
+type WithId<T> = MedplumCore.WithId<T>;
 import type {
   AccessPolicy,
   ClientApplication,
@@ -39,6 +42,7 @@ import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext
 import { validateClientCert } from './cert';
 import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './utils';
+import type * as Jose from 'jose';
 import { vi  } from 'vitest';
 import type {Mock} from 'vitest';
 
@@ -62,8 +66,8 @@ const MockJoseMultipleMatchingError = vi.hoisted(() => {
 });
 
 vi.mock('jose', async () => {
-  const core = await vi.importActual<typeof import('@medplum/core')>('@medplum/core');
-  const original = await vi.importActual<typeof import('jose')>('jose');
+  const core = await vi.importActual<typeof MedplumCore>('@medplum/core');
+  const original = await vi.importActual<typeof Jose>('jose');
   return {
     ...original,
     jwtVerify: vi.fn(async (credential: string) => {

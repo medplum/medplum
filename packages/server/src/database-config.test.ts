@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type * as Pg from 'pg';
 import { vi } from 'vitest';
 
 const dbConfigTestState = vi.hoisted(() => ({
   advisoryLockResponse: true,
-  poolConfigs: [] as import('pg').PoolConfig[],
+  poolConfigs: [] as Pg.PoolConfig[],
 }));
 
 vi.mock('pg', async () => {
@@ -16,15 +17,15 @@ vi.mock('pg', async () => {
   );
   const preDeployVersion = getPreDeployMigrationVersions().length;
   const latestVersion = getLatestPostDeployMigrationVersion();
-  const original = await vi.importActual<typeof import('pg')>('pg');
-  type ClientBase = import('pg').ClientBase;
-  type Pool = import('pg').Pool;
-  type PoolClient = import('pg').PoolClient;
-  type PoolConfig = import('pg').PoolConfig;
-  type QueryArrayResult = import('pg').QueryArrayResult;
-  type QueryConfig<I = any[]> = import('pg').QueryConfig<I>;
-  type QueryResult<R extends import('pg').QueryResultRow = import('pg').QueryResultRow> = import('pg').QueryResult<R>;
-  type QueryResultRow = import('pg').QueryResultRow;
+  const original = await vi.importActual<typeof Pg>('pg');
+  type ClientBase = Pg.ClientBase;
+  type Pool = Pg.Pool;
+  type PoolClient = Pg.PoolClient;
+  type PoolConfig = Pg.PoolConfig;
+  type QueryArrayResult = Pg.QueryArrayResult;
+  type QueryConfig<I = any[]> = Pg.QueryConfig<I>;
+  type QueryResult<R extends Pg.QueryResultRow = Pg.QueryResultRow> = Pg.QueryResult<R>;
+  type QueryResultRow = Pg.QueryResultRow;
 
   class MockPoolClient extends Duplex implements PoolClient {
     release(): void {}
@@ -75,7 +76,7 @@ vi.mock('pg', async () => {
     expiredCount: number;
     ending: boolean;
     ended: boolean;
-    options: import('pg').PoolOptions;
+    options: Pg.PoolOptions;
 
     constructor(config?: PoolConfig) {
       super();

@@ -768,7 +768,3 @@ describe('OAuth utils', () => {
     });
   });
 });
-
-function fail(message: string): never {
-  throw new Error(message);
-}

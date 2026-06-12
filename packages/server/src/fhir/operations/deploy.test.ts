@@ -14,6 +14,7 @@ import * as storage from '../../storage/loader';
 import type { BinaryStorage } from '../../storage/types';
 import { initTestAuth, withTestContext } from '../../test.setup';
 import * as streamUtils from '../../util/streams';
+import type * as AwsDeploy from '../../cloud/aws/deploy';
 import { vi } from 'vitest';
 
 const deployMocks = vi.hoisted(() => ({
@@ -22,7 +23,7 @@ const deployMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../cloud/aws/deploy', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../cloud/aws/deploy')>();
+  const actual = await importOriginal<typeof AwsDeploy>();
   return {
     ...actual,
     getLambdaTimeoutForBot: deployMocks.getLambdaTimeoutForBot,

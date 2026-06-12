@@ -7,6 +7,7 @@ import { getPostDeployVersion, markPostDeployMigrationCompleted } from './migrat
 import type { CustomPostDeployMigration } from './migrations/data/types';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationActionResult } from './migrations/types';
+import type * as MigrationDataV1 from './migrations/data/v1';
 import { vi } from 'vitest';
 
 vi.mock('./migrations/data/v1', () => {
@@ -29,9 +30,9 @@ vi.mock('./migrations/data/v1', () => {
 
 vi.mock('./migrations/data/index', async () => {
   return {
-    v1: await vi.importMock<typeof import('./migrations/data/v1')>('./migrations/data/v1'),
-    v2: await vi.importMock<typeof import('./migrations/data/v1')>('./migrations/data/v1'), // Mock v2 to be the same as v1 for testing
-    v3: await vi.importMock<typeof import('./migrations/data/v1')>('./migrations/data/v1'), // Mock v3 to be the same as v1 for testing
+    v1: await vi.importMock<typeof MigrationDataV1>('./migrations/data/v1'),
+    v2: await vi.importMock<typeof MigrationDataV1>('./migrations/data/v1'), // Mock v2 to be the same as v1 for testing
+    v3: await vi.importMock<typeof MigrationDataV1>('./migrations/data/v1'), // Mock v3 to be the same as v1 for testing
   };
 });
 

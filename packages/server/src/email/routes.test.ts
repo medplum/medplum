@@ -6,7 +6,6 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import express from 'express';
 import { simpleParser } from 'mailparser';
-import type { Transporter } from 'nodemailer';
 import nodemailer from 'nodemailer';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';

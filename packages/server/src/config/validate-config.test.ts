@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { MedplumServerConfig } from './types';
+import type * as ValidateConfig from './validate-config';
 import { vi } from 'vitest';
 
 const { mockGetWarehouseSyncPostgresTableNames } = vi.hoisted(() => ({
@@ -12,9 +13,9 @@ vi.mock('../data-warehouse/config', () => ({
   getWarehouseSyncPostgresTableNames: mockGetWarehouseSyncPostgresTableNames,
 }));
 
-let getDataWarehouseConfigErrors: typeof import('./validate-config').getDataWarehouseConfigErrors;
-let isDataWarehouseSyncOperational: typeof import('./validate-config').isDataWarehouseSyncOperational;
-let warnInvalidDataWarehouseConfig: typeof import('./validate-config').warnInvalidDataWarehouseConfig;
+let getDataWarehouseConfigErrors: typeof ValidateConfig.getDataWarehouseConfigErrors;
+let isDataWarehouseSyncOperational: typeof ValidateConfig.isDataWarehouseSyncOperational;
+let warnInvalidDataWarehouseConfig: typeof ValidateConfig.warnInvalidDataWarehouseConfig;
 
 beforeAll(async () => {
   vi.resetModules();

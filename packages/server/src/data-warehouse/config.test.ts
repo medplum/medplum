@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type * as MedplumCore from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import pgConnectionString from 'pg-connection-string';
+import type * as DataWarehouseConfig from './config';
 import { vi } from 'vitest';
 
 const { mockGetResourceTypes } = vi.hoisted(() => ({
@@ -10,18 +12,18 @@ const { mockGetResourceTypes } = vi.hoisted(() => ({
 }));
 
 vi.mock('@medplum/core', async () => {
-  const actual = await vi.importActual<typeof import('@medplum/core')>('@medplum/core');
+  const actual = await vi.importActual<typeof MedplumCore>('@medplum/core');
   return {
     ...actual,
     getResourceTypes: mockGetResourceTypes,
   };
 });
 
-let DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT: typeof import('./config').DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT;
-let appendMedplumDatabaseSslSearchParams: typeof import('./config').appendMedplumDatabaseSslSearchParams;
-let buildPgConnectionURI: typeof import('./config').buildPgConnectionURI;
-let getWarehouseSyncPostgresTableNames: typeof import('./config').getWarehouseSyncPostgresTableNames;
-let toIcebergTableName: typeof import('./config').toIcebergTableName;
+let DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT: typeof DataWarehouseConfig.DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT;
+let appendMedplumDatabaseSslSearchParams: typeof DataWarehouseConfig.appendMedplumDatabaseSslSearchParams;
+let buildPgConnectionURI: typeof DataWarehouseConfig.buildPgConnectionURI;
+let getWarehouseSyncPostgresTableNames: typeof DataWarehouseConfig.getWarehouseSyncPostgresTableNames;
+let toIcebergTableName: typeof DataWarehouseConfig.toIcebergTableName;
 
 beforeAll(async () => {
   vi.resetModules();

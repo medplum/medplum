@@ -28,7 +28,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import type { Job, Worker } from 'bullmq';
+import type { Job } from 'bullmq';
 import * as bullmqModule from 'bullmq';
 import type { Redis } from 'ioredis';
 import fetch from 'node-fetch';
@@ -64,11 +64,12 @@ import {
   recordSubscriptionFailure,
 } from './subscription-failure-tracker';
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
+import type * as Constants from '../constants';
 import * as workerUtils from './utils';
 
 vi.mock('node-fetch', () => ({ default: vi.fn() }));
 vi.mock('../constants', async () => ({
-  ...(await vi.importActual<typeof import('../constants')>('../constants')),
+  ...(await vi.importActual<typeof Constants>('../constants')),
   WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:worker',
 }));
 const mockBullmq = vi.mocked(bullmqModule);
