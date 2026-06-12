@@ -22,22 +22,22 @@ describe('RequestContext', () => {
 
   test('tryGetRequestContext', async () => {
     expect(tryGetRequestContext()).toBeUndefined();
-    withTestContext(() => expect(tryGetRequestContext()).toBeDefined());
+    await withTestContext(() => expect(tryGetRequestContext()).toBeDefined());
   });
 
-  test('getRequestContext', () => {
+  test('getRequestContext', async () => {
     expect(() => getRequestContext()).toThrow('No request context available');
-    withTestContext(() => expect(getRequestContext()).toBeDefined());
+    await withTestContext(() => expect(getRequestContext()).toBeDefined());
   });
 
-  test('getAuthenticatedContext', () => {
+  test('getAuthenticatedContext', async () => {
     expect(() => getAuthenticatedContext()).toThrow('No request context available');
 
     requestContextStore.run(new RequestContext('request', 'trace'), () => {
       expect(() => getAuthenticatedContext()).toThrow('Request is not authenticated');
     });
 
-    withTestContext(() => {
+    await withTestContext(() => {
       expect(() => getAuthenticatedContext()).toThrow('Request is not authenticated');
     });
   });

@@ -31,7 +31,7 @@ describe('worker utils', () => {
       expect(isJobSuccessful(subscription, 200)).toBe(true);
     });
 
-    test('Successful job with invalid custom codes', () => {
+    test('Successful job with invalid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -48,10 +48,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
     });
 
-    test('Unsuccessful job with invalid custom codes', () => {
+    test('Unsuccessful job with invalid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -68,10 +68,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(false));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(false));
     });
 
-    test('Successful job with valid custom codes', () => {
+    test('Successful job with valid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -88,10 +88,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(true));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(true));
     });
 
-    test('Unsuccessful job with valid custom codes', () => {
+    test('Unsuccessful job with valid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -108,10 +108,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(false));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(false));
     });
 
-    test('Successful job with valid custom codes comma separated', () => {
+    test('Successful job with valid custom codes comma separated', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -128,7 +128,7 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
     });
   });
 

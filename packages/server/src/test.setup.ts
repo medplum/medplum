@@ -27,7 +27,6 @@ import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import type { ServerInviteResponse } from './admin/invite';
-import type { RequestContext } from './context';
 import type { MedplumRedisConfig } from './config/types';
 // `fhir/repo`, `fhir/accesspolicy`, `admin/invite`, `oauth/keys`, and `context` are dynamically imported below.
 // Static imports here would load `workers/subscription` (via `fhir/repo`) or `database` (via `oauth/keys` /
@@ -337,12 +336,12 @@ export async function waitForAsyncJob(
 }
 
 const DEFAULT_TEST_CONTEXT = { requestId: 'test-request-id', traceId: 'test-trace-id' };
-export function withTestContext<T>(fn: () => T, ctx?: { requestId?: string; traceId?: string }): T {
+export async function withTestContext<T>(
+  fn: () => T | Promise<T>,
+  ctx?: { requestId?: string; traceId?: string }
+): Promise<T> {
   const defaults = ctx ?? DEFAULT_TEST_CONTEXT;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { RequestContext } = require('./context') as {
-    RequestContext: new (requestId: string, traceId: string) => RequestContext;
-  };
+  const { RequestContext } = await import('./context');
   const context = new RequestContext(defaults.requestId ?? '', defaults.traceId ?? '');
   return requestContextStore.run(context, fn);
 }
