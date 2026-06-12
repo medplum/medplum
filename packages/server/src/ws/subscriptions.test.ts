@@ -32,7 +32,6 @@ import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
 import * as oauthUtilsModule from '../oauth/utils';
 import * as pubsubModule from '../pubsub';
-import * as redisModule from '../redis';
 import {
   addUserActiveWebSocketSubscription,
   cleanupUserSubs,
@@ -41,6 +40,7 @@ import {
   publish,
   setActiveSubscription,
 } from '../pubsub';
+import * as redisModule from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDispatchJob } from '../workers/test-utils';
 import { cleanupR4SubscriptionResources } from './subscriptions';
@@ -2103,14 +2103,15 @@ describe('Subscription Heartbeat', () => {
             while (!subActive) {
               await sleep(0);
               subActive =
-                (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
+                (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription.id}`)) === 1;
             }
             // A non-JSON payload must be logged and ignored, not crash the redis message handler
             await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, 'not-valid-json{');
             for (let i = 0; i < 25; i++) {
               if (
                 errorSpy.mock.calls.some(
-                  (call) => typeof call[0] === 'string' && call[0].includes('Failed to parse subscription event payload')
+                  (call) =>
+                    typeof call[0] === 'string' && call[0].includes('Failed to parse subscription event payload')
                 )
               ) {
                 break;

@@ -471,9 +471,7 @@ describe('Agent WebSockets', () => {
 
       // The close handler updates status asynchronously; wait for the failure to be logged
       for (let i = 0; i < 10; i++) {
-        if (
-          errorSpy.mock.calls.some((call) => call[0] === '[Agent]: Failed to update agent status on disconnect')
-        ) {
+        if (errorSpy.mock.calls.some((call) => call[0] === '[Agent]: Failed to update agent status on disconnect')) {
           break;
         }
         await sleep(20);
