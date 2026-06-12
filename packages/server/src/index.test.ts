@@ -17,7 +17,7 @@ const mockLatestVersion = getLatestPostDeployMigrationVersion();
 vi.mock('express', async (importOriginal) => {
   const original = await importOriginal<typeof Express>();
   const express = original.default ?? original;
-  const listen = vi.fn(() => ({}));
+  const listen = vi.fn(() => ({} as http.Server));
   const fn = (): any => {
     const app = express();
     app.listen = listen;

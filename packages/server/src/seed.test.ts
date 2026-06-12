@@ -18,6 +18,7 @@ import {
 } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import { seedDatabase } from './seed';
+import type { MockInstance } from 'vitest';
 import { withTestContext } from './test.setup';
 
 async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: SystemRepository): Promise<void> {
@@ -108,7 +109,7 @@ describe('Seed', () => {
       const postDeployVersion = await getPostDeployVersion(pool);
       // only show log messages if post-deploy migrations did not run successfully
       if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
-        loggerWriteSpy.mock.calls.forEach((call) => console.log(...call));
+        loggerWriteSpy.mock.calls.forEach((call: unknown[]) => console.log(...call));
       }
       expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 

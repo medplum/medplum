@@ -17,6 +17,8 @@ import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
 import { vi } from 'vitest';
+import type { Mock, MockInstance } from 'vitest';
+import nodemailer from 'nodemailer';
 
 const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
   const sendMail = vi.fn().mockResolvedValue({ messageId: '123' });
@@ -347,8 +349,8 @@ describe('Email', () => {
   });
 
   describe('Project SMTP', () => {
-    let sendMail: jest.Mock;
-    let createTransportSpy: jest.SpyInstance;
+    let sendMail: Mock;
+    let createTransportSpy: MockInstance;
 
     function makeProject(secrets: ProjectSetting[]): WithId<Project> {
       return { resourceType: 'Project', id: randomUUID(), secret: secrets };
@@ -363,8 +365,8 @@ describe('Email', () => {
     ];
 
     beforeEach(() => {
-      sendMail = jest.fn().mockResolvedValue({ messageId: '123' });
-      createTransportSpy = jest.spyOn(nodemailer, 'createTransport');
+      sendMail = vi.fn().mockResolvedValue({ messageId: '123' });
+      createTransportSpy = vi.spyOn(nodemailer, 'createTransport');
       createTransportSpy.mockClear();
       createTransportSpy.mockReturnValue({ sendMail });
     });
@@ -504,7 +506,7 @@ describe('Email', () => {
     });
 
     test('Logs and rethrows on project SMTP send failure', async () => {
-      const loggerErrorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+      const loggerErrorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
       sendMail.mockRejectedValue(new Error('Connection refused'));
       const project = makeProject(baseSecrets);
 

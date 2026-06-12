@@ -13,7 +13,8 @@ import { globalLogger } from './logger';
 import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
 import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
-import type { MockInstance , vi, type Mock } from 'vitest';
+import { vi } from 'vitest';
+import type { Mock, MockInstance } from 'vitest';
 
 describe('App', () => {
   let stdOutSpy: MockInstance;

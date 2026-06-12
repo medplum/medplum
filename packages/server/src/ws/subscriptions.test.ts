@@ -8,7 +8,7 @@ import type {
   BundleEntry,
   DocumentReference,
   Login,
-  Parameters,
+  Parameters as FhirParameters,
   Patient,
   Project,
   ProjectMembership,
@@ -38,6 +38,7 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import { createTestProject, withTestContext } from '../test.setup';
+import type { Mock } from 'vitest';
 import { findAndExecDispatchJob } from '../workers/test-utils';
 import type * as Constants from '../constants';
 import type * as FhirRewrite from '../fhir/rewrite';
@@ -148,7 +149,7 @@ describe('WebSocket Subscription', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.body).toBeDefined();
-      const body = res.body as Parameters;
+      const body = res.body as FhirParameters;
       expect(body.resourceType).toStrictEqual('Parameters');
       expect(body.parameter?.[0]).toBeDefined();
       expect(body.parameter?.[0]?.name).toStrictEqual('token');
@@ -280,7 +281,7 @@ describe('WebSocket Subscription', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.body).toBeDefined();
-      const body = res.body as Parameters;
+      const body = res.body as FhirParameters;
       expect(body.resourceType).toStrictEqual('Parameters');
       expect(body.parameter?.[0]).toBeDefined();
       expect(body.parameter?.[0]?.name).toStrictEqual('token');
@@ -375,7 +376,7 @@ describe('WebSocket Subscription', () => {
           const deadline = Date.now() + 5000;
           while (
             Date.now() < deadline &&
-            !writeMock.mock.calls.some((args) => typeof args[0] === 'string' && expectedMsg.test(args[0]))
+            !writeMock.mock.calls.some((args: unknown[]) => typeof args[0] === 'string' && expectedMsg.test(args[0]))
           ) {
             await sleep(10);
           }
@@ -411,12 +412,12 @@ describe('WebSocket Subscription', () => {
       const patientTokenRes = await request(server)
         .get(`/fhir/R4/Subscription/${patientSub.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
-      const patientToken = (patientTokenRes.body as Parameters).parameter?.[0]?.valueString as string;
+      const patientToken = (patientTokenRes.body as FhirParameters).parameter?.[0]?.valueString as string;
 
       const observationTokenRes = await request(server)
         .get(`/fhir/R4/Subscription/${observationSub.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
-      const observationToken = (observationTokenRes.body as Parameters).parameter?.[0]?.valueString as string;
+      const observationToken = (observationTokenRes.body as FhirParameters).parameter?.[0]?.valueString as string;
 
       // Bind both subscriptions on the same WebSocket, then close
       await request(server)
@@ -563,7 +564,7 @@ describe('WebSocket Subscription', () => {
         .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
 
-      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+      const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
 
       await request(server)
         .ws('/ws/subscriptions-r4')
@@ -631,7 +632,7 @@ describe('WebSocket Subscription', () => {
         .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
 
-      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+      const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
 
       await request(server)
         .ws('/ws/subscriptions-r4')
@@ -708,12 +709,12 @@ describe('WebSocket Subscription', () => {
       const res1 = await request(server)
         .get(`/fhir/R4/Subscription/${subscription1.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
-      const token1 = (res1.body as Parameters).parameter?.[0]?.valueString as string;
+      const token1 = (res1.body as FhirParameters).parameter?.[0]?.valueString as string;
 
       const res2 = await request(server)
         .get(`/fhir/R4/Subscription/${subscription2.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
-      const token2 = (res2.body as Parameters).parameter?.[0]?.valueString as string;
+      const token2 = (res2.body as FhirParameters).parameter?.[0]?.valueString as string;
 
       const receivedSubRefs: string[] = [];
 
@@ -827,7 +828,7 @@ describe('WebSocket Subscription', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.body).toBeDefined();
-      const body = res.body as Parameters;
+      const body = res.body as FhirParameters;
       expect(body.resourceType).toStrictEqual('Parameters');
       expect(body.parameter?.[0]).toBeDefined();
       expect(body.parameter?.[0]?.name).toStrictEqual('token');
@@ -1020,7 +1021,7 @@ describe('WebSocket Subscription', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.body).toBeDefined();
-      const body = res.body as Parameters;
+      const body = res.body as FhirParameters;
       expect(body.resourceType).toStrictEqual('Parameters');
       expect(body.parameter?.[0]).toBeDefined();
       expect(body.parameter?.[0]?.name).toStrictEqual('token');
@@ -1138,7 +1139,7 @@ describe('WebSocket Subscription', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.body).toBeDefined();
-      const body = res.body as Parameters;
+      const body = res.body as FhirParameters;
       expect(body.resourceType).toStrictEqual('Parameters');
       expect(body.parameter?.[0]).toBeDefined();
       expect(body.parameter?.[0]?.name).toStrictEqual('token');
@@ -1240,7 +1241,7 @@ describe('WebSocket Subscription', () => {
         .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
 
-      const body = res.body as Parameters;
+      const body = res.body as FhirParameters;
       const token = body.parameter?.[0]?.valueString as string;
 
       await request(server)
@@ -1323,7 +1324,7 @@ describe('WebSocket Subscription', () => {
         .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
 
-      const body = res.body as Parameters;
+      const body = res.body as FhirParameters;
       const token = body.parameter?.[0]?.valueString as string;
 
       await request(server)
@@ -1426,7 +1427,7 @@ describe('WebSocket Subscription', () => {
       const tokenRes = await request(server)
         .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + testAccessToken);
-      const token = (tokenRes.body as Parameters).parameter?.[0]?.valueString as string;
+      const token = (tokenRes.body as FhirParameters).parameter?.[0]?.valueString as string;
 
       let firstPatientId: string;
       await request(server)
@@ -1526,7 +1527,7 @@ describe('WebSocket Subscription', () => {
       const res = await request(server)
         .get(`/fhir/R4/Subscription/${sub.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
-      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+      const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
 
       // Subscriptions are only added to the user active set when bound, not when created
       let countAfterBind = 0;
@@ -1972,7 +1973,7 @@ describe('Subscription Heartbeat', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.body).toBeDefined();
-      const body = res.body as Parameters;
+      const body = res.body as FhirParameters;
       expect(body.resourceType).toStrictEqual('Parameters');
       expect(body.parameter?.[0]).toBeDefined();
       expect(body.parameter?.[0]?.name).toStrictEqual('token');

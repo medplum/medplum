@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type * as NodeStream from 'node:stream';
 import type * as Pg from 'pg';
 import { vi } from 'vitest';
 
@@ -11,10 +12,11 @@ const dbConfigTestState = vi.hoisted(() => ({
 vi.mock('pg', async () => {
   const { EventEmitter } = await import('node:events');
   const { Duplex, Readable, Writable } = await import('node:stream');
+  type ReadableStream = NodeStream.Readable;
+  type WritableStream = NodeStream.Writable;
   const { GetDataVersionSql, GetVersionSql } = await import('./migration-sql');
-  const { getLatestPostDeployMigrationVersion, getPreDeployMigrationVersions } = await import(
-    './migrations/migration-versions'
-  );
+  const { getLatestPostDeployMigrationVersion, getPreDeployMigrationVersions } =
+    await import('./migrations/migration-versions');
   const preDeployVersion = getPreDeployMigrationVersions().length;
   const latestVersion = getLatestPostDeployMigrationVersion();
   const original = await vi.importActual<typeof Pg>('pg');
@@ -22,7 +24,6 @@ vi.mock('pg', async () => {
   type Pool = Pg.Pool;
   type PoolClient = Pg.PoolClient;
   type PoolConfig = Pg.PoolConfig;
-  type QueryArrayResult = Pg.QueryArrayResult;
   type QueryConfig<I = any[]> = Pg.QueryConfig<I>;
   type QueryResult<R extends Pg.QueryResultRow = Pg.QueryResultRow> = Pg.QueryResult<R>;
   type QueryResultRow = Pg.QueryResultRow;
@@ -52,10 +53,10 @@ vi.mock('pg', async () => {
 
       return result;
     }
-    copyFrom(_queryText: string): Writable {
+    copyFrom(_queryText: string): WritableStream {
       return new Writable();
     }
-    copyTo(_queryText: string): Readable {
+    copyTo(_queryText: string): ReadableStream {
       return new Readable();
     }
     pauseDrain(): void {}
@@ -105,7 +106,7 @@ vi.mock('pg', async () => {
       return this;
     }
     async end(): Promise<void> {}
-    async query(): Promise<QueryArrayResult<any>> {
+    async query(): Promise<QueryResult> {
       return {
         command: '',
         rowCount: null,
@@ -212,9 +213,7 @@ describe('Database config', () => {
     config.database.runMigrations = true;
     const initDBPromise = initDatabase(config);
 
-    vi
-      .runAllTimersAsync()
-      .catch((reason) => globalLogger.error('Unexpected error in vi.runAllTimersAsync', reason));
+    vi.runAllTimersAsync().catch((reason) => globalLogger.error('Unexpected error in vi.runAllTimersAsync', reason));
 
     await expect(initDBPromise).rejects.toThrow('Failed to acquire migration lock');
   });

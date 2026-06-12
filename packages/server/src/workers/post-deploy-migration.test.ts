@@ -335,7 +335,7 @@ describe('Post-Deploy Migration Worker', () => {
 
     const getPostDeployMigrationSpy = vi
       .spyOn(migrationUtils, 'getPostDeployMigration')
-      .mockReturnValue(mockCustomMigration);
+      .mockResolvedValue(mockCustomMigration);
 
     const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
@@ -398,7 +398,7 @@ describe('Post-Deploy Migration Worker', () => {
       };
       const getPostDeployMigrationSpy = vi
         .spyOn(migrationUtils, 'getPostDeployMigration')
-        .mockReturnValue(mockCustomMigration);
+        .mockResolvedValue(mockCustomMigration);
 
       // temporarily set to {} to appease typescript since it gets set within withTestContext
       let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
@@ -514,7 +514,7 @@ describe('Post-Deploy Migration Worker', () => {
     };
     const getPostDeployMigrationSpy = vi
       .spyOn(migrationUtils, 'getPostDeployMigration')
-      .mockReturnValue(mockCustomMigration);
+      .mockResolvedValue(mockCustomMigration);
 
     mockRegisteredServers = [
       {

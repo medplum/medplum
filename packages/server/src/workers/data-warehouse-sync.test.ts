@@ -14,10 +14,11 @@
  * For the worker job path with a real database and sync, see `data-warehouse-sync.int.test.ts`.
  */
 
-import { vi } from 'vitest';
 import type { Queue } from 'bullmq';
 import { Worker } from 'bullmq';
 import type { PoolClient } from 'pg';
+import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -53,7 +54,7 @@ function setupWarehouseTableNamesMock(): void {
   );
 }
 
-function setupSyncDataMock(): ReturnType<typeof vi.spyOn<typeof syncModule, 'syncData'>> {
+function setupSyncDataMock(): MockInstance<typeof syncModule.syncData> {
   return vi.spyOn(syncModule, 'syncData').mockResolvedValue({
     tables: [
       {
@@ -61,12 +62,16 @@ function setupSyncDataMock(): ReturnType<typeof vi.spyOn<typeof syncModule, 'syn
         postgresTable: 'Patient_History',
         destination: 'patient_history.parquet',
         rowsInserted: 1,
+        watermarkDurationMs: 0,
+        syncDurationMs: 0,
       },
       {
         icebergTable: 'observation_history',
         postgresTable: 'Observation_History',
         destination: 'observation_history.parquet',
         rowsInserted: 0,
+        watermarkDurationMs: 0,
+        syncDurationMs: 0,
       },
     ],
   });

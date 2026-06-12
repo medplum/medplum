@@ -51,15 +51,14 @@ const joseMockState = vi.hoisted(() => ({ count: 0 }));
 const MockJoseMultipleMatchingError = vi.hoisted(() => {
   class JoseMultipleMatchingError extends Error {
     code: string;
-    [Symbol.asyncIterator]: () => AsyncIterableIterator<any>;
+    [Symbol.asyncIterator]: () => AsyncIterableIterator<any> = async function* () {
+      yield 'key1';
+      yield 'key2';
+    };
     constructor(message: string, code: string) {
       super(message);
       this.name = 'CustomError';
       this.code = code;
-      this[Symbol.asyncIterator] = async function* () {
-        yield 'key1';
-        yield 'key2';
-      };
     }
   }
   return JoseMultipleMatchingError;

@@ -970,7 +970,7 @@ describe('GraphQL', () => {
       return res.body.data;
     }
 
-    let searchByReferenceSpy: MockInstance<ReturnType<typeof searchFile.searchByReferenceImpl>>;
+    let searchByReferenceSpy: MockInstance<typeof searchFile.searchByReferenceImpl>;
 
     beforeEach(async () => {
       searchByReferenceSpy = vi.spyOn(searchFile, 'searchByReferenceImpl');

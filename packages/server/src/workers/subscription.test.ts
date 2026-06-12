@@ -64,6 +64,7 @@ import {
   recordSubscriptionFailure,
 } from './subscription-failure-tracker';
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
+import type { Mock, MockInstance } from 'vitest';
 import type * as Constants from '../constants';
 import * as workerUtils from './utils';
 
@@ -1530,9 +1531,9 @@ describe('Subscription Worker', () => {
 
         // Should log AuditEvent via globalLogger
         expect(writeSpy).toHaveBeenCalled();
-        const loggedCall = writeSpy.mock.calls.find((call) => {
+        const loggedCall = writeSpy.mock.calls.find((call: unknown[]) => {
           try {
-            const parsed = JSON.parse(call[0]);
+            const parsed = JSON.parse(call[0] as string);
             return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
           } catch {
             return false;
@@ -1597,9 +1598,9 @@ describe('Subscription Worker', () => {
 
         // Should also log AuditEvent via globalLogger
         expect(writeSpy).toHaveBeenCalled();
-        const loggedCall = writeSpy.mock.calls.find((call) => {
+        const loggedCall = writeSpy.mock.calls.find((call: unknown[]) => {
           try {
-            const parsed = JSON.parse(call[0]);
+            const parsed = JSON.parse(call[0] as string);
             return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
           } catch {
             return false;
@@ -3841,7 +3842,7 @@ describe('Subscription Worker Event Handling', () => {
         return mockWorker;
       }),
     };
-    mockBullmq.Worker.mockImplementation(function MockWorker() {
+    (mockBullmq.Worker as unknown as Mock).mockImplementation(function MockWorker() {
       return mockWorker;
     });
     // Now import the subscription worker init function
@@ -3849,7 +3850,7 @@ describe('Subscription Worker Event Handling', () => {
     vi.spyOn(globalLogger, 'info').mockImplementation(() => {});
 
     // Mock the logger and metrics functions
-    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation();
+    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     // Initialize the subscription worker with mock config
     initSubscriptionWorker({} as MedplumServerConfig);

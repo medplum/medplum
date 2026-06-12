@@ -11,6 +11,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { initTestAuth } from '../test.setup';
+import { vi } from 'vitest';
 
 const app = express();
 
@@ -95,9 +96,9 @@ describe('Email API Routes', () => {
   });
 
   test('Send email via project SMTP', async () => {
-    const sendMail = jest.fn().mockResolvedValue({ messageId: '123' });
-    const createTransportSpy = jest.spyOn(nodemailer, 'createTransport');
-    createTransportSpy.mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue({ messageId: '123' });
+    const createTransportSpy = vi.spyOn(nodemailer, 'createTransport');
+    createTransportSpy.mockReturnValue({ sendMail } as unknown as nodemailer.Transporter);
 
     try {
       const accessToken = await initTestAuth({

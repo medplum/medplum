@@ -117,9 +117,9 @@ describe('Reset Password', () => {
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
-    expect(args.Destination.ToAddresses[0]).toBe(email);
+    expect(args.Destination?.ToAddresses?.[0]).toBe(email);
 
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
     expect(parsed.subject).toBe('Medplum Password Reset');
   });
 
@@ -168,17 +168,17 @@ describe('Reset Password', () => {
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
-    expect(args.Destination.ToAddresses[0]).toBe(email);
+    expect(args.Destination?.ToAddresses?.[0]).toBe(email);
 
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
     expect(parsed.subject).toBe('Medplum Password Reset');
   });
 
   test('Project-scoped user uses project SMTP', async () => {
     const email = `project-smtp-${randomUUID()}@example.com`;
-    const sendMail = jest.fn().mockResolvedValue({ messageId: '123' });
-    const createTransportSpy = jest.spyOn(nodemailer, 'createTransport');
-    createTransportSpy.mockReturnValue({ sendMail });
+    const sendMail = vi.fn().mockResolvedValue({ messageId: '123' });
+    const createTransportSpy = vi.spyOn(nodemailer, 'createTransport');
+    createTransportSpy.mockReturnValue({ sendMail } as unknown as nodemailer.Transporter);
 
     try {
       const project = await withTestContext(async () => {
@@ -295,9 +295,9 @@ describe('Reset Password', () => {
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
-    expect(args.Destination.ToAddresses[0]).toBe(email);
+    expect(args.Destination?.ToAddresses?.[0]).toBe(email);
 
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
     expect(parsed.subject).toBe('Medplum Password Reset');
   });
 
@@ -438,10 +438,10 @@ describe('Reset Password', () => {
 
     // Verify email details
     const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
-    expect(args.Destination.ToAddresses[0]).toBe(email);
+    expect(args.Destination?.ToAddresses?.[0]).toBe(email);
 
     // Verify parsed email content
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
     expect(parsed.subject).toBe('Medplum Password Reset');
   });
 
@@ -502,10 +502,10 @@ describe('Reset Password', () => {
 
     // Verify email details
     const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
-    expect(args.Destination.ToAddresses[0]).toBe(email);
+    expect(args.Destination?.ToAddresses?.[0]).toBe(email);
 
     // Verify parsed email content
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
     expect(parsed.subject).toBe('Medplum Password Reset');
   });
 });

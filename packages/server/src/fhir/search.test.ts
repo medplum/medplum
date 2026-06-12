@@ -67,6 +67,7 @@ import type { TokenColumnSearchParameterImplementation } from './searchparameter
 import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 import { loadStructureDefinitions } from './structure';
+import type { MockInstance } from 'vitest';
 
 vi.mock('hibp');
 
@@ -3011,7 +3012,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           ],
           include: [{ resourceType: 'Patient', searchParam: 'link', modifier: Operator.ITERATE }],
         })
-      ).resolves.toMatchObject<Bundle>({
+      ).resolves.toMatchObject({
         resourceType: 'Bundle',
         type: 'searchset',
         entry: [],
@@ -3052,7 +3053,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         include: [{ resourceType: 'Patient', searchParam: 'general-practitioner' }],
         count: 1,
       };
-      await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+      await expect(repo.search(searchRequest)).resolves.toMatchObject({
         resourceType: 'Bundle',
         type: 'searchset',
         entry: [
@@ -3068,7 +3069,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
 
       searchRequest.count = 2;
-      await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+      await expect(repo.search(searchRequest)).resolves.toMatchObject({
         resourceType: 'Bundle',
         type: 'searchset',
         entry: [
@@ -5647,7 +5648,7 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
     withTestContext(async () => {
       const type = randomUUID();
       const searchRequest = parseSearchRequest(`PractitionerRole?_total=accurate&organization.type=${type}`);
-      await expect(systemRepo.search(searchRequest)).resolves.toMatchObject<Partial<Bundle>>({
+      await expect(systemRepo.search(searchRequest)).resolves.toMatchObject({
         type: 'searchset',
         total: 0,
       });

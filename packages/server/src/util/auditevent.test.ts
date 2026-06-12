@@ -16,6 +16,7 @@ import {
   ReadInteraction,
   RestfulOperationType,
 } from './auditevent';
+import type { MockInstance } from 'vitest';
 
 describe('AuditEvent utils', () => {
   let writeSpy: MockInstance;

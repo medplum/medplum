@@ -26,7 +26,8 @@ import type { LambdaCleanerJobData } from '../workers/lambda-cleaner';
 import { getLambdaCleanerQueue } from '../workers/lambda-cleaner';
 import type { ReindexJobData } from '../workers/reindex';
 import { getReindexQueue } from '../workers/reindex';
-import type { MockedFunction , vi, type MockInstance } from 'vitest';
+import { vi } from 'vitest';
+import type { MockedFunction, MockInstance } from 'vitest';
 
 vi.mock('../seeds/valuesets');
 vi.mock('../seeds/structuredefinitions');

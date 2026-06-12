@@ -226,7 +226,7 @@ describe('Repository validation', () => {
       await expect(repo.createResource(observation)).rejects.toThrow('Missing required property (Observation.subject)');
 
       observation.subject = { identifier: { value: randomUUID() } };
-      await expect(repo.createResource(observation)).resolves.toMatchObject<Partial<Observation>>({
+      await expect(repo.createResource(observation)).resolves.toMatchObject({
         meta: expect.objectContaining({
           profile: ['http://hl7.org/fhir/StructureDefinition/vitalsigns'],
         }),

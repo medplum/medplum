@@ -246,7 +246,7 @@ describe('worker utils', () => {
       const queue = { name: queueName } as Queue;
       const worker = new EventEmitter() as unknown as Worker;
 
-      const loggerInfoSpy = vi.spyOn(globalLogger, 'info').mockImplementation();
+      const loggerInfoSpy = vi.spyOn(globalLogger, 'info').mockImplementation(() => undefined);
 
       addVerboseQueueLogging<any>(queue, worker, (job) => ({ asyncJob: 'AsyncJob/' + job.data.asyncJobId }));
 

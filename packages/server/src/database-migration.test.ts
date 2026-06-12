@@ -3,7 +3,9 @@
 import type { WithId } from '@medplum/core';
 import { allOk, badRequest, createReference, getReferenceString, parseSearchRequest } from '@medplum/core';
 import type { AsyncJob, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import type { Queue } from 'bullmq';
+import type { Queue, Job } from 'bullmq';
+import { vi } from 'vitest';
+import type { MockedFunction, MockInstance } from 'vitest';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import type { Pool, PoolClient } from 'pg';
@@ -29,7 +31,7 @@ import {
 } from './migrations/migration-utils';
 import * as migrationVersions from './migrations/migration-versions';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
-import type { MigrationAction, MigrationActionResult } from './migrations/types';
+import type { MigrationAction } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
 import { createTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
@@ -75,11 +77,9 @@ vi.mock('./migrations/data/v1', async () => {
   migrationMocks.customMigration = {
     type: 'custom',
     prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
-    run: function (repo, jobData) {
-      return runCustomMigration(repo, jobData, async () => {
-        const results: MigrationActionResult[] = [];
+    run: function (repo, job, jobData) {
+      return runCustomMigration(repo, job, jobData, async (_client, results) => {
         results.push({ name: 'nothing', durationMs: 5 });
-        return results;
       });
     },
   };
@@ -96,12 +96,14 @@ function mockQueueAddImplementation(queue: Queue | undefined): void {
   if (!queue) {
     return;
   }
-  vi.mocked(queue.add).mockImplementation(async (jobName: string, jobData: unknown, options: unknown) => ({
-    id: '123',
-    name: jobName,
-    data: jobData,
-    opts: options,
-  }));
+  vi.mocked(queue.add).mockImplementation(async (jobName, jobData, options) =>
+    ({
+      id: '123',
+      name: jobName,
+      data: jobData,
+      opts: options,
+    }) as Job
+  );
 }
 
 function restoreWorkerQueueMocks(): void {
@@ -147,11 +149,9 @@ describe('Database migrations', () => {
     migrationMocks.customMigration = {
       type: 'custom',
       prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
-      run: function (repo, jobData) {
-        return runCustomMigration(repo, jobData, async () => {
-          const results: MigrationActionResult[] = [];
+      run: function (repo, job, jobData) {
+        return runCustomMigration(repo, job, jobData, async (_client, results) => {
           results.push({ name: 'nothing', durationMs: 5 });
-          return results;
         });
       },
     };
@@ -337,7 +337,7 @@ describe('Database migrations', () => {
 
         const expectedJobData = prepareCustomMigrationJobData(asyncJob);
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
-        expect(queueAddSpy.mock.lastCall[1]).toEqual(expectedJobData);
+        expect(queueAddSpy.mock.lastCall?.[1]).toEqual(expectedJobData);
       }));
 
     test('No pending data migration', () =>
@@ -368,7 +368,7 @@ describe('Database migrations', () => {
 
         const expectedJobData = prepareCustomMigrationJobData(asyncJob);
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
-        expect(queueAddSpy.mock.lastCall[1]).toEqual(expectedJobData);
+        expect(queueAddSpy.mock.lastCall?.[1]).toEqual(expectedJobData);
       }));
 
     test('Existing data migration job in a project is ignored', () =>
@@ -407,7 +407,7 @@ describe('Database migrations', () => {
 
         const expectedJobData = prepareCustomMigrationJobData(asyncJob);
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
-        expect(queueAddSpy.mock.lastCall[1]).toEqual(expectedJobData);
+        expect(queueAddSpy.mock.lastCall?.[1]).toEqual(expectedJobData);
 
         // The project AsyncJob should not be found/returned
         expect(asyncJob.id).toBeDefined();
@@ -797,7 +797,7 @@ describe('Database migrations', () => {
     });
 
     describe('Reconcile schema drift', () => {
-      let generateMigrationActionsSpy: MockInstance<ReturnType<typeof migrateModule.generateMigrationActions>>;
+      let generateMigrationActionsSpy: MockInstance<typeof migrateModule.generateMigrationActions>;
 
       beforeEach(() => {
         generateMigrationActionsSpy = vi.spyOn(migrateModule, 'generateMigrationActions');

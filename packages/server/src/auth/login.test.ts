@@ -253,7 +253,7 @@ describe('Login', () => {
 
     // Parse the email for the "set password" link
     const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
     const content = parsed.text as string;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');

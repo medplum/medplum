@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { FileBuilder, loadDataType } from '@medplum/core';
 import { escapeIdentifier } from 'pg';
+import type { Mock, MockInstance } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import { globalLogger } from '../logger';

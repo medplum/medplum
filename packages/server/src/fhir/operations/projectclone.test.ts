@@ -30,6 +30,7 @@ import {
   setupRecaptchaMock,
   withTestContext,
 } from '../../test.setup';
+import type { Mock } from 'vitest';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { createProject } from './projectinit';
 
