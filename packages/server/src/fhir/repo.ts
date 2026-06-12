@@ -393,6 +393,7 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   async recordFhirQuota(points: number): Promise<void> {
+    this.assertUsable();
     const ctx = tryGetRequestContext();
     const limiter = this.isSuperAdmin() ? undefined : ctx?.fhirRateLimiter;
     if (ctx instanceof AuthenticatedRequestContext && ctx.isAsync) {
@@ -441,7 +442,6 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
-    this.assertUsable();
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
     await this.resourceCap()?.created();
 
@@ -492,7 +492,6 @@ export class Repository extends FhirRepository implements Disposable {
     id: string,
     options?: ReadResourceOptions
   ): Promise<WithId<T>> {
-    this.assertUsable();
     await this.recordFhirQuota(FhirQuotaCost.READ);
 
     const startTime = Date.now();
@@ -576,7 +575,6 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
-    this.assertUsable();
     await this.recordFhirQuota(references.length * FhirQuotaCost.READ);
     const cacheEntries = await this.getCacheEntries(references);
     const result: (WithId<T> | Error)[] = new Array(references.length);
@@ -668,7 +666,6 @@ export class Repository extends FhirRepository implements Disposable {
     id: string,
     options?: ReadHistoryOptions
   ): Promise<Bundle<T>> {
-    this.assertUsable();
     await this.recordFhirQuota(FhirQuotaCost.HISTORY);
     const startTime = Date.now();
     try {
@@ -763,7 +760,6 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<WithId<T>> {
-    this.assertUsable();
     await this.recordFhirQuota(FhirQuotaCost.READ);
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
@@ -805,7 +801,6 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
-    this.assertUsable();
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
@@ -1198,7 +1193,6 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
-    this.assertUsable();
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
@@ -1292,7 +1286,6 @@ export class Repository extends FhirRepository implements Disposable {
     patch: Operation[],
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
-    this.assertUsable();
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
@@ -1418,7 +1411,6 @@ export class Repository extends FhirRepository implements Disposable {
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
-    this.assertUsable();
     await this.recordFhirQuota(FhirQuotaCost.SEARCH);
 
     const startTime = Date.now();
@@ -1469,7 +1461,6 @@ export class Repository extends FhirRepository implements Disposable {
     referenceField: string,
     references: string[]
   ): Promise<Record<string, WithId<T>[]>> {
-    this.assertUsable();
     await this.recordFhirQuota(references.length * FhirQuotaCost.SEARCH);
     const startTime = Date.now();
     try {

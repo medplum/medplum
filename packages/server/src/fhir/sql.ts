@@ -700,29 +700,31 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
     return err;
   }
 
-  // Handle known Postgres error codes
-  // @see https://www.postgresql.org/docs/16/errcodes-appendix.html
-  switch (err?.code) {
-    case PostgresError.UniqueViolation:
-      // Duplicate key error -> 409 Conflict
-      // @see https://github.com/brianc/node-postgres/issues/1602
-      return new OperationOutcomeError(conflict(err.detail), err);
-    case PostgresError.SerializationFailure:
-      // Transaction rollback due to serialization error -> 409 Conflict
-      return new OperationOutcomeError(conflict(err.message, err.code), err);
-    case PostgresError.QueryCanceled:
-      // Statement timeout -> 504 Gateway Timeout
-      getLogger().warn('Database statement timeout', { error: err.message, stack: err.stack, code: err.code });
-      return new OperationOutcomeError(serverTimeout(err.message), err);
-    case PostgresError.InFailedSqlTransaction:
-      getLogger().warn('Statement in failed transaction', { stack: err.stack });
-      return new OperationOutcomeError(normalizeOperationOutcome(err), err);
-    case PostgresError.DatetimeFieldOverflow:
-      // Date/time value out of range (e.g. Feb 29 on a non-leap year) -> 400 Bad Request
-      return new OperationOutcomeError(badRequest(err.message), err);
+  if (err.code) {
+    // Handle known Postgres error codes
+    // @see https://www.postgresql.org/docs/16/errcodes-appendix.html
+    switch (err.code) {
+      case PostgresError.UniqueViolation:
+        // Duplicate key error -> 409 Conflict
+        // @see https://github.com/brianc/node-postgres/issues/1602
+        return new OperationOutcomeError(conflict(err.detail), err);
+      case PostgresError.SerializationFailure:
+        // Transaction rollback due to serialization error -> 409 Conflict
+        return new OperationOutcomeError(conflict(err.message, err.code), err);
+      case PostgresError.QueryCanceled:
+        // Statement timeout -> 504 Gateway Timeout
+        getLogger().warn('Database statement timeout', { error: err.message, stack: err.stack, code: err.code });
+        return new OperationOutcomeError(serverTimeout(err.message), err);
+      case PostgresError.InFailedSqlTransaction:
+        getLogger().warn('Statement in failed transaction', { stack: err.stack });
+        return new OperationOutcomeError(normalizeOperationOutcome(err), err);
+      case PostgresError.DatetimeFieldOverflow:
+        // Date/time value out of range (e.g. Feb 29 on a non-leap year) -> 400 Bad Request
+        return new OperationOutcomeError(badRequest(err.message), err);
+    }
+    getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
   }
 
-  getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
   return new OperationOutcomeError(normalizeOperationOutcome(err), err);
 }
 
