@@ -8,11 +8,20 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import { simpleParser } from 'mailparser';
-import nodemailer from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
-import type { Mock, MockInstance } from 'vitest';
 import { vi } from 'vitest';
+
+const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
+  const mockSendMail = vi.fn().mockResolvedValue({ messageId: '123' });
+  const mockCreateTransport = vi.fn(() => ({ sendMail: mockSendMail }));
+  return { mockCreateTransport, mockSendMail };
+});
+
+vi.mock('nodemailer', () => ({
+  createTransport: mockCreateTransport,
+  default: { createTransport: mockCreateTransport },
+}));
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
@@ -316,9 +325,8 @@ describe('Email', () => {
       password: 'pass',
     };
 
-    const sendMail = vi.fn().mockResolvedValue({ messageId: '123' });
-    const createTransportSpy = vi.spyOn(nodemailer, 'createTransport');
-    createTransportSpy.mockReturnValue({ sendMail } as unknown as nodemailer.Transporter);
+    mockCreateTransport.mockClear();
+    mockSendMail.mockClear();
 
     try {
       const toAddresses = 'alice@example.com';
@@ -329,19 +337,15 @@ describe('Email', () => {
         text: 'Hello Alice',
       });
 
-      expect(createTransportSpy).toHaveBeenCalledTimes(1);
-      expect(sendMail).toHaveBeenCalledTimes(1);
+      expect(mockCreateTransport).toHaveBeenCalledTimes(1);
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
       expect(mockSESv2Client.send.callCount).toBe(0);
     } finally {
-      createTransportSpy.mockRestore();
       config.smtp = undefined;
     }
   });
 
   describe('Project SMTP', () => {
-    let sendMail: Mock;
-    let createTransportSpy: MockInstance;
-
     function makeProject(secrets: ProjectSetting[]): WithId<Project> {
       return { resourceType: 'Project', id: randomUUID(), secret: secrets };
     }
@@ -355,14 +359,12 @@ describe('Email', () => {
     ];
 
     beforeEach(() => {
-      sendMail = vi.fn().mockResolvedValue({ messageId: '123' });
-      createTransportSpy = vi.spyOn(nodemailer, 'createTransport');
-      createTransportSpy.mockClear();
-      createTransportSpy.mockReturnValue({ sendMail });
+      mockSendMail.mockReset();
+      mockSendMail.mockResolvedValue({ messageId: '123' });
+      mockCreateTransport.mockClear();
     });
 
     afterEach(() => {
-      createTransportSpy.mockRestore();
       getConfig().allowProjectSmtp = undefined;
       getConfig().smtp = undefined;
     });
@@ -371,8 +373,8 @@ describe('Email', () => {
       const project = makeProject(baseSecrets);
       await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
 
-      expect(createTransportSpy).toHaveBeenCalledTimes(1);
-      expect(createTransportSpy).toHaveBeenCalledWith(
+      expect(mockCreateTransport).toHaveBeenCalledTimes(1);
+      expect(mockCreateTransport).toHaveBeenCalledWith(
         expect.objectContaining({
           host: 'smtp.project.example.com',
           port: 587,
@@ -380,7 +382,7 @@ describe('Email', () => {
           auth: { user: 'projectuser', pass: 'projectpass' },
         })
       );
-      expect(sendMail).toHaveBeenCalledTimes(1);
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
       expect(mockSESv2Client.send.callCount).toBe(0);
     });
 
@@ -394,7 +396,7 @@ describe('Email', () => {
       ]);
       await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
 
-      expect(createTransportSpy).toHaveBeenCalledWith(expect.objectContaining({ port: 465, secure: true }));
+      expect(mockCreateTransport).toHaveBeenCalledWith(expect.objectContaining({ port: 465, secure: true }));
     });
 
     test('Explicit smtpSecure overrides port inference', async () => {
@@ -408,7 +410,7 @@ describe('Email', () => {
       ]);
       await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
 
-      expect(createTransportSpy).toHaveBeenCalledWith(expect.objectContaining({ port: 465, secure: false }));
+      expect(mockCreateTransport).toHaveBeenCalledWith(expect.objectContaining({ port: 465, secure: false }));
     });
 
     test('From address approved by project sender list', async () => {
@@ -426,8 +428,8 @@ describe('Email', () => {
         project
       );
 
-      expect(sendMail).toHaveBeenCalledTimes(1);
-      expect(sendMail.mock.calls[0][0].from).toBe('sender@project.example.com');
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      expect(mockSendMail.mock.calls[0][0].from).toBe('sender@project.example.com');
     });
 
     test('Server-approved sender not accepted under project list', async () => {
@@ -446,8 +448,8 @@ describe('Email', () => {
         project
       );
 
-      expect(sendMail).toHaveBeenCalledTimes(1);
-      expect(sendMail.mock.calls[0][0].from).toBe('default@project.example.com');
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      expect(mockSendMail.mock.calls[0][0].from).toBe('default@project.example.com');
     });
 
     test('Missing smtpFromAddress fails loudly', async () => {
@@ -461,7 +463,7 @@ describe('Email', () => {
         sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project)
       ).rejects.toThrow('Project SMTP configuration is incomplete or invalid');
 
-      expect(sendMail).not.toHaveBeenCalled();
+      expect(mockSendMail).not.toHaveBeenCalled();
       expect(mockSESv2Client.send.callCount).toBe(0);
     });
 
@@ -475,7 +477,7 @@ describe('Email', () => {
       const project = makeProject([{ name: 'OPENAI_API_KEY', valueString: 'unrelated' }]);
       await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
 
-      expect(createTransportSpy).toHaveBeenCalledWith(expect.objectContaining({ host: 'smtp.server.example.com' }));
+      expect(mockCreateTransport).toHaveBeenCalledWith(expect.objectContaining({ host: 'smtp.server.example.com' }));
       expect(mockSESv2Client.send.callCount).toBe(0);
     });
 
@@ -491,13 +493,13 @@ describe('Email', () => {
         sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project)
       ).rejects.toThrow('Project SMTP configuration is incomplete or invalid');
 
-      expect(sendMail).not.toHaveBeenCalled();
+      expect(mockSendMail).not.toHaveBeenCalled();
       expect(mockSESv2Client.send.callCount).toBe(0);
     });
 
     test('Logs and rethrows on project SMTP send failure', async () => {
       const loggerErrorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
-      sendMail.mockRejectedValue(new Error('Connection refused'));
+      mockSendMail.mockRejectedValue(new Error('Connection refused'));
       const project = makeProject(baseSecrets);
 
       try {
@@ -525,7 +527,7 @@ describe('Email', () => {
       await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
 
       // Falls through to AWS SES (the configured emailProvider)
-      expect(sendMail).not.toHaveBeenCalled();
+      expect(mockSendMail).not.toHaveBeenCalled();
       expect(mockSESv2Client.send.callCount).toBe(1);
     });
   });

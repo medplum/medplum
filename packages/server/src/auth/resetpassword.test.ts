@@ -10,7 +10,6 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
-import nodemailer from 'nodemailer';
 import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
@@ -20,8 +19,18 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
+const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
+  const mockSendMail = vi.fn().mockResolvedValue({ messageId: '123' });
+  const mockCreateTransport = vi.fn(() => ({ sendMail: mockSendMail }));
+  return { mockCreateTransport, mockSendMail };
+});
+
 vi.mock('hibp');
 vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('nodemailer', () => ({
+  createTransport: mockCreateTransport,
+  default: { createTransport: mockCreateTransport },
+}));
 
 describe('Reset Password', () => {
   const app = express();
@@ -176,12 +185,10 @@ describe('Reset Password', () => {
 
   test('Project-scoped user uses project SMTP', async () => {
     const email = `project-smtp-${randomUUID()}@example.com`;
-    const sendMail = vi.fn().mockResolvedValue({ messageId: '123' });
-    const createTransportSpy = vi.spyOn(nodemailer, 'createTransport');
-    createTransportSpy.mockReturnValue({ sendMail } as unknown as nodemailer.Transporter);
+    mockCreateTransport.mockClear();
+    mockSendMail.mockClear();
 
-    try {
-      const project = await withTestContext(async () => {
+    const project = await withTestContext(async () => {
         const project = await systemRepo.createResource<Project>({
           resourceType: 'Project',
           name: 'Project SMTP Reset Project',
@@ -205,23 +212,20 @@ describe('Reset Password', () => {
         return project;
       });
 
-      const res = await request(app).post('/auth/resetpassword').type('json').send({
-        email,
-        projectId: project.id,
-        recaptchaToken: 'xyz',
-      });
-      expect(res.status).toBe(200);
+    const res = await request(app).post('/auth/resetpassword').type('json').send({
+      email,
+      projectId: project.id,
+      recaptchaToken: 'xyz',
+    });
+    expect(res.status).toBe(200);
 
-      expect(createTransportSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ host: 'smtp.project.example.com', port: 587 })
-      );
-      expect(sendMail).toHaveBeenCalledTimes(1);
-      expect(sendMail.mock.calls[0][0].from).toBe('support@project.example.com');
-      expect(mockSESv2Client.send.callCount).toBe(0);
-      expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
-    } finally {
-      createTransportSpy.mockRestore();
-    }
+    expect(mockCreateTransport).toHaveBeenCalledWith(
+      expect.objectContaining({ host: 'smtp.project.example.com', port: 587 })
+    );
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    expect(mockSendMail.mock.calls[0][0].from).toBe('support@project.example.com');
+    expect(mockSESv2Client.send.callCount).toBe(0);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('External auth', async () => {

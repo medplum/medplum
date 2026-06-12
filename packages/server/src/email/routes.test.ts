@@ -6,9 +6,19 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import express from 'express';
 import { simpleParser } from 'mailparser';
-import nodemailer from 'nodemailer';
 import request from 'supertest';
 import { vi } from 'vitest';
+
+const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
+  const mockSendMail = vi.fn().mockResolvedValue({ messageId: '123' });
+  const mockCreateTransport = vi.fn(() => ({ sendMail: mockSendMail }));
+  return { mockCreateTransport, mockSendMail };
+});
+
+vi.mock('nodemailer', () => ({
+  createTransport: mockCreateTransport,
+  default: { createTransport: mockCreateTransport },
+}));
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { initTestAuth } from '../test.setup';
@@ -96,12 +106,10 @@ describe('Email API Routes', () => {
   });
 
   test('Send email via project SMTP', async () => {
-    const sendMail = vi.fn().mockResolvedValue({ messageId: '123' });
-    const createTransportSpy = vi.spyOn(nodemailer, 'createTransport');
-    createTransportSpy.mockReturnValue({ sendMail } as unknown as nodemailer.Transporter);
+    mockCreateTransport.mockClear();
+    mockSendMail.mockClear();
 
-    try {
-      const accessToken = await initTestAuth({
+    const accessToken = await initTestAuth({
         membership: { admin: true },
         project: {
           secret: [
@@ -113,27 +121,24 @@ describe('Email API Routes', () => {
           ],
         },
       });
-      const res = await request(app)
-        .post(`/email/v1/send`)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .set('Content-Type', ContentType.JSON)
-        .send({
-          to: 'alice@example.com',
-          subject: 'Subject',
-          text: 'Body',
-        });
-      expect(res.status).toBe(200);
+    const res = await request(app)
+      .post(`/email/v1/send`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        to: 'alice@example.com',
+        subject: 'Subject',
+        text: 'Body',
+      });
+    expect(res.status).toBe(200);
 
-      expect(createTransportSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ host: 'smtp.project.example.com', port: 587, secure: false })
-      );
-      expect(sendMail).toHaveBeenCalledTimes(1);
-      expect(sendMail.mock.calls[0][0].from).toBe('support@project.example.com');
-      expect(mockSESv2Client.send.callCount).toBe(0);
-      expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
-    } finally {
-      createTransportSpy.mockRestore();
-    }
+    expect(mockCreateTransport).toHaveBeenCalledWith(
+      expect.objectContaining({ host: 'smtp.project.example.com', port: 587, secure: false })
+    );
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    expect(mockSendMail.mock.calls[0][0].from).toBe('support@project.example.com');
+    expect(mockSESv2Client.send.callCount).toBe(0);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Handle SES error', async () => {
