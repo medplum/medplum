@@ -3,7 +3,7 @@
 import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { InternalSchemaElement } from '@medplum/core';
-import { deepClone, getElementDefinition } from '@medplum/core';
+import { deepClone, getElementDefinition, normalizeErrorString } from '@medplum/core';
 import type { ProjectSetting } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
 import type { FormEvent, JSX } from 'react';
@@ -21,7 +21,7 @@ export function SettingsPage(): JSX.Element {
     medplum
       .requestSchema('Project')
       .then(() => setSchemaLoaded(true))
-      .catch(console.log);
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum]);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export function SettingsPage(): JSX.Element {
           .post(`admin/projects/${projectId}/settings`, settings)
           .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
           .then(() => showNotification({ color: 'green', message: 'Saved' }))
-          .catch(console.log);
+          .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
       }}
     >
       <Title>Project Settings</Title>
