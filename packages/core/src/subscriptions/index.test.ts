@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Bundle, Communication, Parameters, Subscription, SubscriptionChannel } from '@medplum/fhirtypes';
+import type { Bundle, Communication, Meta, Parameters, Subscription, SubscriptionChannel } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
 import { WS } from 'vitest-websocket-mock';
 import type { CriteriaState, SubscriptionEventMap } from '.';
@@ -1850,164 +1850,56 @@ describe('resourceMatchesSubscriptionCriteria', () => {
   );
 
   describe('Account matching logic', () => {
-    const ORGANIZATION_ONE = { reference: 'Organization/123' };
-    const ORGANIZATION_TWO = { reference: 'Organization/456' };
-    const ORGANIZATION_THREE = { reference: 'Organization/789' };
-    const ORGANIZATION_FOUR = { reference: 'Organization/999' };
+    const orgA = { reference: 'Organization/a' };
+    const orgB = { reference: 'Organization/b' };
+    const orgC = { reference: 'Organization/c' };
+    const orgD = { reference: 'Organization/d' };
 
-    test.each([
+    type testCase = {
+      title: string;
+      subscriptionMeta: Pick<Meta, 'compartment'>;
+      resourceMeta: Pick<Meta, 'compartment'>;
+      shouldMatch: boolean;
+    };
+
+    test.each<testCase>([
       {
-        description:
-          'should return true when subscription has meta.account and resource has matching account in meta.accounts even if meta.account differs',
-        subscriptionMeta: { account: ORGANIZATION_ONE },
-        resourceMeta: {
-          account: ORGANIZATION_TWO,
-          accounts: [ORGANIZATION_TWO, ORGANIZATION_ONE],
-        },
+        title: 'partially overlapping compartments',
+        subscriptionMeta: { compartment: [orgA] },
+        resourceMeta: { compartment: [orgB, orgA] },
         shouldMatch: true,
       },
       {
-        description:
-          'should return true when subscription has meta.accounts and resource has matching account in meta.accounts',
-        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
-        resourceMeta: { accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE] },
-        shouldMatch: true,
-      },
-      {
-        description:
-          'should return false when subscription has meta.accounts but resource has no matching accounts in meta.accounts',
-        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
-        resourceMeta: { accounts: [ORGANIZATION_THREE, ORGANIZATION_FOUR] },
+        title: 'no matching compartment',
+        subscriptionMeta: { compartment: [orgA, orgB] },
+        resourceMeta: { compartment: [orgC, orgD] },
         shouldMatch: false,
       },
       {
-        description:
-          'should return true when subscription has meta.accounts and resource has no meta.accounts but matching meta.account',
-        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
-        resourceMeta: { account: ORGANIZATION_TWO },
-        shouldMatch: true,
-      },
-      {
-        description:
-          'should return false when subscription has meta.accounts and resource has no meta.accounts but non-matching meta.account',
-        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
-        resourceMeta: { account: ORGANIZATION_THREE },
-        shouldMatch: false,
-      },
-      {
-        description:
-          'should return false when subscription has meta.accounts but resource has neither meta.accounts nor meta.account',
-        subscriptionMeta: { accounts: [ORGANIZATION_ONE, ORGANIZATION_TWO] },
+        title: 'resource not in compartment',
+        subscriptionMeta: { compartment: [orgA, orgB] },
         resourceMeta: {},
         shouldMatch: false,
       },
       {
-        description:
-          'should return true when subscription has meta.accounts with single account and resource has matching meta.account',
-        subscriptionMeta: { accounts: [ORGANIZATION_ONE] },
-        resourceMeta: { account: ORGANIZATION_ONE },
+        title: 'perfect match',
+        subscriptionMeta: { compartment: [orgA] },
+        resourceMeta: { compartment: [orgA] },
         shouldMatch: true,
       },
       {
-        description: 'should return false when subscription has empty meta.accounts array',
-        subscriptionMeta: { accounts: [], account: ORGANIZATION_ONE },
-        resourceMeta: { account: ORGANIZATION_TWO },
-        shouldMatch: false,
-      },
-      {
-        description: 'should return true when subscription has meta.account and resource has matching meta.account',
-        subscriptionMeta: { account: ORGANIZATION_ONE },
-        resourceMeta: { account: ORGANIZATION_ONE },
+        title: 'subscription not in compartment',
+        subscriptionMeta: {},
+        resourceMeta: { compartment: [orgB] },
         shouldMatch: true,
       },
       {
-        description:
-          'should return false when subscription has meta.account and resource has non-matching meta.account',
-        subscriptionMeta: { account: ORGANIZATION_ONE },
-        resourceMeta: { account: ORGANIZATION_TWO },
-        shouldMatch: false,
-      },
-      {
-        description:
-          'should return true when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts but subscription account matches one in the combined list',
-        subscriptionMeta: { account: ORGANIZATION_ONE },
-        resourceMeta: {
-          account: ORGANIZATION_TWO,
-          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
-        },
-        shouldMatch: true,
-      },
-      {
-        description:
-          'should return true when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts and subscription account matches the resource meta.account',
-        subscriptionMeta: { account: ORGANIZATION_TWO },
-        resourceMeta: {
-          account: ORGANIZATION_TWO,
-          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
-        },
-        shouldMatch: true,
-      },
-      {
-        description:
-          'should return false when subscription has meta.account and resource has both meta.account and meta.accounts where meta.account NOT in accounts and no match in combined list',
-        subscriptionMeta: { account: ORGANIZATION_FOUR },
-        resourceMeta: {
-          account: ORGANIZATION_TWO,
-          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
-        },
-        shouldMatch: false,
-      },
-      {
-        description:
-          'should return true when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts but resource account matches one in combined list',
-        subscriptionMeta: {
-          account: ORGANIZATION_TWO,
-          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
-        },
-        resourceMeta: { account: ORGANIZATION_ONE },
-        shouldMatch: true,
-      },
-      {
-        description:
-          'should return true when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts and resource account matches subscription meta.account',
-        subscriptionMeta: {
-          account: ORGANIZATION_TWO,
-          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
-        },
-        resourceMeta: { account: ORGANIZATION_TWO },
-        shouldMatch: true,
-      },
-      {
-        description:
-          'should return false when resource has meta.account and subscription has both meta.account and meta.accounts where meta.account NOT in accounts and no match',
-        subscriptionMeta: {
-          account: ORGANIZATION_TWO,
-          accounts: [ORGANIZATION_THREE, ORGANIZATION_ONE],
-        },
-        resourceMeta: { account: ORGANIZATION_FOUR },
-        shouldMatch: false,
-      },
-      {
-        description: 'should return true when neither subscription nor resource have account metadata',
+        title: 'no compartment metadata present',
         subscriptionMeta: {},
         resourceMeta: {},
         shouldMatch: true,
       },
-      {
-        description:
-          'should return true when subscription has meta.account and resource has matching account in meta.accounts',
-        subscriptionMeta: { account: ORGANIZATION_ONE },
-        resourceMeta: { accounts: [ORGANIZATION_TWO, ORGANIZATION_ONE] },
-        shouldMatch: true,
-      },
-      {
-        description:
-          'should return false when subscription has meta.account and resource has non-matching accounts in meta.accounts',
-        subscriptionMeta: { account: ORGANIZATION_ONE },
-        resourceMeta: { accounts: [ORGANIZATION_TWO, ORGANIZATION_THREE] },
-        shouldMatch: false,
-      },
-    ])('$description', async ({ subscriptionMeta, resourceMeta, shouldMatch }) => {
+    ])('$title', async ({ subscriptionMeta, resourceMeta, shouldMatch }) => {
       const log = vi.fn();
 
       const subscription: Subscription = {

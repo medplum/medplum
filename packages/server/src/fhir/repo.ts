@@ -819,22 +819,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
-    let validatedResource = this.checkResourcePermissions(resource, interaction);
+    const validatedResource = this.checkResourcePermissions(resource, interaction);
     const { resourceType, id } = validatedResource;
-
-    const preCommitResult = await preCommitValidation(this, validatedResource, 'update');
-
-    if (
-      isResourceWithId(preCommitResult, validatedResource.resourceType) &&
-      preCommitResult.id === validatedResource.id
-    ) {
-      validatedResource = this.checkResourcePermissions(preCommitResult, interaction);
-    }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
-      (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
-      if (!this.canPerformInteraction(interaction, existing)) {
+      if (
+        !this.canPerformInteraction(interaction, {
+          ...existing,
+          meta: { ...existing.meta, compartment: await this.getCompartments(existing) },
+        })
+      ) {
         // Check before the update
         throw new OperationOutcomeError(forbidden);
       }
@@ -848,29 +843,35 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     });
     updated = await replaceConditionalReferences(this, updated);
 
-    const resultMeta: Meta = {
-      ...updated.meta,
-      versionId: this.generateId(),
-      lastUpdated: this.getLastUpdated(existing, validatedResource),
-      author: this.getAuthor(validatedResource),
-      onBehalfOf: this.context.onBehalfOf,
-    };
-
-    const result = { ...updated, meta: resultMeta };
-
     const projectId = this.getProjectId(existing, updated);
-    if (projectId) {
-      resultMeta.project = projectId;
-    }
     const accounts = await this.getAccounts(existing, updated);
-    if (accounts) {
-      resultMeta.account = accounts[0];
-      resultMeta.accounts = accounts;
-    }
-    resultMeta.compartment = this.getCompartments(result);
+
+    let result = {
+      ...updated,
+      meta: {
+        ...updated.meta,
+        project: projectId,
+        accounts,
+        account: accounts?.[0], // Legacy account field is set to the first accounts entry
+        versionId: this.generateId(),
+        lastUpdated: this.getLastUpdated(existing, validatedResource),
+        author: this.getAuthor(validatedResource),
+        onBehalfOf: this.context.onBehalfOf,
+      },
+    };
+    // Set compartments based on the computed accounts values and eligible references in the resource
+    result.meta.compartment = await this.getCompartments(result, accounts);
 
     // Validate resource after all modifications and touchups above are done
     await validateRepositoryResource(this, result);
+    const preCommitResult = await preCommitValidation(this, result, 'update');
+    if (isResourceWithId<T>(preCommitResult, validatedResource.resourceType) && preCommitResult.id === result.id) {
+      // Pre-commit returned an updated copy of the resource to use
+      // It should be at least minimally re-validated to ensure that the new version is still okay to write
+      result = this.checkResourcePermissions(preCommitResult, interaction);
+      await validateRepositoryResource(this, result);
+    }
+
     // If this is a Subscription resource we are creating, we want to make sure the user is not over their per-user limit
     if (create && result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
       const projectId = result.meta?.project;
@@ -1100,7 +1101,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     for (let i = 0; i < resources.length; i++) {
       const resource = resources[i];
       const meta = resource.meta as Meta;
-      meta.compartment = this.getCompartments(resource);
+      meta.compartment = await this.getCompartments(resource);
 
       if (!meta.project) {
         const projectRef = meta.compartment.find((r) => r.reference?.startsWith('Project/'));
@@ -1632,9 +1633,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 1) Search narrowing (i.e., /Patient/123/Observation searches within the patient compartment).
    * 2) Access controls.
    * @param resource - The resource.
+   * @param accounts - Account references to be applied to the resource compartments.
    * @returns The list of compartments for the resource.
    */
-  private getCompartments(resource: WithId<Resource>): Reference[] {
+  private async getCompartments(resource: WithId<Resource>, accounts?: Reference[]): Promise<Reference[]> {
     const compartments = new Set<string>();
 
     if (resource.meta?.project && isUUID(resource.meta.project)) {
@@ -1647,24 +1649,39 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       compartments.add(resource.project.reference);
     }
 
-    if (resource.meta?.accounts) {
-      for (const account of resource.meta.accounts) {
-        const id = resolveId(account);
-        if (!account.reference?.startsWith('Project/') && id && isUUID(id)) {
-          compartments.add(account.reference as string);
-        }
-      }
-    } else if (resource.meta?.account && !resource.meta.account.reference?.startsWith('Project/')) {
-      const id = resolveId(resource.meta.account);
-      if (id && isUUID(id)) {
-        compartments.add(resource.meta.account.reference as string);
+    for (const account of accounts ?? EMPTY) {
+      const id = resolveId(account);
+      if (!account.reference?.startsWith('Project/') && id && isUUID(id)) {
+        compartments.add(account.reference as string);
       }
     }
 
-    for (const patient of getPatients(resource)) {
+    const patientRefs = getPatients(resource);
+    for (const patient of patientRefs) {
       const patientId = resolveId(patient);
       if (patientId && isUUID(patientId)) {
         compartments.add(patient.reference);
+      }
+    }
+
+    const systemRepo = this.getSystemRepo();
+    const patients = await systemRepo.readReferences(patientRefs);
+    for (const patient of patients) {
+      if (patient instanceof Error) {
+        getLogger().debug('Error setting patient compartment', patient);
+        continue;
+      }
+      if (resource.resourceType === 'Patient' && resource.id === patient.id) {
+        // Don't pull from the old versions of the Patient when updating
+        continue;
+      }
+
+      // If the patient has an account, then use it as the resource account.
+      const patientAccounts = extractAccountReferences(patient.meta);
+      for (const account of patientAccounts ?? EMPTY) {
+        if (account.reference) {
+          compartments.add(account.reference);
+        }
       }
     }
 
@@ -1672,7 +1689,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     for (const reference of compartments.values()) {
       results.push({ reference });
     }
-
     return results;
   }
 
@@ -1822,29 +1838,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       accounts.add(this.context.accessPolicy.compartment.reference);
     }
 
-    if (updated.resourceType === 'Patient') {
-      // When examining a Patient resource, we only look at the individual patient
-      // We should not call `getPatients` and `readReference`
-      const existingAccounts = extractAccountReferences(existing?.meta);
-      for (const account of existingAccounts ?? EMPTY) {
+    if (existing) {
+      for (const account of existing.meta?.accounts ?? EMPTY) {
         accounts.add(account.reference as string);
-      }
-    } else {
-      const systemRepo = this.getSystemRepo();
-      const patients = await systemRepo.readReferences(getPatients(updated));
-      for (const patient of patients) {
-        if (patient instanceof Error) {
-          getLogger().debug('Error setting patient compartment', patient);
-          continue;
-        }
-
-        // If the patient has an account, then use it as the resource account.
-        const patientAccounts = extractAccountReferences(patient.meta);
-        for (const account of patientAccounts ?? EMPTY) {
-          if (account.reference) {
-            accounts.add(account.reference);
-          }
-        }
       }
     }
 

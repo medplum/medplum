@@ -725,18 +725,18 @@ describe('Subscription Worker', () => {
 
   test('Ignore resource changes in different account compartment', () =>
     withTestContext(async () => {
-      const project = randomUUID();
-      const account = 'Organization/' + randomUUID();
+      const { repo } = await createTestProject({
+        withRepo: true,
+        // Only Admins can set meta.accounts
+        membership: { admin: true },
+      });
+      const org1 = { reference: 'Organization/' + randomUUID() };
 
       const subscription = await repo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
-        meta: {
-          project,
-          account: {
-            reference: account,
-          },
-        },
+        // Subscription should only apply to resources in the same account
+        meta: { account: org1 },
         status: 'active',
         criteria: 'Patient',
         channel: {
@@ -744,16 +744,11 @@ describe('Subscription Worker', () => {
           endpoint: 'https://example.com/subscription',
         },
       });
-      expect(subscription).toBeDefined();
+      expect(subscription.meta?.compartment).toContainEqual(org1);
 
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        meta: {
-          project,
-        },
-        name: [{ given: ['Alice'], family: 'Smith' }],
-      });
-      expect(patient).toBeDefined();
+      // Patient created outside of the Subscription's account
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      expect(patient.meta?.compartment).not.toContainEqual(org1);
       await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 

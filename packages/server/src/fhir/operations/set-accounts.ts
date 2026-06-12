@@ -5,7 +5,6 @@ import {
   accepted,
   AccessPolicyInteraction,
   allOk,
-  append,
   badRequest,
   concatUrls,
   EMPTY,
@@ -51,6 +50,14 @@ const operation = makeOperationDefinition(
         max: '1',
       },
       {
+        use: 'in',
+        name: 'force',
+        documentation: 'If set, force set accounts of compartment resources to the target values',
+        type: 'boolean',
+        min: 0,
+        max: '1',
+      },
+      {
         use: 'out',
         name: 'resourcesUpdated',
         documentation: 'Number of resources that were updated',
@@ -65,6 +72,7 @@ const operation = makeOperationDefinition(
 export interface SetAccountsParameters {
   accounts: Reference[];
   propagate?: boolean;
+  force?: boolean;
 }
 
 /**
@@ -139,7 +147,6 @@ export async function setResourceAccounts(
     throw new OperationOutcomeError(notFound);
   }
   const accounts = params.accounts;
-  const oldAccounts = target.meta?.accounts;
 
   // Update the target resource with the new accounts
   target.meta = {
@@ -155,12 +162,7 @@ export async function setResourceAccounts(
   let count = 1; // Target resource is updated already
 
   if (params.propagate && target.resourceType === 'Patient') {
-    // Calculate the difference between the previous accounts array and new one, in order to
-    // propagate only those changes to compartment resources
-    const additions = accounts.filter((a) => !oldAccounts?.find((o) => o.reference === a.reference));
-    const removals = oldAccounts?.filter((o) => !accounts.some((a) => a.reference === o.reference)) ?? [];
-
-    // Update the resources in the target compartment to trigger meta.accounts refresh
+    // Update the resources in the target compartment to trigger meta.compartment refresh
     const search: Partial<SearchRequest> = { offset: 0, count: 1000 };
     const maxSearchOffset = getConfig().maxSearchOffset ?? Number.POSITIVE_INFINITY;
     while ((search.offset ?? 0) <= maxSearchOffset) {
@@ -168,7 +170,7 @@ export async function setResourceAccounts(
       for (const entry of bundle.entry ?? EMPTY) {
         const resource = entry.resource;
         if (resource && resource.resourceType !== 'Patient') {
-          await updateCompartmentResource(systemRepo, resource, additions, removals);
+          await updateCompartmentResource(systemRepo, resource, params);
           count++;
         }
       }
@@ -188,27 +190,16 @@ export async function setResourceAccounts(
 async function updateCompartmentResource<T extends Resource>(
   systemRepo: SystemRepository,
   resource: T,
-  additions: Reference[],
-  removals: Reference[]
+  params: SetAccountsParameters
 ): Promise<T> {
-  let accountList = resource.meta?.accounts;
-  for (const added of additions) {
-    if (!accountList?.find((a) => a.reference === added.reference)) {
-      accountList = append(accountList, added);
-    }
+  if (params.force) {
+    const accountList = params.accounts;
+    resource.meta = {
+      ...resource.meta,
+      accounts: accountList,
+      account: accountList?.[0],
+    };
   }
-  for (const dropped of removals) {
-    const index = accountList?.findIndex((a) => a.reference === dropped.reference) ?? -1;
-    if (index > -1) {
-      accountList?.splice(index, 1);
-    }
-  }
-
-  resource.meta = {
-    ...resource.meta,
-    accounts: accountList,
-    account: accountList?.[0],
-  };
   // Use system repo to force update meta.accounts
   await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
   return systemRepo.updateResource(resource);
