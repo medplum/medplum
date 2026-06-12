@@ -73,6 +73,7 @@ export class MigrationDefinitionNotFoundError extends Error {
 }
 
 export async function getPostDeployMigration(migrationNumber: number): Promise<PostDeployMigration> {
+  // Get the post-deploy migration from the post-deploy migrations module
   const postDeployMigrations = await import('./data');
   const migration = (postDeployMigrations as Record<string, { migration: PostDeployMigration } | undefined>)[
     'v' + migrationNumber

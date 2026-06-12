@@ -3,7 +3,6 @@
 import type { Binary } from '@medplum/fhirtypes';
 import { PassThrough } from 'stream';
 import { vi } from 'vitest';
-import { clearGcpStorageMock } from '../../__mocks__/@google-cloud/storage';
 import { GoogleCloudStorage } from './storage';
 
 describe('Integration Tests for GoogleCloudStorage', () => {
@@ -11,7 +10,6 @@ describe('Integration Tests for GoogleCloudStorage', () => {
   let storage: GoogleCloudStorage;
 
   beforeEach(() => {
-    clearGcpStorageMock();
     storage = new GoogleCloudStorage(testStorageString);
   });
 

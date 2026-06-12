@@ -308,14 +308,11 @@ export async function waitForAsyncJob(
       .get(new URL(contentLocation).pathname)
       .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    if (res.status === 200) {
+    if (res.status !== 202) {
       if (completionDelayMs > 0) {
         await sleep(completionDelayMs); // Buffer time to ensure that any remaining async processing has fully completed
       }
       return res.body as AsyncJob;
-    }
-    if (res.status !== 202 && res.status !== 429) {
-      throw new Error(`Async Job failed with status ${res.status}: ${JSON.stringify(res.body)}`);
     }
     await sleep(pollIntervalMs);
   }

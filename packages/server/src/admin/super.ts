@@ -38,7 +38,7 @@ import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
-import { removeBullMQJobByKey } from '../workers/cron';
+import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import type { LambdaCleanerOptions } from '../workers/lambda-cleaner';
 import { addLambdaCleanerJobData } from '../workers/lambda-cleaner';
 import { addPostDeployMigrationJobData, prepareDynamicMigrationJobData } from '../workers/post-deploy-migration';
@@ -592,8 +592,7 @@ superAdminRouter.post('/reloadcron', async (req: Request, res: Response) => {
 
   await sendAsyncResponse(req, res, async () => {
     const startTime = Date.now();
-    const { reloadCronBots: reloadCronBotsFn } = await import('../workers/cron');
-    await reloadCronBotsFn();
+    await reloadCronBots();
     const { globalLogger } = await import('../logger');
     globalLogger.info('[Super Admin]: Cron bots reloaded', {
       durationMs: Date.now() - startTime,

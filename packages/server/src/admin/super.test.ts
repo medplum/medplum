@@ -3,6 +3,7 @@
 import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
 import type { Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import type { Queue } from 'bullmq';
+import type * as Pg from 'pg';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -15,19 +16,119 @@ import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
-import { getPostDeployMigrationVersions } from '../migrations/migration-versions';
+import * as migrationVersions from '../migrations/migration-versions';
 import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import type { CronJobData } from '../workers/cron';
-import * as cronWorkers from '../workers/cron';
 import { getCronQueue } from '../workers/cron';
 import type { LambdaCleanerJobData } from '../workers/lambda-cleaner';
 import { getLambdaCleanerQueue } from '../workers/lambda-cleaner';
 import type { ReindexJobData } from '../workers/reindex';
 import { getReindexQueue } from '../workers/reindex';
+
+const mockPgMaintenanceQueries: string[] = [];
+
+vi.mock('pg', async () => {
+  const original = await vi.importActual<typeof Pg>('pg');
+  const poolPrototype = original.Pool.prototype as {
+    query: (...args: any[]) => any;
+    connect: (...args: any[]) => any;
+  };
+
+  function mockGetSql(query: unknown): string | undefined {
+    if (typeof query === 'string') {
+      return query.trim();
+    }
+    if (query && typeof query === 'object' && 'text' in query && typeof query.text === 'string') {
+      return query.text.trim();
+    }
+    return undefined;
+  }
+
+  function mockIsMaintenanceQuery(sql: string): boolean {
+    return (
+      sql === 'VACUUM;' ||
+      sql.startsWith('VACUUM ') ||
+      sql.startsWith('ANALYZE ') ||
+      /^ALTER TABLE "[A-Za-z][A-Za-z0-9_]*" SET \(autovacuum_/.test(sql)
+    );
+  }
+
+  function mockHandleMaintenanceQuery(args: unknown[]): { handled: true; result: unknown } | undefined {
+    const sql = mockGetSql(args[0]);
+    if (!sql || !mockIsMaintenanceQuery(sql)) {
+      return undefined;
+    }
+
+    mockPgMaintenanceQueries.push(sql);
+
+    const result = {
+      command: sql.split(/\s+/)[0],
+      fields: [],
+      oid: null,
+      rowCount: 0,
+      rows: [],
+    };
+    const callback = args[args.length - 1];
+    if (typeof callback === 'function') {
+      callback(undefined, result);
+      return { handled: true, result: undefined };
+    }
+    return { handled: true, result: Promise.resolve(result) };
+  }
+
+  function mockWrapClient(client: any): any {
+    if (client.__mockMaintenanceQueryWrapped) {
+      return client;
+    }
+
+    const originalQuery = client.query.bind(client);
+    client.query = (...queryArgs: any[]): any => {
+      const handled = mockHandleMaintenanceQuery(queryArgs);
+      if (handled) {
+        return handled.result;
+      }
+      return originalQuery(...queryArgs);
+    };
+    Object.defineProperty(client, '__mockMaintenanceQueryWrapped', { value: true });
+    return client;
+  }
+
+  class MockPool extends original.Pool {
+    query(...args: any[]): any {
+      const handled = mockHandleMaintenanceQuery(args);
+      if (handled) {
+        return handled.result;
+      }
+      return poolPrototype.query.apply(this, args);
+    }
+
+    connect(...args: any[]): any {
+      const callback = args[args.length - 1];
+      if (typeof callback === 'function') {
+        return poolPrototype.connect.apply(this, [
+          ...args.slice(0, -1),
+          (err: unknown, client: any, done: unknown) => {
+            if (client) {
+              mockWrapClient(client);
+            }
+            callback(err, client, done);
+          },
+        ]);
+      }
+
+      return poolPrototype.connect.apply(this, args).then((client: any) => mockWrapClient(client));
+    }
+  }
+
+  return {
+    ...original,
+    Pool: MockPool,
+  };
+});
 
 vi.mock('../seeds/valuesets');
 vi.mock('../seeds/structuredefinitions');
@@ -37,11 +138,22 @@ const app = express();
 let project: Project;
 let adminAccessToken: string;
 let nonAdminAccessToken: string;
+const mockAsyncJobWaitOptions = { completionDelayMs: 0, maxAttempts: 200, pollIntervalMs: 10 };
 const mockRebuildR4ValueSets = rebuildR4ValueSets as MockedFunction<typeof rebuildR4ValueSets>;
 const mockRebuildR4StructureDefinitions = rebuildR4StructureDefinitions as MockedFunction<
   typeof rebuildR4StructureDefinitions
 >;
-const mockRebuildR4SearchParameters = rebuildR4SearchParameters as MockedFunction<typeof rebuildR4SearchParameters>;
+const mockRebuildR4SearchParameters = rebuildR4SearchParameters as MockedFunction<
+  typeof rebuildR4SearchParameters
+>;
+
+vi.mock('../migrations/data', async () => {
+  return {
+    v1: await vi.importMock('../migrations/data/v1'),
+    v2: await vi.importMock('../migrations/data/v2'),
+    v3: await vi.importMock('../migrations/data/v2'),
+  };
+});
 
 describe('Super Admin routes', () => {
   let processStdoutWriteSpy: MockInstance;
@@ -124,14 +236,15 @@ describe('Super Admin routes', () => {
       profile: getReferenceString(practitioner2),
       scope: 'openid',
     });
-  }, 30_000);
+  });
 
   afterAll(async () => {
     await shutdownApp();
     processStdoutWriteSpy.mockRestore();
-  }, 30_000);
+  });
 
   beforeEach(() => {
+    mockPgMaintenanceQueries.length = 0;
     mockRebuildR4ValueSets.mockReset();
     mockRebuildR4StructureDefinitions.mockReset();
     mockRebuildR4SearchParameters.mockReset();
@@ -162,7 +275,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(mockRebuildR4ValueSets).toHaveBeenCalledTimes(1);
     expect(mockRebuildR4ValueSets).toHaveBeenCalledWith(expect.any(Repository));
   });
@@ -200,7 +313,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledTimes(1);
     expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledWith(expect.any(Repository));
   });
@@ -217,7 +330,7 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toStrictEqual(202);
-    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(job.status).toStrictEqual('error');
     expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledTimes(1);
     expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledWith(expect.any(Repository));
@@ -256,7 +369,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(mockRebuildR4SearchParameters).toHaveBeenCalledTimes(1);
     expect(mockRebuildR4SearchParameters).toHaveBeenCalledWith(expect.any(Repository));
   });
@@ -273,7 +386,7 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toStrictEqual(202);
-    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(job.status).toStrictEqual('error');
     expect(mockRebuildR4SearchParameters).toHaveBeenCalledTimes(1);
     expect(mockRebuildR4SearchParameters).toHaveBeenCalledWith(expect.any(Repository));
@@ -868,15 +981,22 @@ describe('Super Admin routes', () => {
 
   describe('/migrations', () => {
     test('Migrate', async () => {
-      const res1 = await request(app)
-        .get('/admin/super/migrations')
-        .set('Authorization', 'Bearer ' + adminAccessToken);
+      const versionsSpy = vi
+        .spyOn(migrationVersions, 'getPostDeployMigrationVersions')
+        .mockReturnValue([1, 2, 3]);
+      try {
+        const res1 = await request(app)
+          .get('/admin/super/migrations')
+          .set('Authorization', 'Bearer ' + adminAccessToken);
 
-      expect(res1.body).toStrictEqual({
-        postDeployMigrations: getPostDeployMigrationVersions(),
-        pendingPostDeployMigration: 0,
-      });
-      expect(res1.status).toStrictEqual(200);
+        expect(res1.body).toStrictEqual({
+          postDeployMigrations: [1, 2, 3],
+          pendingPostDeployMigration: 0,
+        });
+        expect(res1.status).toStrictEqual(200);
+      } finally {
+        versionsSpy.mockRestore();
+      }
     });
   });
 
@@ -893,6 +1013,9 @@ describe('Super Admin routes', () => {
       expect(res1.status).toStrictEqual(200);
       expect(res1.body).toMatchObject(allOk);
 
+      expect(mockPgMaintenanceQueries).toContain(
+        'ALTER TABLE "Observation" SET (autovacuum_analyze_scale_factor = 0.005);'
+      );
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Table settings updated', {
         durationMs: expect.any(Number),
         query: 'ALTER TABLE "Observation" SET (autovacuum_analyze_scale_factor = 0.005);',
@@ -1030,6 +1153,9 @@ describe('Super Admin routes', () => {
       expect(res1.status).toStrictEqual(200);
       expect(res1.body).toMatchObject(allOk);
 
+      expect(mockPgMaintenanceQueries).toContain(
+        'ALTER TABLE "Observation" SET (autovacuum_analyze_scale_factor = 0.005, autovacuum_vacuum_scale_factor = 0.01);'
+      );
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Table settings updated', {
         durationMs: expect.any(Number),
         query:
@@ -1072,12 +1198,18 @@ describe('Super Admin routes', () => {
 
       expect(res1.status).toStrictEqual(202);
       expect(res1.headers['content-location']).toBeDefined();
-      const asyncJob = await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+      const asyncJob = await waitForAsyncJob(
+        res1.headers['content-location'],
+        app,
+        adminAccessToken,
+        mockAsyncJobWaitOptions
+      );
 
       const expectedQuery = 'VACUUM;';
 
       expect(asyncJob.output?.parameter?.find((p) => p.name === 'query')?.valueString).toBe(expectedQuery);
 
+      expect(mockPgMaintenanceQueries).toContain(expectedQuery);
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
         vacuum: true,
@@ -1116,8 +1248,9 @@ describe('Super Admin routes', () => {
 
       expect(res1.status).toStrictEqual(202);
       expect(res1.headers['content-location']).toBeDefined();
-      await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+      await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
+      expect(mockPgMaintenanceQueries).toContain('VACUUM "Observation", "Observation_History";');
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
         vacuum: true,
@@ -1140,8 +1273,9 @@ describe('Super Admin routes', () => {
 
       expect(res1.status).toStrictEqual(202);
       expect(res1.headers['content-location']).toBeDefined();
-      await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+      await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
+      expect(mockPgMaintenanceQueries).toContain('VACUUM ANALYZE "Observation", "Observation_History";');
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
         vacuum: true,
@@ -1164,8 +1298,9 @@ describe('Super Admin routes', () => {
 
       expect(res1.status).toStrictEqual(202);
       expect(res1.headers['content-location']).toBeDefined();
-      await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+      await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
+      expect(mockPgMaintenanceQueries).toContain('ANALYZE "Observation", "Observation_History";');
       expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
         durationMs: expect.any(Number),
         vacuum: false,
@@ -1255,13 +1390,8 @@ describe('Super Admin routes', () => {
 
   describe('Reload cron', () => {
     test('Happy path', async () => {
-      const cronQueue = getCronQueue() as Queue<CronJobData> & {
-        obliterate: MockedFunction<Queue<CronJobData>['obliterate']>;
-        upsertJobScheduler: MockedFunction<Queue<CronJobData>['upsertJobScheduler']>;
-      };
+      const cronQueue = getCronQueue() as Queue<CronJobData>;
       expect(cronQueue).toBeDefined();
-      cronQueue.obliterate.mockClear();
-      cronQueue.upsertJobScheduler.mockClear();
 
       const res1 = await request(app)
         .post('/fhir/R4/Bot')
@@ -1274,19 +1404,8 @@ describe('Super Admin routes', () => {
 
       const bot = res1.body as Bot & { id: string };
 
-      const reloadCronBotsSpy = vi.spyOn(cronWorkers, 'reloadCronBots').mockImplementation(async () => {
-        await cronQueue.obliterate({ force: true });
-        await cronQueue.upsertJobScheduler(
-          bot.id,
-          { pattern: '*/20 * * * *' },
-          {
-            data: {
-              resourceType: bot.resourceType,
-              botId: bot.id,
-            },
-          }
-        );
-      });
+      const obliterateSpy = vi.spyOn(cronQueue, 'obliterate');
+      const upsertJobSchedulerSpy = vi.spyOn(cronQueue, 'upsertJobScheduler');
 
       const res2 = await request(app)
         .post('/admin/super/reloadcron')
@@ -1298,9 +1417,8 @@ describe('Super Admin routes', () => {
       expect(res2.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res2.headers['content-location'], app, adminAccessToken);
 
-      expect(reloadCronBotsSpy).toHaveBeenCalledTimes(1);
-      expect(cronQueue.obliterate).toHaveBeenCalledWith({ force: true });
-      expect(cronQueue.upsertJobScheduler).toHaveBeenCalledWith(
+      expect(obliterateSpy).toHaveBeenCalledWith({ force: true });
+      expect(upsertJobSchedulerSpy).toHaveBeenCalledWith(
         bot.id,
         {
           pattern: '*/20 * * * *',
@@ -1312,8 +1430,6 @@ describe('Super Admin routes', () => {
           },
         }
       );
-
-      reloadCronBotsSpy.mockRestore();
     });
   });
 });

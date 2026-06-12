@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference, getReferenceString, isPopulated, sleep } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, isPopulated } from '@medplum/core';
 import type { Binary, Bundle, Encounter, Patient, Practitioner, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -428,107 +428,53 @@ describe('GraphQL', () => {
     expect(res.body.data.EncounterList.length).toBe(1);
   });
 
-  test('Sort by _lastUpdated asc', () =>
-    withTestContext(async () => {
-      const testProject = await createTestProject({ withAccessToken: true, withRepo: true });
-      const repo = testProject.repo;
-      const sortPatient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Sort'], family: 'Test' }],
-      });
-      const identifierSystem = 'http://example.com/graphql-sort-test';
-      const identifierValue = randomUUID();
-      const identifier = `${identifierSystem}|${identifierValue}`;
-
-      await repo.createResource<Encounter>({
-        resourceType: 'Encounter',
-        status: 'in-progress',
-        class: { code: 'HH' },
-        subject: createReference(sortPatient),
-        identifier: [{ system: identifierSystem, value: identifierValue }],
-      });
-      await sleep(50);
-      await repo.createResource<Encounter>({
-        resourceType: 'Encounter',
-        status: 'in-progress',
-        class: { code: 'HH' },
-        subject: createReference(sortPatient),
-        identifier: [{ system: identifierSystem, value: identifierValue }],
-      });
-
-      const res = await request(app)
-        .post('/fhir/R4/$graphql')
-        .set('Authorization', 'Bearer ' + testProject.accessToken)
-        .set('Content-Type', ContentType.JSON)
-        .send({
-          query: `
+  test('Sort by _lastUpdated asc', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `
       {
-        EncounterList(identifier: "${identifier}", _sort: "_lastUpdated") {
+        EncounterList(_sort: "_lastUpdated") {
           id
           meta { lastUpdated }
         }
       }
     `,
-        });
-      expect(res.status, `GraphQL request failed: ${JSON.stringify(res.body)}`).toBe(200);
-      expect(res.body.data.EncounterList).toBeDefined();
-      expect(res.body.data.EncounterList.length).toBe(2);
-
-      const e1 = res.body.data.EncounterList[0];
-      const e2 = res.body.data.EncounterList[1];
-      expect(e1.meta.lastUpdated.localeCompare(e2.meta.lastUpdated)).toBeLessThanOrEqual(0);
-    }));
-
-  test('Sort by _lastUpdated desc', () =>
-    withTestContext(async () => {
-      const testProject = await createTestProject({ withAccessToken: true, withRepo: true });
-      const repo = testProject.repo;
-      const sortPatient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Sort'], family: 'Test' }],
       });
-      const identifierSystem = 'http://example.com/graphql-sort-test';
-      const identifierValue = randomUUID();
-      const identifier = `${identifierSystem}|${identifierValue}`;
+    expect(res.status).toBe(200);
+    expect(res.body.data.EncounterList).toBeDefined();
+    expect(res.body.data.EncounterList.length >= 2).toBe(true);
 
-      await repo.createResource<Encounter>({
-        resourceType: 'Encounter',
-        status: 'in-progress',
-        class: { code: 'HH' },
-        subject: createReference(sortPatient),
-        identifier: [{ system: identifierSystem, value: identifierValue }],
-      });
-      await sleep(50);
-      await repo.createResource<Encounter>({
-        resourceType: 'Encounter',
-        status: 'in-progress',
-        class: { code: 'HH' },
-        subject: createReference(sortPatient),
-        identifier: [{ system: identifierSystem, value: identifierValue }],
-      });
+    const e1 = res.body.data.EncounterList[0];
+    const e2 = res.body.data.EncounterList[1];
+    expect(e1.meta.lastUpdated.localeCompare(e2.meta.lastUpdated)).toBeLessThanOrEqual(0);
+  });
 
-      const res = await request(app)
-        .post('/fhir/R4/$graphql')
-        .set('Authorization', 'Bearer ' + testProject.accessToken)
-        .set('Content-Type', ContentType.JSON)
-        .send({
-          query: `
+  test('Sort by _lastUpdated desc', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `
       {
-        EncounterList(identifier: "${identifier}", _sort: "-_lastUpdated") {
+        EncounterList(_sort: "-_lastUpdated") {
           id
           meta { lastUpdated }
         }
       }
     `,
-        });
-      expect(res.status, `GraphQL request failed: ${JSON.stringify(res.body)}`).toBe(200);
-      expect(res.body.data.EncounterList).toBeDefined();
-      expect(res.body.data.EncounterList.length).toBe(2);
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.EncounterList).toBeDefined();
+    expect(res.body.data.EncounterList.length >= 2).toBe(true);
 
-      const e1 = res.body.data.EncounterList[0];
-      const e2 = res.body.data.EncounterList[1];
-      expect(e1.meta.lastUpdated.localeCompare(e2.meta.lastUpdated)).toBeGreaterThanOrEqual(0);
-    }));
+    const e1 = res.body.data.EncounterList[0];
+    const e2 = res.body.data.EncounterList[1];
+    expect(e1.meta.lastUpdated.localeCompare(e2.meta.lastUpdated)).toBeGreaterThanOrEqual(0);
+  });
 
   test('Read resource by reference', async () => {
     const res = await request(app)

@@ -11,33 +11,56 @@ export const mockGenerateUserDelegationSasUrl = vi
   .mockReturnValue('https://example.blob.core.windows.net/container/file?sig=mockSasToken');
 export const mockGetUserDelegationKey = vi.fn().mockResolvedValue({ value: 'mock-delegation-key' });
 
-const mockContainerClient = {
-  getBlockBlobClient: vi.fn().mockReturnValue({
-    upload: mockUpload,
-    uploadStream: mockUploadStream,
-  }),
-  getBlobClient: vi.fn().mockReturnValue({
-    download: mockDownload,
-    beginCopyFromURL: mockBeginCopyFromURL,
-    generateUserDelegationSasUrl: mockGenerateUserDelegationSasUrl,
-    url: 'https://example.blob.core.windows.net/container/source-file',
-  }),
-};
-
 /**
  * Mock implementation of BlobSASPermissions (required for class instantiation)
  */
-export const BlobSASPermissions = vi.fn(function BlobSASPermissions(this: { read: boolean }) {
-  this.read = false;
+export const BlobSASPermissions = vi.fn(function () {
+  return {
+    read: false,
+  };
 });
 
 /**
  * Minimal mock implementation of BlobServiceClient for testing.
  */
-export const BlobServiceClient = vi.fn(function BlobServiceClient(this: {
-  getUserDelegationKey: typeof mockGetUserDelegationKey;
-  getContainerClient: ReturnType<typeof vi.fn>;
-}) {
-  this.getUserDelegationKey = mockGetUserDelegationKey;
-  this.getContainerClient = vi.fn().mockReturnValue(mockContainerClient);
+export const BlobServiceClient = vi.fn(function () {
+  return {
+    getUserDelegationKey: mockGetUserDelegationKey,
+    getContainerClient: vi.fn().mockImplementation(() => ({
+    getBlockBlobClient: vi.fn().mockImplementation(() => ({
+      /**
+       * Mocks the `upload` method used for uploading strings/buffers.
+       * This is the method used in the bug fix for string data.
+       */
+      upload: mockUpload,
+
+      /**
+       * Mocks the `uploadStream` method used for uploading streams.
+       * This is the method used for stream data.
+       */
+      uploadStream: mockUploadStream,
+    })),
+    getBlobClient: vi.fn().mockImplementation(() => ({
+      /**
+       * Mocks the `download` method used for reading blob data.
+       */
+      download: mockDownload,
+
+      /**
+       * Mocks the `beginCopyFromURL` method used for copying blobs.
+       */
+      beginCopyFromURL: mockBeginCopyFromURL,
+
+      /**
+       * Mocks the `generateUserDelegationSasUrl` method for generating presigned URLs.
+       */
+      generateUserDelegationSasUrl: mockGenerateUserDelegationSasUrl,
+
+      /**
+       * Mock URL property for blob client.
+       */
+      url: 'https://example.blob.core.windows.net/container/source-file',
+    })),
+  })),
+  };
 });

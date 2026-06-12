@@ -42,6 +42,7 @@ describe('OpenTelemetry', () => {
 
   beforeEach(() => {
     process.env = { ...OLD_ENV };
+    // Reset mockSharedQueue to a fresh queue for each test
     mockSharedQueue = createMockQueue();
     mockQueueGetters(mockSharedQueue);
     cleanupOtelHeartbeat();
@@ -115,19 +116,23 @@ describe('OpenTelemetry', () => {
     const heartbeatAddListenerSpy = vi.spyOn(heartbeat, 'addEventListener');
     const heartbeatRemoveListenerSpy = vi.spyOn(heartbeat, 'removeEventListener');
 
+    // Init otel heartbeat
     initOtelHeartbeat();
     expect(heartbeatAddListenerSpy).toHaveBeenCalled();
 
     heartbeatAddListenerSpy.mockClear();
 
+    // Call init again, no-op
     initOtelHeartbeat();
     expect(heartbeatAddListenerSpy).not.toHaveBeenCalled();
 
+    // Cleanup heartbeat
     cleanupOtelHeartbeat();
     expect(heartbeatRemoveListenerSpy).toHaveBeenCalled();
 
     heartbeatRemoveListenerSpy.mockClear();
 
+    // Cleanup heartbeat again, no-op
     cleanupOtelHeartbeat();
     expect(heartbeatRemoveListenerSpy).not.toHaveBeenCalled();
   });
@@ -148,9 +153,14 @@ describe('OpenTelemetry', () => {
     initOtelHeartbeat();
 
     heartbeat.dispatchEvent({ type: 'heartbeat' });
+
+    // Wait for heartbeat listener callback next tick
     await sleep(0);
 
+    // We call getDatabasePool at the beginning of the listener callback
     expect(getDatabasePoolSpy).toHaveBeenCalled();
+
+    // Check that the queue methods were called for all 4 queues (subscription, cron, download, batch)
     expect(mockSharedQueue.getWaitingCount).toHaveBeenCalledTimes(5);
     expect(mockSharedQueue.getDelayedCount).toHaveBeenCalledTimes(5);
 
@@ -171,22 +181,29 @@ describe('OpenTelemetry', () => {
         }) as unknown as Pool
     );
 
+    // Initialize heartbeat with valid queues first
     initOtelHeartbeat();
 
+    // Trigger one heartbeat with valid queues to initialize queueEntries
     heartbeat.dispatchEvent({ type: 'heartbeat' });
     await sleep(0);
 
+    // Verify queue methods were called
     expect(mockSharedQueue.getWaitingCount).toHaveBeenCalled();
     expect(mockSharedQueue.getDelayedCount).toHaveBeenCalled();
 
+    // Clear the mock calls
     mockSharedQueue.getWaitingCount.mockClear();
     mockSharedQueue.getDelayedCount.mockClear();
 
+    // Now set mockSharedQueue to undefined for subsequent calls
     mockQueueGetters(undefined);
 
+    // Trigger another heartbeat - should skip queue collection but not crash
     heartbeat.dispatchEvent({ type: 'heartbeat' });
     await sleep(0);
 
+    // Database pool should still be called
     expect(getDatabasePoolSpy).toHaveBeenCalled();
 
     cleanupOtelHeartbeat();

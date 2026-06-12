@@ -964,9 +964,9 @@ export async function verifyMultipleMatchingException(
   verifyOptions: VerifyOptions,
   client: ClientApplication
 ): Promise<ValidationAssertion> {
-  const { jwtVerify } = await import('jose');
   for await (const publicKey of publicKeys) {
     try {
+      const { jwtVerify } = await import('jose');
       await jwtVerify(clientAssertion, publicKey, verifyOptions);
       // If we validate successfully inside the catch we can validate the client assertion
       return { clientId, clientSecret: client.secret };
