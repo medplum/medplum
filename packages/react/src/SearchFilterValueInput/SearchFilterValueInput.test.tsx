@@ -6,7 +6,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
 import { convertIsoToLocal } from '../DateTimeInput/DateTimeInput.utils';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 
 const medplum = new MockClient();
@@ -17,18 +17,18 @@ function setup(child: ReactNode): void {
 
 describe('SearchFilterValueInput', () => {
   beforeEach(async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Text input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -46,7 +46,7 @@ describe('SearchFilterValueInput', () => {
   });
 
   test('Boolean input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -72,7 +72,7 @@ describe('SearchFilterValueInput', () => {
   });
 
   test('Date input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -92,7 +92,7 @@ describe('SearchFilterValueInput', () => {
   test('Date/Time input', async () => {
     const isoString = '2020-01-01T00:00:00.000Z';
     const localString = convertIsoToLocal(isoString);
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -110,7 +110,7 @@ describe('SearchFilterValueInput', () => {
   });
 
   test('Quantity input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -131,7 +131,7 @@ describe('SearchFilterValueInput', () => {
     // Warm up the default value
     await medplum.readResource('Organization', '123');
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -152,24 +152,7 @@ describe('SearchFilterValueInput', () => {
     });
 
     const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Different' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await selectAutocompleteOption(input, 'Different', 'Different');
 
     // Expect new organization selected
     expect(onChange).toHaveBeenCalledWith('Organization/456');

@@ -83,7 +83,7 @@ export class AuthenticatedRequestContext extends RequestContext {
     }
     super(requestId, traceId, options?.logger, loggerMetadata);
 
-    this.fhirRateLimiter = getFhirRateLimiter(authState, this.logger, options?.async);
+    this.fhirRateLimiter = getFhirRateLimiter(authState, this.logger);
     this.resourceCap = getResourceCap(authState, this.logger);
 
     this.authState = authState;
@@ -262,10 +262,10 @@ function requestIds(req: Request): { requestId: string; traceId: string } {
   return { requestId, traceId };
 }
 
-function getFhirRateLimiter(authState: AuthState, logger?: Logger, async?: boolean): FhirRateLimiter | undefined {
+function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimiter | undefined {
   const { userLimit, projectLimit } = getFhirQuotaConfig(authState);
   return authState.membership
-    ? new FhirRateLimiter(getRateLimitRedis(), authState, userLimit, projectLimit, logger ?? globalLogger, async)
+    ? new FhirRateLimiter(getRateLimitRedis(), authState, userLimit, projectLimit, logger ?? globalLogger)
     : undefined;
 }
 

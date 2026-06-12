@@ -35,15 +35,15 @@ describe('AccountsPage', () => {
 
   test('Patient shows accounts form', async () => {
     const medplum = new MockClient();
-    jest.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
+    vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
     await setup('/Patient/123/accounts', medplum);
     expect(await screen.findByText('Current Accounts')).toBeInTheDocument();
   });
 
   test('Patient non-admin shows access message', async () => {
     const medplum = new MockClient();
-    jest.spyOn(medplum, 'isProjectAdmin').mockReturnValue(false);
-    jest.spyOn(medplum, 'isSuperAdmin').mockReturnValue(false);
+    vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(false);
+    vi.spyOn(medplum, 'isSuperAdmin').mockReturnValue(false);
     await setup('/Patient/123/accounts', medplum);
     expect(await screen.findByText('Admin access required')).toBeInTheDocument();
   });

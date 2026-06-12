@@ -57,7 +57,7 @@ describe('ErrorBoundary', () => {
   });
 
   test('Handles error', () => {
-    console.error = jest.fn();
+    console.error = vi.fn();
     render(
       <div>
         <div>outside</div>
@@ -74,7 +74,7 @@ describe('ErrorBoundary', () => {
   });
 
   test('Clears error on page navigation', async () => {
-    console.error = jest.fn();
+    console.error = vi.fn();
     const { rerender } = render(<TestApp shouldNavigate={false} />);
     expect(screen.getByText('outside')).toBeInTheDocument();
     expect(screen.queryByText('inside')).toBeNull();

@@ -241,6 +241,8 @@ In this model, the [RelatedPerson](/docs/api/fhir/resources/relatedperson) does 
 
 A common use case for this approach is in neonatal care. Many common neonatal workflows, such as newborn hearing tests, postpartum-depression screening, and breastfeeding metrics all require modeling both the mother and child as patients to track their individual encounters, medications, labs, and imaging.
 
+For maternity applications where the same patient can have multiple pregnancies over time, usually keep one `Patient` resource for the person and create one [`EpisodeOfCare`](/docs/api/fhir/resources/episodeofcare) per pregnancy. Link pregnancy-specific encounters, observations, care plans, tasks, and communications to the active episode when the resource supports that relationship. Use one `Patient` per pregnancy only when downstream systems require each pregnancy to behave as a separate chart, and keep an external identity link so those charts still map to the same authenticated person.
+
 :::info[Note]
 
 The FHIR spec also allows the use of the [Person](/docs/api/fhir/resources/person) resource to factor out demographic information. While this is a valid approach in cases where an individual can be both a [Patient](/docs/api/fhir/resources/patient) and a [Practitioner](/docs/api/fhir/resources/practitioner), Medplum generally doesn't recommend the additional complexity of mixing [Patient](/docs/api/fhir/resources/patient) and [Person](/docs/api/fhir/resources/person) resources.

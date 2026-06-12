@@ -120,7 +120,7 @@ describe('SmartSearchPage', () => {
   });
 
   test('Left click on row', async () => {
-    window.open = jest.fn();
+    window.open = vi.fn();
 
     await setup(`/smart?resourceType=ServiceRequest&query=${query}&fields=${JSON.stringify(fields)}`);
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
@@ -137,7 +137,7 @@ describe('SmartSearchPage', () => {
   });
 
   test('Middle click on row', async () => {
-    window.open = jest.fn();
+    window.open = vi.fn();
 
     await setup(`/smart?resourceType=ServiceRequest&query=${query}&fields=${JSON.stringify(fields)}`);
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();

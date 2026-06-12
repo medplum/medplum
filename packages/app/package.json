@@ -26,7 +26,7 @@
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",
     "source-map-explorer": "source-map-explorer dist/**/*.js --gzip",
-    "test": "jest"
+    "test": "vitest run"
   },
   "browserslist": [
     "last 1 Chrome versions"

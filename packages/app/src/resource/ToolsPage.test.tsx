@@ -17,20 +17,26 @@ import {
 import type { Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { ReactNode } from 'react';
+import type * as ReactDom from 'react-dom';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { act, fireEvent, renderAppRoutes, screen } from '../test-utils/render';
 
-jest.mock('react-dom', () => ({
-  ...jest.requireActual('react-dom'),
-  createPortal: (children: ReactNode) => <>{children}</>,
-}));
+vi.mock('react-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof ReactDom>();
+  return {
+    ...actual,
+    createPortal: (children: ReactNode) => <>{children}</>,
+  };
+});
 
 function mockFetch(
   status: number,
   body: Record<string, unknown> | ((url: string, options?: any) => any),
   contentType = ContentType.JSON
-): jest.Mock {
+): Mock {
   const bodyFn = typeof body === 'function' ? body : () => body;
-  return jest.fn((url: string, options?: any) => {
+  return vi.fn((url: string, options?: any) => {
     const response = bodyFn(url, options);
     const responseStatus = isOperationOutcome(response) ? getStatus(response) : status;
     return Promise.resolve({
@@ -87,7 +93,7 @@ describe('ToolsPage', () => {
     });
 
     await expect(screen.findByText('disconnected', { exact: false })).resolves.toBeInTheDocument();
-    expect(screen.getByText(MEDPLUM_VERSION)).toBeInTheDocument();
+    expect((await screen.findAllByText(MEDPLUM_VERSION))[0]).toBeInTheDocument();
   });
 
   test('Renders last ping', async () => {
@@ -144,7 +150,7 @@ describe('ToolsPage', () => {
   });
 
   test('Setting count for ping', async () => {
-    const pushToAgentSpy = jest.spyOn(medplum, 'pushToAgent');
+    const pushToAgentSpy = vi.spyOn(medplum, 'pushToAgent');
 
     // load agent page
     setup(`/${getReferenceString(agent)}`);
@@ -179,7 +185,7 @@ describe('ToolsPage', () => {
   });
 
   test('No host entered for ping', async () => {
-    const pushToAgentSpy = jest.spyOn(medplum, 'pushToAgent');
+    const pushToAgentSpy = vi.spyOn(medplum, 'pushToAgent');
 
     // load agent page
     setup(`/${getReferenceString(agent)}`);
@@ -566,7 +572,7 @@ describe('ToolsPage', () => {
       screen.findByText('Are you sure you want to upgrade this agent from version 3.2.13 to version 3.2.14?')
     ).resolves.toBeInTheDocument();
 
-    const medplumGetSpy = jest.spyOn(medplum, 'get');
+    const medplumGetSpy = vi.spyOn(medplum, 'get');
 
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /confirm upgrade/i }));

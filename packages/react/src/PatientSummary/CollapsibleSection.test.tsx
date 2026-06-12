@@ -66,7 +66,7 @@ describe('CollapsibleSection', () => {
   });
 
   test('Shows add button when onAdd is provided', () => {
-    const onAdd = jest.fn();
+    const onAdd = vi.fn();
     render(
       <CollapsibleSection title="Test Section" onAdd={onAdd}>
         <div>Test Content</div>
@@ -87,7 +87,7 @@ describe('CollapsibleSection', () => {
   });
 
   test('Calls onAdd when add button is clicked', async () => {
-    const onAdd = jest.fn();
+    const onAdd = vi.fn();
     render(
       <CollapsibleSection title="Test Section" onAdd={onAdd}>
         <div>Test Content</div>

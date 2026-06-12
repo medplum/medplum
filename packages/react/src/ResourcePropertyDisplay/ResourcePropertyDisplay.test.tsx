@@ -484,7 +484,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Primitive with extension but no value should render empty string', async () => {
-    console.warn = jest.fn();
+    console.warn = vi.fn();
     await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, path: 'Patient.birthDate', type: [{ code: 'date' }] }}
@@ -574,7 +574,7 @@ describe('ResourcePropertyDisplay', () => {
 
       // Mock clipboard API
       const mockClipboard = {
-        writeText: jest.fn().mockResolvedValue(undefined),
+        writeText: vi.fn().mockResolvedValue(undefined),
       };
       Object.defineProperty(navigator, 'clipboard', {
         value: mockClipboard,
@@ -600,7 +600,7 @@ describe('ResourcePropertyDisplay', () => {
 
       // Mock clipboard API
       const mockClipboard = {
-        writeText: jest.fn().mockResolvedValue(undefined),
+        writeText: vi.fn().mockResolvedValue(undefined),
       };
       Object.defineProperty(navigator, 'clipboard', {
         value: mockClipboard,
