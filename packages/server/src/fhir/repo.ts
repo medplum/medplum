@@ -97,7 +97,7 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
-import type { FhirRateLimiter } from './fhirquota';
+import { FhirQuotaCost } from './fhirquota';
 import { clamp } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
@@ -358,8 +358,22 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.connection.mode = mode;
   }
 
-  private rateLimiter(): FhirRateLimiter | undefined {
-    return this.isSuperAdmin() ? undefined : tryGetRequestContext()?.fhirRateLimiter;
+  async recordFhirQuota(points: number): Promise<void> {
+    const ctx = tryGetRequestContext();
+    const limiter = this.isSuperAdmin() ? undefined : ctx?.fhirRateLimiter;
+    if (ctx instanceof AuthenticatedRequestContext && ctx.isAsync) {
+      // Do not enforce rate limits in async context; instead, slow down the consumer
+      // in proportion to the weight of the operation being performed
+      const delay = points * getConfig().asyncDelayScaling;
+      if (this.connection.isInTransaction()) {
+        // Don't hold the transaction open, but shift the delay to after the transaction commits
+        await this.postCommit(() => sleep(delay));
+      } else {
+        await sleep(delay);
+      }
+    } else {
+      await limiter?.consume(points);
+    }
   }
 
   private resourceCap(): ResourceCap | undefined {
@@ -393,7 +407,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
-    await this.rateLimiter()?.recordWrite();
+    await this.recordFhirQuota(FhirQuotaCost.WRITE);
     await this.resourceCap()?.created();
 
     if (options?.assignedId && resource.id && !this.context.superAdmin) {
@@ -443,7 +457,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     options?: ReadResourceOptions
   ): Promise<WithId<T>> {
-    await this.rateLimiter()?.recordRead();
+    await this.recordFhirQuota(FhirQuotaCost.READ);
 
     const startTime = Date.now();
     try {
@@ -526,7 +540,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
-    await this.rateLimiter()?.recordRead(references.length);
+    await this.recordFhirQuota(references.length * FhirQuotaCost.READ);
     const cacheEntries = await this.getCacheEntries(references);
     const result: (WithId<T> | Error)[] = new Array(references.length);
 
@@ -616,7 +630,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     options?: ReadHistoryOptions
   ): Promise<Bundle<T>> {
-    await this.rateLimiter()?.recordHistory();
+    await this.recordFhirQuota(FhirQuotaCost.HISTORY);
     const startTime = Date.now();
     try {
       let resource: T | undefined = undefined;
@@ -710,7 +724,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<WithId<T>> {
-    await this.rateLimiter()?.recordRead();
+    await this.recordFhirQuota(FhirQuotaCost.READ);
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
     try {
@@ -751,7 +765,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
-    await this.rateLimiter()?.recordWrite();
+    await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
     try {
@@ -1140,7 +1154,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
-    await this.rateLimiter()?.recordWrite();
+    await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
     let resource: WithId<T>;
@@ -1232,7 +1246,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     patch: Operation[],
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
-    await this.rateLimiter()?.recordWrite();
+    await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
     try {
@@ -1353,7 +1367,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
-    await this.rateLimiter()?.recordSearch();
+    await this.recordFhirQuota(FhirQuotaCost.SEARCH);
 
     const startTime = Date.now();
     try {
@@ -1402,7 +1416,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     referenceField: string,
     references: string[]
   ): Promise<Record<string, WithId<T>[]>> {
-    await this.rateLimiter()?.recordSearch(references.length);
+    await this.recordFhirQuota(references.length * FhirQuotaCost.SEARCH);
     const startTime = Date.now();
     try {
       const result = await searchByReferenceImpl(this, searchRequest, referenceField, references);
