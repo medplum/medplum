@@ -152,20 +152,6 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
             fullWidth
           />
         </FormSection>
-        {format === 'everything' && (
-          <FormSection
-            title="Inline Attachments"
-            description="Embed DocumentReference file attachments as base64-encoded data instead of storage URLs."
-          >
-            <Stack gap="xs">
-              <Checkbox
-                label="Inline attachments"
-                checked={inlineAttachments}
-                onChange={(e) => setInlineAttachments(e.currentTarget.checked)}
-              />
-            </Stack>
-          </FormSection>
-        )}
         <FormSection title="Author" description="Optional author for composition. Default value is current user.">
           <ReferenceInput
             name="author"
@@ -191,6 +177,20 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
         >
           <DateTimeInput name="endDate" placeholder="End date" />
         </FormSection>
+        {format === 'everything' && (
+          <FormSection
+            title="Inline Attachments"
+            description="Embed DocumentReference file attachments as base64-encoded data instead of storage URLs."
+          >
+            <Stack gap="xs">
+              <Checkbox
+                label="Inline attachments"
+                checked={inlineAttachments}
+                onChange={(e) => setInlineAttachments(e.currentTarget.checked)}
+              />
+            </Stack>
+          </FormSection>
+        )}
         <Group justify="right">
           <SubmitButton>Request Export</SubmitButton>
         </Group>
