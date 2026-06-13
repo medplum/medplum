@@ -13,17 +13,26 @@ import {
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
+  Attachment,
+  Binary,
   Bundle,
   BundleEntry,
   CompartmentDefinitionResource,
+  DocumentReference,
+  DocumentReferenceContent,
   Patient,
   Reference,
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
+import type { Readable } from 'node:stream';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
+import { getBinaryStorage } from '../../storage/loader';
 import { getPatientCompartments } from '../patient';
 import type { Repository } from '../repo';
+import { normalizeBinaryUrl } from '../rewrite';
 import { getOperationDefinition } from './definitions';
 import { filterByCareDate } from './utils/caredate';
 import { parseInputParameters } from './utils/parameters';
@@ -39,6 +48,7 @@ export interface PatientEverythingParameters {
   _count?: number;
   _offset?: number;
   _type?: ResourceType[];
+  _inlineAttachments?: boolean;
 }
 
 // Patient everything operation.
@@ -54,6 +64,9 @@ export async function patientEverythingHandler(req: FhirRequest): Promise<FhirRe
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
   const params = parseInputParameters<PatientEverythingParameters>(operation, req);
+
+  // _inlineAttachments is a Medplum extension not in the standard OperationDefinition.
+  params._inlineAttachments = isPatientEverythingInlineAttachmentsEnabled(req, ctx.repo);
 
   // First read the patient to verify access
   const patient = await ctx.repo.readResource<Patient>('Patient', id);
@@ -99,7 +112,21 @@ export async function getPatientEverything(
   // which should be included for completeness
   await addResolvedReferences(repo, bundle.entry);
   bundle.entry = removeDuplicateEntries(bundle.entry);
+
+  if (params?._inlineAttachments) {
+    await inlineDocumentReferenceAttachments(repo, bundle.entry, getConfig().inlineAttachmentsMaxTotalBytes);
+  }
+
   return bundle;
+}
+
+function isPatientEverythingInlineAttachmentsEnabled(req: FhirRequest, repo: Repository): boolean {
+  if (req.query?.['_inlineAttachments'] !== undefined) {
+    return req.query['_inlineAttachments'] === 'true';
+  }
+  return (
+    repo.currentProject()?.setting?.find((s) => s.name === 'patientEverythingInlineAttachments')?.valueBoolean === true
+  );
 }
 
 export async function searchPatientCompartment(
@@ -197,16 +224,118 @@ function collectReferences(resource: any, foundReferences = new Set<string>()): 
 }
 
 /**
+ * For each DocumentReference in the bundle, replaces attachment URLs pointing to Binary storage
+ * with inline base64-encoded data. This transforms `attachment.url` into `attachment.data`.
+ * @param repo - The repository for reading Binary resources.
+ * @param entries - The bundle entries to process.
+ * @param maxBytes - Max total size of attachments to inline
+ */
+async function inlineDocumentReferenceAttachments(
+  repo: Repository,
+  entries: BundleEntry[] | undefined,
+  maxBytes: number
+): Promise<void> {
+  let totalBytes = 0;
+  let inlinedCount = 0;
+  let skippedCount = 0;
+  for (const entry of entries ?? []) {
+    const resource = entry.resource;
+    if (resource?.resourceType !== 'DocumentReference') {
+      continue;
+    }
+    const docRef = resource as WithId<DocumentReference>;
+    for (const content of docRef.content ?? []) {
+      const binaryAttachment = getBinaryAttachmentToInline(content);
+      if (!binaryAttachment) {
+        continue;
+      }
+      const { attachment, id, versionId } = binaryAttachment;
+      const remainingBytes = maxBytes - totalBytes;
+      if (remainingBytes <= 0) {
+        skippedCount++;
+        continue;
+      }
+      try {
+        const binary = await readBinaryAttachmentResource(repo, id, versionId);
+        const stream = await getBinaryStorage().readBinary(binary);
+        const buffer = await readStreamToBufferWithLimit(stream, remainingBytes);
+        if (!buffer) {
+          skippedCount++;
+          getLogger().debug('Skipping attachment inline: exceeds remaining inline attachment budget', {
+            binaryId: id,
+            remainingBytes,
+            maxBytes,
+          });
+          // Leave attachment.url untouched when the Binary exceeds the inline limit.
+          continue;
+        }
+        attachment.data = buffer.toString('base64');
+        if (!attachment.contentType && binary.contentType) {
+          attachment.contentType = binary.contentType;
+        }
+        delete attachment.url;
+        totalBytes += buffer.length;
+        inlinedCount++;
+      } catch (err) {
+        skippedCount++;
+        getLogger().debug('Error inlining DocumentReference attachment', { error: err });
+      }
+    }
+  }
+  getLogger().debug('Finished inlining DocumentReference attachments', { inlinedCount, skippedCount, totalBytes });
+}
+
+export function getBinaryAttachmentToInline(
+  content: DocumentReferenceContent
+): { attachment: Attachment; id: string; versionId?: string } | undefined {
+  const attachment = content.attachment;
+  if (!attachment.url) {
+    return undefined;
+  }
+  const { id, versionId } = normalizeBinaryUrl(attachment.url);
+  return id ? { attachment, id, versionId } : undefined;
+}
+
+export async function readBinaryAttachmentResource(
+  repo: Pick<Repository, 'readResource' | 'readVersion'>,
+  id: string,
+  versionId?: string
+): Promise<Binary> {
+  if (versionId) {
+    return repo.readVersion<Binary>('Binary', id, versionId);
+  }
+  return repo.readResource<Binary>('Binary', id);
+}
+
+/**
+ * Reads a stream into a Buffer, aborting and returning undefined if the total byte count exceeds maxBytes.
+ * @param stream - binary input stream
+ * @param maxBytes - Max size for attachment to inline
+ * @returns Buffered binary stream
+ */
+export async function readStreamToBufferWithLimit(stream: Readable, maxBytes: number): Promise<Buffer | undefined> {
+  const chunks: Buffer[] = [];
+  let totalBytes = 0;
+  for await (const chunk of stream) {
+    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    totalBytes += buf.length;
+    if (totalBytes > maxBytes) {
+      stream.destroy();
+      return undefined;
+    }
+    chunks.push(buf);
+  }
+  return Buffer.concat(chunks);
+}
+
+/**
  * Removes duplicate entries from the given list of bundle entries.
  * @param entries - The bundle entries.
  * @returns The deduplicated bundle entries.
  */
 function removeDuplicateEntries(entries: Bundle<WithId<Resource>>['entry']): Bundle<WithId<Resource>>['entry'] {
-  if (!entries) {
-    return undefined;
-  }
   const seen = new Set<string>();
-  return entries.filter((entry) => {
+  return entries?.filter((entry) => {
     const resource = entry.resource as WithId<Resource>;
     const ref = getReferenceString(resource);
     if (seen.has(ref)) {
