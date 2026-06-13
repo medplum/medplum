@@ -42,6 +42,7 @@ export const MIGRATIONS: readonly Migration[] = [
         server_status_code    INTEGER,
         ack_sent_to_source    INTEGER NOT NULL DEFAULT 0,
         last_error            TEXT,
+        error_code            TEXT,
         seq_no                INTEGER,
         received_at           INTEGER NOT NULL,
         committed_at          INTEGER,

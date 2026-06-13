@@ -6,6 +6,7 @@ import { ContentType, normalizeErrorString, sleep } from '@medplum/core';
 import type { App } from '../app';
 import type { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
+import { QueueError, QueueErrorCode } from './types';
 
 /**
  * Maximum time we wait for the Medplum server to respond to an
@@ -139,11 +140,9 @@ export class ChannelQueueWorker {
 
   /**
    * Stops the dispatch loop. Cancels any in-flight dispatch by rejecting its
-   * pending response Promise; the row stays in `processing` and will be
-   * promoted to `errored` by {@link DurableQueue.recoverOnStartup} on the
-   * next startup. That's the right semantic — we don't know whether the
-   * server actually processed the message, so an operator has to decide
-   * whether to replay.
+   * pending response Promise with `worker-stopped` — an ambiguous outcome (we
+   * don't know whether the server processed the message). The row is marked
+   * `errored` for operator review; an operator decides whether to replay.
    */
   async stop(): Promise<void> {
     if (!this.running) {
@@ -154,7 +153,7 @@ export class ChannelQueueWorker {
       const pending = this.pending;
       clearTimeout(pending.timeout);
       this.pending = undefined;
-      pending.reject(new Error('worker stopping'));
+      pending.reject(new QueueError(QueueErrorCode.WorkerStopped, 'worker stopping'));
     }
     // Wake the loop so it observes `stopping`.
     this.notify();
@@ -225,9 +224,11 @@ export class ChannelQueueWorker {
         // liveness gate keeps it there until the connection comes back.
         return;
       }
-      this.queue.markErrored(row.id, normalizeErrorString(err));
+      const code = err instanceof QueueError ? err.code : QueueErrorCode.DispatchFailed;
+      const msg = normalizeErrorString(err);
+      this.queue.markErrored(row.id, msg, code);
       this.log.error(
-        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) errored during dispatch: ${normalizeErrorString(err)}`
+        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) errored during dispatch (${code}): ${msg}`
       );
       return;
     }
@@ -237,8 +238,9 @@ export class ChannelQueueWorker {
     const statusCode = response.statusCode ?? 0;
     if (statusCode >= 400) {
       const msg = `Server returned ${statusCode}: ${response.body ?? ''}`;
-      this.queue.markErrored(row.id, msg);
-      this.log.warn(`Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) errored: ${msg}`);
+      const code = classifyStatusCode(statusCode);
+      this.queue.markErrored(row.id, msg, code);
+      this.log.warn(`Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) errored (${code}): ${msg}`);
       return;
     }
 
@@ -246,12 +248,19 @@ export class ChannelQueueWorker {
     try {
       ackOk = this.sendAck(response, row);
     } catch (err) {
-      this.queue.markErrored(row.id, `ACK delivery threw: ${normalizeErrorString(err)}`);
+      // The server already processed the message (2xx); only the ACK back to the
+      // source failed. Classified separately so it's never confused with a
+      // delivery failure that could be safely re-dispatched.
+      this.queue.markErrored(
+        row.id,
+        `ACK delivery threw: ${normalizeErrorString(err)}`,
+        QueueErrorCode.AckDeliveryFailed
+      );
       return;
     }
 
     if (!ackOk) {
-      this.queue.markErrored(row.id, 'ACK delivery to source failed');
+      this.queue.markErrored(row.id, 'ACK delivery to source failed', QueueErrorCode.AckDeliveryFailed);
       return;
     }
 
@@ -264,7 +273,12 @@ export class ChannelQueueWorker {
         if (this.pending?.row.id === row.id) {
           this.pending = undefined;
         }
-        reject(new Error(`Timed out after ${this.responseTimeoutMs}ms waiting for server response`));
+        reject(
+          new QueueError(
+            QueueErrorCode.ResponseTimeout,
+            `Timed out after ${this.responseTimeoutMs}ms waiting for server response`
+          )
+        );
       }, this.responseTimeoutMs);
       // node's setTimeout returns a Timeout that keeps the event loop alive by default;
       // .unref() prevents the worker from holding the process open during shutdown drains.
@@ -293,6 +307,22 @@ export class ChannelQueueWorker {
     // the loop still makes progress.
     await Promise.race([wake.promise, sleep(this.idlePollMs)]);
   }
+}
+
+/**
+ * Maps a server HTTP status to a {@link QueueErrorCode}: 5xx and 429 are
+ * transient; any other 4xx means the server rejected the message itself.
+ * @param statusCode - HTTP-style status code from the server response (>= 400).
+ * @returns The classification for this failure.
+ */
+function classifyStatusCode(statusCode: number): QueueErrorCode {
+  if (statusCode === 429) {
+    return QueueErrorCode.ServerRateLimited;
+  }
+  if (statusCode >= 500) {
+    return QueueErrorCode.ServerError;
+  }
+  return QueueErrorCode.ServerRejected;
 }
 
 function makeWakeSignal(): { promise: Promise<void>; resolve: () => void } {

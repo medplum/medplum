@@ -6,8 +6,15 @@ import { normalizeErrorString } from '@medplum/core';
 import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
 import { runMigrations } from './schema';
-import type { EnqueueInput, EnqueueRejectedInput, EnqueueResult, InboundRow, MessageState } from './types';
-import { MessageState as MessageStateValues } from './types';
+import type {
+  EnqueueInput,
+  EnqueueRejectedInput,
+  EnqueueResult,
+  InboundRow,
+  MessageState,
+  QueueErrorCode,
+} from './types';
+import { MessageState as MessageStateValues, QueueErrorCode as QueueErrorCodeValues } from './types';
 
 export interface DurableQueueOptions {
   /** Filesystem path to the SQLite DB file. */
@@ -166,7 +173,8 @@ export class DurableQueue {
       UPDATE inbound_hl7_messages
          SET state = 'errored',
              errored_at = ?,
-             last_error = ?
+             last_error = ?,
+             error_code = ?
        WHERE id = ?
     `);
 
@@ -186,7 +194,8 @@ export class DurableQueue {
       UPDATE inbound_hl7_messages
          SET state = 'errored',
              errored_at = ?,
-             last_error = COALESCE(last_error, 'interrupted: process restart while processing')
+             last_error = COALESCE(last_error, 'interrupted: process restart while processing'),
+             error_code = COALESCE(error_code, '${QueueErrorCodeValues.Interrupted}')
        WHERE state = 'processing'
     `);
 
@@ -462,10 +471,11 @@ export class DurableQueue {
    * Terminal transition: row failed somewhere after commit.
    * @param id - Row primary key.
    * @param error - Human-readable error string, written to `last_error`.
+   * @param errorCode - Machine-readable classification, written to `error_code`.
    * @param now - Override for `errored_at` (for tests).
    */
-  markErrored(id: number, error: string, now: number = Date.now()): void {
-    this.markErroredStmt.run(now, error, id);
+  markErrored(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+    this.markErroredStmt.run(now, error, errorCode, id);
     this.walDirty = true;
   }
 
@@ -654,6 +664,7 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     serverStatusCode: (raw.server_status_code as number | null) ?? null,
     ackSentToSource: (raw.ack_sent_to_source as number) === 1,
     lastError: (raw.last_error as string | null) ?? null,
+    errorCode: (raw.error_code as QueueErrorCode | null) ?? null,
     seqNo: (raw.seq_no as number | null) ?? null,
     receivedAt: raw.received_at as number,
     committedAt: (raw.committed_at as number | null) ?? null,

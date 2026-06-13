@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createMockLogger } from '../test-utils';
 import { DurableQueue, isUniqueConstraintError } from './durable-queue';
-import { MessageState } from './types';
+import { MessageState, QueueErrorCode } from './types';
 
 function makeEnqueueInput(
   overrides: Partial<Parameters<DurableQueue['enqueue']>[0]> = {}
@@ -151,9 +151,10 @@ describe('DurableQueue', () => {
       throw new Error('expected inserted');
     }
     queue.claimNext(r2.row.channelName);
-    queue.markErrored(r2.row.id, 'boom', 1700000000123);
+    queue.markErrored(r2.row.id, 'boom', QueueErrorCode.ServerError, 1700000000123);
     expect(queue.getById(r2.row.id)?.state).toBe(MessageState.ERRORED);
     expect(queue.getById(r2.row.id)?.lastError).toBe('boom');
+    expect(queue.getById(r2.row.id)?.errorCode).toBe(QueueErrorCode.ServerError);
     expect(queue.getById(r2.row.id)?.erroredAt).toBe(1700000000123);
 
     // First row still processed, unaffected.
@@ -197,6 +198,7 @@ describe('DurableQueue', () => {
     expect(promoted).toBe(1);
     expect(queue.getById(prow.row.id)?.state).toBe(MessageState.ERRORED);
     expect(queue.getById(prow.row.id)?.lastError).toContain('interrupted');
+    expect(queue.getById(prow.row.id)?.errorCode).toBe(QueueErrorCode.Interrupted);
     if (qrow.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
@@ -226,7 +228,7 @@ describe('DurableQueue', () => {
     queue.claimNext(a.row.channelName); // a → processing
     queue.markProcessed(a.row.id);
     queue.claimNext(b.row.channelName); // b → processing
-    queue.markErrored(b.row.id, 'x');
+    queue.markErrored(b.row.id, 'x', QueueErrorCode.DispatchFailed);
     queue.enqueueRejected({ ...makeEnqueueInput({ msgControlId: 'CB-N' }), lastError: 'dup' });
 
     expect(queue.countByState()).toEqual({

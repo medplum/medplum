@@ -10,7 +10,7 @@ import type { App } from '../app';
 import { createMockLogger } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
-import { MessageState } from './types';
+import { MessageState, QueueErrorCode } from './types';
 import { ChannelQueueWorker } from './worker';
 
 /**
@@ -154,6 +154,7 @@ describe('ChannelQueueWorker', () => {
 
     await waitFor(() => queue.getById(r1.id)?.state === MessageState.ERRORED);
     expect(queue.getById(r1.id)?.lastError).toContain('503');
+    expect(queue.getById(r1.id)?.errorCode).toBe(QueueErrorCode.ServerError);
 
     await waitFor(() => worker.hasInFlight() && r2.callbackId === lastCallback(worker));
     worker.onServerResponse(makeResponse(r2.callbackId, 200));
@@ -178,6 +179,7 @@ describe('ChannelQueueWorker', () => {
     worker.onServerResponse(makeResponse(r.callbackId, 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.ERRORED);
     expect(queue.getById(r.id)?.lastError).toContain('ACK delivery');
+    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.AckDeliveryFailed);
     await worker.stop();
   });
 
@@ -205,6 +207,7 @@ describe('ChannelQueueWorker', () => {
     worker.onServerResponse(makeResponse(r1.callbackId, 200));
     await waitFor(() => queue.getById(r1.id)?.state === MessageState.ERRORED);
     expect(queue.getById(r1.id)?.lastError).toContain('socket gone');
+    expect(queue.getById(r1.id)?.errorCode).toBe(QueueErrorCode.AckDeliveryFailed);
 
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(r2.callbackId, 200));
@@ -227,6 +230,7 @@ describe('ChannelQueueWorker', () => {
     worker.start();
     await waitFor(() => queue.getById(r.id)?.state === MessageState.ERRORED, 2000);
     expect(queue.getById(r.id)?.lastError).toContain('Timed out');
+    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
     await worker.stop();
   });
 
@@ -373,6 +377,7 @@ describe('ChannelQueueWorker', () => {
     expect(worker.hasInFlight()).toBe(true);
     await waitFor(() => queue.getById(r.id)?.state === MessageState.ERRORED, 2000);
     expect(queue.getById(r.id)?.lastError).toContain('Timed out');
+    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
     await worker.stop();
   });
 
