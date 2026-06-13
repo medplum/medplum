@@ -194,6 +194,52 @@ export function getPubSubRedisSubscriber(): RedisWithoutDuplicate & { quit: neve
 }
 
 /**
+ * Waits for a pub/sub subscriber connection to become ready.
+ *
+ * ioredis runs an INFO "ready check" during connect. If SUBSCRIBE completes first, the
+ * connection enters subscriber mode and the ready check fails. Call this before the first
+ * SUBSCRIBE on a new subscriber instance.
+ *
+ * @param subscriber - The subscriber instance returned by {@link getPubSubRedisSubscriber}.
+ */
+export async function awaitPubSubRedisSubscriberReady(
+  subscriber: RedisWithoutDuplicate & { quit: never }
+): Promise<void> {
+  if (subscriber.status === 'ready') {
+    return;
+  }
+  if (subscriber.status === 'end' || subscriber.status === 'close') {
+    throw new Error('Redis subscriber connection is not open');
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const onReady = (): void => {
+      cleanup();
+      resolve();
+    };
+    const onError = (err: Error): void => {
+      cleanup();
+      reject(err);
+    };
+    const onEnd = (): void => {
+      cleanup();
+      reject(new Error('Redis subscriber connection closed before ready'));
+    };
+    function cleanup(): void {
+      subscriber.off('ready', onReady);
+      subscriber.off('error', onError);
+      subscriber.off('end', onEnd);
+    }
+    subscriber.once('ready', onReady);
+    subscriber.once('error', onError);
+    subscriber.once('end', onEnd);
+    if (subscriber.status === 'ready') {
+      onReady();
+    }
+  });
+}
+
+/**
  * @returns The amount of active `Redis` subscriber instances.
  */
 export function getPubSubRedisSubscriberCount(): number {

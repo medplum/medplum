@@ -49,6 +49,7 @@ describe('Echo websocket', () => {
     withTestContext(async () => {
       const subscribeError = new Error('Connection is closed.');
       const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+        status: 'ready',
         subscribe: vi.fn().mockRejectedValue(subscribeError),
         on: vi.fn(),
         disconnect: vi.fn(),

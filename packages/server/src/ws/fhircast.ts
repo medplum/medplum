@@ -9,7 +9,7 @@ import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { setGauge } from '../otel/otel';
 import { publish } from '../pubsub';
-import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+import { awaitPubSubRedisSubscriberReady, getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
@@ -95,11 +95,9 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   const redisSubscriber = getPubSubRedisSubscriber();
 
-  // Bind all listeners (and topic bookkeeping) before awaiting the subscribe, so that
-  // messages published immediately after subscription are not dropped, and a socket that
-  // closes during the subscribe still cleans up its Redis subscriber.
-  const subscribed = redisSubscriber.subscribe(projectAndTopic);
-
+  // Bind all listeners (and topic bookkeeping) before subscribing, so that messages
+  // published immediately after subscription are not dropped, and a socket that closes
+  // during the subscribe still cleans up its Redis subscriber.
   const topic = projectAndTopic?.split(':')[1] ?? 'invalid topic';
   // Increment ref count for the specified topic
   topicRefCountMap.set(projectAndTopic, (topicRefCountMap.get(projectAndTopic) ?? 0) + 1);
@@ -139,7 +137,8 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   // Wait for the subscription to be established before sending the connection verification.
   // Listeners are already bound above, so no messages are missed while this resolves.
   try {
-    await subscribed;
+    await awaitPubSubRedisSubscriberReady(redisSubscriber);
+    await redisSubscriber.subscribe(projectAndTopic);
   } catch (err) {
     globalLogger.error('[FHIRcast]: Failed to subscribe to topic', { err });
     socket.close();

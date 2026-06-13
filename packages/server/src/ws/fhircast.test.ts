@@ -929,6 +929,7 @@ describe('FHIRcast WebSocket', () => {
           get: vi.fn().mockResolvedValue('project-id:my-topic'),
         } as any);
         const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+          status: 'ready',
           subscribe: vi.fn().mockRejectedValue(subscribeError),
           on: vi.fn(),
           disconnect: vi.fn(),

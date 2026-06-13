@@ -31,7 +31,6 @@ import { mockClient } from 'aws-sdk-client-mock';
 import type { Job } from 'bullmq';
 import * as bullmqModule from 'bullmq';
 import { UnrecoverableError } from 'bullmq';
-import type { Redis } from 'ioredis';
 import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
 import type { Mock, MockInstance } from 'vitest';
@@ -52,7 +51,7 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import * as redisModule from '../redis';
-import { getPubSubRedisSubscriber } from '../redis';
+import { awaitPubSubRedisSubscriberReady, getPubSubRedisSubscriber } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import type { SubEventsOptions } from '../ws/subscriptions';
@@ -1995,7 +1994,7 @@ describe('Subscription Worker', () => {
     // ws/subscriptions.test.ts loads workers/subscription.ts first with its own mocked channel.
     const WS_SUBSCRIPTIONS_TEST_CHANNEL = 'medplum:subscriptions:r4:websockets:test:ws';
 
-    let subscriber: Redis;
+    let subscriber: ReturnType<typeof getPubSubRedisSubscriber>;
     let resolveExpected: ((args: EventNotificationArgs<Resource>) => void) | undefined;
     let rejectNotExpected: ((err: Error) => void) | undefined;
     let resolveExpectedFullMessage: ((message: WsSubMessage) => void) | undefined;
@@ -2025,6 +2024,7 @@ describe('Subscription Worker', () => {
         WS_SUBSCRIPTIONS_TEST_CHANNEL,
         actualConstants.WEBSOCKET_SUB_PUBLISH_CHANNEL,
       ]);
+      await awaitPubSubRedisSubscriberReady(subscriber);
       for (const channel of channels) {
         await subscriber.subscribe(channel);
       }
