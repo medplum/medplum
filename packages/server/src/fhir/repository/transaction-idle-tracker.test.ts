@@ -15,19 +15,6 @@ describe('TransactionIdleTracker', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
-
-    // testProject = await globalSystemRepo.createResource({
-    //   resourceType: 'Project',
-    //   id: randomUUID(),
-    // });
-    // systemRepo = await getProjectSystemRepo(testProject);
-    // testProjectRepo = new Repository({
-    //   projects: [testProject],
-    //   extendedMode: true,
-    //   author: {
-    //     reference: 'Practitioner/' + randomUUID(),
-    //   },
-    // });
   });
 
   afterAll(async () => {

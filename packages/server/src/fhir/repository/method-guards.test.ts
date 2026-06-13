@@ -355,7 +355,6 @@ describe('transaction-scoped repository guards', () => {
             observedError = err;
           }
         });
-        // console.log('observedError', observedError);
         expect(observedError).toBeInstanceOf(Error);
         expect((observedError as Error).message).toContain('transaction-scoped repository');
       })
@@ -365,7 +364,6 @@ describe('transaction-scoped repository guards', () => {
   test('closed repository rejects guarded operations', () =>
     withTestContext(async () => {
       const cloned = repo.clone();
-      // console.log('cloned', cloned, cloned.isClosed());
       cloned[Symbol.dispose]();
 
       expect(() => cloned.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
