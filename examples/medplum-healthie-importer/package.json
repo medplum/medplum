@@ -35,7 +35,7 @@
     "@vitest/ui": "4.1.8",
     "commander": "12.1.0",
     "dotenv": "17.4.2",
-    "esbuild": "0.28.0",
+    "esbuild": "0.28.1",
     "fast-glob": "3.3.3",
     "tsx": "4.22.4",
     "typescript": "6.0.3",

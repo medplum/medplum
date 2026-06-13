@@ -34,7 +34,7 @@
     "@vitest/coverage-v8": "4.1.8",
     "@vitest/ui": "4.1.8",
     "dotenv": "17.4.2",
-    "esbuild": "0.28.0",
+    "esbuild": "0.28.1",
     "fast-glob": "3.3.3",
     "fast-xml-parser": "5.8.0",
     "form-data": "4.0.5",
