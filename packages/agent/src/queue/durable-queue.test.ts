@@ -16,7 +16,8 @@ function makeEnqueueInput(
     remote: '127.0.0.1:5000',
     msgControlId: `MSG${Math.random().toString(36).slice(2, 9)}`,
     msgType: 'ADT^A01',
-    body: Buffer.from('MSH|^~\\&|SND|FAC|...|2.5\rPID|...'),
+    originalMessage: Buffer.from('MSH|^~\\&|SND|FAC|...|2.5\rPID|...'),
+    finalizedMessage: Buffer.from('MSH|^~\\&|SND|FAC|...|2.5\rPID|...'),
     encoding: 'utf-8',
     enhancedMode: 'standard',
     callbackId: `cb-${Math.random().toString(36).slice(2, 9)}`,
@@ -51,36 +52,114 @@ describe('DurableQueue', () => {
 
   test('enqueue inserts a queued row and round-trips a binary body', () => {
     const body = Buffer.from([0x4d, 0x53, 0x48, 0x00, 0xff, 0xfe]); // includes non-UTF-8 bytes
-    const result = queue.enqueue(makeEnqueueInput({ msgControlId: 'MSG_BIN', body }));
+    const result = queue.enqueue(
+      makeEnqueueInput({ msgControlId: 'MSG_BIN', originalMessage: body, finalizedMessage: body })
+    );
     expect(result.kind).toBe('inserted');
     if (result.kind !== 'inserted') {
       throw new Error('unreachable');
     }
     expect(result.row.state).toBe(MessageState.QUEUED);
-    expect(result.row.body.equals(body)).toBe(true);
+    expect(result.row.originalMessage.equals(body)).toBe(true);
+    expect(result.row.finalizedMessage.equals(body)).toBe(true);
     expect(result.row.committedAt).toBe(result.row.receivedAt);
     expect(result.row.attemptCount).toBe(0);
   });
 
-  test('duplicate insert in active window returns duplicateActive with the prior row', () => {
+  test('duplicate insert in active window returns duplicate with the prior row', () => {
     const r1 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP1', callbackId: 'cb-a' }));
     expect(r1.kind).toBe('inserted');
     const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP1', callbackId: 'cb-b' }));
-    expect(r2.kind).toBe('duplicateActive');
-    if (r2.kind !== 'duplicateActive') {
+    expect(r2.kind).toBe('duplicate');
+    if (r2.kind !== 'duplicate') {
       throw new Error('unreachable');
     }
     expect(r2.existing.callbackId).toBe('cb-a');
   });
 
-  test('duplicate is permitted once the prior row is terminal (processed)', () => {
-    const r1 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP2' }));
+  test('duplicate is detected even once the prior row is terminal (processed)', () => {
+    const r1 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP2', callbackId: 'cb-first' }));
     if (r1.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
     queue.markProcessed(r1.row.id);
     const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP2', callbackId: 'cb-second' }));
-    expect(r2.kind).toBe('inserted');
+    expect(r2.kind).toBe('duplicate');
+    if (r2.kind !== 'duplicate') {
+      throw new Error('unreachable');
+    }
+    expect(r2.existing.callbackId).toBe('cb-first');
+    expect(r2.existing.state).toBe(MessageState.PROCESSED);
+  });
+
+  test('duplicate is detected once the prior row is terminal (errored)', () => {
+    const r1 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP3', callbackId: 'cb-err' }));
+    if (r1.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    queue.claimNext(r1.row.channelName);
+    queue.markErrored(r1.row.id, 'boom', QueueErrorCode.ServerError);
+    const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP3', callbackId: 'cb-after-error' }));
+    expect(r2.kind).toBe('duplicate');
+  });
+
+  test('a nacked audit row does not count as a prior duplicate', () => {
+    queue.enqueueRejected({
+      ...makeEnqueueInput({ msgControlId: 'DUP4', callbackId: 'cb-nack' }),
+      lastError: 'rejected',
+    });
+    // A nacked row reuses the control ID for audit only; a fresh intake of the
+    // same ID must still insert rather than dedupe against the audit row.
+    const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP4', callbackId: 'cb-real' }));
+    expect(r.kind).toBe('inserted');
+  });
+
+  test('peekNextSeqNo is non-consuming; commitSeqNo advances per channel and persists across reopen', () => {
+    // Peek does not advance: repeated peeks return the same value until committed.
+    expect(queue.peekNextSeqNo('A')).toBe(0);
+    expect(queue.peekNextSeqNo('A')).toBe(0);
+    queue.commitSeqNo('A', 0);
+    expect(queue.peekNextSeqNo('A')).toBe(1);
+    queue.commitSeqNo('A', 1);
+    expect(queue.peekNextSeqNo('A')).toBe(2);
+
+    // Independent counter per channel.
+    expect(queue.peekNextSeqNo('B')).toBe(0);
+    queue.commitSeqNo('B', 0);
+    expect(queue.peekNextSeqNo('B')).toBe(1);
+    // A is unaffected by B.
+    expect(queue.peekNextSeqNo('A')).toBe(2);
+
+    // Survives a restart: reopen the same DB and the committed counter resumes.
+    queue.commitSeqNo('A', 2);
+    queue.close();
+    queue = DurableQueue.open({ path: dbPath, log: createMockLogger() });
+    expect(queue.peekNextSeqNo('A')).toBe(3);
+    expect(queue.peekNextSeqNo('B')).toBe(1);
+  });
+
+  test('enqueue commitSeqNo advances the counter atomically with the insert, and not on a duplicate', () => {
+    expect(queue.peekNextSeqNo('X')).toBe(0);
+    const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP', seqNo: 0 }), { commitSeqNo: 0 });
+    expect(r1.kind).toBe('inserted');
+    // The counter advanced as part of the same insert.
+    expect(queue.peekNextSeqNo('X')).toBe(1);
+
+    // A duplicate short-circuits before the insert, so the counter is untouched
+    // even though a commitSeqNo candidate was supplied.
+    const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP', seqNo: 1 }), { commitSeqNo: 1 });
+    expect(r2.kind).toBe('duplicate');
+    expect(queue.peekNextSeqNo('X')).toBe(1);
+  });
+
+  test('a peeked-but-not-committed sequence number is not consumed', () => {
+    // Simulates a failed enqueue: we peek (to stamp a candidate) but never commit.
+    expect(queue.peekNextSeqNo('C')).toBe(0);
+    // ...enqueue throws, so commitSeqNo is never called...
+    // The next successful message peeks the same value — no number was burned.
+    expect(queue.peekNextSeqNo('C')).toBe(0);
+    queue.commitSeqNo('C', 0);
+    expect(queue.peekNextSeqNo('C')).toBe(1);
   });
 
   test('claimNext returns FIFO order per channel and ignores other channels', () => {

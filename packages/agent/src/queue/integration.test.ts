@@ -23,6 +23,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from '../app';
 import type { Channel } from '../channel';
+import type { AgentHl7Channel } from '../hl7';
 import { createEndpointWithRandomPort } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 
@@ -231,7 +232,8 @@ describe('Durable queue integration', () => {
       remote: '1.2.3.4:5000',
       msgControlId: 'HB_CKPT',
       msgType: 'ADT^A01',
-      body: Buffer.from('MSH|...'),
+      originalMessage: Buffer.from('MSH|...'),
+      finalizedMessage: Buffer.from('MSH|...'),
       encoding: 'utf-8',
       enhancedMode: 'standard',
       callbackId: 'cb-hb-ckpt',
@@ -290,6 +292,270 @@ describe('Durable queue integration', () => {
     expect(existsSync(walPath) ? statSync(walPath).size : 0).toBe(0);
   });
 
+  test('idempotent duplicate after processing replays the prior server response ACK', async () => {
+    // Reply 200 + AA so the row reaches `processed` with a stored response body.
+    startMockServer((cmd) => {
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: ack.toString(),
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    const first = await client.sendAndWait(TEST_MSG('INT_DUP'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(first.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    const queue = app.getDurableQueue() as DurableQueue;
+    await waitForRow(queue, (counts) => counts.processed === 1, 3000);
+
+    // Exact retransmit: the sender should get the prior server response ACK (AA),
+    // and no new row should be created.
+    const replay = await client.sendAndWait(TEST_MSG('INT_DUP'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(replay.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
+    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, processing: 0, errored: 0 });
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('idempotent duplicate before any server response replays the commit ACK', async () => {
+    // Never reply: the first row stays queued/processing with no server response,
+    // so the duplicate must fall back to a commit ACK (CA) replay.
+    startMockServer(() => undefined);
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    const first = await client.sendAndWait(TEST_MSG('INT_DUP2'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(first.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    const replay = await client.sendAndWait(TEST_MSG('INT_DUP2'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(replay.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    // Still exactly one row — the duplicate was not enqueued.
+    const queue = app.getDurableQueue() as DurableQueue;
+    const counts = queue.countByState();
+    expect(counts.queued + counts.processing).toBe(1);
+    expect(counts.nacked).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('idempotent duplicate with different content for a seen control ID is rejected with AR', async () => {
+    startMockServer(() => undefined);
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    const first = await client.sendAndWait(TEST_MSG('INT_MM'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(first.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    // Same control ID, different PID → a different message reusing a committed ID.
+    const mismatched = Hl7Message.parse(
+      'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|INT_MM|P|2.5\r' +
+        'PID|||PATID9999^5^M11||SMITH^JANE^B||19700101|F\r'
+    );
+    const rejected = await client.sendAndWait(mismatched, { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(rejected.getSegment('MSA')?.getField(1)?.toString()).toBe('AR');
+    expect(rejected.getSegment('MSA')?.getField(3)?.toString()).toContain('different content');
+
+    // The mismatch produced a nacked audit row; the original is untouched.
+    const queue = app.getDurableQueue() as DurableQueue;
+    const counts = queue.countByState();
+    expect(counts.nacked).toBe(1);
+    expect(counts.queued + counts.processing).toBe(1);
+
+    // Stats are balanced: the reject recorded an ack, so the control ID isn't
+    // left dangling in the pending-RTT map.
+    const channel = app.channels.get('dq-test') as unknown as AgentHl7Channel;
+    expect(channel.stats.getPendingCount()).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('assignSeqNo: a retransmit dedupes on the original message despite a new sequence number', async () => {
+    // Never reply, so the first row stays queued/processing (no server response).
+    startMockServer(() => undefined);
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&assignSeqNo=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    const first = await client.sendAndWait(TEST_MSG('SEQ1'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(first.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    // The agent stamps MSH.13 (assignSeqNo), so the retransmit's *finalized* bytes
+    // differ from the first (a new sequence number) — but the *original* matches,
+    // so it's recognized as a retransmit and re-acked (CA), not rejected (AR).
+    const replay = await client.sendAndWait(TEST_MSG('SEQ1'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(replay.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    const queue = app.getDurableQueue() as DurableQueue;
+    const counts = queue.countByState();
+    expect(counts.queued + counts.processing).toBe(1);
+    expect(counts.nacked).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('assignSeqNo: a duplicate does not consume a sequence number', async () => {
+    startMockServer(() => undefined);
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&assignSeqNo=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    // First message gets sequence 0.
+    await client.sendAndWait(TEST_MSG('A'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    // Retransmit of A: deduped, must NOT consume a sequence number.
+    await client.sendAndWait(TEST_MSG('A'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    // A distinct message therefore gets sequence 1 (not 2).
+    await client.sendAndWait(TEST_MSG('B'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+
+    const queue = app.getDurableQueue() as DurableQueue;
+    expect(queue.findSeenByControlId('dq-test', 'A')?.seqNo).toBe(0);
+    expect(queue.findSeenByControlId('dq-test', 'B')?.seqNo).toBe(1);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('assignSeqNo: a storage error does not consume a sequence number', async () => {
+    startMockServer(() => undefined);
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&assignSeqNo=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    // Force the first intake's enqueue to fail (simulated storage error). The
+    // sequence number was only peeked (stamped as a candidate), never committed.
+    const enqueueSpy = vi.spyOn(queue, 'enqueue').mockImplementationOnce(() => {
+      throw new Error('simulated disk full');
+    });
+
+    const failed = await client.sendAndWait(TEST_MSG('X'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(failed.getSegment('MSA')?.getField(1)?.toString()).toBe('CR');
+    enqueueSpy.mockRestore();
+
+    // The next message must reuse sequence 0 — the failed one consumed nothing.
+    await client.sendAndWait(TEST_MSG('Y'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(queue.findSeenByControlId('dq-test', 'Y')?.seqNo).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
   test('restart recovery: rows left in processing across process boundary become errored', async () => {
     // We don't kill the App mid-flight (worker.stop() drains gracefully). Instead
     // we simulate the crash directly against the underlying DB — the same state
@@ -325,7 +591,8 @@ describe('Durable queue integration', () => {
         remote: '1.2.3.4:5000',
         msgControlId: 'CRASHED',
         msgType: 'ADT^A01',
-        body: Buffer.from('MSH|...'),
+        originalMessage: Buffer.from('MSH|...'),
+        finalizedMessage: Buffer.from('MSH|...'),
         encoding: 'utf-8',
         enhancedMode: 'standard',
         callbackId: 'cb-crashed',

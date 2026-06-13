@@ -59,7 +59,9 @@ export class DurableQueue {
   // Names mirror the public methods that use them.
   private readonly enqueueStmt: StatementSync;
   private readonly enqueueRejectedStmt: StatementSync;
-  private readonly findActiveDuplicateStmt: StatementSync;
+  private readonly peekLastSeqNoStmt: StatementSync;
+  private readonly commitSeqNoStmt: StatementSync;
+  private readonly findSeenByControlIdStmt: StatementSync;
   private readonly claimNextStmt: StatementSync;
   private readonly findByCallbackStmt: StatementSync;
   private readonly findByIdStmt: StatementSync;
@@ -101,30 +103,49 @@ export class DurableQueue {
 
     this.enqueueStmt = this.db.prepare(`
       INSERT INTO inbound_hl7_messages (
-        channel_name, remote, msg_control_id, msg_type, body, encoding,
+        channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
         enhanced_mode, state, attempt_count, callback_id,
         seq_no, received_at, committed_at
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?
       )
     `);
 
     this.enqueueRejectedStmt = this.db.prepare(`
       INSERT INTO inbound_hl7_messages (
-        channel_name, remote, msg_control_id, msg_type, body, encoding,
+        channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
         enhanced_mode, state, attempt_count, callback_id,
         ack_sent_to_source, last_error, seq_no, received_at
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 1, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 1, ?, ?, ?
       )
     `);
 
-    this.findActiveDuplicateStmt = this.db.prepare(`
+    // Per-channel monotonic sequence counter (assignSeqNo). peek is a pure read
+    // of the last assigned value; commit advances it. They're split (rather than
+    // a single advance-and-return) so the caller can stamp a candidate sequence
+    // number and only commit it once the row is durably inserted — a failed
+    // insert never consumes a sequence number. Single-process + synchronous, so
+    // no locking is needed between peek and commit.
+    this.peekLastSeqNoStmt = this.db.prepare(`
+      SELECT last_seq_no FROM _channel_seq WHERE channel_name = ?
+    `);
+    this.commitSeqNoStmt = this.db.prepare(`
+      INSERT INTO _channel_seq (channel_name, last_seq_no) VALUES (?, ?)
+        ON CONFLICT(channel_name) DO UPDATE SET last_seq_no = excluded.last_seq_no
+    `);
+
+    // Canonical prior row for a (channel, control_id): any state except `nacked`
+    // (nacked rows are rejected-intake audit records and intentionally reuse
+    // control IDs, so they're not a "real" prior delivery to dedupe against).
+    // id DESC returns the most recent in the unlikely event legacy duplicates
+    // predate the dedupe-on-intake logic.
+    this.findSeenByControlIdStmt = this.db.prepare(`
       SELECT * FROM inbound_hl7_messages
        WHERE channel_name = ?
          AND msg_control_id = ?
-         AND state IN ('queued', 'processing')
-       ORDER BY id ASC
+         AND state != 'nacked'
+       ORDER BY id DESC
        LIMIT 1
     `);
 
@@ -341,30 +362,64 @@ export class DurableQueue {
   /**
    * Inserts a new `queued` row.
    *
-   * If a row with the same `(channel_name, msg_control_id)` is already in
-   * `queued` or `processing`, the partial unique index throws a SQLITE_CONSTRAINT
-   * error and we surface a `duplicateActive` result instead — letting the caller
-   * decide between `reject` and `idempotent` behavior (§8).
+   * If any prior non-`nacked` row already owns this `(channel_name,
+   * msg_control_id)` — in `queued`, `processing`, `processed`, or `errored` —
+   * we don't insert; we surface a `duplicate` result carrying that row so the
+   * caller can compare bodies and decide between replaying the prior ACK and
+   * rejecting the collision (§8). The partial unique index remains as a
+   * last-resort guard against an active-window race (not expected in the
+   * single-process agent).
    * @param input - Fields to persist on the new row.
-   * @returns Either the inserted row, or the prior active row that owns the MSH.10.
+   * @param options - Optional behavior.
+   * @param options.commitSeqNo - When set, advances the channel's persisted
+   *   sequence counter to this value in the SAME transaction as the insert, so a
+   *   crash can never leave the row committed while the counter lags (which would
+   *   reuse the sequence number on restart). Pass the value just peeked via
+   *   {@link peekNextSeqNo} and stamped into the message.
+   * @returns Either the inserted row, or the prior row that owns the MSH.10.
    */
-  enqueue(input: EnqueueInput): EnqueueResult {
+  enqueue(input: EnqueueInput, options?: { commitSeqNo?: number }): EnqueueResult {
+    if (input.msgControlId) {
+      const existing = this.findSeenByControlId(input.channelName, input.msgControlId);
+      if (existing) {
+        return { kind: 'duplicate', existing };
+      }
+    }
     try {
-      const info = this.enqueueStmt.run(
-        input.channelName,
-        input.remote,
-        input.msgControlId,
-        input.msgType,
-        toBlob(input.body),
-        input.encoding,
-        input.enhancedMode,
-        input.callbackId,
-        input.seqNo,
-        input.receivedAt,
-        input.receivedAt
-      );
+      const runInsert = (): number => {
+        const info = this.enqueueStmt.run(
+          input.channelName,
+          input.remote,
+          input.msgControlId,
+          input.msgType,
+          toBlob(input.originalMessage),
+          toBlob(input.finalizedMessage),
+          input.encoding,
+          input.enhancedMode,
+          input.callbackId,
+          input.seqNo,
+          input.receivedAt,
+          input.receivedAt
+        );
+        return Number(info.lastInsertRowid);
+      };
+
+      let id: number;
+      if (options?.commitSeqNo !== undefined) {
+        // Atomically insert the row and advance the sequence counter.
+        this.db.exec('BEGIN');
+        try {
+          id = runInsert();
+          this.commitSeqNo(input.channelName, options.commitSeqNo);
+          this.db.exec('COMMIT');
+        } catch (txErr) {
+          this.db.exec('ROLLBACK');
+          throw txErr;
+        }
+      } else {
+        id = runInsert();
+      }
       this.walDirty = true;
-      const id = Number(info.lastInsertRowid);
       const row = this.getById(id);
       if (!row) {
         throw new Error(`enqueue: inserted row id=${id} could not be re-read`);
@@ -372,9 +427,9 @@ export class DurableQueue {
       return { kind: 'inserted', row };
     } catch (err) {
       if (isUniqueConstraintError(err) && input.msgControlId) {
-        const existing = this.findActiveDuplicate(input.channelName, input.msgControlId);
+        const existing = this.findSeenByControlId(input.channelName, input.msgControlId);
         if (existing) {
-          return { kind: 'duplicateActive', existing };
+          return { kind: 'duplicate', existing };
         }
       }
       throw err;
@@ -395,7 +450,8 @@ export class DurableQueue {
         input.remote,
         input.msgControlId,
         input.msgType,
-        toBlob(input.body),
+        toBlob(input.originalMessage),
+        toBlob(input.finalizedMessage),
         input.encoding,
         input.enhancedMode,
         input.callbackId,
@@ -630,11 +686,44 @@ export class DurableQueue {
     return row?.bytes ?? 0;
   }
 
-  private findActiveDuplicate(channelName: string, msgControlId: string): InboundRow | null {
-    const raw = this.findActiveDuplicateStmt.get(channelName, msgControlId) as
+  /**
+   * @param channelName - The channel to search.
+   * @param msgControlId - MSH.10 to look up.
+   * @returns The most recent non-`nacked` row owning this `(channel, control_id)`, or null.
+   */
+  findSeenByControlId(channelName: string, msgControlId: string): InboundRow | null {
+    const raw = this.findSeenByControlIdStmt.get(channelName, msgControlId) as
       | Record<string, SQLInputValue>
       | undefined;
     return raw ? rowFromSql(raw) : null;
+  }
+
+  /**
+   * Returns the sequence number that {@link commitSeqNo} would next persist for
+   * a channel, WITHOUT advancing the counter. The first value for a channel is
+   * 0; thereafter it is the last committed value + 1. Read-only: callers stamp
+   * this candidate into MSH.13 and only {@link commitSeqNo} it once the row is
+   * durably enqueued, so a failed insert never burns a sequence number.
+   * @param channelName - The channel whose counter to peek.
+   * @returns The next sequence number to assign.
+   */
+  peekNextSeqNo(channelName: string): number {
+    const row = this.peekLastSeqNoStmt.get(channelName) as { last_seq_no: number } | undefined;
+    return row === undefined ? 0 : row.last_seq_no + 1;
+  }
+
+  /**
+   * Persists `seqNo` as the channel's last assigned sequence number. Production
+   * intake commits this inside the insert transaction via
+   * {@link enqueue}'s `commitSeqNo` option, so the row and the counter advance
+   * atomically; call it directly only when not pairing it with an insert. The
+   * counter survives restarts, keeping MSH.13 sequence numbers monotonic.
+   * @param channelName - The channel whose counter to advance.
+   * @param seqNo - The sequence number that was assigned and successfully enqueued.
+   */
+  commitSeqNo(channelName: string, seqNo: number): void {
+    this.commitSeqNoStmt.run(channelName, seqNo);
+    this.walDirty = true;
   }
 }
 
@@ -651,7 +740,8 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     remote: raw.remote as string,
     msgControlId: (raw.msg_control_id as string | null) ?? null,
     msgType: (raw.msg_type as string | null) ?? null,
-    body: toBuffer(raw.body),
+    originalMessage: toBuffer(raw.original_message),
+    finalizedMessage: toBuffer(raw.finalized_message),
     encoding: (raw.encoding as string | null) ?? null,
     enhancedMode: (raw.enhanced_mode as 'standard' | 'aaMode' | null) ?? null,
     state: raw.state as MessageState,

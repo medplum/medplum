@@ -293,7 +293,7 @@ export class ChannelQueueWorker {
         channel: row.channelName,
         remote: row.remote,
         contentType: ContentType.HL7_V2,
-        body: row.body.toString(row.encoding ? toBufferEncoding(row.encoding) : 'utf8'),
+        body: row.finalizedMessage.toString(row.encoding ? toBufferEncoding(row.encoding) : 'utf8'),
         callback: row.callbackId,
       });
     });

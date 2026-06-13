@@ -91,7 +91,10 @@ export interface InboundRow {
   remote: string;
   msgControlId: string | null;
   msgType: string | null;
-  body: Buffer;
+  /** The message exactly as received; used for the duplicate-content comparison. */
+  originalMessage: Buffer;
+  /** The message as dispatched upstream (e.g. with an assigned MSH.13); equals {@link originalMessage} when untransformed. */
+  finalizedMessage: Buffer;
   encoding: string | null;
   enhancedMode: EnhancedModeColumn;
   state: MessageState;
@@ -116,7 +119,10 @@ export interface EnqueueInput {
   remote: string;
   msgControlId: string | null;
   msgType: string | null;
-  body: Buffer;
+  /** The message exactly as received; persisted for the duplicate-content comparison. */
+  originalMessage: Buffer;
+  /** The message to dispatch upstream; equals {@link originalMessage} when the channel applies no transformation. */
+  finalizedMessage: Buffer;
   encoding: string | null;
   enhancedMode: EnhancedModeColumn;
   callbackId: string;
@@ -130,7 +136,9 @@ export interface EnqueueRejectedInput extends EnqueueInput {
 }
 
 /**
- * Distinguishes the outcomes of an idempotent intake attempt against an active
- * duplicate (one still in `queued` or `processing`).
+ * Outcome of an intake attempt. `duplicate` means a prior row for the same
+ * `(channel, msg_control_id)` already exists in a non-`nacked` state (queued,
+ * processing, processed, or errored) — the caller compares bodies to decide
+ * between replaying the prior ACK and rejecting the collision (§8).
  */
-export type EnqueueResult = { kind: 'inserted'; row: InboundRow } | { kind: 'duplicateActive'; existing: InboundRow };
+export type EnqueueResult = { kind: 'inserted'; row: InboundRow } | { kind: 'duplicate'; existing: InboundRow };

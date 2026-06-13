@@ -32,7 +32,13 @@ export const MIGRATIONS: readonly Migration[] = [
         remote                TEXT    NOT NULL,
         msg_control_id        TEXT,
         msg_type              TEXT,
-        body                  BLOB    NOT NULL,
+        -- original_message is the message exactly as received, used for the
+        -- intake duplicate-content comparison. finalized_message is what the
+        -- worker dispatches upstream; it differs from original only when the
+        -- channel rewrites the message (e.g. assignSeqNo sets MSH.13). When no
+        -- transformation applies the two are byte-identical.
+        original_message      BLOB    NOT NULL,
+        finalized_message     BLOB    NOT NULL,
         encoding              TEXT,
         enhanced_mode         TEXT,
         state                 TEXT    NOT NULL,
@@ -75,6 +81,15 @@ export const MIGRATIONS: readonly Migration[] = [
         holder      TEXT    NOT NULL,
         acquired_at INTEGER NOT NULL,
         expires_at  INTEGER NOT NULL
+      ) STRICT;
+
+      -- Per-channel monotonic sequence counter for the assignSeqNo feature.
+      -- Persisting it here (rather than only in memory) keeps MSH.13 sequence
+      -- numbers monotonic across agent restarts. last_seq_no holds the most
+      -- recently assigned value; the next assignment is last_seq_no + 1.
+      CREATE TABLE IF NOT EXISTS _channel_seq (
+        channel_name TEXT    PRIMARY KEY,
+        last_seq_no  INTEGER NOT NULL
       ) STRICT;
     `,
   },
