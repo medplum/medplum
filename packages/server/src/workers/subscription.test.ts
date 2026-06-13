@@ -30,7 +30,6 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import type { Job, Worker } from 'bullmq';
 import * as bullmqModule from 'bullmq';
-import type { Redis } from 'ioredis';
 import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
 import { UnrecoverableError } from '../__mocks__/bullmq';
@@ -51,7 +50,7 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import * as redisModule from '../redis';
-import { getPubSubRedisSubscriber } from '../redis';
+import { awaitPubSubRedisSubscriberReady, getPubSubRedisSubscriber } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import type { SubEventsOptions } from '../ws/subscriptions';
@@ -1983,7 +1982,7 @@ describe('Subscription Worker', () => {
     type EventNotificationArgs<T extends Resource> = [T, string, SubEventsOptions];
     type WsSubMessage = { resource: Resource; events: [string, SubEventsOptions][] };
 
-    let subscriber: Redis;
+    let subscriber: ReturnType<typeof getPubSubRedisSubscriber>;
     let resolveExpected: ((args: EventNotificationArgs<Resource>) => void) | undefined;
     let rejectNotExpected: ((err: Error) => void) | undefined;
     let resolveExpectedFullMessage: ((message: WsSubMessage) => void) | undefined;
@@ -2005,11 +2004,12 @@ describe('Subscription Worker', () => {
           rejectNotExpected = undefined;
         }
       });
+      await awaitPubSubRedisSubscriberReady(subscriber);
       await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
     });
 
     afterAll(async () => {
-      await subscriber.quit();
+      subscriber.disconnect();
     });
 
     async function assertNoWsNotifications(timeoutMs?: number): Promise<void> {

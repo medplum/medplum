@@ -48,6 +48,7 @@ describe('Echo websocket', () => {
     withTestContext(async () => {
       const subscribeError = new Error('Connection is closed.');
       const subscriberSpy = jest.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+        status: 'ready',
         subscribe: jest.fn().mockRejectedValue(subscribeError),
         on: jest.fn(),
         disconnect: jest.fn(),

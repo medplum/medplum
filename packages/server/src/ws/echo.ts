@@ -8,7 +8,7 @@ import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { setGauge } from '../otel/otel';
 import { publish } from '../pubsub';
-import { getPubSubRedisSubscriber } from '../redis';
+import { awaitPubSubRedisSubscriberReady, getPubSubRedisSubscriber } from '../redis';
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
@@ -48,7 +48,10 @@ export async function handleEchoConnection(socket: WebSocket): Promise<void> {
 
   // Attach socket listeners before awaiting the Redis subscription,
   // otherwise messages sent by the client immediately after connecting are silently dropped
-  const subscribed = redisSubscriber.subscribe(channel);
+  const subscribed = (async (): Promise<void> => {
+    await awaitPubSubRedisSubscriberReady(redisSubscriber);
+    await redisSubscriber.subscribe(channel);
+  })();
 
   redisSubscriber.on('message', (channel: string, message: string) => {
     globalLogger.debug('[WS] redis message', { channel, message });

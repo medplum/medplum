@@ -929,6 +929,7 @@ describe('FHIRcast WebSocket', () => {
           get: jest.fn().mockResolvedValue('project-id:my-topic'),
         } as any);
         const subscriberSpy = jest.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+          status: 'ready',
           subscribe: jest.fn().mockRejectedValue(subscribeError),
           on: jest.fn(),
           disconnect: jest.fn(),
