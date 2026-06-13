@@ -89,7 +89,7 @@ kubectl create namespace medplum
 
 ## Run the Helm Install Command
 
-With the namespace created and the `values.yaml` file configured, they can now run the `helm install` command to deploy Medplum into their cluster.
+With the namespace created and the `values.yaml` file configured, you can now run the `helm install` command to deploy Medplum into your cluster.
 
 ```bash
 helm install medplum medplum/medplum --namespace medplum -f ./values.yaml
