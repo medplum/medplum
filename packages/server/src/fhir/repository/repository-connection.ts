@@ -25,30 +25,46 @@ export type StatementTimeoutOptions = {
   mode?: DatabaseMode;
 };
 
-export type Scope = object & { readonly _brand: 'scope' };
-
-type WritableScope = {
-  readonly _brand: 'scope';
-  parent?: WritableScope;
+export type Scope = { readonly _brand: 'scope' };
+type RootScope = Scope & {
+  readonly kind: 'root';
+  readonly parent?: undefined;
+  state: 'active';
+};
+type TransactionScope = Scope & {
+  readonly kind: 'transaction';
+  readonly parent: ConnectionScope;
   /** See {@link RepositoryConnection.withTransaction} for the state machine and what each state means. */
-  state: 'active' | 'released' | 'committing' | 'post-commit' | 'ended';
+  state: 'active' | 'committing' | 'post-commit' | 'ended';
+  preCommitCallbacks: (() => Promise<void>)[];
+  postCommitCallbacks: (() => Promise<void>)[];
+};
+type SavepointScope = Scope & {
+  readonly kind: 'savepoint';
+  readonly parent: ConnectionScope;
+  /** See {@link RepositoryConnection.withTransaction} for the state machine and what each state means. */
+  state: 'active' | 'released' | 'ended';
   preCommitCallbacks: (() => Promise<void>)[];
   postCommitCallbacks: (() => Promise<void>)[];
 };
 
-function createScope(parent?: WritableScope): WritableScope {
+/** For internal use within the RepositoryConnection class. */
+type ConnectionScope = RootScope | TransactionScope | SavepointScope;
+
+function createScope(kind: 'transaction' | 'savepoint', parent: ConnectionScope): TransactionScope | SavepointScope {
   return {
     _brand: 'scope',
-    parent,
     state: 'active',
+    kind,
+    parent,
     preCommitCallbacks: [],
     postCommitCallbacks: [],
   };
 }
 
-function validateWritableScope(scope: unknown): WritableScope {
+function validateScope(scope: unknown): ConnectionScope {
   if (typeof scope === 'object' && scope !== null && '_brand' in scope && scope._brand === 'scope') {
-    return scope as unknown as WritableScope;
+    return scope as unknown as ConnectionScope;
   }
   throw new Error('Invalid scope');
 }
@@ -64,7 +80,6 @@ export class RepositoryConnection implements Disposable {
   private conn?: PoolClient;
   private connMode?: DatabaseMode;
   private ownsClient = true;
-  private transactionDepth = 0;
   private transactionIsolationLevel?: TransactionIsolationLevel;
   private pinDepth = 0;
   private discardOnRelease = false;
@@ -72,16 +87,19 @@ export class RepositoryConnection implements Disposable {
   mode: RepositoryMode;
   private transactionIdleTracker?: TransactionIdleTracker;
 
-  private rootScope: WritableScope;
-  private currentScope: WritableScope;
+  private readonly rootScope: RootScope;
+  private currentScope: ConnectionScope;
 
   /**
    * Creates a connection that owns any PoolClient it acquires.
    */
   constructor() {
     this.mode = RepositoryMode.WRITER;
-    // rootScope can not actually have callbacks, maybe we should update the type
-    this.rootScope = createScope();
+    this.rootScope = {
+      _brand: 'scope',
+      state: 'active',
+      kind: 'root',
+    };
     this.currentScope = this.rootScope;
   }
 
@@ -113,17 +131,30 @@ export class RepositoryConnection implements Disposable {
     return !!this.conn;
   }
 
-  assertCurrentScope(scope: unknown): WritableScope {
-    const writableScope = validateWritableScope(scope);
+  private assertCurrentScope(scope: unknown): ConnectionScope {
+    const writableScope = validateScope(scope);
     if (writableScope !== this.currentScope) {
       throw new Error('Scope is not current');
     }
-    // TODO does writableScope.state need to be checked?
     return writableScope;
   }
 
-  assertScope(scope: Scope): WritableScope {
-    const writableScope = validateWritableScope(scope);
+  /**
+   * Number of live SQL transaction levels (BEGIN + SAVEPOINT), derived from the
+   * scope chain. A 'post-commit' scope is a barrier: its COMMIT has already been
+   * issued, so transactions begun by post-commit callbacks restart at depth 1.
+   * @returns The number of live SQL transaction levels
+   */
+  private get transactionDepth(): number {
+    let depth = 0;
+    for (let s = this.currentScope; s.parent && s.state !== 'post-commit'; s = s.parent) {
+      depth++;
+    }
+    return depth;
+  }
+
+  assertScope(scope: Scope): ConnectionScope {
+    const writableScope = validateScope(scope);
     let current = writableScope;
     while (current !== this.currentScope) {
       if (!current.parent) {
@@ -159,7 +190,7 @@ export class RepositoryConnection implements Disposable {
    * @returns True if the scope is permanently ended.
    */
   isScopeEnded(scope: Scope): boolean {
-    let current: WritableScope | undefined = validateWritableScope(scope);
+    let current: ConnectionScope | undefined = validateScope(scope);
     while (current) {
       if (current.state === 'ended') {
         return true;
@@ -262,7 +293,7 @@ export class RepositoryConnection implements Disposable {
     const client = await this.withConnectionStateLock(async () => {
       this.assertNotClosed();
       this.assertOwnsClient();
-      if (this.transactionDepth > 0) {
+      if (this.isInTransaction()) {
         throw new Error('Cannot set statement timeout during an active transaction');
       }
 
@@ -313,25 +344,25 @@ export class RepositoryConnection implements Disposable {
    * ## Scope states
    *
    * - `active` — this transaction level is live; repositories bound to it may query.
-   * - `committing` — outermost scope only: the callback returned and pre-commit callbacks are
+   * - `committing` — 'transaction' scope only: the callback returned and pre-commit callbacks are
    *   running. `COMMIT` has not been issued yet, so queries still run inside the transaction.
    * - `post-commit` — `COMMIT` succeeded and post-commit callbacks are running; queries now run
    *   outside any transaction.
    * - `released` — nested scope whose `RELEASE SAVEPOINT` succeeded. Its work now belongs to the
    *   parent, and its pre/post-commit callbacks were hoisted to the parent. Repositories bound to
-   *   it are invalid, EXCEPT while the outermost scope is `committing`/`post-commit`, so that
+   *   it are invalid, EXCEPT while the 'transaction' scope is `committing`/`post-commit`, so that
    *   hoisted callbacks can still run through the repository that registered them.
    * - `ended` — terminal: the level was rolled back, or the outer transaction fully finished.
    *   A scope is also permanently dead once any of its ancestors is `ended`.
    *
    * ```
    *               callback returned             COMMIT
-   *  ┌────────┐   (outermost only)   ┌────────────┐ succeeded ┌─────────────┐
+   *  ┌────────┐ ('transaction' only) ┌────────────┐ succeeded ┌─────────────┐
    *  │ active │ ────────────────────▶│ committing │ ─────────▶│ post-commit │
    *  └────────┘  pre-commit cbs run  └────────────┘           └─────────────┘
    *    │    │                              │                        │
    *    │    │ RELEASE SAVEPOINT            │ pre-commit cb threw    │ post-commit
-   *    │    │ (nested only)                │ → ROLLBACK             │ cbs done
+   *    │    │ ('savepoint' only)           │ → ROLLBACK             │ cbs done
    *    │    ▼                              ▼                        ▼
    *    │  ┌──────────┐               ┌───────────────────────────────────────┐
    *    │  │ released │               │                 ended                 │
@@ -402,11 +433,11 @@ export class RepositoryConnection implements Disposable {
     let error: OperationOutcomeError | undefined;
     for (let attempt = 0; attempt < transactionAttempts; attempt++) {
       const attemptStartTime = Date.now();
-      let txScope: WritableScope | undefined;
+      let txScope: TransactionScope | SavepointScope | undefined;
       try {
         const { client, scope: newTxScope } = await this.beginTransaction(scope, isolationLevel);
         txScope = newTxScope;
-        if (this.transactionDepth === 1) {
+        if (this.currentScope.kind === 'transaction') {
           this.startTransactionIdleTracking(client, {
             thresholdMs: config.idleInTransactionLogThresholdMs ?? -1,
             attempt,
@@ -483,9 +514,9 @@ export class RepositoryConnection implements Disposable {
   /**
    * Serializes the small critical sections that reads/writes connection
    * state and issues the matching connection SQL commands:
-   * - read/write transactionDepth
+   * - read transaction state
+   * - push and pop scopes
    * - choose COMMIT vs RELEASE SAVEPOINT
-   * - clear/pop callback frames
    * - release connection state
    * - set statement_timeout or other connection-level config
    * @param callback - The callback to execute with the transaction state lock.
@@ -514,7 +545,7 @@ export class RepositoryConnection implements Disposable {
   private async beginTransaction(
     scope: Scope,
     isolationLevel: TransactionIsolationLevel
-  ): Promise<{ client: PoolClient; scope: WritableScope }> {
+  ): Promise<{ client: PoolClient; scope: TransactionScope | SavepointScope }> {
     return this.withConnectionStateLock(async () => {
       this.assertScope(scope);
       this.assertNotClosed();
@@ -544,80 +575,71 @@ export class RepositoryConnection implements Disposable {
       if (nextDepth === 1) {
         this.transactionIsolationLevel = isolationLevel;
       }
-      const txScope = createScope(this.currentScope);
+      const txScope = createScope(nextDepth === 1 ? 'transaction' : 'savepoint', this.currentScope);
       this.currentScope = txScope;
-      this.transactionDepth = nextDepth;
       return { client, scope: txScope };
     });
   }
 
-  private async commitTransaction(txScope: WritableScope): Promise<void> {
-    const shouldProcessPreCommit = await this.withConnectionStateLock(async () => {
+  private async commitTransaction(txScope: ConnectionScope): Promise<void> {
+    await this.withConnectionStateLock(async () => {
       this.assertCurrentScope(txScope);
       this.assertInTransaction();
-      const isOuter = this.transactionDepth === 1;
-      if (isOuter) {
+      if (this.currentScope.kind === 'transaction') {
         this.currentScope.state = 'committing';
       }
-      return isOuter;
     });
 
     // processPreCommit needs to be invoked outside of the transaction state lock to avoid deadlocks
     // since it could involve transactions. Repository.withTransaction keeps the caller repo blocked
     // during this window, so callback code must use the transaction-scoped repo it was given.
-    if (shouldProcessPreCommit) {
+    if (this.currentScope.state === 'committing') {
       await this.processPreCommit(this.currentScope);
     }
 
-    const shouldProcessPostCommit = await this.withConnectionStateLock(async () => {
-      this.assertCurrentScope(txScope);
+    await this.withConnectionStateLock(async () => {
+      this.assertCurrentScope(txScope); // defense in depth, make sure we're still working on the same scope passed in
       this.assertInTransaction();
       const conn = await this.getConnection(DatabaseMode.WRITER);
-      if (this.transactionDepth === 1) {
+      if (this.currentScope.kind === 'transaction') {
+        assert(this.currentScope.state === 'committing');
         await conn.query('COMMIT');
+        this.currentScope.state = 'post-commit';
         this.finishTransactionIdleTracking('committed');
 
-        assert(this.currentScope.state === 'committing');
-        this.currentScope.state = 'post-commit';
-
-        this.transactionDepth = 0;
         this.transactionIsolationLevel = undefined;
         this.releaseConnection();
-        return true;
       } else {
+        assert(this.currentScope.kind === 'savepoint');
+        assert(this.currentScope.parent.kind !== 'root');
         // If RELEASE SAVEPOINT fails (e.g. transaction in aborted state), let the error propagate.
         // withTransaction's catch will invoke rollbackTransaction, which can run ROLLBACK TO SAVEPOINT
         // even against an aborted transaction to recover — aborting here would discard work the outer
         // scope can still commit. rollbackTransaction's own catch handles the truly-dead-connection case.
         await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
-        this.transactionDepth--; // safe to decrement since assertInTransaction() ensures transactionDepth > 0
-
-        assert(this.currentScope.parent);
         this.currentScope.state = 'released';
         this.currentScope.parent.preCommitCallbacks.push(...this.currentScope.preCommitCallbacks);
         this.currentScope.parent.postCommitCallbacks.push(...this.currentScope.postCommitCallbacks);
         this.currentScope = this.currentScope.parent;
-        return false;
       }
     });
 
-    if (shouldProcessPostCommit) {
+    if (this.currentScope.state === 'post-commit') {
+      this.assertCurrentScope(txScope); // defense in depth, make sure we're still working on the same scope passed in
       try {
         await this.processPostCommit(this.currentScope);
       } finally {
-        assert(this.currentScope.state === 'post-commit');
-        assert(this.currentScope.parent);
         this.currentScope.state = 'ended';
         this.currentScope = this.currentScope.parent;
       }
     }
   }
 
-  private async rollbackTransaction(txScope: WritableScope, error: Error): Promise<void> {
+  private async rollbackTransaction(txScope: ConnectionScope, error: Error): Promise<void> {
     return this.withConnectionStateLock(async () => {
       // Tolerate being called after state has already been reset (e.g. when a prior
       // cleanup path in commit/rollback fully aborted the transaction on a dead connection).
-      if (this.transactionDepth === 0) {
+      if (!this.isInTransaction()) {
         return;
       }
       this.assertCurrentScope(txScope);
@@ -641,12 +663,10 @@ export class RepositoryConnection implements Disposable {
         });
 
         // abort the transaction
-        while (this.currentScope !== this.rootScope) {
-          assert(this.currentScope.parent);
+        while (this.currentScope.kind !== 'root') {
           this.currentScope.state = 'ended';
           this.currentScope = this.currentScope.parent;
         }
-        this.transactionDepth = 0;
         this.transactionIsolationLevel = undefined;
 
         // Pass the original triggering error so the client is released with the right root cause.
@@ -662,8 +682,6 @@ export class RepositoryConnection implements Disposable {
       assert(this.currentScope.parent);
       this.currentScope.state = 'ended';
       this.currentScope = this.currentScope.parent;
-
-      this.transactionDepth--; // safe to decrement since early return if transactionDepth === 0
       if (isOuter) {
         this.transactionIsolationLevel = undefined;
         this.releaseConnection(error);
@@ -745,15 +763,15 @@ export class RepositoryConnection implements Disposable {
     if (this.currentScope.state !== 'active' && this.currentScope.state !== 'committing') {
       throw new Error('Cannot add pre-commit callback while scope is not active');
     }
-    if (this.currentScope !== this.rootScope) {
-      this.currentScope.preCommitCallbacks.push(fn);
-    } else {
+    if (this.currentScope.kind === 'root') {
       // rely on thrown errors bubbling up from here to halt the transaction
       await fn();
+    } else {
+      this.currentScope.preCommitCallbacks.push(fn);
     }
   }
 
-  private async processPreCommit(scope: WritableScope): Promise<void> {
+  private async processPreCommit(scope: TransactionScope): Promise<void> {
     let cb: (() => Promise<void>) | undefined;
     while ((cb = scope.preCommitCallbacks.shift())) {
       // rely on thrown errors bubbling up from here to halt the transaction
@@ -767,14 +785,14 @@ export class RepositoryConnection implements Disposable {
     // immediately like the no-transaction case below. This is what allows writes
     // performed within post-commit callbacks (which register their own post-commit
     // callbacks after their inner transaction ends) to work.
-    if (this.currentScope !== this.rootScope && this.currentScope.state !== 'post-commit') {
+    if (this.currentScope.kind !== 'root' && this.currentScope.state !== 'post-commit') {
       this.currentScope.postCommitCallbacks.push(fn);
     } else {
       await this.invokePostCommitCallback(fn);
     }
   }
 
-  private async processPostCommit(scope: WritableScope): Promise<void> {
+  private async processPostCommit(scope: TransactionScope): Promise<void> {
     let cb: (() => Promise<void>) | undefined;
     while ((cb = scope.postCommitCallbacks.shift())) {
       await this.invokePostCommitCallback(cb);
@@ -799,7 +817,7 @@ export class RepositoryConnection implements Disposable {
 
   [Symbol.dispose](removeConnection?: boolean): void {
     this.assertNotClosed();
-    if (this.transactionDepth > 0) {
+    if (this.isInTransaction()) {
       // Bad state, remove connection from pool
       getLogger().error('Closing Repository with active transaction');
       this.releaseConnection(new Error('Closing Repository with active transaction'));
