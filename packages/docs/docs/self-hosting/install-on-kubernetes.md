@@ -94,3 +94,60 @@ With the namespace created and the `values.yaml` file configured, they can now r
 ```bash
 helm install medplum medplum/medplum --namespace medplum -f ./values.yaml
 ```
+
+## Upgrade to a new version
+
+After Medplum has been installed, you can upgrade the existing Helm release using `helm upgrade`.
+
+Before upgrading, review [Upgrading Medplum Server](/docs/self-hosting/upgrading-server). Medplum upgrades must be applied one minor version at a time, and you should wait for database migrations to complete before proceeding to the next minor version.
+
+First, update your local Helm repository index:
+
+```bash
+helm repo update
+```
+
+For production upgrades, pin the Medplum version with the `--version` flag:
+
+```bash
+helm upgrade medplum medplum/medplum \
+  --namespace medplum \
+  -f ./values.yaml \
+  --version 5.1.17 \
+  --wait
+```
+
+This upgrades the existing `medplum` release in the `medplum` namespace using Medplum chart version `5.1.17` and your configured `values.yaml` file.
+
+To upgrade to the latest available version of the Medplum Helm chart, omit the `--version` flag:
+
+```bash
+helm upgrade medplum medplum/medplum \
+  --namespace medplum \
+  -f ./values.yaml \
+  --wait
+```
+
+Medplum releases its Helm chart, application packages, and Docker images together using the same version number. For example, chart version `5.1.17` deploys Medplum application version `5.1.17` by default.
+
+The `--wait` flag waits for Kubernetes resources to become ready before marking the upgrade as successful.
+
+### Upgrade with a specific Docker image
+
+In most cases, you should upgrade Medplum by upgrading the Helm chart version, as described above. Medplum publishes its Helm chart and Docker images together using the same version number.
+
+Advanced users may want to override the Docker image tag directly. This can be useful for internal testing, release candidates, custom builds, or CI/CD workflows that deploy images identified by Git SHA.
+
+For example:
+
+```bash
+helm upgrade medplum medplum/medplum \
+  --namespace medplum \
+  -f ./values.yaml \
+  --set deployment.image.tag=abc123def456 \
+  --wait
+```
+
+This overrides the `deployment.image.tag` value from `values.yaml` for this upgrade.
+
+Use this option carefully. Overriding the Docker image tag can cause the Helm chart version and Medplum application version to diverge. This is useful for advanced deployment workflows, but the recommended production path is to use matching Medplum chart and application versions.
