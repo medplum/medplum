@@ -218,9 +218,7 @@ This ensures that traffic to these domains is routed through the CDN-enabled loa
 
 ### Deploy APP Using Helm {/* #deploy-app-using-helm */}
 
-The Helm chart is a package that contains `yaml` templates that represents Kubernetes Objects.
-
-The helm chart can be found in the `helm` directory.
+The Medplum Helm chart is a package containing `yaml` templates representing Kubernetes objects.
 
 **It will deploy:**
 
@@ -266,26 +264,34 @@ Reapply the Terraform configuration if you make changes:
 terraform apply
 ```
 
-#### Navigate to Your Helm Chart Directory {/* #navigate-to-your-helm-chart-directory */}
+#### Setup the Helm Repository {/* #setup-the-helm-repository */}
+
+Add the Medplum Helm repository:
 
 ```bash
-cd medplum/helm
+helm repo add medplum https://charts.medplum.com
+helm repo update
+```
+
+Generate a local `values.yaml` file:
+
+```bash
+helm show values medplum/medplum > values.yaml
 ```
 
 #### Edit the values.yaml File {/* #edit-the-values.yaml-file */}
 
-Edit the values.yaml file to override default values, specifying your cloud provider, project_id and config_sicret_id:
+Edit the `values.yaml` file to override default values, specifying your cloud provider and configuration source:
 
 ```yaml
 global:
-  cloudProvider: gcp # Supported values: gcp. # roadmap: aws, azure
-  gcp:
-    projectId: [MY_PROJECT_ID] # Your Google Cloud Platform project ID
-    secretId: [MY_CONFIG_SECRET_ID] # The secret ID for configuration in Google Cloud Platform
+  cloudProvider: gcp
+  configSource:
+    type: "gcp:[MY_PROJECT_ID]:[MY_CONFIG_SECRET_ID]"
 ```
 
 Replace `[MY_PROJECT_ID]` with your actual GCP project id.
-Replace [`[MY_CONFIG_SECRET_ID]`](#generate-configuration-secret) with the secret name created the step before.
+Replace `[MY_CONFIG_SECRET_ID]` with the secret name created in the [Generate configuration secret](#generate-configuration-secret) step.
 
 #### Edit service account values {/* #edit-service-account-values */}
 
@@ -295,9 +301,9 @@ serviceAccount:
     iam.gke.io/gcp-service-account: [MY_GCP_SERVICE_ACCOUNT] # Your Google Cloud Platform service account e.i: medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com
 ```
 
-    Replace `[MY_GCP_SERVICE_ACCOUNT]` with your actual GCP service account which was created by terraform and its name is `medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com`
+Replace `[MY_GCP_SERVICE_ACCOUNT]` with your actual GCP service account, which was created by Terraform and is named `medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com`.
 
-**Edit ingress values:**
+#### Edit ingress values {/* #edit-ingress-values */}
 
 (ingress is optional, customers can choose to use whatever method they like to expose the app)
 
@@ -307,30 +313,37 @@ ingress:
   domain: api.yourdomain.com
 ```
 
-    Replace `api.yourdomain.com` with your actual domain.
+Replace `api.yourdomain.com` with your actual domain.
 
-**Install the Application:**
+#### Install the Application {/* #install-the-application */}
 
 ```bash
-helm install medplum-server . -n medplum --create-namespace -f values.yaml
+helm install medplum medplum/medplum \
+  --namespace medplum \
+  --create-namespace \
+  -f values.yaml
 ```
-
-Note: “.” is the `./path-to-your-helm-chart.` The `values.yam`l is in the same directory as helm chart
 
 - **Update DNS Records:**
 
 Obtain the IP address of the Ingress:
 
 ```bash
-kubectl get ingress medplum-server --namespace medplum
+kubectl get ingress medplum --namespace medplum
 
-NAME             CLASS    HOSTS                     ADDRESS        PORTS   AGE
-medplum-server   <none>   api.yourdomain.com        34.8.101.254   80      18h
+NAME      CLASS    HOSTS                     ADDRESS        PORTS   AGE
+medplum   <none>   api.yourdomain.com        34.8.101.254   80      18h
 ```
 
 Update your DNS records to point api.yourdomain.com to the Ingress IP address.
 
 This is the backend API endpoint.
+
+### Upgrade the backend application {/* #upgrade-the-backend-application */}
+
+Backend upgrades use the standard Medplum Helm upgrade process. See [Install on Kubernetes: Upgrade to a new version](/docs/self-hosting/install-on-kubernetes#upgrade-to-a-new-version).
+
+The GCP-specific settings in `values.yaml`, such as the configuration source, service account annotations, and ingress settings, continue to apply during the upgrade. This upgrades the Kubernetes backend only; frontend static assets are built and uploaded separately in the next section.
 
 ## Deploy the frontend (App) {/* #deploy-the-frontend-(app) */}
 

@@ -257,9 +257,7 @@ cdn_endpoint = "medplumapp7d8c-endpoint-cv01.azurefd.net"
 
 ### Deploy the APP Using Helm {/* #deploy-the-app-using-helm */}
 
-The Helm chart is a package containing `yaml` templates representing Kubernetes Objects.
-
-The helm chart can be found in the `helm` directory.
+The Medplum Helm chart is a package containing `yaml` templates representing Kubernetes objects.
 
 **It will deploy:**
 
@@ -274,67 +272,73 @@ The helm chart can be found in the `helm` directory.
 
 #### Configure kubectl {/* #configure-kubectl */}
 
-Get credentials for your GKE cluster:
+Get credentials for your AKS cluster:
 
-```
+```bash
 az aks get-credentials --resource-group MY_RESOURCE_GROUP --name AKS_NAME --overwrite-existing --admin
 ```
 
-#### Navigate to Your Helm Chart Directory {/* #navigate-to-your-helm-chart-directory */}
+#### Setup the Helm Repository {/* #setup-the-helm-repository */}
 
+Add the Medplum Helm repository:
+
+```bash
+helm repo add medplum https://charts.medplum.com
+helm repo update
 ```
-cd medplum/helm
+
+Generate a local `values.yaml` file:
+
+```bash
+helm show values medplum/medplum > values.yaml
 ```
 
 #### Edit the values.yaml File {/* #edit-the-values.yaml-file */}
 
-Edit the `values.yaml` file to override default values, specifying your cloud provider, project_id and config_sicret_id:
+Edit the `values.yaml` file to override default values, specifying your cloud provider and configuration source:
 
-```
+```yaml
 global:
   cloudProvider: azure
-  azure:
-    keyVaultURL: [MY_KEYVAULT_URL] # Your Azure Key Vault URL
-    secretName: [MY_CONFIG_SECRET_NAME] # The configuration secret Name in Azure
-
+  configSource:
+    type: "azure:[MY_KEY_VAULT_HOST]:[MY_CONFIG_SECRET_NAME]"
 ```
 
-Replace `[MY_KEYVAULT_URL]` with the key vault URL where the configuration secret is.  
-Replace [`[`](#generate-configuration-secret)`MY_CONFIG_SECRET_NAME]` with the secret name created in the step before.
+Replace `[MY_KEY_VAULT_HOST]` with the Key Vault host where the configuration secret is stored, for example `my-vault.vault.azure.net`. Do not include `https://` or a trailing slash.
+Replace `[MY_CONFIG_SECRET_NAME]` with the secret name created in the [Generate configuration secret](#generate-configuration-secret) step.
 
 #### Edit service account values {/* #edit-service-account-values */}
 
-```
+```yaml
 serviceAccount:
   annotations:
     azure.workload.identity/client-id: "MY_AZURE_MANAGED_IDENTITY_ID" # Azure Managed Identity Client ID
-
 ```
 
-    Replace `[MY_AZURE_MANAGED_IDENTITY_ID]` with the managed entity ID from the terraform output:
+Replace `[MY_AZURE_MANAGED_IDENTITY_ID]` with the managed identity ID from the Terraform output:
 
 ```
 medplum_server_identity_client_id = "7f61-4b27-ae90d7ee8"
 ```
 
-**Edit ingress values:**
+#### Edit ingress values {/* #edit-ingress-values */}
 
 (ingress is optional; customers can choose to use whatever method they like to expose the app)
 
-```
+```yaml
 ingress:
   deploy: true
   domain: [MY_DOMAIN] # Your domain name
   tlsSecretName: [TLS_SECRET_NAME] # Azure only
 ```
 
-    Replace `MY_DOMAIN` and `TLS_SECRET_NAME` with your actual domain and certificate secret name
+Replace `MY_DOMAIN` and `TLS_SECRET_NAME` with your actual domain and certificate secret name.
 
-**Create a K8s secret from the KeyVault certificate:**
+#### Create a K8s secret from the Key Vault certificate {/* #create-a-k8s-secret-from-the-key-vault-certificate */}
 
-In the Step 1, we prepared a certificate for `api.medplum.com` and exported it to a KeyVault. Now we need to download that certificate and create a kubernetes secret with it:
+In the Step 1, we prepared a certificate for `api.medplum.com` and exported it to a Key Vault. Now we need to download that certificate and create a Kubernetes secret with it:
 
-```
+```bash
 # download cert
 az keyvault secret show \
     --vault-name $KEYVAULT_NAME \
@@ -356,13 +360,20 @@ kubectl create secret tls api-certificate \
 
 Replace the variables. (this will create a secret called `api-certificate` in namespace `medplum`)
 
-**Install the Application:**
+#### Install the Application {/* #install-the-application */}
 
-```
-helm install medplum-server . -n medplum --create-namespace -f values.yaml
+```bash
+helm install medplum medplum/medplum \
+  --namespace medplum \
+  --create-namespace \
+  -f values.yaml
 ```
 
-Note: "." is the `./path-to-your-helm-chart.` The `values.yaml` is in the same directory as helm chart
+### Upgrade the backend application {/* #upgrade-the-backend-application */}
+
+Backend upgrades use the standard Medplum Helm upgrade process. See [Install on Kubernetes: Upgrade to a new version](/docs/self-hosting/install-on-kubernetes#upgrade-to-a-new-version).
+
+The Azure-specific settings in `values.yaml`, such as the configuration source, workload identity annotations, and ingress settings, continue to apply during the upgrade. This upgrades the Kubernetes backend only; frontend static assets are built and uploaded separately in the next section.
 
 ### Deploy the frontend (App) {/* #deploy-the-frontend-(app) */}
 
