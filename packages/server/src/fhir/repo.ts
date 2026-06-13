@@ -540,7 +540,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.authorizeBinarySecurityContext(resource);
   }
 
-  private async authorizeBinarySecurityContext<T extends Resource>(resource: WithId<T>): Promise<WithId<T>> {
+  private async authorizeBinarySecurityContext<T extends Resource>(resource: T): Promise<T> {
     if (resource.resourceType === 'Binary' && resource.securityContext && !this.isSuperAdmin()) {
       if (resource.securityContext.reference?.startsWith('Binary/')) {
         throw new OperationOutcomeError(notFound);
@@ -599,7 +599,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         if (!this.canPerformInteraction(AccessPolicyInteraction.READ, cacheEntry.resource)) {
           return new OperationOutcomeError(notFound);
         }
-        return await this.authorizeBinarySecurityContext(cacheEntry.resource as WithId<Resource>);
+        return await this.authorizeBinarySecurityContext(cacheEntry.resource);
       }
       return await this.readResourceFromDatabase(resourceType, id);
     } catch (err) {

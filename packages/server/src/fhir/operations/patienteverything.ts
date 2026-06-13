@@ -13,11 +13,13 @@ import {
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
+  Attachment,
   Binary,
   Bundle,
   BundleEntry,
   CompartmentDefinitionResource,
   DocumentReference,
+  DocumentReferenceContent,
   Patient,
   Reference,
   Resource,
@@ -233,51 +235,38 @@ async function inlineDocumentReferenceAttachments(
   entries: BundleEntry[] | undefined,
   maxBytes: number
 ): Promise<void> {
-  if (!entries) {
-    return;
-  }
   let totalBytes = 0;
   let inlinedCount = 0;
   let skippedCount = 0;
-  for (const entry of entries) {
+  for (const entry of entries ?? []) {
     const resource = entry.resource;
     if (resource?.resourceType !== 'DocumentReference') {
       continue;
     }
     const docRef = resource as WithId<DocumentReference>;
-    if (!docRef.content) {
-      continue;
-    }
-    for (const content of docRef.content) {
-      const attachment = content.attachment;
-      if (!attachment?.url) {
+    for (const content of docRef.content ?? []) {
+      const binaryAttachment = getBinaryAttachmentToInline(content);
+      if (!binaryAttachment) {
         continue;
       }
-      const { id, versionId } = normalizeBinaryUrl(attachment.url);
-      if (!id) {
-        continue;
-      }
+      const { attachment, id, versionId } = binaryAttachment;
       const remainingBytes = maxBytes - totalBytes;
       if (remainingBytes <= 0) {
         skippedCount++;
         continue;
       }
       try {
-        let binary: Binary;
-        if (versionId) {
-          binary = await repo.readVersion<Binary>('Binary', id, versionId);
-        } else {
-          binary = await repo.readResource<Binary>('Binary', id);
-        }
+        const binary = await readBinaryAttachmentResource(repo, id, versionId);
         const stream = await getBinaryStorage().readBinary(binary);
         const buffer = await readStreamToBufferWithLimit(stream, remainingBytes);
-        if (buffer === null) {
+        if (!buffer) {
           skippedCount++;
           getLogger().debug('Skipping attachment inline: exceeds remaining inline attachment budget', {
             binaryId: id,
             remainingBytes,
             maxBytes,
           });
+          // Leave attachment.url untouched when the Binary exceeds the inline limit.
           continue;
         }
         attachment.data = buffer.toString('base64');
@@ -296,14 +285,35 @@ async function inlineDocumentReferenceAttachments(
   getLogger().debug('Finished inlining DocumentReference attachments', { inlinedCount, skippedCount, totalBytes });
 }
 
+export function getBinaryAttachmentToInline(
+  content: DocumentReferenceContent
+): { attachment: Attachment; id: string; versionId?: string } | undefined {
+  const attachment = content.attachment;
+  if (!attachment.url) {
+    return undefined;
+  }
+  const { id, versionId } = normalizeBinaryUrl(attachment.url);
+  return id ? { attachment, id, versionId } : undefined;
+}
+
+export async function readBinaryAttachmentResource(
+  repo: Pick<Repository, 'readResource' | 'readVersion'>,
+  id: string,
+  versionId?: string
+): Promise<Binary> {
+  if (versionId) {
+    return repo.readVersion<Binary>('Binary', id, versionId);
+  }
+  return repo.readResource<Binary>('Binary', id);
+}
+
 /**
- * Reads a stream into a Buffer, aborting and returning null if the total byte count exceeds maxBytes.
- * The URL is left untouched for attachments that exceed the limit.
+ * Reads a stream into a Buffer, aborting and returning undefined if the total byte count exceeds maxBytes.
  * @param stream - binary input stream
  * @param maxBytes - Max size for attachment to inline
  * @returns Buffered binary stream
  */
-async function readStreamToBufferWithLimit(stream: Readable, maxBytes: number): Promise<Buffer | null> {
+export async function readStreamToBufferWithLimit(stream: Readable, maxBytes: number): Promise<Buffer | undefined> {
   const chunks: Buffer[] = [];
   let totalBytes = 0;
   for await (const chunk of stream) {
@@ -311,7 +321,7 @@ async function readStreamToBufferWithLimit(stream: Readable, maxBytes: number): 
     totalBytes += buf.length;
     if (totalBytes > maxBytes) {
       stream.destroy();
-      return null;
+      return undefined;
     }
     chunks.push(buf);
   }
@@ -324,11 +334,8 @@ async function readStreamToBufferWithLimit(stream: Readable, maxBytes: number): 
  * @returns The deduplicated bundle entries.
  */
 function removeDuplicateEntries(entries: Bundle<WithId<Resource>>['entry']): Bundle<WithId<Resource>>['entry'] {
-  if (!entries) {
-    return undefined;
-  }
   const seen = new Set<string>();
-  return entries.filter((entry) => {
+  return entries?.filter((entry) => {
     const resource = entry.resource as WithId<Resource>;
     const ref = getReferenceString(resource);
     if (seen.has(ref)) {

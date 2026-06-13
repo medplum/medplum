@@ -14,11 +14,17 @@ import type {
   Resource,
 } from '@medplum/fhirtypes';
 import express from 'express';
+import { Readable } from 'node:stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth } from '../../test.setup';
-import { searchPatientCompartment } from './patienteverything';
+import {
+  getBinaryAttachmentToInline,
+  readBinaryAttachmentResource,
+  readStreamToBufferWithLimit,
+  searchPatientCompartment,
+} from './patienteverything';
 
 const app = express();
 let accessToken: string;
@@ -200,7 +206,7 @@ describe('Patient Everything Operation', () => {
         resourceType: 'DocumentReference',
         status: 'current',
         subject: createReference(patient),
-        content: [{ attachment: { url: binary.url, contentType: ContentType.TEXT } }],
+        content: [{ attachment: { url: binary.url } }],
       } satisfies DocumentReference);
     expect(docRefRes.status).toBe(201);
 
@@ -229,6 +235,7 @@ describe('Patient Everything Operation', () => {
         ?.map((e) => e.resource)
         .find((r): r is DocumentReference => r?.resourceType === 'DocumentReference');
       expect(docRefWith?.content?.[0]?.attachment?.url).toBeUndefined();
+      expect(docRefWith?.content?.[0]?.attachment?.contentType).toBe(ContentType.TEXT);
       expect(docRefWith?.content?.[0]?.attachment?.data).toBeDefined();
       expect(Buffer.from(docRefWith?.content?.[0]?.attachment?.data ?? '', 'base64').toString('utf8')).toBe(
         'Hello attachment'
@@ -300,7 +307,7 @@ describe('Patient Everything Operation', () => {
     }
   });
 
-  test('Skips inlining attachments after server total inline size is exhausted', async () => {
+  test('Skips inlining attachments when the attachment cannot fit or be read', async () => {
     const previousMaxTotal = getConfig().inlineAttachmentsMaxTotalBytes;
     getConfig().inlineAttachmentsMaxTotalBytes = 5;
     const patientRes = await request(app)
@@ -315,7 +322,7 @@ describe('Patient Everything Operation', () => {
       .post('/fhir/R4/Binary')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
-      .send('12345');
+      .send('123456');
     expect(binaryRes.status).toBe(201);
     const binary = binaryRes.body as Binary;
 
@@ -327,6 +334,14 @@ describe('Patient Everything Operation', () => {
     expect(secondBinaryRes.status).toBe(201);
     const secondBinary = secondBinaryRes.body as Binary;
 
+    const thirdBinaryRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('x');
+    expect(thirdBinaryRes.status).toBe(201);
+    const thirdBinary = thirdBinaryRes.body as Binary;
+
     const docRefRes = await request(app)
       .post('/fhir/R4/DocumentReference')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -337,7 +352,20 @@ describe('Patient Everything Operation', () => {
         subject: createReference(patient),
         content: [
           { attachment: { url: binary.url, contentType: ContentType.TEXT } },
-          { attachment: { url: secondBinary.url, contentType: ContentType.TEXT } },
+          { attachment: { url: 'https://example.com/external.txt', contentType: ContentType.TEXT } },
+          {
+            attachment: {
+              url: 'Binary/00000000-0000-4000-8000-000000000003',
+              contentType: ContentType.TEXT,
+            },
+          },
+          {
+            attachment: {
+              url: `Binary/${secondBinary.id}/_history/${secondBinary.meta?.versionId}`,
+              contentType: ContentType.TEXT,
+            },
+          },
+          { attachment: { url: thirdBinary.url, contentType: ContentType.TEXT } },
         ],
       } satisfies DocumentReference);
     expect(docRefRes.status).toBe(201);
@@ -349,10 +377,16 @@ describe('Patient Everything Operation', () => {
       expect(res.status).toBe(200);
       const bundle = res.body as Bundle;
       const docRef = findDocumentReference(bundle);
-      expect(docRef?.content?.[0]?.attachment?.url).toBeUndefined();
-      expect(Buffer.from(docRef?.content?.[0]?.attachment?.data ?? '', 'base64').toString('utf8')).toBe('12345');
+      expect(docRef?.content?.[0]?.attachment?.url).toBeDefined();
+      expect(docRef?.content?.[0]?.attachment?.data).toBeUndefined();
       expect(docRef?.content?.[1]?.attachment?.url).toBeDefined();
       expect(docRef?.content?.[1]?.attachment?.data).toBeUndefined();
+      expect(docRef?.content?.[2]?.attachment?.url).toBeDefined();
+      expect(docRef?.content?.[2]?.attachment?.data).toBeUndefined();
+      expect(docRef?.content?.[3]?.attachment?.url).toBeUndefined();
+      expect(Buffer.from(docRef?.content?.[3]?.attachment?.data ?? '', 'base64').toString('utf8')).toBe('67890');
+      expect(docRef?.content?.[4]?.attachment?.url).toBeDefined();
+      expect(docRef?.content?.[4]?.attachment?.data).toBeUndefined();
     } finally {
       getConfig().inlineAttachmentsMaxTotalBytes = previousMaxTotal;
     }
@@ -364,6 +398,47 @@ function findDocumentReference(bundle: Bundle): DocumentReference | undefined {
     ?.map((e) => e.resource)
     .find((r): r is DocumentReference => r?.resourceType === 'DocumentReference');
 }
+
+describe('Patient Everything inline attachments helpers', () => {
+  test('Identifies inlineable Binary attachments', () => {
+    const id = '00000000-0000-4000-8000-000000000001';
+    const versionId = '00000000-0000-4000-8000-000000000002';
+    const attachment = { url: `Binary/${id}/_history/${versionId}` };
+
+    expect(getBinaryAttachmentToInline({ attachment })).toEqual({ attachment, id, versionId });
+    expect(getBinaryAttachmentToInline({ attachment: { data: 'SGVsbG8=' } })).toBeUndefined();
+    expect(getBinaryAttachmentToInline({ attachment: { url: 'https://example.com/file.txt' } })).toBeUndefined();
+  });
+
+  test('Reads current and versioned Binary attachments', async () => {
+    const binary = { resourceType: 'Binary', id: 'binary-id' } as Binary;
+    const versionedBinary = { resourceType: 'Binary', id: 'binary-id', meta: { versionId: 'version-id' } } as Binary;
+    const repo = {
+      readResource: jest.fn().mockResolvedValue(binary),
+      readVersion: jest.fn().mockResolvedValue(versionedBinary),
+    };
+
+    await expect(readBinaryAttachmentResource(repo, 'binary-id')).resolves.toBe(binary);
+    expect(repo.readResource).toHaveBeenCalledWith('Binary', 'binary-id');
+
+    await expect(readBinaryAttachmentResource(repo, 'binary-id', 'version-id')).resolves.toBe(versionedBinary);
+    expect(repo.readVersion).toHaveBeenCalledWith('Binary', 'binary-id', 'version-id');
+  });
+
+  test('Reads string and Buffer stream chunks into a Buffer', async () => {
+    const buffer = await readStreamToBufferWithLimit(Readable.from(['Hello ', Buffer.from('attachment')]), 1024);
+
+    expect(buffer?.toString('utf8')).toBe('Hello attachment');
+  });
+
+  test('Returns undefined and destroys the stream when the max byte count is exceeded', async () => {
+    const stream = Readable.from([Buffer.from('123'), Buffer.from('456')]);
+    const destroySpy = jest.spyOn(stream, 'destroy');
+
+    await expect(readStreamToBufferWithLimit(stream, 5)).resolves.toBeUndefined();
+    expect(destroySpy).toHaveBeenCalled();
+  });
+});
 
 describe('searchPatientCompartment', () => {
   beforeEach(async () => {
