@@ -411,7 +411,6 @@ describe('CodeSystem $import', () => {
       .send();
     expect(resExpand.status).toStrictEqual(200);
     const expanded = resExpand.body as ValueSet;
-    console.log(JSON.stringify(expanded.expansion));
     expect(expanded.expansion?.contains).toHaveLength(1);
   });
 });
