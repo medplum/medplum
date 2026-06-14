@@ -6,6 +6,7 @@ import {
   allOk,
   badRequest,
   created,
+  isOk,
   normalizeOperationOutcome,
   notFound,
   parseSearchRequest,
@@ -80,6 +81,16 @@ async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter)
   }
 
   const result = await processBatch(req, repo, router, bundle);
+
+  if (bundle.type === 'transaction') {
+    const outcome = result.entry?.[0]?.response?.outcome;
+    if (outcome && !isOk(outcome)) {
+      // For a failed transaction, the server returns a single OperationOutcome instead of a Bundle.
+      // See: https://hl7.org/fhir/R4/http.html#transaction-response
+      return [outcome];
+    }
+  }
+
   return [allOk, result];
 }
 
