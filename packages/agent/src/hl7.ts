@@ -501,7 +501,11 @@ export class AgentHl7ChannelConnection {
     } catch (err) {
       const reason = `storage error: ${normalizeErrorString(err)}`;
       this.channel.channelLog.error(`Durable enqueue failed for ${msgControlId ?? 'no-id'}: ${reason}`);
-      conn.nackCommit(event.message, enhancedMode === 'aaMode' ? 'AR' : 'CR', 'storage error');
+      // A storage error is transient (disk full, DB locked, ...), so answer with
+      // the retryable *error* code — CE (standard) / AE (aaMode) — not a terminal
+      // reject. The peer may retransmit, and because we write only a `nacked`
+      // audit row (never a committed one) the resend is accepted as fresh.
+      conn.nackCommit(event.message, enhancedMode === 'aaMode' ? 'AE' : 'CE', 'storage error');
       this.recordImmediateAck(msgControlId);
       // Best-effort audit row. If this also fails, we've already told the sender
       // NACK so they will retry — the failure log above is sufficient. No
@@ -627,8 +631,8 @@ export class AgentHl7ChannelConnection {
     this.channel.channelLog.warn(`[Duplicate rejected -- ID: ${idLabel}] prior row id=${existing.id}: ${reason}`);
     if (contentMismatch) {
       // Bypass the connection's already-acked guard: the prior (legit) copy was
-      // acked under this control ID, so nackCommit would suppress this AR.
-      this.replyAr(event.message, reason);
+      // acked under this control ID, so nackCommit would suppress this reject.
+      this.replyReject(event.message, reason);
     } else {
       conn.nackCommit(event.message, enhancedMode === 'aaMode' ? 'AR' : 'CR', reason);
     }
@@ -677,19 +681,25 @@ export class AgentHl7ChannelConnection {
   }
 
   /**
-   * Sends an application-reject (AR) for a content-mismatched duplicate, with
-   * `reason` in MSA.3. Sent directly (bypassing the connection's already-acked
-   * guard, which would otherwise suppress it because the prior copy under this
-   * control ID was already acked). No-op when the channel isn't in enhanced
-   * mode — the agent originates no ACKs on those channels.
+   * Sends a terminal reject (CR in standard enhanced mode, AR in aaMode) for a
+   * content-mismatched duplicate, with `reason` in MSA.3. A reject code (not a
+   * retryable error code) on purpose: a different message reusing an
+   * already-committed control ID can never succeed on retransmit, so the peer
+   * must not retry it.
+   *
+   * Sent directly (bypassing the connection's already-acked guard, which would
+   * otherwise suppress it because the prior copy under this control ID was
+   * already acked). No-op when the channel isn't in enhanced mode — the agent
+   * originates no ACKs on those channels.
    * @param message - The duplicate inbound message to reject.
    * @param reason - Human-readable explanation placed in MSA.3.
    */
-  private replyAr(message: Hl7Message, reason: string): void {
-    if (!this.hl7Connection.getEnhancedMode()) {
+  private replyReject(message: Hl7Message, reason: string): void {
+    const enhancedMode = this.hl7Connection.getEnhancedMode();
+    if (!enhancedMode) {
       return;
     }
-    const ack = message.buildAck({ ackCode: 'AR' });
+    const ack = message.buildAck({ ackCode: enhancedMode === 'aaMode' ? 'AR' : 'CR' });
     ack.getSegment('MSA')?.setField(3, reason);
     this.hl7Connection.send(ack);
   }

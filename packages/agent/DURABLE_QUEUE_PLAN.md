@@ -307,14 +307,17 @@ setDeferredCommitAck(deferred: boolean): void;
 ackCommit(message: Hl7Message): void;
 
 /**
- * Send a negative commit ACK (CR for standard enhanced, AR for aaMode), with
- * an optional human-readable reason recorded in MSA.3.
- * Codes:
- *   'CR' — Commit Reject (transient: storage error, retryable)
- *   'CE' — Commit Error  (permanent: malformed)
- *   'AR' — App-level Reject (used when enhancedMode=aaMode rejects)
+ * Send a negative commit ACK, with an optional human-readable reason recorded
+ * in MSA.3. The *error* codes are retryable (the peer may retransmit and could
+ * succeed); the *reject* codes are terminal (a retransmit fails identically):
+ *   'CE' — Commit Error (standard enhanced): retryable, e.g. a transient storage error.
+ *   'AE' — App-level Error (aaMode): retryable.
+ *   'CR' — Commit Reject (standard enhanced): terminal, e.g. a rejected duplicate.
+ *   'AR' — App-level Reject (aaMode): terminal.
+ * Retryable codes do NOT consume the already-acked slot, so the eventual
+ * successful retry can still send its commit ACK.
  */
-nackCommit(message: Hl7Message, code: 'CR' | 'CE' | 'AR', reason?: string): void;
+nackCommit(message: Hl7Message, code: 'CR' | 'CE' | 'AR' | 'AE', reason?: string): void;
 ```
 
 Implementation:
@@ -332,7 +335,7 @@ Implementation:
 In `enhancedMode=aaMode`, the sender expects an **AA** as the immediate ACK; there is no separate app-level AA that follows. With deferral on:
 
 - On successful commit, send AA.
-- On commit failure, send AR. The sender will treat AR as a hard rejection — they may or may not retry. This is correct: we are telling them we did not store it.
+- On a *storage* failure, send AE (Application Error) — the retryable code. The failure is transient (disk full, DB locked), so we want the sender to retransmit; because we never committed, the resend is accepted fresh. On a terminal *rejection* (duplicate), send AR — a hard reject the sender must not retry.
 
 We document this behavior change clearly in the channel URL `enhanced=aa` docs.
 
@@ -378,7 +381,8 @@ The runtime path replacing today's `AgentHl7ChannelConnection.handleMessage` (`h
           API needed — we're literally re-asserting the prior commit promise.
         - On unique-index conflict + duplicateBehavior=reject: connection.nackCommit(
           msg, 'CR', 'duplicate control id'); INSERT a `nacked` audit row; return.
-        - On other DB error: connection.nackCommit(msg, 'CR', errorMessage);
+        - On other DB error: connection.nackCommit(msg, 'CE', errorMessage)
+          (retryable — a storage error is transient, so the peer may retransmit);
           attempt INSERT of a `nacked` row best-effort (different DB handle session
           to avoid cascading on a transient error). Return.
    d. On successful INSERT → connection.ackCommit(message). Source now holds a
@@ -393,8 +397,8 @@ Failure handling matrix:
 | Failure point | Source sees | Row state |
 |---|---|---|
 | Body parse fails before INSERT (no MSH.10) | `CR`/`AR` (nackCommit with 'malformed') in enhanced mode; nothing in standard mode (current behavior) | `nacked` (with `msg_control_id=NULL`, `last_error='unparseable'`) — best effort |
-| INSERT fails (disk full, permission, corrupted DB) | `CR`/`AR` (nackCommit with 'storage error') | best-effort `nacked` write to a separate journal log file (DB is presumed unwritable) |
-| Duplicate (reject mode) | `CR`/`AR` (nackCommit with 'duplicate') | `nacked` |
+| INSERT fails (disk full, permission, corrupted DB) | `CE`/`AE` (nackCommit with 'storage error') — retryable, so the peer can retransmit | best-effort `nacked` write to a separate journal log file (DB is presumed unwritable) |
+| Duplicate (reject mode) | `CR`/`AR` (nackCommit with 'duplicate') — terminal | `nacked` |
 | Duplicate (idempotent mode) | prior stored ACK (or synthetic AA) | none (no new row) |
 | INSERT succeeds | `CA`/`AA` (ackCommit) | `queued` |
 

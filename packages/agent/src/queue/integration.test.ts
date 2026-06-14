@@ -422,7 +422,9 @@ describe('Durable queue integration', () => {
         'PID|||PATID9999^5^M11||SMITH^JANE^B||19700101|F\r'
     );
     const rejected = await client.sendAndWait(mismatched, { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
-    expect(rejected.getSegment('MSA')?.getField(1)?.toString()).toBe('AR');
+    // Standard enhanced mode → CR (a terminal *reject*: retransmitting a message
+    // that reuses a committed control ID can never succeed, so the peer must not retry).
+    expect(rejected.getSegment('MSA')?.getField(1)?.toString()).toBe('CR');
     expect(rejected.getSegment('MSA')?.getField(3)?.toString()).toContain('different content');
 
     // The mismatch produced a nacked audit row; the original is untouched.
@@ -545,12 +547,139 @@ describe('Durable queue integration', () => {
     });
 
     const failed = await client.sendAndWait(TEST_MSG('X'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
-    expect(failed.getSegment('MSA')?.getField(1)?.toString()).toBe('CR');
+    // A storage error is transient → CE (the retryable commit code), not a reject.
+    expect(failed.getSegment('MSA')?.getField(1)?.toString()).toBe('CE');
     enqueueSpy.mockRestore();
 
     // The next message must reuse sequence 0 — the failed one consumed nothing.
     await client.sendAndWait(TEST_MSG('Y'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
     expect(queue.findSeenByControlId('dq-test', 'Y')?.seqNo).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('storage error is retryable by the peer: a CE retransmit is accepted fresh and processed', async () => {
+    // A successfully-enqueued message reaches `processed` (200 + AA).
+    startMockServer((cmd) => {
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: ack.toString(),
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    // First intake hits a (simulated, transient) storage error. The agent answers
+    // CE — the retryable commit code — and writes only a `nacked` audit row, so
+    // the control ID is never committed and isn't poisoned for a later resend.
+    const enqueueSpy = vi.spyOn(queue, 'enqueue').mockImplementationOnce(() => {
+      throw new Error('simulated disk full');
+    });
+    const failed = await client.sendAndWait(TEST_MSG('RETRY_ME'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(failed.getSegment('MSA')?.getField(1)?.toString()).toBe('CE');
+    enqueueSpy.mockRestore();
+
+    // The peer retransmits the same message. Because the prior row is `nacked`
+    // (never committed), this is treated as a fresh delivery — CA, then processed —
+    // not a duplicate replay of the failure.
+    const retried = await client.sendAndWait(TEST_MSG('RETRY_ME'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(retried.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    await waitForRow(queue, (counts) => counts.processed === 1, 3000);
+    const counts = queue.countByState();
+    expect(counts.processed).toBe(1); // the retransmit went all the way through
+    expect(counts.nacked).toBe(1); // the storage-error audit row from the first attempt
+    expect(counts.queued + counts.processing + counts.errored).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('a committed duplicate is replayed, never re-dispatched to the server', async () => {
+    // Count how many times we dispatch upstream so we can assert the duplicate
+    // is *not* reprocessed.
+    let dispatches = 0;
+    startMockServer((cmd) => {
+      dispatches++;
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: ack.toString(),
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    const first = await client.sendAndWait(TEST_MSG('COMMITTED'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(first.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+    await waitForRow(queue, (counts) => counts.processed === 1, 3000);
+    expect(dispatches).toBe(1);
+
+    // The peer retransmits the same committed message. It must get the prior
+    // server ACK replayed — and the server must NOT be dispatched a second time
+    // (a committed control ID is never reprocessed).
+    const replay = await client.sendAndWait(TEST_MSG('COMMITTED'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(replay.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
+    expect(dispatches).toBe(1); // unchanged: no re-dispatch
+    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, processing: 0, errored: 0, nacked: 0 });
 
     await client.close();
     await app.stop();

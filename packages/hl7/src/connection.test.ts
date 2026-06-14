@@ -508,6 +508,51 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A`);
       await connection.close();
     });
 
+    test('nackCommit sends CE (retryable commit error) in standard mode', async () => {
+      const mockSocket = new MockSocket();
+      const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
+      connection.setDeferredCommitAck(true);
+
+      connection.nackCommit(testMessage, 'CE', 'storage error');
+
+      expect(mockSocket.write).toHaveBeenCalledTimes(1);
+      const writeBuffer = mockSocket.write.mock.calls[0][0] as Buffer;
+      expect(getAckCode(writeBuffer)).toBe('CE');
+      expect(getAckMsaText(writeBuffer)).toBe('storage error');
+
+      await connection.close();
+    });
+
+    test('nackCommit sends AE (retryable application error) in aaMode', async () => {
+      const mockSocket = new MockSocket();
+      const connection = new Hl7Connection(mockSocket as any, undefined, 'aaMode');
+      connection.setDeferredCommitAck(true);
+
+      connection.nackCommit(testMessage, 'AE');
+
+      expect(mockSocket.write).toHaveBeenCalledTimes(1);
+      expect(getAckCode(mockSocket.write.mock.calls[0][0] as Buffer)).toBe('AE');
+
+      await connection.close();
+    });
+
+    test('ackCommit after a retryable nackCommit (CE) for the same MSH.10 still sends', async () => {
+      // CE invites a retransmit, so it must not poison the already-acked slot:
+      // the successful retry's commit ACK must still reach the wire.
+      const mockSocket = new MockSocket();
+      const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
+      connection.setDeferredCommitAck(true);
+
+      connection.nackCommit(testMessage, 'CE', 'storage error');
+      connection.ackCommit(testMessage);
+
+      expect(mockSocket.write).toHaveBeenCalledTimes(2);
+      expect(getAckCode(mockSocket.write.mock.calls[0][0] as Buffer)).toBe('CE');
+      expect(getAckCode(mockSocket.write.mock.calls[1][0] as Buffer)).toBe('CA');
+
+      await connection.close();
+    });
+
     test('nackCommit is no-op when not in enhanced mode', async () => {
       const mockSocket = new MockSocket();
       const connection = new Hl7Connection(mockSocket as any, undefined, undefined);
