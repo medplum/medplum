@@ -7,6 +7,7 @@ import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
 import { runMigrations } from './schema';
 import type {
+  AckOutcome,
   EnqueueInput,
   EnqueueRejectedInput,
   EnqueueResult,
@@ -14,7 +15,11 @@ import type {
   MessageState,
   QueueErrorCode,
 } from './types';
-import { MessageState as MessageStateValues, QueueErrorCode as QueueErrorCodeValues } from './types';
+import {
+  AckOutcome as AckOutcomeValues,
+  MessageState as MessageStateValues,
+  QueueErrorCode as QueueErrorCodeValues,
+} from './types';
 
 export interface DurableQueueOptions {
   /** Filesystem path to the SQLite DB file. */
@@ -67,7 +72,8 @@ export class DurableQueue {
   private readonly findByIdStmt: StatementSync;
   private readonly recordServerResponseStmt: StatementSync;
   private readonly markProcessedStmt: StatementSync;
-  private readonly markErroredStmt: StatementSync;
+  private readonly markBotFailedStmt: StatementSync;
+  private readonly setAckOutcomeStmt: StatementSync;
   private readonly requeueStmt: StatementSync;
   private readonly recoverProcessingStmt: StatementSync;
   private readonly listQueuedIdsForChannelStmt: StatementSync;
@@ -115,9 +121,9 @@ export class DurableQueue {
       INSERT INTO inbound_hl7_messages (
         channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
         enhanced_mode, state, attempt_count, callback_id,
-        ack_sent_to_source, last_error, seq_no, received_at
+        ack_outcome, last_error, seq_no, received_at
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 1, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 'not_owed', ?, ?, ?
       )
     `);
 
@@ -182,20 +188,35 @@ export class DurableQueue {
        WHERE id = ?
     `);
 
+    // Bot accepted (2xx). state → processed regardless of the source leg; the
+    // caller passes the ack_outcome (delivered / undelivered) separately so a
+    // failed return ACK is recorded on its own axis, never as a Bot-leg error.
     this.markProcessedStmt = this.db.prepare(`
       UPDATE inbound_hl7_messages
          SET state = 'processed',
-             ack_sent_to_source = 1,
+             ack_outcome = ?,
              processed_at = ?
        WHERE id = ?
     `);
 
-    this.markErroredStmt = this.db.prepare(`
+    // Bot-leg failure: state is the caller-supplied terminal (`rejected` for a
+    // permanent reject, `failed` for transient/ambiguous). No app-level ACK is
+    // owed in either case, so the source leg settles to not_owed.
+    this.markBotFailedStmt = this.db.prepare(`
       UPDATE inbound_hl7_messages
-         SET state = 'errored',
+         SET state = ?,
              errored_at = ?,
              last_error = ?,
-             error_code = ?
+             error_code = ?,
+             ack_outcome = 'not_owed'
+       WHERE id = ?
+    `);
+
+    // Source leg only: used when a retransmit replays a previously-undelivered
+    // ACK and lands it, flipping the row's ack_outcome without touching state.
+    this.setAckOutcomeStmt = this.db.prepare(`
+      UPDATE inbound_hl7_messages
+         SET ack_outcome = ?
        WHERE id = ?
     `);
 
@@ -211,9 +232,13 @@ export class DurableQueue {
        WHERE id = ? AND state = 'processing'
     `);
 
+    // Interrupted mid-flight: ambiguous (the server may or may not have processed
+    // it), so it lands in `failed` for operator review — never `rejected`. The
+    // source leg's ack_outcome is left as-is (`pending`): we genuinely don't know
+    // whether an ACK was owed.
     this.recoverProcessingStmt = this.db.prepare(`
       UPDATE inbound_hl7_messages
-         SET state = 'errored',
+         SET state = 'failed',
              errored_at = ?,
              last_error = COALESCE(last_error, 'interrupted: process restart while processing'),
              error_code = COALESCE(error_code, '${QueueErrorCodeValues.Interrupted}')
@@ -363,8 +388,8 @@ export class DurableQueue {
    * Inserts a new `queued` row.
    *
    * If any prior non-`nacked` row already owns this `(channel_name,
-   * msg_control_id)` — in `queued`, `processing`, `processed`, or `errored` —
-   * we don't insert; we surface a `duplicate` result carrying that row so the
+   * msg_control_id)` — in `queued`, `processing`, `processed`, `rejected`, or
+   * `failed` — we don't insert; we surface a `duplicate` result carrying that row so the
    * caller can compare bodies and decide between replaying the prior ACK and
    * rejecting the collision (§8). The partial unique index remains as a
    * last-resort guard against an active-window race (not expected in the
@@ -514,24 +539,60 @@ export class DurableQueue {
   }
 
   /**
-   * Terminal transition: row succeeded end-to-end (server 2xx + source ACK delivered).
+   * Terminal Bot-leg transition: the server accepted the message (2xx). The
+   * source leg is recorded independently via `ackOutcome` — `delivered` when the
+   * app-level ACK reached the source, `undelivered` when it couldn't (e.g. the
+   * source connection had closed). An `undelivered` row is fully processed
+   * upstream and must never be re-dispatched; it recovers when the source
+   * retransmits and the stored ACK is replayed (see {@link setAckOutcome}).
    * @param id - Row primary key.
+   * @param ackOutcome - Source-leg result: `delivered` or `undelivered`.
    * @param now - Override for `processed_at` (for tests).
    */
-  markProcessed(id: number, now: number = Date.now()): void {
-    this.markProcessedStmt.run(now, id);
+  markProcessed(id: number, ackOutcome: AckOutcome, now: number = Date.now()): void {
+    this.markProcessedStmt.run(ackOutcome, now, id);
     this.walDirty = true;
   }
 
   /**
-   * Terminal transition: row failed somewhere after commit.
+   * Terminal Bot-leg transition: the server **rejected** the message itself
+   * (permanent 4xx). Retrying can never help — the content must be triaged.
    * @param id - Row primary key.
    * @param error - Human-readable error string, written to `last_error`.
    * @param errorCode - Machine-readable classification, written to `error_code`.
    * @param now - Override for `errored_at` (for tests).
    */
-  markErrored(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
-    this.markErroredStmt.run(now, error, errorCode, id);
+  markRejected(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+    this.markBotFailedStmt.run(MessageStateValues.REJECTED, now, error, errorCode, id);
+    this.walDirty = true;
+  }
+
+  /**
+   * Terminal-for-now Bot-leg transition: a **transient/ambiguous** failure
+   * (5xx, 429, response timeout, dispatch error, interrupted). The retry/
+   * operator-review candidate — distinct from a `rejected` message so a future
+   * retry policy can re-dispatch `failed` rows without ever touching `rejected`
+   * ones (or `processed` + `undelivered` ones, whose Bot leg already succeeded).
+   * @param id - Row primary key.
+   * @param error - Human-readable error string, written to `last_error`.
+   * @param errorCode - Machine-readable classification, written to `error_code`.
+   * @param now - Override for `errored_at` (for tests).
+   */
+  markFailed(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+    this.markBotFailedStmt.run(MessageStateValues.FAILED, now, error, errorCode, id);
+    this.walDirty = true;
+  }
+
+  /**
+   * Updates only the source-leg {@link AckOutcome}, leaving the Bot-leg `state`
+   * untouched. Used when a duplicate retransmit replays a previously
+   * `undelivered` ACK and it lands — flipping the row to `delivered` so it no
+   * longer reads as awaiting source delivery.
+   * @param id - Row primary key.
+   * @param ackOutcome - The new source-leg outcome.
+   */
+  setAckOutcome(id: number, ackOutcome: AckOutcome): void {
+    this.setAckOutcomeStmt.run(ackOutcome, id);
     this.walDirty = true;
   }
 
@@ -554,9 +615,9 @@ export class DurableQueue {
   }
 
   /**
-   * Promotes every `processing` row to `errored`. Runs once at startup so that
-   * rows interrupted mid-dispatch surface for operator review instead of being
-   * silently retried (§10).
+   * Promotes every `processing` row to `failed` (error code `interrupted`). Runs
+   * once at startup so that rows interrupted mid-dispatch surface for operator
+   * review instead of being silently retried (§10).
    * @param now - Override for `errored_at` (for tests).
    * @returns The number of rows promoted.
    */
@@ -585,7 +646,8 @@ export class DurableQueue {
       queued: 0,
       processing: 0,
       processed: 0,
-      errored: 0,
+      rejected: 0,
+      failed: 0,
       nacked: 0,
     };
     const rows = this.countByStateStmt.all() as { state: MessageState; n: number }[];
@@ -752,7 +814,7 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
         ? null
         : toBuffer(raw.server_response_body),
     serverStatusCode: (raw.server_status_code as number | null) ?? null,
-    ackSentToSource: (raw.ack_sent_to_source as number) === 1,
+    ackOutcome: (raw.ack_outcome as AckOutcome | null) ?? AckOutcomeValues.PENDING,
     lastError: (raw.last_error as string | null) ?? null,
     errorCode: (raw.error_code as QueueErrorCode | null) ?? null,
     seqNo: (raw.seq_no as number | null) ?? null,

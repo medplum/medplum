@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createMockLogger } from '../test-utils';
 import { DurableQueue, isUniqueConstraintError } from './durable-queue';
-import { MessageState, QueueErrorCode } from './types';
+import { AckOutcome, MessageState, QueueErrorCode } from './types';
 
 function makeEnqueueInput(
   overrides: Partial<Parameters<DurableQueue['enqueue']>[0]> = {}
@@ -82,7 +82,7 @@ describe('DurableQueue', () => {
     if (r1.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.markProcessed(r1.row.id);
+    queue.markProcessed(r1.row.id, AckOutcome.DELIVERED);
     const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP2', callbackId: 'cb-second' }));
     expect(r2.kind).toBe('duplicate');
     if (r2.kind !== 'duplicate') {
@@ -92,13 +92,13 @@ describe('DurableQueue', () => {
     expect(r2.existing.state).toBe(MessageState.PROCESSED);
   });
 
-  test('duplicate is detected once the prior row is terminal (errored)', () => {
+  test('duplicate is detected once the prior row is terminal (failed)', () => {
     const r1 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP3', callbackId: 'cb-err' }));
     if (r1.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
     queue.claimNext(r1.row.channelName);
-    queue.markErrored(r1.row.id, 'boom', QueueErrorCode.ServerError);
+    queue.markFailed(r1.row.id, 'boom', QueueErrorCode.ServerError);
     const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP3', callbackId: 'cb-after-error' }));
     expect(r2.kind).toBe('duplicate');
   });
@@ -210,7 +210,7 @@ describe('DurableQueue', () => {
     expect(queue.getById(r2.row.id)?.state).toBe(MessageState.QUEUED);
   });
 
-  test('markProcessed and markErrored set timestamps correctly', () => {
+  test('markProcessed records the source-leg ack outcome and processed timestamp', () => {
     const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS1' }));
     if (r.kind !== 'inserted') {
       throw new Error('expected inserted');
@@ -218,26 +218,57 @@ describe('DurableQueue', () => {
     const claimed = queue.claimNext(r.row.channelName);
     expect(claimed?.processingStartedAt).not.toBeNull();
 
-    queue.markProcessed(r.row.id, 1700000000000);
+    queue.markProcessed(r.row.id, AckOutcome.DELIVERED, 1700000000000);
     const after = queue.getById(r.row.id);
     expect(after?.state).toBe(MessageState.PROCESSED);
     expect(after?.processedAt).toBe(1700000000000);
-    expect(after?.ackSentToSource).toBe(true);
+    expect(after?.ackOutcome).toBe(AckOutcome.DELIVERED);
 
-    // markErrored on a separate row, to confirm it doesn't disturb the processed one.
-    const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS2' }));
-    if (r2.kind !== 'inserted') {
+    // The Bot can accept the message (processed) while the source ACK fails to
+    // deliver — the two legs are recorded independently.
+    const undelivered = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS1b' }));
+    if (undelivered.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.claimNext(r2.row.channelName);
-    queue.markErrored(r2.row.id, 'boom', QueueErrorCode.ServerError, 1700000000123);
-    expect(queue.getById(r2.row.id)?.state).toBe(MessageState.ERRORED);
-    expect(queue.getById(r2.row.id)?.lastError).toBe('boom');
-    expect(queue.getById(r2.row.id)?.errorCode).toBe(QueueErrorCode.ServerError);
-    expect(queue.getById(r2.row.id)?.erroredAt).toBe(1700000000123);
+    queue.claimNext(undelivered.row.channelName);
+    queue.markProcessed(undelivered.row.id, AckOutcome.UNDELIVERED, 1700000000050);
+    expect(queue.getById(undelivered.row.id)?.state).toBe(MessageState.PROCESSED);
+    expect(queue.getById(undelivered.row.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
+    expect(queue.getById(undelivered.row.id)?.errorCode).toBeNull();
 
-    // First row still processed, unaffected.
-    expect(queue.getById(r.row.id)?.state).toBe(MessageState.PROCESSED);
+    // A later retransmit-replay can close the source leg without touching state.
+    queue.setAckOutcome(undelivered.row.id, AckOutcome.DELIVERED);
+    expect(queue.getById(undelivered.row.id)?.state).toBe(MessageState.PROCESSED);
+    expect(queue.getById(undelivered.row.id)?.ackOutcome).toBe(AckOutcome.DELIVERED);
+  });
+
+  test('markRejected and markFailed set the terminal Bot-leg state, error, and not_owed ack', () => {
+    // markFailed: transient Bot-leg failure → `failed`, ack not owed.
+    const f = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS2' }));
+    if (f.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    queue.claimNext(f.row.channelName);
+    queue.markFailed(f.row.id, 'boom', QueueErrorCode.ServerError, 1700000000123);
+    expect(queue.getById(f.row.id)?.state).toBe(MessageState.FAILED);
+    expect(queue.getById(f.row.id)?.lastError).toBe('boom');
+    expect(queue.getById(f.row.id)?.errorCode).toBe(QueueErrorCode.ServerError);
+    expect(queue.getById(f.row.id)?.erroredAt).toBe(1700000000123);
+    expect(queue.getById(f.row.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
+
+    // markRejected: permanent reject → `rejected`, ack not owed.
+    const rj = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS3' }));
+    if (rj.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    queue.claimNext(rj.row.channelName);
+    queue.markRejected(rj.row.id, 'bad message', QueueErrorCode.ServerRejected, 1700000000200);
+    expect(queue.getById(rj.row.id)?.state).toBe(MessageState.REJECTED);
+    expect(queue.getById(rj.row.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
+    expect(queue.getById(rj.row.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
+
+    // The failed row is untouched by the rejected one.
+    expect(queue.getById(f.row.id)?.state).toBe(MessageState.FAILED);
   });
 
   test('recordServerResponse writes statusCode + body without changing state', () => {
@@ -264,7 +295,7 @@ describe('DurableQueue', () => {
     expect(queue.findByCallback('nope')).toBeNull();
   });
 
-  test('recoverOnStartup promotes processing rows to errored and leaves queued alone', () => {
+  test('recoverOnStartup promotes processing rows to failed and leaves queued alone', () => {
     // Different channels so the claim picks the row we expect.
     const qrow = queue.enqueue(makeEnqueueInput({ channelName: 'Q', msgControlId: 'Q1' }));
     const prow = queue.enqueue(makeEnqueueInput({ channelName: 'P', msgControlId: 'P1' }));
@@ -275,9 +306,11 @@ describe('DurableQueue', () => {
 
     const promoted = queue.recoverOnStartup(1700000000000);
     expect(promoted).toBe(1);
-    expect(queue.getById(prow.row.id)?.state).toBe(MessageState.ERRORED);
+    expect(queue.getById(prow.row.id)?.state).toBe(MessageState.FAILED);
     expect(queue.getById(prow.row.id)?.lastError).toContain('interrupted');
     expect(queue.getById(prow.row.id)?.errorCode).toBe(QueueErrorCode.Interrupted);
+    // The source leg is genuinely unknown for an interrupted row — left pending.
+    expect(queue.getById(prow.row.id)?.ackOutcome).toBe(AckOutcome.PENDING);
     if (qrow.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
@@ -287,14 +320,16 @@ describe('DurableQueue', () => {
     expect(queue.recoverOnStartup()).toBe(0);
   });
 
-  test('enqueueRejected creates a nacked audit row with last_error and ack_sent_to_source=1', () => {
+  test('enqueueRejected creates a nacked audit row with last_error and ack_outcome=not_owed', () => {
     const row = queue.enqueueRejected({
       ...makeEnqueueInput({ msgControlId: 'NACK1' }),
       lastError: 'duplicate control id',
     });
     expect(row?.state).toBe(MessageState.NACKED);
     expect(row?.lastError).toBe('duplicate control id');
-    expect(row?.ackSentToSource).toBe(true);
+    // An intake reject was answered synchronously with a NACK; no app-level ACK
+    // is ever owed for it.
+    expect(row?.ackOutcome).toBe(AckOutcome.NOT_OWED);
     expect(row?.committedAt).toBeNull();
   });
 
@@ -305,16 +340,17 @@ describe('DurableQueue', () => {
       throw new Error('expected inserted');
     }
     queue.claimNext(a.row.channelName); // a → processing
-    queue.markProcessed(a.row.id);
+    queue.markProcessed(a.row.id, AckOutcome.DELIVERED);
     queue.claimNext(b.row.channelName); // b → processing
-    queue.markErrored(b.row.id, 'x', QueueErrorCode.DispatchFailed);
+    queue.markFailed(b.row.id, 'x', QueueErrorCode.DispatchFailed);
     queue.enqueueRejected({ ...makeEnqueueInput({ msgControlId: 'CB-N' }), lastError: 'dup' });
 
     expect(queue.countByState()).toEqual({
       queued: 0,
       processing: 0,
       processed: 1,
-      errored: 1,
+      rejected: 0,
+      failed: 1,
       nacked: 1,
     });
   });

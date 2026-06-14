@@ -10,7 +10,7 @@ import type { App } from '../app';
 import { createMockLogger } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
-import { MessageState, QueueErrorCode } from './types';
+import { AckOutcome, MessageState, QueueErrorCode } from './types';
 import { ChannelQueueWorker } from './worker';
 
 /**
@@ -135,7 +135,7 @@ describe('ChannelQueueWorker', () => {
     await worker.stop();
   });
 
-  test('server >= 400 marks the row errored and proceeds to the next', async () => {
+  test('server 5xx marks the row failed (transient) and proceeds to the next', async () => {
     const r1 = enqueueOne(queue, 'E1');
     const r2 = enqueueOne(queue, 'E2');
     const { app } = makeStubApp();
@@ -153,9 +153,11 @@ describe('ChannelQueueWorker', () => {
     await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
     worker.onServerResponse(makeResponse(r1.callbackId, 503, 'service down'));
 
-    await waitFor(() => queue.getById(r1.id)?.state === MessageState.ERRORED);
+    await waitFor(() => queue.getById(r1.id)?.state === MessageState.FAILED);
     expect(queue.getById(r1.id)?.lastError).toContain('503');
     expect(queue.getById(r1.id)?.errorCode).toBe(QueueErrorCode.ServerError);
+    // 5xx is a Bot-leg failure → no source ACK is owed.
+    expect(queue.getById(r1.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
 
     await waitFor(() => worker.hasInFlight() && r2.callbackId === lastCallback(worker));
     worker.onServerResponse(makeResponse(r2.callbackId, 200));
@@ -164,7 +166,38 @@ describe('ChannelQueueWorker', () => {
     await worker.stop();
   });
 
-  test('sendAck returning false marks the row errored', async () => {
+  test('server 4xx marks the row rejected (permanent) and proceeds to the next', async () => {
+    const r1 = enqueueOne(queue, 'RJ1');
+    const r2 = enqueueOne(queue, 'RJ2');
+    const { app } = makeStubApp();
+
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      idlePollMs: 10,
+    });
+    worker.start();
+
+    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
+    worker.onServerResponse(makeResponse(r1.callbackId, 422, 'bad message'));
+
+    await waitFor(() => queue.getById(r1.id)?.state === MessageState.REJECTED);
+    expect(queue.getById(r1.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
+    expect(queue.getById(r1.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
+
+    // 429 is the one 4xx that's transient → failed, not rejected.
+    await waitFor(() => worker.hasInFlight() && r2.callbackId === lastCallback(worker));
+    worker.onServerResponse(makeResponse(r2.callbackId, 429, 'slow down'));
+    await waitFor(() => queue.getById(r2.id)?.state === MessageState.FAILED);
+    expect(queue.getById(r2.id)?.errorCode).toBe(QueueErrorCode.ServerRateLimited);
+
+    await worker.stop();
+  });
+
+  test('sendAck returning false leaves the row processed with ack_outcome=undelivered', async () => {
     const r = enqueueOne(queue, 'A1');
     const { app } = makeStubApp();
     const worker = new ChannelQueueWorker({
@@ -178,13 +211,15 @@ describe('ChannelQueueWorker', () => {
     worker.start();
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(r.callbackId, 200));
-    await waitFor(() => queue.getById(r.id)?.state === MessageState.ERRORED);
-    expect(queue.getById(r.id)?.lastError).toContain('ACK delivery');
-    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.AckDeliveryFailed);
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    // The Bot accepted it (processed); only the source-leg ACK failed. No Bot-leg
+    // error code is set — a closed source connection is never an upstream failure.
+    expect(queue.getById(r.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
+    expect(queue.getById(r.id)?.errorCode).toBeNull();
     await worker.stop();
   });
 
-  test('sendAck throwing marks the row errored without crashing the loop', async () => {
+  test('sendAck throwing leaves the row processed+undelivered without crashing the loop', async () => {
     const r1 = enqueueOne(queue, 'T1');
     const r2 = enqueueOne(queue, 'T2');
     const { app } = makeStubApp();
@@ -206,17 +241,18 @@ describe('ChannelQueueWorker', () => {
     worker.start();
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(r1.callbackId, 200));
-    await waitFor(() => queue.getById(r1.id)?.state === MessageState.ERRORED);
-    expect(queue.getById(r1.id)?.lastError).toContain('socket gone');
-    expect(queue.getById(r1.id)?.errorCode).toBe(QueueErrorCode.AckDeliveryFailed);
+    await waitFor(() => queue.getById(r1.id)?.state === MessageState.PROCESSED);
+    expect(queue.getById(r1.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
+    expect(queue.getById(r1.id)?.errorCode).toBeNull();
 
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(r2.callbackId, 200));
     await waitFor(() => queue.getById(r2.id)?.state === MessageState.PROCESSED);
+    expect(queue.getById(r2.id)?.ackOutcome).toBe(AckOutcome.DELIVERED);
     await worker.stop();
   });
 
-  test('response timeout marks the row errored', async () => {
+  test('response timeout marks the row failed', async () => {
     const r = enqueueOne(queue, 'TIMEOUT');
     const { app } = makeStubApp();
     const worker = new ChannelQueueWorker({
@@ -229,7 +265,7 @@ describe('ChannelQueueWorker', () => {
       idlePollMs: 10,
     });
     worker.start();
-    await waitFor(() => queue.getById(r.id)?.state === MessageState.ERRORED, 2000);
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
     expect(queue.getById(r.id)?.lastError).toContain('Timed out');
     expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
     await worker.stop();
@@ -374,9 +410,9 @@ describe('ChannelQueueWorker', () => {
     setLive(false);
     worker.onWebSocketDisconnect();
 
-    // Ambiguous delivery — the worker must not requeue; the timeout errors it.
+    // Ambiguous delivery — the worker must not requeue; the timeout fails it.
     expect(worker.hasInFlight()).toBe(true);
-    await waitFor(() => queue.getById(r.id)?.state === MessageState.ERRORED, 2000);
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
     expect(queue.getById(r.id)?.lastError).toContain('Timed out');
     expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
     await worker.stop();

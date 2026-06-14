@@ -150,13 +150,16 @@ describe('Durable queue integration', () => {
     const counts = queue.countByState();
     expect(counts.processed).toBe(1);
     expect(counts.queued).toBe(0);
-    expect(counts.errored).toBe(0);
+    expect(counts.failed).toBe(0);
+    expect(counts.rejected).toBe(0);
+    // The happy path delivered the ACK back to the source.
+    expect(queue.findSeenByControlId('dq-test', 'INT_001')?.ackOutcome).toBe('delivered');
 
     await client.close();
     await app.stop();
   });
 
-  test('server 4xx response marks the row errored', async () => {
+  test('server 5xx response marks the row failed (transient, ack not owed)', async () => {
     startMockServer(
       (cmd) =>
         ({
@@ -196,8 +199,62 @@ describe('Durable queue integration', () => {
     expect(response.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
 
     const queue = app.getDurableQueue() as DurableQueue;
-    await waitForRow(queue, (counts) => counts.errored === 1, 3000);
-    expect(queue.countByState().errored).toBe(1);
+    await waitForRow(queue, (counts) => counts.failed === 1, 3000);
+    expect(queue.countByState().failed).toBe(1);
+    const row = queue.findSeenByControlId('dq-test', 'INT_500');
+    expect(row?.errorCode).toBe('server-error');
+    expect(row?.ackOutcome).toBe('not_owed');
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('server 4xx response marks the row rejected (permanent), never re-dispatched', async () => {
+    let dispatches = 0;
+    startMockServer((cmd) => {
+      dispatches++;
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.TEXT,
+        statusCode: 422,
+        body: 'rejected: unparseable',
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    const response = await client.sendAndWait(TEST_MSG('INT_422'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(response.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    const queue = app.getDurableQueue() as DurableQueue;
+    await waitForRow(queue, (counts) => counts.rejected === 1, 3000);
+    const row = queue.findSeenByControlId('dq-test', 'INT_422');
+    expect(row?.state).toBe('rejected');
+    expect(row?.errorCode).toBe('server-rejected'); // permanent — never retried
+    expect(row?.ackOutcome).toBe('not_owed');
+    expect(dispatches).toBe(1);
 
     await client.close();
     await app.stop();
@@ -341,7 +398,7 @@ describe('Durable queue integration', () => {
       timeoutMs: 5000,
     });
     expect(replay.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
-    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, processing: 0, errored: 0 });
+    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, processing: 0, failed: 0, rejected: 0 });
 
     await client.close();
     await app.stop();
@@ -619,7 +676,7 @@ describe('Durable queue integration', () => {
     const counts = queue.countByState();
     expect(counts.processed).toBe(1); // the retransmit went all the way through
     expect(counts.nacked).toBe(1); // the storage-error audit row from the first attempt
-    expect(counts.queued + counts.processing + counts.errored).toBe(0);
+    expect(counts.queued + counts.processing + counts.failed + counts.rejected).toBe(0);
 
     await client.close();
     await app.stop();
@@ -679,13 +736,138 @@ describe('Durable queue integration', () => {
     });
     expect(replay.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
     expect(dispatches).toBe(1); // unchanged: no re-dispatch
-    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, processing: 0, errored: 0, nacked: 0 });
+    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, processing: 0, failed: 0, rejected: 0, nacked: 0 });
 
     await client.close();
     await app.stop();
   });
 
-  test('restart recovery: rows left in processing across process boundary become errored', async () => {
+  test('ack-delivery failure (source connection closed) → processed+undelivered, no re-dispatch; retransmit replays and flips to delivered', async () => {
+    // The worker forwards upstream and gets a 2xx + AA, but the source HL7
+    // connection is gone by the time the worker tries to deliver that ACK back.
+    // The two legs are tracked independently: the Bot leg succeeded, so the row
+    // is `processed`; only the source leg failed, so ack_outcome = `undelivered`.
+    // It must NOT be a Bot-leg failure (`failed`/`rejected`) and the server must
+    // NOT be hit again — not now, and not when the peer retransmits (which must
+    // replay the stored ACK and flip the row to `delivered`). This pins the
+    // invariant the Path-2 retry layer keys off: an undelivered ACK is never a
+    // re-dispatchable upstream failure (doing so would double-process upstream
+    // and loop against the dead remote).
+    let dispatches = 0;
+    let releaseReply!: () => void;
+    const replyGate = new Promise<void>((resolve) => {
+      releaseReply = resolve;
+    });
+
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          return;
+        }
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:heartbeat:response',
+                version: MEDPLUM_VERSION,
+              } satisfies AgentHeartbeatResponse)
+            )
+          );
+          return;
+        }
+        if (command.type === 'agent:transmit:request') {
+          dispatches++;
+          const ack = Hl7Message.parse(command.body).buildAck({ ackCode: 'AA' });
+          const reply = {
+            type: 'agent:transmit:response',
+            channel: command.channel,
+            remote: command.remote,
+            callback: command.callback,
+            contentType: ContentType.HL7_V2,
+            statusCode: 200,
+            body: ack.toString(),
+          } satisfies AgentTransmitResponse;
+          // Defer the server reply until the test has closed the source
+          // connection, so the worker's app-level ACK lands on a dead socket.
+          void replyGate.then(() => socket.send(Buffer.from(JSON.stringify(reply))));
+        }
+      });
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+    const channel = app.channels.get('dq-test') as unknown as AgentHl7Channel;
+
+    // Send a message and get the deferred commit ACK (CA).
+    const client = new Hl7Client({ host: 'localhost', port });
+    const ca = await client.sendAndWait(TEST_MSG('ACKFAIL'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(ca.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    // Close the source connection, then wait for the agent to observe the close
+    // and drop the remote — so the pending app-level ACK has nowhere to go.
+    await client.close();
+    const start = Date.now();
+    while (channel.connections.size > 0 && Date.now() - start < 3000) {
+      await sleep(25);
+    }
+    expect(channel.connections.size).toBe(0);
+
+    // Release the server reply. The worker records the 2xx and marks the row
+    // `processed`; the ACK to the (now-absent) source fails → ack `undelivered`.
+    releaseReply();
+    await waitForRow(
+      queue,
+      () => queue.findSeenByControlId('dq-test', 'ACKFAIL')?.ackOutcome === 'undelivered',
+      3000
+    );
+
+    const undelivered = queue.findSeenByControlId('dq-test', 'ACKFAIL');
+    expect(undelivered?.state).toBe('processed'); // Bot leg succeeded
+    expect(undelivered?.ackOutcome).toBe('undelivered'); // source leg failed
+    expect(undelivered?.errorCode).toBeNull(); // NOT a Bot-leg error
+    // The server was reached exactly once; the failure was purely on the return path.
+    expect(dispatches).toBe(1);
+    // It is `processed`, not a re-dispatchable `failed`/`rejected`.
+    expect(queue.countByState()).toMatchObject({ processed: 1, failed: 0, rejected: 0 });
+
+    // The peer retransmits over a fresh connection. It must get the *stored*
+    // server ACK replayed (AA), the server must NOT be dispatched again, and the
+    // row's source leg must flip to `delivered` (state unchanged).
+    const client2 = new Hl7Client({ host: 'localhost', port });
+    const replay = await client2.sendAndWait(TEST_MSG('ACKFAIL'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(replay.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
+    expect(dispatches).toBe(1); // no re-dispatch — replayed from the durable row
+
+    const afterReplay = queue.findSeenByControlId('dq-test', 'ACKFAIL');
+    expect(afterReplay?.state).toBe('processed');
+    expect(afterReplay?.ackOutcome).toBe('delivered'); // retransmit closed the source leg
+    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, processing: 0, failed: 0, rejected: 0, nacked: 0 });
+
+    await client2.close();
+    await app.stop();
+  });
+
+  test('restart recovery: rows left in processing across process boundary become failed', async () => {
     // We don't kill the App mid-flight (worker.stop() drains gracefully). Instead
     // we simulate the crash directly against the underlying DB — the same state
     // a SIGKILL would leave — and confirm that the next App.start() picks it up
@@ -739,7 +921,11 @@ describe('Durable queue integration', () => {
     const queue = app.getDurableQueue() as DurableQueue;
     const counts = queue.countByState();
     expect(counts.processing).toBe(0);
-    expect(counts.errored).toBe(1);
+    expect(counts.failed).toBe(1);
+    const recovered = queue.findSeenByControlId('dq-test', 'CRASHED');
+    expect(recovered?.errorCode).toBe('interrupted');
+    // The ack leg is genuinely unknown for an interrupted row — left pending.
+    expect(recovered?.ackOutcome).toBe('pending');
     await app.stop();
   });
 });

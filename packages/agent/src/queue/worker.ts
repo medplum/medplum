@@ -6,7 +6,7 @@ import { ContentType, normalizeErrorString, sleep } from '@medplum/core';
 import type { App } from '../app';
 import type { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
-import { QueueError, QueueErrorCode } from './types';
+import { AckOutcome, QueueError, QueueErrorCode } from './types';
 
 /**
  * Maximum time we wait for the Medplum server to respond to an
@@ -31,8 +31,9 @@ export interface ChannelQueueWorkerOptions {
    * read off the channel) so the worker can stay agnostic about which channel
    * type owns it and so tests don't need a real socket.
    *
-   * Returning `false` signals delivery failure (e.g. socket closed) — the row
-   * goes to `errored`.
+   * Returning `false` signals source-leg delivery failure (e.g. socket closed) —
+   * the row is still `processed` (the Bot accepted it) but with ack_outcome
+   * `undelivered`, never a Bot-leg error.
    */
   sendAck: (response: AgentTransmitResponse, row: InboundRow) => boolean;
 }
@@ -142,7 +143,7 @@ export class ChannelQueueWorker {
    * Stops the dispatch loop. Cancels any in-flight dispatch by rejecting its
    * pending response Promise with `worker-stopped` — an ambiguous outcome (we
    * don't know whether the server processed the message). The row is marked
-   * `errored` for operator review; an operator decides whether to replay.
+   * `failed` for operator review; an operator decides whether to replay.
    */
   async stop(): Promise<void> {
     if (!this.running) {
@@ -172,7 +173,7 @@ export class ChannelQueueWorker {
    * Called from `app.ts` when the agent WebSocket closes. If the in-flight
    * row's `agent:transmit:request` is still sitting unsent in the app's WS
    * queue, the server provably never saw it — remove it and return the row to
-   * `queued` so it retries on reconnect instead of timing out into `errored`.
+   * `queued` so it retries on reconnect instead of timing out into `failed`.
    *
    * If the request already went out on the wire, the outcome is ambiguous (the
    * server may have processed it and the response was lost), so we leave the
@@ -224,11 +225,14 @@ export class ChannelQueueWorker {
         // liveness gate keeps it there until the connection comes back.
         return;
       }
+      // A dispatch-leg failure (timeout, worker-stopped, unclassified) is always
+      // transient/ambiguous — never a rejection of the message — so it lands in
+      // `failed`, the retry/review bucket.
       const code = err instanceof QueueError ? err.code : QueueErrorCode.DispatchFailed;
       const msg = normalizeErrorString(err);
-      this.queue.markErrored(row.id, msg, code);
+      this.queue.markFailed(row.id, msg, code);
       this.log.error(
-        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) errored during dispatch (${code}): ${msg}`
+        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) failed during dispatch (${code}): ${msg}`
       );
       return;
     }
@@ -239,32 +243,36 @@ export class ChannelQueueWorker {
     if (statusCode >= 400) {
       const msg = `Server returned ${statusCode}: ${response.body ?? ''}`;
       const code = classifyStatusCode(statusCode);
-      this.queue.markErrored(row.id, msg, code);
-      this.log.warn(`Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) errored (${code}): ${msg}`);
+      // A permanent 4xx means the Bot rejected the message itself (`rejected`,
+      // never retried); 5xx / 429 is a transient Bot-leg failure (`failed`).
+      if (code === QueueErrorCode.ServerRejected) {
+        this.queue.markRejected(row.id, msg, code);
+      } else {
+        this.queue.markFailed(row.id, msg, code);
+      }
+      this.log.warn(`Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) ${code}: ${msg}`);
       return;
     }
 
+    // The Bot accepted the message (2xx): the row is `processed`. Delivering the
+    // ACK back to the source is a SEPARATE leg recorded in ack_outcome — a closed
+    // source connection yields `processed` + `undelivered`, never a Bot-leg
+    // failure, and is therefore never re-dispatched. The source recovers it by
+    // retransmitting, which replays the stored ACK (handleDuplicate, hl7.ts).
     let ackOk = false;
+    let ackError: unknown;
     try {
       ackOk = this.sendAck(response, row);
     } catch (err) {
-      // The server already processed the message (2xx); only the ACK back to the
-      // source failed. Classified separately so it's never confused with a
-      // delivery failure that could be safely re-dispatched.
-      this.queue.markErrored(
-        row.id,
-        `ACK delivery threw: ${normalizeErrorString(err)}`,
-        QueueErrorCode.AckDeliveryFailed
-      );
-      return;
+      ackError = err;
     }
-
+    this.queue.markProcessed(row.id, ackOk ? AckOutcome.DELIVERED : AckOutcome.UNDELIVERED);
     if (!ackOk) {
-      this.queue.markErrored(row.id, 'ACK delivery to source failed', QueueErrorCode.AckDeliveryFailed);
-      return;
+      const detail = ackError ? `: ${normalizeErrorString(ackError)}` : '';
+      this.log.warn(
+        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) processed upstream but ACK delivery to source failed${detail}; awaiting source retransmit to replay`
+      );
     }
-
-    this.queue.markProcessed(row.id);
   }
 
   private async dispatch(row: InboundRow): Promise<AgentTransmitResponse> {

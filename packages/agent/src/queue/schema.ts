@@ -41,12 +41,16 @@ export const MIGRATIONS: readonly Migration[] = [
         finalized_message     BLOB    NOT NULL,
         encoding              TEXT,
         enhanced_mode         TEXT,
+        -- state tracks the Bot leg (queued/processing/processed/rejected/failed)
+        -- plus the intake-reject 'nacked'. The source-leg ACK-delivery outcome is
+        -- tracked independently in ack_outcome
+        -- (pending/delivered/undelivered/not_owed) so the two legs never conflate.
         state                 TEXT    NOT NULL,
         attempt_count         INTEGER NOT NULL DEFAULT 0,
         callback_id           TEXT    NOT NULL,
         server_response_body  BLOB,
         server_status_code    INTEGER,
-        ack_sent_to_source    INTEGER NOT NULL DEFAULT 0,
+        ack_outcome           TEXT    NOT NULL DEFAULT 'pending',
         last_error            TEXT,
         error_code            TEXT,
         seq_no                INTEGER,

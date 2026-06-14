@@ -2,25 +2,64 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Lifecycle states for a row in `inbound_hl7_messages`.
+ * Lifecycle state for a row in `inbound_hl7_messages`.
  *
- * See DURABLE_QUEUE_PLAN.md §4 for the full transition diagram.
+ * `state` tracks the **Bot leg** — the message's journey to the Medplum server
+ * and back — and the worker scheduling lifecycle. The independent **source leg**
+ * (delivering the app-level ACK back to the sending device) is tracked
+ * separately in {@link AckOutcome}, so the two can't be conflated: a message the
+ * Bot accepted but whose ACK we couldn't return is `processed` + `undelivered`,
+ * NOT a Bot-leg failure. See DURABLE_QUEUE_PLAN.md §4 for the transition diagram.
  *
  * - `queued`     — inserted, awaiting worker dispatch.
  * - `processing` — worker has claimed it and dispatched to the Medplum server.
- * - `processed`  — server returned 2xx and the app-level ACK was delivered to the source.
- * - `errored`    — terminal failure post-commit (server 4xx/5xx, ACK delivery failure,
- *                  or "interrupted" — a row found in `processing` on startup).
+ * - `processed`  — the Bot accepted it (server 2xx). Says nothing about whether
+ *                  the source ACK was delivered — see {@link AckOutcome}.
+ * - `rejected`   — terminal: the Bot rejected the message itself (permanent 4xx).
+ *                  Retrying can never help; the content must be triaged.
+ * - `failed`     — terminal-for-now: a transient/ambiguous Bot-leg failure
+ *                  (5xx, 429, response timeout, dispatch error, or "interrupted" —
+ *                  a row found in `processing` on startup). The retry/operator-
+ *                  review candidate; never confused with a `rejected` message.
  * - `nacked`     — rejected at intake; sender was told NACK and the row exists only for audit.
  */
 export const MessageState = {
   QUEUED: 'queued',
   PROCESSING: 'processing',
   PROCESSED: 'processed',
-  ERRORED: 'errored',
+  REJECTED: 'rejected',
+  FAILED: 'failed',
   NACKED: 'nacked',
 } as const;
 export type MessageState = (typeof MessageState)[keyof typeof MessageState];
+
+/**
+ * Outcome of the **source leg** — delivering the app-level ACK back to the
+ * sending device — tracked independently of the Bot-leg {@link MessageState}.
+ *
+ * This is the axis that lets "the Bot processed it but we couldn't ACK the
+ * source" (`processed` + `undelivered`) be a first-class, queryable state rather
+ * than masquerading as an upstream failure. Crucially, an `undelivered` ACK is
+ * never a reason to re-dispatch to the Bot (that already succeeded) — recovery
+ * is the source retransmitting, which replays the stored ACK (see §8).
+ *
+ * - `pending`     — owed but not yet resolved (the default while queued/processing,
+ *                   and on interrupted rows whose ack leg never resolved).
+ * - `delivered`   — the source received the app-level ACK (includes policy-suppressed
+ *                   sends, which are a successful no-op). Also set when a retransmit
+ *                   later replays a previously-undelivered ACK.
+ * - `undelivered` — the Bot accepted the message but the ACK couldn't reach the
+ *                   source (connection closed). The actionable signal.
+ * - `not_owed`    — no app-level ACK will be delivered for this row: intake-`nacked`,
+ *                   or the Bot leg ended `rejected`/`failed` with no success to relay.
+ */
+export const AckOutcome = {
+  PENDING: 'pending',
+  DELIVERED: 'delivered',
+  UNDELIVERED: 'undelivered',
+  NOT_OWED: 'not_owed',
+} as const;
+export type AckOutcome = (typeof AckOutcome)[keyof typeof AckOutcome];
 
 /**
  * Machine-readable classification attached to every post-commit failure.
@@ -30,32 +69,42 @@ export type MessageState = (typeof MessageState)[keyof typeof MessageState];
  * `last_error`, so operators and tooling can reason about *why* a row errored
  * without parsing free-form error strings.
  *
+ * Every code here describes a **Bot-leg** failure (it annotates a `rejected` or
+ * `failed` row). The source-leg ACK-delivery outcome is NOT an error code — it
+ * lives on its own axis ({@link AckOutcome}), precisely so a failed ACK can
+ * never be misread as a re-dispatchable upstream failure.
+ *
  * The codes are grouped into three failure classes — the distinction a retry
  * policy keys off of:
  * - Transient: the failure says nothing about the message itself, so a later
- *   attempt could succeed.
+ *   attempt could succeed. (Row state: `failed`.)
  * - Ambiguous: the request may have reached the server, so re-dispatching would
- *   risk duplicate processing. Operator review required.
- * - Permanent: retrying can never help, or would actively cause duplicate
- *   server-side processing.
+ *   risk duplicate processing. Operator review required. (Row state: `failed`.)
+ * - Permanent: retrying can never help. (Row state: `rejected`.)
+ *
+ * NOTE for the (not-yet-built) Path-2 retry layer: `failed` is NOT uniformly
+ * retryable — it covers both transient and ambiguous codes. A retry policy must
+ * gate on the *code*, not the `failed` state alone: auto-retry only the transient
+ * codes (`ServerError`, `ServerRateLimited`); the ambiguous codes (`ResponseTimeout`,
+ * `Interrupted`, `WorkerStopped`, `DispatchFailed`) must stay operator-review-only
+ * until server-side callback-keyed dedupe makes redispatch idempotent (see
+ * DURABLE_QUEUE_PLAN.md §4 + §16).
  */
 export const QueueErrorCode = {
-  /** Transient: server returned 5xx. */
+  /** Transient (`failed`): server returned 5xx. */
   ServerError: 'server-error',
-  /** Transient: server returned 429. */
+  /** Transient (`failed`): server returned 429. */
   ServerRateLimited: 'server-rate-limited',
-  /** Ambiguous: timed out waiting for the server response; delivery unknown. */
+  /** Ambiguous (`failed`): timed out waiting for the server response; delivery unknown. */
   ResponseTimeout: 'response-timeout',
-  /** Ambiguous: row was in `processing` when the agent restarted. */
+  /** Ambiguous (`failed`): row was in `processing` when the agent restarted. */
   Interrupted: 'interrupted',
-  /** Ambiguous: in-flight dispatch was cancelled by worker shutdown. */
+  /** Ambiguous (`failed`): in-flight dispatch was cancelled by worker shutdown. */
   WorkerStopped: 'worker-stopped',
-  /** Ambiguous: dispatch failed for an unclassified reason; delivery unknown. */
+  /** Ambiguous (`failed`): dispatch failed for an unclassified reason; delivery unknown. */
   DispatchFailed: 'dispatch-failed',
-  /** Permanent: server returned 4xx (other than 429) — the message was rejected. */
+  /** Permanent (`rejected`): server returned 4xx (other than 429) — the message was rejected. */
   ServerRejected: 'server-rejected',
-  /** Permanent: server processed the message (2xx) but the ACK could not be delivered to the source. */
-  AckDeliveryFailed: 'ack-delivery-failed',
 } as const;
 export type QueueErrorCode = (typeof QueueErrorCode)[keyof typeof QueueErrorCode];
 
@@ -102,7 +151,8 @@ export interface InboundRow {
   callbackId: string;
   serverResponseBody: Buffer | null;
   serverStatusCode: number | null;
-  ackSentToSource: boolean;
+  /** Source-leg delivery outcome — independent of {@link state}. See {@link AckOutcome}. */
+  ackOutcome: AckOutcome;
   lastError: string | null;
   errorCode: QueueErrorCode | null;
   seqNo: number | null;

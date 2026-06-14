@@ -17,7 +17,7 @@ import { BaseChannel } from './channel';
 import { ChannelStatsTracker } from './channel-stats-tracker';
 import type { DurableQueue } from './queue/durable-queue';
 import type { EnqueueResult, InboundRow } from './queue/types';
-import { DuplicateBehavior } from './queue/types';
+import { AckOutcome, DuplicateBehavior } from './queue/types';
 import { ChannelQueueWorker } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 
@@ -606,6 +606,12 @@ export class AgentHl7ChannelConnection {
     if (behavior === DuplicateBehavior.IDEMPOTENT && existing.originalMessage.equals(audit.originalMessage)) {
       // Exact retransmit: replay the ACK the sender missed, then balance stats.
       if (existing.serverResponseBody && existing.serverResponseBody.length > 0 && this.replayServerAck(existing)) {
+        // If the original delivery failed (processed + undelivered), this
+        // retransmit is what finally lands the ACK — close the source leg so the
+        // row no longer reads as awaiting delivery.
+        if (existing.ackOutcome === AckOutcome.UNDELIVERED) {
+          queue.setAckOutcome(existing.id, AckOutcome.DELIVERED);
+        }
         this.channel.channelLog.info(
           `[Duplicate idempotent -- ID: ${idLabel}] replayed prior server response ACK from row id=${existing.id}`
         );
