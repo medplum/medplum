@@ -42,6 +42,7 @@ const unguardedMembers = new Set<PropertyKey>([
   'addDeletedFilter',
   'addSecurityFilters',
   'isClosed',
+  'validateBinarySecurityContext',
 ]);
 
 /**
@@ -89,6 +90,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'deleteCacheEntries',
   'createTransactionScopedRepo',
   'assertUsable',
+  'authorizeBinarySecurityContext',
 ]);
 
 interface MethodInvocation {
