@@ -25,6 +25,17 @@ export const DEFAULT_WORKER_RESPONSE_TIMEOUT_MS = 60_000;
 export const DEFAULT_WORKER_IDLE_POLL_MS = 250;
 
 /**
+ * Default number of messages a single channel's worker may have in flight (sent
+ * to the Bot, awaiting a response) at once. The default of 1 preserves strict
+ * per-channel serial processing — one message is dispatched and its response
+ * awaited before the next is claimed. Raising it (via the `maxConcurrentPerQueue`
+ * endpoint param / `channelMaxConcurrentPerQueue` agent setting) lets the worker
+ * dispatch up to N messages concurrently, trading the per-channel ordering
+ * guarantee for throughput when the Bot leg is the bottleneck.
+ */
+export const DEFAULT_MAX_CONCURRENT_PER_QUEUE = 1;
+
+/**
  * Per-channel auto-retry policy for the **Path-2** leg (queue → Bot), resolved
  * from endpoint query params layered over agent settings (see
  * `resolveRetryPolicy` in hl7.ts). It governs ONLY re-dispatch of a `failed`
@@ -122,6 +133,12 @@ export interface ChannelQueueWorkerOptions {
   /** Override for unit tests; default {@link DEFAULT_WORKER_IDLE_POLL_MS}. */
   idlePollMs?: number;
   /**
+   * Max messages this channel may have in flight (dispatched, awaiting a Bot
+   * response) at once; default {@link DEFAULT_MAX_CONCURRENT_PER_QUEUE} (1, fully
+   * serial). Values above 1 relax the per-channel ordering guarantee.
+   */
+  maxConcurrentPerQueue?: number;
+  /**
    * How to deliver the app-level ACK back to the source device. Injected (not
    * read off the channel) so the worker can stay agnostic about which channel
    * type owns it and so tests don't need a real socket.
@@ -152,19 +169,23 @@ class RowRequeuedError extends Error {
 }
 
 /**
- * Per-channel serial worker that drains the durable queue.
+ * Per-channel worker that drains the durable queue.
  *
- * One running tick at a time per channel — exactly the per-channel ordering
- * guarantee §1.1 promises. Cross-channel parallelism is achieved by running
- * one worker instance per channel.
+ * By default (`maxConcurrentPerQueue` = 1) it runs strictly serially — one
+ * message dispatched and its response awaited before the next is claimed, the
+ * per-channel ordering guarantee §1.1 promises. Raising the limit lets the
+ * worker keep up to N messages in flight at once, dispatching the next without
+ * waiting for the previous Bot response (ordering of completion is then no
+ * longer guaranteed). Cross-channel parallelism is achieved by running one
+ * worker instance per channel regardless of this limit.
  *
  * Lifecycle:
  * - {@link start} starts the dispatch loop in the background.
  * - {@link notify} is called whenever a new row is inserted so the loop wakes
  *   immediately instead of waiting on the idle poll.
  * - {@link onServerResponse} is called from `app.ts` when the server replies;
- *   it resolves the in-flight pending promise.
- * - {@link stop} drains the in-flight row (if any) and stops claiming new ones.
+ *   it resolves the matching in-flight pending promise (keyed by callback id).
+ * - {@link stop} drains all in-flight rows and stops claiming new ones.
  */
 export class ChannelQueueWorker {
   readonly channelName: string;
@@ -175,6 +196,7 @@ export class ChannelQueueWorker {
   private readonly idlePollMs: number;
   private readonly sendAck: ChannelQueueWorkerOptions['sendAck'];
   private retryPolicy: RetryPolicy;
+  private maxConcurrentPerQueue: number;
 
   private running = false;
   private stopping = false;
@@ -182,7 +204,13 @@ export class ChannelQueueWorker {
   // Resolves whenever `notify()` is called, then is replaced with a fresh promise.
   // Lets the loop sleep without polling when the queue is known-empty.
   private wakeSignal: { promise: Promise<void>; resolve: () => void };
-  private pending: PendingResponse | undefined;
+  // In-flight dispatches keyed by callback id — the rows that have been sent to
+  // the Bot and are awaiting a response. At most `maxConcurrentPerQueue` entries.
+  private readonly pending = new Map<string, PendingResponse>();
+  // Every running `process()` call (from claim through final state transition).
+  // Its size is the slot count the loop gates on, and `stop()` awaits these to
+  // settle so the channel doesn't shut down mid-dispatch.
+  private readonly inFlight = new Set<Promise<void>>();
 
   constructor(options: ChannelQueueWorkerOptions) {
     this.channelName = options.channelName;
@@ -193,6 +221,7 @@ export class ChannelQueueWorker {
     this.idlePollMs = options.idlePollMs ?? DEFAULT_WORKER_IDLE_POLL_MS;
     this.sendAck = options.sendAck;
     this.retryPolicy = options.retryPolicy ?? DEFAULT_RETRY_POLICY;
+    this.maxConcurrentPerQueue = Math.max(1, Math.floor(options.maxConcurrentPerQueue ?? DEFAULT_MAX_CONCURRENT_PER_QUEUE));
     this.wakeSignal = makeWakeSignal();
   }
 
@@ -204,6 +233,18 @@ export class ChannelQueueWorker {
    */
   setRetryPolicy(policy: RetryPolicy): void {
     this.retryPolicy = policy;
+  }
+
+  /**
+   * Updates the max in-flight limit. Called on channel config reloads. Lowering
+   * it lets the excess in-flight rows drain naturally (the loop won't claim more
+   * until it's back under the limit); raising it wakes the loop so the new
+   * headroom is used right away.
+   * @param maxConcurrentPerQueue - The newly resolved limit (clamped to >= 1).
+   */
+  setMaxConcurrentPerQueue(maxConcurrentPerQueue: number): void {
+    this.maxConcurrentPerQueue = Math.max(1, Math.floor(maxConcurrentPerQueue));
+    this.notify();
   }
 
   /** Starts the dispatch loop. No-op if already started. */
@@ -236,12 +277,12 @@ export class ChannelQueueWorker {
     if (!response.callback) {
       return false;
     }
-    if (this.pending?.row.callbackId !== response.callback) {
+    const pending = this.pending.get(response.callback);
+    if (!pending) {
       return false;
     }
-    const pending = this.pending;
     clearTimeout(pending.timeout);
-    this.pending = undefined;
+    this.pending.delete(response.callback);
     pending.resolve(response);
     return true;
   }
@@ -259,23 +300,29 @@ export class ChannelQueueWorker {
       return;
     }
     this.stopping = true;
-    if (this.pending) {
-      const pending = this.pending;
+    // This prologue runs synchronously (no await before the loop yields), so the
+    // dispatch loop — parked at an await — can't claim a new row in between: the
+    // set of pending dispatches is fixed here, and every one of them is rejected.
+    for (const pending of this.pending.values()) {
       clearTimeout(pending.timeout);
-      this.pending = undefined;
       pending.reject(new QueueError(QueueErrorCode.WorkerStopped, 'worker stopping'));
     }
+    this.pending.clear();
     // Wake the loop so it observes `stopping`.
     this.notify();
     if (this.loopPromise) {
       await this.loopPromise;
     }
+    // The rejected dispatches above resolve their `process()` calls quickly
+    // (handleFailure), as do any rows already past their response; wait them out
+    // so the channel never tears down with a dispatch still in progress.
+    await Promise.allSettled([...this.inFlight]);
     this.running = false;
   }
 
-  /** @returns True if a row is currently in-flight (worker awaiting a server response). */
+  /** @returns True if any row is currently in-flight (worker awaiting a server response). */
   hasInFlight(): boolean {
-    return this.pending !== undefined;
+    return this.pending.size > 0;
   }
 
   /**
@@ -290,20 +337,21 @@ export class ChannelQueueWorker {
    * {@link handleFailure} (review-only in normal mode, retried under guaranteed).
    */
   onWebSocketDisconnect(): void {
-    const pending = this.pending;
-    if (!pending) {
-      return;
+    // Check every in-flight dispatch independently: a row whose request is still
+    // unsent in the app's WS queue is provably unseen by the server, so requeue
+    // it; a row already on the wire is ambiguous and left to time out.
+    for (const [callbackId, pending] of [...this.pending]) {
+      if (!this.app.removeUnsentTransmit(pending.row.callbackId)) {
+        continue;
+      }
+      clearTimeout(pending.timeout);
+      this.pending.delete(callbackId);
+      this.queue.requeue(pending.row.id);
+      this.log.info(
+        `Row id=${pending.row.id} (control id=${pending.row.msgControlId ?? 'n/a'}) requeued: WebSocket disconnected before transmit was sent`
+      );
+      pending.reject(new RowRequeuedError());
     }
-    if (!this.app.removeUnsentTransmit(pending.row.callbackId)) {
-      return;
-    }
-    clearTimeout(pending.timeout);
-    this.pending = undefined;
-    this.queue.requeue(pending.row.id);
-    this.log.info(
-      `Row id=${pending.row.id} (control id=${pending.row.msgControlId ?? 'n/a'}) requeued: WebSocket disconnected before transmit was sent`
-    );
-    pending.reject(new RowRequeuedError());
   }
 
   private async loop(): Promise<void> {
@@ -316,12 +364,37 @@ export class ChannelQueueWorker {
         await this.waitForWork();
         continue;
       }
+      // Honor the concurrency limit: once `maxConcurrentPerQueue` rows are in
+      // flight, park until one finishes (each `process()` calls `notify()` on
+      // completion, freeing a slot) instead of claiming more.
+      if (this.inFlight.size >= this.maxConcurrentPerQueue) {
+        await this.waitForWork();
+        continue;
+      }
       const row = this.queue.claimNext(this.channelName);
       if (!row) {
         await this.waitForWork();
         continue;
       }
-      await this.process(row);
+      // Fire-and-forget so the loop can claim the next row (up to the limit)
+      // without waiting on this Bot response. Track the promise so `stop()` can
+      // await it, and wake the loop when it settles to reclaim the slot.
+      // `entry` is captured by the finally below; the callback runs only after
+      // this assignment completes, so referencing it there is safe.
+      const entry: Promise<void> = this.process(row)
+        .catch((err) => {
+          // process() handles its own dispatch/Bot failures; an error escaping
+          // here is unexpected (e.g. a queue write failed). Log and move on —
+          // the slot still frees via finally so the worker doesn't wedge.
+          this.log.error(
+            `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) unexpected processing error: ${normalizeErrorString(err)}`
+          );
+        })
+        .finally(() => {
+          this.inFlight.delete(entry);
+          this.notify();
+        });
+      this.inFlight.add(entry);
     }
   }
 
@@ -472,9 +545,7 @@ export class ChannelQueueWorker {
   private async dispatch(row: InboundRow): Promise<AgentTransmitResponse> {
     return new Promise<AgentTransmitResponse>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        if (this.pending?.row.id === row.id) {
-          this.pending = undefined;
-        }
+        this.pending.delete(row.callbackId);
         reject(
           new QueueError(
             QueueErrorCode.ResponseTimeout,
@@ -487,7 +558,7 @@ export class ChannelQueueWorker {
       if (typeof timeout.unref === 'function') {
         timeout.unref();
       }
-      this.pending = { row, resolve, reject, timeout };
+      this.pending.set(row.callbackId, { row, resolve, reject, timeout });
 
       this.app.addToWebSocketQueue({
         type: 'agent:transmit:request',

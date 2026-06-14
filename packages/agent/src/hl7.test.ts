@@ -36,10 +36,15 @@ import {
   APP_LEVEL_ACK_MODES,
   parseAppLevelAckMode,
   parseEnhancedMode,
+  resolveMaxConcurrentPerQueue,
   resolveRetryPolicy,
   shouldSendAppLevelAck,
 } from './hl7';
-import { DEFAULT_NORMAL_MODE_MAX_ATTEMPTS, DEFAULT_RETRY_POLICY } from './queue/worker';
+import {
+  DEFAULT_MAX_CONCURRENT_PER_QUEUE,
+  DEFAULT_NORMAL_MODE_MAX_ATTEMPTS,
+  DEFAULT_RETRY_POLICY,
+} from './queue/worker';
 import { createEndpointWithRandomPort, createMockLogger, getFreePort } from './test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
@@ -2780,6 +2785,7 @@ describe('AgentHl7Channel application-level ACK gating', () => {
       getAgentConfig: vi.fn(),
       getDurableQueue: vi.fn().mockReturnValue(undefined),
       getChannelRetrySettings: vi.fn().mockReturnValue({}),
+      getChannelMaxConcurrentPerQueue: vi.fn().mockReturnValue(undefined),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;
@@ -3089,6 +3095,45 @@ describe('resolveRetryPolicy', () => {
     expect(policy.guaranteedDelivery).toBe(true);
     expect(policy.maxAttempts).toBe(0);
     expect(logger.warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('resolveMaxConcurrentPerQueue', () => {
+  test('defaults to 1 (serial) with no param and no agent setting', () => {
+    const logger = createMockLogger();
+    expect(resolveMaxConcurrentPerQueue(undefined, new URLSearchParams(), logger)).toBe(
+      DEFAULT_MAX_CONCURRENT_PER_QUEUE
+    );
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('agent setting overrides the default, endpoint param overrides the agent setting', () => {
+    const logger = createMockLogger();
+    // Agent setting alone.
+    expect(resolveMaxConcurrentPerQueue(5, new URLSearchParams(), logger)).toBe(5);
+    // Endpoint param wins.
+    expect(resolveMaxConcurrentPerQueue(5, new URLSearchParams('maxConcurrentPerQueue=3'), logger)).toBe(3);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('clamps a fractional value down to an integer', () => {
+    const logger = createMockLogger();
+    expect(resolveMaxConcurrentPerQueue(2.9, new URLSearchParams(), logger)).toBe(2);
+  });
+
+  test('an invalid param warns and falls through to the agent setting', () => {
+    const logger = createMockLogger();
+    expect(resolveMaxConcurrentPerQueue(4, new URLSearchParams('maxConcurrentPerQueue=0'), logger)).toBe(4);
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Invalid maxConcurrentPerQueue value '0'; expected a number >= 1. Ignoring."
+    );
+  });
+
+  test('clamps a non-positive agent setting up to 1', () => {
+    const logger = createMockLogger();
+    // Agent settings arrive unchecked; a misconfigured 0/negative must not stall the worker.
+    expect(resolveMaxConcurrentPerQueue(0, new URLSearchParams(), logger)).toBe(1);
+    expect(resolveMaxConcurrentPerQueue(-5, new URLSearchParams(), logger)).toBe(1);
   });
 });
 

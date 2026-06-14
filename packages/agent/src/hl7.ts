@@ -19,7 +19,12 @@ import type { DurableQueue } from './queue/durable-queue';
 import type { EnqueueResult, InboundRow } from './queue/types';
 import { AckOutcome, DuplicateBehavior } from './queue/types';
 import type { RetryPolicy } from './queue/worker';
-import { ChannelQueueWorker, DEFAULT_NORMAL_MODE_MAX_ATTEMPTS, DEFAULT_RETRY_POLICY } from './queue/worker';
+import {
+  ChannelQueueWorker,
+  DEFAULT_MAX_CONCURRENT_PER_QUEUE,
+  DEFAULT_NORMAL_MODE_MAX_ATTEMPTS,
+  DEFAULT_RETRY_POLICY,
+} from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 
 /**
@@ -52,6 +57,7 @@ export class AgentHl7Channel extends BaseChannel {
   private lastSeqNo = -1;
   private duplicateBehavior: DuplicateBehavior = DuplicateBehavior.IDEMPOTENT;
   private retryPolicy: RetryPolicy = DEFAULT_RETRY_POLICY;
+  private maxConcurrentPerQueue: number = DEFAULT_MAX_CONCURRENT_PER_QUEUE;
   worker: ChannelQueueWorker | undefined;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
@@ -129,6 +135,7 @@ export class AgentHl7Channel extends BaseChannel {
       queue,
       log: this.log,
       retryPolicy: this.retryPolicy,
+      maxConcurrentPerQueue: this.maxConcurrentPerQueue,
       sendAck: (response) => this.sendToRemote(response),
     });
     this.worker.start();
@@ -293,6 +300,15 @@ export class AgentHl7Channel extends BaseChannel {
     }
     this.worker?.setRetryPolicy(this.retryPolicy);
 
+    // Per-channel max in-flight limit: endpoint URL param overrides the
+    // agent-wide channelMaxConcurrentPerQueue default, falling back to 1 (serial).
+    this.maxConcurrentPerQueue = resolveMaxConcurrentPerQueue(
+      this.app.getChannelMaxConcurrentPerQueue(),
+      address.searchParams,
+      this.log
+    );
+    this.worker?.setMaxConcurrentPerQueue(this.maxConcurrentPerQueue);
+
     for (const connection of this.connections.values()) {
       connection.hl7Connection.setEncoding(encoding);
       connection.hl7Connection.setEnhancedMode(enhancedMode);
@@ -308,6 +324,11 @@ export class AgentHl7Channel extends BaseChannel {
   /** @returns The channel's resolved Path-2 auto-retry policy. */
   getRetryPolicy(): RetryPolicy {
     return this.retryPolicy;
+  }
+
+  /** @returns The channel's resolved max in-flight (queue → Bot) message count. */
+  getMaxConcurrentPerQueue(): number {
+    return this.maxConcurrentPerQueue;
   }
 
   private handleNewConnection(connection: Hl7Connection): void {
@@ -987,6 +1008,33 @@ export function resolveRetryPolicy(
     policy.maxDelayMs = policy.baseDelayMs;
   }
   return policy;
+}
+
+/**
+ * Resolves a channel's max in-flight (queue → Bot) message count. Precedence:
+ * the `maxConcurrentPerQueue` endpoint URL param overrides the agent-wide
+ * `channelMaxConcurrentPerQueue` default, which falls back to
+ * {@link DEFAULT_MAX_CONCURRENT_PER_QUEUE} (1, fully serial).
+ *
+ * 1 preserves the strict per-channel ordering guarantee; values > 1 let the
+ * worker keep that many messages in flight at once (ordering of completion is no
+ * longer guaranteed) to raise throughput when the Bot leg is the bottleneck. The
+ * result is clamped to an integer >= 1 — both the URL param (validated for >= 1)
+ * and the agent setting (unchecked) degrade to a sane value instead of stalling
+ * the worker with a 0 or negative limit.
+ * @param agentDefault - Agent-wide `channelMaxConcurrentPerQueue` setting (undefined = not configured).
+ * @param params - The endpoint URL's query params.
+ * @param logger - Logger used to emit warnings on invalid values.
+ * @returns The resolved limit (integer >= 1).
+ */
+export function resolveMaxConcurrentPerQueue(
+  agentDefault: number | undefined,
+  params: URLSearchParams,
+  logger: ILogger
+): number {
+  const fromParam = parseRetryNumberParam(params.get('maxConcurrentPerQueue'), 'maxConcurrentPerQueue', 1, logger);
+  const resolved = fromParam ?? agentDefault ?? DEFAULT_MAX_CONCURRENT_PER_QUEUE;
+  return Math.max(1, Math.floor(resolved));
 }
 
 function parseRetryBoolParam(rawValue: string | null, name: string, logger: ILogger): boolean | undefined {

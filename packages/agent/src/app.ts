@@ -149,6 +149,9 @@ export class App {
   // Agent-wide channelAutoRetry* settings; fields left undefined fall through to
   // DEFAULT_RETRY_POLICY when channels resolve their per-channel policy.
   private channelRetrySettings: Partial<RetryPolicy> = {};
+  // Agent-wide default for the max in-flight (queue → Bot) message count;
+  // undefined falls through to DEFAULT_MAX_CONCURRENT_PER_QUEUE (1) per channel.
+  private channelMaxConcurrentPerQueue: number | undefined;
   private retentionSweeper: RetentionSweeper | undefined;
   private leaseManager: QueueLeaseManager | undefined;
   private queueCheckpointListener: (() => void) | undefined;
@@ -442,7 +445,7 @@ export class App {
             if (this.config?.status !== 'active') {
               this.sendAgentDisabledError(command);
               // We check the existence of a statusCode for backwards compat
-            } else if (!(command.statusCode && command.statusCode >= 400)) {
+            } else if (command.statusCode === undefined || command.statusCode < 400) {
               this.addToHl7Queue(command);
             } else {
               // Log error
@@ -575,6 +578,9 @@ export class App {
       backoffMultiplier: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBackoffMultiplier')
         ?.valueDecimal,
     };
+    this.channelMaxConcurrentPerQueue = agent?.setting?.find(
+      (setting) => setting.name === 'channelMaxConcurrentPerQueue'
+    )?.valueInteger;
 
     // If the keepAlive setting changed, we need to reset the pools we have
     if (this.keepAlive !== keepAlive) {
@@ -787,6 +793,14 @@ export class App {
   /** @returns The agent-wide channelAutoRetry* settings, used as per-channel policy defaults. */
   getChannelRetrySettings(): Partial<RetryPolicy> {
     return this.channelRetrySettings;
+  }
+
+  /**
+   * @returns The agent-wide `channelMaxConcurrentPerQueue` setting (the default
+   * max in-flight message count per channel), or undefined if not configured.
+   */
+  getChannelMaxConcurrentPerQueue(): number | undefined {
+    return this.channelMaxConcurrentPerQueue;
   }
 
   getStats(): AgentStats {

@@ -723,6 +723,185 @@ describe('ChannelQueueWorker', () => {
       await worker.stop();
     });
   });
+
+  describe('maxConcurrentPerQueue', () => {
+    test('defaults to serial: only one message is in flight at a time', async () => {
+      const rows = ['S1', 'S2', 'S3'].map((id) => enqueueOne(queue, id));
+      const { app, sent } = makeStubApp();
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        idlePollMs: 10,
+      });
+      worker.start();
+
+      // Without a response, the worker never claims past the first row.
+      await waitFor(() => sent.length === 1);
+      await sleepMs(50);
+      expect(sent).toHaveLength(1);
+      expect((sent[0] as { callback?: string }).callback).toBe(rows[0].callbackId);
+      await worker.stop();
+    });
+
+    test('dispatches up to the limit before any response, then refills as slots free', async () => {
+      const rows = ['C1', 'C2', 'C3', 'C4', 'C5'].map((id) => enqueueOne(queue, id));
+      const { app, sent } = makeStubApp();
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        idlePollMs: 10,
+        maxConcurrentPerQueue: 3,
+      });
+      worker.start();
+
+      // Three claimed and dispatched concurrently without waiting for responses,
+      // and it stops there — the 4th and 5th stay queued until a slot frees.
+      await waitFor(() => sent.length === 3);
+      await sleepMs(50);
+      expect(sent).toHaveLength(3);
+      expect(sent.map((m) => (m as { callback?: string }).callback)).toStrictEqual([
+        rows[0].callbackId,
+        rows[1].callbackId,
+        rows[2].callbackId,
+      ]);
+
+      // Free one slot → exactly one more dispatches (the 4th).
+      worker.onServerResponse(makeResponse(rows[0].callbackId, 200));
+      await waitFor(() => sent.length === 4);
+      await sleepMs(50);
+      expect(sent).toHaveLength(4);
+      expect((sent[3] as { callback?: string }).callback).toBe(rows[3].callbackId);
+
+      // Drain the rest: respond only once each is actually in flight (C5 only
+      // dispatches after a slot frees, so it isn't pending until then).
+      for (const row of rows.slice(1)) {
+        await waitFor(() => sent.some((m) => (m as { callback?: string }).callback === row.callbackId));
+        worker.onServerResponse(makeResponse(row.callbackId, 200));
+        await waitFor(() => queue.getById(row.id)?.state === MessageState.PROCESSED);
+      }
+      await worker.stop();
+    });
+
+    test('an invalid limit clamps to 1 (serial)', async () => {
+      const rows = ['Z1', 'Z2'].map((id) => enqueueOne(queue, id));
+      const { app, sent } = makeStubApp();
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        idlePollMs: 10,
+        maxConcurrentPerQueue: 0,
+      });
+      worker.start();
+
+      await waitFor(() => sent.length === 1);
+      await sleepMs(50);
+      expect(sent).toHaveLength(1);
+      worker.onServerResponse(makeResponse(rows[0].callbackId, 200));
+      await waitFor(() => queue.getById(rows[0].id)?.state === MessageState.PROCESSED);
+      await worker.stop();
+    });
+
+    test('setMaxConcurrentPerQueue raises the limit at runtime', async () => {
+      const rows = ['R1', 'R2', 'R3'].map((id) => enqueueOne(queue, id));
+      const { app, sent } = makeStubApp();
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        idlePollMs: 10,
+      });
+      worker.start();
+
+      // Serial to start: one in flight.
+      await waitFor(() => sent.length === 1);
+      await sleepMs(50);
+      expect(sent).toHaveLength(1);
+
+      // Raise the limit — the two remaining rows dispatch without any response
+      // to the first.
+      worker.setMaxConcurrentPerQueue(3);
+      await waitFor(() => sent.length === 3);
+      await sleepMs(50);
+      expect(sent).toHaveLength(3);
+
+      for (const row of rows) {
+        worker.onServerResponse(makeResponse(row.callbackId, 200));
+      }
+      await waitFor(() => rows.every((row) => queue.getById(row.id)?.state === MessageState.PROCESSED));
+      await worker.stop();
+    });
+
+    test('stop drains all in-flight dispatches without hanging', async () => {
+      const rows = ['D1', 'D2', 'D3'].map((id) => enqueueOne(queue, id));
+      const { app, sent } = makeStubApp();
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        // Long timeout so a missed wake-up would manifest as a hang, not a quick
+        // response-timeout that masks it.
+        responseTimeoutMs: 60_000,
+        idlePollMs: 10,
+        maxConcurrentPerQueue: 3,
+      });
+      worker.start();
+
+      await waitFor(() => sent.length === 3 && worker.hasInFlight());
+
+      // No responses arrive — stop must reject every pending dispatch and return.
+      await worker.stop();
+      expect(worker.hasInFlight()).toBe(false);
+
+      // worker-stopped is ambiguous; under the default (guaranteed) policy every
+      // interrupted row is rescheduled, so all three land back in `queued`.
+      for (const row of rows) {
+        expect(queue.getById(row.id)?.state).toBe(MessageState.QUEUED);
+      }
+    });
+
+    test('disconnect requeues every unsent in-flight row', async () => {
+      const rows = ['W1', 'W2', 'W3'].map((id) => enqueueOne(queue, id));
+      const { app, sent, setLive } = makeStubApp();
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        responseTimeoutMs: 60_000,
+        idlePollMs: 10,
+        maxConcurrentPerQueue: 3,
+      });
+      worker.start();
+
+      await waitFor(() => sent.length === 3 && worker.hasInFlight());
+
+      // Connection drops with all three requests still unsent in the stub's WS
+      // queue → every one requeues. setLive(false) keeps the liveness gate from
+      // immediately re-claiming them (mirrors a real WS disconnect).
+      setLive(false);
+      worker.onWebSocketDisconnect();
+      expect(worker.hasInFlight()).toBe(false);
+      for (const row of rows) {
+        expect(queue.getById(row.id)?.state).toBe(MessageState.QUEUED);
+        expect(queue.getById(row.id)?.attemptCount).toBe(0);
+      }
+      await worker.stop();
+    });
+  });
 });
 
 describe('computeRetryDelayMs', () => {
@@ -774,7 +953,10 @@ async function waitFor(predicate: () => boolean, timeoutMs: number = 1000): Prom
 }
 
 function lastCallback(worker: ChannelQueueWorker): string | undefined {
-  return (worker as unknown as { pending?: { row: InboundRow } }).pending?.row.callbackId;
+  // The worker keeps in-flight dispatches in a Map keyed by callback id. The
+  // serial-mode tests that use this helper have at most one entry; return it.
+  const pending = (worker as unknown as { pending: Map<string, { row: InboundRow }> }).pending;
+  return [...pending.values()].at(-1)?.row.callbackId;
 }
 
 async function sleepMs(ms: number): Promise<void> {
