@@ -9,6 +9,7 @@ import type { InboundRow } from './types';
 import {
   AckOutcome,
   GUARANTEED_TERMINAL_CODES,
+  MessageState,
   PERMANENT_ERROR_CODES,
   QueueError,
   QueueErrorCode,
@@ -268,23 +269,59 @@ export class ChannelQueueWorker {
   }
 
   /**
-   * Routes a server `agent:transmit:response` to its pending in-flight row, if any.
+   * Routes a server `agent:transmit:response` to its row.
+   *
+   * The common case is the response to the current in-flight dispatch, which
+   * resolves the pending promise and lets {@link process} settle the row.
+   *
+   * A response can also arrive *late* — after the response timeout (or a requeue
+   * / worker stop) already cleared the pending dispatch and left the row
+   * `failed`. We don't discard those: the Medplum server is the authority on the
+   * Bot-leg outcome, so a late ACK/NACK for a row that errored and isn't being
+   * retried right now is applied to settle the row ({@link applyServerResponse}),
+   * exactly as if it had arrived in time. This disambiguates the ambiguous
+   * `ResponseTimeout` case — a row we couldn't classify becomes a definite
+   * `processed`/`rejected`/`failed` — and avoids a redundant re-dispatch.
    * @param response - The response message received over the WS.
-   * @returns True if the response was claimed by this worker; false if no row
-   *          matched (caller should fall through to legacy handling).
+   * @returns True if the response was applied or resolved a pending dispatch;
+   *          false if it could not be matched to a settleable row.
    */
   onServerResponse(response: AgentTransmitResponse): boolean {
     if (!response.callback) {
       return false;
     }
     const pending = this.pending.get(response.callback);
-    if (!pending) {
+    if (pending) {
+      clearTimeout(pending.timeout);
+      this.pending.delete(response.callback);
+      pending.resolve(response);
+      return true;
+    }
+    // No in-flight dispatch matches this callback — a late response. Look up the
+    // row it belongs to and decide whether it's still settleable.
+    const row = this.queue.findByCallback(response.callback);
+    if (!row) {
+      this.log.warn(`Discarding server response with no matching row (callback=${response.callback})`);
       return false;
     }
-    clearTimeout(pending.timeout);
-    this.pending.delete(response.callback);
-    pending.resolve(response);
-    return true;
+    if (row.state === MessageState.FAILED) {
+      // Errored earlier (most commonly a response timeout) and not currently in
+      // flight — `failed` rows are never re-claimed (claimNext only takes
+      // `queued`). The server's verdict is authoritative, so settle the row from
+      // this late response instead of leaving it ambiguous.
+      this.log.info(
+        `Applying late server response to errored row id=${row.id} ` +
+          `(control id=${row.msgControlId ?? 'n/a'}, status=${response.statusCode ?? 'n/a'})`
+      );
+      this.applyServerResponse(row, response);
+      return true;
+    }
+    // processing (a retry is in flight), processed/rejected (already settled), or
+    // queued/nacked — the outcome is owned elsewhere; don't double-apply.
+    this.log.warn(
+      `Discarding server response for row id=${row.id} in state '${row.state}' (callback=${response.callback})`
+    );
+    return false;
   }
 
   /**
@@ -416,6 +453,21 @@ export class ChannelQueueWorker {
       return;
     }
 
+    this.applyServerResponse(row, response);
+  }
+
+  /**
+   * Settles a row from its server `agent:transmit:response`: records the raw
+   * response, then transitions the row by status — 2xx → `processed` (plus the
+   * source-leg ACK), permanent 4xx → `rejected`, 5xx/429 → `failed`.
+   *
+   * Shared by the normal in-flight path ({@link process}) and the late-response
+   * path ({@link onServerResponse}), so a response that arrives after the
+   * response timeout settles the row identically to one that arrived in time.
+   * @param row - The row the response belongs to.
+   * @param response - The server response to apply.
+   */
+  private applyServerResponse(row: InboundRow, response: AgentTransmitResponse): void {
     this.queue.recordServerResponse(row.id, response.statusCode ?? null, response.body ?? null);
 
     const statusCode = response.statusCode ?? 0;
