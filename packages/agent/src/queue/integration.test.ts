@@ -212,7 +212,10 @@ describe('Durable queue integration', () => {
     await app.stop();
   });
 
-  test('server 4xx response marks the row rejected (permanent), never re-dispatched', async () => {
+  // guaranteedDelivery=false → normal mode, where a 4xx is a permanent reject.
+  // (Under the guaranteed default a 4xx without a definitive AR/CR ACK is retried,
+  // not rejected — see the worker's guaranteed-delivery unit tests.)
+  test('server 4xx response marks the row rejected (permanent) in normal mode, never re-dispatched', async () => {
     let dispatches = 0;
     startMockServer((cmd) => {
       dispatches++;
@@ -229,7 +232,7 @@ describe('Durable queue integration', () => {
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      address: 'mllp://0.0.0.0:0?enhanced=true',
+      address: 'mllp://0.0.0.0:0?enhanced=true&guaranteedDelivery=false',
     });
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',

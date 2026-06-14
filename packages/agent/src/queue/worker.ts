@@ -40,6 +40,10 @@ export const DEFAULT_WORKER_IDLE_POLL_MS = 250;
  * - guaranteedDelivery mode: retry every failure (ambiguous codes included,
  *   duplication risk accepted) until upstream gives a definitive answer — an
  *   MSA-1 of AA/CA (settled) or AR/CR (terminal {@link GUARANTEED_TERMINAL_CODES}).
+ *
+ * guaranteedDelivery is the **default** today — see {@link DEFAULT_RETRY_POLICY}
+ * for why. Operators who want exactly-once semantics opt out per channel
+ * (`guaranteedDelivery=false`) and dedupe in their Bot.
  */
 export interface RetryPolicy {
   /** Master switch. On by default; opt out via the autoRetry URL param / channelAutoRetry agent setting. */
@@ -47,8 +51,10 @@ export interface RetryPolicy {
   /**
    * Keep retrying until upstream gives a definitive answer for the message
    * (MSA-1 of AA/CA → processed, AR/CR → rejected), even across the ambiguous
-   * failures that could cause duplicate delivery. Requires `enabled`; policy
-   * resolution forces this off (with a warning) when autoRetry is disabled.
+   * failures that could cause duplicate delivery. **On by default** (see
+   * {@link DEFAULT_RETRY_POLICY}); opt out per channel with
+   * `guaranteedDelivery=false`. Requires `enabled`; policy resolution forces
+   * this off when autoRetry is disabled (warning only if it was set explicitly).
    */
   guaranteedDelivery: boolean;
   /** Delay before the first retry. */
@@ -61,12 +67,36 @@ export interface RetryPolicy {
   backoffMultiplier: number;
 }
 
+/**
+ * Cap on dispatch attempts in **normal** (non-guaranteed) mode before a
+ * transient failure becomes terminal `failed`. guaranteedDelivery overrides this
+ * to 0 (unlimited) — it cannot guarantee delivery while giving up after N tries.
+ * Kept separate from {@link DEFAULT_RETRY_POLICY} because the default policy is
+ * guaranteed (maxAttempts 0); this is the fallback only when a channel opts out.
+ */
+export const DEFAULT_NORMAL_MODE_MAX_ATTEMPTS = 10;
+
+/**
+ * The policy a channel gets with zero configuration: **guaranteed at-least-once
+ * delivery**, retrying every failure indefinitely (`maxAttempts: 0`).
+ *
+ * This is guaranteed-by-default for a historical reason: the Medplum server's
+ * agent WebSocket transmit handler collapses every Bot-execution failure to HTTP
+ * 400 (ws/agent.ts) and does NOT disambiguate a permanent rejection from a
+ * transient/ephemeral one. With no reliable transient-vs-permanent signal, the
+ * only safe default is to assume every error might be ephemeral and keep
+ * retrying — otherwise a retryable failure would be silently dropped. The cost
+ * is possible duplicate delivery; operators who need exactly-once should either
+ * opt out (`guaranteedDelivery=false`) or dedupe in their Bot — e.g. record
+ * processed message control IDs on a FHIR resource such as `MessageHeader` and
+ * skip a control ID that has already been handled.
+ */
 export const DEFAULT_RETRY_POLICY: RetryPolicy = {
   enabled: true,
-  guaranteedDelivery: false,
+  guaranteedDelivery: true,
   baseDelayMs: 1_000,
   maxDelayMs: 60_000,
-  maxAttempts: 10,
+  maxAttempts: 0,
   backoffMultiplier: 2,
 };
 
@@ -85,7 +115,7 @@ export interface ChannelQueueWorkerOptions {
   app: App;
   queue: DurableQueue;
   log: ILogger;
-  /** Auto-retry policy; default {@link DEFAULT_RETRY_POLICY} (enabled, transient codes only). */
+  /** Auto-retry policy; default {@link DEFAULT_RETRY_POLICY} (enabled, guaranteed delivery). */
   retryPolicy?: RetryPolicy;
   /** Override for unit tests; default {@link DEFAULT_WORKER_RESPONSE_TIMEOUT_MS}. */
   responseTimeoutMs?: number;

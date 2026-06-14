@@ -19,7 +19,7 @@ import type { DurableQueue } from './queue/durable-queue';
 import type { EnqueueResult, InboundRow } from './queue/types';
 import { AckOutcome, DuplicateBehavior } from './queue/types';
 import type { RetryPolicy } from './queue/worker';
-import { ChannelQueueWorker, DEFAULT_RETRY_POLICY } from './queue/worker';
+import { ChannelQueueWorker, DEFAULT_NORMAL_MODE_MAX_ATTEMPTS, DEFAULT_RETRY_POLICY } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 
 /**
@@ -894,6 +894,11 @@ export function parseDuplicateBehavior(rawValue: string | undefined, logger: ILo
  * {@link DEFAULT_RETRY_POLICY}. Invalid values warn and fall through to the
  * next layer, mirroring the other channel URL params.
  *
+ * The built-in default is **guaranteed delivery** (see DEFAULT_RETRY_POLICY for
+ * why) with unlimited attempts. Opting out (`guaranteedDelivery=false`) drops to
+ * normal mode, where maxAttempts falls back to
+ * {@link DEFAULT_NORMAL_MODE_MAX_ATTEMPTS} rather than the guaranteed default's 0.
+ *
  * This resolves only *how aggressively* to retry; *which* failures are eligible
  * is decided in the worker by classification (transient vs ambiguous — see
  * RetryPolicy / handleFailure in worker.ts). In particular, normal mode never
@@ -902,7 +907,8 @@ export function parseDuplicateBehavior(rawValue: string | undefined, logger: ILo
  *
  * Cross-field rules:
  * - `guaranteedDelivery` requires auto-retry: when autoRetry resolves to
- *   false, guaranteedDelivery is ignored with a warning.
+ *   false, guaranteedDelivery is forced off — with a warning only if it was set
+ *   explicitly (the default-on value is dropped silently).
  * - `guaranteedDelivery` implies unlimited attempts (`maxAttempts = 0`). An
  *   explicitly configured nonzero `autoRetryMaxAttempts` conflicts: we warn
  *   and respect the explicit cap — delivery is then no longer guaranteed.
@@ -921,12 +927,18 @@ export function resolveRetryPolicy(
     agentDefaults.enabled ??
     DEFAULT_RETRY_POLICY.enabled;
 
-  let guaranteedDelivery =
+  // Track whether guaranteedDelivery was set explicitly (param or agent setting)
+  // vs. inherited from the built-in default — guaranteedDelivery defaults to ON,
+  // so the autoRetry=false conflict must only warn when the operator actually
+  // asked for it, not for every channel that simply turns auto-retry off.
+  const guaranteedExplicit =
     parseRetryBoolParam(params.get('guaranteedDelivery'), 'guaranteedDelivery', logger) ??
-    agentDefaults.guaranteedDelivery ??
-    DEFAULT_RETRY_POLICY.guaranteedDelivery;
+    agentDefaults.guaranteedDelivery;
+  let guaranteedDelivery = guaranteedExplicit ?? DEFAULT_RETRY_POLICY.guaranteedDelivery;
   if (guaranteedDelivery && !enabled) {
-    logger.warn('guaranteedDelivery=true conflicts with autoRetry=false; ignoring guaranteedDelivery.');
+    if (guaranteedExplicit === true) {
+      logger.warn('guaranteedDelivery=true conflicts with autoRetry=false; ignoring guaranteedDelivery.');
+    }
     guaranteedDelivery = false;
   }
 
@@ -935,7 +947,9 @@ export function resolveRetryPolicy(
   const explicitMaxAttempts =
     parseRetryNumberParam(params.get('autoRetryMaxAttempts'), 'autoRetryMaxAttempts', 0, logger) ??
     agentDefaults.maxAttempts;
-  let maxAttempts = explicitMaxAttempts ?? (guaranteedDelivery ? 0 : DEFAULT_RETRY_POLICY.maxAttempts);
+  // guaranteedDelivery → unlimited (0); normal mode falls back to the normal-mode
+  // cap, NOT DEFAULT_RETRY_POLICY.maxAttempts (which is 0 for the guaranteed default).
+  let maxAttempts = explicitMaxAttempts ?? (guaranteedDelivery ? 0 : DEFAULT_NORMAL_MODE_MAX_ATTEMPTS);
   if (guaranteedDelivery && explicitMaxAttempts !== undefined && explicitMaxAttempts > 0) {
     logger.warn(
       `guaranteedDelivery retries indefinitely, but autoRetryMaxAttempts=${explicitMaxAttempts} was explicitly configured; respecting autoRetryMaxAttempts — delivery is no longer guaranteed once attempts are exhausted.`

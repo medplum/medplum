@@ -258,9 +258,13 @@ describe('ChannelQueueWorker', () => {
     await worker.stop();
   });
 
-  test('response timeout marks the row failed', async () => {
+  test('under the default (guaranteed) policy, a response timeout is retried, not failed', async () => {
     const r = enqueueOne(queue, 'TIMEOUT');
     const { app } = makeStubApp();
+    // No retryPolicy → DEFAULT_RETRY_POLICY, which is guaranteedDelivery. An
+    // ambiguous response timeout is retried (returned to `queued`) rather than
+    // left `failed` — the at-least-once default. (Normal-mode opt-out, which DOES
+    // land such a timeout in `failed` for review, is covered separately below.)
     const worker = new ChannelQueueWorker({
       channelName: 'ch1',
       app,
@@ -271,9 +275,11 @@ describe('ChannelQueueWorker', () => {
       idlePollMs: 10,
     });
     worker.start();
-    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
-    expect(queue.getById(r.id)?.lastError).toContain('Timed out');
-    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED, 2000);
+    const scheduled = queue.getById(r.id);
+    expect(scheduled?.lastError).toContain('Timed out');
+    expect(scheduled?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    expect(scheduled?.nextAttemptAt).toBeGreaterThan(0);
     await worker.stop();
   });
 
@@ -406,6 +412,11 @@ describe('ChannelQueueWorker', () => {
       sendAck: () => true,
       responseTimeoutMs: 50,
       idlePollMs: 10,
+      // Normal mode isolates the disconnect semantics under test: the worker must
+      // not requeue an already-sent request, and the ambiguous timeout then lands
+      // terminally in `failed`. (Under the guaranteed default that timeout would
+      // be retried instead — covered by the guaranteed-delivery tests.)
+      retryPolicy: { ...DEFAULT_RETRY_POLICY, guaranteedDelivery: false },
     });
     worker.start();
     await waitFor(() => worker.hasInFlight());
