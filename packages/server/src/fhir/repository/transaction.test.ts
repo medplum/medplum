@@ -462,7 +462,7 @@ describe('FHIR Repo Transactions', () => {
 
       const tx1UpdateFinished = Promise.withResolvers<undefined>();
       const allowTx1Commit = Promise.withResolvers<undefined>();
-      const tx2CallbackStarted = Promise.withResolvers<undefined>();
+      const tx2SnapshotTaken = Promise.withResolvers<undefined>();
 
       const events: string[] = [];
       const log = jest.fn().mockImplementation((msg: string) => {
@@ -473,10 +473,11 @@ describe('FHIR Repo Transactions', () => {
       1. tx1 begins a REPEATABLE READ transaction and updates the patient row.
       2. tx1 stays open, so it still holds the row/update conflict.
       3. tx2 begins its own REPEATABLE READ transaction while tx1 is still open.
-      4. tx2 tries to update the same patient row.
-      5. Once tx1 commits, Postgres can’t safely let tx2 continue using the snapshot it started with, because that snapshot predates tx1’s committed update.
-      6. Postgres raises serialization failure 40001.
-      7. RepositoryConnection.withTransaction() treats 40001 as retryable, rolls back tx2, starts a fresh transaction, reruns tx2 callback and succeeds.
+      4. tx2 takes its snapshot by reading the patient row (any query would do)
+      5. tx2 tries to update the same patient row.
+      6. Once tx1 commits, Postgres can’t safely let tx2 continue using the snapshot it started with, because that snapshot predates tx1’s committed update.
+      7. Postgres raises serialization failure 40001.
+      8. RepositoryConnection.withTransaction() treats 40001 as retryable, rolls back tx2, starts a fresh transaction, reruns tx2 callback and succeeds.
       */
 
       const tx1 = repo.clone().withTransaction(async (txRepo) => {
@@ -498,7 +499,8 @@ describe('FHIR Repo Transactions', () => {
 
       const tx2 = repo.clone().withTransaction(async (txRepo) => {
         log('tx2 start');
-        tx2CallbackStarted.resolve(undefined);
+        await txRepo.readResource('Patient', existing.id);
+        tx2SnapshotTaken.resolve(undefined);
         try {
           await txRepo.updateResource({ ...existing, deceasedBoolean: false });
         } catch (err) {
@@ -510,7 +512,7 @@ describe('FHIR Repo Transactions', () => {
         return 'tx2 success';
       });
 
-      await tx2CallbackStarted.promise;
+      await tx2SnapshotTaken.promise;
 
       allowTx1Commit.resolve(undefined);
       const results = await Promise.allSettled([tx1, tx2]);
