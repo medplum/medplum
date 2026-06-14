@@ -15,20 +15,25 @@ import { MessageState } from './types';
  * @param state - Terminal state to land the row in.
  * @param terminalAt - Timestamp to write to the terminal-state column.
  * @param msgControlId - MSH.10 to use (also baked into the callback ID).
+ * @param ackOutcome - Source-leg outcome; defaults to `delivered` for processed
+ *   rows (fully done) and `not_owed` otherwise. Pass `undelivered` to seed the
+ *   processed-but-ACK-failed cell that the retention floor must protect.
  * @returns The inserted row's primary key.
  */
 function seedRow(
   queue: DurableQueue,
-  state: 'processed' | 'errored' | 'nacked',
+  state: 'processed' | 'rejected' | 'failed' | 'nacked',
   terminalAt: number,
-  msgControlId: string
+  msgControlId: string,
+  ackOutcome: 'delivered' | 'undelivered' | 'not_owed' = state === 'processed' ? 'delivered' : 'not_owed'
 ): number {
   const r = queue.enqueue({
     channelName: 'ch1',
     remote: '127.0.0.1:5000',
     msgControlId,
     msgType: 'ADT^A01',
-    body: Buffer.from('seed-body'),
+    originalMessage: Buffer.from('seed-body'),
+    finalizedMessage: Buffer.from('seed-body'),
     encoding: 'utf-8',
     enhancedMode: 'standard',
     callbackId: `cb-${msgControlId}`,
@@ -40,13 +45,13 @@ function seedRow(
   }
   const db = queue.getDb();
   if (state === 'processed') {
-    db.prepare(`UPDATE inbound_hl7_messages SET state = 'processed', processed_at = ? WHERE id = ?`).run(
-      terminalAt,
-      r.row.id
-    );
+    db.prepare(
+      `UPDATE inbound_hl7_messages SET state = 'processed', ack_outcome = ?, processed_at = ? WHERE id = ?`
+    ).run(ackOutcome, terminalAt, r.row.id);
   } else {
-    db.prepare(`UPDATE inbound_hl7_messages SET state = ?, errored_at = ? WHERE id = ?`).run(
+    db.prepare(`UPDATE inbound_hl7_messages SET state = ?, ack_outcome = ?, errored_at = ? WHERE id = ?`).run(
       state,
+      ackOutcome,
       terminalAt,
       r.row.id
     );
@@ -73,7 +78,7 @@ describe('RetentionSweeper', () => {
     const dayMs = 86_400_000;
     seedRow(queue, 'processed', now - 10 * dayMs, 'OLD_P');
     seedRow(queue, 'processed', now - 1 * dayMs, 'YOUNG_P');
-    seedRow(queue, 'errored', now - 10 * dayMs, 'OLD_E'); // should be spared by phase 1
+    seedRow(queue, 'failed', now - 10 * dayMs, 'OLD_E'); // should be spared by phase 1
 
     const sweeper = new RetentionSweeper({
       queue,
@@ -88,7 +93,29 @@ describe('RetentionSweeper', () => {
 
     const counts = queue.countByState();
     expect(counts.processed).toBe(1);
-    expect(counts.errored).toBe(1);
+    expect(counts.failed).toBe(1);
+  });
+
+  test('time-based purge spares processed rows whose ACK is still undelivered', async () => {
+    const now = 1_700_000_000_000;
+    const dayMs = 86_400_000;
+    // Both are old enough for the processed window, but the undelivered one is
+    // not "fully done" — it must survive (source may still retransmit, and it's
+    // an operator signal). The delivered one is purged.
+    seedRow(queue, 'processed', now - 10 * dayMs, 'OLD_DELIVERED', 'delivered');
+    const undeliveredId = seedRow(queue, 'processed', now - 10 * dayMs, 'OLD_UNDELIVERED', 'undelivered');
+
+    const sweeper = new RetentionSweeper({
+      queue,
+      log: createMockLogger(),
+      retentionDays: 7,
+      maxSizeMb: 1024, // huge so the floor purge (phase 3) never fires
+      erroredRetentionDays: 90,
+    });
+    const result = await sweeper.sweep(now);
+    expect(result.deletedProcessed).toBe(1); // only the delivered one
+    expect(queue.getById(undeliveredId)?.state).toBe(MessageState.PROCESSED);
+    expect(queue.getById(undeliveredId)?.ackOutcome).toBe('undelivered');
   });
 
   test('size-driven purge deletes oldest processed first', async () => {
@@ -110,11 +137,11 @@ describe('RetentionSweeper', () => {
     expect(queue.countByState().processed).toBeLessThan(50);
   });
 
-  test('errored floor protects errored rows from size-driven sweep', async () => {
+  test('errored floor protects failed rows from size-driven sweep', async () => {
     const now = 1_700_000_000_000;
     const dayMs = 86_400_000;
-    // Young errored — protected by the floor regardless of size pressure.
-    const errYoungId = seedRow(queue, 'errored', now - 1 * dayMs, 'EY');
+    // Young failed — protected by the floor regardless of size pressure.
+    const errYoungId = seedRow(queue, 'failed', now - 1 * dayMs, 'EY');
     // No processed rows at all, just to make sure phase 2 hits nothing then phase 3 runs.
     const sweeper = new RetentionSweeper({
       queue,
@@ -124,13 +151,31 @@ describe('RetentionSweeper', () => {
       erroredRetentionDays: 90, // EY is only 1 day old → still protected
     });
     await sweeper.sweep(now);
-    expect(queue.getById(errYoungId)?.state).toBe(MessageState.ERRORED);
+    expect(queue.getById(errYoungId)?.state).toBe(MessageState.FAILED);
   });
 
-  test('errored older than floor is purged under size pressure', async () => {
+  test('errored floor also protects young processed+undelivered rows under size pressure', async () => {
     const now = 1_700_000_000_000;
     const dayMs = 86_400_000;
-    seedRow(queue, 'errored', now - 100 * dayMs, 'EOLD'); // past the floor
+    // Old enough for the processed window but young vs the errored floor — the
+    // floor (keyed on processed_at via COALESCE) must keep it.
+    const undeliveredId = seedRow(queue, 'processed', now - 10 * dayMs, 'YOUNG_UNDELIVERED', 'undelivered');
+    const sweeper = new RetentionSweeper({
+      queue,
+      log: createMockLogger(),
+      retentionDays: 7,
+      maxSizeMb: 0, // max size pressure
+      erroredRetentionDays: 90, // 10 days old → still inside the floor
+    });
+    await sweeper.sweep(now);
+    expect(queue.getById(undeliveredId)?.state).toBe(MessageState.PROCESSED);
+    expect(queue.getById(undeliveredId)?.ackOutcome).toBe('undelivered');
+  });
+
+  test('failed older than floor is purged under size pressure', async () => {
+    const now = 1_700_000_000_000;
+    const dayMs = 86_400_000;
+    seedRow(queue, 'failed', now - 100 * dayMs, 'EOLD'); // past the floor
     const sweeper = new RetentionSweeper({
       queue,
       log: createMockLogger(),
@@ -140,6 +185,23 @@ describe('RetentionSweeper', () => {
     });
     const result = await sweeper.sweep(now);
     expect(result.deletedErrored).toBeGreaterThanOrEqual(1);
+  });
+
+  test('processed+undelivered older than floor is purged under size pressure', async () => {
+    const now = 1_700_000_000_000;
+    const dayMs = 86_400_000;
+    // Past both the processed window (spared by phase 1) and the errored floor.
+    seedRow(queue, 'processed', now - 100 * dayMs, 'POLD_UNDELIVERED', 'undelivered');
+    const sweeper = new RetentionSweeper({
+      queue,
+      log: createMockLogger(),
+      retentionDays: 7,
+      maxSizeMb: 0,
+      erroredRetentionDays: 90,
+    });
+    const result = await sweeper.sweep(now);
+    expect(result.deletedErrored).toBeGreaterThanOrEqual(1);
+    expect(queue.countByState().processed).toBe(0);
   });
 
   test('sweep is a no-op when below thresholds', async () => {

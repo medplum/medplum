@@ -32,16 +32,36 @@ export const MIGRATIONS: readonly Migration[] = [
         remote                TEXT    NOT NULL,
         msg_control_id        TEXT,
         msg_type              TEXT,
-        body                  BLOB    NOT NULL,
+        -- original_message is the message exactly as received, used for the
+        -- intake duplicate-content comparison. finalized_message is what the
+        -- worker dispatches upstream; it differs from original only when the
+        -- channel rewrites the message (e.g. assignSeqNo sets MSH.13). When no
+        -- transformation applies the two are byte-identical.
+        original_message      BLOB    NOT NULL,
+        finalized_message     BLOB    NOT NULL,
         encoding              TEXT,
         enhanced_mode         TEXT,
+        -- state tracks the Bot leg (queued/processing/processed/rejected/failed)
+        -- plus the intake-reject 'nacked'. The source-leg ACK-delivery outcome is
+        -- tracked independently in ack_outcome
+        -- (pending/delivered/undelivered/not_owed) so the two legs never conflate.
         state                 TEXT    NOT NULL,
         attempt_count         INTEGER NOT NULL DEFAULT 0,
         callback_id           TEXT    NOT NULL,
         server_response_body  BLOB,
         server_status_code    INTEGER,
-        ack_sent_to_source    INTEGER NOT NULL DEFAULT 0,
+        ack_outcome           TEXT    NOT NULL DEFAULT 'pending',
         last_error            TEXT,
+        -- error_code is the machine-readable failure classification (QueueErrorCode);
+        -- the retry policy gates on it, never on the free-form last_error string.
+        error_code            TEXT,
+        -- next_attempt_at is the earliest time (ms) a retry-scheduled 'queued' row
+        -- may be re-claimed; NULL unless an auto-retry backoff is pending.
+        next_attempt_at       INTEGER,
+        -- guaranteed_delivery snapshots the channel's guaranteedDelivery setting at
+        -- intake, so recoverOnStartup (which runs before channel policies resolve)
+        -- knows whether to requeue (1) or fail (0) an interrupted row.
+        guaranteed_delivery   INTEGER NOT NULL DEFAULT 0,
         seq_no                INTEGER,
         received_at           INTEGER NOT NULL,
         committed_at          INTEGER,
@@ -75,25 +95,15 @@ export const MIGRATIONS: readonly Migration[] = [
         acquired_at INTEGER NOT NULL,
         expires_at  INTEGER NOT NULL
       ) STRICT;
-    `,
-  },
-  {
-    version: 2,
-    sql: `
-      -- Auto-retry support: machine-readable failure classification plus the
-      -- earliest timestamp at which a retry-scheduled 'queued' row may be
-      -- claimed again. Both NULL for rows that have never failed.
-      ALTER TABLE inbound_hl7_messages ADD COLUMN error_code TEXT;
-      ALTER TABLE inbound_hl7_messages ADD COLUMN next_attempt_at INTEGER;
-    `,
-  },
-  {
-    version: 3,
-    sql: `
-      -- Guaranteed-delivery support: snapshot of the channel's guaranteedDelivery
-      -- setting at intake time. Rows with 1 are requeued (not errored) when found
-      -- in 'processing' at startup, so the delivery guarantee survives restarts.
-      ALTER TABLE inbound_hl7_messages ADD COLUMN guaranteed_delivery INTEGER NOT NULL DEFAULT 0;
+
+      -- Per-channel monotonic sequence counter for the assignSeqNo feature.
+      -- Persisting it here (rather than only in memory) keeps MSH.13 sequence
+      -- numbers monotonic across agent restarts. last_seq_no holds the most
+      -- recently assigned value; the next assignment is last_seq_no + 1.
+      CREATE TABLE IF NOT EXISTS _channel_seq (
+        channel_name TEXT    PRIMARY KEY,
+        last_seq_no  INTEGER NOT NULL
+      ) STRICT;
     `,
   },
 ];

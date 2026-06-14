@@ -7,6 +7,7 @@ import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
 import { runMigrations } from './schema';
 import type {
+  AckOutcome,
   EnqueueInput,
   EnqueueRejectedInput,
   EnqueueResult,
@@ -14,7 +15,11 @@ import type {
   MessageState,
   QueueErrorCode,
 } from './types';
-import { MessageState as MessageStateValues, QueueErrorCode as QueueErrorCodeValues } from './types';
+import {
+  AckOutcome as AckOutcomeValues,
+  MessageState as MessageStateValues,
+  QueueErrorCode as QueueErrorCodeValues,
+} from './types';
 
 export interface DurableQueueOptions {
   /** Filesystem path to the SQLite DB file. */
@@ -59,13 +64,16 @@ export class DurableQueue {
   // Names mirror the public methods that use them.
   private readonly enqueueStmt: StatementSync;
   private readonly enqueueRejectedStmt: StatementSync;
-  private readonly findActiveDuplicateStmt: StatementSync;
+  private readonly peekLastSeqNoStmt: StatementSync;
+  private readonly commitSeqNoStmt: StatementSync;
+  private readonly findSeenByControlIdStmt: StatementSync;
   private readonly claimNextStmt: StatementSync;
   private readonly findByCallbackStmt: StatementSync;
   private readonly findByIdStmt: StatementSync;
   private readonly recordServerResponseStmt: StatementSync;
   private readonly markProcessedStmt: StatementSync;
-  private readonly markErroredStmt: StatementSync;
+  private readonly markBotFailedStmt: StatementSync;
+  private readonly setAckOutcomeStmt: StatementSync;
   private readonly scheduleRetryStmt: StatementSync;
   private readonly requeueStmt: StatementSync;
   private readonly recoverProcessingStmt: StatementSync;
@@ -103,30 +111,49 @@ export class DurableQueue {
 
     this.enqueueStmt = this.db.prepare(`
       INSERT INTO inbound_hl7_messages (
-        channel_name, remote, msg_control_id, msg_type, body, encoding,
+        channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
         enhanced_mode, state, attempt_count, callback_id,
         seq_no, received_at, committed_at, guaranteed_delivery
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?, ?
       )
     `);
 
     this.enqueueRejectedStmt = this.db.prepare(`
       INSERT INTO inbound_hl7_messages (
-        channel_name, remote, msg_control_id, msg_type, body, encoding,
+        channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
         enhanced_mode, state, attempt_count, callback_id,
-        ack_sent_to_source, last_error, seq_no, received_at
+        ack_outcome, last_error, seq_no, received_at
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 1, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 'not_owed', ?, ?, ?
       )
     `);
 
-    this.findActiveDuplicateStmt = this.db.prepare(`
+    // Per-channel monotonic sequence counter (assignSeqNo). peek is a pure read
+    // of the last assigned value; commit advances it. They're split (rather than
+    // a single advance-and-return) so the caller can stamp a candidate sequence
+    // number and only commit it once the row is durably inserted — a failed
+    // insert never consumes a sequence number. Single-process + synchronous, so
+    // no locking is needed between peek and commit.
+    this.peekLastSeqNoStmt = this.db.prepare(`
+      SELECT last_seq_no FROM _channel_seq WHERE channel_name = ?
+    `);
+    this.commitSeqNoStmt = this.db.prepare(`
+      INSERT INTO _channel_seq (channel_name, last_seq_no) VALUES (?, ?)
+        ON CONFLICT(channel_name) DO UPDATE SET last_seq_no = excluded.last_seq_no
+    `);
+
+    // Canonical prior row for a (channel, control_id): any state except `nacked`
+    // (nacked rows are rejected-intake audit records and intentionally reuse
+    // control IDs, so they're not a "real" prior delivery to dedupe against).
+    // id DESC returns the most recent in the unlikely event legacy duplicates
+    // predate the dedupe-on-intake logic.
+    this.findSeenByControlIdStmt = this.db.prepare(`
       SELECT * FROM inbound_hl7_messages
        WHERE channel_name = ?
          AND msg_control_id = ?
-         AND state IN ('queued', 'processing')
-       ORDER BY id ASC
+         AND state != 'nacked'
+       ORDER BY id DESC
        LIMIT 1
     `);
 
@@ -139,7 +166,8 @@ export class DurableQueue {
     // select, on purpose: a head row waiting out its retry backoff blocks the
     // whole channel (claim returns null) instead of letting younger rows skip
     // ahead. Head-of-line blocking is what preserves the per-channel FIFO
-    // ordering guarantee (§1.1) across retries.
+    // ordering guarantee (§1.1) across retries. The claim also clears
+    // next_attempt_at so a re-claimed retry row carries no stale schedule.
     this.claimNextStmt = this.db.prepare(`
       UPDATE inbound_hl7_messages
          SET state = 'processing',
@@ -171,27 +199,44 @@ export class DurableQueue {
        WHERE id = ?
     `);
 
+    // Bot accepted (2xx). state → processed regardless of the source leg; the
+    // caller passes the ack_outcome (delivered / undelivered) separately so a
+    // failed return ACK is recorded on its own axis, never as a Bot-leg error.
     this.markProcessedStmt = this.db.prepare(`
       UPDATE inbound_hl7_messages
          SET state = 'processed',
-             ack_sent_to_source = 1,
+             ack_outcome = ?,
              processed_at = ?
        WHERE id = ?
     `);
 
-    this.markErroredStmt = this.db.prepare(`
+    // Bot-leg failure: state is the caller-supplied terminal (`rejected` for a
+    // permanent reject, `failed` for transient/ambiguous). No app-level ACK is
+    // owed in either case, so the source leg settles to not_owed.
+    this.markBotFailedStmt = this.db.prepare(`
       UPDATE inbound_hl7_messages
-         SET state = 'errored',
+         SET state = ?,
              errored_at = ?,
              last_error = ?,
-             error_code = ?
+             error_code = ?,
+             ack_outcome = 'not_owed'
+       WHERE id = ?
+    `);
+
+    // Source leg only: used when a retransmit replays a previously-undelivered
+    // ACK and lands it, flipping the row's ack_outcome without touching state.
+    this.setAckOutcomeStmt = this.db.prepare(`
+      UPDATE inbound_hl7_messages
+         SET ack_outcome = ?
        WHERE id = ?
     `);
 
     // Auto-retry transition: processing → queued with a future next_attempt_at.
     // The row keeps its id, so it stays at the head of its channel's FIFO; the
-    // claim statement won't hand it out again until the backoff elapses.
-    // attempt_count is NOT touched here — claimNext already counted the attempt.
+    // claim statement won't hand it out again until the backoff elapses. Note
+    // the row goes back to `queued`, NOT to a terminal `failed`/`rejected` — a
+    // scheduled retry is still in flight. attempt_count is NOT touched here —
+    // claimNext already counted the attempt.
     this.scheduleRetryStmt = this.db.prepare(`
       UPDATE inbound_hl7_messages
          SET state = 'queued',
@@ -214,9 +259,14 @@ export class DurableQueue {
        WHERE id = ? AND state = 'processing'
     `);
 
+    // Interrupted mid-flight: ambiguous (the server may or may not have processed
+    // it), so it lands in `failed` for operator review — never `rejected`. The
+    // source leg's ack_outcome is left as-is (`pending`): we genuinely don't know
+    // whether an ACK was owed. Non-guaranteed channels stop here: `interrupted`
+    // is an ambiguous code, so it is review-only, never silently auto-retried.
     this.recoverProcessingStmt = this.db.prepare(`
       UPDATE inbound_hl7_messages
-         SET state = 'errored',
+         SET state = 'failed',
              errored_at = ?,
              last_error = COALESCE(last_error, 'interrupted: process restart while processing'),
              error_code = COALESCE(error_code, '${QueueErrorCodeValues.Interrupted}')
@@ -225,8 +275,9 @@ export class DurableQueue {
 
     // Guaranteed-delivery counterpart of the recovery sweep: the operator asked
     // us to keep trying until upstream gives a definitive answer, so an
-    // interrupted row goes back to the head of its channel's FIFO (duplication
-    // risk accepted) instead of parking in `errored`.
+    // interrupted row goes straight back to the head of its channel's FIFO
+    // (duplication risk accepted) instead of parking in `failed`. next_attempt_at
+    // is cleared so it is immediately claimable on restart.
     this.recoverProcessingGuaranteedStmt = this.db.prepare(`
       UPDATE inbound_hl7_messages
          SET state = 'queued',
@@ -379,31 +430,65 @@ export class DurableQueue {
   /**
    * Inserts a new `queued` row.
    *
-   * If a row with the same `(channel_name, msg_control_id)` is already in
-   * `queued` or `processing`, the partial unique index throws a SQLITE_CONSTRAINT
-   * error and we surface a `duplicateActive` result instead — letting the caller
-   * decide between `reject` and `idempotent` behavior (§8).
+   * If any prior non-`nacked` row already owns this `(channel_name,
+   * msg_control_id)` — in `queued`, `processing`, `processed`, `rejected`, or
+   * `failed` — we don't insert; we surface a `duplicate` result carrying that row so the
+   * caller can compare bodies and decide between replaying the prior ACK and
+   * rejecting the collision (§8). The partial unique index remains as a
+   * last-resort guard against an active-window race (not expected in the
+   * single-process agent).
    * @param input - Fields to persist on the new row.
-   * @returns Either the inserted row, or the prior active row that owns the MSH.10.
+   * @param options - Optional behavior.
+   * @param options.commitSeqNo - When set, advances the channel's persisted
+   *   sequence counter to this value in the SAME transaction as the insert, so a
+   *   crash can never leave the row committed while the counter lags (which would
+   *   reuse the sequence number on restart). Pass the value just peeked via
+   *   {@link peekNextSeqNo} and stamped into the message.
+   * @returns Either the inserted row, or the prior row that owns the MSH.10.
    */
-  enqueue(input: EnqueueInput): EnqueueResult {
+  enqueue(input: EnqueueInput, options?: { commitSeqNo?: number }): EnqueueResult {
+    if (input.msgControlId) {
+      const existing = this.findSeenByControlId(input.channelName, input.msgControlId);
+      if (existing) {
+        return { kind: 'duplicate', existing };
+      }
+    }
     try {
-      const info = this.enqueueStmt.run(
-        input.channelName,
-        input.remote,
-        input.msgControlId,
-        input.msgType,
-        toBlob(input.body),
-        input.encoding,
-        input.enhancedMode,
-        input.callbackId,
-        input.seqNo,
-        input.receivedAt,
-        input.receivedAt,
-        input.guaranteedDelivery ? 1 : 0
-      );
+      const runInsert = (): number => {
+        const info = this.enqueueStmt.run(
+          input.channelName,
+          input.remote,
+          input.msgControlId,
+          input.msgType,
+          toBlob(input.originalMessage),
+          toBlob(input.finalizedMessage),
+          input.encoding,
+          input.enhancedMode,
+          input.callbackId,
+          input.seqNo,
+          input.receivedAt,
+          input.receivedAt,
+          input.guaranteedDelivery ? 1 : 0
+        );
+        return Number(info.lastInsertRowid);
+      };
+
+      let id: number;
+      if (options?.commitSeqNo !== undefined) {
+        // Atomically insert the row and advance the sequence counter.
+        this.db.exec('BEGIN');
+        try {
+          id = runInsert();
+          this.commitSeqNo(input.channelName, options.commitSeqNo);
+          this.db.exec('COMMIT');
+        } catch (txErr) {
+          this.db.exec('ROLLBACK');
+          throw txErr;
+        }
+      } else {
+        id = runInsert();
+      }
       this.walDirty = true;
-      const id = Number(info.lastInsertRowid);
       const row = this.getById(id);
       if (!row) {
         throw new Error(`enqueue: inserted row id=${id} could not be re-read`);
@@ -411,9 +496,9 @@ export class DurableQueue {
       return { kind: 'inserted', row };
     } catch (err) {
       if (isUniqueConstraintError(err) && input.msgControlId) {
-        const existing = this.findActiveDuplicate(input.channelName, input.msgControlId);
+        const existing = this.findSeenByControlId(input.channelName, input.msgControlId);
         if (existing) {
-          return { kind: 'duplicateActive', existing };
+          return { kind: 'duplicate', existing };
         }
       }
       throw err;
@@ -434,7 +519,8 @@ export class DurableQueue {
         input.remote,
         input.msgControlId,
         input.msgType,
-        toBlob(input.body),
+        toBlob(input.originalMessage),
+        toBlob(input.finalizedMessage),
         input.encoding,
         input.enhancedMode,
         input.callbackId,
@@ -453,16 +539,13 @@ export class DurableQueue {
   /**
    * Atomically claims the next `queued` row for `channelName`, flipping it to
    * `processing` and bumping `attempt_count`.
-   *
-   * Returns `null` when the channel queue is empty AND when the head row is a
-   * scheduled retry whose `next_attempt_at` has not elapsed — the channel
-   * blocks (head-of-line) rather than claiming a younger row out of order.
    * @param channelName - The channel to claim from.
-   * @param now - Override the timestamp written to `processing_started_at` and
-   *              compared against `next_attempt_at` (for tests).
-   * @returns The claimed row, or `null` if no row is currently claimable.
+   * @param now - Override the timestamp written to `processing_started_at` (for tests).
+   * @returns The claimed row, or `null` if the channel queue is empty.
    */
   claimNext(channelName: string, now: number = Date.now()): InboundRow | null {
+    // Bind `now` twice: once for processing_started_at, once for the
+    // next_attempt_at backoff predicate on the outer update.
     const raw = this.claimNextStmt.get(now, channelName, now) as Record<string, SQLInputValue> | undefined;
     if (raw) {
       this.walDirty = true;
@@ -502,24 +585,62 @@ export class DurableQueue {
   }
 
   /**
-   * Terminal transition: row succeeded end-to-end (server 2xx + source ACK delivered).
+   * Terminal Bot-leg transition: the server accepted the message (2xx). The
+   * source leg is recorded independently via `ackOutcome` — `delivered` when the
+   * app-level ACK reached the source, `undelivered` when it couldn't (e.g. the
+   * source connection had closed). An `undelivered` row is fully processed
+   * upstream and must never be re-dispatched; it recovers when the source
+   * retransmits and the stored ACK is replayed (see {@link setAckOutcome}).
    * @param id - Row primary key.
+   * @param ackOutcome - Source-leg result: `delivered` or `undelivered`.
    * @param now - Override for `processed_at` (for tests).
    */
-  markProcessed(id: number, now: number = Date.now()): void {
-    this.markProcessedStmt.run(now, id);
+  markProcessed(id: number, ackOutcome: AckOutcome, now: number = Date.now()): void {
+    this.markProcessedStmt.run(ackOutcome, now, id);
     this.walDirty = true;
   }
 
   /**
-   * Terminal transition: row failed somewhere after commit.
+   * Terminal Bot-leg transition: the server **rejected** the message itself
+   * (permanent 4xx). Retrying can never help — the content must be triaged.
    * @param id - Row primary key.
    * @param error - Human-readable error string, written to `last_error`.
    * @param errorCode - Machine-readable classification, written to `error_code`.
    * @param now - Override for `errored_at` (for tests).
    */
-  markErrored(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
-    this.markErroredStmt.run(now, error, errorCode, id);
+  markRejected(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+    this.markBotFailedStmt.run(MessageStateValues.REJECTED, now, error, errorCode, id);
+    this.walDirty = true;
+  }
+
+  /**
+   * Terminal-for-now Bot-leg transition: a **transient/ambiguous** failure
+   * (5xx, 429, response timeout, dispatch error, interrupted). The retry/
+   * operator-review candidate — distinct from a `rejected` message so the retry
+   * policy can re-dispatch `failed` rows (via {@link scheduleRetry}) without ever
+   * touching `rejected` ones (or `processed` + `undelivered` ones, whose Bot leg
+   * already succeeded). Used only for failures the policy is NOT retrying — a
+   * retry routes through {@link scheduleRetry} instead, keeping the row `queued`.
+   * @param id - Row primary key.
+   * @param error - Human-readable error string, written to `last_error`.
+   * @param errorCode - Machine-readable classification, written to `error_code`.
+   * @param now - Override for `errored_at` (for tests).
+   */
+  markFailed(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+    this.markBotFailedStmt.run(MessageStateValues.FAILED, now, error, errorCode, id);
+    this.walDirty = true;
+  }
+
+  /**
+   * Updates only the source-leg {@link AckOutcome}, leaving the Bot-leg `state`
+   * untouched. Used when a duplicate retransmit replays a previously
+   * `undelivered` ACK and it lands — flipping the row to `delivered` so it no
+   * longer reads as awaiting source delivery.
+   * @param id - Row primary key.
+   * @param ackOutcome - The new source-leg outcome.
+   */
+  setAckOutcome(id: number, ackOutcome: AckOutcome): void {
+    this.setAckOutcomeStmt.run(ackOutcome, id);
     this.walDirty = true;
   }
 
@@ -529,6 +650,11 @@ export class DurableQueue {
    * are ordered by id, it sits at the head of its channel's FIFO and blocks
    * younger rows until it either succeeds or exhausts its attempts — preserving
    * per-channel ordering across retries.
+   *
+   * Distinct from {@link markFailed}: a retry stays `queued` (still in flight),
+   * whereas `markFailed` is the terminal landing for a failure the policy is not
+   * retrying. The worker decides which to call by gating the row's
+   * {@link QueueErrorCode} against the retry policy (see worker.ts).
    * @param id - Row primary key.
    * @param error - Human-readable error string, written to `last_error`.
    * @param errorCode - Machine-readable classification, written to `error_code`.
@@ -565,21 +691,22 @@ export class DurableQueue {
   /**
    * Startup sweep over rows interrupted mid-dispatch (still in `processing`).
    *
-   * Non-guaranteed rows are promoted to `errored` so they surface for operator
-   * review instead of being silently retried (§10) — delivery is ambiguous and
-   * those channels haven't accepted duplication risk. Guaranteed-delivery rows
-   * are returned to `queued` so the channel keeps trying until upstream gives a
-   * definitive answer (§4.1).
+   * Non-guaranteed rows are promoted to `failed` with error code `interrupted`
+   * so they surface for operator review instead of being silently retried (§10)
+   * — `interrupted` is an ambiguous code (delivery unknown) and those channels
+   * haven't accepted duplication risk. Guaranteed-delivery rows are returned to
+   * `queued` so the channel keeps trying until upstream gives a definitive
+   * answer (§4.1).
    * @param now - Override for `errored_at` (for tests).
-   * @returns Counts of rows promoted to `errored` and requeued, respectively.
+   * @returns Counts of rows promoted to `failed` and requeued, respectively.
    */
-  recoverOnStartup(now: number = Date.now()): { errored: number; requeued: number } {
-    const errored = Number(this.recoverProcessingStmt.run(now).changes);
+  recoverOnStartup(now: number = Date.now()): { failed: number; requeued: number } {
+    const failed = Number(this.recoverProcessingStmt.run(now).changes);
     const requeued = Number(this.recoverProcessingGuaranteedStmt.run().changes);
-    if (errored > 0 || requeued > 0) {
+    if (failed > 0 || requeued > 0) {
       this.walDirty = true;
     }
-    return { errored, requeued };
+    return { failed, requeued };
   }
 
   /**
@@ -599,7 +726,8 @@ export class DurableQueue {
       queued: 0,
       processing: 0,
       processed: 0,
-      errored: 0,
+      rejected: 0,
+      failed: 0,
       nacked: 0,
     };
     const rows = this.countByStateStmt.all() as { state: MessageState; n: number }[];
@@ -700,11 +828,44 @@ export class DurableQueue {
     return row?.bytes ?? 0;
   }
 
-  private findActiveDuplicate(channelName: string, msgControlId: string): InboundRow | null {
-    const raw = this.findActiveDuplicateStmt.get(channelName, msgControlId) as
+  /**
+   * @param channelName - The channel to search.
+   * @param msgControlId - MSH.10 to look up.
+   * @returns The most recent non-`nacked` row owning this `(channel, control_id)`, or null.
+   */
+  findSeenByControlId(channelName: string, msgControlId: string): InboundRow | null {
+    const raw = this.findSeenByControlIdStmt.get(channelName, msgControlId) as
       | Record<string, SQLInputValue>
       | undefined;
     return raw ? rowFromSql(raw) : null;
+  }
+
+  /**
+   * Returns the sequence number that {@link commitSeqNo} would next persist for
+   * a channel, WITHOUT advancing the counter. The first value for a channel is
+   * 0; thereafter it is the last committed value + 1. Read-only: callers stamp
+   * this candidate into MSH.13 and only {@link commitSeqNo} it once the row is
+   * durably enqueued, so a failed insert never burns a sequence number.
+   * @param channelName - The channel whose counter to peek.
+   * @returns The next sequence number to assign.
+   */
+  peekNextSeqNo(channelName: string): number {
+    const row = this.peekLastSeqNoStmt.get(channelName) as { last_seq_no: number } | undefined;
+    return row === undefined ? 0 : row.last_seq_no + 1;
+  }
+
+  /**
+   * Persists `seqNo` as the channel's last assigned sequence number. Production
+   * intake commits this inside the insert transaction via
+   * {@link enqueue}'s `commitSeqNo` option, so the row and the counter advance
+   * atomically; call it directly only when not pairing it with an insert. The
+   * counter survives restarts, keeping MSH.13 sequence numbers monotonic.
+   * @param channelName - The channel whose counter to advance.
+   * @param seqNo - The sequence number that was assigned and successfully enqueued.
+   */
+  commitSeqNo(channelName: string, seqNo: number): void {
+    this.commitSeqNoStmt.run(channelName, seqNo);
+    this.walDirty = true;
   }
 }
 
@@ -721,7 +882,8 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     remote: raw.remote as string,
     msgControlId: (raw.msg_control_id as string | null) ?? null,
     msgType: (raw.msg_type as string | null) ?? null,
-    body: toBuffer(raw.body),
+    originalMessage: toBuffer(raw.original_message),
+    finalizedMessage: toBuffer(raw.finalized_message),
     encoding: (raw.encoding as string | null) ?? null,
     enhancedMode: (raw.enhanced_mode as 'standard' | 'aaMode' | null) ?? null,
     state: raw.state as MessageState,
@@ -733,7 +895,7 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
         ? null
         : toBuffer(raw.server_response_body),
     serverStatusCode: (raw.server_status_code as number | null) ?? null,
-    ackSentToSource: (raw.ack_sent_to_source as number) === 1,
+    ackOutcome: (raw.ack_outcome as AckOutcome | null) ?? AckOutcomeValues.PENDING,
     lastError: (raw.last_error as string | null) ?? null,
     errorCode: (raw.error_code as QueueErrorCode | null) ?? null,
     nextAttemptAt: (raw.next_attempt_at as number | null) ?? null,

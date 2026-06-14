@@ -11,11 +11,16 @@ import { Hl7CloseEvent, Hl7EnhancedAckSentEvent, Hl7ErrorEvent, Hl7MessageEvent,
 /**
  * Negative commit ACK code accepted by {@link Hl7Connection.nackCommit}.
  *
- * - `CR` — Commit Reject (transient, retryable)
- * - `CE` — Commit Error  (permanent, malformed)
- * - `AR` — Application Reject (used when enhancedMode=aaMode rejects)
+ * By HL7 convention the *error* codes are retryable (the peer may retransmit and
+ * could succeed) while the *reject* codes are terminal (retransmitting the same
+ * message will fail identically, so the peer must not retry):
+ *
+ * - `CE` — Commit Error (standard enhanced): retryable, e.g. a transient storage failure.
+ * - `AE` — Application Error (aaMode): retryable.
+ * - `CR` — Commit Reject (standard enhanced): terminal, e.g. a rejected duplicate.
+ * - `AR` — Application Reject (aaMode): terminal.
  */
-export type NackCommitCode = 'CR' | 'CE' | 'AR';
+export type NackCommitCode = 'CR' | 'CE' | 'AR' | 'AE';
 
 /** Upper bound on the size of the deferred-ack idempotency set. */
 const ACKED_CONTROL_IDS_MAX = 10_000;
@@ -484,16 +489,23 @@ export class Hl7Connection extends Hl7Base {
 
   /**
    * Sends a negative commit ACK for the supplied inbound message. The wire-level code is:
-   * - `standard` enhanced mode: `CR` (transient) or `CE` (permanent).
-   * - `aaMode`: `AR` (the only negative code the sender expects in this mode).
+   * - `standard` enhanced mode: `CE` (retryable error) or `CR` (terminal reject).
+   * - `aaMode`: `AE` (retryable error) or `AR` (terminal reject).
    *
    * Passing a code that doesn't match the connection's enhanced mode is permitted —
    * the caller decides which code best describes the failure. An optional `reason`
    * is recorded in MSA.3 of the outgoing ACK for the sender's logs.
    *
+   * Retryable error codes (`CE`/`AE`) explicitly invite the peer to retransmit, so
+   * they do NOT consume the already-acked slot for this control ID — the eventual
+   * successful retry must still be able to send its own commit ACK. Terminal
+   * rejects (`CR`/`AR`) do claim the slot, so a duplicate retransmit of a rejected
+   * message is suppressed rather than double-nacked.
+   *
    * No-op (and no wire write) in these cases:
    * - `enhancedMode` is undefined.
-   * - The same MSH.10 has already been (n)acked under this connection's deferred session.
+   * - The same MSH.10 has already been (n)acked under this deferred session AND
+   *   the code is terminal.
    *
    * @param message - The original inbound message to NACK.
    * @param code - The negative ACK code to send.
@@ -503,8 +515,9 @@ export class Hl7Connection extends Hl7Base {
     if (!this.enhancedMode) {
       return;
     }
+    const retryable = code === 'CE' || code === 'AE';
     const controlId = message.getSegment('MSH')?.getField(10)?.toString();
-    if (controlId && !this.recordAcked(controlId)) {
+    if (controlId && !retryable && !this.recordAcked(controlId)) {
       return;
     }
     const response = message.buildAck({ ackCode: code });

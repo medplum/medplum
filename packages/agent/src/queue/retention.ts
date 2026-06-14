@@ -37,10 +37,11 @@ export interface SweepResult {
  * Background sweeper that enforces the queue's retention policy.
  *
  * Phases (§11 of the plan):
- *  1. Delete `processed` rows past the time window.
- *  2. If still over the size cap, delete oldest `processed` rows until under.
- *  3. If still over cap *and* oldest `errored` is past the errored floor, delete
- *     oldest `errored` / `nacked` rows past the floor.
+ *  1. Delete fully-done `processed` rows (ACK delivered/not-owed) past the time window.
+ *  2. If still over the size cap, delete oldest fully-done `processed` rows until under.
+ *  3. If still over cap *and* the oldest floor-protected row is past the errored
+ *     floor, delete oldest `rejected` / `failed` / `nacked` rows — and `processed`
+ *     rows whose ACK is still `undelivered` — past the floor.
  *  4. Checkpoint the WAL to reclaim disk space.
  *
  * Running periodically (not just on size pressure) keeps the DB tidy on agents
@@ -121,22 +122,29 @@ export class RetentionSweeper {
       const cutoffProcessed = now - this.retentionMs;
       const cutoffErrored = now - this.erroredRetentionMs;
 
-      // Phase 1: time-based purge of processed rows.
+      // Phase 1: time-based purge of fully-done processed rows. A processed row
+      // whose ACK never reached the source (ack_outcome = 'undelivered') is NOT
+      // fully done — it must survive long enough for the source to retransmit
+      // (which replays the stored ACK) and is an operator signal — so it's
+      // excluded here and protected by the errored floor in phase 3.
       const phase1 = db
-        .prepare(`DELETE FROM inbound_hl7_messages WHERE state = 'processed' AND processed_at < ?`)
+        .prepare(
+          `DELETE FROM inbound_hl7_messages
+            WHERE state = 'processed' AND ack_outcome != 'undelivered' AND processed_at < ?`
+        )
         .run(cutoffProcessed);
 
       let deletedProcessed = Number(phase1.changes);
       let deletedErrored = 0;
 
-      // Phase 2: size-driven purge of processed rows in oldest-first batches.
+      // Phase 2: size-driven purge of fully-done processed rows in oldest-first batches.
       const sizeBudget = this.maxSizeBytes;
       const batchSize = 1000;
       const purgeOldestProcessed = db.prepare(`
         DELETE FROM inbound_hl7_messages
          WHERE id IN (
            SELECT id FROM inbound_hl7_messages
-            WHERE state = 'processed'
+            WHERE state = 'processed' AND ack_outcome != 'undelivered'
             ORDER BY processed_at ASC
             LIMIT ?
          )
@@ -144,24 +152,30 @@ export class RetentionSweeper {
       while (this.queue.getDbSizeBytes() > sizeBudget) {
         const info = purgeOldestProcessed.run(batchSize);
         if (info.changes === 0) {
-          // No more processed rows to delete — fall through to phase 3.
+          // No more fully-done processed rows to delete — fall through to phase 3.
           break;
         }
         deletedProcessed += Number(info.changes);
       }
 
-      // Phase 3: if still over budget, peel off errored/nacked rows that are
-      // past the errored floor. We never delete errored rows younger than the
+      // Phase 3: if still over budget, peel off the floor-protected terminal rows
+      // past the errored floor — rejected/failed/nacked, plus processed rows
+      // whose ACK is still undelivered. We never delete these younger than the
       // floor regardless of size pressure — better to alert on disk than to
-      // silently drop forensics evidence.
+      // silently drop forensics evidence (or a row a source might still
+      // retransmit against). Ordered by the terminal timestamp, which is
+      // errored_at for failures and processed_at for undelivered rows.
       if (this.queue.getDbSizeBytes() > sizeBudget) {
         const purgeOldestErrored = db.prepare(`
           DELETE FROM inbound_hl7_messages
            WHERE id IN (
              SELECT id FROM inbound_hl7_messages
-              WHERE state IN ('errored', 'nacked')
-                AND errored_at < ?
-              ORDER BY errored_at ASC
+              WHERE (
+                      state IN ('rejected', 'failed', 'nacked')
+                      OR (state = 'processed' AND ack_outcome = 'undelivered')
+                    )
+                AND COALESCE(errored_at, processed_at) < ?
+              ORDER BY COALESCE(errored_at, processed_at) ASC
               LIMIT ?
            )
         `);

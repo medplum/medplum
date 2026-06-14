@@ -6,8 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createMockLogger } from '../test-utils';
 import { DurableQueue, isUniqueConstraintError } from './durable-queue';
-import { MIGRATIONS } from './schema';
-import { MessageState, QueueErrorCode } from './types';
+import { AckOutcome, MessageState, QueueErrorCode } from './types';
 
 function makeEnqueueInput(
   overrides: Partial<Parameters<DurableQueue['enqueue']>[0]> = {}
@@ -17,7 +16,8 @@ function makeEnqueueInput(
     remote: '127.0.0.1:5000',
     msgControlId: `MSG${Math.random().toString(36).slice(2, 9)}`,
     msgType: 'ADT^A01',
-    body: Buffer.from('MSH|^~\\&|SND|FAC|...|2.5\rPID|...'),
+    originalMessage: Buffer.from('MSH|^~\\&|SND|FAC|...|2.5\rPID|...'),
+    finalizedMessage: Buffer.from('MSH|^~\\&|SND|FAC|...|2.5\rPID|...'),
     encoding: 'utf-8',
     enhancedMode: 'standard',
     callbackId: `cb-${Math.random().toString(36).slice(2, 9)}`,
@@ -50,68 +50,116 @@ describe('DurableQueue', () => {
     q2.close();
   });
 
-  test('migrates a v1 database in place, preserving existing rows', () => {
-    // Build a DB that only has migration v1 applied, with one row in it.
-    const v1Path = join(dir, 'v1.sqlite');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-    const { DatabaseSync } = require('node:sqlite') as typeof import('node:sqlite');
-    const rawDb = new DatabaseSync(v1Path);
-    rawDb.exec(MIGRATIONS[0].sql);
-    rawDb.prepare('INSERT INTO _schema (version, applied_at) VALUES (1, ?)').run(Date.now());
-    rawDb
-      .prepare(
-        `INSERT INTO inbound_hl7_messages (
-           channel_name, remote, body, state, callback_id, received_at
-         ) VALUES ('ch1', 'r', x'4d5348', 'queued', 'cb-v1', ?)`
-      )
-      .run(Date.now());
-    rawDb.close();
-
-    // Re-opening through DurableQueue applies v2; the old row reads back with
-    // the new columns as nulls and is still claimable.
-    const upgraded = DurableQueue.open({ path: v1Path, log: createMockLogger() });
-    try {
-      const claimed = upgraded.claimNext('ch1');
-      expect(claimed?.callbackId).toBe('cb-v1');
-      expect(claimed?.errorCode).toBeNull();
-      expect(claimed?.nextAttemptAt).toBeNull();
-    } finally {
-      upgraded.close();
-    }
-  });
-
   test('enqueue inserts a queued row and round-trips a binary body', () => {
     const body = Buffer.from([0x4d, 0x53, 0x48, 0x00, 0xff, 0xfe]); // includes non-UTF-8 bytes
-    const result = queue.enqueue(makeEnqueueInput({ msgControlId: 'MSG_BIN', body }));
+    const result = queue.enqueue(
+      makeEnqueueInput({ msgControlId: 'MSG_BIN', originalMessage: body, finalizedMessage: body })
+    );
     expect(result.kind).toBe('inserted');
     if (result.kind !== 'inserted') {
       throw new Error('unreachable');
     }
     expect(result.row.state).toBe(MessageState.QUEUED);
-    expect(result.row.body.equals(body)).toBe(true);
+    expect(result.row.originalMessage.equals(body)).toBe(true);
+    expect(result.row.finalizedMessage.equals(body)).toBe(true);
     expect(result.row.committedAt).toBe(result.row.receivedAt);
     expect(result.row.attemptCount).toBe(0);
   });
 
-  test('duplicate insert in active window returns duplicateActive with the prior row', () => {
+  test('duplicate insert in active window returns duplicate with the prior row', () => {
     const r1 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP1', callbackId: 'cb-a' }));
     expect(r1.kind).toBe('inserted');
     const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP1', callbackId: 'cb-b' }));
-    expect(r2.kind).toBe('duplicateActive');
-    if (r2.kind !== 'duplicateActive') {
+    expect(r2.kind).toBe('duplicate');
+    if (r2.kind !== 'duplicate') {
       throw new Error('unreachable');
     }
     expect(r2.existing.callbackId).toBe('cb-a');
   });
 
-  test('duplicate is permitted once the prior row is terminal (processed)', () => {
-    const r1 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP2' }));
+  test('duplicate is detected even once the prior row is terminal (processed)', () => {
+    const r1 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP2', callbackId: 'cb-first' }));
     if (r1.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.markProcessed(r1.row.id);
+    queue.markProcessed(r1.row.id, AckOutcome.DELIVERED);
     const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP2', callbackId: 'cb-second' }));
-    expect(r2.kind).toBe('inserted');
+    expect(r2.kind).toBe('duplicate');
+    if (r2.kind !== 'duplicate') {
+      throw new Error('unreachable');
+    }
+    expect(r2.existing.callbackId).toBe('cb-first');
+    expect(r2.existing.state).toBe(MessageState.PROCESSED);
+  });
+
+  test('duplicate is detected once the prior row is terminal (failed)', () => {
+    const r1 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP3', callbackId: 'cb-err' }));
+    if (r1.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    queue.claimNext(r1.row.channelName);
+    queue.markFailed(r1.row.id, 'boom', QueueErrorCode.ServerError);
+    const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP3', callbackId: 'cb-after-error' }));
+    expect(r2.kind).toBe('duplicate');
+  });
+
+  test('a nacked audit row does not count as a prior duplicate', () => {
+    queue.enqueueRejected({
+      ...makeEnqueueInput({ msgControlId: 'DUP4', callbackId: 'cb-nack' }),
+      lastError: 'rejected',
+    });
+    // A nacked row reuses the control ID for audit only; a fresh intake of the
+    // same ID must still insert rather than dedupe against the audit row.
+    const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP4', callbackId: 'cb-real' }));
+    expect(r.kind).toBe('inserted');
+  });
+
+  test('peekNextSeqNo is non-consuming; commitSeqNo advances per channel and persists across reopen', () => {
+    // Peek does not advance: repeated peeks return the same value until committed.
+    expect(queue.peekNextSeqNo('A')).toBe(0);
+    expect(queue.peekNextSeqNo('A')).toBe(0);
+    queue.commitSeqNo('A', 0);
+    expect(queue.peekNextSeqNo('A')).toBe(1);
+    queue.commitSeqNo('A', 1);
+    expect(queue.peekNextSeqNo('A')).toBe(2);
+
+    // Independent counter per channel.
+    expect(queue.peekNextSeqNo('B')).toBe(0);
+    queue.commitSeqNo('B', 0);
+    expect(queue.peekNextSeqNo('B')).toBe(1);
+    // A is unaffected by B.
+    expect(queue.peekNextSeqNo('A')).toBe(2);
+
+    // Survives a restart: reopen the same DB and the committed counter resumes.
+    queue.commitSeqNo('A', 2);
+    queue.close();
+    queue = DurableQueue.open({ path: dbPath, log: createMockLogger() });
+    expect(queue.peekNextSeqNo('A')).toBe(3);
+    expect(queue.peekNextSeqNo('B')).toBe(1);
+  });
+
+  test('enqueue commitSeqNo advances the counter atomically with the insert, and not on a duplicate', () => {
+    expect(queue.peekNextSeqNo('X')).toBe(0);
+    const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP', seqNo: 0 }), { commitSeqNo: 0 });
+    expect(r1.kind).toBe('inserted');
+    // The counter advanced as part of the same insert.
+    expect(queue.peekNextSeqNo('X')).toBe(1);
+
+    // A duplicate short-circuits before the insert, so the counter is untouched
+    // even though a commitSeqNo candidate was supplied.
+    const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP', seqNo: 1 }), { commitSeqNo: 1 });
+    expect(r2.kind).toBe('duplicate');
+    expect(queue.peekNextSeqNo('X')).toBe(1);
+  });
+
+  test('a peeked-but-not-committed sequence number is not consumed', () => {
+    // Simulates a failed enqueue: we peek (to stamp a candidate) but never commit.
+    expect(queue.peekNextSeqNo('C')).toBe(0);
+    // ...enqueue throws, so commitSeqNo is never called...
+    // The next successful message peeks the same value — no number was burned.
+    expect(queue.peekNextSeqNo('C')).toBe(0);
+    queue.commitSeqNo('C', 0);
+    expect(queue.peekNextSeqNo('C')).toBe(1);
   });
 
   test('claimNext returns FIFO order per channel and ignores other channels', () => {
@@ -209,23 +257,11 @@ describe('DurableQueue', () => {
     expect(reclaimed?.nextAttemptAt).toBeNull();
 
     // And the channel resumes normal FIFO behind it.
-    queue.markProcessed(r1.row.id);
+    queue.markProcessed(r1.row.id, AckOutcome.DELIVERED);
     expect(queue.claimNext('R', now + 5000)?.id).toBe(r2.row.id);
   });
 
-  test('recoverOnStartup stamps interrupted error code on recovered rows', () => {
-    const r = queue.enqueue(makeEnqueueInput({ channelName: 'I', msgControlId: 'INT1' }));
-    if (r.kind !== 'inserted') {
-      throw new Error('expected inserted');
-    }
-    queue.claimNext('I');
-    expect(queue.recoverOnStartup()).toEqual({ errored: 1, requeued: 0 });
-    const recovered = queue.getById(r.row.id);
-    expect(recovered?.state).toBe(MessageState.ERRORED);
-    expect(recovered?.errorCode).toBe(QueueErrorCode.Interrupted);
-  });
-
-  test('markProcessed and markErrored set timestamps correctly', () => {
+  test('markProcessed records the source-leg ack outcome and processed timestamp', () => {
     const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS1' }));
     if (r.kind !== 'inserted') {
       throw new Error('expected inserted');
@@ -233,26 +269,57 @@ describe('DurableQueue', () => {
     const claimed = queue.claimNext(r.row.channelName);
     expect(claimed?.processingStartedAt).not.toBeNull();
 
-    queue.markProcessed(r.row.id, 1700000000000);
+    queue.markProcessed(r.row.id, AckOutcome.DELIVERED, 1700000000000);
     const after = queue.getById(r.row.id);
     expect(after?.state).toBe(MessageState.PROCESSED);
     expect(after?.processedAt).toBe(1700000000000);
-    expect(after?.ackSentToSource).toBe(true);
+    expect(after?.ackOutcome).toBe(AckOutcome.DELIVERED);
 
-    // markErrored on a separate row, to confirm it doesn't disturb the processed one.
-    const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS2' }));
-    if (r2.kind !== 'inserted') {
+    // The Bot can accept the message (processed) while the source ACK fails to
+    // deliver — the two legs are recorded independently.
+    const undelivered = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS1b' }));
+    if (undelivered.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.claimNext(r2.row.channelName);
-    queue.markErrored(r2.row.id, 'boom', QueueErrorCode.ServerRejected, 1700000000123);
-    expect(queue.getById(r2.row.id)?.state).toBe(MessageState.ERRORED);
-    expect(queue.getById(r2.row.id)?.lastError).toBe('boom');
-    expect(queue.getById(r2.row.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
-    expect(queue.getById(r2.row.id)?.erroredAt).toBe(1700000000123);
+    queue.claimNext(undelivered.row.channelName);
+    queue.markProcessed(undelivered.row.id, AckOutcome.UNDELIVERED, 1700000000050);
+    expect(queue.getById(undelivered.row.id)?.state).toBe(MessageState.PROCESSED);
+    expect(queue.getById(undelivered.row.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
+    expect(queue.getById(undelivered.row.id)?.errorCode).toBeNull();
 
-    // First row still processed, unaffected.
-    expect(queue.getById(r.row.id)?.state).toBe(MessageState.PROCESSED);
+    // A later retransmit-replay can close the source leg without touching state.
+    queue.setAckOutcome(undelivered.row.id, AckOutcome.DELIVERED);
+    expect(queue.getById(undelivered.row.id)?.state).toBe(MessageState.PROCESSED);
+    expect(queue.getById(undelivered.row.id)?.ackOutcome).toBe(AckOutcome.DELIVERED);
+  });
+
+  test('markRejected and markFailed set the terminal Bot-leg state, error, and not_owed ack', () => {
+    // markFailed: transient Bot-leg failure → `failed`, ack not owed.
+    const f = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS2' }));
+    if (f.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    queue.claimNext(f.row.channelName);
+    queue.markFailed(f.row.id, 'boom', QueueErrorCode.ServerError, 1700000000123);
+    expect(queue.getById(f.row.id)?.state).toBe(MessageState.FAILED);
+    expect(queue.getById(f.row.id)?.lastError).toBe('boom');
+    expect(queue.getById(f.row.id)?.errorCode).toBe(QueueErrorCode.ServerError);
+    expect(queue.getById(f.row.id)?.erroredAt).toBe(1700000000123);
+    expect(queue.getById(f.row.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
+
+    // markRejected: permanent reject → `rejected`, ack not owed.
+    const rj = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS3' }));
+    if (rj.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    queue.claimNext(rj.row.channelName);
+    queue.markRejected(rj.row.id, 'bad message', QueueErrorCode.ServerRejected, 1700000000200);
+    expect(queue.getById(rj.row.id)?.state).toBe(MessageState.REJECTED);
+    expect(queue.getById(rj.row.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
+    expect(queue.getById(rj.row.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
+
+    // The failed row is untouched by the rejected one.
+    expect(queue.getById(f.row.id)?.state).toBe(MessageState.FAILED);
   });
 
   test('recordServerResponse writes statusCode + body without changing state', () => {
@@ -279,7 +346,7 @@ describe('DurableQueue', () => {
     expect(queue.findByCallback('nope')).toBeNull();
   });
 
-  test('recoverOnStartup promotes processing rows to errored and leaves queued alone', () => {
+  test('recoverOnStartup promotes processing rows to failed and leaves queued alone', () => {
     // Different channels so the claim picks the row we expect.
     const qrow = queue.enqueue(makeEnqueueInput({ channelName: 'Q', msgControlId: 'Q1' }));
     const prow = queue.enqueue(makeEnqueueInput({ channelName: 'P', msgControlId: 'P1' }));
@@ -289,16 +356,19 @@ describe('DurableQueue', () => {
     queue.claimNext('P'); // P → processing
 
     const result = queue.recoverOnStartup(1700000000000);
-    expect(result).toEqual({ errored: 1, requeued: 0 });
-    expect(queue.getById(prow.row.id)?.state).toBe(MessageState.ERRORED);
+    expect(result).toEqual({ failed: 1, requeued: 0 });
+    expect(queue.getById(prow.row.id)?.state).toBe(MessageState.FAILED);
     expect(queue.getById(prow.row.id)?.lastError).toContain('interrupted');
+    expect(queue.getById(prow.row.id)?.errorCode).toBe(QueueErrorCode.Interrupted);
+    // The source leg is genuinely unknown for an interrupted row — left pending.
+    expect(queue.getById(prow.row.id)?.ackOutcome).toBe(AckOutcome.PENDING);
     if (qrow.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
     expect(queue.getById(qrow.row.id)?.state).toBe(MessageState.QUEUED);
 
     // Re-running is a no-op now that no rows are in processing.
-    expect(queue.recoverOnStartup()).toEqual({ errored: 0, requeued: 0 });
+    expect(queue.recoverOnStartup()).toEqual({ failed: 0, requeued: 0 });
   });
 
   test('recoverOnStartup requeues guaranteed-delivery rows instead of erroring them', () => {
@@ -314,7 +384,7 @@ describe('DurableQueue', () => {
     queue.claimNext('G');
     queue.claimNext('N');
 
-    expect(queue.recoverOnStartup()).toEqual({ errored: 1, requeued: 1 });
+    expect(queue.recoverOnStartup()).toEqual({ failed: 1, requeued: 1 });
 
     const recovered = queue.getById(guaranteed.row.id);
     expect(recovered?.state).toBe(MessageState.QUEUED);
@@ -323,17 +393,20 @@ describe('DurableQueue', () => {
     // Immediately claimable again — the guarantee survives the restart.
     expect(queue.claimNext('G')?.id).toBe(guaranteed.row.id);
 
-    expect(queue.getById(normal.row.id)?.state).toBe(MessageState.ERRORED);
+    // The non-guaranteed row is ambiguous (interrupted) → review-only `failed`.
+    expect(queue.getById(normal.row.id)?.state).toBe(MessageState.FAILED);
   });
 
-  test('enqueueRejected creates a nacked audit row with last_error and ack_sent_to_source=1', () => {
+  test('enqueueRejected creates a nacked audit row with last_error and ack_outcome=not_owed', () => {
     const row = queue.enqueueRejected({
       ...makeEnqueueInput({ msgControlId: 'NACK1' }),
       lastError: 'duplicate control id',
     });
     expect(row?.state).toBe(MessageState.NACKED);
     expect(row?.lastError).toBe('duplicate control id');
-    expect(row?.ackSentToSource).toBe(true);
+    // An intake reject was answered synchronously with a NACK; no app-level ACK
+    // is ever owed for it.
+    expect(row?.ackOutcome).toBe(AckOutcome.NOT_OWED);
     expect(row?.committedAt).toBeNull();
   });
 
@@ -344,16 +417,17 @@ describe('DurableQueue', () => {
       throw new Error('expected inserted');
     }
     queue.claimNext(a.row.channelName); // a → processing
-    queue.markProcessed(a.row.id);
+    queue.markProcessed(a.row.id, AckOutcome.DELIVERED);
     queue.claimNext(b.row.channelName); // b → processing
-    queue.markErrored(b.row.id, 'x', QueueErrorCode.ServerRejected);
+    queue.markFailed(b.row.id, 'x', QueueErrorCode.DispatchFailed);
     queue.enqueueRejected({ ...makeEnqueueInput({ msgControlId: 'CB-N' }), lastError: 'dup' });
 
     expect(queue.countByState()).toEqual({
       queued: 0,
       processing: 0,
       processed: 1,
-      errored: 1,
+      rejected: 0,
+      failed: 1,
       nacked: 1,
     });
   });

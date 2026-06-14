@@ -743,10 +743,10 @@ export class App {
     if (!queue) {
       return;
     }
-    const { errored, requeued } = queue.recoverOnStartup();
-    if (errored > 0 || requeued > 0) {
+    const { failed, requeued } = queue.recoverOnStartup();
+    if (failed > 0 || requeued > 0) {
       this.log.info(
-        `Acquired queue lease — promoted ${errored} interrupted row(s) to errored, requeued ${requeued} guaranteed-delivery row(s).`
+        `Acquired queue lease — promoted ${failed} interrupted row(s) to failed, requeued ${requeued} guaranteed-delivery row(s).`
       );
     }
     // Tell every HL7 channel to start its worker now that we're leader.

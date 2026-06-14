@@ -6,7 +6,14 @@ import { ContentType, Hl7Message, normalizeErrorString, sleep } from '@medplum/c
 import type { App } from '../app';
 import type { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
-import { GUARANTEED_TERMINAL_CODES, QueueError, QueueErrorCode, RETRYABLE_ERROR_CODES } from './types';
+import {
+  AckOutcome,
+  GUARANTEED_TERMINAL_CODES,
+  PERMANENT_ERROR_CODES,
+  QueueError,
+  QueueErrorCode,
+  RETRYABLE_ERROR_CODES,
+} from './types';
 
 /**
  * Maximum time we wait for the Medplum server to respond to an
@@ -18,22 +25,30 @@ export const DEFAULT_WORKER_RESPONSE_TIMEOUT_MS = 60_000;
 export const DEFAULT_WORKER_IDLE_POLL_MS = 250;
 
 /**
- * Per-channel auto-retry policy, resolved from endpoint query params layered
- * over agent settings (see `configureHl7ServerAndConnections` in hl7.ts).
+ * Per-channel auto-retry policy for the **Path-2** leg (queue → Bot), resolved
+ * from endpoint query params layered over agent settings (see
+ * `resolveRetryPolicy` in hl7.ts). It governs ONLY re-dispatch of a `failed`
+ * row's Bot leg — never the source-leg ACK delivery (that recovers via Path-1
+ * source retransmit, not re-dispatch).
  *
- * In normal mode only failures whose {@link QueueErrorCode} is in
- * {@link RETRYABLE_ERROR_CODES} (guaranteed-safe: cannot duplicate) are retried.
- * In guaranteed-delivery mode every failure retries — duplication risk accepted —
- * except the definitive upstream answers in {@link GUARANTEED_TERMINAL_CODES}.
+ * The policy never retries on the `failed` state alone. It gates on the row's
+ * {@link QueueErrorCode}:
+ * - Normal mode: retry only the transient codes ({@link RETRYABLE_ERROR_CODES}).
+ *   Ambiguous codes (response timeout, interrupted, worker-stopped, dispatch
+ *   failure) are left `failed` for operator review — the server may already have
+ *   processed the message, so re-dispatch could double-process.
+ * - guaranteedDelivery mode: retry every failure (ambiguous codes included,
+ *   duplication risk accepted) until upstream gives a definitive answer — an
+ *   MSA-1 of AA/CA (settled) or AR/CR (terminal {@link GUARANTEED_TERMINAL_CODES}).
  */
 export interface RetryPolicy {
   /** Master switch. On by default; opt out via the autoRetry URL param / channelAutoRetry agent setting. */
   enabled: boolean;
   /**
    * Keep retrying until upstream gives a definitive answer for the message
-   * (MSA-1 of AA/CA → processed, AR/CR → errored), even across failures that
-   * could cause duplicate delivery. Requires `enabled`; policy resolution
-   * forces this off (with a warning) when autoRetry is disabled.
+   * (MSA-1 of AA/CA → processed, AR/CR → rejected), even across the ambiguous
+   * failures that could cause duplicate delivery. Requires `enabled`; policy
+   * resolution forces this off (with a warning) when autoRetry is disabled.
    */
   guaranteedDelivery: boolean;
   /** Delay before the first retry. */
@@ -57,7 +72,7 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = {
 
 /**
  * @param policy - The channel's retry policy.
- * @param failedAttemptCount - How many dispatch attempts have failed so far (≥ 1).
+ * @param failedAttemptCount - How many dispatch attempts have failed so far (>= 1).
  * @returns Backoff delay before the next attempt, in milliseconds.
  */
 export function computeRetryDelayMs(policy: RetryPolicy, failedAttemptCount: number): number {
@@ -70,7 +85,7 @@ export interface ChannelQueueWorkerOptions {
   app: App;
   queue: DurableQueue;
   log: ILogger;
-  /** Auto-retry policy; default {@link DEFAULT_RETRY_POLICY} (enabled, safe-codes only). */
+  /** Auto-retry policy; default {@link DEFAULT_RETRY_POLICY} (enabled, transient codes only). */
   retryPolicy?: RetryPolicy;
   /** Override for unit tests; default {@link DEFAULT_WORKER_RESPONSE_TIMEOUT_MS}. */
   responseTimeoutMs?: number;
@@ -81,8 +96,9 @@ export interface ChannelQueueWorkerOptions {
    * read off the channel) so the worker can stay agnostic about which channel
    * type owns it and so tests don't need a real socket.
    *
-   * Returning `false` signals delivery failure (e.g. socket closed) — the row
-   * goes to `errored`.
+   * Returning `false` signals source-leg delivery failure (e.g. socket closed) —
+   * the row is still `processed` (the Bot accepted it) but with ack_outcome
+   * `undelivered`, never a Bot-leg error.
    */
   sendAck: (response: AgentTransmitResponse, row: InboundRow) => boolean;
 }
@@ -203,9 +219,10 @@ export class ChannelQueueWorker {
   /**
    * Stops the dispatch loop. Cancels any in-flight dispatch by rejecting its
    * pending response Promise with `worker-stopped` — an ambiguous outcome (we
-   * don't know whether the server processed the message). Normal channels mark
-   * the row `errored` for operator review; guaranteed-delivery channels
-   * schedule a retry so the row resumes after restart.
+   * don't know whether the server processed the message). Because `worker-stopped`
+   * is an ambiguous code, normal channels leave the row `failed` for operator
+   * review (never silently re-dispatched); guaranteed-delivery channels schedule
+   * a retry so the row resumes after restart.
    */
   async stop(): Promise<void> {
     if (!this.running) {
@@ -235,11 +252,12 @@ export class ChannelQueueWorker {
    * Called from `app.ts` when the agent WebSocket closes. If the in-flight
    * row's `agent:transmit:request` is still sitting unsent in the app's WS
    * queue, the server provably never saw it — remove it and return the row to
-   * `queued` so it retries on reconnect instead of timing out into `errored`.
+   * `queued` so it retries on reconnect instead of timing out into `failed`.
    *
    * If the request already went out on the wire, the outcome is ambiguous (the
    * server may have processed it and the response was lost), so we leave the
-   * pending dispatch alone and let the response timeout mark it `errored`.
+   * pending dispatch alone and let the response timeout route it through
+   * {@link handleFailure} (review-only in normal mode, retried under guaranteed).
    */
   onWebSocketDisconnect(): void {
     const pending = this.pending;
@@ -287,6 +305,9 @@ export class ChannelQueueWorker {
         // liveness gate keeps it there until the connection comes back.
         return;
       }
+      // A dispatch-leg failure (timeout, worker-stopped, unclassified) is always
+      // transient/ambiguous — never a rejection of the message. handleFailure
+      // gates it: review-only in normal mode, retried under guaranteed delivery.
       const code = err instanceof QueueError ? err.code : QueueErrorCode.DispatchFailed;
       this.handleFailure(row, code, normalizeErrorString(err));
       return;
@@ -296,10 +317,12 @@ export class ChannelQueueWorker {
 
     const statusCode = response.statusCode ?? 0;
     if (this.retryPolicy.guaranteedDelivery) {
-      // Guaranteed delivery: the upstream HL7 ACK code is the source of truth.
-      // AA/CA → delivered (fall through to the success path); AR/CR → definitive
-      // reject (terminal); anything else — AE/CE, an HTTP failure with no
-      // parseable ACK — keeps retrying until upstream answers definitively.
+      // Guaranteed delivery: the upstream HL7 ACK code (MSA-1) is the source of
+      // truth, not the HTTP status. AA/CA → accepted (fall through to success);
+      // AR/CR → definitive reject (terminal `rejected`); AE/CE or any failure
+      // without a parseable AA/CA → keep retrying until upstream answers
+      // definitively. This deliberately retries the ambiguous codes too — the
+      // duplication risk the operator opted into by enabling guaranteedDelivery.
       const ackCode = parseAckCode(response.body);
       if (ackCode === 'AR' || ackCode === 'CR') {
         this.handleFailure(
@@ -326,37 +349,60 @@ export class ChannelQueueWorker {
         return;
       }
     } else if (statusCode >= 400) {
+      // Normal mode: the HTTP status is the Bot-leg verdict. A permanent 4xx is
+      // a `rejected` message (never retried); 5xx / 429 is a transient `failed`
+      // (auto-retried). handleFailure applies that gate.
       this.handleFailure(row, classifyStatusCode(statusCode), `Server returned ${statusCode}: ${response.body ?? ''}`);
       return;
     }
 
+    // The Bot accepted the message (2xx, or guaranteed-mode AA/CA): the row is
+    // `processed`. Delivering the ACK back to the source is a SEPARATE leg
+    // recorded in ack_outcome — a closed source connection yields `processed` +
+    // `undelivered`, never a Bot-leg failure, and is therefore never
+    // re-dispatched. The source recovers it by retransmitting, which replays the
+    // stored ACK (handleDuplicate, hl7.ts).
     let ackOk = false;
+    let ackError: unknown;
     try {
       ackOk = this.sendAck(response, row);
     } catch (err) {
-      // The server already processed the message (2xx); only the ACK back to the
-      // source failed. Never re-dispatched — that would double-process server-side.
-      this.handleFailure(row, QueueErrorCode.AckDeliveryFailed, `ACK delivery threw: ${normalizeErrorString(err)}`);
-      return;
+      ackError = err;
     }
-
-    if (!ackOk) {
-      this.handleFailure(row, QueueErrorCode.AckDeliveryFailed, 'ACK delivery to source failed');
-      return;
-    }
-
+    this.queue.markProcessed(row.id, ackOk ? AckOutcome.DELIVERED : AckOutcome.UNDELIVERED);
     if (row.attemptCount > 1) {
       this.log.info(
-        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) succeeded after ${row.attemptCount} attempts`
+        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) Bot leg succeeded after ${row.attemptCount} attempts`
       );
     }
-    this.queue.markProcessed(row.id);
+    if (!ackOk) {
+      const detail = ackError ? `: ${normalizeErrorString(ackError)}` : '';
+      this.log.warn(
+        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) processed upstream but ACK delivery to source failed${detail}; awaiting source retransmit to replay`
+      );
+    }
   }
 
   /**
-   * Single decision point for every post-commit failure: schedule a retry when
-   * the error code is retryable and the policy allows it, otherwise mark the
-   * row `errored` (terminal, operator replay).
+   * Single decision point for every post-commit Bot-leg failure — where the
+   * two-path split actually changes retry behavior.
+   *
+   * The retry GATE keys off the {@link QueueErrorCode}, NEVER the `failed` state
+   * alone (which holds transient AND ambiguous codes):
+   * - Normal mode: retry only the **transient** codes ({@link RETRYABLE_ERROR_CODES}:
+   *   `ServerError`/5xx, `ServerRateLimited`/429) — they cannot duplicate work
+   *   because the server provably never accepted the message. The **ambiguous**
+   *   codes (`ResponseTimeout`, `Interrupted`, `WorkerStopped`, `DispatchFailed`)
+   *   are NOT retried: the server may already have processed the message, so a
+   *   blind re-dispatch could double-process. They stay `failed` for operator
+   *   review.
+   * - guaranteedDelivery mode: retry everything except a definitive upstream
+   *   reject ({@link GUARANTEED_TERMINAL_CODES}) — ambiguous codes included,
+   *   accepting the duplication risk.
+   *
+   * A retry stays `queued` (via {@link DurableQueue.scheduleRetry}); otherwise the
+   * terminal state is chosen by classification — permanent codes
+   * ({@link PERMANENT_ERROR_CODES}) → `rejected`, everything else → `failed`.
    * @param row - The row that failed; `attemptCount` reflects the attempt that just failed.
    * @param code - Classification attached at the failure site.
    * @param message - Human-readable error, written to `last_error` either way.
@@ -382,8 +428,15 @@ export class ChannelQueueWorker {
         message = `${message} (${row.attemptCount} attempts exhausted)`;
       }
     }
-    this.queue.markErrored(row.id, message, code);
-    this.log.error(`${rowDesc} errored (${code}): ${message}`);
+    // Not retried (or exhausted): land on the terminal state by classification.
+    if (PERMANENT_ERROR_CODES.has(code)) {
+      this.queue.markRejected(row.id, message, code);
+      this.log.error(`${rowDesc} rejected (${code}): ${message}`);
+    } else {
+      // Transient/ambiguous codes the policy isn't retrying — left for operator review.
+      this.queue.markFailed(row.id, message, code);
+      this.log.error(`${rowDesc} failed (${code}, operator review): ${message}`);
+    }
   }
 
   private async dispatch(row: InboundRow): Promise<AgentTransmitResponse> {
@@ -412,7 +465,7 @@ export class ChannelQueueWorker {
         channel: row.channelName,
         remote: row.remote,
         contentType: ContentType.HL7_V2,
-        body: row.body.toString(row.encoding ? toBufferEncoding(row.encoding) : 'utf8'),
+        body: row.finalizedMessage.toString(row.encoding ? toBufferEncoding(row.encoding) : 'utf8'),
         callback: row.callbackId,
       });
     });
@@ -430,11 +483,20 @@ export class ChannelQueueWorker {
 
 /**
  * Maps a server HTTP status to a {@link QueueErrorCode}: 5xx and 429 are
- * transient (retryable); any other 4xx means the server rejected the message
- * itself, which no retry can fix.
- * @param statusCode - HTTP-style status code from the server response (≥ 400).
+ * transient; any other 4xx means the server rejected the message itself.
+ * @param statusCode - HTTP-style status code from the server response (>= 400).
  * @returns The classification for this failure.
  */
+function classifyStatusCode(statusCode: number): QueueErrorCode {
+  if (statusCode === 429) {
+    return QueueErrorCode.ServerRateLimited;
+  }
+  if (statusCode >= 500) {
+    return QueueErrorCode.ServerError;
+  }
+  return QueueErrorCode.ServerRejected;
+}
+
 /**
  * Extracts the MSA-1 acknowledgment code from an HL7 ACK body, if there is one.
  * Used in guaranteed-delivery mode, where the upstream ACK code — not the HTTP
@@ -452,16 +514,6 @@ function parseAckCode(body: string | undefined): string | undefined {
   } catch {
     return undefined;
   }
-}
-
-function classifyStatusCode(statusCode: number): QueueErrorCode {
-  if (statusCode === 429) {
-    return QueueErrorCode.ServerRateLimited;
-  }
-  if (statusCode >= 500) {
-    return QueueErrorCode.ServerError;
-  }
-  return QueueErrorCode.ServerRejected;
 }
 
 function makeWakeSignal(): { promise: Promise<void>; resolve: () => void } {
