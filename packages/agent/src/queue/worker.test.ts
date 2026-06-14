@@ -271,6 +271,83 @@ describe('ChannelQueueWorker', () => {
     await worker.stop();
   });
 
+  test('late server response settles a timed-out row as processed', async () => {
+    const r = enqueueOne(queue, 'LATE-OK');
+    const { app } = makeStubApp();
+    const sendAck = vi.fn(() => true);
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck,
+      responseTimeoutMs: 50,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
+    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    await worker.stop();
+
+    // The server's response finally arrives, after the row already errored. The
+    // server is authoritative on the Bot-leg outcome, so the row is settled from
+    // it — not discarded and left for an ambiguous re-dispatch.
+    expect(worker.onServerResponse(makeResponse(r.callbackId, 200))).toBe(true);
+
+    const settled = queue.getById(r.id);
+    expect(settled?.state).toBe(MessageState.PROCESSED);
+    expect(settled?.serverStatusCode).toBe(200);
+    expect(settled?.ackOutcome).toBe(AckOutcome.DELIVERED);
+    expect(sendAck).toHaveBeenCalledTimes(1);
+  });
+
+  test('late server response settles a timed-out row as rejected on a permanent 4xx', async () => {
+    const r = enqueueOne(queue, 'LATE-REJ');
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      responseTimeoutMs: 50,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
+    await worker.stop();
+
+    expect(worker.onServerResponse(makeResponse(r.callbackId, 422, 'bad message'))).toBe(true);
+    const settled = queue.getById(r.id);
+    expect(settled?.state).toBe(MessageState.REJECTED);
+    expect(settled?.errorCode).toBe(QueueErrorCode.ServerRejected);
+  });
+
+  test('late duplicate server response is discarded for an already-settled row', async () => {
+    const r = enqueueOne(queue, 'DUP');
+    const { app } = makeStubApp();
+    const sendAck = vi.fn(() => true);
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    await worker.stop();
+
+    // A second response for the same callback (e.g. a duplicate, or a NACK after
+    // the row already succeeded) must not re-apply over the settled outcome.
+    expect(worker.onServerResponse(makeResponse(r.callbackId, 422))).toBe(false);
+    expect(queue.getById(r.id)?.state).toBe(MessageState.PROCESSED);
+    expect(sendAck).toHaveBeenCalledTimes(1);
+  });
+
   test('onServerResponse for an unknown callback returns false', () => {
     const { app } = makeStubApp();
     const worker = new ChannelQueueWorker({

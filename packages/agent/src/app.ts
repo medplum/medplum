@@ -439,7 +439,7 @@ export class App {
             if (this.config?.status !== 'active') {
               this.sendAgentDisabledError(command);
               // We check the existence of a statusCode for backwards compat
-            } else if (!(command.statusCode && command.statusCode >= 400)) {
+            } else if (command.statusCode === undefined || command.statusCode < 400) {
               this.addToHl7Queue(command);
             } else {
               // Log error
@@ -1207,7 +1207,16 @@ export class App {
     if (!(channel instanceof AgentHl7Channel) || !channel.worker) {
       return false;
     }
-    return channel.worker.onServerResponse(response);
+    // This channel is owned end-to-end by its durable-queue worker: when the
+    // queue is on, inbound messages never use the legacy in-memory path, so
+    // their responses must not either. Consume the response here unconditionally.
+    // If the worker has no matching in-flight row — e.g. a late response that
+    // arrived after the response timeout already errored/requeued the row, or
+    // after a requeue/worker stop cleared the pending dispatch — onServerResponse
+    // logs and drops it. Returning true regardless prevents it from falling
+    // through to addToHl7Queue, which would re-send a stale ACK to the source.
+    channel.worker.onServerResponse(response);
+    return true;
   }
 
   addToWebSocketQueue(message: AgentMessage): void {
