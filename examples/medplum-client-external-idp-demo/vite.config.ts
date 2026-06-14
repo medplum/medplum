@@ -10,7 +10,7 @@ if (!existsSync(path.join(__dirname, '.env'))) {
 }
 
 export default defineConfig({
-  envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_'],
+  envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_', 'EXTERNAL_'],
   plugins: [react()],
   server: {
     port: 8000,

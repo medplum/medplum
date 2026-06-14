@@ -29,13 +29,13 @@ const WEB_APP_REDIRECT_URI = 'http://localhost:8000/signin';
  * For example, this would be an Auth0, AWS Cognito, or Okta URL.
  * This value is specific to your external auth provider.
  */
-const EXTERNAL_AUTHORIZE_URL = '';
+const EXTERNAL_AUTHORIZE_URL = import.meta.env.EXTERNAL_AUTHORIZE_URL;
 
 /**
  * External OAuth2 client ID.
  * This value is specific to your external auth provider.
  */
-const EXTERNAL_CLIENT_ID = '';
+const EXTERNAL_CLIENT_ID = import.meta.env.EXTERNAL_CLIENT_ID;
 
 /**
  * External OAuth2 redirect URI.
