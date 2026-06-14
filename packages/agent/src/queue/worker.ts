@@ -444,6 +444,24 @@ export class ChannelQueueWorker {
     // `undelivered`, never a Bot-leg failure, and is therefore never
     // re-dispatched. The source recovers it by retransmitting, which replays the
     // stored ACK (handleDuplicate, hl7.ts).
+
+    // In aaMode the deferred-commit ACK already sent the source an `AA` at intake
+    // (hl7.ts handleMessageDurable → conn.ackCommit), and aaMode's contract is
+    // "send AA immediately, then ignore any later app-level ACKs" (hl7 connection).
+    // The Bot's app-level AA would therefore be a redundant *second* AA the source
+    // is no longer listening for — a source that closes its connection on ACK has
+    // already torn the socket down, producing spurious "disconnected remote" /
+    // "ACK delivery failed" warnings. Suppress the second send; the source was
+    // already acknowledged, so the outcome is a successful no-op (DELIVERED), the
+    // same convention used for policy-suppressed sends.
+    if (row.enhancedMode === 'aaMode') {
+      this.queue.markProcessed(row.id, AckOutcome.DELIVERED);
+      this.log.debug(
+        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) processed; app-level AA suppressed (aaMode commit ACK already acknowledged the source)`
+      );
+      return;
+    }
+
     let ackOk = false;
     let ackError: unknown;
     try {

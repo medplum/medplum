@@ -58,7 +58,12 @@ function makeStubApp(options?: { live?: boolean }): {
   };
 }
 
-function enqueueOne(queue: DurableQueue, callbackId: string, body: string = 'MSH|^~\\&|...|2.5\r'): InboundRow {
+function enqueueOne(
+  queue: DurableQueue,
+  callbackId: string,
+  body: string = 'MSH|^~\\&|...|2.5\r',
+  enhancedMode: 'standard' | 'aaMode' | null = 'standard'
+): InboundRow {
   const r = queue.enqueue({
     channelName: 'ch1',
     remote: '127.0.0.1:5000',
@@ -67,7 +72,7 @@ function enqueueOne(queue: DurableQueue, callbackId: string, body: string = 'MSH
     originalMessage: Buffer.from(body),
     finalizedMessage: Buffer.from(body),
     encoding: 'utf-8',
-    enhancedMode: 'standard',
+    enhancedMode,
     callbackId,
     seqNo: null,
     receivedAt: Date.now(),
@@ -221,6 +226,32 @@ describe('ChannelQueueWorker', () => {
     // The Bot accepted it (processed); only the source-leg ACK failed. No Bot-leg
     // error code is set — a closed source connection is never an upstream failure.
     expect(queue.getById(r.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
+    expect(queue.getById(r.id)?.errorCode).toBeNull();
+    await worker.stop();
+  });
+
+  test('aaMode suppresses the app-level ACK (commit AA already acknowledged the source)', async () => {
+    // In aaMode the deferred-commit ACK already sent the source an AA at intake;
+    // the Bot's app-level AA would be a redundant second AA the source (which closes
+    // on ACK) is no longer listening for. The worker must NOT call sendAck, yet still
+    // mark the row processed+delivered — the source was already acknowledged.
+    const r = enqueueOne(queue, 'AA1', 'MSH|^~\\&|...|2.5\r', 'aaMode');
+    const { app } = makeStubApp();
+    const sendAck = vi.fn(() => true);
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    expect(sendAck).not.toHaveBeenCalled();
+    expect(queue.getById(r.id)?.ackOutcome).toBe(AckOutcome.DELIVERED);
     expect(queue.getById(r.id)?.errorCode).toBeNull();
     await worker.stop();
   });
