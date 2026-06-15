@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { accepted, badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Pool, PoolClient } from 'pg';
 import { escapeIdentifier } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
 import { getConfig } from '../../config/loader';
@@ -10,6 +9,7 @@ import { DatabaseMode } from '../../database';
 import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
 import { getShardSystemRepo } from '../repo';
 import { PLACEHOLDER_SHARD_ID } from '../sharding';
+import type { PgQueryable } from '../sql';
 import { isValidTableName } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
@@ -122,7 +122,7 @@ type GinIndexConfig = {
 };
 
 export async function configureGinIndexes(
-  client: PoolClient | Pool,
+  client: PgQueryable,
   actions: OutputAction[],
   tableNames: string[],
   config: GinIndexConfig
@@ -211,11 +211,7 @@ export async function configureGinIndexes(
   }
 }
 
-export async function vacuumTable(
-  client: PoolClient | Pool,
-  actions: OutputAction[],
-  tableName: string
-): Promise<void> {
+export async function vacuumTable(client: PgQueryable, actions: OutputAction[], tableName: string): Promise<void> {
   const sql = `VACUUM ${escapeIdentifier(tableName)}`;
   const startTime = Date.now();
   await client.query(sql);

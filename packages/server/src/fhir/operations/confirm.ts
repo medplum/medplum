@@ -33,8 +33,8 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
   const ctx = getAuthenticatedContext();
   const appointmentId = req.params.id;
   const updatedResources = await ctx.repo.withTransaction(
-    async () => {
-      const appointment = await ctx.repo.readResource<Appointment>('Appointment', appointmentId);
+    async (txRepo) => {
+      const appointment = await txRepo.readResource<Appointment>('Appointment', appointmentId);
       if (appointment.status !== 'pending' && appointment.status !== 'proposed') {
         throw new OperationOutcomeError(
           badRequest(`Appointment cannot be confirmed in '${appointment.status}' status`)
@@ -42,7 +42,7 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
       }
 
       // Fetch slots
-      const slots = await ctx.repo
+      const slots = await txRepo
         .readReferences(appointment.slot ?? [])
         .then((slots) => withPaths(slots, 'Appointment.slot'));
       assertAllLoaded(slots, 'Loading slots failed');
@@ -50,12 +50,12 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
       // Mark `busy-tentative` slots as `busy`
       const updatedSlots = await Promise.all(
         slots.map(async (slot) =>
-          slot.status === 'busy-tentative' ? ctx.repo.updateResource<Slot>({ ...slot, status: 'busy' }) : slot
+          slot.status === 'busy-tentative' ? txRepo.updateResource<Slot>({ ...slot, status: 'busy' }) : slot
         )
       );
 
       // Set appointment.status to `booked`
-      const updatedAppointment = await ctx.repo.updateResource<Appointment>({ ...appointment, status: 'booked' });
+      const updatedAppointment = await txRepo.updateResource<Appointment>({ ...appointment, status: 'booked' });
 
       return [updatedAppointment, ...updatedSlots];
     },
