@@ -3,7 +3,7 @@
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { COMPLIANCE, FOUNDATIONS } from '../../data/platform-content';
-import { MedplumDiagram } from './PlatformDiagram';
+import { FOUNDATION_ICON, Icon, MedplumDiagram } from './PlatformDiagram';
 import styles from './PlatformFoundations.module.css';
 
 export function PlatformFoundations(): JSX.Element {
@@ -37,40 +37,21 @@ export function PlatformFoundations(): JSX.Element {
         </p>
       </div>
 
-      {/* ---- numbered index of every foundation; numbers match the diagram badges ---- */}
-      <div className={styles.foundationsNav}>
-        {FOUNDATIONS.map((f, i) => (
-          <button
-            key={f.name}
-            type="button"
-            className={`${styles.navChip} ${f.name === activeName ? styles.navChipActive : ''}`}
-            aria-pressed={f.name === activeName}
-            onClick={() => toggle(f.name)}
-            onMouseEnter={() => setPeekName(f.name)}
-            onMouseLeave={() => setPeekName(null)}
-            onFocus={() => setPeekName(f.name)}
-            onBlur={() => setPeekName(null)}
-          >
-            <span className={styles.navChipNum}>{i + 1}</span>
-            {f.name}
-          </button>
-        ))}
-      </div>
+      <MedplumDiagram active={activeName} peek={peekName} onSelect={toggle} />
 
-      {/* ---- tracker: description of the selected foundation, with prev/next stepper ---- */}
+      {/* ---- tracker: description of the selected foundation, with prev/next stepper.
+             Sits directly under the diagram and above the selector list, so it stays
+             co-visible with whichever surface the user interacts with. ---- */}
       <div className={styles.detailPanel}>
         {active ? (
           <div className={styles.detailMeta}>
-            <div className={styles.detailNameRow}>
-              <span className={styles.detailName}>{active.name}</span>
-            </div>
             <p className={styles.detailBody}>{active.body}</p>
           </div>
         ) : (
           <div className={styles.detailMeta}>
             <p className={styles.detailPrompt}>
-              Select a foundation — by number above, or directly in the diagram — to read about it. Use the arrows to
-              step through all {FOUNDATIONS.length}.
+              Select a foundation — in the diagram above or the list below — to read about it. Use the arrows to step
+              through all {FOUNDATIONS.length}.
             </p>
           </div>
         )}
@@ -84,7 +65,27 @@ export function PlatformFoundations(): JSX.Element {
         </div>
       </div>
 
-      <MedplumDiagram active={activeName} peek={peekName} onSelect={toggle} />
+      {/* ---- index of every foundation; each chip's icon matches its diagram region ---- */}
+      <div className={styles.foundationsNav}>
+        {FOUNDATIONS.map((f) => (
+          <button
+            key={f.name}
+            type="button"
+            className={`${styles.navChip} ${f.name === activeName ? styles.navChipActive : ''}`}
+            aria-pressed={f.name === activeName}
+            onClick={() => toggle(f.name)}
+            onMouseEnter={() => setPeekName(f.name)}
+            onMouseLeave={() => setPeekName(null)}
+            onFocus={() => setPeekName(f.name)}
+            onBlur={() => setPeekName(null)}
+          >
+            <span className={styles.navChipIcon}>
+              <Icon name={FOUNDATION_ICON[f.name]} color="currentColor" size={18} />
+            </span>
+            {f.name}
+          </button>
+        ))}
+      </div>
 
       {/* ---- Compliance & Certification (full-width band, grouped with Foundations) ---- */}
       <div className={styles.complianceBand}>

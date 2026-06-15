@@ -94,7 +94,10 @@
 }
 
 .clickable {
-  transition: border-color 120ms ease, box-shadow 120ms ease, filter 200ms ease;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    filter 200ms ease;
 }
 
 .clickable:hover,
@@ -140,55 +143,45 @@
 }
 
 .cardShadowDeep {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 /* ---- spotlight dimming ----
-   Filter-based (no opacity) so dimmed elements stay fully opaque — nothing shows
-   through them. Saturation is kept near full so Medplum-managed elements stay
-   properly purple even when not in focus; the dim reads through brightness/contrast.
-   Applied per leaf element (not containers) so an active card nested inside the
-   platform box is never dimmed by its parent. */
+   Un-selected elements fade via opacity so the active region reads as the lit cluster.
+   Applied per leaf element (not containers) so an active card nested inside the platform
+   box is never dimmed by its parent. EXCEPTION: solid-fill elements (the purple "MEDPLUM
+   HOSTED PLATFORM" pill) would go translucent and let the page bleed through, so they use
+   .dimmedSolid — a filter-only wash that recedes without any transparency. */
 .dimmable {
-  transition: filter 200ms ease;
+  transition:
+    filter 200ms ease,
+    opacity 200ms ease;
 }
 
 .dimmed {
-  filter: saturate(0.9) contrast(0.95) brightness(1.04);
+  filter: saturate(0.85);
+  opacity: 0.42;
 }
 
 [data-theme='dark'] .dimmed {
-  filter: saturate(0.9) brightness(0.82);
+  filter: saturate(0.85) brightness(0.9);
+  opacity: 0.4;
 }
 
-/* ---- numbered foundation markers ----
-   One badge per foundation, on its primary region, matching the nav pill numbers. */
-.numBadge {
-  position: absolute;
-  top: -9px;
-  left: -9px;
-  z-index: 5;
-  width: 21px;
-  height: 21px;
-  border-radius: 50%;
-  background: var(--dg-purple);
+/* Hosted-platform pill: color lives here (not inline) so .dimmedSolid can gray it. */
+.hostedPill {
   color: #fff;
-  font-size: 11.5px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  pointer-events: none;
 }
 
-/* Inside the platform's overflow:hidden box a badge can't hang over the edge —
-   keep it inside the region instead. */
-.numBadgeInset {
-  top: 6px;
-  left: 6px;
+.dimmedSolid {
+  filter: saturate(0.45) brightness(1.12) contrast(0.92);
+  /* Defined after .hostedPill so this color wins when both classes are present. */
+  color: rgba(255, 255, 255, 0.62);
 }
 
-[data-theme='dark'] .numBadge {
-  color: #1b1b1d;
+[data-theme='dark'] .dimmedSolid {
+  filter: saturate(0.5) brightness(0.58);
+  color: rgba(255, 255, 255, 0.62);
 }

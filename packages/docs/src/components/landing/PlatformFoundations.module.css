@@ -8,7 +8,7 @@
 }
 
 .sectionHeader {
-  margin-bottom: 36px;
+  margin-bottom: 24px;
 }
 
 .sectionHeadline {
@@ -29,13 +29,13 @@
   max-width: 760px;
 }
 
-/* ---- top nav: numbered index of all foundations, doubles as a selector ---- */
+/* ---- selector: icon index of all foundations, sits below the diagram + description ---- */
 
 .foundationsNav {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  margin: 28px 0 16px;
+  margin: 24px 0 0;
 }
 
 .navChip {
@@ -66,40 +66,29 @@
   font-weight: 600;
 }
 
-/* Number disc inside each pill — matches the badges on the diagram regions. */
-.navChipNum {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #e9ecef;
-  color: #495057;
-  font-size: 11.5px;
-  font-weight: 600;
+/* Icon inside each pill — the same glyph its region uses in the diagram, so the
+   selector and the figure read as one set. Inherits the chip's text color (incl. the
+   hover/active grape swap), connecting the pill to its region by icon + color. */
+.navChipIcon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: all 120ms ease;
-}
-
-.navChip:hover .navChipNum,
-.navChipActive .navChipNum {
-  background: var(--oc-grape-8);
-  color: #fff;
+  color: inherit;
 }
 
 /* ---- tracker: description of the selected foundation (sits above the diagram) ---- */
 
 .detailPanel {
-  margin: 0 0 28px;
+  margin: 20px 0 0;
   background: #fff;
   border: 1px solid #e9ecef;
   border-left: 3px solid var(--oc-grape-8);
   border-radius: 12px;
-  padding: 18px 24px;
-  /* Floor sits ABOVE the tallest content state (name row + two-line body ≈ 115px),
-     so min-height governs in every state and the panel height never changes. */
-  min-height: 118px;
+  padding: 16px 22px;
+  /* Floor sits ABOVE the tallest content state (a three-line body), so min-height
+     governs in every state and the panel height never jumps between selections. */
+  min-height: 84px;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 24px;
@@ -108,22 +97,6 @@
 
 .detailMeta {
   min-width: 0;
-}
-
-.detailNameRow {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-}
-
-.detailName {
-  font-family: 'Poppins', system-ui, sans-serif;
-  font-weight: 600;
-  font-size: 19px;
-  line-height: 1.3; /* pinned so selected-state height stays under the panel's min-height */
-  color: #212529;
 }
 
 .detailBody {
@@ -163,7 +136,9 @@
   justify-content: center;
   color: #495057;
   font-size: 16px;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
 }
 
 .navButton:hover {
@@ -274,25 +249,10 @@
   color: var(--oc-grape-4);
 }
 
-[data-theme='dark'] .navChipNum {
-  background: var(--oc-gray-7);
-  color: var(--oc-gray-3);
-}
-
-[data-theme='dark'] .navChip:hover .navChipNum,
-[data-theme='dark'] .navChipActive .navChipNum {
-  background: var(--oc-grape-5);
-  color: #fff;
-}
-
 [data-theme='dark'] .detailPanel {
   background: #1b1b1d;
   border-color: var(--oc-gray-8);
   border-left-color: var(--oc-grape-5);
-}
-
-[data-theme='dark'] .detailName {
-  color: var(--oc-gray-0);
 }
 
 [data-theme='dark'] .detailBody {
