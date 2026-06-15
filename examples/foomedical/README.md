@@ -82,44 +82,33 @@ When you log into Foo Medical a set of sample FHIR records is created on your be
 
 ### Scheduling
 
-The "Get Care" page is configured to search for availability with service-type "office-visit". Configure your practitioner's schedule with a Medplum scheduling extension such as this one:
+The "Get Care" page is configured to search for a single `Schedule` resource, and use the first `HealthcareService` found in `Schedule.serviceType` with the `"https://medplum.com/fhir/service-type-reference"` extension.
 
+To set it up, first create a `HealthcareService` with attributes like this:
 ```
 {
-  "resourceType": "Schedule",
-  "active": true,
+  "resourceType": "HealthcareService",
+  "name": "Office Visit",
+  "type": [
+    { "coding": [{ "code": "office-visit" }]}
+  ],
+  "availableTime": [
+    {
+      "daysOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+      "availableStartTime": "09:00:00",
+      "availableEndTime": "17:00:00"
+    }
+  ],
   "extension": [
     {
       "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
       "extension": [
-        {
-          "url": "serviceType",
-          "valueCodeableConcept": {
-            "coding": [{"code": "office-visit"}]
-          }
-        },
         {
           "url": "duration",
           "valueDuration": {
             "value": 1,
             "unit": "h"
           }
-        },
-        {
-          "url": "availability",
-          "extension": [
-            {
-              "url": "availableTime",
-              "extension": [
-                { "url": "daysOfWeek", "valueCode": "mon" },
-                { "url": "daysOfWeek", "valueCode": "tue" },
-                { "url": "daysOfWeek", "valueCode": "wed" },
-                { "url": "daysOfWeek", "valueCode": "thu" },
-                { "url": "availableStartTime", "valueTime": "09:00:00" },
-                { "url": "availableEndTime", "valueTime": "17:00:00" },
-              ]
-            }
-          ]
         }
       ]
     }
@@ -127,6 +116,40 @@ The "Get Care" page is configured to search for availability with service-type "
 }
 
 ```
+
+Next, create a Practitioner's schedule linked to that service, with configuration such as this:
+```
+{
+  "resourceType": "Schedule",
+  "actor": [
+    {
+      "reference": "Practitioner/<Practitioner ID here>",
+      "display": "My Practitioner"
+    }
+  ],
+  "serviceType": [
+    {
+      "coding": [
+        {
+          "code": "office-visit",
+          "display": "Office Visit"
+        }
+      ],
+      "extension": [
+        {
+          "url": "https://medplum.com/fhir/service-type-reference",
+          "valueReference": {
+            "reference": "HealthcareService/<Service ID here>",
+            "display": "Office Visit"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+For more details, see [Defining Availability](https://www.medplum.com/docs/scheduling/defining-availability).
 
 ### Compliance
 
