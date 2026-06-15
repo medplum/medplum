@@ -24,7 +24,7 @@
     "@medplum/health-gorilla-react": "5.1.17",
     "@medplum/react": "5.1.17",
     "@tabler/icons-react": "3.44.0",
-    "@types/react": "19.2.16",
+    "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
     "eslint": "9.39.4",
