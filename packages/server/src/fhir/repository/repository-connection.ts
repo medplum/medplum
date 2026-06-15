@@ -70,7 +70,7 @@ function createScope(kind: 'transaction' | 'savepoint', parent: Scope): Transact
 }
 
 function validateScope(scope: unknown): Scope {
-  if (typeof scope === 'object' && scope !== null && '_brand' in scope && scope._brand === 'scope') {
+  if (typeof scope === 'object' && scope !== null && '__brand' in scope && scope.__brand === 'scope') {
     return scope as unknown as Scope;
   }
   throw new Error('Invalid scope');
