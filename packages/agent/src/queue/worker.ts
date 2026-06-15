@@ -142,7 +142,7 @@ export class ChannelQueueWorker {
       return false;
     }
     const pending = this.pending;
-    if (pending && pending.row.callbackId === response.callback) {
+    if (pending?.row.callbackId === response.callback) {
       clearTimeout(pending.timeout);
       this.pending = undefined;
       pending.resolve(response);

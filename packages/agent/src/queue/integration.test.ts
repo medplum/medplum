@@ -839,7 +839,14 @@ describe('Durable queue integration', () => {
     });
     expect(replay.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
     expect(dispatches).toBe(1); // unchanged: no re-dispatch
-    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, processing: 0, failed: 0, rejected: 0, nacked: 0 });
+    expect(queue.countByState()).toMatchObject({
+      processed: 1,
+      queued: 0,
+      processing: 0,
+      failed: 0,
+      rejected: 0,
+      nacked: 0,
+    });
 
     await client.close();
     await app.stop();
@@ -935,11 +942,7 @@ describe('Durable queue integration', () => {
     // Release the server reply. The worker records the 2xx and marks the row
     // `processed`; the ACK to the (now-absent) source fails → ack `undelivered`.
     releaseReply();
-    await waitForRow(
-      queue,
-      () => queue.findSeenByControlId('dq-test', 'ACKFAIL')?.ackOutcome === 'undelivered',
-      3000
-    );
+    await waitForRow(queue, () => queue.findSeenByControlId('dq-test', 'ACKFAIL')?.ackOutcome === 'undelivered', 3000);
 
     const undelivered = queue.findSeenByControlId('dq-test', 'ACKFAIL');
     expect(undelivered?.state).toBe('processed'); // Bot leg succeeded
@@ -964,7 +967,14 @@ describe('Durable queue integration', () => {
     const afterReplay = queue.findSeenByControlId('dq-test', 'ACKFAIL');
     expect(afterReplay?.state).toBe('processed');
     expect(afterReplay?.ackOutcome).toBe('delivered'); // retransmit closed the source leg
-    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, processing: 0, failed: 0, rejected: 0, nacked: 0 });
+    expect(queue.countByState()).toMatchObject({
+      processed: 1,
+      queued: 0,
+      processing: 0,
+      failed: 0,
+      rejected: 0,
+      nacked: 0,
+    });
 
     await client2.close();
     await app.stop();
