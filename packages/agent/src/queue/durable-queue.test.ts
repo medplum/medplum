@@ -62,7 +62,6 @@ describe('DurableQueue', () => {
     expect(result.row.state).toBe(MessageState.QUEUED);
     expect(result.row.originalMessage.equals(body)).toBe(true);
     expect(result.row.finalizedMessage.equals(body)).toBe(true);
-    expect(result.row.committedAt).toBe(result.row.receivedAt);
     expect(result.row.attemptCount).toBe(0);
   });
 
@@ -352,7 +351,6 @@ describe('DurableQueue', () => {
     // An intake reject was answered synchronously with a NACK; no app-level ACK
     // is ever owed for it.
     expect(row?.ackOutcome).toBe(AckOutcome.NOT_OWED);
-    expect(row?.committedAt).toBeNull();
   });
 
   test('countByState reports correct totals across states', () => {

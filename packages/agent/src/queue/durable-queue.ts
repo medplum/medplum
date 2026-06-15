@@ -5,6 +5,13 @@ import type { ILogger } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
+import {
+  CLAIM_NEXT,
+  FIND_BY_CALLBACK,
+  FIND_SEEN_BY_CONTROL_ID,
+  LIST_QUEUED_IDS_FOR_CHANNEL,
+  RECOVER_PROCESSING,
+} from './queries';
 import { runMigrations } from './schema';
 import type {
   AckOutcome,
@@ -15,11 +22,7 @@ import type {
   MessageState,
   QueueErrorCode,
 } from './types';
-import {
-  AckOutcome as AckOutcomeValues,
-  MessageState as MessageStateValues,
-  QueueErrorCode as QueueErrorCodeValues,
-} from './types';
+import { AckOutcome as AckOutcomeValues, MessageState as MessageStateValues } from './types';
 
 export interface DurableQueueOptions {
   /** Filesystem path to the SQLite DB file. */
@@ -111,9 +114,9 @@ export class DurableQueue {
       INSERT INTO inbound_hl7_messages (
         channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
         enhanced_mode, state, attempt_count, callback_id,
-        seq_no, received_at, committed_at
+        seq_no, received_at
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?
       )
     `);
 
@@ -146,36 +149,15 @@ export class DurableQueue {
     // control IDs, so they're not a "real" prior delivery to dedupe against).
     // id DESC returns the most recent in the unlikely event legacy duplicates
     // predate the dedupe-on-intake logic.
-    this.findSeenByControlIdStmt = this.db.prepare(`
-      SELECT * FROM inbound_hl7_messages
-       WHERE channel_name = ?
-         AND msg_control_id = ?
-         AND state != 'nacked'
-       ORDER BY id DESC
-       LIMIT 1
-    `);
+    this.findSeenByControlIdStmt = this.db.prepare(FIND_SEEN_BY_CONTROL_ID);
 
     // FIFO claim: take the lowest-id queued row for this channel, flip it to
     // processing in the same statement so concurrent workers can't double-claim.
     // node:sqlite is synchronous and the agent is single-process, so RETURNING is
     // enough — no advisory locking needed.
-    this.claimNextStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = 'processing',
-             processing_started_at = ?,
-             attempt_count = attempt_count + 1
-       WHERE id = (
-         SELECT id FROM inbound_hl7_messages
-          WHERE channel_name = ? AND state = 'queued'
-          ORDER BY id ASC
-          LIMIT 1
-       )
-       RETURNING *
-    `);
+    this.claimNextStmt = this.db.prepare(CLAIM_NEXT);
 
-    this.findByCallbackStmt = this.db.prepare(`
-      SELECT * FROM inbound_hl7_messages WHERE callback_id = ?
-    `);
+    this.findByCallbackStmt = this.db.prepare(FIND_BY_CALLBACK);
 
     this.findByIdStmt = this.db.prepare(`
       SELECT * FROM inbound_hl7_messages WHERE id = ?
@@ -236,20 +218,9 @@ export class DurableQueue {
     // it), so it lands in `failed` for operator review — never `rejected`. The
     // source leg's ack_outcome is left as-is (`pending`): we genuinely don't know
     // whether an ACK was owed.
-    this.recoverProcessingStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = 'failed',
-             errored_at = ?,
-             last_error = COALESCE(last_error, 'interrupted: process restart while processing'),
-             error_code = COALESCE(error_code, '${QueueErrorCodeValues.Interrupted}')
-       WHERE state = 'processing'
-    `);
+    this.recoverProcessingStmt = this.db.prepare(RECOVER_PROCESSING);
 
-    this.listQueuedIdsForChannelStmt = this.db.prepare(`
-      SELECT id FROM inbound_hl7_messages
-       WHERE channel_name = ? AND state = 'queued'
-       ORDER BY id ASC
-    `);
+    this.listQueuedIdsForChannelStmt = this.db.prepare(LIST_QUEUED_IDS_FOR_CHANNEL);
 
     this.countByStateStmt = this.db.prepare(`
       SELECT state, COUNT(*) AS n FROM inbound_hl7_messages GROUP BY state
@@ -443,7 +414,6 @@ export class DurableQueue {
           input.enhancedMode,
           input.callbackId,
           seqNo,
-          input.receivedAt,
           input.receivedAt
         );
         return Number(info.lastInsertRowid);
@@ -839,7 +809,6 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     errorCode: (raw.error_code as QueueErrorCode | null) ?? null,
     seqNo: (raw.seq_no as number | null) ?? null,
     receivedAt: raw.received_at as number,
-    committedAt: (raw.committed_at as number | null) ?? null,
     processingStartedAt: (raw.processing_started_at as number | null) ?? null,
     processedAt: (raw.processed_at as number | null) ?? null,
     erroredAt: (raw.errored_at as number | null) ?? null,
