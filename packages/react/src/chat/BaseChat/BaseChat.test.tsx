@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
-import { act, fireEvent, render, screen, userEvent } from '../../test-utils/render';
+import { act, fireEvent, render, screen } from '../../test-utils/render';
 import type { BaseChatProps } from './BaseChat';
 import { BaseChat } from './BaseChat';
 
@@ -608,6 +608,26 @@ describe('BaseChat', () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
     medplum.setSubscriptionManager(defaultSubManager);
 
+    // Stub ResizeObserver to fire its callback immediately with a non-zero height,
+    // so parentRect.height > 0 and the scroll effect is not blocked.
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        private cb: ResizeObserverCallback;
+        constructor(cb: ResizeObserverCallback) {
+          this.cb = cb;
+        }
+        observe = vi.fn((el: Element) => {
+          this.cb(
+            [{ contentRect: new DOMRect(0, 0, 400, 500), target: el, borderBoxSize: [], contentBoxSize: [], devicePixelContentBoxSize: [] }] as ResizeObserverEntry[],
+            this as unknown as ResizeObserver
+          );
+        });
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+      }
+    );
+
     const mockScrollTo = vi.fn();
     Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
       value: mockScrollTo,
@@ -670,6 +690,8 @@ describe('BaseChat', () => {
         top: expect.any(Number),
       })
     );
+
+    vi.unstubAllGlobals();
   });
 
   test('BaseChat returns null when profile is null', async () => {
@@ -931,17 +953,16 @@ describe('BaseChat', () => {
     expect(screen.getByText('Third message with no sent date')).toBeInTheDocument();
   });
 
-  test('SMS SegmentedControl shows when sendSmsMessage is provided and hides when not', async () => {
+  test('SMS channel select shows when sendSmsMessage is provided and hides when not', async () => {
     const { rerender } = await setup({
       title: 'Test Chat',
       query: HOMER_DR_ALICE_CHAT_QUERY,
       sendMessage: () => undefined,
-      sendSmsMessage: jest.fn().mockResolvedValue(undefined),
+      sendSmsMessage: vi.fn().mockResolvedValue(undefined),
       smsPatientHasPhone: true,
     });
 
-    expect(screen.getByRole('radio', { name: 'Chat' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Text Message' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Chat')).toBeInTheDocument();
 
     await rerender({
       title: 'Test Chat',
@@ -949,13 +970,12 @@ describe('BaseChat', () => {
       sendMessage: () => undefined,
     });
 
-    expect(screen.queryByRole('radio', { name: 'Chat' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('radio', { name: 'Text Message' })).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Chat')).not.toBeInTheDocument();
   });
 
   test('Selecting Text Message mode routes message to sendSmsMessage', async () => {
-    const sendMessage = jest.fn();
-    const sendSmsMessage = jest.fn().mockResolvedValue(undefined);
+    const sendMessage = vi.fn();
+    const sendSmsMessage = vi.fn().mockResolvedValue(undefined);
 
     await setup({
       title: 'Test Chat',
@@ -965,10 +985,9 @@ describe('BaseChat', () => {
       smsPatientHasPhone: true,
     });
 
-    // Mantine 8 renders the radio as visually hidden with a sibling <label> linked via htmlFor.
-    // Click the label (what the user sees) to activate the radio.
-    const smsRadio = screen.getByRole('radio', { name: 'Text Message' });
-    await userEvent.click(document.querySelector(`label[for="${smsRadio.id}"]`) as HTMLElement);
+    act(() => {
+      fireEvent.click(screen.getByRole('option', { name: 'Text Message', hidden: true }));
+    });
 
     const chatInput = screen.getByPlaceholderText('Type a message...');
     act(() => {
@@ -982,17 +1001,16 @@ describe('BaseChat', () => {
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
-  test('Text Message option is disabled in SegmentedControl when smsPatientHasPhone is false', async () => {
+  test('Text Message option is disabled in channel select when smsPatientHasPhone is false', async () => {
     await setup({
       title: 'Test Chat',
       query: HOMER_DR_ALICE_CHAT_QUERY,
       sendMessage: () => undefined,
-      sendSmsMessage: jest.fn(),
+      sendSmsMessage: vi.fn(),
       smsPatientHasPhone: false,
     });
 
-    expect(screen.getByRole('radio', { name: 'Text Message' })).toBeDisabled();
-    expect(screen.getByRole('radio', { name: 'Chat' })).not.toBeDisabled();
+    expect(screen.getByRole('option', { name: 'Text Message', hidden: true })).toHaveAttribute('data-combobox-disabled', 'true');
   });
 
   test('"Text Message" badge renders on SMSWRIT-medium bubbles but not regular ones', async () => {

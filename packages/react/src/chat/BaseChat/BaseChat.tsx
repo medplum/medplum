@@ -441,7 +441,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
             onChange={(val) => setSmsModeSelected(val === 'sms')}
             allowDeselect={false}
             w={120}
-            comboboxProps={{ withinPortal: true }}
+            comboboxProps={{ withinPortal: true, keepMounted: true }}
           />
         )}
         {(pendingFile || pendingDocRef) && (
