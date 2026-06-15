@@ -47,11 +47,11 @@ const transactionBundle = {
 ```
 
 :::caution[Transaction Support]
-Transaction support requires the `transaction-bundles` feature flag to be enabled on your project. Contact Medplum to enable this feature.
+Transaction bundles are generally available and production-ready, but they require the `transaction-bundles` feature flag to be enabled on your Medplum `Project`.
+
+A Medplum super administrator must enable the feature flag for each `Project`. For Medplum-hosted environments, contact Medplum support because Medplum manages super administrator access. For self-hosted environments, ask one of your internal Medplum super administrators to enable the feature flag.
 
 If the feature flag is not enabled, a bundle with `type: "transaction"` is processed as a `batch`. Entries execute independently with no atomicity guarantee, and the server does not return an error or warning. Verify the flag is enabled on your project before relying on transaction semantics.
-
-The transaction feature is currently in beta. You may experience `409 conflict` errors when attempting transactions. If this occurs, implement retry logic in your client to handle these errors and retry the transaction until it succeeds.
 :::
 
 ### Transaction Limits

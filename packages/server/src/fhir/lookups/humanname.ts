@@ -12,7 +12,7 @@ import type {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
+import type { PgQueryable } from '../sql';
 import { DeleteQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
@@ -118,7 +118,7 @@ export class HumanNameTable extends LookupTable {
   }
 
   async batchIndexResources<T extends Resource>(
-    client: PoolClient,
+    client: PgQueryable,
     resources: WithId<T>[],
     create: boolean,
     resourceBatchSize?: number
@@ -135,7 +135,7 @@ export class HumanNameTable extends LookupTable {
    * @param client - The database client.
    * @param resource - The resource to delete.
    */
-  async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
+  async deleteValuesForResource(client: PgQueryable, resource: Resource): Promise<void> {
     if (!HumanNameTable.hasHumanName(resource.resourceType)) {
       return;
     }
@@ -152,7 +152,7 @@ export class HumanNameTable extends LookupTable {
    * @param resourceType - The FHIR resource type.
    * @param before - The date before which resources should be purged.
    */
-  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+  async purgeValuesBefore(client: PgQueryable, resourceType: ResourceType, before: string): Promise<void> {
     if (!HumanNameTable.hasHumanName(resourceType)) {
       return;
     }

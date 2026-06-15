@@ -11,7 +11,8 @@ export function SignInPage(): JSX.Element {
   return (
     <SignInForm
       // Configure according to your settings
-      googleClientId="921088377005-3j1sa10vr6hj86jgmdfh2l53v3mp7lfi.apps.googleusercontent.com"
+      googleClientId={import.meta.env.GOOGLE_CLIENT_ID}
+      clientId={import.meta.env.MEDPLUM_CLIENT_ID}
       onSuccess={() => navigate('/')?.catch(console.error)}
       projectId={searchParams.get('project') || undefined}
       login={searchParams.get('login') || undefined}
