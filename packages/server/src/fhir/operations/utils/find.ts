@@ -44,9 +44,9 @@ function minutesSinceMidnight(date: Date, timezone?: string): number {
  * @param options.offsetMinutes - A number of minutes to offset the alignment by
  * @param options.durationMinutes - How long each slot should last
  * @param options.maxCount - Maximum number of intervals to find
- * @param options.timezone - IANA timezone name (e.g. "America/Los_Angeles"). When provided the
- *   alignment grid is anchored to local midnight in that timezone, keeping slot times stable
- *   across DST transitions. Defaults to UTC midnight.
+ * @param options.timezone - IANA timezone name (e.g. "America/Los_Angeles"). The alignment
+ *   grid is anchored to local midnight in this timezone, keeping slot times stable across
+ *   DST transitions.
  * @returns An array of aligned slot intervals
  */
 export function findAlignedSlotTimes(
@@ -55,8 +55,8 @@ export function findAlignedSlotTimes(
     alignment: number;
     offsetMinutes: number;
     durationMinutes: number;
+    timezone: string;
     maxCount?: number;
-    timezone?: string;
   }
 ): Interval[] {
   if (options.alignment < 1) {
@@ -65,7 +65,7 @@ export function findAlignedSlotTimes(
 
   const results: Interval[] = [];
 
-  for (const dayStart of eachDayOfInterval(interval, options.timezone ?? 'UTC')) {
+  for (const dayStart of eachDayOfInterval(interval, options.timezone)) {
     const nextDay = dayStart.add({ days: 1 });
     const dayInterval: Interval = {
       start: new Date(Math.max(interval.start.valueOf(), dayStart.epochMilliseconds)),
