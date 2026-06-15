@@ -616,6 +616,109 @@ describe('Durable queue integration', () => {
     await app.stop();
   });
 
+  test('assignSeqNo: a content-mismatch reject records the inbound MSH.13 on its nacked audit row, not a fresh candidate', async () => {
+    // No reply, so the first row stays queued/processing (still a "seen" prior row).
+    startMockServer(() => undefined);
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&assignSeqNo=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    // First MM commits and is assigned sequence 0.
+    const first = await client.sendAndWait(TEST_MSG('MM'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(first.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    // Same control ID, different PID → a different message reusing a committed ID.
+    // It carries its own MSH.13 (77) so we can prove the audit row records the
+    // *inbound* sequence field, never a freshly-peeked candidate (which would be 1).
+    const mismatched = Hl7Message.parse(
+      'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MM|P|2.5|77\r' +
+        'PID|||PATID9999^5^M11||SMITH^JANE^B||19700101|F\r'
+    );
+    const rejected = await client.sendAndWait(mismatched, { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(rejected.getSegment('MSA')?.getField(1)?.toString()).toBe('CR');
+
+    const queue = app.getDurableQueue() as DurableQueue;
+    // The nacked audit row carries the inbound MSH.13 (77), NOT a fresh candidate (1).
+    expect(nackedSeqNo(queue, 'dq-test', 'MM')).toBe(77);
+    // The committed original keeps sequence 0, untouched by the collision.
+    expect(queue.findSeenByControlId('dq-test', 'MM')?.seqNo).toBe(0);
+
+    // The rejected collision consumed no sequence number: the next fresh message
+    // gets sequence 1, not 2.
+    await client.sendAndWait(TEST_MSG('FRESH'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(queue.findSeenByControlId('dq-test', 'FRESH')?.seqNo).toBe(1);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('assignSeqNo: a storage error records the peeked candidate on its nacked audit row', async () => {
+    startMockServer(() => undefined);
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&assignSeqNo=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    // Fail the *insert* of X's queued row — not the peek/stamp that precedes it —
+    // so the candidate sequence 0 was assigned into MSH.13 before the write failed.
+    // A BEFORE INSERT trigger is a faithful stand-in for a disk/IO error: it aborts
+    // the real INSERT at exactly the point a storage failure would, after assignment.
+    // (The audit row is written with state 'nacked', so the trigger skips it.)
+    queue.getDb().exec(`
+      CREATE TEMP TRIGGER fail_insert_x BEFORE INSERT ON inbound_hl7_messages
+      WHEN NEW.msg_control_id = 'X' AND NEW.state = 'queued'
+      BEGIN SELECT RAISE(ABORT, 'simulated disk full'); END;
+    `);
+
+    const failed = await client.sendAndWait(TEST_MSG('X'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    // A storage error is transient → CE (the retryable commit code), not a reject.
+    expect(failed.getSegment('MSA')?.getField(1)?.toString()).toBe('CE');
+
+    // The audit row records the candidate (0) that was peeked + stamped into MSH.13
+    // before the insert failed — even though the counter itself never advanced.
+    expect(nackedSeqNo(queue, 'dq-test', 'X')).toBe(0);
+
+    // Drop the trigger so the next message can be inserted normally.
+    queue.getDb().exec('DROP TRIGGER fail_insert_x');
+
+    // The counter never advanced: the next message reuses sequence 0.
+    await client.sendAndWait(TEST_MSG('Y'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(queue.findSeenByControlId('dq-test', 'Y')?.seqNo).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
   test('storage error is retryable by the peer: a CE retransmit is accepted fresh and processed', async () => {
     // A successfully-enqueued message reaches `processed` (200 + AA).
     startMockServer((cmd) => {
@@ -791,7 +894,7 @@ describe('Durable queue integration', () => {
           } satisfies AgentTransmitResponse;
           // Defer the server reply until the test has closed the source
           // connection, so the worker's app-level ACK lands on a dead socket.
-          void replyGate.then(() => socket.send(Buffer.from(JSON.stringify(reply))));
+          replyGate.then(() => socket.send(Buffer.from(JSON.stringify(reply)))).catch(() => undefined);
         }
       });
     });
@@ -1016,4 +1119,29 @@ async function waitForRow(
   throw new Error(
     `waitForRow: predicate not satisfied after ${timeoutMs}ms; counts=${JSON.stringify(queue.countByState())}`
   );
+}
+
+/**
+ * Reads the `seq_no` of the most recent `nacked` audit row for a control ID.
+ * {@link DurableQueue.findSeenByControlId} deliberately excludes `nacked` rows,
+ * so audit-row assertions go straight through the raw handle.
+ * @param queue - The queue to read from.
+ * @param channelName - Channel the row belongs to.
+ * @param msgControlId - MSH.10 to look up.
+ * @returns The audit row's `seq_no` (which may be SQL NULL → `null`).
+ * @throws If no `nacked` row exists for the control ID.
+ */
+function nackedSeqNo(queue: DurableQueue, channelName: string, msgControlId: string): number | null {
+  const row = queue
+    .getDb()
+    .prepare(
+      `SELECT seq_no FROM inbound_hl7_messages
+        WHERE channel_name = ? AND msg_control_id = ? AND state = 'nacked'
+        ORDER BY id DESC LIMIT 1`
+    )
+    .get(channelName, msgControlId) as { seq_no: number | null } | undefined;
+  if (!row) {
+    throw new Error(`nackedSeqNo: no nacked row for ${channelName}/${msgControlId}`);
+  }
+  return row.seq_no;
 }

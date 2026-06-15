@@ -499,48 +499,18 @@ export class AgentHl7ChannelConnection {
     const callbackId = `Agent/${this.channel.app.agentId}-${randomUUID()}`;
     const receivedAt = Date.now();
 
-    // Duplicate detection runs BEFORE sequence-number assignment so a retransmit
-    // never consumes a sequence number, and compares the original (as-received)
-    // bytes so an assigned MSH.13 on the prior copy can't defeat the match.
-    if (msgControlId) {
-      const existing = queue.findSeenByControlId(channelName, msgControlId);
-      if (existing) {
-        this.handleDuplicate(queue, event, existing, msgControlId, {
-          callbackId,
-          msgType,
-          originalMessage,
-          // No sequence number is assigned to a duplicate, so the finalized
-          // bytes equal the original.
-          finalizedMessage: originalMessage,
-          enhancedModeColumn,
-          seqNo: this.parseSeqNo(event),
-          receivedAt,
-        });
-        return;
-      }
-    }
-
-    // Fresh message. Assign the sequence number (if configured) by PEEKING the
-    // persisted counter — a non-consuming read — and stamping the candidate into
-    // MSH.13. The counter is only advanced (commitSeqNo) after the row is durably
-    // enqueued below, so a storage error consumes no sequence number. Everything
-    // up to the insert is in the try so any failure routes to the NACK path.
+    // Sequence-number assignment is delegated to enqueue so it runs behind the
+    // single duplicate check (a retransmit never burns a number) and only on a
+    // durable insert. The callback stamps MSH.13 with the peeked candidate and
+    // returns the finalized bytes; we mirror them into `finalizedMessage`/`seqNo`
+    // so the storage-error audit row below reflects what was actually assigned. On
+    // a duplicate the callback never fires, leaving the as-received bytes and the
+    // inbound MSH.13 — exactly what the dedup comparison and audit row want.
     const assigning = this.channel.shouldAssignSeqNo();
     let finalizedMessage = originalMessage;
     let seqNo = this.parseSeqNo(event);
-    let assignedSeqNo: number | undefined;
     let result: EnqueueResult;
     try {
-      if (assigning) {
-        const candidate = queue.peekNextSeqNo(channelName);
-        event.message.getSegment('MSH')?.setField(13, candidate.toString());
-        this.channel.channelLog.info(
-          `Setting sequence number for message control ID '${msgControlId ?? 'n/a'}': ${candidate}`
-        );
-        finalizedMessage = Buffer.from(event.message.toString(), 'utf8');
-        seqNo = candidate;
-        assignedSeqNo = candidate;
-      }
       result = queue.enqueue(
         {
           channelName,
@@ -555,9 +525,19 @@ export class AgentHl7ChannelConnection {
           seqNo,
           receivedAt,
         },
-        // Advance the persisted sequence counter atomically with the insert, so a
-        // crash can't durably store the row while leaving the counter behind.
-        assignedSeqNo !== undefined ? { commitSeqNo: assignedSeqNo } : undefined
+        assigning
+          ? {
+              assignSeqNo: (candidate: number): Buffer => {
+                event.message.getSegment('MSH')?.setField(13, candidate.toString());
+                this.channel.channelLog.info(
+                  `Setting sequence number for message control ID '${msgControlId ?? 'n/a'}': ${candidate}`
+                );
+                finalizedMessage = Buffer.from(event.message.toString(), 'utf8');
+                seqNo = candidate;
+                return finalizedMessage;
+              },
+            }
+          : undefined
       );
     } catch (err) {
       const reason = `storage error: ${normalizeErrorString(err)}`;
@@ -589,9 +569,9 @@ export class AgentHl7ChannelConnection {
     }
 
     if (result.kind === 'duplicate') {
-      // Defensive only: the pre-check above already caught duplicates under the
-      // single-process intake model; this guards a theoretical race. The counter
-      // was peeked, not committed, so no sequence number is consumed.
+      // The single dedup authority lives in enqueue; on a hit the assignSeqNo
+      // callback never ran, so no number was peeked/stamped/committed and the
+      // audit fields still hold the as-received bytes + inbound MSH.13.
       this.handleDuplicate(queue, event, result.existing, msgControlId, {
         callbackId,
         msgType,
