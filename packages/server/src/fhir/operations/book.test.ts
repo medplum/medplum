@@ -1975,6 +1975,9 @@ describe('scheduling flow integration test', () => {
       ],
     });
 
+    // When updating this policy, please try to update the sample "Patient Access Policy"
+    // in the documentation so that it includes these permissions.
+    // @see https://www.medplum.com/docs/access/access-policies#patient-access
     const minimalPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
       resource: [
@@ -1984,7 +1987,7 @@ describe('scheduling flow integration test', () => {
         },
         {
           resourceType: 'HealthcareService',
-          interaction: ['search'],
+          interaction: ['read'],
         },
         {
           resourceType: 'Schedule',
@@ -2022,19 +2025,28 @@ describe('scheduling flow integration test', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
               start,
               end,
-              status: 'free',
-              serviceType: [officeVisitConcept],
-            } satisfies Slot,
-          },
-          {
-            name: 'patient-reference',
-            valueReference: createReference(profile),
+              status: 'proposed',
+              serviceType: toCodeableReferenceLike(service),
+              participant: [
+                { actor: createReference(profile), status: 'accepted' },
+                { actor: createReference(practitioner), status: 'accepted' },
+              ],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                  status: 'busy',
+                  serviceType: [officeVisitConcept],
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
