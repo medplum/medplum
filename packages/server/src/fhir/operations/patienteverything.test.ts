@@ -170,12 +170,36 @@ describe('Patient Everything Operation', () => {
     expect(bundle.link?.some((link) => link.relation === 'next')).toBeTruthy();
     expect(bundle.link?.some((link) => link.relation === 'first')).toBeTruthy();
     expect(bundle.link?.some((link) => link.relation === 'previous')).toBeTruthy();
+    for (const link of bundle.link ?? []) {
+      const url = new URL(link.url);
+      expect(url.pathname).toBe(`/fhir/R4/Patient/${patient.id}/$everything`);
+      expect(url.searchParams.has('_compartment')).toBe(false);
+      expect(url.searchParams.has('_sort')).toBe(false);
+      expect(url.searchParams.has('_type')).toBe(false);
+      expect(url.searchParams.get('_count')).toBe('1');
+    }
+    expect(new URL(bundle.link?.find((link) => link.relation === 'next')?.url as string).searchParams.get('_offset')).toBe(
+      '2'
+    );
 
-    // Execute the operation with "start" and "end" parameters
+    // Execute the operation with _type
     const res8 = await request(app)
-      .get(`/fhir/R4/Patient/${patient.id}/$everything?start=2020-01-01&end=2040-01-01`)
+      .get(`/fhir/R4/Patient/${patient.id}/$everything?_count=1&_type=Observation`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res8.status).toBe(200);
+    const typeBundle = res8.body as Bundle;
+    for (const link of typeBundle.link ?? []) {
+      const url = new URL(link.url);
+      expect(url.pathname).toBe(`/fhir/R4/Patient/${patient.id}/$everything`);
+      expect(url.searchParams.get('_type')).toBe('Observation');
+      expect(url.searchParams.has('_compartment')).toBe(false);
+    }
+
+    // Execute the operation with "start" and "end" parameters
+    const res9 = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}/$everything?start=2020-01-01&end=2040-01-01`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res9.status).toBe(200);
   });
 
   test('Inline DocumentReference attachments', async () => {

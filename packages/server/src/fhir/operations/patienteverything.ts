@@ -4,6 +4,7 @@ import type { SearchRequest, WithId } from '@medplum/core';
 import {
   allOk,
   append,
+  concatUrls,
   flatMapFilter,
   getReferenceString,
   isReference,
@@ -17,6 +18,7 @@ import type {
   Binary,
   Bundle,
   BundleEntry,
+  BundleLink,
   CompartmentDefinitionResource,
   DocumentReference,
   DocumentReferenceContent,
@@ -47,7 +49,7 @@ export interface PatientEverythingParameters {
   _since?: string;
   _count?: number;
   _offset?: number;
-  _type?: ResourceType[];
+  _type?: ResourceType[] | string;
   _inlineAttachments?: boolean;
 }
 
@@ -90,9 +92,11 @@ export async function getPatientEverything(
   patient: WithId<Patient>,
   params?: PatientEverythingParameters
 ): Promise<Bundle<WithId<Resource>>> {
+  const types = normalizeTypes(params?._type);
+
   // First get all compartment resources
   const search: Partial<SearchRequest> = {
-    types: params?._type,
+    types: types.length > 0 ? types : undefined,
     count: params?._count,
     offset: params?._offset,
   };
@@ -104,6 +108,7 @@ export async function getPatientEverything(
     });
   }
   const bundle = await searchPatientCompartment(repo, patient, search);
+  rewritePatientEverythingLinks(bundle, patient, params);
 
   // Filter by requested date range
   filterByCareDate(bundle, params?.start, params?.end);
@@ -118,6 +123,58 @@ export async function getPatientEverything(
   }
 
   return bundle;
+}
+
+function rewritePatientEverythingLinks(
+  bundle: Bundle<WithId<Resource>>,
+  patient: WithId<Patient>,
+  params: PatientEverythingParameters | undefined
+): void {
+  if (!bundle.link?.length) {
+    return;
+  }
+
+  bundle.link = bundle.link.map((link) => rewritePatientEverythingLink(link, patient, params));
+}
+
+function rewritePatientEverythingLink(
+  link: BundleLink,
+  patient: WithId<Patient>,
+  params: PatientEverythingParameters | undefined
+): BundleLink {
+  const searchUrl = new URL(link.url);
+  const url = new URL(concatUrls(getConfig().baseUrl, `/fhir/R4/Patient/${patient.id}/$everything`));
+
+  setSearchParam(url, 'start', params?.start);
+  setSearchParam(url, 'end', params?.end);
+  setSearchParam(url, '_since', params?._since);
+  setSearchParam(url, '_count', searchUrl.searchParams.get('_count') ?? params?._count);
+  setSearchParam(url, '_offset', searchUrl.searchParams.get('_offset'));
+
+  const types = normalizeTypes(params?._type);
+  if (types.length > 0) {
+    url.searchParams.set('_type', types.join(','));
+  }
+
+  if (params?._inlineAttachments !== undefined) {
+    url.searchParams.set('_inlineAttachments', String(params._inlineAttachments));
+  }
+
+  return { ...link, url: url.toString() };
+}
+
+function setSearchParam(url: URL, name: string, value: string | number | undefined | null): void {
+  if (value !== undefined && value !== null && value !== '') {
+    url.searchParams.set(name, String(value));
+  }
+}
+
+function normalizeTypes(types: PatientEverythingParameters['_type']): ResourceType[] {
+  if (!types) {
+    return [];
+  }
+  const values = Array.isArray(types) ? types : [types];
+  return flatMapFilter(values, (type) => type.split(',').filter(Boolean) as ResourceType[]);
 }
 
 function isPatientEverythingInlineAttachmentsEnabled(req: FhirRequest, repo: Repository): boolean {
