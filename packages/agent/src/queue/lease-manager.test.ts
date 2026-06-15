@@ -215,4 +215,55 @@ describe('QueueLeaseManager', () => {
 
     mgr.stop();
   });
+
+  test('losing the lease mid-run fires onLostLeadership so workers can drain', async () => {
+    const onLost = vi.fn();
+    const mgr = new QueueLeaseManager({
+      queue,
+      log: createMockLogger(),
+      ttlMs: 100,
+      heartbeatMs: 30,
+      acquireRetryMs: 50,
+    });
+    mgr.start(vi.fn(), onLost);
+    await waitFor(() => mgr.isLeader());
+    expect(onLost).not.toHaveBeenCalled();
+
+    // A peer steals the lease, so the next heartbeat finds it gone.
+    queue.releaseLease(mgr.getHolderId());
+    expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
+
+    await waitFor(() => onLost.mock.calls.length > 0, 500);
+    expect(mgr.isLeader()).toBe(false);
+
+    mgr.stop();
+  });
+
+  test('a throwing onLostLeadership does not stop the acquire-retry loop', async () => {
+    const onLost = vi.fn(() => {
+      throw new Error('drain blew up');
+    });
+    const mgr = new QueueLeaseManager({
+      queue,
+      log: createMockLogger(),
+      ttlMs: 100,
+      heartbeatMs: 30,
+      acquireRetryMs: 25,
+    });
+    mgr.start(vi.fn(), onLost);
+    await waitFor(() => mgr.isLeader());
+
+    // Peer steals, then releases — mgr should still be able to reclaim despite
+    // the drain callback throwing.
+    queue.releaseLease(mgr.getHolderId());
+    expect(queue.tryAcquireLease('peer', 50)).toBe(true);
+    await waitFor(() => onLost.mock.calls.length > 0, 500);
+
+    // Let the peer's short lease lapse; mgr should reacquire on a later retry.
+    queue.releaseLease('peer');
+    await waitFor(() => mgr.isLeader(), 1000);
+    expect(queue.getCurrentLease()?.holder).toBe(mgr.getHolderId());
+
+    mgr.stop();
+  });
 });

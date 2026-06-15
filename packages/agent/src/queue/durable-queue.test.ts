@@ -138,17 +138,39 @@ describe('DurableQueue', () => {
     expect(queue.peekNextSeqNo('B')).toBe(1);
   });
 
-  test('enqueue commitSeqNo advances the counter atomically with the insert, and not on a duplicate', () => {
+  test('enqueue assignSeqNo assigns + commits the counter atomically with the insert, and not on a duplicate', () => {
     expect(queue.peekNextSeqNo('X')).toBe(0);
-    const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP', seqNo: 0 }), { commitSeqNo: 0 });
+
+    // A fresh insert: the callback receives the peeked candidate, and enqueue
+    // persists both the returned finalized bytes and the assigned seq number.
+    const finalized = Buffer.from('finalized-with-seq-0');
+    let stamped: number | undefined;
+    const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP' }), {
+      assignSeqNo: (candidate) => {
+        stamped = candidate;
+        return finalized;
+      },
+    });
     expect(r1.kind).toBe('inserted');
+    expect(stamped).toBe(0);
+    if (r1.kind === 'inserted') {
+      expect(r1.row.seqNo).toBe(0);
+      expect(r1.row.finalizedMessage.equals(finalized)).toBe(true);
+    }
     // The counter advanced as part of the same insert.
     expect(queue.peekNextSeqNo('X')).toBe(1);
 
-    // A duplicate short-circuits before the insert, so the counter is untouched
-    // even though a commitSeqNo candidate was supplied.
-    const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP', seqNo: 1 }), { commitSeqNo: 1 });
+    // A duplicate short-circuits before assignment, so the callback never runs
+    // and the counter is untouched.
+    let called = false;
+    const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP' }), {
+      assignSeqNo: (candidate) => {
+        called = true;
+        return Buffer.from(`finalized-with-seq-${candidate}`);
+      },
+    });
     expect(r2.kind).toBe('duplicate');
+    expect(called).toBe(false);
     expect(queue.peekNextSeqNo('X')).toBe(1);
   });
 

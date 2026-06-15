@@ -434,25 +434,45 @@ export class DurableQueue {
    * msg_control_id)` — in `queued`, `processing`, `processed`, `rejected`, or
    * `failed` — we don't insert; we surface a `duplicate` result carrying that row so the
    * caller can compare bodies and decide between replaying the prior ACK and
-   * rejecting the collision (§8). The partial unique index remains as a
-   * last-resort guard against an active-window race (not expected in the
-   * single-process agent).
+   * rejecting the collision (§8). This SELECT is the single dedup authority on the
+   * intake path: the partial unique index only covers `queued`/`processing`, so it
+   * can't recognize a retransmit of an already-`processed`/`rejected`/`failed` row —
+   * it remains only as a last-resort guard against an active-window race (not
+   * expected in the single-process agent).
    * @param input - Fields to persist on the new row.
    * @param options - Optional behavior.
-   * @param options.commitSeqNo - When set, advances the channel's persisted
-   *   sequence counter to this value in the SAME transaction as the insert, so a
-   *   crash can never leave the row committed while the counter lags (which would
-   *   reuse the sequence number on restart). Pass the value just peeked via
-   *   {@link peekNextSeqNo} and stamped into the message.
+   * @param options.assignSeqNo - When provided, enqueue assigns the channel's next
+   *   sequence number — but only after the duplicate check passes, so a retransmit
+   *   never consumes one. It peeks the persisted counter (a non-consuming read),
+   *   calls this callback with the candidate so the caller can stamp it into MSH.13
+   *   and return the finalized bytes to persist, then advances the counter in the
+   *   SAME transaction as the insert (so a crash can't store the row while leaving
+   *   the counter behind, which would reuse the number on restart). On a duplicate
+   *   the callback is never invoked.
    * @returns Either the inserted row, or the prior row that owns the MSH.10.
    */
-  enqueue(input: EnqueueInput, options?: { commitSeqNo?: number }): EnqueueResult {
+  enqueue(input: EnqueueInput, options?: { assignSeqNo?: (candidate: number) => Buffer }): EnqueueResult {
     if (input.msgControlId) {
       const existing = this.findSeenByControlId(input.channelName, input.msgControlId);
       if (existing) {
         return { kind: 'duplicate', existing };
       }
     }
+
+    // Not a duplicate — only now assign the sequence number (if configured). Peek
+    // is non-consuming; the counter is advanced (commitSeqNo) inside the insert
+    // transaction below, so a failed insert burns no number and a duplicate (above)
+    // never reaches here.
+    let finalizedMessage = input.finalizedMessage;
+    let seqNo = input.seqNo;
+    let seqNoToCommit: number | undefined;
+    if (options?.assignSeqNo) {
+      const candidate = this.peekNextSeqNo(input.channelName);
+      finalizedMessage = options.assignSeqNo(candidate);
+      seqNo = candidate;
+      seqNoToCommit = candidate;
+    }
+
     try {
       const runInsert = (): number => {
         const info = this.enqueueStmt.run(
@@ -461,11 +481,11 @@ export class DurableQueue {
           input.msgControlId,
           input.msgType,
           toBlob(input.originalMessage),
-          toBlob(input.finalizedMessage),
+          toBlob(finalizedMessage),
           input.encoding,
           input.enhancedMode,
           input.callbackId,
-          input.seqNo,
+          seqNo,
           input.receivedAt,
           input.receivedAt,
           input.guaranteedDelivery ? 1 : 0
@@ -474,12 +494,12 @@ export class DurableQueue {
       };
 
       let id: number;
-      if (options?.commitSeqNo !== undefined) {
+      if (seqNoToCommit !== undefined) {
         // Atomically insert the row and advance the sequence counter.
         this.db.exec('BEGIN');
         try {
           id = runInsert();
-          this.commitSeqNo(input.channelName, options.commitSeqNo);
+          this.commitSeqNo(input.channelName, seqNoToCommit);
           this.db.exec('COMMIT');
         } catch (txErr) {
           this.db.exec('ROLLBACK');
