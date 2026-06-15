@@ -5,6 +5,7 @@ import { IconArrowRight } from '@tabler/icons-react';
 import type { CSSProperties, JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { HERO_HEADLINE, HERO_SUB } from '../../data/platform-content';
+import { BuildDropdown } from './BuildDropdown';
 import styles from './PlatformHero.module.css';
 
 /* The hero plays a three-beat story when scrolled into view:
@@ -127,7 +128,6 @@ function HeroStack(): JSX.Element {
 
   return (
     <div ref={stackRef} className={`${styles.stack} ${play ? styles.play : ''}`}>
-      <div className={styles.glow} aria-hidden="true" />
       <div className={styles.codeEditorWrapper}>
         <CodeSnippetCard />
       </div>
@@ -147,8 +147,9 @@ export function PlatformHero(): JSX.Element {
           <p className={styles.lead}>{HERO_SUB}</p>
           <div className={styles.cta}>
             <Link to="https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a" className={styles.primaryButton}>
-              Schedule a demo <IconArrowRight size={16} />
+              Schedule a Demo <IconArrowRight size={16} />
             </Link>
+            <BuildDropdown triggerClassName={styles.primaryButton} />
           </div>
         </div>
         <HeroStack />

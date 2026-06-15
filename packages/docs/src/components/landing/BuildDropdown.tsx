@@ -41,7 +41,13 @@ function CopyRow({ value }: CopyRowProps): JSX.Element {
   );
 }
 
-export function BuildDropdown(): JSX.Element {
+interface BuildDropdownProps {
+  /* When set, replaces the default trigger styling so the button can match a host page's
+     CTA (e.g. the products hero's primary button). The dropdown menu is unchanged. */
+  triggerClassName?: string;
+}
+
+export function BuildDropdown({ triggerClassName }: BuildDropdownProps = {}): JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -63,7 +69,7 @@ export function BuildDropdown(): JSX.Element {
     <div className={styles.dropdownWrapper} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <button
         type="button"
-        className={`${styles.dropdownTrigger}${isOpen ? ` ${styles.dropdownTriggerActive}` : ''}`}
+        className={triggerClassName ?? `${styles.dropdownTrigger}${isOpen ? ` ${styles.dropdownTriggerActive}` : ''}`}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import Link from '@docusaurus/Link';
 import type { JSX } from 'react';
 import type { AppItem } from '../../data/platform-content';
 import { FEATURED_APPS } from '../../data/platform-content';
@@ -44,25 +45,17 @@ const APP_SCREENSHOTS: Record<string, AppScreenshot> = {
   },
 };
 
-function AppRow({ app, flip }: { app: AppItem; flip: boolean }): JSX.Element {
-  const text = (
-    <div>
-      <h3 className={styles.appName}>{app.name}</h3>
-      <div className={styles.appTagline}>{app.tagline}</div>
-      <p className={styles.appBody}>{app.body}</p>
-    </div>
-  );
+/* Secondary, de-emphasized: the reference apps that ship with the platform. Smaller
+   screenshot + compact copy so they read as supporting examples, not the main focus. */
+function ReferenceAppCard({ app }: { app: AppItem }): JSX.Element {
   const screenshot = APP_SCREENSHOTS[app.id];
-  const visual = screenshot ? (
-    <AppHeroImage {...screenshot} />
-  ) : (
-    <ScreenshotPlaceholder caption={`${app.name} — screenshot`} />
-  );
-
   return (
-    <div className={`${styles.appRow} ${flip ? styles.appRowFlipped : ''}`}>
-      {text}
-      {visual}
+    <div className={styles.refCard}>
+      {/* Name + tagline head the card so they label the screenshot below; body reads as a caption. */}
+      <h4 className={styles.refName}>{app.name}</h4>
+      <div className={styles.refTagline}>{app.tagline}</div>
+      {screenshot ? <AppHeroImage {...screenshot} /> : <ScreenshotPlaceholder caption={`${app.name} — screenshot`} />}
+      <p className={styles.refBody}>{app.body}</p>
     </div>
   );
 }
@@ -73,14 +66,33 @@ export function PlatformApps(): JSX.Element {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionHeadline}>Apps</h2>
         <p className={styles.sectionLead}>
-          Apps sit at the top of the stack — both your custom apps and the reference implementations that ship with the
-          platform. The references below are full working examples: pull from them, learn from them, or use them as the
-          foundation for what you're building.
+          Apps sit at the top of the stack. Most teams build their own — a custom EHR, patient portal, or data hub — on
+          Medplum's FHIR data model, auth, and APIs. Medplum also ships full working reference apps you can pull from,
+          learn from, or build on.
         </p>
       </div>
-      <div className={styles.rows}>
-        {FEATURED_APPS.map((app, i) => (
-          <AppRow key={app.id} app={app} flip={i % 2 === 1} />
+
+      {/* Primary focus: the custom application the team brings to market. */}
+      <div className={styles.customHero}>
+        <div className={styles.customHeroText}>
+          <h3 className={styles.customHeroName}>Your Custom Applications</h3>
+          <div className={styles.customHeroTagline}>The product you bring to market</div>
+          <p className={styles.customHeroBody}>
+            Your UI, your workflows, your brand — built on Medplum's FHIR data model, auth, and APIs. This is where most
+            teams start, and where your product lives.
+          </p>
+          <Link to="/solutions" className={styles.customHeroLink}>
+            See what teams have built <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+        <ScreenshotPlaceholder caption="Your application — screenshot" />
+      </div>
+
+      {/* Secondary: reference implementations, demoted below the custom-app hero. */}
+      <div className={styles.refIntro}>Ships with the platform</div>
+      <div className={styles.refGrid}>
+        {FEATURED_APPS.map((app) => (
+          <ReferenceAppCard key={app.id} app={app} />
         ))}
       </div>
     </div>
