@@ -159,6 +159,70 @@ describe('Durable queue integration', () => {
     await app.stop();
   });
 
+  // Regression: in durable aaMode the source's only ACK is the commit AA sent at
+  // intake — the worker suppresses the Bot's app-level AA (it never goes through
+  // sendToRemote, see applyServerResponse). So the pending RTT entry recorded at
+  // intake (handleMessage → recordMessageSent) MUST be balanced by the commit ACK
+  // (handleMessageDurable → recordImmediateAck). Without that, EVERY committed
+  // aaMode message lingers in the pending-RTT map and is eventually GC'd with a
+  // "never got response" warning, and getPendingCount() never returns to 0.
+  test('aaMode happy path: the commit AA balances the pending RTT entry (no dangling pending message)', async () => {
+    startMockServer((cmd) => {
+      // Reply 200 with an AA. In aaMode this app-level AA is suppressed at the
+      // worker and never forwarded to the source, so it can't balance the entry —
+      // the commit AA from intake is the only thing that can.
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: ack.toString(),
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=aa',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+
+    const client = new Hl7Client({ host: 'localhost', port });
+    const response = await client.sendAndWait(TEST_MSG('INT_AA'), {
+      // In aaMode the first (and only) ACK to the source is the commit AA.
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(response.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
+
+    // The worker processes the row (and suppresses the Bot's app-level AA).
+    const queue = app.getDurableQueue() as DurableQueue;
+    await waitForRow(queue, (counts) => counts.processed === 1, 3000);
+
+    // The commit AA balanced the entry recorded at intake: nothing dangles in the
+    // pending-RTT map, so no message will be GC'd with a "never got response"
+    // warning. (Pre-fix this stayed at 1 forever.)
+    const channel = app.channels.get('dq-test') as unknown as AgentHl7Channel;
+    expect(channel.stats.getPendingCount()).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
   test('server 5xx response marks the row failed (transient, ack not owed)', async () => {
     startMockServer(
       (cmd) =>

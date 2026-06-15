@@ -588,6 +588,13 @@ export class AgentHl7ChannelConnection {
     // transaction) — now tell the sender CA/AA. The ack is a no-op outside
     // enhanced mode.
     this.sendCommitAck(event.message);
+    // Balance the RTT entry recorded at intake (handleMessage). The commit ACK is
+    // the source-facing response in durable mode, so it settles the round trip —
+    // exactly as the storage-error and duplicate paths do. Without this, an aaMode
+    // message would never balance: the worker suppresses the Bot's app-level AA
+    // (applyServerResponse), so sendToRemote (the only other balancer) never runs,
+    // and every message lingers in the pending map until the 5-min GC warns.
+    this.recordImmediateAck(msgControlId);
     this.channel.worker?.notify();
   }
 
