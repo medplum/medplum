@@ -46,7 +46,7 @@ export interface ChannelDepth {
  *
  * One instance owns one synchronous `node:sqlite` connection plus a bag of
  * prepared statements covering the hot path. All channel intake and worker
- * dispatch goes through this object. See DURABLE_QUEUE_PLAN.md §3, §5.
+ * dispatch goes through this object. See DURABLE_QUEUE_ARCHITECTURE.md §3, §5.
  *
  * The class is designed to be opened once at agent startup, used for the
  * lifetime of the process, and closed exactly once during {@link DurableQueue.close}.

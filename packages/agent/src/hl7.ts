@@ -463,7 +463,7 @@ export class AgentHl7ChannelConnection {
   }
 
   /**
-   * Durable inbound path (§8 of DURABLE_QUEUE_PLAN.md):
+   * Durable inbound path (§8 of DURABLE_QUEUE_ARCHITECTURE.md):
    *
    *  1. INSERT a `queued` row.
    *  2. On success, send CA/AA via the deferred-ack API — only now is the

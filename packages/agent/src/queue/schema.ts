@@ -10,7 +10,7 @@ import type { DatabaseSync } from 'node:sqlite';
  * `_schema` row that records its version. Once shipped, a migration is never
  * edited in place — append a new version instead.
  *
- * See DURABLE_QUEUE_PLAN.md §3.2.
+ * See DURABLE_QUEUE_ARCHITECTURE.md §3.2.
  */
 export interface Migration {
   version: number;

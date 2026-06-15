@@ -9,7 +9,7 @@
  * (delivering the app-level ACK back to the sending device) is tracked
  * separately in {@link AckOutcome}, so the two can't be conflated: a message the
  * Bot accepted but whose ACK we couldn't return is `processed` + `undelivered`,
- * NOT a Bot-leg failure. See DURABLE_QUEUE_PLAN.md §4 for the transition diagram.
+ * NOT a Bot-leg failure. See DURABLE_QUEUE_ARCHITECTURE.md §4 for the transition diagram.
  *
  * - `queued`     — inserted, awaiting worker dispatch.
  * - `processing` — worker has claimed it and dispatched to the Medplum server.
@@ -88,7 +88,7 @@ export type AckOutcome = (typeof AckOutcome)[keyof typeof AckOutcome];
  * codes (`ServerError`, `ServerRateLimited`); the ambiguous codes (`ResponseTimeout`,
  * `Interrupted`, `WorkerStopped`, `DispatchFailed`) must stay operator-review-only
  * until server-side callback-keyed dedupe makes redispatch idempotent (see
- * DURABLE_QUEUE_PLAN.md §4 + §16).
+ * DURABLE_QUEUE_ARCHITECTURE.md §4 + §16).
  */
 export const QueueErrorCode = {
   /** Transient (`failed`): server returned 5xx. */
