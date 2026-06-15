@@ -15,8 +15,10 @@
   left: 0;
   right: 0;
   bottom: 100%;
-  height: 120px;
-  background: linear-gradient(to bottom, transparent, var(--oc-grape-0));
+  /* Fade starts lower than before (clearing the compliance logos) but stays gradual:
+     the top portion holds transparent, then eases into the grape background. */
+  height: 96px;
+  background: linear-gradient(to bottom, transparent 0%, transparent 22%, var(--oc-grape-0) 100%);
   pointer-events: none;
 }
 

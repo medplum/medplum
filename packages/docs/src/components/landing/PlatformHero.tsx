@@ -64,21 +64,21 @@ function PatientHeaderCard(): JSX.Element {
   return (
     <div className={styles.patientCard}>
       <div className={styles.patientHeader}>
-        <div className={styles.patientAvatar}>JD</div>
+        <img className={styles.patientAvatar} src="/img/provider/lauren-warner-avatar.webp" alt="Lauren Warner" />
         <div className={styles.patientMeta}>
-          <div className={styles.patientName}>Jane Doe</div>
+          <div className={styles.patientName}>Lauren Warner</div>
           <div className={styles.patientMrn}>mrn-44218</div>
         </div>
-        <span className={styles.allergyPill}>⚠ Penicillin</span>
+        <span className={styles.allergyPill}>⚠ Shellfish</span>
       </div>
       <div className={styles.patientFields}>
         <div>
           <div className={styles.fieldLabel}>DOB</div>
-          <div className={styles.fieldValue}>Mar 14, 1992</div>
+          <div className={styles.fieldValue}>Apr 15, 1968</div>
         </div>
         <div>
           <div className={styles.fieldLabel}>Age</div>
-          <div className={styles.fieldValue}>34</div>
+          <div className={styles.fieldValue}>58</div>
         </div>
         <div>
           <div className={styles.fieldLabel}>Sex</div>

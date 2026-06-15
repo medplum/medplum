@@ -176,12 +176,16 @@
   border: 1px solid #e9ecef;
   border-radius: 12px;
   padding: 14px 16px;
-  transition: border-color 140ms ease, box-shadow 140ms ease;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .supportCard:hover {
   border-color: #ced4da;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 14px -8px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 6px 14px -8px rgba(0, 0, 0, 0.08);
 }
 
 .supportCardIcon {
@@ -204,13 +208,13 @@
 .supportCardName {
   font-family: 'Poppins', system-ui, sans-serif;
   font-weight: 600;
-  font-size: 14.5px;
+  font-size: 16px;
   color: #212529;
   margin-bottom: 3px;
 }
 
 .supportCardDesc {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: #495057;
   margin: 0;
@@ -286,7 +290,7 @@
 
 .capabilityName {
   font-family: 'Poppins', system-ui, sans-serif;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #212529;
   line-height: 1.3;
@@ -298,7 +302,7 @@
 
 .capabilityShort {
   font-family: 'Poppins', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   color: #868e96;
   line-height: 1.35;
 }
