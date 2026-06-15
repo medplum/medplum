@@ -156,8 +156,8 @@ function rewritePatientEverythingLink(
     url.searchParams.set('_type', types.join(','));
   }
 
-  if (params?._inlineAttachments !== undefined) {
-    url.searchParams.set('_inlineAttachments', String(params._inlineAttachments));
+  if (params?._inlineAttachments) {
+    url.searchParams.set('_inlineAttachments', 'true');
   }
 
   return { ...link, url: url.toString() };

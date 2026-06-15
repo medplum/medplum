@@ -176,6 +176,7 @@ describe('Patient Everything Operation', () => {
       expect(url.searchParams.has('_compartment')).toBe(false);
       expect(url.searchParams.has('_sort')).toBe(false);
       expect(url.searchParams.has('_type')).toBe(false);
+      expect(url.searchParams.has('_inlineAttachments')).toBe(false);
       expect(url.searchParams.get('_count')).toBe('1');
     }
     expect(
