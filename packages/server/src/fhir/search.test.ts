@@ -4447,6 +4447,44 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(bundleContains(bundle, obs)).toBeTruthy();
     }));
 
+  test('Multiple resource types with _type uses offset pagination across combined results', async () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const expectedIds = [patient.id];
+
+      for (let i = 0; i < 4; i++) {
+        const obs = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'test' },
+          subject: createReference(patient),
+        });
+        expectedIds.push(obs.id);
+      }
+
+      let url = `Patient?_type=Patient,Observation&_compartment=${getReferenceString(patient)}&_sort=_id&_count=2`;
+      const seenIds: string[] = [];
+      const pageSizes: number[] = [];
+
+      while (url) {
+        const bundle = await repo.search(parseSearchRequest(url));
+        pageSizes.push(bundle.entry?.length ?? 0);
+        for (const entry of bundle.entry ?? []) {
+          seenIds.push(entry.resource?.id as string);
+        }
+
+        const nextLink = bundle.link?.find((l) => l.relation === 'next')?.url;
+        if (nextLink) {
+          expect(nextLink).toContain('_type=Patient,Observation');
+          expect(nextLink).toContain('_offset=');
+        }
+        url = nextLink ?? '';
+      }
+
+      expect(pageSizes).toStrictEqual([2, 2, 1]);
+      expect(seenIds.sort()).toStrictEqual(expectedIds.sort());
+    }));
+
   test('Binary search not allowed', async () =>
     withTestContext(async () => {
       await expect(repo.search<Binary>({ resourceType: 'Binary' })).rejects.toThrow(
@@ -5116,6 +5154,41 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           }
         }
         expect(seenResources.length).toBe(50);
+      }));
+
+    test('Cursor pagination with multiple resource types from _type', () =>
+      withTestContext(async () => {
+        const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+        const expectedIds = [patient.id];
+
+        for (let i = 0; i < 49; i++) {
+          const obs = await systemRepo.createResource<Observation>({
+            resourceType: 'Observation',
+            status: 'final',
+            code: { text: 'cursor_type_test' },
+            subject: createReference(patient),
+          });
+          expectedIds.push(obs.id);
+        }
+
+        let url = `Patient?_type=Patient,Observation&_compartment=${getReferenceString(patient)}&_sort=_lastUpdated&_count=20`;
+        const seenIds: string[] = [];
+        while (url) {
+          const bundle = await systemRepo.search(parseSearchRequest(url));
+          for (const entry of bundle.entry ?? []) {
+            seenIds.push(entry.resource?.id as string);
+          }
+
+          const link = bundle.link?.find((l) => l.relation === 'next')?.url;
+          if (link) {
+            expect(link).toContain('_type=Patient,Observation');
+            expect(link).toContain('_cursor=');
+          }
+          url = link ?? '';
+        }
+
+        expect(seenIds.length).toBe(50);
+        expect(seenIds.sort()).toStrictEqual(expectedIds.sort());
       }));
 
     test('V1 cursor is not parsed as V2', () =>

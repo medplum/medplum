@@ -120,6 +120,39 @@ describe('Group Export', () => {
     expect(output[0].url.startsWith(getConfig().storageBaseUrl)).toBeTruthy();
   });
 
+  test('Export Group Accepted with POST', async () => {
+    const patientRes = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+    expect(patientRes.status).toBe(201);
+
+    const groupRes = await request(app)
+      .post(`/fhir/R4/Group`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Group',
+        type: 'person',
+        actual: true,
+        member: [{ entity: { reference: `Patient/${patientRes.body.id}` } }],
+      });
+    expect(groupRes.status).toBe(201);
+
+    const exportRes = await request(app)
+      .post(`/fhir/R4/Group/${groupRes.body.id}/$export`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(exportRes.status).toBe(202);
+    expect(exportRes.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(exportRes.headers['content-location'], app, accessToken);
+  });
+
   test('Since filter', async () => {
     const now = new Date();
 
