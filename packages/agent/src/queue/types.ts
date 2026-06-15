@@ -9,7 +9,7 @@
  * (delivering the app-level ACK back to the sending device) is tracked
  * separately in {@link AckOutcome}, so the two can't be conflated: a message the
  * Bot accepted but whose ACK we couldn't return is `processed` + `undelivered`,
- * NOT a Bot-leg failure. See DURABLE_QUEUE_PLAN.md §4 for the transition diagram.
+ * NOT a Bot-leg failure. See DURABLE_QUEUE_ARCHITECTURE.md §4 for the transition diagram.
  *
  * - `queued`     — inserted, awaiting worker dispatch.
  * - `processing` — worker has claimed it and dispatched to the Medplum server.
@@ -70,13 +70,18 @@ export type AckOutcome = (typeof AckOutcome)[keyof typeof AckOutcome];
  * `last_error`, so the retry policy and operator tooling can reason about *why*
  * a row errored without parsing free-form error strings.
  *
- * Every code here describes a **Bot-leg** failure (it annotates a `rejected` or
+ * Most codes here describe a **Bot-leg** failure (they annotate a `rejected` or
  * `failed` row). The source-leg ACK-delivery outcome is NOT an error code — it
  * lives on its own axis ({@link AckOutcome}), precisely so a failed ACK can
- * never be misread as a re-dispatchable upstream failure.
+ * never be misread as a re-dispatchable upstream failure. The trailing
+ * **intake-rejection** codes are the exception: they annotate `nacked` audit
+ * rows (a message intake refused before it was ever committed), so tooling can
+ * tell a storage-error reject from a duplicate-collision reject without parsing
+ * `last_error`. A retry policy must never act on a `nacked` row — it was never
+ * accepted — so these codes are outside the transient/ambiguous/permanent split.
  *
- * The codes are grouped into three failure classes — the distinction the retry
- * policy keys off of (see {@link RETRYABLE_ERROR_CODES} and the §4 retry rules):
+ * The Bot-leg codes are grouped into three failure classes — the distinction the
+ * retry policy keys off of (see {@link RETRYABLE_ERROR_CODES} and the §4 retry rules):
  *
  * - **Transient** — the failure says nothing about the message itself, so a
  *   later attempt could succeed. Safe to auto-retry: re-dispatch cannot
@@ -126,6 +131,10 @@ export const QueueErrorCode = {
    * the guaranteed-delivery path, which parses MSA-1 from the server response.
    */
   UpstreamError: 'upstream-error',
+  /** Intake rejection (`nacked`): a storage error prevented the message from being committed. */
+  StorageError: 'storage-error',
+  /** Intake rejection (`nacked`): the message reused a committed control ID (duplicate collision). */
+  DuplicateRejected: 'duplicate-rejected',
 } as const;
 export type QueueErrorCode = (typeof QueueErrorCode)[keyof typeof QueueErrorCode];
 
@@ -257,6 +266,8 @@ export interface EnqueueInput {
 /** Input payload for {@link DurableQueue.enqueueRejected}. */
 export interface EnqueueRejectedInput extends EnqueueInput {
   lastError: string;
+  /** Machine-readable reason this intake was rejected, stored in `error_code`. */
+  errorCode: QueueErrorCode;
 }
 
 /**

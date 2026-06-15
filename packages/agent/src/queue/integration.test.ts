@@ -5,7 +5,7 @@
  * End-to-end integration tests for the durable inbound queue.
  *
  * These spin up a full {@link App} (with a mocked Medplum WS server) and a real
- * HL7 client, then drive scenarios from DURABLE_QUEUE_PLAN.md §14.2. The unit
+ * HL7 client, then drive scenarios from DURABLE_QUEUE_ARCHITECTURE.md §14.2. The unit
  * tests in `durable-queue.test.ts` / `worker.test.ts` / `retention.test.ts`
  * cover the individual components; this file is about the contract those
  * components implement *together* — specifically, that the durable CA promise

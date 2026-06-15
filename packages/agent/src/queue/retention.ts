@@ -89,11 +89,13 @@ export class RetentionSweeper {
     this.runSweep();
   }
 
-  /** Fire-and-forget wrapper around {@link RetentionSweeper.sweep} that logs failures. */
+  /** Wrapper around {@link RetentionSweeper.sweep} that logs failures instead of throwing. */
   private runSweep(): void {
-    this.sweep().catch((err) => {
+    try {
+      this.sweep();
+    } catch (err) {
       this.log.error(`Retention sweep crashed: ${normalizeErrorString(err)}`);
-    });
+    }
   }
 
   /** Stops the periodic sweep timer. */
@@ -106,10 +108,15 @@ export class RetentionSweeper {
 
   /**
    * Run a single sweep cycle immediately. Safe to call from `start`'s timer or tests.
+   *
+   * Synchronous: every SQLite call here is synchronous, so there is no `await` to
+   * make. Keeping the signature non-`async` means the `running` guard can't be
+   * defeated by a future edit that adds an `await` mid-sweep and opens a
+   * re-entrancy window.
    * @param now - Override the "now" timestamp used for retention comparisons.
    * @returns The deletion counts and DB size after this sweep cycle.
    */
-  async sweep(now: number = Date.now()): Promise<SweepResult> {
+  sweep(now: number = Date.now()): SweepResult {
     if (this.running) {
       // A previous sweep is still running (e.g. on a very slow disk). Skip rather
       // than queue — the next interval will pick up where this one left off.
