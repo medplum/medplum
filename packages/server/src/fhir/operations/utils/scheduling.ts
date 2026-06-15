@@ -28,12 +28,13 @@ import assert from 'node:assert';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
 import { areIntervalsOverlapping, clamp, earliest, latest } from '../../../util/date';
+import type { LayeredDict } from '../../../util/layereddict';
 import { extractReferencesFromCodeableReferenceLike } from '../../../util/servicetype';
 import type { WithPath } from '../../../util/withpath';
 import { copyPaths, filterWithPaths, getPath, withPath } from '../../../util/withpath';
 import type { Repository } from '../../repo';
 import type { SchedulingParameters } from './scheduling-parameters';
-import { chooseSchedulingParameterGroup } from './scheduling-parameters';
+import { getHealthcareServiceSchedulingParameters, getScheduleSchedulingParameters } from './scheduling-parameters';
 import { uniqueOn } from './terminology';
 
 // Tricky: support zero-based and one-based indexing by including Sunday on both ends.
@@ -140,13 +141,14 @@ function mergeIntervals(left: Interval, right: Interval): Interval | undefined {
  * @returns An array of intervals of availability
  */
 export function resolveAvailability(
-  schedulingParameters: SchedulingParameters,
+  schedulingParameters: LayeredDict<SchedulingParameters>,
   interval: Interval,
   timeZone: string
 ): Interval[] {
   return eachDayOfInterval(interval, timeZone).flatMap((dayStart) => {
     const dayOfWeek = dayNames[dayStart.dayOfWeek];
-    return schedulingParameters.availability
+    return schedulingParameters
+      .get('availability')
       .filter((availability) => availability.dayOfWeek.includes(dayOfWeek))
       .map((availability) => {
         const [sH, sM, sS] = availability.availableStartTime.split(':').map(Number);
@@ -310,11 +312,14 @@ export function assertAllLoaded<T extends Resource>(
   }
 }
 
+// Gets SchedulingParameters information for a list of Schedule resources with
+// respect to a specific HealthcareService. Loads `Schedule.actor` references
+// to look for timezone information.
 export async function getSchedulingParametersGroup(
   repo: Repository,
   schedules: WithPath<WithId<Schedule>>[],
   healthcareService: WithPath<WithId<HealthcareService>>
-): Promise<Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters & { timezone: string }>>> {
+): Promise<Map<WithPath<WithId<Schedule>>, LayeredDict<SchedulingParameters & { timezone: string }>>> {
   schedules.forEach((schedule) => {
     if (schedule.actor.length !== 1) {
       throw new OperationOutcomeError(
@@ -328,17 +333,31 @@ export async function getSchedulingParametersGroup(
     .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
   assertAllLoaded(actors, 'Loading schedule.actor failed');
 
-  const group = chooseSchedulingParameterGroup(schedules, healthcareService);
+  const serviceParams = getHealthcareServiceSchedulingParameters(healthcareService);
 
-  return new Map(
-    group.entries().map(([schedule, parameters], idx) => {
+  return new Map<WithPath<WithId<Schedule>>, LayeredDict<SchedulingParameters & { timezone: string }>>(
+    schedules.map((schedule, idx) => {
       const actor = actors[idx];
-      assert(actor);
-      const timezone = parameters.timezone ?? getTimeZone(actor);
-      if (!timezone) {
-        throw new OperationOutcomeError(badRequest('No timezone specified', getPath(actor)));
+
+      let parameters = getScheduleSchedulingParameters(schedule, healthcareService, serviceParams);
+
+      const timezone = getTimeZone(actor);
+      if (timezone) {
+        // Tricky: `timezone` is defined to prefer scheduling-parameter
+        // definitions coming from HealthcareService or Schedule extensions
+        // over per-actor configuration. We put the actor-based layer at the
+        // bottom of the stack with `prepend` to give it lowest priority.
+        parameters = parameters.prependLayer(withPath({ timezone }, getPath(actor)));
       }
-      return [schedule, { ...parameters, timezone }];
+
+      return [
+        schedule,
+        parameters.refine((p): asserts p is SchedulingParameters & { timezone: string } => {
+          if (p.timezone === undefined) {
+            throw new OperationOutcomeError(badRequest('No timezone specified', getPath(actor)));
+          }
+        }),
+      ];
     })
   );
 }
@@ -485,11 +504,11 @@ async function validateAvailability(
   repo: Repository,
   healthcareService: HealthcareService,
   schedule: WithId<Schedule>,
-  parameters: SchedulingParameters & { timezone: string },
+  parameters: LayeredDict<SchedulingParameters & { timezone: string }>,
   interval: Interval
 ): Promise<void> {
   const existingSlots = await slotsOverlappingInterval(repo, [schedule], interval);
-  let availability = resolveAvailability(parameters, interval, parameters.timezone);
+  let availability = resolveAvailability(parameters, interval, parameters.get('timezone'));
   availability = applyExistingSlots({
     availability,
     slots: existingSlots,
@@ -538,7 +557,7 @@ export async function validateProposedAppointment(
     Appointment,
     WithPath<Slot>[],
     HealthcareService,
-    Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters & { timezone: string }>>,
+    Map<WithPath<WithId<Schedule>>, LayeredDict<SchedulingParameters & { timezone: string }>>,
   ]
 > {
   const { contained, ...appointment } = proposedAppointment;
@@ -593,7 +612,7 @@ export async function validateProposedAppointment(
     assert(parameters);
 
     const slotsForSchedule = proposedSlots.filter((slot) => resolveId(slot.schedule) === schedule.id);
-    validateSlots(slotsForSchedule, parameters);
+    validateSlots(slotsForSchedule, parameters.flatten());
   }
 
   return [appointment, proposedSlots, healthcareService, schedulingParameterGroup];
@@ -603,7 +622,7 @@ export async function validateAllAvailability(
   repo: Repository,
   allSlots: WithPath<Slot>[],
   healthcareService: HealthcareService,
-  schedulingParameterGroup: Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters & { timezone: string }>>
+  schedulingParameterGroup: Map<WithPath<WithId<Schedule>>, LayeredDict<SchedulingParameters & { timezone: string }>>
 ): Promise<void> {
   const groupedSlots = Object.groupBy(allSlots, (slot) => slot.schedule.reference ?? 'unknown');
   for (const [schedule, parameters] of schedulingParameterGroup.entries()) {
@@ -668,10 +687,10 @@ export async function createProposedAppointment(
   customizer(appointment, slots);
 
   const createdResources = await repo.withTransaction(
-    async () => {
-      await validateAllAvailability(repo, slots, healthcareService, schedulingParametersGroup);
-      const createdSlots = await Promise.all(slots.map((slot) => repo.createResource<Slot>(slot)));
-      const createdAppointment = await repo.createResource<Appointment>({
+    async (txRepo) => {
+      await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
+      const createdSlots = await Promise.all(slots.map((slot) => txRepo.createResource<Slot>(slot)));
+      const createdAppointment = await txRepo.createResource<Appointment>({
         ...appointment,
         slot: createdSlots.map((slot) => createReference(slot)),
       });
