@@ -89,7 +89,6 @@ export function PlatformApps(): JSX.Element {
       </div>
 
       {/* Secondary: reference implementations, demoted below the custom-app hero. */}
-      <div className={styles.refIntro}>Ships with the platform</div>
       <div className={styles.refGrid}>
         {FEATURED_APPS.map((app) => (
           <ReferenceAppCard key={app.id} app={app} />

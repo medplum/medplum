@@ -206,16 +206,9 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #9c36b5, #c8479c);
-  color: #fff;
-  font-family: 'Poppins', system-ui, sans-serif;
-  font-weight: 600;
-  font-size: 16px;
-  letter-spacing: 0.02em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: cover;
   flex-shrink: 0;
+  background: #f1f3f5;
 }
 
 .patientMeta {

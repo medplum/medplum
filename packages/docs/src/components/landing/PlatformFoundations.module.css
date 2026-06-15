@@ -43,7 +43,7 @@
   align-items: center;
   gap: 8px;
   font-family: 'Poppins', system-ui, sans-serif;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
   color: #495057;
   background: #f8f9fa;
@@ -88,7 +88,7 @@
   padding: 16px 22px;
   /* Floor sits ABOVE the tallest content state (a three-line body), so min-height
      governs in every state and the panel height never jumps between selections. */
-  min-height: 84px;
+  min-height: 96px;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 24px;
@@ -100,15 +100,15 @@
 }
 
 .detailBody {
-  font-size: 14.5px;
+  font-size: 16px;
   color: #495057;
-  line-height: 1.65;
+  line-height: 1.6;
   margin: 0;
   max-width: 820px;
 }
 
 .detailPrompt {
-  font-size: 14.5px;
+  font-size: 16px;
   color: #868e96;
   line-height: 1.6;
   margin: 0;
@@ -211,13 +211,13 @@
 .complianceName {
   font-family: 'Poppins', system-ui, sans-serif;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 13px;
   color: #212529;
   line-height: 1.2;
 }
 
 .complianceSub {
-  font-size: 10.5px;
+  font-size: 12px;
   color: #868e96;
   margin-top: 1px;
 }
