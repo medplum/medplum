@@ -32,9 +32,13 @@ For example:
 medplum get 'Agent/$fetch-logs?_tag=Group+A'
 ```
 
+Here, `_tag=Group+A` is an `Agent` search parameter used to select which agents to fetch logs from. For example, to fetch logs from all active agents use `status=active`. See [Using Agent search parameters in bulk operations](./using-search-parameters.md) for more ways to select operation targets.
+
 ## Parameters
 
 - `limit` (optional; default: `20`): Maximum number of log entries to return per agent
+
+> The parameter above configures _how_ logs are fetched. To select _which_ agents to fetch logs from when using the multi-agent endpoint, use `Agent` search parameters — see [Using Agent search parameters in bulk operations](./using-search-parameters.md).
 
 ## Single Agent Response
 
@@ -193,6 +197,12 @@ Some useful search parameters are:
 - `status`
 - `_count` and `_offset`
 
+:::note[Default page size]
+
+When `_count` is omitted, the operation fetches logs from at most the **default page of 20 agents** — it does _not_ automatically run against every matching agent. The maximum allowed `_count` is `100`. To cover more agents than fit on one page, use `_count` and `_offset` to page through the results (see [Paging Through Agent Logs](#paging-through-agent-logs)).
+
+:::
+
 ## Recipes
 
 ### Single Agent by ID
@@ -221,7 +231,7 @@ medplum get 'Agent/$fetch-logs?identifier=agent-007'
 
 ### Multiple Agents by Name
 
-Fetch logs from all agents with a specific name prefix:
+Fetch logs from agents with a specific name prefix (without a `_count`, this acts on at most the default page of 20 agents):
 
 ```bash
 medplum get 'Agent/$fetch-logs?name=Production+Agent'
@@ -229,7 +239,7 @@ medplum get 'Agent/$fetch-logs?name=Production+Agent'
 
 ### Multiple Agents by Status
 
-Fetch logs from all active agents:
+Fetch logs from active agents (without a `_count`, this acts on at most the default page of 20 agents):
 
 ```bash
 medplum get 'Agent/$fetch-logs?status=active'
@@ -237,7 +247,7 @@ medplum get 'Agent/$fetch-logs?status=active'
 
 ### Multiple Agents with Limit
 
-Fetch logs from all agents, limited to 5 entries per agent:
+Fetch logs from the matched agents, limited to 5 entries per agent (without a `_count`, this acts on at most the default page of 20 agents):
 
 ```bash
 medplum get 'Agent/$fetch-logs?limit=5'

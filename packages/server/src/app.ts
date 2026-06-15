@@ -306,6 +306,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
       status: res.writableFinished ? res.statusCode : 408,
       ua: req.get('User-Agent'),
       mode: ctx instanceof AuthenticatedRequestContext ? ctx.repo.mode : undefined,
+      fhirQuota: ctx?.fhirRateLimiter?.unitsConsumed,
     });
   });
 

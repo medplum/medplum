@@ -28,11 +28,12 @@ import {
 } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useEffect, useRef, useState } from 'react';
-import { ChatInput, DEFAULT_MODEL } from '../../pages/spaces/ChatInput';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChatInput } from '../../pages/spaces/ChatInput';
 import type { Message } from '../../types/spaces';
 import { showErrorNotification } from '../../utils/notifications';
 import { processMessage } from '../../utils/spaceMessaging';
+import { getDefaultModel, getProjectModels } from '../../utils/spaceModels';
 import { loadConversationMessages } from '../../utils/spacePersistence';
 import { ComponentPreview } from './ComponentPreview';
 import { HistoryList } from './HistoryList';
@@ -52,10 +53,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const { topic: topicRef, onNewTopic, onSelectedItem, onAdd } = props;
   const medplum = useMedplum();
   const topic = useResource(topicRef);
+  const models = useMemo(() => getProjectModels(medplum), [medplum]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
+  const [selectedModel, setSelectedModel] = useState(() => getDefaultModel(models));
   const [hasStarted, setHasStarted] = useState(false);
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
   const [currentTopicId, setCurrentTopicId] = useState(topic?.id);
@@ -68,12 +70,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [streamingComponentCode, setStreamingComponentCode] = useState<string | undefined>();
   const [componentPanelOpen, setComponentPanelOpen] = useState(false);
   const [componentPreview, setComponentPreview] = useState<{ code: string; resources?: string[] } | undefined>();
-  const [expandedResponses, setExpandedResponses] = useState(new Set<number>());
+  const [expandedResponses, setExpandedResponses] = useState(new Set<string>());
   const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
   const loadVersionRef = useRef(0);
-  const componentStreamOpenedRef = useRef(false);
   const isAtBottomRef = useRef(true);
 
   // Load conversation when topic changes
@@ -222,7 +223,6 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setLoading(true);
     isSendingRef.current = true;
     loadVersionRef.current++;
-    componentStreamOpenedRef.current = false;
 
     try {
       const result = await processMessage({
@@ -241,13 +241,16 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           setStreamingContent((prev) => (prev ?? '') + chunk);
           setCurrentFhirRequest(undefined);
         },
+        onComponentStart: () => {
+          // Show the "Generating component..." card and open the preview panel
+          // immediately, before FHIR data is fetched and the first chunk arrives.
+          setSelectedResource(undefined);
+          setSelectedResources(undefined);
+          setComponentPanelOpen(true);
+          setStreamingComponentCode('');
+          setCurrentFhirRequest(undefined);
+        },
         onComponentStreamChunk: (chunk) => {
-          if (!componentStreamOpenedRef.current) {
-            setSelectedResource(undefined);
-            setSelectedResources(undefined);
-            setComponentPanelOpen(true);
-            componentStreamOpenedRef.current = true;
-          }
           setStreamingComponentCode((prev) => (prev ?? '') + chunk);
           setCurrentFhirRequest(undefined);
         },
@@ -282,19 +285,31 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     }
   };
 
-  const toggleResponse = (index: number): void => {
+  const toggleResponse = (id: string): void => {
     setExpandedResponses((prev) => {
       const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
+      if (next.has(id)) {
+        next.delete(id);
       } else {
-        next.add(index);
+        next.add(id);
       }
       return next;
     });
   };
 
   const visibleMessages = messages.filter((m) => m.role !== 'system');
+
+  // Map each tool response to the tool call that produced it, so each request can
+  // be rendered together with its matching response.
+  const toolResponsesByCallId = useMemo(() => {
+    const map = new Map<string, Message>();
+    for (const message of messages) {
+      if (message.role === 'tool' && message.tool_call_id) {
+        map.set(message.tool_call_id, message);
+      }
+    }
+    return map;
+  }, [messages]);
 
   return (
     <>
@@ -355,11 +370,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
             >
               <Stack gap="xl" p="xs">
                 {visibleMessages.map((message, index) => {
-                  // FHIR tool call — show method + path
+                  // FHIR tool calls — show each request paired with its response
                   if (message.role === 'assistant' && message.tool_calls && !message.content) {
                     return (
                       <div key={index} className={cx(classes.messageWrapper, classes.assistantMessage)}>
-                        <Stack gap={6}>
+                        <Stack gap="md">
                           {message.tool_calls.map((tc, tcIdx) => {
                             let args: { method?: string; path?: string } | undefined;
                             try {
@@ -370,31 +385,58 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                             } catch {
                               /* ignore */
                             }
-                            if (args) {
-                              return (
-                                <Group
-                                  key={tcIdx}
-                                  gap="xs"
-                                  align="flex-start"
-                                  wrap="nowrap"
-                                  className={classes.toolCallGroup}
-                                >
-                                  <Badge
-                                    size="sm"
-                                    color={getMethodColor(args.method)}
-                                    variant="filled"
-                                    className={classes.toolCallBadge}
-                                  >
-                                    {args.method ?? 'CALL'}
-                                  </Badge>
-                                  <Code className={classes.toolCallPath}>{args.path ?? tc.function.name}</Code>
-                                </Group>
-                              );
+
+                            const response = tc.id ? toolResponsesByCallId.get(tc.id) : undefined;
+                            const responseKey = tc.id ?? `${index}-${tcIdx}`;
+                            const isExpanded = expandedResponses.has(responseKey);
+                            let prettyContent = response?.content ?? '';
+                            try {
+                              prettyContent = JSON.stringify(JSON.parse(response?.content ?? ''), null, 2);
+                            } catch {
+                              /* use raw */
                             }
+
                             return (
-                              <Text key={tcIdx} size="xs" c="dimmed" fs="italic">
-                                Unable to parse tool call
-                              </Text>
+                              <Stack key={responseKey} gap={6}>
+                                {args ? (
+                                  <Group gap="xs" align="flex-start" wrap="nowrap" className={classes.toolCallGroup}>
+                                    <Badge
+                                      size="sm"
+                                      color={getMethodColor(args.method)}
+                                      variant="filled"
+                                      className={classes.toolCallBadge}
+                                    >
+                                      {args.method ?? 'CALL'}
+                                    </Badge>
+                                    <Code className={classes.toolCallPath}>{args.path ?? tc.function.name}</Code>
+                                  </Group>
+                                ) : (
+                                  <Text size="xs" c="dimmed" fs="italic">
+                                    Unable to parse tool call
+                                  </Text>
+                                )}
+                                {response && (
+                                  <>
+                                    <Group
+                                      gap="xs"
+                                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                                      onClick={() => toggleResponse(responseKey)}
+                                    >
+                                      <Text size="xs" fw={500} c="dimmed">
+                                        Response
+                                      </Text>
+                                      <Text size="xs" c="dimmed">
+                                        {isExpanded ? '▲' : '▼'}
+                                      </Text>
+                                    </Group>
+                                    <Collapse in={isExpanded}>
+                                      <Code block className={classes.toolResponseCode}>
+                                        {prettyContent}
+                                      </Code>
+                                    </Collapse>
+                                  </>
+                                )}
+                              </Stack>
                             );
                           })}
                         </Stack>
@@ -402,36 +444,9 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                     );
                   }
 
-                  // Tool response — collapsible JSON
+                  // Tool responses are rendered inline with their request above
                   if (message.role === 'tool') {
-                    const isExpanded = expandedResponses.has(index);
-                    let prettyContent = message.content ?? '';
-                    try {
-                      prettyContent = JSON.stringify(JSON.parse(message.content ?? ''), null, 2);
-                    } catch {
-                      /* use raw */
-                    }
-                    return (
-                      <div key={index} className={cx(classes.messageWrapper, classes.assistantMessage)}>
-                        <Group
-                          gap="xs"
-                          style={{ cursor: 'pointer', userSelect: 'none' }}
-                          onClick={() => toggleResponse(index)}
-                        >
-                          <Text size="xs" fw={500} c="dimmed">
-                            Response
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            {isExpanded ? '▲' : '▼'}
-                          </Text>
-                        </Group>
-                        <Collapse in={isExpanded}>
-                          <Code block className={classes.toolResponseCode}>
-                            {prettyContent}
-                          </Code>
-                        </Collapse>
-                      </div>
-                    );
+                    return null;
                   }
 
                   // Standard user / assistant messages
@@ -587,6 +602,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
               onKeyDown={handleKeyDown}
               onSend={handleSend}
               loading={loading}
+              models={models}
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
               backgroundColor="transparent"

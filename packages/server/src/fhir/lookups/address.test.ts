@@ -4,12 +4,12 @@ import type { WithId } from '@medplum/core';
 import { Operator } from '@medplum/core';
 import type { Address, InsurancePlan, Location, Patient, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
 import { withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
+import type { PgQueryable } from '../sql';
 import type { AddressTableRow } from './address';
 import { AddressTable } from './address';
 
@@ -216,7 +216,7 @@ describe('Address Lookup Table', () => {
   );
 
   test('Purges related resource type', async () => {
-    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PgQueryable;
 
     const table = new AddressTable();
     await table.purgeValuesBefore(db, 'Patient', '2024-01-01T00:00:00Z');
@@ -225,7 +225,7 @@ describe('Address Lookup Table', () => {
   });
 
   test('Does not purge unrelated resource type', async () => {
-    const db = { query: jest.fn() } as unknown as PoolClient;
+    const db = { query: jest.fn() } as unknown as PgQueryable;
 
     const table = new AddressTable();
     await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');
@@ -409,7 +409,7 @@ describe('Address Lookup Table', () => {
   });
 
   test('Errors logged and rethrown', async () => {
-    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PgQueryable;
     const table = new AddressTable();
     const r1: WithId<Patient> = {
       resourceType: 'Patient',

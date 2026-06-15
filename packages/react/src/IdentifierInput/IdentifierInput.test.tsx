@@ -10,7 +10,7 @@ describe('IdentifierInput', () => {
       <IdentifierInput
         name="test"
         path="test"
-        onChange={jest.fn()}
+        onChange={vi.fn()}
         outcome={undefined}
         defaultValue={{ system: 'x', value: 'y' }}
       />
@@ -20,7 +20,7 @@ describe('IdentifierInput', () => {
   });
 
   test('Renders undefined value', () => {
-    render(<IdentifierInput name="test" path="test" onChange={jest.fn()} outcome={undefined} />);
+    render(<IdentifierInput name="test" path="test" onChange={vi.fn()} outcome={undefined} />);
     expect(screen.getByPlaceholderText('System')).toBeDefined();
     expect(screen.getByPlaceholderText('Value')).toBeDefined();
   });

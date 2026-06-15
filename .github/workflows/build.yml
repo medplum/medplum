@@ -91,6 +91,51 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+      - name: Detect changed packages
+        id: changes
+        # Decide which previews to deploy based on what changed in this PR.
+        # Rules:
+        #   - packages/app                  -> app preview
+        #   - packages/docs                 -> docs preview
+        #   - examples/medplum-provider     -> provider preview
+        #   - packages/{core,react,react-hooks} -> all previews (shared deps)
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          # Three-dot diff: changes on the PR branch since its merge-base with the target.
+          CHANGED="$(git diff --name-only "$BASE_SHA"...HEAD)"
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          changed() { echo "$CHANGED" | grep -qE "$1"; }
+
+          deploy_app=false
+          deploy_docs=false
+          deploy_provider=false
+
+          # Shared packages force all previews.
+          if changed '^packages/(core|react|react-hooks)/'; then
+            deploy_app=true
+            deploy_docs=true
+            deploy_provider=true
+          fi
+
+          if changed '^packages/app/'; then deploy_app=true; fi
+          if changed '^packages/docs/'; then deploy_docs=true; fi
+          if changed '^examples/medplum-provider/'; then deploy_provider=true; fi
+
+          deploy_any=false
+          if [ "$deploy_app" = true ] || [ "$deploy_docs" = true ] || [ "$deploy_provider" = true ]; then
+            deploy_any=true
+          fi
+
+          echo "Decision: app=$deploy_app docs=$deploy_docs provider=$deploy_provider any=$deploy_any"
+
+          {
+            echo "deploy_app=$deploy_app"
+            echo "deploy_docs=$deploy_docs"
+            echo "deploy_provider=$deploy_provider"
+            echo "deploy_any=$deploy_any"
+          } >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
@@ -107,8 +152,10 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
       - name: Install
+        if: steps.changes.outputs.deploy_any == 'true'
         run: npm ci
       - name: Build Project
+        if: steps.changes.outputs.deploy_any == 'true'
         run: npm run build:all
         env:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
@@ -118,11 +165,13 @@ jobs:
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
           VITE_MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
       - name: Configure AWS Credentials
+        if: steps.changes.outputs.deploy_any == 'true'
         uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838
         with:
           role-to-assume: ${{ secrets.STAGING_AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.STAGING_AWS_REGION }}
       - name: Deploy app preview
+        if: steps.changes.outputs.deploy_app == 'true'
         run: './scripts/deploy-app.sh'
         env:
           APP_BUCKET: preview.medplum.dev/previews/app-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
@@ -130,30 +179,50 @@ jobs:
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
           RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
       - name: Deploy docs preview
+        if: steps.changes.outputs.deploy_docs == 'true'
         run: './scripts/deploy-docs.sh'
         env:
           DOCS_DESTINATION: preview.medplum.dev/previews/docs-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
       - name: Deploy provider app preview
+        if: steps.changes.outputs.deploy_provider == 'true'
         run: './scripts/deploy-provider-app.sh'
         env:
           PROVIDER_APP_BUCKET: preview.medplum.dev/previews/provider-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
       - name: Comment preview URLs
+        if: steps.changes.outputs.deploy_any == 'true'
         uses: actions/github-script@v7
+        env:
+          DEPLOY_APP: ${{ steps.changes.outputs.deploy_app }}
+          DEPLOY_DOCS: ${{ steps.changes.outputs.deploy_docs }}
+          DEPLOY_PROVIDER: ${{ steps.changes.outputs.deploy_provider }}
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            const body = `### Preview Links
+            const login = context.payload.pull_request.user.login;
+            const n = context.runNumber;
 
-            | Project   | URL  |
-            | --------- | ---- |
-            | App       | https://app-${context.payload.pull_request.user.login}-${context.runNumber}.preview.medplum.dev        |
-            | Docs      | https://docs-${context.payload.pull_request.user.login}-${context.runNumber}.preview.medplum.dev       |
-            | Provider  | https://provider-${context.payload.pull_request.user.login}-${context.runNumber}.preview.medplum.dev   |
+            const rows = [];
+            if (process.env.DEPLOY_APP === 'true') {
+              rows.push(`| App       | https://app-${login}-${n}.preview.medplum.dev |`);
+            }
+            if (process.env.DEPLOY_DOCS === 'true') {
+              rows.push(`| Docs      | https://docs-${login}-${n}.preview.medplum.dev |`);
+            }
+            if (process.env.DEPLOY_PROVIDER === 'true') {
+              rows.push(`| Provider  | https://provider-${login}-${n}.preview.medplum.dev |`);
+            }
 
-            **Commit:** \`${context.sha.substring(0, 7)}\`
-            **Build:** [See logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
-            `;
+            const body = [
+              '### Preview Links',
+              '',
+              '| Project   | URL  |',
+              '| --------- | ---- |',
+              ...rows,
+              '',
+              `**Commit:** \`${context.sha.substring(0, 7)}\``,
+              `**Build:** [See logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+            ].join('\n');
 
             const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
@@ -365,7 +434,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: SonarCloud Scan
-        if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
+        # Skip on fork PRs (SONAR_TOKEN is unavailable to forks). Still runs on push to
+        # main and merge_group; for pull_request events, only runs when the PR head is on
+        # this repo rather than a fork.
+        if: ${{ !github.event.pull_request.head.repo.fork && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         uses: SonarSource/sonarqube-scan-action@9598b8a83feef37de07f549027fab50ecffe6a6e # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -10,7 +10,7 @@
   width: fit-content;
   height: fit-content;
   padding: 8px 7px;
-  border-radius: var(--mantine-radius-sm);
+  border-radius: var(--mantine-radius-md);
   transition: background-color 100ms ease;
 
   &:hover {
@@ -31,6 +31,7 @@
   padding-bottom: 8px;
   box-sizing: border-box;
   font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -51,7 +52,7 @@
 .link {
   width: 100%;
   height: 36px;
-  border-radius: var(--mantine-radius-sm);
+  border-radius: var(--mantine-radius-md);
   font-weight: 450;
   display: flex;
   align-items: center;
@@ -201,13 +202,17 @@
 .toggleButton {
   width: 38px;
   height: 36px;
-  border-radius: var(--mantine-radius-sm);
+  border-radius: var(--mantine-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   transition: background-color 100ms ease;
-  cursor: ew-resize;
+  cursor: e-resize;
+
+  &[data-opened] {
+    cursor: w-resize;
+  }
 
   & svg:global(.tabler-icon) {
     color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));

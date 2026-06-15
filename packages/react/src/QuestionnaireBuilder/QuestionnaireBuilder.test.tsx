@@ -24,7 +24,7 @@ describe('QuestionnaireBuilder', () => {
       questionnaire: {
         resourceType: 'Questionnaire',
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
     expect(screen.getByTestId('questionnaire-form')).toBeDefined();
   });
@@ -70,7 +70,7 @@ describe('QuestionnaireBuilder', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByTestId('questionnaire-form')).toBeDefined();
@@ -79,7 +79,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Handles submit', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -125,7 +125,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Handles submit with required items', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -164,7 +164,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Handles AutoSave', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -206,7 +206,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Sets ids', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -244,7 +244,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Edit a question text', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -291,7 +291,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Add item', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -341,7 +341,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Add item with existing linkId', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -392,7 +392,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Remove item', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -440,7 +440,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Add group', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -486,7 +486,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Change title', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -526,7 +526,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Add Reference Profiles', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -578,7 +578,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Change linkId', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -635,7 +635,7 @@ describe('QuestionnaireBuilder', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByTestId('question1')).not.toHaveClass('hovering');
@@ -654,7 +654,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Add multiple choice', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -717,7 +717,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Add Pages', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -749,7 +749,7 @@ describe('QuestionnaireBuilder', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     await act(async () => {
@@ -770,7 +770,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Add Value Set', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -840,7 +840,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Move down', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -910,7 +910,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Move Up', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -976,7 +976,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Move Up with nested items', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -1058,7 +1058,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Remove multiple choice', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {

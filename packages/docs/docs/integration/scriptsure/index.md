@@ -28,8 +28,7 @@ Medplum will create your organization in the ScriptSure vendor portal and config
 | [Sync a Provider](/docs/integration/scriptsure/sync-provider) | Enroll a prescriber in ScriptSure |
 | [Sync a Patient](/docs/integration/scriptsure/sync-patient) | Sync a patient to ScriptSure before an encounter |
 | [Prescribing iFrame](/docs/integration/scriptsure/iframe) | Render the ScriptSure prescribing UI |
-| Order Medication _(docs coming soon)_ | Create a pending prescription order and launch the prescribing widget |
-| Drug Search _(docs coming soon)_ | Search drugs by name or routed med ID via `$drug-search` |
-| Drug Interaction Check _(docs coming soon)_ | Check candidate drugs against the patient's current medications |
-| Pharmacy Search _(docs coming soon)_ | Search pharmacies and set a patient's preferred pharmacy |
-| Order Sets _(docs coming soon)_ | Import and launch ScriptSure order sets |
+| [Order Medication](/docs/integration/scriptsure/order-medication) | Create a pending prescription order and launch the prescribing widget |
+| [Drug Interaction Check](/docs/integration/scriptsure/drug-interaction) | Check candidate drugs against the patient's current medications |
+| [Pharmacy Search](/docs/integration/scriptsure/pharmacy-search) | Search pharmacies and set a patient's preferred pharmacy |
+| [Order Sets](/docs/integration/scriptsure/order-sets) | Import and launch ScriptSure order sets |

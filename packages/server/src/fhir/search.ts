@@ -299,8 +299,8 @@ export function getSelectQueryForSearch<T extends Resource>(
   } else if (searchRequest.cursor) {
     const cursor = parseCursor(searchRequest.cursor);
     if (cursor) {
-      builder.orderBy(new Column(searchRequest.resourceType, 'lastUpdated', false));
-      builder.whereExpr(new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '>=', cursor.nextInstant));
+      builder.orderBy(new Column(builder.effectiveTableName, 'lastUpdated', false));
+      builder.whereExpr(new Condition(new Column(builder.effectiveTableName, 'lastUpdated'), '>=', cursor.nextInstant));
 
       if (cursor.excludedIds?.length) {
         builder.whereExpr(new Negation(new Condition('id', 'IN', cursor.excludedIds)));

@@ -16,8 +16,8 @@ describe('Hl7MessageTracker', () => {
       const tracker = new Hl7MessageTracker();
       const item = {
         message: Hl7Message.parse('MSH|^~\\&|A|B|C|D|202301011200||ADT^A01|MSG001|P|2.5'),
-        resolve: jest.fn(),
-        reject: jest.fn(),
+        resolve: vi.fn(),
+        reject: vi.fn(),
         returnAck: ReturnAckCategory.FIRST,
       };
 
@@ -35,8 +35,8 @@ describe('Hl7MessageTracker', () => {
       const tracker = new Hl7MessageTracker();
       const item = {
         message: Hl7Message.parse('MSH|^~\\&|A|B|C|D|202301011200||ADT^A01|MSG001|P|2.5'),
-        resolve: jest.fn(),
-        reject: jest.fn(),
+        resolve: vi.fn(),
+        reject: vi.fn(),
         returnAck: ReturnAckCategory.FIRST,
       };
 
@@ -54,21 +54,21 @@ describe('Hl7MessageTracker', () => {
     test('drainAll rejects all pending messages and clears timers', () => {
       const tracker = new Hl7MessageTracker();
 
-      const reject1 = jest.fn();
-      const reject2 = jest.fn();
+      const reject1 = vi.fn();
+      const reject2 = vi.fn();
       const timer1 = setTimeout(() => {}, 60000);
-      const clearSpy = jest.spyOn(global, 'clearTimeout');
+      const clearSpy = vi.spyOn(global, 'clearTimeout');
 
       tracker.setPendingMessage('MSG001', {
         message: Hl7Message.parse('MSH|^~\\&|A|B|C|D|202301011200||ADT^A01|MSG001|P|2.5'),
-        resolve: jest.fn(),
+        resolve: vi.fn(),
         reject: reject1,
         returnAck: ReturnAckCategory.FIRST,
         timer: timer1,
       });
       tracker.setPendingMessage('MSG002', {
         message: Hl7Message.parse('MSH|^~\\&|A|B|C|D|202301011200||ADT^A01|MSG002|P|2.5'),
-        resolve: jest.fn(),
+        resolve: vi.fn(),
         reject: reject2,
         returnAck: ReturnAckCategory.FIRST,
       });
@@ -156,7 +156,7 @@ describe('Hl7MessageTracker', () => {
       );
 
       // Start sending but don't await (no ACK will come)
-      const rejectSpy = jest.fn();
+      const rejectSpy = vi.fn();
       const sendPromise = client.sendAndWait(message).catch(rejectSpy);
 
       // Wait for microtasks to settle (setPendingMessage is called synchronously
@@ -375,7 +375,7 @@ describe('Hl7MessageTracker', () => {
       );
 
       // Send with a short timeout
-      const rejectSpy = jest.fn();
+      const rejectSpy = vi.fn();
       const sendPromise = client.sendAndWait(message, { timeoutMs: 200 }).catch(rejectSpy);
 
       // Wait for the message to be registered in the tracker
