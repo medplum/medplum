@@ -312,7 +312,7 @@ export class ChannelQueueWorker {
     // retransmitting, which replays the stored ACK (handleDuplicate, hl7.ts).
 
     // In aaMode the deferred-commit ACK already sent the source an `AA` at intake
-    // (hl7.ts handleMessageDurable → conn.ackCommit), and aaMode's contract is
+    // (hl7.ts handleMessageDurable → sendCommitAck), and aaMode's contract is
     // "send AA immediately, then ignore any later app-level ACKs" (hl7 connection).
     // The Bot's app-level AA would therefore be a redundant *second* AA the source
     // is no longer listening for — a source that closes its connection on ACK has

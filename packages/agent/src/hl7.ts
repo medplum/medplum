@@ -1,16 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AgentTransmitResponse, ILogger } from '@medplum/core';
+import type { AckCode, AgentTransmitResponse, ILogger } from '@medplum/core';
 import { ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
 import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
-import type {
-  EnhancedMode,
-  Hl7Connection,
-  Hl7EnhancedAckSentEvent,
-  Hl7ErrorEvent,
-  Hl7MessageEvent,
-} from '@medplum/hl7';
-import { Hl7Server } from '@medplum/hl7';
+import type { EnhancedMode, Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from '@medplum/hl7';
+import { Hl7EnhancedAckSentEvent, Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import type { App } from './app';
 import { BaseChannel } from './channel';
@@ -38,6 +32,20 @@ export interface ShouldSendAppLevelAckOptions {
   enhancedMode: EnhancedMode;
 }
 
+/**
+ * Negative commit-ACK code the durable path sends via {@link AgentHl7ChannelConnection.sendCommitNack}.
+ *
+ * By HL7 convention the *error* codes invite a retransmit (the peer may retry and
+ * could succeed) while the *reject* codes are terminal (retransmitting the same
+ * message fails identically, so the peer must not retry):
+ *
+ * - `CE` — Commit Error (standard enhanced): e.g. a transient storage failure.
+ * - `AE` — Application Error (aaMode).
+ * - `CR` — Commit Reject (standard enhanced): e.g. a rejected duplicate.
+ * - `AR` — Application Reject (aaMode).
+ */
+export type NackCommitCode = 'CR' | 'CE' | 'AR' | 'AE';
+
 export class AgentHl7Channel extends BaseChannel {
   readonly server: Hl7Server;
   private started = false;
@@ -50,6 +58,12 @@ export class AgentHl7Channel extends BaseChannel {
   private assignSeqNo: boolean = false;
   private lastSeqNo = -1;
   private duplicateBehavior: DuplicateBehavior = DuplicateBehavior.IDEMPOTENT;
+  // The channel's own copy of the enhanced mode, parsed from the endpoint URL.
+  // In durable mode this is intentionally NOT pushed onto the Hl7Connection (so
+  // the connection's synchronous auto-ACK stays off and the agent can defer the
+  // commit ACK until after the DB write); the connection therefore can't be the
+  // source of truth, so we track it here and the durable path reads it directly.
+  private enhancedMode: EnhancedMode = undefined;
   worker: ChannelQueueWorker | undefined;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
@@ -200,7 +214,7 @@ export class AgentHl7Channel extends BaseChannel {
       !shouldSendAppLevelAck({
         mode: this.appLevelAckMode,
         ackCode,
-        enhancedMode: this.server.getEnhancedMode(),
+        enhancedMode: this.enhancedMode,
       })
     ) {
       this.channelLog.debug(
@@ -291,15 +305,25 @@ export class AgentHl7Channel extends BaseChannel {
       this.lastSeqNo = -1;
     }
 
-    this.server.setEncoding(encoding);
-    this.server.setEnhancedMode(enhancedMode);
-    this.server.setMessagesPerMin(messagesPerMin);
+    this.enhancedMode = enhancedMode;
+
+    // In durable mode the agent owns the commit ACK: it must fire CA/AA only after
+    // the message is durably on disk. We achieve that without any deferred-ACK hook
+    // in @medplum/hl7 by simply NOT giving the connection an enhancedMode — the
+    // connection's synchronous auto-ACK only runs when enhancedMode is set, so an
+    // unset mode keeps it silent and the agent sends the ACK itself post-commit.
+    // The legacy (non-durable) path keeps the passthrough, so the connection
+    // auto-ACKs exactly as before.
     const queueOn = this.app.getDurableQueue() !== undefined;
+    const connectionEnhancedMode = queueOn ? undefined : enhancedMode;
+
+    this.server.setEncoding(encoding);
+    this.server.setEnhancedMode(connectionEnhancedMode);
+    this.server.setMessagesPerMin(messagesPerMin);
     for (const connection of this.connections.values()) {
       connection.hl7Connection.setEncoding(encoding);
-      connection.hl7Connection.setEnhancedMode(enhancedMode);
+      connection.hl7Connection.setEnhancedMode(connectionEnhancedMode);
       connection.hl7Connection.setMessagesPerMin(messagesPerMin);
-      connection.hl7Connection.setDeferredCommitAck(queueOn);
     }
   }
 
@@ -307,13 +331,19 @@ export class AgentHl7Channel extends BaseChannel {
     return this.duplicateBehavior;
   }
 
+  /**
+   * @returns The channel's enhanced mode, as parsed from the endpoint URL. This is
+   * the agent's source of truth in durable mode, where enhancedMode is deliberately
+   * kept off the underlying {@link Hl7Connection} (see {@link enhancedMode}).
+   */
+  getEnhancedMode(): EnhancedMode {
+    return this.enhancedMode;
+  }
+
   private handleNewConnection(connection: Hl7Connection): void {
-    // Apply the per-channel deferred-ack setting to every newly-accepted socket.
-    // The Hl7Server has no built-in way to set this at construction, so we set it
-    // here once before the application code starts seeing messages.
-    if (this.app.getDurableQueue()) {
-      connection.setDeferredCommitAck(true);
-    }
+    // Newly-accepted sockets inherit the Hl7Server's enhancedMode at construction
+    // (see Hl7Server). In durable mode that mode is left unset, so the connection
+    // never auto-ACKs and the agent sends the commit ACK itself after the DB write.
     const c = new AgentHl7ChannelConnection(this, connection);
     updateStat('hl7ConnectionsOpen', getCurrentStats().hl7ConnectionsOpen + 1);
     c.hl7Connection.addEventListener('close', () => {
@@ -462,7 +492,7 @@ export class AgentHl7ChannelConnection {
     originalMessage: Buffer
   ): Promise<void> {
     const conn = this.hl7Connection;
-    const enhancedMode = conn.getEnhancedMode();
+    const enhancedMode = this.channel.getEnhancedMode();
     const enhancedModeColumn = enhancedMode ?? null;
     const channelName = this.channel.getDefinition().name;
     const msgType = event.message.getSegment('MSH')?.getField(9)?.toString() ?? null;
@@ -536,7 +566,7 @@ export class AgentHl7ChannelConnection {
       // the retryable *error* code — CE (standard) / AE (aaMode) — not a terminal
       // reject. The peer may retransmit, and because we write only a `nacked`
       // audit row (never a committed one) the resend is accepted as fresh.
-      conn.nackCommit(event.message, enhancedMode === 'aaMode' ? 'AE' : 'CE', 'storage error');
+      this.sendCommitNack(event.message, enhancedMode === 'aaMode' ? 'AE' : 'CE', 'storage error');
       this.recordImmediateAck(msgControlId);
       // Best-effort audit row. If this also fails, we've already told the sender
       // NACK so they will retry — the failure log above is sufficient. No
@@ -577,7 +607,7 @@ export class AgentHl7ChannelConnection {
     // Durably inserted (and the sequence counter advanced in the same
     // transaction) — now tell the sender CA/AA. The ack is a no-op outside
     // enhanced mode.
-    conn.ackCommit(event.message);
+    this.sendCommitAck(event.message);
     this.channel.worker?.notify();
   }
 
@@ -595,7 +625,7 @@ export class AgentHl7ChannelConnection {
    *   we reject it with AR (and a `nacked` audit row) the same way `reject`
    *   handles any duplicate.
    *
-   * The replayed ACKs go through the connection's `ackCommit`/`nackCommit` just
+   * The replayed ACKs go through {@link sendCommitAck}/{@link sendCommitNack} just
    * like a fresh message — a retransmit means the sender never saw the original
    * ACK and must be re-told, and the durable row is the dedup authority.
    * @param queue - The app-owned durable queue handle.
@@ -627,7 +657,7 @@ export class AgentHl7ChannelConnection {
     }
   ): void {
     const conn = this.hl7Connection;
-    const enhancedMode = conn.getEnhancedMode();
+    const enhancedMode = this.channel.getEnhancedMode();
     const idLabel = msgControlId ?? 'n/a';
     const behavior = this.channel.getDuplicateBehavior();
 
@@ -653,7 +683,7 @@ export class AgentHl7ChannelConnection {
       this.channel.channelLog.info(
         `[Duplicate idempotent -- ID: ${idLabel}] replayed commit ACK for prior row id=${existing.id}`
       );
-      conn.ackCommit(event.message);
+      this.sendCommitAck(event.message);
       this.recordImmediateAck(msgControlId);
       return;
     }
@@ -667,7 +697,7 @@ export class AgentHl7ChannelConnection {
       ? `duplicate control id ${idLabel}: a message with this control ID was already committed with different content`
       : 'duplicate control id';
     this.channel.channelLog.warn(`[Duplicate rejected -- ID: ${idLabel}] prior row id=${existing.id}: ${reason}`);
-    conn.nackCommit(event.message, enhancedMode === 'aaMode' ? 'AR' : 'CR', reason);
+    this.sendCommitNack(event.message, enhancedMode === 'aaMode' ? 'AR' : 'CR', reason);
     this.recordImmediateAck(msgControlId);
     queue.enqueueRejected({
       channelName: this.channel.getDefinition().name,
@@ -729,6 +759,53 @@ export class AgentHl7ChannelConnection {
   private async handleError(event: Hl7ErrorEvent): Promise<void> {
     this.channel.log.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
     this.channel.channelLog.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
+  }
+
+  /**
+   * Sends the commit ACK (CA in `standard` enhanced mode, AA in `aaMode`) for an
+   * inbound message that has been durably committed. No-op outside enhanced mode.
+   *
+   * This is the durable path's replacement for the connection's synchronous
+   * auto-ACK: in durable mode the connection carries no enhancedMode (so it never
+   * auto-ACKs), and the agent calls this only after the DB write succeeds — so the
+   * CA/AA is a real promise that the message is on disk. Idempotency is not enforced
+   * here; the on-disk row (channel + MSH.10) is the dedup authority, and a genuine
+   * retransmit must be re-ACKed because the sender never saw the original.
+   * @param message - The original inbound message to ACK.
+   */
+  private sendCommitAck(message: Hl7Message): void {
+    const enhancedMode = this.channel.getEnhancedMode();
+    if (!enhancedMode) {
+      return;
+    }
+    const ackCode: AckCode = enhancedMode === 'standard' ? 'CA' : 'AA';
+    const response = message.buildAck({ ackCode });
+    this.hl7Connection.send(response);
+    // Reuse the existing 'enhancedAckSent' listener for logging (handleEnhancedAckSent).
+    this.hl7Connection.dispatchEvent(new Hl7EnhancedAckSentEvent(this.hl7Connection, response));
+  }
+
+  /**
+   * Sends a negative commit ACK for an inbound message. The wire code is CE/CR in
+   * `standard` enhanced mode and AE/AR in `aaMode` (error = retryable, reject =
+   * terminal); the caller picks which best describes the failure. An optional
+   * `reason` is written to MSA.3 for the sender's logs. No-op outside enhanced mode.
+   * @param message - The original inbound message to NACK.
+   * @param code - The negative ACK code to send.
+   * @param reason - Optional human-readable explanation placed in MSA.3.
+   */
+  private sendCommitNack(message: Hl7Message, code: NackCommitCode, reason?: string): void {
+    const enhancedMode = this.channel.getEnhancedMode();
+    if (!enhancedMode) {
+      return;
+    }
+    const response = message.buildAck({ ackCode: code });
+    if (reason) {
+      // Overwrite the default MSA.3 text (e.g. "Commit Reject") with the supplied reason.
+      response.getSegment('MSA')?.setField(3, reason);
+    }
+    this.hl7Connection.send(response);
+    this.hl7Connection.dispatchEvent(new Hl7EnhancedAckSentEvent(this.hl7Connection, response));
   }
 
   private handleEnhancedAckSent(event: Hl7EnhancedAckSentEvent): void {

@@ -1,26 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AckCode } from '@medplum/core';
 import { Hl7Message, OperationOutcomeError, ReturnAckCategory, sleep, validationError } from '@medplum/core';
 import iconv from 'iconv-lite';
 import type net from 'node:net';
 import { Hl7Base } from './base';
 import { CR, FS, VT } from './constants';
 import { Hl7CloseEvent, Hl7EnhancedAckSentEvent, Hl7ErrorEvent, Hl7MessageEvent, Hl7WarningEvent } from './events';
-
-/**
- * Negative commit ACK code accepted by {@link Hl7Connection.nackCommit}.
- *
- * By HL7 convention the *error* codes invite a retransmit (the peer may retry and
- * could succeed) while the *reject* codes are terminal (retransmitting the same
- * message will fail identically, so the peer must not retry):
- *
- * - `CE` — Commit Error (standard enhanced): e.g. a transient storage failure.
- * - `AE` — Application Error (aaMode).
- * - `CR` — Commit Reject (standard enhanced): e.g. a rejected duplicate.
- * - `AR` — Application Reject (aaMode).
- */
-export type NackCommitCode = 'CR' | 'CE' | 'AR' | 'AE';
 
 // Export `ReturnAckCategory` for backwards-compat
 export { ReturnAckCategory } from '@medplum/core';
@@ -72,7 +57,6 @@ export class Hl7Connection extends Hl7Base {
   private lastMessageDispatchedTime = 0;
   private responseQueueProcessing = false;
   private closing = false;
-  private deferredCommitAck = false;
 
   constructor(
     socket: net.Socket,
@@ -139,15 +123,11 @@ export class Hl7Connection extends Hl7Base {
     this.addEventListener('message', (event) => {
       // In standard enhanced mode, send commit ACK (CA) immediately, then later forward app-level ACKs
       // In aaMode, send application ACK (AA) immediately, then ignore any later app-level ACKs
-      // When deferredCommitAck is on, the application is responsible for calling ackCommit/nackCommit
-      // after it has durably committed (or rejected) the message.
       let response: Hl7Message | undefined;
-      if (!this.deferredCommitAck) {
-        if (this.enhancedMode === 'standard') {
-          response = event.message.buildAck({ ackCode: 'CA' });
-        } else if (this.enhancedMode === 'aaMode') {
-          response = event.message.buildAck({ ackCode: 'AA' });
-        }
+      if (this.enhancedMode === 'standard') {
+        response = event.message.buildAck({ ackCode: 'CA' });
+      } else if (this.enhancedMode === 'aaMode') {
+        response = event.message.buildAck({ ackCode: 'AA' });
       }
       if (response) {
         this.send(response);
@@ -428,76 +408,6 @@ export class Hl7Connection extends Hl7Base {
 
   private resetBuffer(): void {
     this.chunks = [];
-  }
-
-  /**
-   * Enables or disables deferred commit-ACK mode.
-   *
-   * When `deferred` is true, the connection will not auto-send CA/AA on message receipt;
-   * the application MUST call {@link Hl7Connection.ackCommit} or {@link Hl7Connection.nackCommit}
-   * after it has durably committed (or rejected) the inbound message. This is the hook
-   * the Medplum Agent's durable inbound queue uses to back the enhanced-mode CA promise
-   * with an actual on-disk write.
-   *
-   * Only meaningful when {@link Hl7Connection.enhancedMode} is set. When `enhancedMode`
-   * is undefined this flag has no effect (no ACK is auto-sent in either case).
-   * @param deferred - True to suppress auto-ACK; false to restore default behavior.
-   */
-  setDeferredCommitAck(deferred: boolean): void {
-    this.deferredCommitAck = deferred;
-  }
-
-  /** @returns Whether deferred commit-ACK mode is currently enabled. */
-  getDeferredCommitAck(): boolean {
-    return this.deferredCommitAck;
-  }
-
-  /**
-   * Sends the configured commit ACK (CA in `standard` enhanced mode, AA in `aaMode`)
-   * for the supplied inbound message. No-op (and no wire write) when `enhancedMode`
-   * is undefined, since no commit ACK is part of the protocol then.
-   *
-   * Idempotency is NOT enforced here: the caller decides when to (re-)send. In the
-   * Medplum Agent's durable queue the on-disk row (keyed by channel + MSH.10) is the
-   * single dedup authority, and a deliberate retransmit must be re-acked because the
-   * sender never saw the original ACK.
-   * @param message - The original inbound message to ACK.
-   */
-  ackCommit(message: Hl7Message): void {
-    if (!this.enhancedMode) {
-      return;
-    }
-    const ackCode: AckCode = this.enhancedMode === 'standard' ? 'CA' : 'AA';
-    const response = message.buildAck({ ackCode });
-    this.send(response);
-    this.dispatchEvent(new Hl7EnhancedAckSentEvent(this, response));
-  }
-
-  /**
-   * Sends a negative commit ACK for the supplied inbound message. The wire-level code is:
-   * - `standard` enhanced mode: `CE` (retryable error) or `CR` (terminal reject).
-   * - `aaMode`: `AE` (retryable error) or `AR` (terminal reject).
-   *
-   * Passing a code that doesn't match the connection's enhanced mode is permitted —
-   * the caller decides which code best describes the failure. An optional `reason`
-   * is recorded in MSA.3 of the outgoing ACK for the sender's logs.
-   *
-   * No-op (and no wire write) when `enhancedMode` is undefined.
-   * @param message - The original inbound message to NACK.
-   * @param code - The negative ACK code to send.
-   * @param reason - Optional human-readable explanation placed in MSA.3.
-   */
-  nackCommit(message: Hl7Message, code: NackCommitCode, reason?: string): void {
-    if (!this.enhancedMode) {
-      return;
-    }
-    const response = message.buildAck({ ackCode: code });
-    if (reason) {
-      // Overwrite the default MSA.3 text (e.g. "Commit Reject") with the supplied reason.
-      response.getSegment('MSA')?.setField(3, reason);
-    }
-    this.send(response);
-    this.dispatchEvent(new Hl7EnhancedAckSentEvent(this, response));
   }
 
   setEncoding(encoding: string | undefined): void {
