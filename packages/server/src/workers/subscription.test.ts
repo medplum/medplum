@@ -1307,16 +1307,17 @@ describe('Subscription Worker', () => {
 
   test('AuditEvent has Subscription account details', () =>
     withTestContext(async () => {
-      const project = (await createTestProject()).project.id;
+      // Create the Subscription as a project-admin test user (admin is required to set meta.account)
+      // rather than the system user, so the author has a ProjectMembership and AccessPolicy.
+      const { repo: testRepo } = await createTestProject({ withRepo: true, membership: { admin: true } });
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
 
-      const subscription = await systemRepo.createResource<Subscription>({
+      const subscription = await testRepo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         meta: {
-          project,
           account,
         },
         status: 'active',
@@ -1328,10 +1329,9 @@ describe('Subscription Worker', () => {
       });
       expect(subscription).toBeDefined();
 
-      const patient = await systemRepo.createResource<Patient>({
+      const patient = await testRepo.createResource<Patient>({
         resourceType: 'Patient',
         meta: {
-          project,
           account,
         },
         name: [{ given: ['Alice'], family: 'Smith' }],
@@ -1363,16 +1363,17 @@ describe('Subscription Worker', () => {
 
   test('AuditEvent outcome from custom codes', () =>
     withTestContext(async () => {
-      const project = (await createTestProject()).project.id;
+      // Create the Subscription as a project-admin test user (admin is required to set meta.account)
+      // rather than the system user, so the author has a ProjectMembership and AccessPolicy.
+      const { repo: testRepo } = await createTestProject({ withRepo: true, membership: { admin: true } });
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
 
-      const subscription = await systemRepo.createResource<Subscription>({
+      const subscription = await testRepo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         meta: {
-          project,
           account,
         },
         status: 'active',
@@ -1390,10 +1391,9 @@ describe('Subscription Worker', () => {
       });
       expect(subscription).toBeDefined();
 
-      const patient = await systemRepo.createResource<Patient>({
+      const patient = await testRepo.createResource<Patient>({
         resourceType: 'Patient',
         meta: {
-          project,
           account,
         },
         name: [{ given: ['Alice'], family: 'Smith' }],
@@ -1424,14 +1424,13 @@ describe('Subscription Worker', () => {
 
   test('Subscription AuditEvent destination - default behavior creates resource', () =>
     withTestContext(async () => {
-      const project = (await createTestProject()).project.id;
+      // Create the Subscription as a test user (not the system user) so the author has a
+      // ProjectMembership and AccessPolicy that grant read access to the triggering resource.
+      const { repo: testRepo } = await createTestProject({ withRepo: true });
 
-      const subscription = await systemRepo.createResource<Subscription>({
+      const subscription = await testRepo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
-        meta: {
-          project,
-        },
         status: 'active',
         criteria: 'Patient',
         channel: {
@@ -1440,11 +1439,8 @@ describe('Subscription Worker', () => {
         },
       });
 
-      const patient = await systemRepo.createResource<Patient>({
+      const patient = await testRepo.createResource<Patient>({
         resourceType: 'Patient',
-        meta: {
-          project,
-        },
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
@@ -1484,14 +1480,13 @@ describe('Subscription Worker', () => {
 
     test('log only', () =>
       withTestContext(async () => {
-        const project = (await createTestProject()).project.id;
+        // Create the Subscription as a test user (not the system user) so the author has a
+        // ProjectMembership and AccessPolicy that grant read access to the triggering resource.
+        const { repo: testRepo } = await createTestProject({ withRepo: true });
 
-        const subscription = await systemRepo.createResource<Subscription>({
+        const subscription = await testRepo.createResource<Subscription>({
           resourceType: 'Subscription',
           reason: 'test',
-          meta: {
-            project,
-          },
           status: 'active',
           criteria: 'Patient',
           channel: {
@@ -1506,11 +1501,8 @@ describe('Subscription Worker', () => {
           ],
         });
 
-        const patient = await systemRepo.createResource<Patient>({
+        const patient = await testRepo.createResource<Patient>({
           resourceType: 'Patient',
-          meta: {
-            project,
-          },
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
@@ -1547,14 +1539,13 @@ describe('Subscription Worker', () => {
 
     test('resource and log', () =>
       withTestContext(async () => {
-        const project = (await createTestProject()).project.id;
+        // Create the Subscription as a test user (not the system user) so the author has a
+        // ProjectMembership and AccessPolicy that grant read access to the triggering resource.
+        const { repo: testRepo } = await createTestProject({ withRepo: true });
 
-        const subscription = await systemRepo.createResource<Subscription>({
+        const subscription = await testRepo.createResource<Subscription>({
           resourceType: 'Subscription',
           reason: 'test',
-          meta: {
-            project,
-          },
           status: 'active',
           criteria: 'Patient',
           channel: {
@@ -1573,11 +1564,8 @@ describe('Subscription Worker', () => {
           ],
         });
 
-        const patient = await systemRepo.createResource<Patient>({
+        const patient = await testRepo.createResource<Patient>({
           resourceType: 'Patient',
-          meta: {
-            project,
-          },
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
