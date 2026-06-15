@@ -133,7 +133,8 @@ CREATE TABLE IF NOT EXISTS inbound_hl7_messages (
   server_response_body  BLOB,                      -- raw agent:transmit:response body when received
   server_status_code INTEGER,                      -- statusCode from agent:transmit:response
   ack_outcome        TEXT    NOT NULL DEFAULT 'pending', -- source leg, independent of state; see §4
-  last_error         TEXT,
+  last_error         TEXT,                         -- human-readable failure detail
+  error_code         TEXT,                         -- machine-readable QueueErrorCode (Bot-leg failure or intake-reject reason)
   seq_no             INTEGER,                      -- MSH.13 assigned by agent (if assignSeqNo)
   received_at        INTEGER NOT NULL,             -- ms epoch (handleMessage entry); also the commit timestamp (CA fires synchronously after the durable write)
   processing_started_at INTEGER,

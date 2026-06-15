@@ -106,6 +106,7 @@ describe('DurableQueue', () => {
     queue.enqueueRejected({
       ...makeEnqueueInput({ msgControlId: 'DUP4', callbackId: 'cb-nack' }),
       lastError: 'rejected',
+      errorCode: QueueErrorCode.DuplicateRejected,
     });
     // A nacked row reuses the control ID for audit only; a fresh intake of the
     // same ID must still insert rather than dedupe against the audit row.
@@ -341,16 +342,35 @@ describe('DurableQueue', () => {
     expect(queue.recoverOnStartup()).toBe(0);
   });
 
-  test('enqueueRejected creates a nacked audit row with last_error and ack_outcome=not_owed', () => {
+  test('enqueueRejected creates a nacked audit row with last_error, error_code, and ack_outcome=not_owed', () => {
     const row = queue.enqueueRejected({
       ...makeEnqueueInput({ msgControlId: 'NACK1' }),
       lastError: 'duplicate control id',
+      errorCode: QueueErrorCode.DuplicateRejected,
     });
     expect(row?.state).toBe(MessageState.NACKED);
     expect(row?.lastError).toBe('duplicate control id');
+    // The machine-readable code is persisted alongside last_error so tooling can
+    // distinguish nacked reasons (storage error vs. duplicate) without parsing strings.
+    expect(row?.errorCode).toBe(QueueErrorCode.DuplicateRejected);
     // An intake reject was answered synchronously with a NACK; no app-level ACK
     // is ever owed for it.
     expect(row?.ackOutcome).toBe(AckOutcome.NOT_OWED);
+  });
+
+  test('enqueueRejected persists distinct error codes for distinct reasons', () => {
+    const storage = queue.enqueueRejected({
+      ...makeEnqueueInput({ msgControlId: 'NACK-STORAGE' }),
+      lastError: 'storage error: disk full',
+      errorCode: QueueErrorCode.StorageError,
+    });
+    const dup = queue.enqueueRejected({
+      ...makeEnqueueInput({ msgControlId: 'NACK-DUP' }),
+      lastError: 'duplicate control id',
+      errorCode: QueueErrorCode.DuplicateRejected,
+    });
+    expect(storage?.errorCode).toBe(QueueErrorCode.StorageError);
+    expect(dup?.errorCode).toBe(QueueErrorCode.DuplicateRejected);
   });
 
   test('countByState reports correct totals across states', () => {
@@ -363,7 +383,11 @@ describe('DurableQueue', () => {
     queue.markProcessed(a.row.id, AckOutcome.DELIVERED);
     queue.claimNext(b.row.channelName); // b → processing
     queue.markFailed(b.row.id, 'x', QueueErrorCode.DispatchFailed);
-    queue.enqueueRejected({ ...makeEnqueueInput({ msgControlId: 'CB-N' }), lastError: 'dup' });
+    queue.enqueueRejected({
+      ...makeEnqueueInput({ msgControlId: 'CB-N' }),
+      lastError: 'dup',
+      errorCode: QueueErrorCode.DuplicateRejected,
+    });
 
     expect(queue.countByState()).toEqual({
       queued: 0,
@@ -492,6 +516,24 @@ describe('DurableQueue', () => {
     queue.enqueue(makeEnqueueInput());
     expect(queue.checkpointWalIfDirty()).toBe(true);
     expect(statSync(walPath).size).toBe(0);
+  });
+
+  test('checkpointWal reuses a prepared statement instead of re-compiling on every call', () => {
+    // Regression: checkpointWal() ran on every heartbeat tick + retention sweep,
+    // and used to call db.prepare() each time — leaking GC-finalised statement
+    // objects proportional to heartbeat frequency. The statement is now prepared
+    // once in the constructor, so checkpointWal() must never call prepare().
+    const db = queue.getDb();
+    const prepareSpy = vi.spyOn(db, 'prepare');
+    try {
+      for (let i = 0; i < 5; i++) {
+        queue.enqueue(makeEnqueueInput());
+        expect(queue.checkpointWal()).toBe(true);
+      }
+      expect(prepareSpy).not.toHaveBeenCalled();
+    } finally {
+      prepareSpy.mockRestore();
+    }
   });
 
   test('close() checkpoints the WAL even when another connection holds the DB open', () => {

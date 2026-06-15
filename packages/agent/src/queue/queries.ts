@@ -97,7 +97,7 @@ export const RETENTION_PHASE2_DELETE = `
    )
 `;
 
-/** Phase 3 — floor-protected purge of terminal/undelivered rows. `idx_inbound_terminal_at`. */
+/** Phase 3 — floor-protected purge of terminal/undelivered rows. `idx_inbound_state_processed_at`. */
 export const RETENTION_PHASE3_DELETE = `
   DELETE FROM inbound_hl7_messages
    WHERE id IN (

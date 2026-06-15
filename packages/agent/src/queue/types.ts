@@ -69,13 +69,18 @@ export type AckOutcome = (typeof AckOutcome)[keyof typeof AckOutcome];
  * `last_error`, so operators and tooling can reason about *why* a row errored
  * without parsing free-form error strings.
  *
- * Every code here describes a **Bot-leg** failure (it annotates a `rejected` or
+ * Most codes here describe a **Bot-leg** failure (they annotate a `rejected` or
  * `failed` row). The source-leg ACK-delivery outcome is NOT an error code — it
  * lives on its own axis ({@link AckOutcome}), precisely so a failed ACK can
- * never be misread as a re-dispatchable upstream failure.
+ * never be misread as a re-dispatchable upstream failure. The trailing
+ * **intake-rejection** codes are the exception: they annotate `nacked` audit
+ * rows (a message intake refused before it was ever committed), so tooling can
+ * tell a storage-error reject from a duplicate-collision reject without parsing
+ * `last_error`. A retry policy must never act on a `nacked` row — it was never
+ * accepted — so these codes are outside the transient/ambiguous/permanent split.
  *
- * The codes are grouped into three failure classes — the distinction a retry
- * policy keys off of:
+ * The Bot-leg codes are grouped into three failure classes — the distinction a
+ * retry policy keys off of:
  * - Transient: the failure says nothing about the message itself, so a later
  *   attempt could succeed. (Row state: `failed`.)
  * - Ambiguous: the request may have reached the server, so re-dispatching would
@@ -105,6 +110,10 @@ export const QueueErrorCode = {
   DispatchFailed: 'dispatch-failed',
   /** Permanent (`rejected`): server returned 4xx (other than 429) — the message was rejected. */
   ServerRejected: 'server-rejected',
+  /** Intake rejection (`nacked`): a storage error prevented the message from being committed. */
+  StorageError: 'storage-error',
+  /** Intake rejection (`nacked`): the message reused a committed control ID (duplicate collision). */
+  DuplicateRejected: 'duplicate-rejected',
 } as const;
 export type QueueErrorCode = (typeof QueueErrorCode)[keyof typeof QueueErrorCode];
 
@@ -182,6 +191,8 @@ export interface EnqueueInput {
 /** Input payload for {@link DurableQueue.enqueueRejected}. */
 export interface EnqueueRejectedInput extends EnqueueInput {
   lastError: string;
+  /** Machine-readable reason this intake was rejected, stored in `error_code`. */
+  errorCode: QueueErrorCode;
 }
 
 /**

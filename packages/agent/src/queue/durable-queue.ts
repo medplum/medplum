@@ -86,6 +86,7 @@ export class DurableQueue {
   private readonly heartbeatLeaseStmt: StatementSync;
   private readonly releaseLeaseStmt: StatementSync;
   private readonly getLeaseStmt: StatementSync;
+  private readonly checkpointStmt: StatementSync;
 
   constructor(db: DatabaseSync, options: DurableQueueOptions) {
     this.db = db;
@@ -124,9 +125,9 @@ export class DurableQueue {
       INSERT INTO inbound_hl7_messages (
         channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
         enhanced_mode, state, attempt_count, callback_id,
-        ack_outcome, last_error, seq_no, received_at
+        ack_outcome, last_error, error_code, seq_no, received_at
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 'not_owed', ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 'not_owed', ?, ?, ?, ?
       )
     `);
 
@@ -261,6 +262,11 @@ export class DurableQueue {
     `);
 
     this.getLeaseStmt = this.db.prepare(`SELECT holder, expires_at FROM _lease WHERE id = 1`);
+
+    // Prepared once like every other statement — checkpointWal() runs on every
+    // heartbeat tick and every retention sweep, so re-compiling it per call would
+    // leak GC-finalised statement objects proportional to heartbeat frequency.
+    this.checkpointStmt = this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)');
   }
 
   /**
@@ -319,7 +325,7 @@ export class DurableQueue {
    */
   checkpointWal(): boolean {
     try {
-      const row = this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get() as { busy: number } | undefined;
+      const row = this.checkpointStmt.get() as { busy: number } | undefined;
       if (row?.busy) {
         return false;
       }
@@ -455,7 +461,7 @@ export class DurableQueue {
    * Inserts an audit row in the `nacked` terminal state — used when intake
    * rejected the message (duplicate, malformed) but we still want a forensics
    * record. Failure to write this is non-fatal; the caller is expected to log.
-   * @param input - Fields to persist plus the `lastError` describing why we rejected.
+   * @param input - Fields to persist plus the `lastError`/`errorCode` describing why we rejected.
    * @returns The newly inserted audit row, or null if even the audit insert failed.
    */
   enqueueRejected(input: EnqueueRejectedInput): InboundRow | null {
@@ -471,6 +477,7 @@ export class DurableQueue {
         input.enhancedMode,
         input.callbackId,
         input.lastError,
+        input.errorCode,
         input.seqNo,
         input.receivedAt
       );

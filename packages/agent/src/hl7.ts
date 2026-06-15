@@ -11,7 +11,7 @@ import { BaseChannel } from './channel';
 import { ChannelStatsTracker } from './channel-stats-tracker';
 import type { DurableQueue } from './queue/durable-queue';
 import type { EnqueueResult, InboundRow } from './queue/types';
-import { AckOutcome, DuplicateBehavior } from './queue/types';
+import { AckOutcome, DuplicateBehavior, QueueErrorCode } from './queue/types';
 import { ChannelQueueWorker } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 
@@ -564,6 +564,7 @@ export class AgentHl7ChannelConnection {
         seqNo,
         receivedAt,
         lastError: reason,
+        errorCode: QueueErrorCode.StorageError,
       });
       return;
     }
@@ -699,6 +700,7 @@ export class AgentHl7ChannelConnection {
       seqNo: audit.seqNo,
       receivedAt: audit.receivedAt,
       lastError: reason,
+      errorCode: QueueErrorCode.DuplicateRejected,
     });
   }
 
@@ -801,12 +803,40 @@ export class AgentHl7ChannelConnection {
     const ackCode = hl7Message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
 
     this.channel.channelLog.info(
-      `[Sent ${ackCode === 'CA' ? 'Commit ACK (CA)' : 'Immediate ACK (AA)'} -- ID: ${msgControlId ?? 'not provided'}]: ${hl7Message.toString().replaceAll('\r', '\n')}`
+      `[Sent ${describeAckCode(ackCode)} -- ID: ${msgControlId ?? 'not provided'}]: ${hl7Message.toString().replaceAll('\r', '\n')}`
     );
   }
 
   close(): Promise<void> {
     return this.hl7Connection.close();
+  }
+}
+
+/**
+ * Maps an MSA.1 acknowledgment code to a human-readable label for logging.
+ * Covers the positive commit/app ACKs (CA/AA) and the NACK codes dispatched by
+ * {@link AgentHl7Channel.sendCommitNack} (CE/CR/AE/AR) — without this, every
+ * NACK would mislabel itself as "Immediate ACK (AA)".
+ *
+ * @param code - The MSA.1 acknowledgment code (already upper-cased), if present.
+ * @returns A descriptive label, falling back to `ACK (<code>)` for anything unrecognized.
+ */
+export function describeAckCode(code: string | undefined): string {
+  switch (code) {
+    case 'CA':
+      return 'Commit ACK (CA)';
+    case 'AA':
+      return 'App ACK (AA)';
+    case 'CE':
+      return 'Commit Error (CE)';
+    case 'CR':
+      return 'Commit Reject (CR)';
+    case 'AE':
+      return 'App Error (AE)';
+    case 'AR':
+      return 'App Reject (AR)';
+    default:
+      return `ACK (${code ?? 'unknown'})`;
   }
 }
 
