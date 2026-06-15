@@ -26,8 +26,9 @@ import type internal from 'node:stream';
 import type { QueryConfigValues, QueryResult, QueryResultRow } from 'pg';
 import { Client as PgClient } from 'pg';
 import request from 'supertest';
-import type { Mock } from 'vitest';
+import type { Mock, MockInstance } from 'vitest';
 import { vi } from 'vitest';
+import './test-matchers';
 import type { ServerInviteResponse } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
 // `fhir/repo`, `fhir/accesspolicy`, `admin/invite`, `oauth/keys`, and `context` are dynamically imported below.
@@ -646,9 +647,9 @@ export async function withQueryInterceptor<T>(
  */
 export function spyOnQuery<R extends QueryResultRow = any, I = any[]>(
   client: PgQueryable
-): Mock<Promise<QueryResult<R>>, [string, QueryConfigValues<I>]> {
-  return vi.spyOn(client, 'query') as unknown as Mock<
-    Promise<QueryResult<R>>,
-    [string, QueryConfigValues<I>]
+): MockInstance<(queryText: string, values?: QueryConfigValues<I>) => Promise<QueryResult<R>>> {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- narrow pg's overloaded query to the promise-based signature used in tests
+  return vi.spyOn(client, 'query') as unknown as MockInstance<
+    (queryText: string, values?: QueryConfigValues<I>) => Promise<QueryResult<R>>
   >;
 }
