@@ -88,22 +88,15 @@
 
 /* ---- secondary: reference implementations (de-emphasized) ---- */
 
-.refIntro {
-  font-family: 'Poppins', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #868e96;
-  padding-top: 40px;
-  border-top: 1px solid #e9ecef;
-  margin-bottom: 28px;
-}
-
 .refGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 44px;
+  /* Divider + spacing separating the reference apps from the custom-app hero above
+     (previously carried by the "Ships with the platform" eyebrow). */
+  margin-top: 40px;
+  padding-top: 40px;
+  border-top: 1px solid #e9ecef;
 }
 
 .refCard {
@@ -114,7 +107,7 @@
 .refName {
   font-family: 'Poppins', system-ui, sans-serif;
   font-weight: 600;
-  font-size: 21px;
+  font-size: 24px;
   line-height: 1.2;
   letter-spacing: -0.014em;
   margin: 0 0 4px;
@@ -122,13 +115,13 @@
 }
 
 .refTagline {
-  font-size: 13.5px;
+  font-size: 15px;
   color: #868e96;
   margin-bottom: 16px;
 }
 
 .refBody {
-  font-size: 15px;
+  font-size: 16px;
   color: #495057;
   line-height: 1.55;
   margin: 16px 0 0;
@@ -217,7 +210,7 @@
   color: var(--oc-grape-4);
 }
 
-[data-theme='dark'] .refIntro {
+[data-theme='dark'] .refGrid {
   border-top-color: var(--oc-gray-8);
 }
 
