@@ -7,6 +7,8 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
@@ -16,7 +18,7 @@ import { getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-jest.mock('node-fetch');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 const app = express();
 const domain = randomUUID() + '.example.com';
@@ -153,7 +155,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens('not-found@' + domain),
@@ -173,7 +175,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(undefined),
@@ -193,7 +195,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens('admin@medplum.com'),
@@ -216,7 +218,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(email),
@@ -245,7 +247,7 @@ describe('External', () => {
       });
 
       // Mock the external identity provider
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      (fetch as unknown as Mock).mockImplementation(() => ({
         ok: true,
         status: 200,
         json: () => buildTokens(email),
@@ -271,7 +273,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(email),
@@ -294,7 +296,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(email),
@@ -317,7 +319,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(email),
@@ -336,7 +338,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(email),
@@ -355,7 +357,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(email),
@@ -374,7 +376,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => {
@@ -421,7 +423,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens('', externalId),
@@ -477,7 +479,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens('', externalId),
@@ -521,7 +523,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens('', externalId),
@@ -565,7 +567,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(undefined, ''),
@@ -610,7 +612,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(email),
@@ -665,7 +667,7 @@ describe('External', () => {
       state: JSON.stringify({ domain: testDomain, returnTo: allowedReturnTo + '/dashboard' }),
     });
 
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(testEmail),
@@ -688,7 +690,7 @@ describe('External', () => {
       state: JSON.stringify({ domain, returnTo: 'https://evil.example.com/steal' }),
     });
 
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(email),
@@ -737,7 +739,7 @@ describe('External', () => {
       }),
     });
 
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens(testEmail),
@@ -809,7 +811,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as Mock).mockImplementation(() => ({
       ok: true,
       status: 200,
       json: () => buildTokens('', externalId),

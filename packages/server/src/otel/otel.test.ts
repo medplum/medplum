@@ -2,8 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import type { Pool } from 'pg';
+import { vi } from 'vitest';
 import * as databaseModule from '../database';
 import { heartbeat } from '../heartbeat';
+import * as batchModule from '../workers/batch';
+import * as cronModule from '../workers/cron';
+import * as downloadModule from '../workers/download';
+import * as setAccountsModule from '../workers/set-accounts';
+import * as subscriptionModule from '../workers/subscription';
 import {
   cleanupOtelHeartbeat,
   getGauge,
@@ -11,51 +17,41 @@ import {
   initOtelHeartbeat,
   recordHistogramValue,
   setGauge,
-} from '../otel/otel';
+} from './otel';
 
-// Create shared mock queue that all mocks will return
-const createMockQueue = (): any => ({
-  getWaitingCount: jest.fn().mockResolvedValue(5),
-  getDelayedCount: jest.fn().mockResolvedValue(3),
+const createMockQueue = (): {
+  getWaitingCount: ReturnType<typeof vi.fn>;
+  getDelayedCount: ReturnType<typeof vi.fn>;
+} => ({
+  getWaitingCount: vi.fn().mockResolvedValue(5),
+  getDelayedCount: vi.fn().mockResolvedValue(3),
 });
 
-// Dynamic getter for mock queue - can be changed per test
-let mockSharedQueue: any = createMockQueue();
-const getMockSharedQueue = (): any => mockSharedQueue;
+let mockSharedQueue: ReturnType<typeof createMockQueue> | undefined = createMockQueue();
 
-// Mock worker modules before they're imported
-jest.mock('../workers/subscription', () => ({
-  getSubscriptionQueue: () => getMockSharedQueue(),
-}));
-
-jest.mock('../workers/cron', () => ({
-  getCronQueue: () => getMockSharedQueue(),
-}));
-
-jest.mock('../workers/download', () => ({
-  getDownloadQueue: () => getMockSharedQueue(),
-}));
-
-jest.mock('../workers/batch', () => ({
-  getBatchQueue: () => getMockSharedQueue(),
-}));
-
-jest.mock('../workers/set-accounts', () => ({
-  getSetAccountsQueue: () => getMockSharedQueue(),
-}));
+function mockQueueGetters(queue: ReturnType<typeof createMockQueue> | undefined): void {
+  vi.spyOn(subscriptionModule, 'getSubscriptionQueue').mockReturnValue(queue as never);
+  vi.spyOn(cronModule, 'getCronQueue').mockReturnValue(queue as never);
+  vi.spyOn(downloadModule, 'getDownloadQueue').mockReturnValue(queue as never);
+  vi.spyOn(batchModule, 'getBatchQueue').mockReturnValue(queue as never);
+  vi.spyOn(setAccountsModule, 'getSetAccountsQueue').mockReturnValue(queue as never);
+}
 
 describe('OpenTelemetry', () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
-    jest.restoreAllMocks();
     process.env = { ...OLD_ENV };
     // Reset mockSharedQueue to a fresh queue for each test
     mockSharedQueue = createMockQueue();
+    mockQueueGetters(mockSharedQueue);
+    cleanupOtelHeartbeat();
   });
 
   afterAll(async () => {
     process.env = OLD_ENV;
+    cleanupOtelHeartbeat();
+    vi.restoreAllMocks();
   });
 
   test('Increment counter, disabled', async () => {
@@ -117,8 +113,8 @@ describe('OpenTelemetry', () => {
   });
 
   test('initOtelHeartbeat', () => {
-    const heartbeatAddListenerSpy = jest.spyOn(heartbeat, 'addEventListener');
-    const heartbeatRemoveListenerSpy = jest.spyOn(heartbeat, 'removeEventListener');
+    const heartbeatAddListenerSpy = vi.spyOn(heartbeat, 'addEventListener');
+    const heartbeatRemoveListenerSpy = vi.spyOn(heartbeat, 'removeEventListener');
 
     // Init otel heartbeat
     initOtelHeartbeat();
@@ -143,8 +139,11 @@ describe('OpenTelemetry', () => {
 
   test('Heartbeat listener records queue metrics for all queues', async () => {
     process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
+    if (!mockSharedQueue) {
+      throw new Error('Expected mock queue');
+    }
 
-    const getDatabasePoolSpy = jest.spyOn(databaseModule, 'getDatabasePool').mockImplementation(
+    const getDatabasePoolSpy = vi.spyOn(databaseModule, 'getDatabasePool').mockImplementation(
       () =>
         ({
           query: async () => undefined,
@@ -166,12 +165,16 @@ describe('OpenTelemetry', () => {
     expect(mockSharedQueue.getDelayedCount).toHaveBeenCalledTimes(5);
 
     cleanupOtelHeartbeat();
+    getDatabasePoolSpy.mockRestore();
   });
 
   test('Heartbeat listener skips queue collection when queues return undefined', async () => {
     process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
+    if (!mockSharedQueue) {
+      throw new Error('Expected mock queue');
+    }
 
-    const getDatabasePoolSpy = jest.spyOn(databaseModule, 'getDatabasePool').mockImplementation(
+    const getDatabasePoolSpy = vi.spyOn(databaseModule, 'getDatabasePool').mockImplementation(
       () =>
         ({
           query: async () => undefined,
@@ -194,7 +197,7 @@ describe('OpenTelemetry', () => {
     mockSharedQueue.getDelayedCount.mockClear();
 
     // Now set mockSharedQueue to undefined for subsequent calls
-    mockSharedQueue = undefined;
+    mockQueueGetters(undefined);
 
     // Trigger another heartbeat - should skip queue collection but not crash
     heartbeat.dispatchEvent({ type: 'heartbeat' });
@@ -204,5 +207,6 @@ describe('OpenTelemetry', () => {
     expect(getDatabasePoolSpy).toHaveBeenCalled();
 
     cleanupOtelHeartbeat();
+    getDatabasePoolSpy.mockRestore();
   });
 });

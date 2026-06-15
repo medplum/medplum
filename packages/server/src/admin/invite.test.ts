@@ -5,7 +5,6 @@ import { allOk, ContentType, createReference, getReferenceString, normalizeError
 import type { BundleEntry, Practitioner, ProjectMembership, User } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -14,6 +13,8 @@ import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { Readable } from 'stream';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
@@ -21,8 +22,8 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { SelectQuery } from '../fhir/sql';
 import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
+vi.mock('hibp');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 const app = express();
 
@@ -43,10 +44,10 @@ describe('Admin Invite', () => {
     mockSESv2Client = mockClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
 
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    (fetch as unknown as Mock).mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(fetch as unknown as Mock, true);
   });
 
   afterEach(() => {
@@ -84,7 +85,7 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.invitedBy).toMatchObject(createReference(aliceUser));
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -139,7 +140,7 @@ describe('Admin Invite', () => {
 
     expect(res3.status).toBe(200);
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -288,7 +289,7 @@ describe('Admin Invite', () => {
 
     expect(res3.status).toBe(403);
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Input validation', async () => {
@@ -319,7 +320,7 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Do not send email', async () => {
@@ -349,7 +350,7 @@ describe('Admin Invite', () => {
 
     expect(res2.status).toBe(200);
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Invite by externalId', async () => {
@@ -383,7 +384,7 @@ describe('Admin Invite', () => {
     expect(res2.body.profile.reference).toContain('Patient/');
     expect(res2.body.admin).toBe(undefined);
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
 
     const rows = await new SelectQuery('User')
       .column('projectId')
@@ -568,7 +569,7 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.admin).toBe(true);
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const rows = await new SelectQuery('User')
       .column('projectId')
@@ -604,7 +605,7 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.admin).toBe(false);
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
   });
 
   test('Email sending error due to SES not being set up', async () => {
@@ -693,7 +694,7 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.user.display).toBe(lowerBobEmail);
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -1120,7 +1121,7 @@ describe('Admin Invite', () => {
 
     expect(res1.status).toBe(200);
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
     expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(bobEmail);

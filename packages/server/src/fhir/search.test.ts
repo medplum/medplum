@@ -54,6 +54,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import assert from 'node:assert';
+import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
@@ -68,7 +69,7 @@ import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 import { loadStructureDefinitions } from './structure';
 
-jest.mock('hibp');
+vi.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
@@ -162,7 +163,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           resourceType: 'Patient',
           offset: 300,
         });
-        fail('Expected error');
+        expect.fail('Expected error');
       } catch (err) {
         expect(normalizeErrorString(err)).toStrictEqual('Search offset exceeds maximum (got 300, max 200)');
       }
@@ -195,10 +196,10 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
   );
 
   describe('getCount', () => {
-    let getDbClientSpy: jest.SpyInstance;
+    let getDbClientSpy: MockInstance;
 
     beforeEach(() => {
-      getDbClientSpy = jest.spyOn(repo, 'getDatabaseClient');
+      getDbClientSpy = vi.spyOn(repo, 'getDatabaseClient');
     });
 
     afterEach(() => {
@@ -1265,7 +1266,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             },
           ],
         });
-        fail('Expected error');
+        expect.fail('Expected error');
       } catch (err) {
         expect(normalizeErrorString(err)).toStrictEqual('Search filter value must be a string');
       }
@@ -1284,7 +1285,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             },
           ],
         });
-        fail('Expected error');
+        expect.fail('Expected error');
       } catch (err) {
         expect(normalizeErrorString(err)).toStrictEqual('Search filter value cannot contain null bytes');
       }
@@ -2303,7 +2304,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected=2023`
           )
         )
-      ).rejects.toThrow(new Error('Search chains longer than three links are not currently supported'));
+      ).rejects.toThrow('Search chains longer than three links are not currently supported');
     }));
 
   test.each([
@@ -2320,9 +2321,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
     ],
     ['Patient?_has:Observation:status=active', 'Invalid search chain: _has:Observation:status'],
   ])('Invalid chained search parameters: %s', (searchString: string, errorMsg: string) => {
-    return withTestContext(async () =>
-      expect(repo.search(parseSearchRequest(searchString))).rejects.toStrictEqual(new Error(errorMsg))
-    );
+    return withTestContext(async () => expect(repo.search(parseSearchRequest(searchString))).rejects.toThrow(errorMsg));
   });
 
   test('Chained search with modifier', () =>
@@ -3011,7 +3010,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           ],
           include: [{ resourceType: 'Patient', searchParam: 'link', modifier: Operator.ITERATE }],
         })
-      ).resolves.toMatchObject<Bundle>({
+      ).resolves.toMatchObject({
         resourceType: 'Bundle',
         type: 'searchset',
         entry: [],
@@ -3052,7 +3051,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         include: [{ resourceType: 'Patient', searchParam: 'general-practitioner' }],
         count: 1,
       };
-      await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+      await expect(repo.search(searchRequest)).resolves.toMatchObject({
         resourceType: 'Bundle',
         type: 'searchset',
         entry: [
@@ -3068,7 +3067,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
 
       searchRequest.count = 2;
-      await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+      await expect(repo.search(searchRequest)).resolves.toMatchObject({
         resourceType: 'Bundle',
         type: 'searchset',
         entry: [
@@ -5080,7 +5079,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       withTestContext(async () => {
         try {
           await repo.search({ resourceType: 'Patient', offset: 10, cursor: 'foo' });
-          fail('Expected error');
+          expect.fail('Expected error');
         } catch (err) {
           expect(normalizeErrorString(err)).toBe('Cannot use both offset and cursor');
         }
@@ -5393,9 +5392,9 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
   );
 
   describe('discourage sequential scans', () => {
-    let querySpy: jest.SpyInstance;
+    let querySpy: MockInstance;
     beforeEach(() => {
-      querySpy = jest.spyOn(repo.getDatabaseClient(DatabaseMode.READER), 'query');
+      querySpy = vi.spyOn(repo.getDatabaseClient(DatabaseMode.READER), 'query');
     });
 
     afterEach(() => {
@@ -5720,7 +5719,7 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
     withTestContext(async () => {
       const type = randomUUID();
       const searchRequest = parseSearchRequest(`PractitionerRole?_total=accurate&organization.type=${type}`);
-      await expect(systemRepo.search(searchRequest)).resolves.toMatchObject<Partial<Bundle>>({
+      await expect(systemRepo.search(searchRequest)).resolves.toMatchObject({
         type: 'searchset',
         total: 0,
       });

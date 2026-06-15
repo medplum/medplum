@@ -18,7 +18,6 @@ import { allOk, badRequest, ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import JSZip from 'jszip';
@@ -172,18 +171,22 @@ describe('Deploy', () => {
       });
     expect(res2.status).toBe(200);
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(CreateFunctionCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
-      FunctionName: name,
-    });
-    expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
-      FunctionName: name,
-    });
+    expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
+    expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(CreateFunctionCommand)).toHaveLength(1);
+    expect(
+      mockLambdaClient.commandCalls(GetFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(2);
+    expect(
+      mockLambdaClient.commandCalls(CreateFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(1);
 
     // Verify that this was uploaded as a CJS zip file
-    const createCall = mockLambdaClient.commandCall(0, CreateFunctionCommand);
+    const createCall = mockLambdaClient.commandCalls(CreateFunctionCommand)[0];
     const createCodeBytes = createCall.args[0].input.Code?.ZipFile;
     expect(createCodeBytes).toBeInstanceOf(Uint8Array);
     const createZip = await new JSZip().loadAsync(createCodeBytes as Uint8Array);
@@ -207,14 +210,14 @@ describe('Deploy', () => {
       });
     expect(res3.status).toBe(200);
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 0);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 1);
+    expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(GetFunctionConfigurationCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand)).toHaveLength(0);
+    expect(mockLambdaClient.commandCalls(UpdateFunctionCodeCommand)).toHaveLength(1);
 
     // Verify that this was uploaded as a MJS zip file
-    const updateCall = mockLambdaClient.commandCall(0, UpdateFunctionCodeCommand);
+    const updateCall = mockLambdaClient.commandCalls(UpdateFunctionCodeCommand)[0];
     const updateCodeBytes = updateCall.args[0].input?.ZipFile;
     expect(updateCodeBytes).toBeInstanceOf(Uint8Array);
     const updateZip = await new JSZip().loadAsync(updateCodeBytes as Uint8Array);
@@ -260,15 +263,19 @@ describe('Deploy', () => {
       });
     expect(res2.status).toBe(200);
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(CreateFunctionCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
-      FunctionName: name,
-    });
-    expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
-      FunctionName: name,
-    });
+    expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
+    expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(CreateFunctionCommand)).toHaveLength(1);
+    expect(
+      mockLambdaClient.commandCalls(GetFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(2);
+    expect(
+      mockLambdaClient.commandCalls(CreateFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(1);
     mockLambdaClient.resetHistory();
 
     // Step 3: Simulate releasing a new version of the lambda layer
@@ -313,11 +320,11 @@ describe('Deploy', () => {
       });
     expect(res3.status).toBe(200);
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 2);
+    expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(GetFunctionConfigurationCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(UpdateFunctionCodeCommand)).toHaveLength(2);
   });
 
   test('Deploy bot with timeout configured', async () => {
@@ -357,9 +364,9 @@ describe('Deploy', () => {
     expect(res2.status).toBe(200);
     expect(res2.body).toMatchObject(allOk);
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(CreateFunctionCommand, 1);
+    expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
+    expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(CreateFunctionCommand)).toHaveLength(1);
 
     mockLambdaClient.resetHistory();
 
@@ -391,18 +398,30 @@ describe('Deploy', () => {
     expect(res4.body).toMatchObject(allOk);
 
     // Make sure that timeout was updated
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedNthSpecificCommandWith(1, UpdateFunctionConfigurationCommand, {
-      FunctionName: getLambdaNameForBot(bot),
-      Role: getConfig().botLambdaRoleArn,
-      Runtime: LAMBDA_RUNTIME,
-      Handler: LAMBDA_HANDLER,
-      Layers: [TEST_LAYER_ARN],
-      Timeout: 15,
-    });
+    expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(GetFunctionConfigurationCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand)).toHaveLength(1);
+    expect(
+      mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand, {
+        FunctionName: getLambdaNameForBot(bot),
+        Role: getConfig().botLambdaRoleArn,
+        Runtime: LAMBDA_RUNTIME,
+        Handler: LAMBDA_HANDLER,
+        Layers: [TEST_LAYER_ARN],
+        Timeout: 15,
+      })[1 - 1]
+    ).toBeDefined();
+    expect(mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand)[1 - 1].args[0].input).toEqual(
+      expect.objectContaining({
+        FunctionName: getLambdaNameForBot(bot),
+        Role: getConfig().botLambdaRoleArn,
+        Runtime: LAMBDA_RUNTIME,
+        Handler: LAMBDA_HANDLER,
+        Layers: [TEST_LAYER_ARN],
+        Timeout: 15,
+      })
+    );
 
     mockLambdaClient.resetHistory();
 
@@ -434,10 +453,10 @@ describe('Deploy', () => {
     expect(res6.body).toMatchObject(allOk);
 
     // Make sure that timeout was updated again
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 0);
+    expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
+    expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(GetFunctionConfigurationCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand)).toHaveLength(0);
   });
 
   test('Deploying new Bot with no timeout results in Bot with default timeout', async () => {
@@ -484,11 +503,11 @@ describe('Deploy', () => {
     expect(res3.status).toBe(200);
     expect(res3.body).toMatchObject({ ...botProps, timeout: DEFAULT_LAMBDA_TIMEOUT });
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 0);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 0);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 0);
+    expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
+    expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(GetFunctionConfigurationCommand)).toHaveLength(0);
+    expect(mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand)).toHaveLength(0);
+    expect(mockLambdaClient.commandCalls(UpdateFunctionCodeCommand)).toHaveLength(0);
   });
 
   test('Deploy fails when Bot timeout is greater than max', async () => {
@@ -576,11 +595,17 @@ describe('Deploy', () => {
     // Cleanup runs async after the response, so poll until all expected deletes have occurred.
     // Versions 5 and 4 should be kept; 3, 2, 1 deleted.
     await waitFor(async () => {
-      expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 3);
+      expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(3);
     });
-    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '3' });
-    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '2' });
-    expect(mockLambdaClient).toHaveReceivedCommandWith(DeleteFunctionCommand, { FunctionName: name, Qualifier: '1' });
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, { FunctionName: name, Qualifier: '3' })).toHaveLength(
+      1
+    );
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, { FunctionName: name, Qualifier: '2' })).toHaveLength(
+      1
+    );
+    expect(mockLambdaClient.commandCalls(DeleteFunctionCommand, { FunctionName: name, Qualifier: '1' })).toHaveLength(
+      1
+    );
   });
 
   test('Cleanup tolerates DeleteFunction errors', async () => {
@@ -622,7 +647,7 @@ describe('Deploy', () => {
     // Deploy should still succeed even though cleanup deletion failed.
     expect(res3.status).toBe(200);
     await waitFor(async () => {
-      expect(mockLambdaClient).toHaveReceivedCommandTimes(DeleteFunctionCommand, 1);
+      expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(1);
     });
   });
 
@@ -656,7 +681,7 @@ describe('Deploy', () => {
       .on(ListVersionsByFunctionCommand)
       .rejects(new TooManyRequestsException({ $metadata: {}, message: 'Too many requests' }));
 
-    const errorSpy = jest.spyOn(globalLogger, 'error').mockReturnValue();
+    const errorSpy = vi.spyOn(globalLogger, 'error').mockReturnValue();
 
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)

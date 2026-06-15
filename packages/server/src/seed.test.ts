@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Project } from '@medplum/fhirtypes';
+import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
@@ -42,7 +43,7 @@ async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: System
 }
 
 async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository, version: number): Promise<void> {
-  const migration = getPostDeployMigration(version);
+  const migration = await getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
   const jobData = migration.prepareJobData(asyncJob);
   globalLogger.write(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
@@ -51,10 +52,10 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
 }
 
 describe('Seed', () => {
-  let loggerWriteSpy: jest.SpyInstance;
+  let loggerWriteSpy: MockInstance;
 
   beforeAll(async () => {
-    loggerWriteSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    loggerWriteSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
     const config = await loadTestConfig();
     config.database.runMigrations = true;
@@ -108,7 +109,7 @@ describe('Seed', () => {
       const postDeployVersion = await getPostDeployVersion(pool);
       // only show log messages if post-deploy migrations did not run successfully
       if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
-        loggerWriteSpy.mock.calls.forEach((call) => console.log(...call));
+        loggerWriteSpy.mock.calls.forEach((call: unknown[]) => console.log(...call));
       }
       expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 

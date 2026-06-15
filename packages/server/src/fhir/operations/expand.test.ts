@@ -212,7 +212,7 @@ describe('Expand', () => {
     expect(contains?.length).toBeGreaterThan(0);
     for (const code of contains as ValueSetExpansionContains[]) {
       if (code.display === null) {
-        fail(`Found null display value for coding ${code.system}|${code.code}`);
+        expect.fail(`Found null display value for coding ${code.system}|${code.code}`);
       }
     }
   });

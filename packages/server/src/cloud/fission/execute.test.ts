@@ -3,15 +3,26 @@
 import type { WithId } from '@medplum/core';
 import type { Bot, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
-import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth } from '../../test.setup';
 import { executeFissionBot } from './execute';
+import type * as FissionUtils from './utils';
 
-jest.mock('node-fetch');
+const { mockExecuteFissionFunction } = vi.hoisted(() => ({
+  mockExecuteFissionFunction: vi.fn(),
+}));
+
+vi.mock('./utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof FissionUtils>();
+  return {
+    ...actual,
+    executeFissionFunction: mockExecuteFissionFunction,
+  };
+});
 
 describe('Execute Fission bots', () => {
   const app = express();
@@ -36,11 +47,11 @@ describe('Execute Fission bots', () => {
   });
 
   beforeEach(() => {
-    (fetch as unknown as jest.Mock).mockClear();
+    mockExecuteFissionFunction.mockClear();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('Success', async () => {
@@ -51,13 +62,9 @@ describe('Execute Fission bots', () => {
       runtimeVersion: 'fission',
     };
 
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      ok: true,
-      text: jest.fn(async () =>
-        JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } })
-      ),
-    }));
+    mockExecuteFissionFunction.mockResolvedValueOnce(
+      JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } })
+    );
 
     await expect(
       executeFissionBot({
@@ -75,10 +82,7 @@ describe('Execute Fission bots', () => {
       returnValue: { result: 'test result' },
     });
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining(`bot-${bot.id}`),
-      expect.objectContaining({ method: 'POST' })
-    );
+    expect(mockExecuteFissionFunction).toHaveBeenCalledWith(bot.id, expect.any(String));
   });
 
   test('Error', async () => {
@@ -89,13 +93,9 @@ describe('Execute Fission bots', () => {
       runtimeVersion: 'fission',
     };
 
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 400,
-      ok: false,
-      text: jest.fn(async () =>
-        JSON.stringify({ success: false, logResult: 'unhandled error', returnValue: { result: 'unhandled error' } })
-      ),
-    }));
+    mockExecuteFissionFunction.mockRejectedValueOnce(
+      new Error('HTTP error! Status: 400, Message: {"success":false,"logResult":"unhandled error"}')
+    );
 
     await expect(
       executeFissionBot({
@@ -112,9 +112,6 @@ describe('Execute Fission bots', () => {
       success: false,
     });
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining(`bot-${bot.id}`),
-      expect.objectContaining({ method: 'POST' })
-    );
+    expect(mockExecuteFissionFunction).toHaveBeenCalledWith(bot.id, expect.any(String));
   });
 });

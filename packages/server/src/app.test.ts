@@ -4,6 +4,8 @@ import { badRequest, ContentType, getReferenceString, unsupportedMediaType } fro
 import type { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
+import type { Mock, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { inviteUser } from './admin/invite';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
@@ -15,10 +17,10 @@ import type { TestRedisConfig } from './test.setup';
 import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
 
 describe('App', () => {
-  let stdOutSpy: jest.SpyInstance;
+  let stdOutSpy: MockInstance;
 
   beforeEach(() => {
-    stdOutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    stdOutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -175,7 +177,7 @@ describe('App', () => {
         lastName: 'Person',
       });
 
-      (process.stdout.write as jest.Mock).mockClear();
+      (process.stdout.write as Mock).mockClear();
 
       const patient: Patient = {
         resourceType: 'Patient',
@@ -191,7 +193,7 @@ describe('App', () => {
       expect(res1.body).toMatchObject(patient);
       expect(process.stdout.write).toHaveBeenCalledTimes(1);
 
-      const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
+      const logLine = (process.stdout.write as Mock).mock.calls[0][0];
       const logObj = JSON.parse(logLine);
       expect(logObj).toMatchObject({ profile: `${getReferenceString(client)} (as ${getReferenceString(profile)})` });
     });
@@ -281,7 +283,7 @@ describe('App', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    const loggerError = jest.spyOn(globalLogger, 'error').mockReturnValueOnce();
+    const loggerError = vi.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
     getDatabasePool(DatabaseMode.WRITER).emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);

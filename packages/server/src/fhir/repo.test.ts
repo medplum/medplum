@@ -33,6 +33,7 @@ import type {
   UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'node:crypto';
+import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
@@ -47,7 +48,7 @@ import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Reposito
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
-jest.mock('hibp');
+vi.mock('hibp');
 
 describe('FHIR Repo', () => {
   const globalSystemRepo = getGlobalSystemRepo();
@@ -96,7 +97,7 @@ describe('FHIR Repo', () => {
   test('Read resource with undefined id', async () => {
     try {
       await systemRepo.readResource('Patient', undefined as unknown as string);
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -106,7 +107,7 @@ describe('FHIR Repo', () => {
   test('Read resource with blank id', async () => {
     try {
       await systemRepo.readResource('Patient', '');
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -116,7 +117,7 @@ describe('FHIR Repo', () => {
   test('Read resource with invalid id', async () => {
     try {
       await systemRepo.readResource('Patient', 'x');
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -215,28 +216,28 @@ describe('FHIR Repo', () => {
   test('Repo read malformed reference', async () => {
     try {
       await systemRepo.readReference({ reference: undefined });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: '' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: '////' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: 'Patient/123/foo' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
@@ -470,7 +471,7 @@ describe('FHIR Repo', () => {
   test('Create Patient as ClientApplication with no author', () =>
     withTestContext(async () => {
       const { client, repo } = await createTestProject({ withClient: true, withRepo: true });
-      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
       try {
         const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
@@ -569,7 +570,7 @@ describe('FHIR Repo', () => {
         getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
       ).toBe(true);
 
-      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
       // Check that createResource, updateResource, and deleteResource all skip addBackgroundJobs.
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
@@ -666,7 +667,7 @@ describe('FHIR Repo', () => {
 
       try {
         await systemRepo.updateResource(rest);
-        fail('Should have thrown');
+        expect.fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(badRequest('Missing id'));
       }
@@ -762,7 +763,7 @@ describe('FHIR Repo', () => {
       const { repo: repo2 } = await createTestProject({ withRepo: true });
       try {
         await repo2.readResource('Patient', patient1.id);
-        fail('Should have thrown');
+        expect.fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
       }
@@ -821,7 +822,7 @@ describe('FHIR Repo', () => {
 
     try {
       await repo.reindexResource('Practitioner', randomUUID());
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
@@ -833,7 +834,7 @@ describe('FHIR Repo', () => {
 
     try {
       await repo.reindexResources([patient]);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
@@ -842,7 +843,7 @@ describe('FHIR Repo', () => {
   test('Reindex resource not found', async () => {
     try {
       await systemRepo.reindexResource('Practitioner', randomUUID());
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
@@ -856,11 +857,11 @@ describe('FHIR Repo', () => {
     });
 
     // rely on Patient having a search parameter with token-column strategy
-    const buildTokenColumnsSpy = jest.spyOn(tokenColumnModule, 'buildTokenColumns').mockImplementation(() => {
+    const buildTokenColumnsSpy = vi.spyOn(tokenColumnModule, 'buildTokenColumns').mockImplementation(() => {
       throw new Error('test error');
     });
     const logger = getLogger();
-    const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
 
     await expect(systemRepo.reindexResources([patient1])).rejects.toThrow('test error');
     expect(errorSpy).toHaveBeenCalledWith('Error building row for resource', {

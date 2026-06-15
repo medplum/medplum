@@ -33,17 +33,17 @@ describe('TransactionIdleTracker', () => {
     'withTransaction does not record transaction idle metrics when threshold is %s',
     async (thresholdMs) => {
       const restoreThreshold = setIdleInTransactionLogThresholdMs(thresholdMs);
-      const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+      const query = vi.fn(async (_sql: string) => ({ rows: [] }));
       const client = {
         query,
-        release: jest.fn(),
+        release: vi.fn(),
       } as unknown as PoolClient;
       const repo = getShardSystemRepo(
         'test-shard',
         RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
       );
-      const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-      const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+      const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+      const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
       try {
         await repo.withTransaction(async (txRepo) => {
@@ -70,8 +70,8 @@ describe('TransactionIdleTracker', () => {
   test('withTransaction disables idle tracking for callback-style queries', async () => {
     const restoreThreshold = setIdleInTransactionLogThresholdMs(5);
     let now = 0;
-    const dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
-    const query = jest.fn((sql: string, callback?: (err: Error | undefined, result: { rows: any[] }) => void) => {
+    const dateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const query = vi.fn((sql: string, callback?: (err: Error | undefined, result: { rows: any[] }) => void) => {
       if (sql === 'SELECT 1' && callback) {
         now += 10;
         callback(undefined, { rows: [] });
@@ -81,14 +81,14 @@ describe('TransactionIdleTracker', () => {
     });
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
-    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     try {
       await repo.withTransaction(async (txRepo) => {
@@ -112,18 +112,18 @@ describe('TransactionIdleTracker', () => {
   test('withTransaction logs and records high idle time in rolled back transaction', async () => {
     const restoreThreshold = setIdleInTransactionLogThresholdMs(0);
     let now = 0;
-    const dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
-    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const dateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const query = vi.fn(async (_sql: string) => ({ rows: [] }));
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
-    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     try {
       await expect(
@@ -162,8 +162,8 @@ describe('TransactionIdleTracker', () => {
   test('withTransaction records outer transaction idle time across nested transactions', async () => {
     const restoreThreshold = setIdleInTransactionLogThresholdMs(50);
     let now = 0;
-    const dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
-    const query = jest.fn(async (sql: string) => {
+    const dateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const query = vi.fn(async (sql: string) => {
       if (sql === 'SELECT 1') {
         now += 25;
       }
@@ -171,14 +171,14 @@ describe('TransactionIdleTracker', () => {
     });
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
       RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
     );
-    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     try {
       await repo.withTransaction(async (txRepo) => {

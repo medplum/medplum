@@ -5,6 +5,8 @@ import type { Binary, Bundle, Encounter, Patient, Practitioner, Resource, Servic
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config/loader';
@@ -129,7 +131,7 @@ describe('GraphQL', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -914,14 +916,14 @@ describe('GraphQL', () => {
       return res.body.data;
     }
 
-    let searchByReferenceSpy: jest.SpyInstance<ReturnType<typeof searchFile.searchByReferenceImpl>>;
+    let searchByReferenceSpy: MockInstance<typeof searchFile.searchByReferenceImpl>;
 
     beforeEach(async () => {
-      searchByReferenceSpy = jest.spyOn(searchFile, 'searchByReferenceImpl');
+      searchByReferenceSpy = vi.spyOn(searchFile, 'searchByReferenceImpl');
     });
 
     afterEach(() => {
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     test('disabled without project setting', async () => {
@@ -1139,8 +1141,8 @@ describe('GraphQL', () => {
   });
 
   test('Uses reader instance when available', async () => {
-    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
 
     const res = await request(app)
       .post('/fhir/R4/$graphql')
@@ -1153,8 +1155,8 @@ describe('GraphQL', () => {
   });
 
   test('GraphQL in batch users writer', async () => {
-    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
 
     const batch: Bundle = {
       resourceType: 'Bundle',
@@ -1251,7 +1253,7 @@ describe('GraphQL', () => {
     expect(patRes.status).toBe(201);
 
     const redis = getCacheRedis();
-    const mgetSpy = jest.spyOn(redis, 'mget');
+    const mgetSpy = vi.spyOn(redis, 'mget');
 
     const res = await request(app)
       .post('/fhir/R4/$graphql')

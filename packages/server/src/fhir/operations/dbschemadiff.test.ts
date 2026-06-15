@@ -4,6 +4,7 @@ import { ContentType } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { globalLogger } from '../../logger';
@@ -17,7 +18,7 @@ describe('$db-schema-diff', () => {
     await initApp(app, config);
 
     // The migration script can log a lot sometimes
-    jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
   });
 
   afterAll(async () => {

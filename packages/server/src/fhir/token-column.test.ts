@@ -807,7 +807,7 @@ describe('buildTokenColumnsSearchFilter', () => {
 });
 describe('getPaddingElement', () => {
   test('Math.random is 0.99999999', () => {
-    const rng = jest.fn().mockReturnValue(0.99999999);
+    const rng = vi.fn().mockReturnValue(0.99999999);
     expect(getPaddingElement({ m: 1, lambda: 150, statisticsTarget: 1 }, rng)).toBeUndefined();
     // once to decide (not to) return a padding element
     expect(rng).toHaveBeenCalledTimes(1);
@@ -815,7 +815,7 @@ describe('getPaddingElement', () => {
 
   test('Math.random is 0', () => {
     let callCount = 0;
-    const rng = jest.fn().mockImplementation(() => {
+    const rng = vi.fn().mockImplementation(() => {
       // first call returns 0 to guarantee padding is returned
       if (callCount++ === 0) {
         return 0;

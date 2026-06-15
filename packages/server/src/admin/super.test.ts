@@ -5,30 +5,48 @@ import type { Bot, Login, Practitioner, Project, ProjectMembership, User } from 
 import type { Queue } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import type * as Pg from 'pg';
 import request from 'supertest';
-import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
-import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
+import type { MockedFunction, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
-import { Repository } from '../fhir/repo';
+import type * as RepoModule from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
-import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
-import type { CronJobData } from '../workers/cron';
-import { getCronQueue } from '../workers/cron';
-import type { LambdaCleanerJobData } from '../workers/lambda-cleaner';
-import { getLambdaCleanerQueue } from '../workers/lambda-cleaner';
-import type { ReindexJobData } from '../workers/reindex';
-import { getReindexQueue } from '../workers/reindex';
+import type * as CronModule from '../workers/cron';
+import type * as LambdaCleanerModule from '../workers/lambda-cleaner';
+import type * as ReindexModule from '../workers/reindex';
+
+type RepositoryType = RepoModule.Repository;
+
+// Keep in sync with Repository.VERSION in fhir/repo.ts
+const REPOSITORY_VERSION = 15;
+
+let Repository: typeof RepoModule.Repository;
+
+type CronJobData = CronModule.CronJobData;
+type LambdaCleanerJobData = LambdaCleanerModule.LambdaCleanerJobData;
+type ReindexJobData = ReindexModule.ReindexJobData;
+
+let getCronQueue: typeof CronModule.getCronQueue;
+let getLambdaCleanerQueue: typeof LambdaCleanerModule.getLambdaCleanerQueue;
+let getReindexQueue: typeof ReindexModule.getReindexQueue;
+
+// Keep in sync with LAMBDA_NAME_REGEX_PATTERN in cloud/aws/deploy.ts
+const LAMBDA_NAME_REGEX_PATTERN = '^medplum-bot-lambda-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 
 const mockPgMaintenanceQueries: string[] = [];
 
-jest.mock('pg', () => {
-  const original = jest.requireActual('pg');
+vi.mock('pg', async () => {
+  const original = await vi.importActual<typeof Pg>('pg');
+  const poolPrototype = original.Pool.prototype as {
+    query: (...args: any[]) => any;
+    connect: (...args: any[]) => any;
+  };
 
   function mockGetSql(query: unknown): string | undefined {
     if (typeof query === 'string') {
@@ -95,13 +113,13 @@ jest.mock('pg', () => {
       if (handled) {
         return handled.result;
       }
-      return original.Pool.prototype.query.apply(this, args);
+      return poolPrototype.query.apply(this, args);
     }
 
     connect(...args: any[]): any {
       const callback = args[args.length - 1];
       if (typeof callback === 'function') {
-        return original.Pool.prototype.connect.apply(this, [
+        return poolPrototype.connect.apply(this, [
           ...args.slice(0, -1),
           (err: unknown, client: any, done: unknown) => {
             if (client) {
@@ -112,7 +130,7 @@ jest.mock('pg', () => {
         ]);
       }
 
-      return original.Pool.prototype.connect.apply(this, args).then((client: any) => mockWrapClient(client));
+      return poolPrototype.connect.apply(this, args).then((client: any) => mockWrapClient(client));
     }
   }
 
@@ -122,39 +140,42 @@ jest.mock('pg', () => {
   };
 });
 
-jest.mock('../seeds/valuesets');
-jest.mock('../seeds/structuredefinitions');
-jest.mock('../seeds/searchparameters');
+vi.mock('../seeds/valuesets');
+vi.mock('../seeds/structuredefinitions');
+vi.mock('../seeds/searchparameters');
 
 const app = express();
 let project: Project;
 let adminAccessToken: string;
 let nonAdminAccessToken: string;
 const mockAsyncJobWaitOptions = { completionDelayMs: 0, maxAttempts: 200, pollIntervalMs: 10 };
-const mockRebuildR4ValueSets = rebuildR4ValueSets as jest.MockedFunction<typeof rebuildR4ValueSets>;
-const mockRebuildR4StructureDefinitions = rebuildR4StructureDefinitions as jest.MockedFunction<
+const mockRebuildR4ValueSets = rebuildR4ValueSets as MockedFunction<typeof rebuildR4ValueSets>;
+const mockRebuildR4StructureDefinitions = rebuildR4StructureDefinitions as MockedFunction<
   typeof rebuildR4StructureDefinitions
 >;
-const mockRebuildR4SearchParameters = rebuildR4SearchParameters as jest.MockedFunction<
-  typeof rebuildR4SearchParameters
->;
+const mockRebuildR4SearchParameters = rebuildR4SearchParameters as MockedFunction<typeof rebuildR4SearchParameters>;
 
-jest.mock('../migrations/data/index', () => {
-  return {
-    v1: jest.requireMock('../migrations/data/v1'),
-    v2: jest.requireMock('../migrations/data/v2'),
-    v3: jest.requireMock('../migrations/data/v2'),
-  };
-});
+// Stub migration modules instead of vi.importMock to avoid loading workers/reindex → fhir/repo
+// during test file initialization, which breaks workers/index under Vitest ESM.
+vi.mock('../migrations/data/index', () => ({
+  v1: { migration: { type: 'reindex' } },
+  v2: { migration: { type: 'custom' } },
+  v3: { migration: { type: 'custom' } },
+}));
 
 describe('Super Admin routes', () => {
-  let processStdoutWriteSpy: jest.SpyInstance;
+  let processStdoutWriteSpy: MockInstance;
   beforeAll(async () => {
-    processStdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    processStdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const config = await loadTestConfig();
+    const { initApp } = await import('../app');
     await initApp(app, config);
+    ({ getCronQueue } = await import('../workers/cron'));
+    ({ getLambdaCleanerQueue } = await import('../workers/lambda-cleaner'));
+    ({ getReindexQueue } = await import('../workers/reindex'));
+    ({ Repository } = await import('../fhir/repo'));
 
-    let repo: Repository;
+    let repo: RepositoryType;
     ({ project, repo } = await createTestProject({ withClient: true, superAdmin: true, withRepo: true }));
 
     const normalProject = await createTestProject();
@@ -213,6 +234,7 @@ describe('Super Admin routes', () => {
       scope: 'openid',
     });
 
+    const { generateAccessToken } = await import('../oauth/keys');
     adminAccessToken = await generateAccessToken({
       login_id: login1.id,
       sub: user1.id,
@@ -231,6 +253,7 @@ describe('Super Admin routes', () => {
   });
 
   afterAll(async () => {
+    const { shutdownApp } = await import('../app');
     await shutdownApp();
     processStdoutWriteSpy.mockRestore();
   });
@@ -433,7 +456,7 @@ describe('Super Admin routes', () => {
   });
 
   test.each([
-    ['outdated', undefined, Repository.VERSION - 1],
+    ['outdated', undefined, REPOSITORY_VERSION - 1],
     ['specific', '0', 0],
     ['all', undefined, undefined],
   ])('Reindex with %s %s', async (reindexType, maxResourceVersion, expectedMaxResourceVersion) => {
@@ -466,11 +489,11 @@ describe('Super Admin routes', () => {
     ['foobar', undefined, 'reindexType must be "outdated", "all", or "specific"'],
     ['outdated', '0', 'maxResourceVersion should only be specified when reindexType is "specific"'],
     ['all', '0', 'maxResourceVersion should only be specified when reindexType is "specific"'],
-    ['specific', undefined, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
-    ['specific', -1, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
-    ['specific', Repository.VERSION, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
-    ['specific', '1.1', `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
-    ['specific', '9999999', `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+    ['specific', undefined, `maxResourceVersion must be an integer from 0 to ${REPOSITORY_VERSION - 1}`],
+    ['specific', -1, `maxResourceVersion must be an integer from 0 to ${REPOSITORY_VERSION - 1}`],
+    ['specific', REPOSITORY_VERSION, `maxResourceVersion must be an integer from 0 to ${REPOSITORY_VERSION - 1}`],
+    ['specific', '1.1', `maxResourceVersion must be an integer from 0 to ${REPOSITORY_VERSION - 1}`],
+    ['specific', '9999999', `maxResourceVersion must be an integer from 0 to ${REPOSITORY_VERSION - 1}`],
   ])('Reindex with invalid args %s %s', async (reindexType, maxResourceVersion, expectedError) => {
     const queue = getReindexQueue() as any;
     queue.add.mockClear();
@@ -859,8 +882,9 @@ describe('Super Admin routes', () => {
 
   test('Set password success', async () => {
     const email = `alice${randomUUID()}@example.com`;
+    const { registerNew } = await import('../auth/register');
 
-    await withTestContext(() =>
+    await withTestContext(async () =>
       registerNew({
         firstName: 'Alice',
         lastName: 'Smith',
@@ -973,21 +997,27 @@ describe('Super Admin routes', () => {
 
   describe('/migrations', () => {
     test('Migrate', async () => {
-      const res1 = await request(app)
-        .get('/admin/super/migrations')
-        .set('Authorization', 'Bearer ' + adminAccessToken);
+      const migrationVersions = await import('../migrations/migration-versions');
+      const versionsSpy = vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1, 2, 3]);
+      try {
+        const res1 = await request(app)
+          .get('/admin/super/migrations')
+          .set('Authorization', 'Bearer ' + adminAccessToken);
 
-      expect(res1.body).toStrictEqual({
-        postDeployMigrations: [1, 2, 3],
-        pendingPostDeployMigration: 0,
-      });
-      expect(res1.status).toStrictEqual(200);
+        expect(res1.body).toStrictEqual({
+          postDeployMigrations: [1, 2, 3],
+          pendingPostDeployMigration: 0,
+        });
+        expect(res1.status).toStrictEqual(200);
+      } finally {
+        versionsSpy.mockRestore();
+      }
     });
   });
 
   describe('Table settings', () => {
     test('Set table auto-vacuum settings -- Happy path', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1012,7 +1042,7 @@ describe('Super Admin routes', () => {
     });
 
     test('No table name', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1028,7 +1058,7 @@ describe('Super Admin routes', () => {
     });
 
     test('No settings', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1064,7 +1094,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Invalid setting', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1092,7 +1122,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Settings with int values reject floats', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1108,7 +1138,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Settings with float values reject non-numeric values', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1124,7 +1154,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Multiple settings', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1152,7 +1182,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Multiple settings w/ invalid settings', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1173,7 +1203,7 @@ describe('Super Admin routes', () => {
 
   describe('Vacuum', () => {
     test('Vacuum -- No tables specified', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1206,7 +1236,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Invalid table name', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1222,7 +1252,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Table names listed', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1247,7 +1277,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Analyze too', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1272,7 +1302,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Only analyze', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1308,7 +1338,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Non-string table names', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1326,7 +1356,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Non-snake-cased table names', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1344,7 +1374,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Invalid parameter name', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1389,8 +1419,8 @@ describe('Super Admin routes', () => {
 
       const bot = res1.body as Bot & { id: string };
 
-      const obliterateSpy = jest.spyOn(cronQueue, 'obliterate');
-      const upsertJobSchedulerSpy = jest.spyOn(cronQueue, 'upsertJobScheduler');
+      const obliterateSpy = vi.spyOn(cronQueue, 'obliterate');
+      const upsertJobSchedulerSpy = vi.spyOn(cronQueue, 'upsertJobScheduler');
 
       const res2 = await request(app)
         .post('/admin/super/reloadcron')

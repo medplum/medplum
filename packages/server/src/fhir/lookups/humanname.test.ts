@@ -307,7 +307,7 @@ describe('HumanName Lookup Table', () => {
       expect(descending.entry?.map((e) => e.resource?.id)).toStrictEqual([p3.id, p2.id, p1.id]);
     }));
 
-  test.failing('FAILING Sort by name multi-type', () =>
+  test.fails('FAILING Sort by name multi-type', () =>
     withTestContext(async () => {
       const name = randomUUID();
       const identifier = randomUUID();
@@ -336,7 +336,7 @@ describe('HumanName Lookup Table', () => {
   );
 
   test('Purges related resource type', async () => {
-    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PgQueryable;
+    const db = { query: vi.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PgQueryable;
 
     const table = new HumanNameTable();
     await table.purgeValuesBefore(db, 'Patient', '2024-01-01T00:00:00Z');
@@ -345,7 +345,7 @@ describe('HumanName Lookup Table', () => {
   });
 
   test('Does not purge unrelated resource type', async () => {
-    const db = { query: jest.fn() } as unknown as PgQueryable;
+    const db = { query: vi.fn() } as unknown as PgQueryable;
 
     const table = new HumanNameTable();
     await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');

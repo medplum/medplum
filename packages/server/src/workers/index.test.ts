@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
 import { addBackgroundJobs, closeWorkers, initWorkers } from '.';
 import { loadTestConfig } from '../config/loader';
 import type { WorkerName } from '../config/types';
@@ -74,7 +75,7 @@ describe('Workers', () => {
 
   describe('addBackgroundJobs', () => {
     afterEach(() => {
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     test.each(['error', 'string'])('Errors handled', async (errorType) => {
@@ -86,21 +87,21 @@ describe('Workers', () => {
         },
       };
 
-      const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+      const loggerErrorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
-      const dispatchSpy = jest.spyOn(dispatchModule, 'addDispatchJobs').mockImplementation(() => {
+      const dispatchSpy = vi.spyOn(dispatchModule, 'addDispatchJobs').mockImplementation(() => {
         throw errorType === 'error' ? new Error('Test error') : 'Test error';
       });
 
-      const subSpy = jest.spyOn(subscriptionModule, 'addSubscriptionJobs').mockImplementation(() => {
+      const subSpy = vi.spyOn(subscriptionModule, 'addSubscriptionJobs').mockImplementation(() => {
         throw errorType === 'error' ? new Error('Test error') : 'Test error';
       });
 
-      const downloadSpy = jest.spyOn(downloadModule, 'addDownloadJobs').mockImplementation(() => {
+      const downloadSpy = vi.spyOn(downloadModule, 'addDownloadJobs').mockImplementation(() => {
         throw errorType === 'error' ? new Error('Test error') : 'Test error';
       });
 
-      const cronSpy = jest.spyOn(cronModule, 'addCronJobs').mockImplementation(() => {
+      const cronSpy = vi.spyOn(cronModule, 'addCronJobs').mockImplementation(() => {
         throw errorType === 'error' ? new Error('Test error') : 'Test error';
       });
 
@@ -122,8 +123,8 @@ describe('Workers', () => {
         },
       };
 
-      const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
-      jest.spyOn(queueRegistry, 'get').mockReturnValue(undefined);
+      const loggerErrorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
+      vi.spyOn(queueRegistry, 'get').mockReturnValue(undefined);
 
       await addBackgroundJobs(resource, undefined, {} as BackgroundJobContext);
 

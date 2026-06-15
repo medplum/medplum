@@ -27,11 +27,11 @@ describe('withLongRunningDatabaseClient', () => {
 });
 
 describe('getPostDeployMigration', () => {
-  test('definition found', () => {
-    expect(getPostDeployMigration(1)).toBeDefined();
+  test('definition found', async () => {
+    await expect(getPostDeployMigration(1)).resolves.toBeDefined();
   });
 
-  test('migration definition not found', () => {
-    expect(() => getPostDeployMigration(9999)).toThrow(MigrationDefinitionNotFoundError);
+  test('migration definition not found', async () => {
+    await expect(getPostDeployMigration(9999)).rejects.toThrow(MigrationDefinitionNotFoundError);
   });
 });

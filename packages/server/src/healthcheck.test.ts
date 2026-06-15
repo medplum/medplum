@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import express from 'express';
 import request from 'supertest';
+import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import * as otel from './otel/otel';
@@ -9,12 +11,12 @@ import * as otel from './otel/otel';
 const app = express();
 
 describe('Health check', () => {
-  let setGaugeSpy: jest.SpyInstance;
+  let setGaugeSpy: MockInstance;
   const originalProcessEnv = process.env;
 
   beforeEach(() => {
     process.env = { ...originalProcessEnv };
-    setGaugeSpy = jest.spyOn(otel, 'setGauge');
+    setGaugeSpy = vi.spyOn(otel, 'setGauge');
   });
 
   afterEach(async () => {

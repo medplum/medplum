@@ -5,6 +5,7 @@ import type { AsyncJob } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
@@ -53,7 +54,7 @@ describe('Job status', () => {
   test('completed', () =>
     withTestContext(async () => {
       const job = await asyncJobManager.init('http://example.com');
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       asyncJobManager.start(async () => {
         callback();
@@ -122,7 +123,7 @@ describe('Job status', () => {
   test('Cancel -- error (job already completed)', () =>
     withTestContext(async () => {
       const job = await asyncJobManager.init('http://example.com');
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       asyncJobManager.start(async () => {
         callback();

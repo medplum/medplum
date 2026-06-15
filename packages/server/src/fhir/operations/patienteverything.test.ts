@@ -439,8 +439,8 @@ describe('Patient Everything inline attachments helpers', () => {
     const binary = { resourceType: 'Binary', id: 'binary-id' } as Binary;
     const versionedBinary = { resourceType: 'Binary', id: 'binary-id', meta: { versionId: 'version-id' } } as Binary;
     const repo = {
-      readResource: jest.fn().mockResolvedValue(binary),
-      readVersion: jest.fn().mockResolvedValue(versionedBinary),
+      readResource: vi.fn().mockResolvedValue(binary),
+      readVersion: vi.fn().mockResolvedValue(versionedBinary),
     };
 
     await expect(readBinaryAttachmentResource(repo, 'binary-id')).resolves.toBe(binary);
@@ -458,7 +458,7 @@ describe('Patient Everything inline attachments helpers', () => {
 
   test('Returns undefined and destroys the stream when the max byte count is exceeded', async () => {
     const stream = Readable.from([Buffer.from('123'), Buffer.from('456')]);
-    const destroySpy = jest.spyOn(stream, 'destroy');
+    const destroySpy = vi.spyOn(stream, 'destroy');
 
     await expect(readStreamToBufferWithLimit(stream, 5)).resolves.toBeUndefined();
     expect(destroySpy).toHaveBeenCalled();

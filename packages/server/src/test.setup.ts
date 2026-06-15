@@ -26,20 +26,35 @@ import type internal from 'node:stream';
 import type { QueryConfigValues, QueryResult, QueryResultRow } from 'pg';
 import { Client as PgClient } from 'pg';
 import request from 'supertest';
+import type { Mock, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import type { ServerInviteResponse } from './admin/invite';
-import { inviteUser } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
-import { RequestContext } from './context';
-import { getRepoForLogin } from './fhir/accesspolicy';
+// `fhir/repo`, `fhir/accesspolicy`, `admin/invite`, `oauth/keys`, and `context` are dynamically imported below.
+// Static imports here would load `workers/subscription` (via `fhir/repo`) or `database` (via `oauth/keys` /
+// `context`) while setupFiles still run. Vitest hoists `vi.mock` per file, not across setupFiles and test
+// files, so modules that import `node-fetch`, `../constants`, or `pg` statically would bind to the wrong
+// instances before test files register their mocks.
 import type { Repository } from './fhir/repo';
-import { getProjectSystemRepo, getShardSystemRepo } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import type { PgQueryable } from './fhir/sql';
-import { generateAccessToken } from './oauth/keys';
-import { tryLogin } from './oauth/utils';
+// Dynamically imported below. A static import would load `fhir/repo` → `database` → `pg`
+// while setupFiles run, before per-test-file `vi.mock('pg')` is registered.
 import { requestContextStore } from './request-context-store';
+import './test-matchers';
 // supertest v7 can cause websocket tests to hang without this
 setDefaultResultOrder('ipv4first');
+
+// Share one `node-fetch` mock between setup and test files so `subscription.ts` and
+// tests configure the same `vi.fn()` instance.
+const { mockFetch } = vi.hoisted(() => ({
+  mockFetch: vi.fn(),
+}));
+
+vi.mock('node-fetch', () => ({ default: mockFetch }));
+
+export { mockFetch };
+vi.mock('bullmq', async () => import('./__mocks__/bullmq'));
 
 export interface TestProjectOptions {
   project?: Partial<Project>;
@@ -69,6 +84,8 @@ export type TestProjectResult<T extends TestProjectOptions> = {
 export async function createTestProject<T extends StrictTestProjectOptions<T> = TestProjectOptions>(
   options?: T
 ): Promise<TestProjectResult<T>> {
+  const { getRepoForLogin } = await import('./fhir/accesspolicy');
+  const { getShardSystemRepo } = await import('./fhir/repo');
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an optional input parameter
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
@@ -143,6 +160,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
         scope,
       });
 
+      const { generateAccessToken } = await import('./oauth/keys');
       accessToken = await generateAccessToken({
         login_id: login.id,
         sub: client.id,
@@ -190,6 +208,7 @@ export async function addTestUser(
   const resourceType = options?.resourceType ?? 'Practitioner';
 
   if (accessPolicy) {
+    const { getProjectSystemRepo } = await import('./fhir/repo');
     const systemRepo = await getProjectSystemRepo(project);
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
       ...accessPolicy,
@@ -199,6 +218,7 @@ export async function addTestUser(
 
   const email = randomUUID() + '@example.com';
   const password = randomUUID();
+  const { inviteUser } = await import('./admin/invite');
   const inviteResponse = await inviteUser({
     project,
     email,
@@ -214,6 +234,7 @@ export async function addTestUser(
 
   const { user, profile } = inviteResponse;
 
+  const { tryLogin } = await import('./oauth/utils');
   const login = await tryLogin({
     authMethod: 'password',
     email,
@@ -223,6 +244,7 @@ export async function addTestUser(
     projectId: project.id,
   });
 
+  const { generateAccessToken } = await import('./oauth/keys');
   const accessToken = await generateAccessToken({
     login_id: login.id,
     sub: user.id,
@@ -239,7 +261,7 @@ export async function addTestUser(
  * @param pwnedPassword - The pwnedPassword mock.
  * @param numPwns - The mock value to return. Zero is a safe password.
  */
-export function setupPwnedPasswordMock(pwnedPassword: jest.Mock, numPwns: number): void {
+export function setupPwnedPasswordMock(pwnedPassword: Mock, numPwns: number): void {
   pwnedPassword.mockImplementation(async () => numPwns);
 }
 
@@ -248,7 +270,7 @@ export function setupPwnedPasswordMock(pwnedPassword: jest.Mock, numPwns: number
  * @param fetch - The fetch mock.
  * @param success - Whether the mock should return a successful response.
  */
-export function setupRecaptchaMock(fetch: jest.Mock, success: boolean): void {
+export function setupRecaptchaMock(fetch: Mock, success: boolean): void {
   fetch.mockImplementation(() => ({
     status: 200,
     json: () => ({ success }),
@@ -318,8 +340,12 @@ export async function waitForAsyncJob(
 }
 
 const DEFAULT_TEST_CONTEXT = { requestId: 'test-request-id', traceId: 'test-trace-id' };
-export function withTestContext<T>(fn: () => T, ctx?: { requestId?: string; traceId?: string }): T {
+export async function withTestContext<T>(
+  fn: () => T | Promise<T>,
+  ctx?: { requestId?: string; traceId?: string }
+): Promise<T> {
   const defaults = ctx ?? DEFAULT_TEST_CONTEXT;
+  const { RequestContext } = await import('./context');
   const context = new RequestContext(defaults.requestId ?? '', defaults.traceId ?? '');
   return requestContextStore.run(context, fn);
 }
@@ -594,7 +620,7 @@ export async function withQueryInterceptor<T>(
   fn: () => Promise<T>
 ): Promise<T> {
   const realQuery = PgClient.prototype.query;
-  const spy = jest.spyOn(PgClient.prototype, 'query').mockImplementation(async function (
+  const spy = vi.spyOn(PgClient.prototype, 'query').mockImplementation(async function (
     this: PgClient,
     ...args: unknown[]
   ): Promise<any> {
@@ -621,8 +647,8 @@ export async function withQueryInterceptor<T>(
  */
 export function spyOnQuery<R extends QueryResultRow = any, I = any[]>(
   client: PgQueryable
-): jest.SpyInstance<Promise<QueryResult<R>>, [string, QueryConfigValues<I>]> {
-  return jest.spyOn(client, 'query') as unknown as jest.SpyInstance<
+): MockInstance<Promise<QueryResult<R>>, [string, QueryConfigValues<I>]> {
+  return vi.spyOn(client, 'query') as unknown as MockInstance<
     Promise<QueryResult<R>>,
     [string, QueryConfigValues<I>]
   >;

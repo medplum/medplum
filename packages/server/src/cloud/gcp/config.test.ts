@@ -1,20 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+import { vi } from 'vitest';
+import { mockAccessSecretVersion } from '../../__mocks__/@google-cloud/secret-manager';
 import type { MedplumServerConfig } from '../../config/types';
 import { loadGcpConfig } from './config';
 
-jest.mock('@google-cloud/secret-manager');
-
 describe('GCP Config', () => {
-  const mockAccessSecretVersion = jest.fn();
-  const mockClient = {
-    accessSecretVersion: mockAccessSecretVersion,
-  };
-
   beforeEach(() => {
-    jest.clearAllMocks();
-    (SecretManagerServiceClient as unknown as jest.Mock).mockImplementation(() => mockClient);
+    vi.clearAllMocks();
   });
 
   describe('loadGcpConfig', () => {

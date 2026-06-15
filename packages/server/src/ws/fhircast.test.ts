@@ -33,7 +33,7 @@ describe('FHIRcast WebSocket', () => {
     let accessToken: string;
 
     beforeAll(async () => {
-      jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+      vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
       app = express();
       config = await loadTestConfig();
       config.heartbeatEnabled = false;
@@ -760,7 +760,7 @@ describe('FHIRcast WebSocket', () => {
 
     test('Invalid endpoint', () =>
       withTestContext(async () => {
-        const globalLoggerErrorSpy = jest.spyOn(globalLogger, 'error');
+        const globalLoggerErrorSpy = vi.spyOn(globalLogger, 'error');
         const topic = randomUUID();
         await request(server)
           .ws(`/ws/fhircast/${topic}`)
@@ -925,18 +925,18 @@ describe('FHIRcast WebSocket', () => {
     test('Closes socket and logs when subscribe rejects', () =>
       withTestContext(async () => {
         const subscribeError = new Error('Connection is closed.');
-        const cacheSpy = jest.spyOn(redis, 'getCacheRedis').mockReturnValue({
-          get: jest.fn().mockResolvedValue('project-id:my-topic'),
+        const cacheSpy = vi.spyOn(redis, 'getCacheRedis').mockReturnValue({
+          get: vi.fn().mockResolvedValue('project-id:my-topic'),
         } as any);
-        const subscriberSpy = jest.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+        const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
           status: 'ready',
-          subscribe: jest.fn().mockRejectedValue(subscribeError),
-          on: jest.fn(),
-          disconnect: jest.fn(),
+          subscribe: vi.fn().mockRejectedValue(subscribeError),
+          on: vi.fn(),
+          disconnect: vi.fn(),
         } as any);
-        const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+        const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
 
-        const socket = { on: jest.fn(), send: jest.fn(), close: jest.fn() } as unknown as WebSocket;
+        const socket = { on: vi.fn(), send: vi.fn(), close: vi.fn() } as unknown as WebSocket;
         const req = { url: '/ws/fhircast/some-endpoint' } as IncomingMessage;
 
         try {

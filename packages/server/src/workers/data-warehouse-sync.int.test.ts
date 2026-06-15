@@ -18,9 +18,10 @@ import type { Job } from 'bullmq';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import type * as DataWarehouseConfigModule from '../data-warehouse/config';
+import * as dataWarehouseConfig from '../data-warehouse/config';
 import { toIcebergTableName } from '../data-warehouse/config';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import type { DataWarehouseSyncJobData } from './data-warehouse-sync';
@@ -28,14 +29,6 @@ import { processDataWarehouseSyncJob } from './data-warehouse-sync';
 
 /** Isolated history table in medplum_test so we do not collide with real FHIR history tables. */
 const HISTORY_TABLE = 'DwWorkerSyncIntTest_history';
-
-jest.mock('../data-warehouse/config', () => {
-  const actual: typeof DataWarehouseConfigModule = jest.requireActual('../data-warehouse/config');
-  return {
-    ...actual,
-    getWarehouseSyncPostgresTableNames: jest.fn(() => [HISTORY_TABLE]),
-  };
-});
 
 function assertParquetMagic(bytes: Buffer): void {
   expect(bytes.subarray(0, 4).toString('ascii')).toBe('PAR1');
@@ -106,16 +99,18 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
   beforeEach(() => {
     outDir = mkdtempSync(join(tmpdir(), 'medplum-dw-worker-sync-'));
     config = buildTestConfig(outDir, baseConfig);
+    vi.spyOn(dataWarehouseConfig, 'getWarehouseSyncPostgresTableNames').mockReturnValue([HISTORY_TABLE]);
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     if (outDir) {
       rmSync(outDir, { recursive: true, force: true });
     }
   });
 
   test('exports projected history rows to a Parquet file via scheduled sync job', async () => {
-    const updateProgress = jest.fn().mockResolvedValue(undefined);
+    const updateProgress = vi.fn().mockResolvedValue(undefined);
     const icebergTable = toIcebergTableName(HISTORY_TABLE);
     const expectedParquetPath = join(outDir as string, `${icebergTable}.parquet`);
 

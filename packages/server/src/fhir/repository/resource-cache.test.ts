@@ -14,7 +14,7 @@ import {
   setResourceCacheEntry,
 } from './resource-cache';
 
-jest.mock('hibp');
+vi.mock('hibp');
 
 describe('Repository resource cache', () => {
   beforeAll(async () => {

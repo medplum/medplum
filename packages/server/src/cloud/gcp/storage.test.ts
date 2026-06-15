@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Binary } from '@medplum/fhirtypes';
 import { PassThrough } from 'stream';
+import { vi } from 'vitest';
 import { GoogleCloudStorage } from './storage';
 
 describe('Integration Tests for GoogleCloudStorage', () => {
@@ -13,8 +14,8 @@ describe('Integration Tests for GoogleCloudStorage', () => {
   });
 
   afterEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
   });
 
   const testBinary: Binary = {

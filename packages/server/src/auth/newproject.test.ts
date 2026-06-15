@@ -6,13 +6,15 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
+vi.mock('hibp');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 const app = express();
 
@@ -28,10 +30,10 @@ describe('New project', () => {
 
   beforeEach(async () => {
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    (fetch as unknown as Mock).mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(fetch as unknown as Mock, true);
   });
 
   test('Success', async () => {

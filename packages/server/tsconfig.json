@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "types": ["jest", "node"],
+    "types": ["node", "vitest/globals"],
     "lib": ["esnext", "dom"],
     "composite": true,
     "rootDir": "src"

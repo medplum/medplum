@@ -6,13 +6,15 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
+vi.mock('hibp');
+vi.mock('node-fetch', () => ({ default: vi.fn() }));
 
 const app = express();
 
@@ -27,10 +29,10 @@ describe('Change Password', () => {
   });
 
   beforeEach(() => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    (fetch as unknown as Mock).mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(fetch as unknown as Mock, true);
   });
 
   test('Success', async () => {
@@ -128,7 +130,7 @@ describe('Change Password', () => {
     );
 
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 1);
 
     const res2 = await request(app)
       .post('/auth/changepassword')

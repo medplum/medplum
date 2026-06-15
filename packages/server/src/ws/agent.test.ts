@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import type { Server } from 'http';
 import request from 'superwstest';
+import { vi } from 'vitest';
 import type { AgentInfo } from '../agent/utils';
 import { AgentConnectionState } from '../agent/utils';
 import { initApp, shutdownApp } from '../app';
@@ -13,6 +14,7 @@ import * as executeBotModule from '../bots/execute';
 import type { BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
@@ -431,6 +433,7 @@ describe('Agent WebSockets', () => {
         })
       )
       .expectJson({ type: 'agent:connect:response' })
+      .exec(() => heartbeat.dispatchEvent({ type: 'heartbeat' }))
       .expectJson({ type: 'agent:heartbeat:request' })
       // Send a ping
       .sendJson({ type: 'agent:heartbeat:request' })
@@ -526,7 +529,7 @@ describe('Agent WebSockets', () => {
   });
 
   test('Received agent:error without callback', async () => {
-    const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
     await request(server)
       .ws('/ws/agent')
       .sendText(
@@ -644,7 +647,7 @@ describe('Agent WebSockets', () => {
     });
 
     test('Bot failure -- Error during Lambda execution, error in returnValue', async () => {
-      jest.spyOn(executeBotModule, 'executeBot').mockImplementationOnce(
+      vi.spyOn(executeBotModule, 'executeBot').mockImplementationOnce(
         async () =>
           ({
             success: false,
