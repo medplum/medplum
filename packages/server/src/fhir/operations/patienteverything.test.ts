@@ -178,9 +178,9 @@ describe('Patient Everything Operation', () => {
       expect(url.searchParams.has('_type')).toBe(false);
       expect(url.searchParams.get('_count')).toBe('1');
     }
-    expect(new URL(bundle.link?.find((link) => link.relation === 'next')?.url as string).searchParams.get('_offset')).toBe(
-      '2'
-    );
+    expect(
+      new URL(bundle.link?.find((link) => link.relation === 'next')?.url as string).searchParams.get('_offset')
+    ).toBe('2');
 
     // Execute the operation with _type
     const res8 = await request(app)
