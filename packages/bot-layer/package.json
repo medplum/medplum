@@ -34,7 +34,7 @@
     "ssh2": "1.17.0",
     "ssh2-sftp-client": "12.1.1",
     "twilio": "6.0.2",
-    "undici": "7.27.1"
+    "undici": "7.27.2"
   },
   "devDependencies": {
     "@types/node-fetch": "2.6.13"
