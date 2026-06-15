@@ -65,7 +65,7 @@ You can deploy this application by [clicking here](https://vercel.com/new/clone?
 
 By default, your locally running Foo Medical app is pointing to the hosted Medplum service. Foo Medical registers signups to a test project.
 
-To send patients to your own organization you will need to [register a new Project on Medplum](https://www.medplum.com/docs/tutorials/register) and configure your environment variables to point to your own project (see [config.ts](https://github.com/medplum/foomedical/blob/main/src/config.ts) for an example).
+To send patients to your own organization you will need to [register a new Project on Medplum](https://www.medplum.com/docs/tutorials/register) and configure the values in `.env` to point to your own project.
 
 If you are using the Medplum Hosted service, you can login to your Medplum Instance and add the following identifiers to your [Project Site Settings](https://app.medplum.com/admin/sites)
 
@@ -83,6 +83,7 @@ When you log into Foo Medical a set of sample FHIR records is created on your be
 ### Scheduling
 
 The "Get Care" page is configured to search for availability with service-type "office-visit". Configure your practitioner's schedule with a Medplum scheduling extension such as this one:
+
 ```
 {
   "resourceType": "Schedule",
