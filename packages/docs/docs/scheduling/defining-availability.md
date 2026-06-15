@@ -50,7 +50,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 
 To use scheduling APIs for a Schedule and HealthcareService, at least one of them must define the `duration` attribute (used to set how long the scheduled appointment will last). There must be a `timezone` attribute, which may also be defined on the Schedule's actor. (See [Timezone Resolution](#timezone-resolution))
 
-When using scheduling APIs to interact with multiple `Schedule` resources at once, they must be configured with matching `duration`, `alignmentInterval`, and `alignmentOffset` parameters. For this reason, Medplum recommends that these parameters only be set on `HealthcareService` resources.
+When using scheduling APIs to interact with multiple `Schedule` resources at once, they must be configured with matching `duration`, `alignmentInterval`, `alignmentTimezone`, and `alignmentOffset` parameters. For this reason, Medplum recommends that these parameters only be set on `HealthcareService` resources.
 
 #### Extension Fields
 

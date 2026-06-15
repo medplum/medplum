@@ -1230,6 +1230,10 @@ describe('Appointment/$find', () => {
               url: 'duration',
               valueDuration: { value: 20, unit: 'min' },
             },
+            {
+              url: 'alignmentTimezone',
+              valueCode: 'America/Chicago',
+            },
           ],
         },
       ],
@@ -1752,6 +1756,47 @@ describe('Appointment/$find', () => {
     expect(response.body.issue[0].expression).toEqual([
       'Parameters.schedule[0].extension[0]',
       'Parameters.schedule[1].extension[1]',
+    ]);
+  });
+
+  test('errors when `alignmentTimezone` scheduling parameter differs across schedules', async () => {
+    // ScheduleA inherits `alignmentTimezone` from the service and gets `America/Chicago`.
+    const scheduleA = await makeSchedule(
+      [
+        {
+          service: genericVisit,
+          availability: monTueAvailability,
+        },
+      ],
+      { actor: [createReference(practitioner)] }
+    );
+
+    // ScheduleB explicitly sets `alignmentTimezone` to `America/New_York`
+    const scheduleB = await makeSchedule(
+      [
+        {
+          service: genericVisit,
+          availability: monTueAvailability,
+          alignmentTimezone: 'America/New_York',
+        },
+      ],
+      { actor: [createReference(location)] }
+    );
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+    });
+    expect(response.status).toBe(400);
+    expect(response.body.issue[0].details.text).toBe(
+      "Scheduling parameters attribute 'alignmentTimezone' does not match"
+    );
+
+    expect(response.body.issue[0].expression).toEqual([
+      'Parameters.service-type-reference.extension[0]',
+      'Parameters.schedule[1].extension[0]',
     ]);
   });
 

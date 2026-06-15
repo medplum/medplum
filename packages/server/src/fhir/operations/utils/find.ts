@@ -82,6 +82,11 @@ export function findAlignedSlotTimes(
     let start = addMinutes(firstMinuteStart, toAlign);
     let end = addMinutes(start, options.durationMinutes);
 
+    // `start` values after the end of the current day will be processed in
+    // the next day's interval and aligned to that day's grid.
+    //
+    // `end` values are allowed to match up to (and including) the end of the
+    // search interval, but may not go beyond.
     while (start < dayInterval.end && end <= interval.end) {
       results.push({ start, end });
       if (options.maxCount && results.length >= options.maxCount) {

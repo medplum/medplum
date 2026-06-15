@@ -130,6 +130,10 @@ const SERVICE_DEFAULTS = Object.freeze({
   alignmentTimezone: 'Etc/UTC',
 });
 
+// This is a `Temporal.Instant` singleton that we instantiate once for
+// performance.
+const epochInstant = Temporal.Instant.fromEpochMilliseconds(0);
+
 function isReferenceTo<T extends Resource>(reference: Reference<T> | undefined, resource: WithId<T>): boolean {
   if (!reference?.reference) {
     return false;
@@ -175,7 +179,7 @@ function assertValidTimezone(ext: WithPath<Extension>): void {
   // "US/Pacific" is an alias for "America/Los_Angeles"), and is
   // case-insensitive (we accept "america/los_angeles" as valid).
   try {
-    Temporal.Instant.fromEpochMilliseconds(0).toZonedDateTimeISO(ext.valueCode);
+    epochInstant.toZonedDateTimeISO(ext.valueCode);
   } catch {
     throw new OperationOutcomeError(badRequest(`Invalid timezone '${ext.valueCode}'`, getPath(ext)));
   }
