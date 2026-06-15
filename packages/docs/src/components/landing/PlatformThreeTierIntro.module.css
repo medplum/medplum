@@ -4,13 +4,25 @@
 .section {
   font-family: 'Poppins', system-ui, sans-serif;
   background: #fff;
-  padding: 40px 0 96px;
+  padding: 40px 0 56px;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 0 64px;
+  padding: 0 var(--layout-padding);
+}
+
+@media (max-width: 996px) {
+  .container {
+    padding: 0 var(--layout-padding-md);
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 0 var(--layout-padding-sm);
+  }
 }
 
 .headlineRow {
@@ -66,7 +78,9 @@
   gap: 24px;
   align-items: center;
   position: relative;
-  transition: opacity 160ms ease, transform 160ms ease;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
 .panel:hover .tierRow {
@@ -91,7 +105,9 @@
   gap: 10px;
   opacity: 0;
   transform: translateX(-6px);
-  transition: opacity 160ms ease, transform 160ms ease;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
   white-space: nowrap;
 }
 
@@ -177,7 +193,6 @@
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-
 /* ---- dark mode ---- */
 
 [data-theme='dark'] .section {
@@ -226,4 +241,3 @@
 [data-theme='dark'] .rowArrow {
   color: var(--oc-gray-1);
 }
-

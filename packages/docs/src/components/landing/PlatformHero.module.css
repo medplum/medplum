@@ -8,13 +8,25 @@
 }
 
 .container {
-  max-width: 1200px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 0 64px;
+  padding: 0 var(--layout-padding);
   display: grid;
   grid-template-columns: 1fr 1.05fr;
   gap: 56px;
   align-items: center;
+}
+
+@media (max-width: 996px) {
+  .container {
+    padding: 0 var(--layout-padding-md);
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 0 var(--layout-padding-sm);
+  }
 }
 
 .headline {
@@ -37,7 +49,11 @@
 }
 
 .cta {
-  margin-top: 28px;
+  margin-top: 36px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .primaryButton {
@@ -71,25 +87,18 @@
   min-height: 400px;
 }
 
-.glow {
-  position: absolute;
-  inset: -20px;
-  background: radial-gradient(ellipse at 60% 55%, rgba(156, 54, 181, 0.1), transparent 65%);
-  pointer-events: none;
-}
-
 .codeEditorWrapper {
   position: absolute;
   inset: 0;
-  padding-right: 72px;
-  padding-bottom: 68px;
+  padding-right: 76px;
+  padding-bottom: 76px;
 }
 
 .patientCardWrapper {
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 332px;
+  width: 356px;
 }
 
 /* ---- code editor card ---- */
@@ -98,7 +107,9 @@
   background: #000;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 18px 28px -10px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 18px 28px -10px rgba(0, 0, 0, 0.18);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -151,12 +162,24 @@
   background: transparent;
 }
 
-.cKeyword { color: #5c7cfa; }
-.cClass { color: #fcc419; }
-.cMethod { color: #74c0fc; }
-.cString { color: #e599f7; }
-.cNumber { color: #fcc419; }
-.cComment { color: #868e96; }
+.cKeyword {
+  color: #5c7cfa;
+}
+.cClass {
+  color: #fcc419;
+}
+.cMethod {
+  color: #74c0fc;
+}
+.cString {
+  color: #e599f7;
+}
+.cNumber {
+  color: #fcc419;
+}
+.cComment {
+  color: #868e96;
+}
 
 /* ---- patient header card ---- */
 
@@ -165,7 +188,9 @@
   border-radius: 14px;
   padding: 20px;
   border: 1px solid #e9ecef;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 30px 50px -18px rgba(31, 21, 35, 0.22),
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 30px 50px -18px rgba(31, 21, 35, 0.22),
     0 12px 18px -10px rgba(31, 21, 35, 0.1);
   min-width: 320px;
 }
@@ -281,7 +306,8 @@
   opacity: 0;
 }
 
-/* No JavaScript: nothing will ever add .play, so show everything. */
+/* No JavaScript: nothing will ever add .play, so show everything. (The connector is
+   JS-rendered, so there is nothing to reveal here.) */
 @media (scripting: none) {
   .codeLine,
   .stack .patientCardWrapper,
@@ -372,7 +398,6 @@
 }
 
 .vitalsReading {
-  margin-left: auto;
   display: flex;
   align-items: baseline;
   gap: 4px;
@@ -400,7 +425,9 @@
 
 [data-theme='dark'] .codeCard {
   background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 18px 28px -10px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 18px 28px -10px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme='dark'] .codeTitleBar {
@@ -415,11 +442,21 @@
   color: #343a40;
 }
 
-[data-theme='dark'] .cKeyword { color: #1971c2; }
-[data-theme='dark'] .cClass  { color: #e67700; }
-[data-theme='dark'] .cMethod { color: #1864ab; }
-[data-theme='dark'] .cString { color: #862e9c; }
-[data-theme='dark'] .cNumber { color: #e67700; }
+[data-theme='dark'] .cKeyword {
+  color: #1971c2;
+}
+[data-theme='dark'] .cClass {
+  color: #e67700;
+}
+[data-theme='dark'] .cMethod {
+  color: #1864ab;
+}
+[data-theme='dark'] .cString {
+  color: #862e9c;
+}
+[data-theme='dark'] .cNumber {
+  color: #e67700;
+}
 
 [data-theme='dark'] .headline {
   color: var(--oc-gray-0);
@@ -430,7 +467,7 @@
 }
 
 [data-theme='dark'] .patientCard {
-  background: #1B1B1D;
+  background: #1b1b1d;
   border-color: var(--oc-gray-8);
 }
 
@@ -456,11 +493,6 @@
   background: rgba(156, 54, 181, 0.18);
   border-color: rgba(156, 54, 181, 0.3);
   --pulse-color: rgba(199, 125, 214, 0.45);
-}
-
-/* The light-mode glow is too faint on near-black — brighten it slightly. */
-[data-theme='dark'] .glow {
-  background: radial-gradient(ellipse at 60% 55%, rgba(156, 54, 181, 0.2), transparent 65%);
 }
 
 [data-theme='dark'] .vitalsLabel {

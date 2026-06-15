@@ -104,11 +104,27 @@
 .clickable.peeked,
 .clickable.active {
   --hl-border: var(--dg-hl);
+  /* Lift the highlighted element above its neighbors so its ring is never covered by an
+     adjacent (dimmed) card where their edges meet. Below the SVG connector overlay
+     (z-index 10) so the wiring still sits on top. */
+  z-index: 5;
 }
 
 .clickable:hover::after,
 .clickable.peeked::after {
   background: rgba(156, 54, 181, 0.05);
+}
+
+/* Cards draw the highlight as an OUTSET ring on ::after rather than recoloring their own
+   border: stacked cards zero their shared edges (borderTopWidth:0 etc.), so a recolored
+   border leaves the touching edge drawn by the dimmed neighbor and the outline breaks. The
+   ring (inset:0 ::after + 2px outset shadow) traces all four edges over the border box no
+   matter which borders exist. Bands keep the inset ring below — an outset ring would be
+   clipped by the platform box's overflow:hidden. */
+.clickable:not(.regionBand):hover::after,
+.clickable:not(.regionBand).peeked::after,
+.clickable:not(.regionBand).active::after {
+  box-shadow: 0 0 0 2px var(--dg-hl);
 }
 
 .clickable.active {
@@ -184,4 +200,11 @@
 [data-theme='dark'] .dimmedSolid {
   filter: saturate(0.5) brightness(0.58);
   color: rgba(255, 255, 255, 0.62);
+}
+
+/* Mutes the platform container's outer border when any region is selected (set on the
+   container, which is not a dimmable leaf). Soft purple reads as dimmed without using
+   opacity, so the bands nested inside stay fully opaque. */
+.platformDimmed {
+  --dg-platform-border: var(--dg-purple-soft);
 }

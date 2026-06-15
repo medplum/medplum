@@ -30,49 +30,108 @@
   max-width: 720px;
 }
 
-.rows {
-  display: flex;
-  flex-direction: column;
-  gap: 80px;
-}
+/* ---- primary focus: custom-application hero (dominant) ---- */
 
-.appRow {
+.customHero {
   display: grid;
-  grid-template-columns: 0.85fr 1.45fr;
+  grid-template-columns: 0.8fr 1.5fr;
   gap: 56px;
   align-items: center;
+  margin-bottom: 72px;
 }
 
-.appRowFlipped {
-  direction: rtl;
-}
-
-.appRowFlipped > * {
-  direction: ltr;
-}
-
-.appName {
+.customHeroName {
   font-family: 'Poppins', system-ui, sans-serif;
   font-weight: 600;
-  font-size: 32px;
-  line-height: 1.15;
-  letter-spacing: -0.018em;
-  margin: 0 0 8px;
+  font-size: 40px;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
   color: #212529;
 }
 
-.appTagline {
-  font-size: 15px;
+.customHeroTagline {
+  font-size: 16px;
   color: #868e96;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
-.appBody {
-  font-size: 16.5px;
+.customHeroBody {
+  font-size: 18px;
   color: #495057;
   line-height: 1.6;
-  margin: 0 0 24px;
-  max-width: 460px;
+  margin: 0 0 28px;
+  max-width: 480px;
+}
+
+.customHeroLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--oc-grape-8);
+}
+
+.customHeroLink:hover {
+  text-decoration: underline;
+}
+
+.customHeroLink span {
+  transition: transform 120ms ease;
+}
+
+.customHeroLink:hover span {
+  transform: translateX(3px);
+}
+
+/* ---- secondary: reference implementations (de-emphasized) ---- */
+
+.refIntro {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #868e96;
+  padding-top: 40px;
+  border-top: 1px solid #e9ecef;
+  margin-bottom: 28px;
+}
+
+.refGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 44px;
+}
+
+.refCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.refName {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 21px;
+  line-height: 1.2;
+  letter-spacing: -0.014em;
+  margin: 0 0 4px;
+  color: #212529;
+}
+
+.refTagline {
+  font-size: 13.5px;
+  color: #868e96;
+  margin-bottom: 16px;
+}
+
+.refBody {
+  font-size: 15px;
+  color: #495057;
+  line-height: 1.55;
+  margin: 16px 0 0;
 }
 
 .screenshotPlaceholder {
@@ -80,7 +139,9 @@
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid #e9ecef;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 24px 40px -18px rgba(31, 21, 35, 0.14),
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 24px 40px -18px rgba(31, 21, 35, 0.14),
     0 10px 16px -10px rgba(31, 21, 35, 0.06);
   aspect-ratio: 8 / 5;
   display: flex;
@@ -142,12 +203,22 @@
   color: var(--oc-gray-4);
 }
 
-[data-theme='dark'] .appName {
+[data-theme='dark'] .customHeroName,
+[data-theme='dark'] .refName {
   color: var(--oc-gray-0);
 }
 
-[data-theme='dark'] .appBody {
+[data-theme='dark'] .customHeroBody,
+[data-theme='dark'] .refBody {
   color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .customHeroLink {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .refIntro {
+  border-top-color: var(--oc-gray-8);
 }
 
 [data-theme='dark'] .screenshotPlaceholder {

@@ -522,7 +522,7 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
     >
       {/* Diagram (flex:1) + a slim vertical legend column to its right, so the legend no
          longer adds height below the figure. */}
-      <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', gap: 28, alignItems: 'flex-start' }}>
+      <div style={{ width: '100%', margin: '0 auto', display: 'flex', gap: 28, alignItems: 'flex-start' }}>
         <div ref={rootRef} style={{ flex: 1, minWidth: 0, position: 'relative' }}>
           {/* ─── SVG overlay (above cards, so dots sit on top) ─── */}
           <svg
@@ -758,20 +758,28 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
                   letterSpacing: '0.08em',
                   padding: '4px 12px',
                   borderRadius: 6,
-                  zIndex: 3,
+                  /* Above active regions (z-index 5) so the label tab is never covered by a
+                     selected band's ring. */
+                  zIndex: 20,
                 }}
               >
                 MEDPLUM HOSTED PLATFORM*
               </div>
 
               <div
+                /* The container border can't dim via the .dimmed filter/opacity used on leaf
+                   elements — that would also dim the active band nested inside it. Instead its
+                   color reads a CSS var that .platformDimmed mutes when any region is selected,
+                   so the outer outline recedes with everything else while children stay bright. */
+                className={active ? styles.platformDimmed : ''}
                 style={{
-                  border: `2px solid ${C.purple}`,
+                  border: `2px solid var(--dg-platform-border, ${C.purple})`,
                   borderRadius: 18,
                   background: C.purpleBg,
                   overflow: 'hidden',
                   display: 'flex',
                   alignItems: 'stretch',
+                  transition: 'border-color 200ms ease',
                 }}
               >
                 {/* Left vertical band — Access Control (RBAC), foundation, clickable */}
