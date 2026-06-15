@@ -464,7 +464,9 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A`);
       await connection.close();
     });
 
-    test('double ackCommit for same MSH.10 only writes once', async () => {
+    test('ackCommit re-sends on every call (no idempotency guard — the DB is the dedup authority)', async () => {
+      // A deliberate retransmit must be re-acked because the sender never saw the
+      // original ACK; dedup is the durable queue's job, not the connection's.
       const mockSocket = new MockSocket();
       const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
       connection.setDeferredCommitAck(true);
@@ -472,7 +474,9 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A`);
       connection.ackCommit(testMessage);
       connection.ackCommit(testMessage);
 
-      expect(mockSocket.write).toHaveBeenCalledTimes(1);
+      expect(mockSocket.write).toHaveBeenCalledTimes(2);
+      expect(getAckCode(mockSocket.write.mock.calls[0][0] as Buffer)).toBe('CA');
+      expect(getAckCode(mockSocket.write.mock.calls[1][0] as Buffer)).toBe('CA');
 
       await connection.close();
     });
@@ -536,9 +540,9 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A`);
       await connection.close();
     });
 
-    test('ackCommit after a retryable nackCommit (CE) for the same MSH.10 still sends', async () => {
-      // CE invites a retransmit, so it must not poison the already-acked slot:
-      // the successful retry's commit ACK must still reach the wire.
+    test('ackCommit after a nackCommit (CE) for the same MSH.10 still sends', async () => {
+      // A NACK followed by the eventual successful commit ACK both reach the
+      // wire — there is no per-connection guard suppressing the second send.
       const mockSocket = new MockSocket();
       const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
       connection.setDeferredCommitAck(true);
@@ -565,7 +569,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A`);
       await connection.close();
     });
 
-    test('ackCommit after nackCommit for same MSH.10 is a no-op', async () => {
+    test('nackCommit (CR) followed by ackCommit both reach the wire', async () => {
       const mockSocket = new MockSocket();
       const connection = new Hl7Connection(mockSocket as any, undefined, 'standard');
       connection.setDeferredCommitAck(true);
@@ -573,9 +577,11 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A`);
       connection.nackCommit(testMessage, 'CR');
       connection.ackCommit(testMessage);
 
-      // Only the nack reached the wire — ackCommit was idempotent-suppressed.
-      expect(mockSocket.write).toHaveBeenCalledTimes(1);
+      // No per-connection idempotency guard: both sends go out. Dedup is the
+      // durable queue's responsibility, not the connection's.
+      expect(mockSocket.write).toHaveBeenCalledTimes(2);
       expect(getAckCode(mockSocket.write.mock.calls[0][0] as Buffer)).toBe('CR');
+      expect(getAckCode(mockSocket.write.mock.calls[1][0] as Buffer)).toBe('CA');
 
       await connection.close();
     });

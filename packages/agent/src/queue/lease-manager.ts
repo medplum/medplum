@@ -57,8 +57,9 @@ export interface QueueLeaseManagerOptions {
  *    succeeds. Each successful acquisition (including the first) fires the
  *    callback exactly once per "run" of leadership.
  *  - A failed heartbeat means a peer stole the lease (we slept too long). We
- *    log and switch back to follower mode; if we recover, a future acquire
- *    will fire the callback again.
+ *    log, fire `onLostLeadership` so the caller can drain its workers, and
+ *    switch back to follower mode; if we recover, a future acquire will fire
+ *    `onBecameLeader` again.
  *  - `stop()` releases the lease (only if we still hold it) and clears timers.
  *
  * The class is deliberately stateless about what the leader *does* — the App
@@ -76,6 +77,7 @@ export class QueueLeaseManager {
   private acquireTimer: NodeJS.Timeout | undefined;
   private heartbeatTimer: NodeJS.Timeout | undefined;
   private onBecameLeader: (() => void) | undefined;
+  private onLostLeadership: (() => void) | undefined;
   private stopped = false;
 
   constructor(options: QueueLeaseManagerOptions) {
@@ -90,11 +92,15 @@ export class QueueLeaseManager {
   /**
    * Begins the acquire-and-heartbeat loop. `onBecameLeader` fires every time
    * we transition from follower to leader (typically once, but can repeat if
-   * we lose the lease mid-run and reclaim it).
+   * we lose the lease mid-run and reclaim it). `onLostLeadership` fires when a
+   * heartbeat discovers a peer stole the lease, so the caller can drain workers
+   * before the peer starts acting on the shared data.
    * @param onBecameLeader - Callback invoked when this process takes the lease.
+   * @param onLostLeadership - Callback invoked when a heartbeat finds the lease lost.
    */
-  start(onBecameLeader: () => void): void {
+  start(onBecameLeader: () => void, onLostLeadership?: () => void): void {
     this.onBecameLeader = onBecameLeader;
+    this.onLostLeadership = onLostLeadership;
     this.stopped = false;
     this.tryAcquire();
   }
@@ -194,11 +200,20 @@ export class QueueLeaseManager {
     }
     if (!extended) {
       // We lost the lease — a peer took over after our TTL elapsed. Drop back
-      // to follower mode; the caller is expected to also drain workers when
-      // notified (via a future surface; for now we just log).
-      this.log.error(`Lost queue lease (holder=${this.holderId}); peer took over. Workers should drain.`);
+      // to follower mode and notify the caller so it can drain its workers
+      // before the peer starts acting on the shared queue. (A small overlap
+      // window is inherent to TTL leases: the peer could only acquire after our
+      // TTL expired, so detection latency is bounded by the heartbeat interval.)
+      this.log.error(`Lost queue lease (holder=${this.holderId}); peer took over. Draining workers.`);
       this.leader = false;
       this.clearHeartbeatTimer();
+      // Fire callback before re-scheduling acquire so a drain exception can't
+      // skip the retry loop.
+      try {
+        this.onLostLeadership?.();
+      } catch (err) {
+        this.log.error(`onLostLeadership callback threw: ${normalizeErrorString(err)}`);
+      }
       this.scheduleAcquireRetry();
     }
   }

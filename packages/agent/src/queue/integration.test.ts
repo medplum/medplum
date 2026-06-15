@@ -928,6 +928,70 @@ describe('Durable queue integration', () => {
     expect(recovered?.ackOutcome).toBe('pending');
     await app.stop();
   });
+
+  test('non-UTF-8 channel encoding (iso-8859-1): message is accepted, CA sent, and forwarded text preserved', async () => {
+    // Regression: the durable path used to re-encode via `Buffer.from(text,
+    // channelEncoding)`. For an encoding Node's Buffer doesn't natively know
+    // (iso-8859-1, windows-1252, ...) that throws ERR_UNKNOWN_ENCODING, so the
+    // message was dropped at intake with NO ACK and the sender retransmitted
+    // forever. The forwarded body must equal the decoded HL7 text — same as the
+    // legacy path — regardless of the wire encoding.
+    let forwardedBody: string | undefined;
+    startMockServer((cmd) => {
+      forwardedBody = cmd.body;
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: ack.toString(),
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&encoding=iso-8859-1',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+
+    // A Latin-1 name (José) — a byte iso-8859-1 represents but UTF-8 encodes
+    // differently — to prove the decode/forward round-trips the text, not bytes.
+    const msg = Hl7Message.parse(
+      `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|ISO_001|P|2.5\r` +
+        'PID|||PATID1234^5^M11||JOSÉ^WILLIAM^A^III||19610615|M\r'
+    );
+    // The client must speak the same wire encoding as the channel.
+    const client = new Hl7Client({ host: 'localhost', port, encoding: 'iso-8859-1' });
+    const response = await client.sendAndWait(msg, {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    // Pre-fix this never arrived — intake threw and dropped the message.
+    expect(response.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    await waitForRow(queue, (counts) => counts.processed === 1, 3000);
+    // The forwarded body is the decoded HL7 text with the accented name intact.
+    expect(forwardedBody).toContain('JOSÉ');
+    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, failed: 0, rejected: 0, nacked: 0 });
+
+    await client.close();
+    await app.stop();
+  });
 });
 
 /**

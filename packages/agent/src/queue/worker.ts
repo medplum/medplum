@@ -370,7 +370,11 @@ export class ChannelQueueWorker {
         channel: row.channelName,
         remote: row.remote,
         contentType: ContentType.HL7_V2,
-        body: row.finalizedMessage.toString(row.encoding ? toBufferEncoding(row.encoding) : 'utf8'),
+        // finalizedMessage holds the decoded HL7 text stored as UTF-8 at intake
+        // (see AgentHl7ChannelConnection.handleMessage) — the same body the legacy
+        // path forwards. The channel `encoding` is wire-level only and recorded
+        // on the row for reference; it does not affect the forwarded text.
+        body: row.finalizedMessage.toString('utf8'),
         callback: row.callbackId,
       });
     });
@@ -408,39 +412,4 @@ function makeWakeSignal(): { promise: Promise<void>; resolve: () => void } {
     resolve = r;
   });
   return { promise, resolve };
-}
-
-/**
- * Translates an HL7 encoding query-param value into the BufferEncoding used by
- * `Buffer.toString`. The agent stores the raw bytes; for forwarding upstream we
- * decode using the channel's configured encoding. The fallback is `utf8`.
- *
- * Only encodings Node's built-in Buffer understands are honored here — anything
- * else (e.g. an iconv-only encoding) falls back to utf8 to avoid throwing.
- * The wire-truth blob is preserved in `body` regardless.
- * @param encoding - The encoding string as recorded on the row (matches the channel URL param).
- * @returns A `BufferEncoding` value safe to pass to `Buffer.toString()`.
- */
-function toBufferEncoding(encoding: string): BufferEncoding {
-  const normalized = encoding.toLowerCase().replace(/[-_]/g, '');
-  switch (normalized) {
-    case 'utf8':
-    case 'utf':
-      return 'utf8';
-    case 'utf16le':
-    case 'ucs2':
-      return 'utf16le';
-    case 'latin1':
-    case 'iso88591':
-    case 'binary':
-      return 'latin1';
-    case 'ascii':
-      return 'ascii';
-    case 'base64':
-      return 'base64';
-    case 'hex':
-      return 'hex';
-    default:
-      return 'utf8';
-  }
 }

@@ -11,19 +11,16 @@ import { Hl7CloseEvent, Hl7EnhancedAckSentEvent, Hl7ErrorEvent, Hl7MessageEvent,
 /**
  * Negative commit ACK code accepted by {@link Hl7Connection.nackCommit}.
  *
- * By HL7 convention the *error* codes are retryable (the peer may retransmit and
+ * By HL7 convention the *error* codes invite a retransmit (the peer may retry and
  * could succeed) while the *reject* codes are terminal (retransmitting the same
  * message will fail identically, so the peer must not retry):
  *
- * - `CE` — Commit Error (standard enhanced): retryable, e.g. a transient storage failure.
- * - `AE` — Application Error (aaMode): retryable.
- * - `CR` — Commit Reject (standard enhanced): terminal, e.g. a rejected duplicate.
- * - `AR` — Application Reject (aaMode): terminal.
+ * - `CE` — Commit Error (standard enhanced): e.g. a transient storage failure.
+ * - `AE` — Application Error (aaMode).
+ * - `CR` — Commit Reject (standard enhanced): e.g. a rejected duplicate.
+ * - `AR` — Application Reject (aaMode).
  */
 export type NackCommitCode = 'CR' | 'CE' | 'AR' | 'AE';
-
-/** Upper bound on the size of the deferred-ack idempotency set. */
-const ACKED_CONTROL_IDS_MAX = 10_000;
 
 // Export `ReturnAckCategory` for backwards-compat
 export { ReturnAckCategory } from '@medplum/core';
@@ -76,10 +73,6 @@ export class Hl7Connection extends Hl7Base {
   private responseQueueProcessing = false;
   private closing = false;
   private deferredCommitAck = false;
-  // Bounded FIFO of MSH.10s we've already (n)acked under deferred mode.
-  // Used to make ackCommit/nackCommit idempotent so the wire only sees one ACK
-  // per inbound message even if upstream code retries.
-  private readonly ackedControlIds: Set<string> = new Set<string>();
 
   constructor(
     socket: net.Socket,
@@ -448,14 +441,10 @@ export class Hl7Connection extends Hl7Base {
    *
    * Only meaningful when {@link Hl7Connection.enhancedMode} is set. When `enhancedMode`
    * is undefined this flag has no effect (no ACK is auto-sent in either case).
-   *
-   * Toggling the flag clears the internal idempotency set so a fresh session of
-   * (n)acks can be tracked.
    * @param deferred - True to suppress auto-ACK; false to restore default behavior.
    */
   setDeferredCommitAck(deferred: boolean): void {
     this.deferredCommitAck = deferred;
-    this.ackedControlIds.clear();
   }
 
   /** @returns Whether deferred commit-ACK mode is currently enabled. */
@@ -465,20 +454,17 @@ export class Hl7Connection extends Hl7Base {
 
   /**
    * Sends the configured commit ACK (CA in `standard` enhanced mode, AA in `aaMode`)
-   * for the supplied inbound message.
+   * for the supplied inbound message. No-op (and no wire write) when `enhancedMode`
+   * is undefined, since no commit ACK is part of the protocol then.
    *
-   * No-op (and no wire write) in these cases:
-   * - `enhancedMode` is undefined (no commit ACK is part of the protocol).
-   * - The same MSH.10 has already been (n)acked under this connection's deferred session.
-   *
+   * Idempotency is NOT enforced here: the caller decides when to (re-)send. In the
+   * Medplum Agent's durable queue the on-disk row (keyed by channel + MSH.10) is the
+   * single dedup authority, and a deliberate retransmit must be re-acked because the
+   * sender never saw the original ACK.
    * @param message - The original inbound message to ACK.
    */
   ackCommit(message: Hl7Message): void {
     if (!this.enhancedMode) {
-      return;
-    }
-    const controlId = message.getSegment('MSH')?.getField(10)?.toString();
-    if (controlId && !this.recordAcked(controlId)) {
       return;
     }
     const ackCode: AckCode = this.enhancedMode === 'standard' ? 'CA' : 'AA';
@@ -496,28 +482,13 @@ export class Hl7Connection extends Hl7Base {
    * the caller decides which code best describes the failure. An optional `reason`
    * is recorded in MSA.3 of the outgoing ACK for the sender's logs.
    *
-   * Retryable error codes (`CE`/`AE`) explicitly invite the peer to retransmit, so
-   * they do NOT consume the already-acked slot for this control ID — the eventual
-   * successful retry must still be able to send its own commit ACK. Terminal
-   * rejects (`CR`/`AR`) do claim the slot, so a duplicate retransmit of a rejected
-   * message is suppressed rather than double-nacked.
-   *
-   * No-op (and no wire write) in these cases:
-   * - `enhancedMode` is undefined.
-   * - The same MSH.10 has already been (n)acked under this deferred session AND
-   *   the code is terminal.
-   *
+   * No-op (and no wire write) when `enhancedMode` is undefined.
    * @param message - The original inbound message to NACK.
    * @param code - The negative ACK code to send.
    * @param reason - Optional human-readable explanation placed in MSA.3.
    */
   nackCommit(message: Hl7Message, code: NackCommitCode, reason?: string): void {
     if (!this.enhancedMode) {
-      return;
-    }
-    const retryable = code === 'CE' || code === 'AE';
-    const controlId = message.getSegment('MSH')?.getField(10)?.toString();
-    if (controlId && !retryable && !this.recordAcked(controlId)) {
       return;
     }
     const response = message.buildAck({ ackCode: code });
@@ -527,30 +498,6 @@ export class Hl7Connection extends Hl7Base {
     }
     this.send(response);
     this.dispatchEvent(new Hl7EnhancedAckSentEvent(this, response));
-  }
-
-  /**
-   * Records that we've sent a deferred-mode ACK for `controlId`. Returns true if the
-   * caller should proceed with the send, false if the control ID was already acked.
-   *
-   * The set is bounded; once it reaches `ACKED_CONTROL_IDS_MAX` the oldest entry is
-   * evicted. The bound is generous enough to cover real-world bursts but prevents
-   * unbounded growth on a long-lived connection.
-   * @param controlId - MSH.10 of the inbound message being (n)acked.
-   * @returns True if this is a fresh ack the caller should proceed with; false if it was already acked.
-   */
-  private recordAcked(controlId: string): boolean {
-    if (this.ackedControlIds.has(controlId)) {
-      return false;
-    }
-    if (this.ackedControlIds.size >= ACKED_CONTROL_IDS_MAX) {
-      const oldest = this.ackedControlIds.values().next().value;
-      if (oldest !== undefined) {
-        this.ackedControlIds.delete(oldest);
-      }
-    }
-    this.ackedControlIds.add(controlId);
-    return true;
   }
 
   setEncoding(encoding: string | undefined): void {
