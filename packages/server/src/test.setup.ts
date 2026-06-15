@@ -28,9 +28,9 @@ import { Client as PgClient } from 'pg';
 import request from 'supertest';
 import type { Mock, MockInstance } from 'vitest';
 import { vi } from 'vitest';
-import './test-matchers';
 import type { ServerInviteResponse } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
+import './test-matchers';
 // `fhir/repo`, `fhir/accesspolicy`, `admin/invite`, `oauth/keys`, and `context` are dynamically imported below.
 // Static imports here would load `workers/subscription` (via `fhir/repo`) or `database` (via `oauth/keys` /
 // `context`) while setupFiles still run. Vitest hoists `vi.mock` per file, not across setupFiles and test
