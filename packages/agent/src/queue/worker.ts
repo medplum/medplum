@@ -243,11 +243,11 @@ export class ChannelQueueWorker {
         continue;
       }
       const row = this.queue.claimNext(this.channelName);
-      if (!row) {
-        await this.waitForWork();
-        continue;
+      if (row) {
+        await this.process(row);
       }
-      await this.process(row);
+
+      await this.waitForWork();
     }
   }
 
