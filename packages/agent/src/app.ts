@@ -49,6 +49,7 @@ import {
   DEFAULT_PING_TIMEOUT,
   HEARTBEAT_PERIOD_MS,
   MAX_MISSED_HEARTBEATS,
+  MAX_NOT_LIVE_HEARTBEATS,
   RETRY_WAIT_DURATION_MS,
 } from './constants';
 import { AgentDicomChannel } from './dicom';
@@ -102,6 +103,7 @@ export class App {
   private heartbeatTimer?: NodeJS.Timeout;
   readonly heartbeatEmitter: HeartbeatEmitter = new TypedEventTarget();
   private outstandingHeartbeats = 0;
+  private notLiveHeartbeats = 0;
   private webSocket?: ReconnectingWebSocket<WebSocket>;
   private webSocketWorker?: Promise<void>;
   private live = false;
@@ -252,7 +254,12 @@ export class App {
 
   private async startWebSocket(): Promise<void> {
     await this.connectWebSocket();
-    this.heartbeatTimer = setInterval(() => this.heartbeat(), this.heartbeatPeriod);
+    this.heartbeatTimer = setInterval(() => {
+      this.heartbeat().catch((err) => {
+        // An unhandled rejection would crash the process
+        this.log.error(`Error during heartbeat: ${normalizeErrorString(err)}`);
+      });
+    }, this.heartbeatPeriod);
   }
 
   private async heartbeat(): Promise<void> {
@@ -266,16 +273,38 @@ export class App {
       return;
     }
 
-    if (this.live) {
-      if (this.outstandingHeartbeats > MAX_MISSED_HEARTBEATS) {
-        this.outstandingHeartbeats = 0;
+    if (!this.live) {
+      // The WebSocket can be open without the agent ever becoming live: the
+      // `agent:connect:request` may have failed to send, or the server may have failed to
+      // process it (without closing the socket). Neither side sends traffic on such a
+      // connection, so nothing would ever break us out of this state -- force a reconnect
+      // after enough heartbeat periods. This also acts as a backstop while the underlying
+      // ReconnectingWebSocket is retrying on its own after a close.
+      this.notLiveHeartbeats += 1;
+      if (this.notLiveHeartbeats > MAX_NOT_LIVE_HEARTBEATS) {
+        this.notLiveHeartbeats = 0;
+        this.log.warn('Not connected to Medplum server after multiple heartbeat periods. Attempting to reconnect...');
         this.webSocket.reconnect();
-        this.log.info('Disconnected from Medplum server. Attempting to reconnect...');
-        return;
       }
-      this.outstandingHeartbeats += 1;
-      await this.sendToWebSocket({ type: 'agent:heartbeat:request' });
-      this.lastHeartbeatSentTime = Date.now();
+      return;
+    }
+
+    this.notLiveHeartbeats = 0;
+
+    if (this.outstandingHeartbeats > MAX_MISSED_HEARTBEATS) {
+      this.outstandingHeartbeats = 0;
+      this.webSocket.reconnect();
+      this.log.info('Disconnected from Medplum server. Attempting to reconnect...');
+      return;
+    }
+    this.outstandingHeartbeats += 1;
+    await this.sendToWebSocket({ type: 'agent:heartbeat:request' });
+    this.lastHeartbeatSentTime = Date.now();
+
+    // If there are queued messages but no worker draining them (e.g. the last drain attempt
+    // failed on a transient error), retry on the heartbeat.
+    if (this.webSocketQueue.length > 0) {
+      this.startWebSocketWorker();
     }
   }
 
@@ -300,11 +329,18 @@ export class App {
     });
 
     this.webSocket.addEventListener('open', async () => {
-      await this.sendToWebSocket({
-        type: 'agent:connect:request',
-        accessToken: this.medplum.getAccessToken() as string,
-        agentId: this.agentId,
-      });
+      try {
+        await this.sendToWebSocket({
+          type: 'agent:connect:request',
+          accessToken: this.medplum.getAccessToken() as string,
+          agentId: this.agentId,
+        });
+      } catch (err) {
+        // This can fail if the access token is expired and refreshing it fails (e.g. the token
+        // endpoint is briefly unreachable right after a network blip). An uncaught error here
+        // would crash the process. We stay not-live, and the heartbeat forces a reconnect.
+        this.log.error(`Error sending connect request: ${normalizeErrorString(err)}`);
+      }
     });
 
     this.webSocket.addEventListener('close', () => {
@@ -326,6 +362,10 @@ export class App {
           case 'connected':
           case 'agent:connect:response':
             this.live = true;
+            // Reset the heartbeat counters so stale counts from a previous connection don't
+            // trigger a premature reconnect.
+            this.notLiveHeartbeats = 0;
+            this.outstandingHeartbeats = 0;
             this.startWebSocketWorker();
             this.log.info('Successfully connected to Medplum server');
             break;
@@ -857,10 +897,15 @@ export class App {
 
     // Start the worker
     this.webSocketWorker = this.trySendToWebSocket()
-      .then(() => {
-        this.webSocketWorker = undefined;
+      .catch((err) => {
+        this.log.error(`WebSocket worker error: ${normalizeErrorString(err)}`);
       })
-      .catch((err) => console.log('WebSocket worker error', err));
+      .finally(() => {
+        // Always clear the worker, even on error -- otherwise the queue could never drain again.
+        // The failed message was put back on the queue; the next enqueue (or the heartbeat)
+        // restarts the worker.
+        this.webSocketWorker = undefined;
+      });
   }
 
   private async trySendToWebSocket(): Promise<void> {
@@ -878,7 +923,6 @@ export class App {
         }
       }
     }
-    this.webSocketWorker = undefined;
   }
 
   private trySendToHl7Connection(): void {
@@ -1053,8 +1097,13 @@ export class App {
         // Remove PID file
         removePidFile('medplum-agent-upgrader');
       }
-      // Clean up upgrade.json
-      unlinkSync(UPGRADE_MANIFEST_PATH);
+      // Clean up upgrade.json if it exists
+      // The upgrade could be considered "in progress" due to a running upgrader process
+      // even when the manifest was never written (or was already cleaned up),
+      // so we must not assume the file exists here
+      if (existsSync(UPGRADE_MANIFEST_PATH)) {
+        unlinkSync(UPGRADE_MANIFEST_PATH);
+      }
     }
 
     // Pre-check: verify artifact exists for this OS before spawning upgrader

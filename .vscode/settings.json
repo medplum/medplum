@@ -18,8 +18,10 @@
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "never"
+    "source.fixAll.eslint": "never",
+    "source.organizeImports": "explicit"
   },
   "[yaml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -28,5 +30,18 @@
     // Which prettier cannot even correct after it's been applied
     "yaml.format.enable": false
   },
-  "cSpell.words": ["auditevent", "bullmq", "FHIR", "Fhircast", "Medplum", "rescope"]
+  "cSpell.words": [
+    "auditevent",
+    "bullmq",
+    "FHIR",
+    "Fhircast",
+    "fhirquota",
+    "Medplum",
+    "orangebot",
+    "reindexing",
+    "rescope",
+    "savepoint",
+    "searchparameter",
+    "vread"
+  ]
 }

@@ -14,7 +14,7 @@ import type {
   Timing,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import { buildRangeColumns, buildRangeColumnsSearchFilter } from './range-column';
+import { buildRangeColumns, buildRangeColumnsSearchFilter, parseDateTimeToRange } from './range-column';
 import type { ColumnSearchParameterImplementation, RangeColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { SqlBuilder } from './sql';
@@ -85,6 +85,21 @@ describe('buildRangeColumns', () => {
 
     expect(columns.__valueDate).toStrictEqual(`[2026-04-01T12:34:56.000Z,2026-04-01T12:34:57.000Z)`);
     expect(columns.__valueDateSort).toStrictEqual('2026-04-01T12:34:56.000Z');
+  });
+
+  test.each([
+    ['2025-11-02T09:11:52Z', '2025-11-02T09:11:53.000Z'],
+    ['2025-11-02T09:11:52.039Z', '2025-11-02T09:11:52.040Z'],
+  ])('date time range uses UTC precision around DST fallback: %s', (value, expectedEnd) => {
+    const originalTZ = process.env.TZ;
+    process.env.TZ = 'America/Los_Angeles';
+    try {
+      const range = parseDateTimeToRange(value);
+      expect(range.left?.toISOString()).toStrictEqual(new Date(value).toISOString());
+      expect(range.right?.toISOString()).toStrictEqual(expectedEnd);
+    } finally {
+      process.env.TZ = originalTZ;
+    }
   });
 
   test.each<[Period, string | undefined, string | undefined]>([

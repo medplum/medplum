@@ -75,6 +75,12 @@ import { userRescopeOperation } from './operations/rescope';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
 import { setAccountsHandler } from './operations/set-accounts';
+import { generateSmartHealthCardHandler, verifySmartHealthCardHandler } from './operations/smarthealthcards';
+import {
+  generateSmartHealthLinkHandler,
+  resolveSmartHealthLinkHandler,
+  smartHealthLinkManifestHandler,
+} from './operations/smarthealthlinks';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { updateUserEmailOperation } from './operations/update-user-email';
@@ -169,6 +175,7 @@ publicRoutes.get(['/$versions', '/%24versions'], (_req: Request, res: Response) 
 // See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#sample-request
 publicRoutes.get('/.well-known/smart-configuration', smartConfigurationHandler);
 publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
+publicRoutes.post('/.well-known/smart-health-links/:id/manifest.json', smartHealthLinkManifestHandler);
 
 // Protected routes require authentication
 const protectedRoutes = Router().use(authenticateRequest);
@@ -372,6 +379,14 @@ function initInternalFhirRouter(): FhirRouter {
   // Patient $ccda-export operation
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
   router.add('POST', '/Patient/:id/$ccda-export', ccdaExportHandler);
+
+  // SMART Health Cards operations
+  router.add('POST', '/Patient/:id/$generate-smart-health-card', generateSmartHealthCardHandler);
+  router.add('POST', '/$verify-smart-health-card', verifySmartHealthCardHandler);
+
+  // SMART Health Links operations
+  router.add('POST', '/Patient/:id/$generate-smart-health-link', generateSmartHealthLinkHandler);
+  router.add('POST', '/$resolve-smart-health-link', resolveSmartHealthLinkHandler);
 
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);

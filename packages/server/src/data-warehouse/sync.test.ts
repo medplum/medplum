@@ -9,7 +9,7 @@ import type { SyncOptions } from './sync';
 import { buildWarehouseSourcePredicate } from './sync';
 import { buildMaxLastUpdatedWatermarkPredicate, buildStartDatePredicate } from './warehouse-sql';
 
-const tableSpec = { postgresTable: 'Patient_history', icebergTable: 'patient_history' };
+const tableSpec = { postgresTable: 'Patient_History', icebergTable: 'patient_history' };
 const namespace = 'default';
 
 function appendPredicateSql(predicate: Expression): {

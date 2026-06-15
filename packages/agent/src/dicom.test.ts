@@ -14,7 +14,7 @@ let endpoint: Endpoint;
 
 describe('DICOM', () => {
   beforeAll(async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     dimse.log.disableAll(false);
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {

@@ -94,18 +94,31 @@ function toHistoryPostgresTableName(resourceType: string): string {
  * matching migrations (`resourceType + '_History'`).
  * Used by the scheduled data warehouse sync worker.
  *
- * @param resourceTypes - Optional FHIR resource types to include. When omitted or empty, all types are included.
+ * @param includeResourceTypes - FHIR types to sync. When omitted or empty (and exclude is too), all types are included.
+ * @param excludeResourceTypes - FHIR types to omit from sync. Cannot be combined with a non-empty include list.
  * @returns The list of Postgres table names.
  */
-export function getWarehouseSyncPostgresTableNames(resourceTypes?: string[]): string[] {
-  if (!resourceTypes?.length) {
+export function getWarehouseSyncPostgresTableNames(
+  includeResourceTypes?: string[],
+  excludeResourceTypes?: string[]
+): string[] {
+  const hasIncluded = !!includeResourceTypes?.length;
+  const hasExcluded = !!excludeResourceTypes?.length;
+
+  if (!hasIncluded && !hasExcluded) {
     return getResourceTypes().map(toHistoryPostgresTableName);
   }
 
-  const selectedTypes = new Set(resourceTypes);
-  return getResourceTypes()
-    .filter((resourceType) => selectedTypes.has(resourceType))
-    .map(toHistoryPostgresTableName);
+  let types = getResourceTypes();
+  if (hasIncluded) {
+    const includedSet = new Set(includeResourceTypes);
+    types = types.filter((resourceType) => includedSet.has(resourceType));
+  } else if (hasExcluded) {
+    const excludedSet = new Set(excludeResourceTypes);
+    types = types.filter((resourceType) => !excludedSet.has(resourceType));
+  }
+
+  return types.map(toHistoryPostgresTableName);
 }
 
 /**

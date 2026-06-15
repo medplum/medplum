@@ -27,21 +27,21 @@ describe('DatabaseToolsPage', () => {
 
   beforeEach(() => {
     medplum = new MockClient();
-    jest.useFakeTimers();
-    jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
   });
 
   afterEach(async () => {
     await act(async () => notifications.clean());
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      await vi.runOnlyPendingTimersAsync();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Access denied', async () => {
-    jest.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
+    vi.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
     setup();
     expect(screen.getByText('Forbidden')).toBeInTheDocument();
   });
