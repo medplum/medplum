@@ -11,9 +11,8 @@ import { createMockLogger } from './test-utils';
 /**
  * Commit-ACK edge cases for {@link AgentHl7ChannelConnection}.
  *
- * These were ported from `@medplum/hl7`'s connection tests when the deferred
- * commit-ACK logic moved out of the library and into the agent. Instead of a
- * `setDeferredCommitAck` flag on the connection, the durable path keeps
+ * These were ported from `@medplum/hl7`'s connection tests when the commit-ACK
+ * logic moved out of the library and into the agent. The durable path keeps
  * `enhancedMode` *off* the {@link Hl7Connection} (so its synchronous auto-ACK
  * never fires) and the agent sends CA/AA/CE/CR/AE/AR itself, after the DB write,
  * via the private `sendCommitAck`/`sendCommitNack` helpers exercised here.
@@ -230,8 +229,7 @@ describe('AgentHl7ChannelConnection commit ACK', () => {
 });
 
 /**
- * Wiring guarantee that replaces the old `setDeferredCommitAck` suppression tests:
- * in durable mode the agent keeps `enhancedMode` off the connection (so the
+ * In durable mode the agent keeps `enhancedMode` off the connection (so the
  * library's synchronous auto-ACK can't fire), while still tracking the real mode
  * on the channel for its own deferred ACK.
  */
