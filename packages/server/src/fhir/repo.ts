@@ -105,7 +105,7 @@ import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { removeField } from './repository/field-utils';
 import { removeCachedProfile } from './repository/profile-cache';
-import type { Scope, StatementTimeoutOptions } from './repository/repository-connection';
+import type { ConnectionScope, StatementTimeoutOptions } from './repository/repository-connection';
 import { RepositoryConnection } from './repository/repository-connection';
 import type { CacheEntry } from './repository/resource-cache';
 import {
@@ -267,7 +267,7 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
 export class Repository extends FhirRepository implements Disposable {
   private readonly context: RepositoryContext;
   private readonly connection: RepositoryConnection;
-  private readonly connectionScope: Scope;
+  private readonly connectionScope: ConnectionScope;
   private readonly ownsConnection: boolean;
   private closed = false;
 
@@ -307,7 +307,7 @@ export class Repository extends FhirRepository implements Disposable {
    * {@link RepositoryConnection.withTransaction} for more details.
    * @param scope - (optional) The repository connection scope to use for the repository.
    */
-  constructor(context: RepositoryContext, connection?: RepositoryConnection, scope?: Scope) {
+  constructor(context: RepositoryContext, connection?: RepositoryConnection, scope?: ConnectionScope) {
     super();
     addSyntheticR4ProjectIfMissing(context);
     this.context = context;
@@ -339,7 +339,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @returns A repository with the same context as the current repository, but valid for the duration of the current transaction as well
    * as post-commit callbacks.
    */
-  private createTransactionScopedRepo(scope: Scope): this {
+  private createTransactionScopedRepo(scope: ConnectionScope): this {
     if (!this.connection.isInTransaction()) {
       throw new Error('Not in transaction');
     }
@@ -347,7 +347,7 @@ export class Repository extends FhirRepository implements Disposable {
     const RepositoryConstructor = this.constructor as new (
       context: RepositoryContext,
       connection?: RepositoryConnection,
-      scope?: Scope
+      scope?: ConnectionScope
     ) => this;
     return new RepositoryConstructor(this.context, this.connection, scope);
   }
@@ -2363,7 +2363,7 @@ type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJo
 function createSystemRepository(
   shardId: string,
   connection?: RepositoryConnection,
-  connectionScope?: Scope,
+  connectionScope?: ConnectionScope,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
   return new SystemRepository(

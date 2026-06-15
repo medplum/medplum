@@ -25,23 +25,30 @@ export type StatementTimeoutOptions = {
   mode?: DatabaseMode;
 };
 
-export type Scope = { readonly _brand: 'scope' };
-type RootScope = Scope & {
+/**
+ * An opaque object representing a scope or token to be presented to a RepositoryConnection
+ * to perform database operations. Must be obtained from the same RepositoryConnection instance
+ * and be valid based on the state-machine described in {@link RepositoryConnection.withTransaction}.
+ */
+
+export type ConnectionScope = { readonly __brand: 'scope' };
+
+type RootScope = ConnectionScope & {
   readonly kind: 'root';
-  readonly parent?: undefined;
-  state: 'active';
+  readonly parent?: never;
+  readonly state: 'active';
 };
-type TransactionScope = Scope & {
+type TransactionScope = ConnectionScope & {
   readonly kind: 'transaction';
-  readonly parent: ConnectionScope;
+  readonly parent: Scope;
   /** See {@link RepositoryConnection.withTransaction} for the state machine and what each state means. */
   state: 'active' | 'committing' | 'post-commit' | 'ended';
   preCommitCallbacks: (() => Promise<void>)[];
   postCommitCallbacks: (() => Promise<void>)[];
 };
-type SavepointScope = Scope & {
+type SavepointScope = ConnectionScope & {
   readonly kind: 'savepoint';
-  readonly parent: ConnectionScope;
+  readonly parent: Scope;
   /** See {@link RepositoryConnection.withTransaction} for the state machine and what each state means. */
   state: 'active' | 'released' | 'ended';
   preCommitCallbacks: (() => Promise<void>)[];
@@ -49,11 +56,11 @@ type SavepointScope = Scope & {
 };
 
 /** For internal use within the RepositoryConnection class. */
-type ConnectionScope = RootScope | TransactionScope | SavepointScope;
+type Scope = RootScope | TransactionScope | SavepointScope;
 
-function createScope(kind: 'transaction' | 'savepoint', parent: ConnectionScope): TransactionScope | SavepointScope {
+function createScope(kind: 'transaction' | 'savepoint', parent: Scope): TransactionScope | SavepointScope {
   return {
-    _brand: 'scope',
+    __brand: 'scope',
     state: 'active',
     kind,
     parent,
@@ -62,9 +69,9 @@ function createScope(kind: 'transaction' | 'savepoint', parent: ConnectionScope)
   };
 }
 
-function validateScope(scope: unknown): ConnectionScope {
+function validateScope(scope: unknown): Scope {
   if (typeof scope === 'object' && scope !== null && '_brand' in scope && scope._brand === 'scope') {
-    return scope as unknown as ConnectionScope;
+    return scope as unknown as Scope;
   }
   throw new Error('Invalid scope');
 }
@@ -73,7 +80,7 @@ function validateScope(scope: unknown): ConnectionScope {
  * Shared database-session state for one or more Repository facades.
  *
  * Any repositories that can share a PoolClient should share a RepositoryConnection
- * so transaction depth, savepoints, callbacks, and cache deferral decisions
+ * so transaction depth, callbacks, and cache deferral decisions
  * cannot diverge from the underlying Postgres transaction.
  */
 export class RepositoryConnection implements Disposable {
@@ -88,7 +95,7 @@ export class RepositoryConnection implements Disposable {
   private transactionIdleTracker?: TransactionIdleTracker;
 
   private readonly rootScope: RootScope;
-  private currentScope: ConnectionScope;
+  private currentScope: Scope;
 
   /**
    * Creates a connection that owns any PoolClient it acquires.
@@ -96,7 +103,7 @@ export class RepositoryConnection implements Disposable {
   constructor() {
     this.mode = RepositoryMode.WRITER;
     this.rootScope = {
-      _brand: 'scope',
+      __brand: 'scope',
       state: 'active',
       kind: 'root',
     };
@@ -119,7 +126,7 @@ export class RepositoryConnection implements Disposable {
     return connection;
   }
 
-  getCurrentScope(): Scope {
+  getCurrentScope(): ConnectionScope {
     return this.currentScope;
   }
 
@@ -131,7 +138,7 @@ export class RepositoryConnection implements Disposable {
     return !!this.conn;
   }
 
-  private assertCurrentScope(scope: unknown): ConnectionScope {
+  private assertCurrentScope(scope: unknown): Scope {
     const writableScope = validateScope(scope);
     if (writableScope !== this.currentScope) {
       throw new Error('Scope is not current');
@@ -153,7 +160,7 @@ export class RepositoryConnection implements Disposable {
     return depth;
   }
 
-  assertScope(scope: Scope): ConnectionScope {
+  assertScope(scope: ConnectionScope): Scope {
     const writableScope = validateScope(scope);
     let current = writableScope;
     while (current !== this.currentScope) {
@@ -189,8 +196,8 @@ export class RepositoryConnection implements Disposable {
    * @param scope - The scope to check.
    * @returns True if the scope is permanently ended.
    */
-  isScopeEnded(scope: Scope): boolean {
-    let current: ConnectionScope | undefined = validateScope(scope);
+  isScopeEnded(scope: ConnectionScope): boolean {
+    let current: Scope | undefined = validateScope(scope);
     while (current) {
       if (current.state === 'ended') {
         return true;
@@ -211,7 +218,7 @@ export class RepositoryConnection implements Disposable {
    * @param mode - The database mode.
    * @returns The database client.
    */
-  getDatabaseClient(scope: Scope, mode: DatabaseMode): PgQueryable {
+  getDatabaseClient(scope: ConnectionScope, mode: DatabaseMode): PgQueryable {
     this.assertNotClosed();
     this.assertScope(scope);
     if (this.conn) {
@@ -320,15 +327,15 @@ export class RepositoryConnection implements Disposable {
 
   /**
    * Runs `callback` inside a database transaction, retrying the outermost transaction on
-   * retryable errors such as serialization failures. Nested calls become savepoints within
+   * retryable errors such as serialization failures. Nested calls become a savepoint within
    * the outer transaction.
    *
    * ## Scope-based usability model
    *
    * Several `Repository` facades may share one `RepositoryConnection`, and therefore one
    * PoolClient. Which of them is allowed to issue queries at any given moment is tracked with
-   * `Scope` tokens: each repository is bound to the scope that was current when it was created,
-   * and every database operation first passes that token to `assertScope()`. Scopes form a chain:
+   * `ConnectionScope` scopes: each repository is bound to the scope that was current when it was created,
+   * and every database operation first passes that scope to `assertScope()`. Scopes form a chain:
    * the root scope lives as long as the connection, and each `withTransaction` call pushes a child
    * scope (`BEGIN` for the outermost, `SAVEPOINT` when nested) that becomes the current scope
    * until that transaction level finishes.
@@ -412,7 +419,7 @@ export class RepositoryConnection implements Disposable {
    * capture a transaction-scoped repository or scope outside the callback: it expires when the
    * attempt ends, and each retry gets a new one.
    *
-   * @param scope - Token of the caller initiating the transaction; must still be valid. It becomes
+   * @param scope - Connection scope to initiate a transaction under. If valid, becomes
    *   the parent of the new transaction scope and is locked until that transaction finishes.
    * @param callback - Work to run inside the transaction. Receives the new (now current) scope;
    *   all database work in the callback must present this scope, not the parent.
@@ -421,8 +428,8 @@ export class RepositoryConnection implements Disposable {
    * @returns The callback's return value, after the transaction level commits.
    */
   async withTransaction<TResult>(
-    scope: Scope,
-    callback: (txScope: Scope) => Promise<TResult>,
+    scope: ConnectionScope,
+    callback: (txScope: ConnectionScope) => Promise<TResult>,
     options?: { serializable?: boolean }
   ): Promise<TResult> {
     this.assertNotClosed();
@@ -543,7 +550,7 @@ export class RepositoryConnection implements Disposable {
   }
 
   private async beginTransaction(
-    scope: Scope,
+    scope: ConnectionScope,
     isolationLevel: TransactionIsolationLevel
   ): Promise<{ client: PoolClient; scope: TransactionScope | SavepointScope }> {
     return this.withConnectionStateLock(async () => {
@@ -581,7 +588,7 @@ export class RepositoryConnection implements Disposable {
     });
   }
 
-  private async commitTransaction(txScope: ConnectionScope): Promise<void> {
+  private async commitTransaction(txScope: Scope): Promise<void> {
     await this.withConnectionStateLock(async () => {
       this.assertCurrentScope(txScope);
       this.assertInTransaction();
@@ -635,7 +642,7 @@ export class RepositoryConnection implements Disposable {
     }
   }
 
-  private async rollbackTransaction(txScope: ConnectionScope, error: Error): Promise<void> {
+  private async rollbackTransaction(txScope: Scope, error: Error): Promise<void> {
     return this.withConnectionStateLock(async () => {
       // Tolerate being called after state has already been reset (e.g. when a prior
       // cleanup path in commit/rollback fully aborted the transaction on a dead connection).
@@ -757,7 +764,7 @@ export class RepositoryConnection implements Disposable {
     }
   }
 
-  async preCommit(scope: Scope, fn: () => Promise<void>): Promise<void> {
+  async preCommit(scope: ConnectionScope, fn: () => Promise<void>): Promise<void> {
     this.assertScope(scope);
     // accept committing so that pre-commit callbacks can add additional pre-commit callbacks
     if (this.currentScope.state !== 'active' && this.currentScope.state !== 'committing') {
@@ -779,7 +786,7 @@ export class RepositoryConnection implements Disposable {
     }
   }
 
-  async postCommit(scope: Scope, fn: () => Promise<void>): Promise<void> {
+  async postCommit(scope: ConnectionScope, fn: () => Promise<void>): Promise<void> {
     this.assertScope(scope);
     // Once the transaction has committed, there is nothing to defer until; invoke
     // immediately like the no-transaction case below. This is what allows writes
