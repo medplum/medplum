@@ -135,8 +135,7 @@ CREATE TABLE IF NOT EXISTS inbound_hl7_messages (
   ack_outcome        TEXT    NOT NULL DEFAULT 'pending', -- source leg, independent of state; see §4
   last_error         TEXT,
   seq_no             INTEGER,                      -- MSH.13 assigned by agent (if assignSeqNo)
-  received_at        INTEGER NOT NULL,             -- ms epoch (handleMessage entry)
-  committed_at       INTEGER,                      -- ms epoch — write that triggered CA
+  received_at        INTEGER NOT NULL,             -- ms epoch (handleMessage entry); also the commit timestamp (CA fires synchronously after the durable write)
   processing_started_at INTEGER,
   processed_at       INTEGER,                      -- terminal state timestamp
   errored_at         INTEGER
@@ -151,11 +150,22 @@ CREATE INDEX IF NOT EXISTS idx_inbound_state_processed_at
   ON inbound_hl7_messages (state, processed_at);
 
 -- Duplicate detection (configurable, see §8). Partial unique to avoid blocking when
--- duplicateBehavior=idempotent or when MSH.10 is null.
+-- duplicateBehavior=idempotent or when MSH.10 is null. This is the insert-race
+-- correctness guard (the enqueue() unique-conflict catch path), scoped to the
+-- active window so it never blocks a legitimate re-send of a long-settled message.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_inbound_dup_active
   ON inbound_hl7_messages (channel_name, msg_control_id)
   WHERE msg_control_id IS NOT NULL
     AND state IN ('queued', 'processing');
+
+-- Read index for the per-message intake dedup lookup: the latest non-nacked row
+-- for a (channel, control_id) across ALL states (the partial-unique index above
+-- only covers the active window). Without it the lookup scans the channel's whole
+-- history every message; the trailing id makes ORDER BY id DESC LIMIT 1 a seek.
+CREATE INDEX IF NOT EXISTS idx_inbound_dup_lookup
+  ON inbound_hl7_messages (channel_name, msg_control_id, id)
+  WHERE msg_control_id IS NOT NULL
+    AND state != 'nacked';
 
 -- Correlate WS callback IDs (what the server echoes back) to rows in O(1).
 CREATE UNIQUE INDEX IF NOT EXISTS uq_inbound_callback
@@ -248,11 +258,13 @@ the stored ACK (§8) and flips the row to `delivered`.
 | `undelivered` | the Bot accepted the message but the ACK couldn't reach the source (connection closed) — the actionable signal | `markProcessed(…, UNDELIVERED)` |
 | `not_owed` | no app-level ACK will be delivered: intake-`nacked`, or the Bot leg ended `rejected`/`failed` | `enqueueRejected` / `markRejected` / `markFailed` |
 
-`nacked` is distinct from the Bot-leg failures. `rejected`/`failed` rows have a
-`committed_at` (we successfully ACKed CA, then later failed downstream).
-`nacked` rows have `ack_outcome='not_owed'` with a non-AA code and no
-`committed_at` — they exist for forensics but were never told to the sender as
-committed.
+`nacked` is distinct from the Bot-leg failures: `rejected`/`failed` rows were
+committed (we ACKed CA, then later failed downstream), whereas `nacked` rows were
+NACKed at intake and never told to the sender as committed. The `state` column
+records that distinction directly — there is no separate `committed_at` column,
+since the durable write that triggers CA happens synchronously at intake and would
+always equal `received_at`. `nacked` rows carry `ack_outcome='not_owed'` with a
+non-AA code and exist for forensics only.
 
 The split is also what keeps the (future) Path-2 retry layer safe: it re-dispatches
 `failed` rows only, never `rejected` (can't help) and never `processed` +
@@ -471,7 +483,7 @@ The runtime path replacing today's `AgentHl7ChannelConnection.handleMessage` (`h
           attempt INSERT of a `nacked` row best-effort (different DB handle session
           to avoid cascading on a transient error). Return.
    d. On successful INSERT → sendCommitAck(message). Source now holds a
-      durable CA. committed_at column set.
+      durable CA (the row's received_at is the commit timestamp).
    e. Notify the channel's ChannelQueueWorker that work is available (in-memory wake
       signal, see §9).
 4. Worker picks it up serially (see §9).

@@ -225,7 +225,6 @@ export interface InboundRow {
   nextAttemptAt: number | null;
   seqNo: number | null;
   receivedAt: number;
-  committedAt: number | null;
   processingStartedAt: number | null;
   processedAt: number | null;
   erroredAt: number | null;

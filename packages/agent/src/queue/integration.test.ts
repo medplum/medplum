@@ -1175,6 +1175,117 @@ describe('Durable queue integration', () => {
     await client.close();
     await app.stop();
   });
+
+  // The durable CA promise must hold even under a concurrent shutdown: if a
+  // source is *spamming* a channel at the exact moment App.stop() tears the
+  // agent down, then for every message the source received a commit ACK (CA)
+  // for, a durable row MUST survive the shutdown. The agent commits (enqueue
+  // transaction) BEFORE sending the CA (hl7.ts: sendCommitAck fires only after
+  // enqueue returns), so a CA the source observed is a promise the row is
+  // persisted — and that promise can't be broken by stop() racing the intake,
+  // the server.stop(), or the DB close. We never assert *processed* here: an
+  // in-flight dispatch is rejected → failed on stop by design. The contract is
+  // "no acknowledged message is lost," not "every message is delivered."
+  test('spam-while-stopping: every CA the source received survives App.stop()', async () => {
+    // Reply 200/AA so any row the worker manages to claim before drain processes
+    // cleanly — but most rows won't be reached before stop; that's the point.
+    startMockServer((cmd) => {
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: ack.toString(),
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const queuePath = join(dir, 'queue.sqlite');
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: queuePath },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+
+    // Control IDs the source got a CA for — i.e. the agent *promised* are committed.
+    const committed: string[] = [];
+    const client = new Hl7Client({ host: 'localhost', port });
+    let seq = 0;
+
+    // A tight loop hammering the channel. It only stops when the connection drops
+    // (the server is being torn down) — i.e. it keeps firing straight through the
+    // shutdown window so messages are genuinely in flight when stop() lands.
+    const spamLoop = (async () => {
+      for (;;) {
+        const cid = `SPAM_${seq++}`;
+        let response;
+        try {
+          response = await client.sendAndWait(TEST_MSG(cid), {
+            // FIRST ACK in enhanced mode is the deferred commit CA.
+            returnAck: ReturnAckCategory.FIRST,
+            timeoutMs: 2000,
+          });
+        } catch {
+          // Connection closed / refused mid-shutdown: this message was NOT
+          // acknowledged, so the agent made no commit promise about it. Expected.
+          return;
+        }
+        if (response.getSegment('MSA')?.getField(1)?.toString() === 'CA') {
+          committed.push(cid);
+        }
+      }
+    })();
+
+    // Let a burst of messages get committed, then pull the plug while the loop is
+    // still firing — stop() now races live intake, drain, and DB teardown.
+    const startWait = Date.now();
+    while (committed.length < 5 && Date.now() - startWait < 5000) {
+      await sleep(10);
+    }
+    expect(committed.length).toBeGreaterThanOrEqual(5);
+
+    await app.stop(); // concurrent with spamLoop still sending
+    await spamLoop; // resolves once the source's connection drops
+    await client.close();
+
+    // App.stop() closed the queue DB; reopen the same file to inspect what
+    // survived. (No App.start(), so recoverOnStartup does NOT run — we want the
+    // raw post-shutdown state, not the post-recovery state.)
+    const reopened = DurableQueue.open({
+      path: queuePath,
+      log: console as unknown as Parameters<typeof DurableQueue.open>[0]['log'],
+    });
+    try {
+      // THE INVARIANT: every CA the source observed has a durable row. A missing
+      // one would be a dishonest CA — the agent claimed a commit it then lost.
+      const missing = committed.filter((cid) => !reopened.findSeenByControlId('dq-test', cid));
+      expect(missing).toEqual([]);
+
+      // Accounting: every acknowledged message is in some real state, none vanished.
+      const counts = reopened.countByState();
+      const accounted = counts.processed + counts.queued + counts.processing + counts.failed;
+      expect(accounted).toBeGreaterThanOrEqual(committed.length);
+      // We never NAK'd or rejected anything on the happy intake path.
+      expect(counts.nacked).toBe(0);
+      expect(counts.rejected).toBe(0);
+    } finally {
+      reopened.close();
+    }
+  });
 });
 
 /**
