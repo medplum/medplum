@@ -2,14 +2,19 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 .page {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   color: #212529;
   background: #fff;
   width: 100%;
   line-height: 1.55;
 }
 
-/* ---- stacked sections wrapper (anchor nav + Apps + Capabilities + Foundations) ---- */
+/* ---- stacked sections wrapper (Apps + Workflows + Foundations) ---- */
 
 .stackedSections {
   background: #fff;
@@ -17,36 +22,23 @@
 }
 
 .container {
-  max-width: 1200px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 0 64px;
+  padding: 0 var(--layout-padding);
+  /* Divider between the three-tier panel above and the Apps section below. */
+  border-top: 1px solid #e9ecef;
 }
 
-/* ---- anchor nav row ---- */
-
-.anchorRow {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border-bottom: 1px solid #e9ecef;
-  margin-bottom: 8px;
+@media (max-width: 996px) {
+  .container {
+    padding: 0 var(--layout-padding-md);
+  }
 }
 
-.anchorLink {
-  font-family: 'Poppins', system-ui, sans-serif;
-  font-weight: 500;
-  font-size: 15px;
-  color: #495057;
-  text-decoration: none;
-  padding: 14px 18px;
-  border-radius: 8px;
-  transition: background 120ms ease, color 120ms ease;
-}
-
-.anchorLink:hover {
-  background: var(--oc-grape-0);
-  color: var(--oc-grape-8);
-  text-decoration: none;
+@media (max-width: 600px) {
+  .container {
+    padding: 0 var(--layout-padding-sm);
+  }
 }
 
 /* ---- dark mode ---- */
@@ -60,15 +52,6 @@
   background: var(--ifm-background-color);
 }
 
-[data-theme='dark'] .anchorRow {
-  border-bottom-color: var(--oc-gray-8);
-}
-
-[data-theme='dark'] .anchorLink {
-  color: var(--oc-gray-4);
-}
-
-[data-theme='dark'] .anchorLink:hover {
-  background: rgba(156, 54, 181, 0.15);
-  color: var(--oc-grape-4);
+[data-theme='dark'] .container {
+  border-top-color: var(--oc-gray-8);
 }
