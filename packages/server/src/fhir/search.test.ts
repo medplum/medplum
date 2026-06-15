@@ -4451,7 +4451,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
   test('Multiple resource types with _type uses offset pagination across combined results', async () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-      const expectedIds = [patient.id as string];
+      const expectedIds = [patient.id];
 
       for (let i = 0; i < 4; i++) {
         const obs = await repo.createResource<Observation>({
@@ -4460,7 +4460,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           code: { text: 'test' },
           subject: createReference(patient),
         });
-        expectedIds.push(obs.id as string);
+        expectedIds.push(obs.id);
       }
 
       let url = `Patient?_type=Patient,Observation&_compartment=${getReferenceString(patient)}&_sort=_id&_count=2`;
@@ -5160,7 +5160,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
     test('Cursor pagination with multiple resource types from _type', () =>
       withTestContext(async () => {
         const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
-        const expectedIds = [patient.id as string];
+        const expectedIds = [patient.id];
 
         for (let i = 0; i < 49; i++) {
           const obs = await systemRepo.createResource<Observation>({
@@ -5169,7 +5169,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             code: { text: 'cursor_type_test' },
             subject: createReference(patient),
           });
-          expectedIds.push(obs.id as string);
+          expectedIds.push(obs.id);
         }
 
         let url = `Patient?_type=Patient,Observation&_compartment=${getReferenceString(patient)}&_sort=_lastUpdated&_count=20`;
