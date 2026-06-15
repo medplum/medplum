@@ -224,12 +224,35 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
 }
 
 /**
+ * The name of the `Project.systemSetting` boolean that, when `true`, restores the legacy
+ * behavior where rest-hook `Subscriptions` fire regardless of whether the `Subscription`
+ * author's `AccessPolicy` grants read access to the triggering resource.
+ *
+ * This is an intentionally insecure opt-out: enabling it lets a `Subscription` deliver
+ * resources the author could not otherwise read via the API.  It exists only to give operators
+ * a temporary escape hatch while migrating `Subscription` author memberships to have the
+ * appropriate `AccessPolicy` access after upgrading.  It is a `systemSetting` (super-admin only)
+ * so that a project administrator cannot disable the security control themselves, and it has no
+ * effect on WebSocket subscriptions, which have always enforced the `AccessPolicy`.
+ */
+export const skipRestHookAccessPolicySystemSettingName = 'skipRestHookAccessPolicyCheck';
+
+function skipsRestHookAccessPolicyCheck(project: Project): boolean {
+  return (
+    project.systemSetting?.find((s) => s.name === skipRestHookAccessPolicySystemSettingName)?.valueBoolean === true
+  );
+}
+
+/**
  * Checks if this resource should create a notification for this `Subscription` based on the access policy that should be applied for this `Subscription`.
  * The `AccessPolicy` of author's `ProjectMembership` for this resource's `Project` is used when evaluating whether the `AccessPolicy` is satisfied.
  *
- * Currently we log if the `AccessPolicy` is not satisfied only.
+ * A `Subscription` only fires for resources that the author's `AccessPolicy` grants read access to.
+ * This prevents a user from using a `Subscription` (in particular a rest-hook webhook) as a "wiretap"
+ * to receive resources they could not otherwise read directly via the API.
  *
- * TODO: Actually prevent notifications for `Subscriptions` where the `AccessPolicy` is not satisfied (for rest-hook subscriptions)
+ * For backwards compatibility, a project can restore the legacy behavior for rest-hook subscriptions
+ * via the super-admin-only {@link skipRestHookAccessPolicySystemSettingName} `systemSetting`.
  *
  * @param resource - The resource to evaluate against the `AccessPolicy`.
  * @param project - The project containing the resource.
@@ -289,8 +312,15 @@ async function satisfiesAccessPolicy(
     );
     satisfied = false;
   }
-  // Always return true if channelType !== websocket for now
-  return subscription.channel.type === 'websocket' ? satisfied : true;
+  // Enforce the author's AccessPolicy for all channel types so that a Subscription cannot deliver
+  // resources the author is not allowed to read.  The legacy (insecure) behavior, where rest-hook
+  // subscriptions fired regardless of the AccessPolicy, can be restored per-project via the
+  // super-admin-only `skipRestHookAccessPolicyCheck` systemSetting.  This opt-out never applies to
+  // WebSocket subscriptions, which have always enforced the AccessPolicy.
+  if (!satisfied && subscription.channel.type !== 'websocket' && skipsRestHookAccessPolicyCheck(project)) {
+    return true;
+  }
+  return satisfied;
 }
 
 /**
@@ -373,10 +403,11 @@ export async function addSubscriptionJobs(
     }
     if (matches) {
       const authorRef = getReferenceString(subscription.meta?.author as Reference);
-      // Channel type is part of the key because satisfiesAccessPolicy() is hardcoded to always
-      // return `true` for rest-hook subscriptions (see the TODO comment on that function).
-      // Without it, a cached `true` from a rest-hook sub could bypass the real policy check
-      // for a websocket sub sharing the same author.
+      // Channel type is part of the key because the two channel types resolve the author's
+      // membership differently: WebSocket subscriptions are evaluated against the specific
+      // membership they bound with (authorMembershipId), while rest-hook subscriptions resolve
+      // the membership by author. Keying by channel type keeps their cached results separate so a
+      // result computed for one channel type can never be reused for the other.
       const cacheKey =
         subscription.channel.type === 'websocket' && authorMembershipId
           ? authorMembershipId
