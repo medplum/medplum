@@ -140,7 +140,9 @@ export async function importCodeSystem(
   if (designations?.length) {
     const lookupCodes = new Set<string>(designations.map((d) => d.code));
     // Batch lookup all Codings with associated properties
-    const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
+    const codingIds = await selectCoding(codeSystem.id, ...lookupCodes)
+      .where('synonymOf', '=', null)
+      .execute(db);
     const synonyms: Record<string, any>[] = [];
     for (const designation of designations) {
       // Add synonym row
@@ -185,7 +187,9 @@ async function processProperties(
   }
 
   // Batch lookup all Codings with associated properties
-  const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
+  const codingIds = await selectCoding(codeSystem.id, ...lookupCodes)
+    .where('synonymOf', '=', null)
+    .execute(db);
   const rows: Record<string, any>[] = [];
   const synonyms: Record<string, any>[] = [];
   for (const imported of importedProperties) {
