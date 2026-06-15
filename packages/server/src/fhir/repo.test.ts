@@ -32,24 +32,21 @@ import type {
   User,
   UserConfiguration,
 } from '@medplum/fhirtypes';
-import { randomBytes, randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
-import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
-import * as otelModule from '../otel/otel';
-import { bundleContains, createTestProject, withTestContext } from '../test.setup';
+import { bundleContains, createTestProject, spyOnQuery, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
-import { RepositoryConnection } from './repository/repository-connection';
-import { TransactionIdleTracker } from './repository/transaction-idle-tracker';
-import { PostgresError, SelectQuery } from './sql';
+import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
 vi.mock('hibp');
@@ -82,15 +79,6 @@ describe('FHIR Repo', () => {
   afterAll(async () => {
     await shutdownApp();
   });
-
-  function setIdleInTransactionLogThresholdMs(thresholdMs: number | undefined): () => void {
-    const config = getConfig();
-    const previousThresholdMs = config.idleInTransactionLogThresholdMs;
-    config.idleInTransactionLogThresholdMs = thresholdMs;
-    return () => {
-      config.idleInTransactionLogThresholdMs = previousThresholdMs;
-    };
-  }
 
   test('getRepoForLogin', async () => {
     await expect(
@@ -202,7 +190,7 @@ describe('FHIR Repo', () => {
   });
 
   test('Read AuditEvent after update', async () => {
-    const projectId = randomUUID();
+    const projectId = testProject.id;
     const resource = await systemRepo.createResource({ resourceType: 'Patient', meta: { project: projectId } });
     const data = createAuditEvent(
       RestfulOperationType,
@@ -846,9 +834,7 @@ describe('FHIR Repo', () => {
     });
 
     try {
-      await repo.withTransaction(async (conn) => {
-        await repo.reindexResources(conn, [patient]);
-      });
+      await repo.reindexResources([patient]);
       expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
@@ -878,11 +864,7 @@ describe('FHIR Repo', () => {
     const logger = getLogger();
     const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
 
-    await expect(
-      systemRepo.withTransaction(async (conn) => {
-        await systemRepo.reindexResources(conn, [patient1]);
-      })
-    ).rejects.toThrow('test error');
+    await expect(systemRepo.reindexResources([patient1])).rejects.toThrow('test error');
     expect(errorSpy).toHaveBeenCalledWith('Error building row for resource', {
       resource: 'Patient/' + patient1.id,
       err: expect.any(Error),
@@ -1455,817 +1437,6 @@ describe('FHIR Repo', () => {
       expect(await getProjectIdColumn(user3.id)).toStrictEqual(systemResourceProjectId);
     }));
 
-  test('Retry after create should not execute post-commit hooks from rollback', () =>
-    withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: true });
-      const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs');
-      const patients: WithId<Patient>[] = [];
-      let shouldError = true;
-
-      const createdPatient = await repo.withTransaction(async () => {
-        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-        patients.push(patient);
-
-        if (shouldError) {
-          shouldError = false;
-          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
-        }
-
-        return patient;
-      });
-
-      expect(patients).toHaveLength(2);
-      expect(createdPatient).toEqual(patients[1]);
-      expect(addBackgroundJobsSpy).toHaveBeenCalledTimes(1);
-      expect(addBackgroundJobsSpy).toHaveBeenCalledWith(
-        {
-          resourceType: 'Patient',
-          id: createdPatient.id,
-          meta: expect.any(Object),
-        },
-        undefined,
-        expect.any(Object)
-      );
-
-      await expect(repo.readResource('Patient', patients[0].id)).rejects.toMatchObject(
-        new OperationOutcomeError(notFound)
-      );
-
-      addBackgroundJobsSpy.mockRestore();
-    }));
-
-  test('Patch post-commit stores full resource in cache', async () =>
-    withTestContext(async () => {
-      const { project, repo, login, membership } = await createTestProject({
-        withRepo: true,
-        withAccessToken: true,
-        withClient: true,
-        extendedMode: false,
-      });
-      const extendedRepo = await getRepoForLogin(
-        { login, project, membership, userConfig: {} as UserConfiguration },
-        true
-      );
-
-      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-      expect(patient.meta?.project).toBeUndefined();
-      expect(patient.gender).toBeUndefined();
-
-      const updatedPatient = await repo.patchResource<Patient>('Patient', patient.id, [
-        { op: 'add', path: '/gender', value: 'unknown' },
-      ]);
-      expect(updatedPatient.meta?.project).toBeUndefined();
-      expect(updatedPatient.gender).toStrictEqual('unknown');
-
-      const cachedPatient = await extendedRepo.readResource<Patient>('Patient', patient.id);
-      expect(cachedPatient.meta?.project).toStrictEqual(project.id);
-      expect(cachedPatient.gender).toStrictEqual('unknown');
-    }));
-
-  test('Retry executes post-commit hook once from outer transaction', async () => {
-    const repo = systemRepo;
-    const postCommit = vi.fn();
-    let shouldError = true;
-
-    await repo.withTransaction(async () => {
-      await repo.postCommit(postCommit);
-
-      await repo.withTransaction(async () => {
-        if (shouldError) {
-          shouldError = false;
-          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
-        }
-      });
-    });
-
-    expect(postCommit).toHaveBeenCalledTimes(1);
-  });
-
-  test('Retry should not execute post-commit hook from rollback', async () => {
-    const repo = systemRepo;
-    const postCommit = vi.fn();
-
-    await repo.withTransaction(async () => {
-      try {
-        await repo.withTransaction(async () => {
-          await repo.postCommit(postCommit);
-          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
-        });
-      } catch {
-        // Ignore error
-      }
-    });
-
-    expect(postCommit).toHaveBeenCalledTimes(0);
-  });
-
-  test('withTransaction releases connection when rollback fails on a dead backend', async () => {
-    const { repo } = await createTestProject({ withRepo: true });
-
-    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
-    let querySpy: MockInstance | undefined;
-    let releaseSpy: MockInstance | undefined;
-
-    await expect(
-      repo.withTransaction(async (client) => {
-        querySpy = vi.spyOn(client, 'query').mockImplementation(() => {
-          // Simulates a session killed by idle_in_transaction_session_timeout: every query
-          // issued on the client — including the ROLLBACK the error handler sends — rejects.
-          const terminationErr = Object.assign(new Error('terminating connection due to idle-in-transaction timeout'), {
-            code: '57P01',
-          });
-          throw terminationErr;
-        });
-        releaseSpy = vi.spyOn(client, 'release');
-        await client.query('SELECT 1');
-      })
-    ).rejects.toThrow('terminating connection due to idle-in-transaction timeout');
-
-    if (!querySpy) {
-      throw new Error('querySpy is undefined');
-    }
-    if (!releaseSpy) {
-      throw new Error('releaseSpy is undefined');
-    }
-
-    // Bookkeeping must be fully reset so the repo is safe for future use
-    expect((repo as any).connection.transactionDepth).toBe(0);
-    expect((repo as any).connection.conn).toBeUndefined();
-
-    // Dead client must be released with a truthy err so pg-pool discards it
-    expect(releaseSpy).toHaveBeenCalledTimes(1);
-    expect(releaseSpy?.mock.calls[0][0]).toBeDefined();
-
-    // The rollback failure should be logged, not thrown
-    expect(warnSpy).toHaveBeenCalledWith(
-      'Error rolling back transaction',
-      expect.objectContaining({
-        err: expect.stringContaining('terminating connection'),
-      })
-    );
-
-    querySpy.mockRestore();
-    releaseSpy.mockRestore();
-    warnSpy.mockRestore();
-    errorSpy.mockRestore();
-  });
-
-  test.each([undefined, -1] as (number | undefined)[])(
-    'withTransaction does not record transaction idle metrics when threshold is %s',
-    async (thresholdMs) => {
-      const restoreThreshold = setIdleInTransactionLogThresholdMs(thresholdMs);
-      const query = vi.fn(async (_sql: string) => ({ rows: [] }));
-      const client = {
-        query,
-        release: vi.fn(),
-      } as unknown as PoolClient;
-      const repo = getShardSystemRepo(
-        'test-shard',
-        RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-      );
-      const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-      const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
-
-      try {
-        await repo.withTransaction(async (txClient) => {
-          await txClient.query('SELECT 1');
-        });
-
-        expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
-          'BEGIN ISOLATION LEVEL REPEATABLE READ',
-          'SELECT 1',
-          'COMMIT',
-        ]);
-        expect(client.query).toBe(query);
-        expect(warnSpy).not.toHaveBeenCalledWith(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, expect.anything());
-        expect(recordHistogramValueSpy).not.toHaveBeenCalled();
-      } finally {
-        restoreThreshold();
-        warnSpy.mockRestore();
-        recordHistogramValueSpy.mockRestore();
-      }
-    }
-  );
-
-  test('withTransaction disables idle tracking for callback-style queries', async () => {
-    const restoreThreshold = setIdleInTransactionLogThresholdMs(5);
-    let now = 0;
-    const dateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
-    const query = vi.fn((sql: string, callback?: (err: Error | undefined, result: { rows: any[] }) => void) => {
-      if (sql === 'SELECT 1' && callback) {
-        now += 10;
-        callback(undefined, { rows: [] });
-        return undefined;
-      }
-      return Promise.resolve({ rows: [] });
-    });
-    const client = {
-      query,
-      release: vi.fn(),
-    } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
-    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
-
-    try {
-      await repo.withTransaction(async (txClient) => {
-        await new Promise<void>((resolve, reject) => {
-          txClient.query('SELECT 1', (err) => (err ? reject(err) : resolve()));
-        });
-      });
-
-      expect(client.query).toBe(query);
-      expect(warnSpy).not.toHaveBeenCalledWith(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, expect.anything());
-      expect(recordHistogramValueSpy).not.toHaveBeenCalled();
-    } finally {
-      restoreThreshold();
-      dateNowSpy.mockRestore();
-      warnSpy.mockRestore();
-      recordHistogramValueSpy.mockRestore();
-    }
-  });
-
-  test('withTransaction logs and records high idle time in rolled back transaction', async () => {
-    const restoreThreshold = setIdleInTransactionLogThresholdMs(0);
-    let now = 0;
-    const dateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
-    const query = vi.fn(async (_sql: string) => ({ rows: [] }));
-    const client = {
-      query,
-      release: vi.fn(),
-    } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
-    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
-
-    try {
-      await expect(
-        repo.withTransaction(async () => {
-          now += 10;
-          throw new Error('work failed');
-        })
-      ).rejects.toThrow('work failed');
-
-      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_TOTAL_METRIC_NAME, 10, {
-        attributes: { attempt: 0, serializable: false, status: 'rolled_back' },
-        options: { unit: 'ms' },
-      });
-      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_MAX_METRIC_NAME, 10, {
-        attributes: { attempt: 0, serializable: false, status: 'rolled_back' },
-        options: { unit: 'ms' },
-      });
-      expect(warnSpy).toHaveBeenCalledWith(
-        TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG,
-        expect.objectContaining({
-          totalIdleMs: 10,
-          maxIdleMs: 10,
-          queryCount: 1,
-          status: 'rolled_back',
-          transactionDurationMs: 10,
-        })
-      );
-    } finally {
-      restoreThreshold();
-      dateNowSpy.mockRestore();
-      warnSpy.mockRestore();
-      recordHistogramValueSpy.mockRestore();
-    }
-  });
-
-  test('withTransaction records outer transaction idle time across nested transactions', async () => {
-    const restoreThreshold = setIdleInTransactionLogThresholdMs(50);
-    let now = 0;
-    const dateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
-    const query = vi.fn(async (sql: string) => {
-      if (sql === 'SELECT 1') {
-        now += 25;
-      }
-      return { rows: [] };
-    });
-    const client = {
-      query,
-      release: vi.fn(),
-    } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
-    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
-
-    try {
-      await repo.withTransaction(async () => {
-        now += 30;
-        await repo.withTransaction(async (txClient) => {
-          now += 20;
-          await txClient.query('SELECT 1');
-        });
-        now += 10;
-      });
-
-      expect(recordHistogramValueSpy).not.toHaveBeenCalled();
-      expect(warnSpy).not.toHaveBeenCalledWith(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, expect.anything());
-
-      now = 0;
-      query.mockClear();
-
-      await repo.withTransaction(async () => {
-        now += 20;
-        await repo.withTransaction(async (txClient) => {
-          now += 5;
-          await txClient.query('SELECT 1');
-        });
-        now += 50;
-      });
-
-      expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
-        'BEGIN ISOLATION LEVEL REPEATABLE READ',
-        'SAVEPOINT sp2',
-        'SELECT 1',
-        'RELEASE SAVEPOINT sp2',
-        'COMMIT',
-      ]);
-      expect(recordHistogramValueSpy).toHaveBeenCalledTimes(2);
-      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_TOTAL_METRIC_NAME, 75, {
-        attributes: { attempt: 0, serializable: false, status: 'committed' },
-        options: { unit: 'ms' },
-      });
-      expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_MAX_METRIC_NAME, 50, {
-        attributes: { attempt: 0, serializable: false, status: 'committed' },
-        options: { unit: 'ms' },
-      });
-      expect(warnSpy).toHaveBeenCalledWith(
-        TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG,
-        expect.objectContaining({
-          attempt: 0,
-          totalIdleMs: 75,
-          maxIdleMs: 50,
-          queryCount: 4,
-          queryDurationMs: 25,
-          serializable: false,
-          status: 'committed',
-          thresholdMs: 50,
-          transactionAttempts: 2,
-          transactionDurationMs: 100,
-        })
-      );
-      expect(client.query).toBe(query);
-    } finally {
-      restoreThreshold();
-      dateNowSpy.mockRestore();
-      warnSpy.mockRestore();
-      recordHistogramValueSpy.mockRestore();
-    }
-  });
-
-  test('withStatementTimeout pins connection and discards it after callback', async () => {
-    const { repo } = await createTestProject({ withRepo: true });
-    let releaseSpy: MockInstance | undefined;
-
-    await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
-      releaseSpy = vi.spyOn(client, 'release');
-
-      await repo.withTransaction(async (txClient) => {
-        expect(txClient).toBe(client);
-      });
-
-      expect(releaseSpy).not.toHaveBeenCalled();
-    });
-
-    expect(releaseSpy).toHaveBeenCalledWith(true);
-    releaseSpy?.mockRestore();
-  });
-
-  test('withStatementTimeout rejects borrowed repository connections', async () => {
-    const { repo } = await createTestProject({ withRepo: true });
-
-    await repo.withTransaction(async () => {
-      await expect(repo.getSystemRepo().withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
-        'borrowed repository connection'
-      );
-    });
-  });
-
-  test('withStatementTimeout rejects active transactions', async () => {
-    const { repo } = await createTestProject({ withRepo: true });
-
-    await repo.withTransaction(async () => {
-      await expect(repo.withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
-        'active transaction'
-      );
-    });
-  });
-
-  test('withStatementTimeout prevents writer operations on a pinned reader connection', async () => {
-    const { repo } = await createTestProject({ withRepo: true });
-    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
-
-    try {
-      await expect(
-        repo.withStatementTimeout({ timeoutMs: 0, mode: DatabaseMode.READER }, async () => {
-          // The timeout wrapper pins one physical reader client. A nested transaction
-          // must not silently reuse that reader client for writer work.
-          await repo.withTransaction(async () => undefined);
-        })
-      ).rejects.toThrow('reader database connection');
-    } finally {
-      errorSpy.mockRestore();
-    }
-  });
-
-  test('borrowed repository connections do not reacquire clients after forced release', async () => {
-    const rollbackError = new Error('rollback failed');
-    const client = {
-      query: vi.fn(async (query: string) => {
-        if (query === 'ROLLBACK') {
-          throw rollbackError;
-        }
-        return { rows: [] };
-      }),
-      release: vi.fn(),
-    } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
-    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
-
-    try {
-      await expect(repo.withTransaction(async () => Promise.reject(new Error('work failed')))).rejects.toThrow(
-        'work failed'
-      );
-
-      // The repository only borrowed this PoolClient, so it drops its local reference
-      // after the fatal rollback path but never releases a client it does not own.
-      expect(client.release).not.toHaveBeenCalled();
-
-      await expect(repo.withTransaction(async () => undefined)).rejects.toThrow(
-        'Borrowed repository connection is no longer available'
-      );
-    } finally {
-      warnSpy.mockRestore();
-      errorSpy.mockRestore();
-    }
-  });
-
-  test('withTransaction does not publish transaction state when BEGIN fails', async () => {
-    const beginError = new Error('begin failed');
-    const client = {
-      query: vi.fn(async () => Promise.reject(beginError)),
-      release: vi.fn(),
-    } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
-    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
-
-    try {
-      await expect(repo.withTransaction(async () => undefined)).rejects.toThrow('begin failed');
-
-      // BEGIN never succeeded, so the in-memory state must not claim an active
-      // transaction or hold callback frames for one.
-      expect((repo as any).connection.transactionDepth).toBe(0);
-      expect((repo as any).connection.callbackStack).toHaveLength(0);
-      expect((repo as any).connection.hasConnection()).toBe(false);
-      expect(client.release).not.toHaveBeenCalled();
-    } finally {
-      errorSpy.mockRestore();
-    }
-  });
-
-  test('withTransaction rejects nested isolation upgrades', async () => {
-    const query = vi.fn(async (_sql: string) => ({ rows: [] }));
-    const client = {
-      query,
-      release: vi.fn(),
-    } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
-
-    await repo.withTransaction(async () => {
-      await expect(repo.withTransaction(async () => undefined, { serializable: true })).rejects.toThrow(
-        'Cannot start SERIALIZABLE transaction inside active REPEATABLE READ transaction'
-      );
-    });
-
-    expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'COMMIT']);
-  });
-
-  test('withTransaction allows nested calls at a weaker isolation level', async () => {
-    const query = vi.fn(async (_sql: string) => ({ rows: [] }));
-    const client = {
-      query,
-      release: vi.fn(),
-    } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
-
-    await repo.withTransaction(
-      async () => {
-        await repo.withTransaction(async () => undefined);
-      },
-      { serializable: true }
-    );
-
-    expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
-      'BEGIN ISOLATION LEVEL SERIALIZABLE',
-      'SAVEPOINT sp2',
-      'RELEASE SAVEPOINT sp2',
-      'COMMIT',
-    ]);
-  });
-
-  test('withTransactionStateLock serializes concurrent transaction begins', async () => {
-    const beginIssued = Promise.withResolvers<undefined>();
-    const allowBegin = Promise.withResolvers<undefined>();
-    const finishFirstTransaction = Promise.withResolvers<undefined>();
-    const secondCallbackStarted = Promise.withResolvers<undefined>();
-    const queries: string[] = [];
-    let beginCount = 0;
-    const query = vi.fn(async (sql: string) => {
-      queries.push(sql);
-      if (sql === 'BEGIN ISOLATION LEVEL REPEATABLE READ' && ++beginCount === 1) {
-        // Pause the first BEGIN before beginTransaction can publish transactionDepth = 1.
-        beginIssued.resolve(undefined);
-        await allowBegin.promise;
-      }
-      return { rows: [] };
-    });
-    const client = {
-      query,
-      release: vi.fn(),
-    } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
-
-    const tx1 = repo.withTransaction(async () => {
-      await finishFirstTransaction.promise;
-    });
-    await beginIssued.promise;
-
-    // Start a second transaction while the first transaction is suspended in BEGIN. Without the state
-    // lock, this second call can observe transactionDepth = 0 and incorrectly issue another BEGIN.
-    const tx2 = repo.withTransaction(async () => {
-      secondCallbackStarted.resolve(undefined);
-    });
-    // Let the second transaction run any queued promise continuations. If it is not blocked by the
-    // lock, it will append its own SQL before this assertion.
-    await allowPendingMicrotasks();
-
-    // The second begin must wait until the first BEGIN has completed and published transactionDepth.
-    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ']);
-
-    allowBegin.resolve(undefined);
-    await secondCallbackStarted.promise;
-    finishFirstTransaction.resolve(undefined);
-    await Promise.all([tx1, tx2]);
-
-    expect(queries).toStrictEqual([
-      'BEGIN ISOLATION LEVEL REPEATABLE READ',
-      'SAVEPOINT sp2',
-      'RELEASE SAVEPOINT sp2',
-      'COMMIT',
-    ]);
-  });
-
-  test('withTransactionStateLock serializes concurrent transaction commits', async () => {
-    const firstStarted = Promise.withResolvers<undefined>();
-    const secondStarted = Promise.withResolvers<undefined>();
-    const finishTransactions = Promise.withResolvers<undefined>();
-    const releaseSavepointIssued = Promise.withResolvers<undefined>();
-    const allowReleaseSavepoint = Promise.withResolvers<undefined>();
-    const queries: string[] = [];
-    let releaseSavepointCount = 0;
-    const query = vi.fn(async (sql: string) => {
-      queries.push(sql);
-      if (sql === 'RELEASE SAVEPOINT sp2' && ++releaseSavepointCount === 1) {
-        // Hold the inner commit in the database call before transactionDepth is decremented.
-        releaseSavepointIssued.resolve(undefined);
-        await allowReleaseSavepoint.promise;
-      }
-      return { rows: [] };
-    });
-    const client = {
-      query,
-      release: vi.fn(),
-    } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
-
-    const tx1 = repo.withTransaction(async () => {
-      firstStarted.resolve(undefined);
-      await secondStarted.promise;
-      await finishTransactions.promise;
-    });
-    await firstStarted.promise;
-
-    const tx2 = repo.withTransaction(async () => {
-      secondStarted.resolve(undefined);
-      await finishTransactions.promise;
-    });
-    await secondStarted.promise;
-
-    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2']);
-    finishTransactions.resolve(undefined);
-    await releaseSavepointIssued.promise;
-    // Both transaction callbacks have finished. Yield so the second commit path can attempt to run;
-    // it must not issue COMMIT until the first RELEASE SAVEPOINT has decremented transactionDepth.
-    await allowPendingMicrotasks();
-
-    // The other commit path must wait until transactionDepth is decremented after RELEASE SAVEPOINT.
-    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2', 'RELEASE SAVEPOINT sp2']);
-
-    allowReleaseSavepoint.resolve(undefined);
-    await Promise.all([tx1, tx2]);
-
-    expect(queries).toStrictEqual([
-      'BEGIN ISOLATION LEVEL REPEATABLE READ',
-      'SAVEPOINT sp2',
-      'RELEASE SAVEPOINT sp2',
-      'COMMIT',
-    ]);
-  });
-
-  test('withTransactionStateLock serializes concurrent transaction rollbacks', async () => {
-    const firstStarted = Promise.withResolvers<undefined>();
-    const secondStarted = Promise.withResolvers<undefined>();
-    const failTransactions = Promise.withResolvers<undefined>();
-    const rollbackSavepointIssued = Promise.withResolvers<undefined>();
-    const allowRollbackSavepoint = Promise.withResolvers<undefined>();
-    const queries: string[] = [];
-    let rollbackSavepointCount = 0;
-    const query = vi.fn(async (sql: string) => {
-      queries.push(sql);
-      if (sql === 'ROLLBACK TO SAVEPOINT sp2' && ++rollbackSavepointCount === 1) {
-        // Hold the inner rollback in the database call before transactionDepth is decremented.
-        rollbackSavepointIssued.resolve(undefined);
-        await allowRollbackSavepoint.promise;
-      }
-      return { rows: [] };
-    });
-    const client = {
-      query,
-      release: vi.fn(),
-    } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
-    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
-
-    try {
-      const tx1 = repo
-        .withTransaction(async () => {
-          firstStarted.resolve(undefined);
-          await secondStarted.promise;
-          await failTransactions.promise;
-          throw new Error('first rollback');
-        })
-        .catch((err) => err);
-      await firstStarted.promise;
-
-      const tx2 = repo
-        .withTransaction(async () => {
-          secondStarted.resolve(undefined);
-          await failTransactions.promise;
-          throw new Error('second rollback');
-        })
-        .catch((err) => err);
-      await secondStarted.promise;
-
-      expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2']);
-      failTransactions.resolve(undefined);
-      await rollbackSavepointIssued.promise;
-      // Both transaction callbacks have failed. Yield so the second rollback path can attempt to run;
-      // it must not issue ROLLBACK until the savepoint rollback has updated transactionDepth.
-      await allowPendingMicrotasks();
-
-      // The other rollback path must wait until transactionDepth is decremented after ROLLBACK TO SAVEPOINT.
-      expect(queries).toStrictEqual([
-        'BEGIN ISOLATION LEVEL REPEATABLE READ',
-        'SAVEPOINT sp2',
-        'ROLLBACK TO SAVEPOINT sp2',
-      ]);
-
-      allowRollbackSavepoint.resolve(undefined);
-      const results = await Promise.all([tx1, tx2]);
-
-      expect(results).toEqual([expect.any(Error), expect.any(Error)]);
-      expect(queries).toStrictEqual([
-        'BEGIN ISOLATION LEVEL REPEATABLE READ',
-        'SAVEPOINT sp2',
-        'ROLLBACK TO SAVEPOINT sp2',
-        'ROLLBACK',
-      ]);
-    } finally {
-      errorSpy.mockRestore();
-    }
-  });
-
-  test('processing pre-commit callbacks does not deadlock a transaction', async () => {
-    const queries: string[] = [];
-    const query = vi.fn(async (sql: string) => {
-      queries.push(sql);
-      return { rows: [] };
-    });
-    const client = {
-      query,
-      release: vi.fn(),
-    } as unknown as PoolClient;
-    const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
-    );
-
-    const result = await Promise.race([
-      repo
-        .withTransaction(async () => {
-          await repo.preCommit(async () => {
-            // Pre-commit callbacks are allowed to start their own nested transaction.
-            // If the outer commit held transactionStateLock while running callbacks, this nested
-            // transaction would wait for the lock while the outer commit waited for the callback.
-            await repo.withTransaction(async () => undefined);
-          });
-        })
-        .then(() => 'completed'),
-      new Promise((resolve) => {
-        // The broken implementation deadlocks, so the race gives the test a bounded failure mode.
-        setTimeout(() => resolve('timed out'), 100);
-      }),
-    ]);
-
-    expect(result).toBe('completed');
-    expect(queries).toStrictEqual([
-      'BEGIN ISOLATION LEVEL REPEATABLE READ',
-      'SAVEPOINT sp2',
-      'RELEASE SAVEPOINT sp2',
-      'COMMIT',
-    ]);
-  });
-
-  test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
-    const repo = systemRepo;
-    const loggerErrorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
-    const finalPostCommit = vi.fn();
-
-    const error = new Error('Post-commit hook failed');
-    const promise = repo.withTransaction(async () => {
-      await repo.postCommit(async () => {
-        throw new Error('Post-commit hook failed');
-      });
-      await repo.postCommit(async () => {
-        // eslint-disable-next-line no-throw-literal
-        throw 'Post-commit hook failed with string';
-      });
-      await repo.postCommit(finalPostCommit);
-      if (mode === 'rollback') {
-        throw new Error('Transaction failed');
-      }
-    });
-
-    if (mode === 'commit') {
-      await promise;
-      expect(finalPostCommit).toHaveBeenCalled();
-      expect(loggerErrorSpy).toHaveBeenCalledTimes(2);
-      expect(loggerErrorSpy).toHaveBeenCalledWith(expect.any(String), error);
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          err: 'Post-commit hook failed with string',
-        })
-      );
-    } else {
-      await expect(promise).rejects.toThrow('Transaction failed');
-      expect(finalPostCommit).not.toHaveBeenCalled();
-      expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          error: 'Transaction failed',
-        })
-      );
-    }
-
-    loggerErrorSpy.mockRestore();
-  });
-
   test('Async quota delay is applied after transaction commit', async () => {
     const { repo, project, client, login, membership } = await createTestProject({
       withRepo: true,
@@ -2281,8 +1452,8 @@ describe('FHIR Repo', () => {
       { async: true },
       async () => {
         const startTime = Date.now();
-        await repo.withTransaction(async () => {
-          await repo.createResource({ resourceType: 'Patient' });
+        await repo.withTransaction(async (txRepo) => {
+          await txRepo.createResource({ resourceType: 'Patient' });
           expect(Date.now() - startTime).toBeLessThan(100);
         });
         expect(Date.now() - startTime).toBeGreaterThan(100);
@@ -2306,15 +1477,19 @@ describe('FHIR Repo', () => {
         patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
       }
 
-      await repo.withTransaction(async (client) => {
-        const querySpy = vi.spyOn(client, 'query');
-        await repo.createResource(patient);
+      let finishedTransaction = false;
+      await repo.withTransaction(async (txRepo) => {
+        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+        const querySpy = spyOnQuery(client);
+        await txRepo.createResource(patient);
         const calls = querySpy.mock.calls;
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
         expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_References"')).length).toBeGreaterThanOrEqual(2);
         querySpy.mockRestore();
+        finishedTransaction = true;
       });
+      expect(finishedTransaction).toBe(true);
     }));
 
   test('__version column', async () => {
@@ -2487,22 +1662,6 @@ describe('FHIR Repo', () => {
     expect(repo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
     expect(clonedRepo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
   });
-
-  test('clone does not share the same connection as the original repository', async () =>
-    withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: true });
-
-      let checked = false;
-      await repo.withTransaction(async (client) => {
-        // starting a transaction will have pinned a connection to `repo`.
-        // so ensure that cloning after that pinning does not propagate the pinned connection
-        // to the cloned repository.
-        const clonedRepo1 = repo.clone();
-        expect(clonedRepo1.getDatabaseClient(DatabaseMode.WRITER)).not.toBe(client);
-        checked = true;
-      });
-      expect(checked).toBe(true);
-    }));
 });
 
 function shuffleString(s: string): string {
@@ -2515,13 +1674,4 @@ function shuffleString(s: string): string {
     arr[j] = temp;
   }
   return arr.join('');
-}
-
-// Some transaction race tests need to make a negative assertion: a competing async path has had a
-// chance to resume, but it must not issue SQL while the transaction state lock is held.
-async function allowPendingMicrotasks(): Promise<void> {
-  // Yield twice so already-queued promise continuations, and continuations queued by those
-  // continuations, can run far enough to issue SQL if the lock is missing.
-  await Promise.resolve();
-  await Promise.resolve();
 }

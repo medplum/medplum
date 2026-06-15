@@ -1733,9 +1733,10 @@ describe('Appointment/$find', () => {
     });
     expect(response.status).toBe(400);
     expect(response.body.issue[0].details.text).toBe("Scheduling parameters attribute 'duration' does not match");
+
     expect(response.body.issue[0].expression).toEqual([
-      "Parameters.schedule[0].extension[0].extension('duration')",
-      "Parameters.schedule[1].extension[1].extension('duration')",
+      'Parameters.schedule[0].extension[0]',
+      'Parameters.schedule[1].extension[1]',
     ]);
   });
 

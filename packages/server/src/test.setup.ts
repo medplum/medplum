@@ -23,6 +23,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type internal from 'node:stream';
+import type { QueryConfigValues, QueryResult, QueryResultRow } from 'pg';
+import { Client as PgClient } from 'pg';
 import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
@@ -35,6 +37,7 @@ import type { MedplumRedisConfig } from './config/types';
 // instances before test files register their mocks.
 import type { Repository } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
+import type { PgQueryable } from './fhir/sql';
 // Dynamically imported below. A static import would load `fhir/repo` → `database` → `pg`
 // while setupFiles run, before per-test-file `vi.mock('pg')` is registered.
 import { requestContextStore } from './request-context-store';
@@ -593,4 +596,59 @@ keyUsage = digitalSignature, keyEncipherment
     // Cleanup
     rmSync(tmpDir, { recursive: true, force: true });
   }
+}
+
+/**
+ * Installs a spy on `PgClient.prototype.query` that consults `interceptor`
+ * for each query and restores the spy after `fn` settles. The interceptor receives
+ * the SQL text (if any) and may:
+ *  - throw — the query rejects with the thrown error
+ *  - return a value — the query resolves with that value (the real DB is not hit)
+ *  - return undefined — the real query implementation runs
+ *
+ * Useful for injecting failures at the PG layer, which is necessary because the
+ * reindex worker runs its search via the transaction-scoped repo created inside
+ * `systemRepo.withTransaction(...)` — a distinct instance from `systemRepo`, so
+ * spying on `systemRepo.search` does not intercept it.
+ * @param interceptor - Called for each PG query with the SQL text; throws to reject, returns a value to resolve, or returns undefined to delegate to the real query.
+ * @param fn - The async block to run while the interceptor is installed.
+ * @returns The resolved value of `fn`.
+ */
+export async function withQueryInterceptor<T>(
+  interceptor: (sql: string | undefined) => unknown,
+  fn: () => Promise<T>
+): Promise<T> {
+  const realQuery = PgClient.prototype.query;
+  const spy = vi.spyOn(PgClient.prototype, 'query').mockImplementation(async function (
+    this: PgClient,
+    ...args: unknown[]
+  ): Promise<any> {
+    const query = args[0] as string | { text?: string } | undefined;
+    const sql = typeof query === 'string' ? query : query?.text;
+    const result = await interceptor(sql);
+    if (result !== undefined) {
+      return result;
+    }
+    return (realQuery as any).apply(this, args);
+  });
+  try {
+    return await fn();
+  } finally {
+    spy.mockRestore();
+  }
+}
+
+/**
+ * Convenience function to spy on the `query` method of the given `client: PgQueryable` returning
+ * the spy cast to the `query` overload signature commonly used in the codebase.
+ * @param client - The client to spy on.
+ * @returns The spy instance.
+ */
+export function spyOnQuery<R extends QueryResultRow = any, I = any[]>(
+  client: PgQueryable
+): Mock<Promise<QueryResult<R>>, [string, QueryConfigValues<I>]> {
+  return vi.spyOn(client, 'query') as unknown as Mock<
+    Promise<QueryResult<R>>,
+    [string, QueryConfigValues<I>]
+  >;
 }

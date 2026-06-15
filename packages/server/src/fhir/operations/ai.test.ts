@@ -553,12 +553,12 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [{ message: { content: 'ok', tool_calls: null } }],
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -573,7 +573,7 @@ describe('AI Operation', () => {
       });
 
     expect(res.status).toBe(200);
-    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe('https://api.openai.com/v1/chat/completions');
+    expect((global.fetch as Mock).mock.calls[0][0]).toBe('https://api.openai.com/v1/chat/completions');
   });
 
   test('Uses custom base URL secret (LiteLLM proxy)', async () => {
@@ -590,12 +590,12 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [{ message: { content: 'ok', tool_calls: null } }],
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -636,12 +636,12 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [{ message: { content: 'ok', tool_calls: null } }],
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -656,7 +656,7 @@ describe('AI Operation', () => {
       });
 
     expect(res.status).toBe(200);
-    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe('https://litellm.example.com/v1/chat/completions');
+    expect((global.fetch as Mock).mock.calls[0][0]).toBe('https://litellm.example.com/v1/chat/completions');
   });
 
   test('Unsupported content type', async () => {

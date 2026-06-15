@@ -583,18 +583,16 @@ describe('Database migrations', () => {
       });
 
       const reindexJob = new ReindexJob(systemRepo);
-      const searchSpy = vi.spyOn(systemRepo, 'search').mockResolvedValueOnce({
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [],
-      });
+      const processIterationSpy = vi
+        .spyOn(reindexJob, 'processIteration')
+        .mockResolvedValueOnce({ count: 0, durationMs: 0 });
       await expect(reindexJob.execute(undefined, jobData)).resolves.toBe('finished');
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       if (firstBootMode && dataVersion) {
         expect(asyncJob.status).toStrictEqual('completed');
         expect(asyncJob.output?.parameter).toEqual([{ name: 'skipped', valueString: 'In firstBoot mode' }]);
-        expect(searchSpy).not.toHaveBeenCalled();
+        expect(processIterationSpy).not.toHaveBeenCalled();
       } else {
         expect(asyncJob.status).toStrictEqual('completed');
         expect(asyncJob.output?.parameter).toEqual([
@@ -606,7 +604,8 @@ describe('Database migrations', () => {
             ]),
           },
         ]);
-        expect(searchSpy).toHaveBeenCalledTimes(1);
+        expect(processIterationSpy).toHaveBeenCalledTimes(1);
+        processIterationSpy.mockRestore();
       }
     });
   });
