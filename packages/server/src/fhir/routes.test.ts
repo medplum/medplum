@@ -6,6 +6,7 @@ import type { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fh
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
@@ -20,6 +21,26 @@ let searchOnReaderAccessToken: string;
 let testPatient: WithId<Patient>;
 let patientId: string;
 let patientVersionId: string;
+
+// Search tests spy on the shared reader/writer pools. Restore only those spies in try/finally
+// rather than vi.restoreAllMocks() in afterEach, which can disturb unrelated mocks and leave
+// pool.query in an inconsistent state for subsequent HTTP requests in this file.
+function spyOnDatabasePools(): {
+  readerSpy: MockInstance;
+  writerSpy: MockInstance;
+  restore: () => void;
+} {
+  const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+  const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+  return {
+    readerSpy,
+    writerSpy,
+    restore: () => {
+      readerSpy.mockRestore();
+      writerSpy.mockRestore();
+    },
+  };
+}
 
 describe('FHIR Routes', () => {
   beforeAll(async () => {
@@ -54,10 +75,6 @@ describe('FHIR Routes', () => {
         patientVersionId = (testPatient.meta as Meta).versionId as string;
       }
     }
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -484,68 +501,77 @@ describe('FHIR Routes', () => {
 
   describe.each<['writer' | 'reader']>([['writer'], ['reader']])('On %s', (repoMode) => {
     test('Search', async () => {
-      const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
-      const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+      try {
+        const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
-      const res = await request(app)
-        .get(`/fhir/R4/Patient`)
-        .set('Authorization', 'Bearer ' + token);
-      expect(res.status).toBe(200);
+        const res = await request(app)
+          .get(`/fhir/R4/Patient`)
+          .set('Authorization', 'Bearer ' + token);
+        expect(res.status).toBe(200);
 
-      if (repoMode === 'writer') {
-        expect(writerSpy).toHaveBeenCalledTimes(1);
-        expect(readerSpy).toHaveBeenCalledTimes(0);
-      } else {
-        expect(writerSpy).toHaveBeenCalledTimes(0);
-        expect(readerSpy).toHaveBeenCalledTimes(1);
+        if (repoMode === 'writer') {
+          expect(writerSpy).toHaveBeenCalledTimes(1);
+          expect(readerSpy).toHaveBeenCalledTimes(0);
+        } else {
+          expect(writerSpy).toHaveBeenCalledTimes(0);
+          expect(readerSpy).toHaveBeenCalledTimes(1);
+        }
+      } finally {
+        restore();
       }
     });
 
     test('Search by POST', async () => {
-      const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
-      const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+      try {
+        const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
-      const res = await request(app)
-        .post(`/fhir/R4/Patient/_search`)
-        .set('Authorization', 'Bearer ' + token)
-        .type('form');
-      expect(res.status).toBe(200);
-      const result = res.body as Bundle;
-      expect(result.type).toStrictEqual('searchset');
-      expect(result.entry?.length).toBeGreaterThan(0);
+        const res = await request(app)
+          .post(`/fhir/R4/Patient/_search`)
+          .set('Authorization', 'Bearer ' + token)
+          .type('form');
+        expect(res.status).toBe(200);
+        const result = res.body as Bundle;
+        expect(result.type).toStrictEqual('searchset');
+        expect(result.entry?.length).toBeGreaterThan(0);
 
-      if (repoMode === 'writer') {
-        expect(writerSpy).toHaveBeenCalledTimes(1);
-        expect(readerSpy).toHaveBeenCalledTimes(0);
-      } else {
-        expect(writerSpy).toHaveBeenCalledTimes(0);
-        expect(readerSpy).toHaveBeenCalledTimes(1);
+        if (repoMode === 'writer') {
+          expect(writerSpy).toHaveBeenCalledTimes(1);
+          expect(readerSpy).toHaveBeenCalledTimes(0);
+        } else {
+          expect(writerSpy).toHaveBeenCalledTimes(0);
+          expect(readerSpy).toHaveBeenCalledTimes(1);
+        }
+      } finally {
+        restore();
       }
     });
 
     test('Search by POST with multiple includes', async () => {
-      const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
-      const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+      try {
+        const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
-      const res = await request(app)
-        .post(`/fhir/R4/Patient/_search`)
-        .set('Authorization', 'Bearer ' + token)
-        .type('form')
-        .send(`_include=Patient:general-practitioner&_include=Patient:organization`);
-      expect(res.status).toBe(200);
-      const result = res.body as Bundle;
-      expect(result.type).toStrictEqual('searchset');
-      expect(result.entry?.length).toBeGreaterThan(0);
+        const res = await request(app)
+          .post(`/fhir/R4/Patient/_search`)
+          .set('Authorization', 'Bearer ' + token)
+          .type('form')
+          .send(`_include=Patient:general-practitioner&_include=Patient:organization`);
+        expect(res.status).toBe(200);
+        const result = res.body as Bundle;
+        expect(result.type).toStrictEqual('searchset');
+        expect(result.entry?.length).toBeGreaterThan(0);
 
-      if (repoMode === 'writer') {
-        expect(writerSpy).toHaveBeenCalledTimes(1);
-        expect(readerSpy).toHaveBeenCalledTimes(0);
-      } else {
-        expect(writerSpy).toHaveBeenCalledTimes(0);
-        expect(readerSpy).toHaveBeenCalledTimes(1);
+        if (repoMode === 'writer') {
+          expect(writerSpy).toHaveBeenCalledTimes(1);
+          expect(readerSpy).toHaveBeenCalledTimes(0);
+        } else {
+          expect(writerSpy).toHaveBeenCalledTimes(0);
+          expect(readerSpy).toHaveBeenCalledTimes(1);
+        }
+      } finally {
+        restore();
       }
     });
 
@@ -574,39 +600,41 @@ describe('FHIR Routes', () => {
           });
         expect(res2.status).toBe(201);
 
-        const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-        const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+        const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+        try {
+          const res3 = await request(app)
+            .get('/fhir/R4?_type=Patient,Observation')
+            .set('Authorization', 'Bearer ' + accessToken);
+          expect(res3.status).toBe(200);
 
-        const res3 = await request(app)
-          .get('/fhir/R4?_type=Patient,Observation')
-          .set('Authorization', 'Bearer ' + accessToken);
-        expect(res3.status).toBe(200);
+          const patient = res1.body;
+          const obs = res2.body;
+          const bundle = res3.body;
 
-        const patient = res1.body;
-        const obs = res2.body;
-        const bundle = res3.body;
+          expect(bundle.entry?.length).toBe(2);
+          expect(bundleContains(bundle, patient)).toBeTruthy();
+          expect(bundleContains(bundle, obs)).toBeTruthy();
 
-        expect(bundle.entry?.length).toBe(2);
-        expect(bundleContains(bundle, patient)).toBeTruthy();
-        expect(bundleContains(bundle, obs)).toBeTruthy();
+          if (repoMode === 'writer') {
+            expect(writerSpy).toHaveBeenCalledTimes(1);
+            expect(readerSpy).toHaveBeenCalledTimes(0);
+          } else {
+            expect(writerSpy).toHaveBeenCalledTimes(0);
+            expect(readerSpy).toHaveBeenCalledTimes(1);
+          }
 
-        if (repoMode === 'writer') {
-          expect(writerSpy).toHaveBeenCalledTimes(1);
-          expect(readerSpy).toHaveBeenCalledTimes(0);
-        } else {
-          expect(writerSpy).toHaveBeenCalledTimes(0);
-          expect(readerSpy).toHaveBeenCalledTimes(1);
+          // Also verify that trailing slash works
+          const res4 = await request(app)
+            .get('/fhir/R4/?_type=Patient,Observation')
+            .set('Authorization', 'Bearer ' + accessToken);
+          expect(res4.status).toBe(200);
+          const bundle2 = res4.body;
+          expect(bundle2.entry?.length).toBe(2);
+          expect(bundleContains(bundle2, patient)).toBeTruthy();
+          expect(bundleContains(bundle2, obs)).toBeTruthy();
+        } finally {
+          restore();
         }
-
-        // Also verify that trailing slash works
-        const res4 = await request(app)
-          .get('/fhir/R4/?_type=Patient,Observation')
-          .set('Authorization', 'Bearer ' + accessToken);
-        expect(res4.status).toBe(200);
-        const bundle2 = res4.body;
-        expect(bundle2.entry?.length).toBe(2);
-        expect(bundleContains(bundle2, patient)).toBeTruthy();
-        expect(bundleContains(bundle2, obs)).toBeTruthy();
       }));
   });
 

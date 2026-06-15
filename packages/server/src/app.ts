@@ -64,6 +64,25 @@ import { closeWebSockets, initWebSockets } from './ws/routes';
 
 let server: http.Server | undefined = undefined;
 
+// Many integration tests call initApp/shutdownApp in quick succession (e.g. resource-cap.test.ts
+// does both in beforeEach/afterEach). Without serialization, shutdown can overlap the next init,
+// leaving the DB pool or Redis in a bad state and causing intermittent HTTP failures in later tests.
+let appLifecycleLock: Promise<unknown> = Promise.resolve();
+
+/**
+ * Serialize initAppServices and shutdownApp so they never run concurrently.
+ * @param fn - The function to run.
+ * @returns The result of the function.
+ */
+function withAppLifecycle<T>(fn: () => Promise<T>): Promise<T> {
+  const result = appLifecycleLock.then(fn, fn);
+  appLifecycleLock = result.then(
+    () => undefined,
+    () => undefined
+  );
+  return result;
+}
+
 export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
 
 /**
@@ -251,43 +270,47 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 }
 
 export async function initAppServices(config: MedplumServerConfig): Promise<void> {
-  loadStructureDefinitions();
-  initRedis(config);
-  await initDatabase(config);
-  initWorkers(config);
-  await seedDatabase(config);
-  await initKeys(config);
-  initBinaryStorage(config.binaryStorage);
-  initHeartbeat(config);
-  initOtelHeartbeat();
-  initServerRegistryHeartbeatListener();
-  await maybeAutoRunPendingPostDeployMigration();
+  return withAppLifecycle(async () => {
+    loadStructureDefinitions();
+    initRedis(config);
+    await initDatabase(config);
+    initWorkers(config);
+    await seedDatabase(config);
+    await initKeys(config);
+    initBinaryStorage(config.binaryStorage);
+    initHeartbeat(config);
+    initOtelHeartbeat();
+    initServerRegistryHeartbeatListener();
+    await maybeAutoRunPendingPostDeployMigration();
+  });
 }
 
 export async function shutdownApp(): Promise<void> {
-  cleanupOtelHeartbeat();
-  cleanupHeartbeat();
-  cleanupReservedDatabaseConnections();
-  await closeWebSockets();
-  if (server) {
-    await new Promise((resolve) => {
-      (server as http.Server).close(resolve);
-    });
-    server = undefined;
-  }
+  return withAppLifecycle(async () => {
+    cleanupOtelHeartbeat();
+    cleanupHeartbeat();
+    cleanupReservedDatabaseConnections();
+    await closeWebSockets();
+    if (server) {
+      await new Promise((resolve) => {
+        (server as http.Server).close(resolve);
+      });
+      server = undefined;
+    }
 
-  await closeWorkers();
-  await closeDatabase();
-  await closeRedis();
-  closeRateLimiter();
+    await closeWorkers();
+    await closeDatabase();
+    await closeRedis();
+    closeRateLimiter();
 
-  // If binary storage is a temporary directory, delete it
-  const binaryStorage = getConfig().binaryStorage;
-  if (binaryStorage?.startsWith('file:' + join(tmpdir(), 'medplum-temp-storage'))) {
-    rmSync(binaryStorage.replace('file:', ''), { recursive: true, force: true });
-  }
+    // If binary storage is a temporary directory, delete it
+    const binaryStorage = getConfig().binaryStorage;
+    if (binaryStorage?.startsWith('file:' + join(tmpdir(), 'medplum-temp-storage'))) {
+      rmSync(binaryStorage.replace('file:', ''), { recursive: true, force: true });
+    }
 
-  await drainStdout();
+    await drainStdout();
+  });
 }
 
 const loggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
