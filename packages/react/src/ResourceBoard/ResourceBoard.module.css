@@ -16,25 +16,14 @@
   border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 }
 
+/* Per-item chrome wrapper. The board renders this `<div>` around each item's
+   content (from `renderItem`), so it owns the hover/selected backgrounds. It
+   deliberately has no padding: the item's content provides its own padding so a
+   navigational item (a link) can fill this wrapper and keep the whole row clickable. */
 .item {
-  display: block;
   transition: background 0.2s;
   cursor: pointer;
-  padding: calc(0.5rem * var(--mantine-scale)) var(--mantine-spacing-xs);
   border-radius: 0.5rem;
-  color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-2));
-  text-decoration: none;
-}
-
-/* Reset native `<button>` defaults so clickable rows match link rows. */
-button.item {
-  width: 100%;
-  border: none;
-  margin: 0;
-  background: transparent;
-  text-align: inherit;
-  font: inherit;
-  appearance: none;
 }
 
 /* Normalize the line-height of every text child so a mix of `<Text size="md">`

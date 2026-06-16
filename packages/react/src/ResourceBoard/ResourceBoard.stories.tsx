@@ -38,16 +38,9 @@ const sampleItems: Communication[] = [
   },
 ];
 
-function ItemRow(props: { readonly item: Communication; readonly selected: boolean }): JSX.Element {
+function ItemRow(props: { readonly item: Communication }): JSX.Element {
   return (
-    <Box
-      p="sm"
-      style={{
-        cursor: 'pointer',
-        background: props.selected ? 'var(--mantine-color-gray-1)' : undefined,
-        borderBottom: '1px solid var(--mantine-color-gray-2)',
-      }}
-    >
+    <Box p="sm">
       <Text fw={500} truncate>
         {props.item.topic?.text}
       </Text>
@@ -75,7 +68,7 @@ export const Basic = (): JSX.Element => {
       <div style={{ height: 600 }}>
         <ResourceBoard
           search={{ resourceType: 'Communication' }}
-          renderItem={(item, ctx) => <ItemRow item={item as Communication} selected={ctx.selected} />}
+          renderItem={(item) => <ItemRow item={item as Communication} />}
           renderDetail={(item) => <DetailPanel item={item as Communication} />}
         />
       </div>
@@ -105,9 +98,9 @@ export const WithTabsAndActions = (): JSX.Element => {
               </ActionIcon>
             </Tooltip>
           }
-          renderItem={(item, ctx) => (
+          renderItem={(item) => (
             <div onClick={() => setSelectedId(item.id)} onKeyDown={() => {}} role="presentation">
-              <ItemRow item={item as Communication} selected={ctx.selected} />
+              <ItemRow item={item as Communication} />
             </div>
           )}
           renderDetail={(item) => <DetailPanel item={item as Communication} />}
@@ -126,7 +119,7 @@ export const CustomLoadItems = (): JSX.Element => {
           search={{ resourceType: 'Communication' }}
           selectedId="comm-2"
           loadItems={loadItems}
-          renderItem={(item, ctx) => <ItemRow item={item as Communication} selected={ctx.selected} />}
+          renderItem={(item) => <ItemRow item={item as Communication} />}
           renderDetail={(item) => <DetailPanel item={item as Communication} />}
         />
       </div>

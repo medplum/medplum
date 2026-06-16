@@ -35,13 +35,12 @@ import { PatientSummary } from '../../PatientSummary/PatientSummary';
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
 import type {
   ResourceBoardDetailContext,
-  ResourceBoardItemContext,
   ResourceBoardLoadResult,
   ResourceBoardTab,
 } from '../../ResourceBoard/ResourceBoard';
 import { ResourceBoard } from '../../ResourceBoard/ResourceBoard';
 import { ThreadChat } from '../ThreadChat/ThreadChat';
-import { ChatListItem } from './ChatListItem';
+import { ThreadListItem } from './ThreadListItem';
 import { NewTopicDialog } from './NewTopicDialog';
 import { ParticipantFilter } from './ParticipantFilter';
 import classes from './ThreadInbox.module.css';
@@ -286,13 +285,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     </>
   );
 
-  const renderItem = (item: Resource, ctx: ResourceBoardItemContext): JSX.Element => (
-    <ChatListItem
+  const renderItem = (item: Resource): JSX.Element => (
+    <ThreadListItem
       topic={item as Communication}
       lastCommunication={item.id ? lastMessagesRef.current.get(item.id) : undefined}
-      isSelected={ctx.selected}
       getThreadUri={getThreadUri}
-      className={ctx.className}
     />
   );
 

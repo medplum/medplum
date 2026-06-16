@@ -7,7 +7,6 @@ import type { Resource } from '@medplum/fhirtypes';
 import type { ResourceBoardLoadResult } from '@medplum/react-hooks';
 import { useMedplumNavigate, useResourceBoard } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
-import { Fragment } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import classes from './ResourceBoard.module.css';
 import { ResourceBoardSkeleton } from './ResourceBoardSkeleton';
@@ -36,12 +35,6 @@ export interface ResourceBoardItemContext {
   readonly index: number;
   /** Full current page of items, for neighbor-aware rendering (e.g. divider hiding). */
   readonly items: Resource[];
-  /**
-   * Standard list-item styling for the item's root anchor or button element:
-   * block layout, hover and selected backgrounds, and a native `<button>` reset.
-   * Already reflects the selected state.
-   */
-  readonly className: string;
 }
 
 export interface ResourceBoardDetailContext {
@@ -83,9 +76,9 @@ export interface ResourceBoardProps {
 
   // List
   /**
-   * Renders one list item. Apply `ctx.className` to the item's root anchor or button
-   * for the standard list-item styling (hover and selected backgrounds included),
-   * or style from scratch using `ctx.selected`.
+   * Renders one list item's content. The board wraps each item in a container that
+   * owns the standard list-item chrome (hover and selected backgrounds), so this only
+   * needs to render content; use `ctx.selected` for any selection-dependent styling.
    */
   readonly renderItem: (item: Resource, ctx: ResourceBoardItemContext) => ReactNode;
   /** Shown when the list loads empty. Default: dimmed "No items found". */
@@ -160,7 +153,9 @@ export function ResourceBoard(props: ResourceBoardProps): JSX.Element {
   const offset = memoizedSearch.offset ?? 0;
   const currentPage = Math.floor(offset / count) + 1;
   const pageCount = total !== undefined ? Math.ceil(total / count) : 0;
-  const showPagination = !!onChange && !loading && total !== undefined && total > count;
+  // Stays mounted across loads so paging doesn't flicker the footer; `total` persists
+  // between loads (only the list area swaps to the skeleton).
+  const showPagination = !!onChange && total !== undefined && total > count;
   const selectedKey = selected?.id ?? selectedId;
 
   // Methods
@@ -213,14 +208,12 @@ export function ResourceBoard(props: ResourceBoardProps): JSX.Element {
             items.map((item, index) => {
               const isSelected = item.id !== undefined && item.id === selectedKey;
               return (
-                <Fragment key={item.id ?? index}>
-                  {renderItem(item, {
-                    selected: isSelected,
-                    index,
-                    items,
-                    className: isSelected ? `${classes.item} ${classes.selected}` : classes.item,
-                  })}
-                </Fragment>
+                <div
+                  key={item.id ?? index}
+                  className={isSelected ? `${classes.item} ${classes.selected}` : classes.item}
+                >
+                  {renderItem(item, { selected: isSelected, index, items })}
+                </div>
               );
             })}
         </ScrollArea>
