@@ -440,6 +440,48 @@ export async function deleteRedisKeys(redisInstance: Redis, prefix: string): Pro
 }
 
 /**
+ * Waits for a pub/sub subscriber connection to become ready before SUBSCRIBE.
+ * ioredis runs an INFO ready check during connect; if SUBSCRIBE completes first,
+ * the connection enters subscriber mode and the ready check fails.
+ * @param subscriber - The subscriber to wait for.
+ * @returns A promise that resolves when the subscriber is ready.
+ */
+export async function waitForPubSubRedisSubscriberReady(subscriber: Redis): Promise<void> {
+  if (subscriber.status === 'ready') {
+    return;
+  }
+  if (subscriber.status === 'end' || subscriber.status === 'close') {
+    throw new Error('Redis subscriber connection is not open');
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const onReady = (): void => {
+      cleanup();
+      resolve();
+    };
+    const onError = (err: Error): void => {
+      cleanup();
+      reject(err);
+    };
+    const onEnd = (): void => {
+      cleanup();
+      reject(new Error('Redis subscriber connection closed before ready'));
+    };
+    function cleanup(): void {
+      subscriber.off('ready', onReady);
+      subscriber.off('error', onError);
+      subscriber.off('end', onEnd);
+    }
+    subscriber.once('ready', onReady);
+    subscriber.once('error', onError);
+    subscriber.once('end', onEnd);
+    if (subscriber.status === 'ready') {
+      onReady();
+    }
+  });
+}
+
+/**
  * Helper function to generate a self-signed certificate for testing.
  * @param subject - The subject name for the certificate.
  * @param isCA - Whether the certificate should be a CA certificate.

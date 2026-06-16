@@ -52,7 +52,7 @@ import {
 } from '../pubsub';
 import * as redisModule from '../redis';
 import { getPubSubRedisSubscriber } from '../redis';
-import { createTestProject, withTestContext } from '../test.setup';
+import { createTestProject, waitForPubSubRedisSubscriberReady, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import type { SubscriptionJobData } from './subscription';
@@ -2024,6 +2024,11 @@ describe('Subscription Worker', () => {
         WS_SUBSCRIPTIONS_TEST_CHANNEL,
         actualConstants.WEBSOCKET_SUB_PUBLISH_CHANNEL,
       ]);
+      // ioredis runs an INFO "ready check" during connect. If SUBSCRIBE completes first, the
+      // connection enters subscriber mode and that check fails with ERR Can't execute 'info'.
+      // Production code on main does not need this helper, but under Vitest's full-suite order
+      // other tests may leave subscribers in flight, so wait for ready before subscribing here.
+      await waitForPubSubRedisSubscriberReady(subscriber);
       for (const channel of channels) {
         await subscriber.subscribe(channel);
       }
