@@ -3,24 +3,26 @@
 // @ts-nocheck -- embedded architecture diagram: self-contained generated figure with
 // inline styling and ref-measured SVG connectors; types intentionally skipped here.
 import { useEffect, useRef, useState } from 'react';
-import styles from './PlatformDiagram.module.css';
+import styles from './ProductsDiagram.module.css';
 
-/* Foundation → diagram icon glyph. Each nav chip in PlatformFoundations renders the same
+/* Foundation → diagram icon glyph. Each nav chip in ProductsFoundations renders the same
    glyph its region uses here, so the selector and the figure read as the same set without
-   needing numbered badges. Keys match the names in platform-content's FOUNDATIONS. */
+   needing numbered badges. Keys match the names in products-content's FOUNDATIONS. */
 export const FOUNDATION_ICON = {
   'FHIR Data Store & API': 'database',
   'TypeScript / JavaScript SDK': 'code',
-  'React Storybook': 'layers',
+  'Medplum Component Library': 'layers',
   Bots: 'robot',
   Subscriptions: 'bell',
   'Medplum Bridge': 'fileTransfer',
   'Medplum Auth': 'lock',
-  'Access Control & Tenancy': 'shield',
+  'Access Control': 'shield',
+  'Multi-Tenancy': 'buildings',
+  'Audit Logging': 'history',
 };
 
 /* ───────────────────────── Tokens ─────────────────────────
-   Colors resolve to CSS custom properties (defined in PlatformDiagram.module.css)
+   Colors resolve to CSS custom properties (defined in ProductsDiagram.module.css)
    so the whole figure follows the light/dark theme. */
 
 const C = {
@@ -219,6 +221,28 @@ const I = {
       <circle cx="7" cy="11" r="1.4" fill="currentColor" />
     </>
   ),
+
+  /* Two separated towers — tenant isolation: many tenants, one deployment. */
+  buildings: (
+    <>
+      <rect x="3" y="9" width="7" height="11" rx="1" />
+      <rect x="13" y="4" width="8" height="16" rx="1" />
+      <path d="M6 13h1" />
+      <path d="M6 16.5h1" />
+      <path d="M16.5 8h1.5" />
+      <path d="M16.5 12h1.5" />
+      <path d="M16.5 16h1.5" />
+    </>
+  ),
+
+  /* Clock with a revert arrow — the standard audit-history glyph. */
+  history: (
+    <>
+      <path d="M3.5 9A9 9 0 1 1 3 13" />
+      <path d="M3 4v5h5" />
+      <path d="M12 8v4.5l3 2" />
+    </>
+  ),
 };
 
 export function Icon({ name, color = '#9CA3AF', size = 20 }) {
@@ -406,7 +430,7 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
   const [R, setR] = useState({});
 
   /* Interactive-foundation wiring. A region passes its foundation name (matching the
-     names in platform-content's FOUNDATIONS) so the parent tracker can show its copy.
+     names in products-content's FOUNDATIONS) so the parent tracker can show its copy.
      Several regions can share a name (e.g. all three SDK boxes) — they all highlight
      together when active. Focus uses a SPOTLIGHT: when a foundation is selected, all
      other elements (foundations and context alike) dim, so the active region(s) read
@@ -416,7 +440,7 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
   const isActive = (name) => active === name;
   const pick = (name) => onSelect && onSelect(name);
   /* opts.band: platform-interior bands have partial borders, so they highlight with
-     an inset ring instead of a border recolor (see PlatformDiagram.module.css). */
+     an inset ring instead of a border recolor (see ProductsDiagram.module.css). */
   const clk = (name, opts = {}) => ({
     className: [
       styles.clickable,
@@ -564,13 +588,17 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
               R.fhirApi &&
               (() => {
                 const from = left(R.customApps);
-                const apiMidY = R.fhirApi.y + R.fhirApi.h / 2;
-                const apiEntry = { x: R.fhirApi.x, y: apiMidY };
+                /* Enter the API band near its top edge rather than at mid-height: the
+                   horizontal run would otherwise cross the governance rail over the
+                   Multi-Tenancy icon in the top cell. A small fixed inset keeps the line
+                   clear of that icon regardless of band height. */
+                const apiEntryY = R.fhirApi.y + 10;
+                const apiEntry = { x: R.fhirApi.x, y: apiEntryY };
                 const baseX = R.platformBox ? Math.min(R.platformBox.x, R.customApps.x) : R.customApps.x;
                 const laneX = baseX - 24;
                 return (
                   <>
-                    <Elbow points={[from, { x: laneX, y: from.y }, { x: laneX, y: apiMidY }, apiEntry]} />
+                    <Elbow points={[from, { x: laneX, y: from.y }, { x: laneX, y: apiEntryY }, apiEntry]} />
                     <Dot p={from} />
                     <Dot p={apiEntry} />
                   </>
@@ -673,29 +701,29 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
                 style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
               />
 
-              {/* Row 2 — React Storybook (foundation, clickable) */}
+              {/* Row 2 — Medplum Component Library (foundation, clickable) */}
               <Card
-                {...clk('React Storybook')}
+                {...clk('Medplum Component Library')}
                 kind="customer"
                 dashed
                 icon="layers"
-                name="React Storybook"
+                name="Component Library"
                 compact
                 style={{ borderRadius: 0, borderBottomWidth: 0 }}
               />
               <Card
-                {...clk('React Storybook')}
+                {...clk('Medplum Component Library')}
                 kind="extensible"
                 icon="layers"
-                name="React Storybook"
+                name="Component Library"
                 compact
                 style={{ borderRadius: 0, borderTopWidth: 0 }}
               />
               <Card
-                {...clk('React Storybook')}
+                {...clk('Medplum Component Library')}
                 kind="extensible"
                 icon="layers"
-                name="React Storybook"
+                name="Component Library"
                 compact
                 style={{ borderRadius: 0, borderTopWidth: 0 }}
               />
@@ -782,41 +810,63 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
                   transition: 'border-color 200ms ease',
                 }}
               >
-                {/* Left vertical band — Access Control (RBAC), foundation, clickable */}
+                {/* Left governance rail — the cross-cutting concerns that wrap everything
+                   inside the platform: Multi-Tenancy, Access Control, and Audit Logging.
+                   Each cell is its own clickable foundation; they share the rail because
+                   none of them lives at a single layer — they apply across all of them. */}
                 <div
                   ref={refs.rbac}
-                  {...clk('Access Control & Tenancy', { band: true })}
+                  className={active ? styles.platformDimmed : ''}
                   style={{
                     background: C.purpleStripe,
-                    borderRight: `2px solid ${C.purple}`,
+                    borderRight: `2px solid var(--dg-platform-border, ${C.purple})`,
                     /* Matches the visible shape created by the platform box's rounded
-                 clipping (18px container radius − 2px border), so the highlight
-                 ring follows the rounded corners. */
+                 clipping (18px container radius − 2px border), so the cells follow
+                 the rounded corners. */
                     borderRadius: '16px 0 0 16px',
-                    padding: '14px 10px',
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 14,
                     flexShrink: 0,
+                    width: 98,
                   }}
                 >
-                  <IconChip kind="medplum" icon="shield" />
-                  <div
-                    style={{
-                      fontSize: 14.5,
-                      fontWeight: 500,
-                      color: C.text,
-                      letterSpacing: '0.04em',
-                      writingMode: 'horizontal-tb',
-                      textAlign: 'center',
-                    }}
-                  >
-                    Access
-                    <br />
-                    Control
-                  </div>
+                  {[
+                    { name: 'Multi-Tenancy', icon: 'buildings', label: ['Multi-', 'Tenancy'] },
+                    { name: 'Access Control', icon: 'shield', label: ['Access', 'Control'] },
+                    { name: 'Audit Logging', icon: 'history', label: ['Audit', 'Logging'] },
+                  ].map((cell, i) => (
+                    <div
+                      key={cell.name}
+                      {...clk(cell.name, { band: true })}
+                      style={{
+                        flex: 1,
+                        padding: '12px 8px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        borderTop: i > 0 ? `1.5px solid ${C.purpleSoft}` : undefined,
+                        borderRadius: i === 0 ? '16px 0 0 0' : i === 2 ? '0 0 0 16px' : 0,
+                      }}
+                    >
+                      <IconChip kind="medplum" icon={cell.icon} size={34} />
+                      <div
+                        style={{
+                          fontSize: 12.5,
+                          fontWeight: 500,
+                          color: C.text,
+                          letterSpacing: '0.03em',
+                          textAlign: 'center',
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {cell.label[0]}
+                        <br />
+                        {cell.label[1]}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Right side — stacked bands */}
@@ -843,7 +893,7 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
                     >
                       <IconChip kind="medplum" icon="api" />
                       <div style={{ fontSize: 14.5, fontWeight: 500, color: C.text, whiteSpace: 'nowrap' }}>
-                        FHIR REST API
+                        REST API
                       </div>
                     </div>
                     <div

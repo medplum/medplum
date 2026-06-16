@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { JSX } from 'react';
-import { FEATURED_APPS, TIER_INTRO_HEADLINE, TIER_INTRO_SUB } from '../../data/platform-content';
-import styles from './PlatformThreeTierIntro.module.css';
+import { FEATURED_APPS, TIER_INTRO_HEADLINE, TIER_INTRO_SUB } from '../../data/products-content';
+import styles from './ProductsThreeTierIntro.module.css';
 
-/* Comprehensive inventories with shortened labels — every workflow and foundation is
+/* Comprehensive inventories with shortened labels — every capability and foundation is
    represented (full names live in the sections below). Each row is a click target
    that jumps to its section; hovering reveals the tier's verb line. */
 const TIERS = [
@@ -17,11 +17,11 @@ const TIERS = [
     items: ['Custom Apps', ...FEATURED_APPS.map((a) => a.name)],
   },
   {
-    key: 'workflows',
-    label: 'Workflows',
-    verb: 'What you build on — hard parts already solved.',
-    rowClass: styles.tierRowWorkflows,
-    stripeClass: styles.tierStripeWorkflows,
+    key: 'capabilities',
+    label: 'Capabilities',
+    verb: 'What you build on — hard parts already solved, pre-built UIs included.',
+    rowClass: styles.tierRowCapabilities,
+    stripeClass: styles.tierStripeCapabilities,
     items: [
       'Intake',
       'Scheduling',
@@ -40,14 +40,16 @@ const TIERS = [
     rowClass: styles.tierRowFoundations,
     stripeClass: styles.tierStripeFoundations,
     items: [
-      'FHIR Datastore',
+      'FHIR Datastore & API',
       'TypeScript SDK',
-      'React Storybook',
+      'Component Library',
       'Bots',
       'Subscriptions',
       'Medplum Bridge',
       'Medplum Auth',
       'Access Control',
+      'Multi-Tenancy',
+      'Audit Logging',
     ],
   },
 ];
@@ -60,7 +62,7 @@ function jumpTo(id: string): void {
   }
 }
 
-export function PlatformThreeTierIntro(): JSX.Element {
+export function ProductsThreeTierIntro(): JSX.Element {
   return (
     <section className={styles.section}>
       <div className={styles.container}>
