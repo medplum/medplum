@@ -160,5 +160,7 @@ export async function waitFor(predicate: () => boolean, timeoutMs = 1000, label?
     }
     await sleep(10);
   }
-  throw new Error(label ? `waitFor: ${label} not satisfied after ${timeoutMs}ms` : `waitFor timed out after ${timeoutMs}ms`);
+  throw new Error(
+    label ? `waitFor: ${label} not satisfied after ${timeoutMs}ms` : `waitFor timed out after ${timeoutMs}ms`
+  );
 }

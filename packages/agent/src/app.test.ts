@@ -2876,12 +2876,16 @@ describe('App', () => {
 
       // Each phase gets its own deadline; surfaces any agent error to aid debugging.
       const waitForPhase = (predicate: () => boolean, description: string): Promise<void> =>
-        waitFor(() => {
-          if (state.agentError) {
-            throw new Error(`Unexpected agent error while waiting for ${description}: ${state.agentError.body}`);
-          }
-          return predicate();
-        }, 2500, description);
+        waitFor(
+          () => {
+            if (state.agentError) {
+              throw new Error(`Unexpected agent error while waiting for ${description}: ${state.agentError.body}`);
+            }
+            return predicate();
+          },
+          2500,
+          description
+        );
 
       // Phase 1: agent is already on the latest version, so this upgrade is a no-op.
       state.mySocket.send(

@@ -2090,9 +2090,7 @@ function nackedRow(
         WHERE channel_name = ? AND msg_control_id = ? AND state = 'nacked'
         ORDER BY id DESC LIMIT 1`
     )
-    .get(channelName, msgControlId) as
-    | { error_code: string | null; ack_outcome: string; state: string }
-    | undefined;
+    .get(channelName, msgControlId) as { error_code: string | null; ack_outcome: string; state: string } | undefined;
   if (!row) {
     throw new Error(`nackedRow: no nacked row for ${channelName}/${msgControlId}`);
   }
