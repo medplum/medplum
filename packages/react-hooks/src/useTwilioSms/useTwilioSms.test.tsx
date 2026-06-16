@@ -201,10 +201,7 @@ describe('useTwilioSms', () => {
   test('sendSms includes sender in body when provided', async () => {
     vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue(MOCK_SENT_COMMUNICATION);
-    const { result } = renderHook(
-      () => useTwilioSms({ patient: TEST_PATIENT, sender: MOCK_SENDER_REF }),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useTwilioSms({ patient: TEST_PATIENT, sender: MOCK_SENDER_REF }), { wrapper });
 
     await act(async () => {
       await result.current.sendSms('Hello!');
@@ -230,10 +227,9 @@ describe('useTwilioSms', () => {
   test('sendSms includes threadRef as partOf when provided', async () => {
     vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue(MOCK_SENT_COMMUNICATION);
-    const { result } = renderHook(
-      () => useTwilioSms({ patient: TEST_PATIENT, threadRef: MOCK_THREAD_REF }),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useTwilioSms({ patient: TEST_PATIENT, threadRef: MOCK_THREAD_REF }), {
+      wrapper,
+    });
 
     await act(async () => {
       await result.current.sendSms('Hello!');

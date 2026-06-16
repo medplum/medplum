@@ -619,7 +619,15 @@ describe('BaseChat', () => {
         }
         observe = vi.fn((el: Element) => {
           this.cb(
-            [{ contentRect: new DOMRect(0, 0, 400, 500), target: el, borderBoxSize: [], contentBoxSize: [], devicePixelContentBoxSize: [] }] as ResizeObserverEntry[],
+            [
+              {
+                contentRect: new DOMRect(0, 0, 400, 500),
+                target: el,
+                borderBoxSize: [],
+                contentBoxSize: [],
+                devicePixelContentBoxSize: [],
+              },
+            ] as ResizeObserverEntry[],
             this
           );
         });
@@ -1010,7 +1018,10 @@ describe('BaseChat', () => {
       smsPatientHasPhone: false,
     });
 
-    expect(screen.getByRole('option', { name: 'Text Message', hidden: true })).toHaveAttribute('data-combobox-disabled', 'true');
+    expect(screen.getByRole('option', { name: 'Text Message', hidden: true })).toHaveAttribute(
+      'data-combobox-disabled',
+      'true'
+    );
   });
 
   test('"Text Message" badge renders on SMSWRIT-medium bubbles but not regular ones', async () => {
