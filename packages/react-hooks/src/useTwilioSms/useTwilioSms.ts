@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import type { Communication, Organization, Patient, Practitioner, PractitionerRole, Reference } from '@medplum/fhirtypes';
+import type {
+  Communication,
+  Organization,
+  Patient,
+  Practitioner,
+  PractitionerRole,
+  Reference,
+} from '@medplum/fhirtypes';
 import { useCallback, useEffect, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
@@ -81,10 +88,7 @@ export function useTwilioSms({ patient, sender, threadRef }: UseTwilioSmsOptions
           payload: [{ contentString: message }],
         };
 
-        await medplum.post<Communication>(
-          medplum.fhirUrl('Communication', '$send-sms-twilio'),
-          communication
-        );
+        await medplum.post<Communication>(medplum.fhirUrl('Communication', '$send-sms-twilio'), communication);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
         throw err;

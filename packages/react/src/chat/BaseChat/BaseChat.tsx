@@ -383,51 +383,51 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
               style={{ width: parentRect.width, height: parentRect.height, position: 'absolute', zIndex: 1 }}
             />
             <div ref={scrollContentRef}>
-            {communications.map((c, i) => {
-              const prevCommunication = i > 0 ? communications[i - 1] : undefined;
-              const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
-              const currCommTime = parseSentTime(c);
-              const showDelivered = !!c.received && c.id === myLastDeliveredId;
-              const payloads = c.payload ?? [];
-              const contentRef = payloads.find((p) => p.contentReference)?.contentReference;
-              const contentAttachment = payloads.find((p) => p.contentAttachment)?.contentAttachment;
-              const hasAttachment = !!(contentRef || contentAttachment);
-              const isSender = c.sender?.reference === profileRefStr;
-              const menu = hasAttachment ? (
-                <ChatBubbleMenu
-                  contentRef={contentRef}
-                  contentAttachment={contentAttachment}
-                  onViewInDocuments={onViewInDocuments}
-                />
-              ) : null;
-              return (
-                <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
-                  {(!prevCommTime || currCommTime !== prevCommTime) && (
-                    <Text fz="xs" ta="center">
-                      {currCommTime}
-                    </Text>
-                  )}
-                  {isSender ? (
-                    <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
-                      <div className={classes.chatBubbleMenu}>{menu}</div>
-                      <ChatBubble alignment="right" communication={c} showDelivered={showDelivered} />
-                      <ResourceAvatar
-                        radius="xl"
-                        color="orange"
-                        value={c.sender}
-                        mb={!showDelivered ? 'sm' : undefined}
-                      />
-                    </Group>
-                  ) : (
-                    <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
-                      <ResourceAvatar radius="xl" value={c.sender} mb="sm" />
-                      <ChatBubble alignment="left" communication={c} />
-                      <div className={classes.chatBubbleMenu}>{menu}</div>
-                    </Group>
-                  )}
-                </Stack>
-              );
-            })}
+              {communications.map((c, i) => {
+                const prevCommunication = i > 0 ? communications[i - 1] : undefined;
+                const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
+                const currCommTime = parseSentTime(c);
+                const showDelivered = !!c.received && c.id === myLastDeliveredId;
+                const payloads = c.payload ?? [];
+                const contentRef = payloads.find((p) => p.contentReference)?.contentReference;
+                const contentAttachment = payloads.find((p) => p.contentAttachment)?.contentAttachment;
+                const hasAttachment = !!(contentRef || contentAttachment);
+                const isSender = c.sender?.reference === profileRefStr;
+                const menu = hasAttachment ? (
+                  <ChatBubbleMenu
+                    contentRef={contentRef}
+                    contentAttachment={contentAttachment}
+                    onViewInDocuments={onViewInDocuments}
+                  />
+                ) : null;
+                return (
+                  <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
+                    {(!prevCommTime || currCommTime !== prevCommTime) && (
+                      <Text fz="xs" ta="center">
+                        {currCommTime}
+                      </Text>
+                    )}
+                    {isSender ? (
+                      <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
+                        <div className={classes.chatBubbleMenu}>{menu}</div>
+                        <ChatBubble alignment="right" communication={c} showDelivered={showDelivered} />
+                        <ResourceAvatar
+                          radius="xl"
+                          color="orange"
+                          value={c.sender}
+                          mb={!showDelivered ? 'sm' : undefined}
+                        />
+                      </Group>
+                    ) : (
+                      <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
+                        <ResourceAvatar radius="xl" value={c.sender} mb="sm" />
+                        <ChatBubble alignment="left" communication={c} />
+                        <div className={classes.chatBubbleMenu}>{menu}</div>
+                      </Group>
+                    )}
+                  </Stack>
+                );
+              })}
             </div>
           </ScrollArea>
         )}
@@ -574,13 +574,7 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
   const isSms = communication.medium?.some((m) => m.coding?.some((c) => c.code === 'SMSWRIT'));
   return (
     <div className={classes.chatBubbleOuterWrap}>
-      <Group
-        gap={6}
-        mb="xs"
-        justify={alignment === 'right' ? 'flex-end' : 'flex-start'}
-        align="center"
-        wrap="nowrap"
-      >
+      <Group gap={6} mb="xs" justify={alignment === 'right' ? 'flex-end' : 'flex-start'} align="center" wrap="nowrap">
         <Text
           fz="xs"
           fw={500}
