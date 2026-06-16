@@ -10,7 +10,9 @@ import {
   FIND_BY_CALLBACK,
   FIND_SEEN_BY_CONTROL_ID,
   LIST_QUEUED_IDS_FOR_CHANNEL,
-  RECOVER_PROCESSING,
+  MARK_SENT,
+  RECOVER_CLAIMED,
+  RECOVER_INFLIGHT,
 } from './queries';
 import { runMigrations } from './schema';
 import type {
@@ -37,7 +39,10 @@ export type StateCounts = Record<MessageState, number>;
 /** Per-channel queue depth snapshot returned by {@link DurableQueue.getChannelDepths}. */
 export interface ChannelDepth {
   queued: number;
-  processing: number;
+  /** Claimed by a worker but not yet written to the socket. */
+  claimed: number;
+  /** Written to the socket, awaiting the server response. */
+  inflight: number;
   oldestQueuedAgeMs: number | null;
 }
 
@@ -71,6 +76,7 @@ export class DurableQueue {
   private readonly commitSeqNoStmt: StatementSync;
   private readonly findSeenByControlIdStmt: StatementSync;
   private readonly claimNextStmt: StatementSync;
+  private readonly markSentStmt: StatementSync;
   private readonly findByCallbackStmt: StatementSync;
   private readonly findByIdStmt: StatementSync;
   private readonly recordServerResponseStmt: StatementSync;
@@ -78,7 +84,8 @@ export class DurableQueue {
   private readonly markBotFailedStmt: StatementSync;
   private readonly setAckOutcomeStmt: StatementSync;
   private readonly requeueStmt: StatementSync;
-  private readonly recoverProcessingStmt: StatementSync;
+  private readonly recoverInflightStmt: StatementSync;
+  private readonly recoverClaimedStmt: StatementSync;
   private readonly listQueuedIdsForChannelStmt: StatementSync;
   private readonly countByStateStmt: StatementSync;
   private readonly channelDepthStmt: StatementSync;
@@ -153,10 +160,14 @@ export class DurableQueue {
     this.findSeenByControlIdStmt = this.db.prepare(FIND_SEEN_BY_CONTROL_ID);
 
     // FIFO claim: take the lowest-id queued row for this channel, flip it to
-    // processing in the same statement so concurrent workers can't double-claim.
+    // `claimed` in the same statement so concurrent workers can't double-claim.
     // node:sqlite is synchronous and the agent is single-process, so RETURNING is
     // enough — no advisory locking needed.
     this.claimNextStmt = this.db.prepare(CLAIM_NEXT);
+
+    // Phase A → B: the App's send path calls this the moment the transmit request
+    // is written to the socket, flipping `claimed` → `inflight` and stamping sent_at.
+    this.markSentStmt = this.db.prepare(MARK_SENT);
 
     this.findByCallbackStmt = this.db.prepare(FIND_BY_CALLBACK);
 
@@ -205,21 +216,26 @@ export class DurableQueue {
 
     // Undo of claimNext for a dispatch that provably never left the process
     // (the transmit request was still sitting in the in-memory WS queue when
-    // the connection dropped). The attempt_count decrement keeps the counter
-    // meaning "times the message could have reached the server".
+    // the connection dropped, so the row is still `claimed`, never `inflight`).
+    // The attempt_count decrement keeps the counter meaning "times the message
+    // could have reached the server".
     this.requeueStmt = this.db.prepare(`
       UPDATE inbound_hl7_messages
          SET state = 'queued',
              processing_started_at = NULL,
              attempt_count = MAX(0, attempt_count - 1)
-       WHERE id = ? AND state = 'processing'
+       WHERE id = ? AND state = 'claimed'
     `);
 
-    // Interrupted mid-flight: ambiguous (the server may or may not have processed
-    // it), so it lands in `failed` for operator review — never `rejected`. The
-    // source leg's ack_outcome is left as-is (`pending`): we genuinely don't know
-    // whether an ACK was owed.
-    this.recoverProcessingStmt = this.db.prepare(RECOVER_PROCESSING);
+    // Crash recovery splits on whether the request reached the wire:
+    //   recoverInflight — rows left `inflight` are ambiguous (the server may or
+    //     may not have processed them), so they land in `failed` for operator
+    //     review, never `rejected`. The source leg's ack_outcome is left as-is
+    //     (`pending`): we genuinely don't know whether an ACK was owed.
+    //   recoverClaimed — rows left `claimed` provably never reached the server,
+    //     so they return to `queued` for a clean re-dispatch with no duplicate risk.
+    this.recoverInflightStmt = this.db.prepare(RECOVER_INFLIGHT);
+    this.recoverClaimedStmt = this.db.prepare(RECOVER_CLAIMED);
 
     this.listQueuedIdsForChannelStmt = this.db.prepare(LIST_QUEUED_IDS_FOR_CHANNEL);
 
@@ -230,7 +246,8 @@ export class DurableQueue {
     this.channelDepthStmt = this.db.prepare(`
       SELECT
         SUM(state = 'queued')                                            AS queued,
-        SUM(state = 'processing')                                        AS processing,
+        SUM(state = 'claimed')                                           AS claimed,
+        SUM(state = 'inflight')                                          AS inflight,
         MIN(CASE WHEN state = 'queued' THEN received_at ELSE NULL END)   AS oldest_queued_at
       FROM inbound_hl7_messages
       WHERE channel_name = ?
@@ -365,12 +382,13 @@ export class DurableQueue {
    * Inserts a new `queued` row.
    *
    * If any prior non-`nacked` row already owns this `(channel_name,
-   * msg_control_id)` — in `queued`, `processing`, `processed`, `rejected`, or
-   * `failed` — we don't insert; we surface a `duplicate` result carrying that row so the
-   * caller can compare bodies and decide between replaying the prior ACK and
-   * rejecting the collision (§8). This SELECT is the single dedup authority on the
-   * intake path: the partial unique index only covers `queued`/`processing`, so it
-   * can't recognize a retransmit of an already-`processed`/`rejected`/`failed` row —
+   * msg_control_id)` — in `queued`, `claimed`, `inflight`, `processed`,
+   * `rejected`, or `failed` — we don't insert; we surface a `duplicate` result
+   * carrying that row so the caller can compare bodies and decide between
+   * replaying the prior ACK and rejecting the collision (§8). This SELECT is the
+   * single dedup authority on the intake path: the partial unique index only
+   * covers the live `queued`/`claimed`/`inflight` window, so it can't recognize a
+   * retransmit of an already-`processed`/`rejected`/`failed` row —
    * it remains only as a last-resort guard against an active-window race (not
    * expected in the single-process agent).
    * @param input - Fields to persist on the new row.
@@ -491,7 +509,8 @@ export class DurableQueue {
 
   /**
    * Atomically claims the next `queued` row for `channelName`, flipping it to
-   * `processing` and bumping `attempt_count`.
+   * `claimed` and bumping `attempt_count`. The row stays `claimed` until
+   * {@link markSent} flips it to `inflight` once the request hits the socket.
    * @param channelName - The channel to claim from.
    * @param now - Override the timestamp written to `processing_started_at` (for tests).
    * @returns The claimed row, or `null` if the channel queue is empty.
@@ -502,6 +521,27 @@ export class DurableQueue {
       this.walDirty = true;
     }
     return raw ? rowFromSql(raw) : null;
+  }
+
+  /**
+   * Phase A → B transition: records that the transmit request for `callbackId`
+   * was written to the WebSocket, flipping the row from `claimed` to `inflight`
+   * and stamping `sent_at`. Called from the App's send path the instant the
+   * request leaves the process — the durable marker that distinguishes a
+   * provably-unsent row (safe to requeue on crash) from an ambiguous in-flight
+   * one (failed for review). Guarded on `state = 'claimed'`, so it's a no-op for
+   * legacy (non-durable) sends and for any row already past `claimed`.
+   * @param callbackId - The callback ID of the transmit request just sent.
+   * @param now - Override for `sent_at` (for tests).
+   * @returns True if a `claimed` row was flipped to `inflight`.
+   */
+  markSent(callbackId: string, now: number = Date.now()): boolean {
+    const info = this.markSentStmt.run(now, callbackId);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -594,13 +634,15 @@ export class DurableQueue {
   }
 
   /**
-   * Returns a `processing` row to `queued` — used when the WS connection drops
-   * before the in-flight transmit request was ever written to the socket, so
-   * retrying on reconnect carries no duplicate-delivery risk. Because the row
-   * keeps its original id and claims are ordered by id, the row goes back to
-   * the front of its channel's FIFO.
+   * Returns a `claimed` row to `queued` — used when the WS connection drops
+   * before the transmit request was ever written to the socket, so retrying on
+   * reconnect carries no duplicate-delivery risk. (A row that already reached the
+   * socket is `inflight`, not `claimed`, and this is a no-op for it — its outcome
+   * is ambiguous and owned by the response timeout.) Because the row keeps its
+   * original id and claims are ordered by id, it goes back to the front of its
+   * channel's FIFO.
    * @param id - Row primary key.
-   * @returns True if the row was requeued; false if it was not in `processing`.
+   * @returns True if the row was requeued; false if it was not in `claimed`.
    */
   requeue(id: number): boolean {
     const info = this.requeueStmt.run(id);
@@ -612,18 +654,24 @@ export class DurableQueue {
   }
 
   /**
-   * Promotes every `processing` row to `failed` (error code `interrupted`). Runs
-   * once at startup so that rows interrupted mid-dispatch surface for operator
-   * review instead of being silently retried (§10).
+   * Recovers rows left mid-flight by a previous process, splitting on whether the
+   * request reached the wire. Runs once at startup (§10):
+   * - `inflight` rows are ambiguous (the server may have processed them) → `failed`
+   *   with error code `interrupted`, surfaced for operator review, never silently retried.
+   * - `claimed` rows provably never left the process (`sent_at` is NULL) → returned
+   *   to `queued` for a clean re-dispatch with no duplicate-delivery risk.
    * @param now - Override for `errored_at` (for tests).
-   * @returns The number of rows promoted.
+   * @returns Counts of `claimed` rows requeued and `inflight` rows failed.
    */
-  recoverOnStartup(now: number = Date.now()): number {
-    const info = this.recoverProcessingStmt.run(now);
-    if (Number(info.changes) > 0) {
+  recoverOnStartup(now: number = Date.now()): { requeued: number; failed: number } {
+    const failedInfo = this.recoverInflightStmt.run(now);
+    const requeuedInfo = this.recoverClaimedStmt.run();
+    const failed = Number(failedInfo.changes);
+    const requeued = Number(requeuedInfo.changes);
+    if (failed > 0 || requeued > 0) {
       this.walDirty = true;
     }
-    return Number(info.changes);
+    return { requeued, failed };
   }
 
   /**
@@ -641,7 +689,8 @@ export class DurableQueue {
   countByState(): StateCounts {
     const counts: StateCounts = {
       queued: 0,
-      processing: 0,
+      claimed: 0,
+      inflight: 0,
       processed: 0,
       rejected: 0,
       failed: 0,
@@ -657,15 +706,16 @@ export class DurableQueue {
   /**
    * @param channelName - The channel to query.
    * @param now - Override for the "now" timestamp used in `oldestQueuedAgeMs`.
-   * @returns Depth snapshot for `channelName` (queued/processing counts + oldest queued age).
+   * @returns Depth snapshot for `channelName` (queued/claimed/inflight counts + oldest queued age).
    */
   getChannelDepth(channelName: string, now: number = Date.now()): ChannelDepth {
     const row = this.channelDepthStmt.get(channelName) as
-      | { queued: number | null; processing: number | null; oldest_queued_at: number | null }
+      | { queued: number | null; claimed: number | null; inflight: number | null; oldest_queued_at: number | null }
       | undefined;
     return {
       queued: row?.queued ?? 0,
-      processing: row?.processing ?? 0,
+      claimed: row?.claimed ?? 0,
+      inflight: row?.inflight ?? 0,
       oldestQueuedAgeMs: row?.oldest_queued_at ? now - row.oldest_queued_at : null,
     };
   }
@@ -817,6 +867,7 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     seqNo: (raw.seq_no as number | null) ?? null,
     receivedAt: raw.received_at as number,
     processingStartedAt: (raw.processing_started_at as number | null) ?? null,
+    sentAt: (raw.sent_at as number | null) ?? null,
     processedAt: (raw.processed_at as number | null) ?? null,
     erroredAt: (raw.errored_at as number | null) ?? null,
   };

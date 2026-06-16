@@ -473,7 +473,9 @@ describe('ChannelQueueWorker', () => {
     });
     worker.start();
     await waitFor(() => worker.hasInFlight());
-    expect(queue.getById(r.id)?.state).toBe(MessageState.PROCESSING);
+    // The stub App never sends, so markSent never fires — the row sits in `claimed`
+    // (worker owns it, request still buffered), exactly the state requeue targets.
+    expect(queue.getById(r.id)?.state).toBe(MessageState.CLAIMED);
 
     // Connection drops before the request left the WS queue.
     setLive(false);

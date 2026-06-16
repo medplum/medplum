@@ -722,7 +722,7 @@ export class App {
    * raw queue-open time would race with any peer that still holds the lease.
    *
    * Re-entrancy: if we lose and regain the lease later, this fires again. The
-   * recovery sweep is idempotent (no `processing` rows means no work), and
+   * recovery sweep is idempotent (no `claimed`/`inflight` rows means no work), and
    * `maybeStartWorker` is a no-op if the worker is already running.
    */
   private onBecameQueueLeader(): void {
@@ -730,9 +730,12 @@ export class App {
     if (!queue) {
       return;
     }
-    const promoted = queue.recoverOnStartup();
-    if (promoted > 0) {
-      this.log.info(`Acquired queue lease — promoted ${promoted} interrupted row(s) to errored.`);
+    const recovered = queue.recoverOnStartup();
+    if (recovered.requeued > 0 || recovered.failed > 0) {
+      this.log.info(
+        `Acquired queue lease — recovered interrupted rows: ${recovered.requeued} requeued (unsent), ` +
+          `${recovered.failed} failed (ambiguous, in-flight).`
+      );
     }
     // Tell every HL7 channel to start its worker now that we're leader.
     for (const channel of this.channels.values()) {
@@ -840,7 +843,8 @@ export class App {
         const d = queue.getChannelDepth(channel.getDefinition().name);
         channelDepth[channel.getDefinition().name] = {
           queued: d.queued,
-          processing: d.processing,
+          claimed: d.claimed,
+          inflight: d.inflight,
           // -1 means "no queued rows" (a zero-aged-row would be 0).
           oldestQueuedAgeMs: d.oldestQueuedAgeMs ?? -1,
         };
@@ -1652,6 +1656,15 @@ export class App {
       message.accessToken = this.medplum.getAccessToken();
     }
     this.webSocket.send(JSON.stringify(message));
+
+    // The request is now on the wire. For a durable-queue dispatch this is the
+    // Phase A → B transition: flip its row from `claimed` to `inflight` and stamp
+    // sent_at, so crash recovery can tell a provably-unsent row (safe to requeue)
+    // from an ambiguous in-flight one. Keyed by callback; a no-op for legacy
+    // (non-durable) sends and for any non-transmit frame.
+    if (message.type === 'agent:transmit:request' && message.callback) {
+      this.durableQueue?.markSent(message.callback);
+    }
   }
 
   private sendAgentDisabledError(command: AgentTransmitRequest | AgentTransmitResponse): void {

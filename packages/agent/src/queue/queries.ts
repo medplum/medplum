@@ -34,12 +34,14 @@ export const FIND_SEEN_BY_CONTROL_ID = `
 `;
 
 /**
- * FIFO claim: flip the lowest-id queued row for a channel to `processing` in one
- * statement. The inner SELECT is served by `idx_inbound_channel_state_id`.
+ * FIFO claim: flip the lowest-id queued row for a channel to `claimed` in one
+ * statement. The row stays `claimed` until {@link MARK_SENT} flips it to
+ * `inflight` once the request is written to the socket. The inner SELECT is
+ * served by `idx_inbound_channel_state_id`.
  */
 export const CLAIM_NEXT = `
   UPDATE inbound_hl7_messages
-     SET state = 'processing',
+     SET state = 'claimed',
          processing_started_at = ?,
          attempt_count = attempt_count + 1
    WHERE id = (
@@ -49,6 +51,19 @@ export const CLAIM_NEXT = `
       LIMIT 1
    )
    RETURNING *
+`;
+
+/**
+ * Phase A → B: the transmit request was written to the socket, so flip the
+ * `claimed` row to `inflight` and stamp `sent_at`. Keyed by callback id (served
+ * by `uq_inbound_callback`). The `state = 'claimed'` guard makes it a no-op for
+ * legacy (non-durable) sends and for any row already past `claimed`.
+ */
+export const MARK_SENT = `
+  UPDATE inbound_hl7_messages
+     SET state = 'inflight',
+         sent_at = ?
+   WHERE callback_id = ? AND state = 'claimed'
 `;
 
 /** Late server-response lookup by callback id. Served by `uq_inbound_callback`. */
@@ -66,16 +81,34 @@ export const LIST_QUEUED_IDS_FOR_CHANNEL = `
 `;
 
 /**
- * Crash recovery: mark rows left mid-flight (`processing`) as `failed`. The
+ * Crash recovery, ambiguous leg: a row left `inflight` (the request went out
+ * but no response came back before the restart) may or may not have reached the
+ * Bot, so it lands in `failed` for operator review — never silently retried. The
  * `WHERE state` scan (no channel filter) is served by `idx_inbound_state_processed_at`.
  */
-export const RECOVER_PROCESSING = `
+export const RECOVER_INFLIGHT = `
   UPDATE inbound_hl7_messages
      SET state = 'failed',
          errored_at = ?,
-         last_error = COALESCE(last_error, 'interrupted: process restart while processing'),
+         last_error = COALESCE(last_error, 'interrupted: process restart while inflight'),
          error_code = COALESCE(error_code, '${QueueErrorCode.Interrupted}')
-   WHERE state = 'processing'
+   WHERE state = 'inflight'
+`;
+
+/**
+ * Crash recovery, safe leg: a row left `claimed` (a worker owned it but the
+ * request never reached the socket — `sent_at` is still NULL) provably never hit
+ * the server, so it's returned to `queued` to re-dispatch with no duplicate
+ * risk. The attempt_count decrement undoes the claim's increment, since the
+ * claim never resulted in a real delivery attempt. The `WHERE state` scan is
+ * served by `idx_inbound_state_processed_at`.
+ */
+export const RECOVER_CLAIMED = `
+  UPDATE inbound_hl7_messages
+     SET state = 'queued',
+         processing_started_at = NULL,
+         attempt_count = MAX(0, attempt_count - 1)
+   WHERE state = 'claimed'
 `;
 
 // --- Retention sweep (cold, periodic / under size pressure) ---

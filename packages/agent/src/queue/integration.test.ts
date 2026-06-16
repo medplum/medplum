@@ -463,14 +463,14 @@ describe('Durable queue integration', () => {
       timeoutMs: 5000,
     });
     expect(replay.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
-    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, processing: 0, failed: 0, rejected: 0 });
+    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, claimed: 0, inflight: 0, failed: 0, rejected: 0 });
 
     await client.close();
     await app.stop();
   });
 
   test('idempotent duplicate before any server response replays the commit ACK', async () => {
-    // Never reply: the first row stays queued/processing with no server response,
+    // Never reply: the first row stays queued/claimed/inflight with no server response,
     // so the duplicate must fall back to a commit ACK (CA) replay.
     startMockServer(() => undefined);
 
@@ -507,7 +507,7 @@ describe('Durable queue integration', () => {
     // Still exactly one row — the duplicate was not enqueued.
     const queue = app.getDurableQueue() as DurableQueue;
     const counts = queue.countByState();
-    expect(counts.queued + counts.processing).toBe(1);
+    expect(counts.queued + counts.claimed + counts.inflight).toBe(1);
     expect(counts.nacked).toBe(0);
 
     await client.close();
@@ -553,7 +553,7 @@ describe('Durable queue integration', () => {
     const queue = app.getDurableQueue() as DurableQueue;
     const counts = queue.countByState();
     expect(counts.nacked).toBe(1);
-    expect(counts.queued + counts.processing).toBe(1);
+    expect(counts.queued + counts.claimed + counts.inflight).toBe(1);
 
     // Stats are balanced: the reject recorded an ack, so the control ID isn't
     // left dangling in the pending-RTT map.
@@ -628,7 +628,8 @@ describe('Durable queue integration', () => {
       processed: 1,
       nacked: 1,
       queued: 0,
-      processing: 0,
+      claimed: 0,
+      inflight: 0,
       failed: 0,
       rejected: 0,
     });
@@ -654,10 +655,10 @@ describe('Durable queue integration', () => {
   });
 
   // Companion to the test above, exercising the in-flight branch: the retransmit
-  // arrives while the original is still queued/processing (the `uq_inbound_dup_active`
+  // arrives while the original is still queued/claimed/inflight (the `uq_inbound_dup_active`
   // path) rather than after it settled. Also covers the aaMode NACK code (AR).
   test('duplicateBehavior=reject (aaMode): a retransmit while the original is still in flight is rejected with AR', async () => {
-    // Never reply, so the first row stays queued/processing with no server response.
+    // Never reply, so the first row stays queued/claimed/inflight with no server response.
     const transmits: string[] = [];
     startMockServer((cmd) => {
       transmits.push(cmd.body);
@@ -689,14 +690,21 @@ describe('Durable queue integration', () => {
     });
     expect(first.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
 
-    // Let the worker claim + dispatch the original (it then parks in `processing`
-    // awaiting the response that never comes). This guarantees the retransmit hits
-    // the in-flight dedupe path AND that the one transmit below is the original.
+    // Let the worker claim + dispatch the original (it then parks `inflight`
+    // awaiting the response that never comes). Wait on the transmit actually
+    // reaching the server (`transmits`), the ground-truth over-the-wire signal:
+    // the row flips to `claimed` at claimNext but only to `inflight` once the
+    // request is written to the socket — and the mock records the transmit right
+    // after that — so asserting straight off a state flip would race the round-trip.
+    // Once the transmit lands, the row is necessarily `inflight` (the server never
+    // replies), so the retransmit below hits the in-flight dedupe path AND the
+    // single transmit is provably the original.
     const queue = app.getDurableQueue() as DurableQueue;
-    await waitForRow(queue, (counts) => counts.processing === 1, 3000);
+    await waitFor(() => transmits.length === 1, 3000, 'original dispatched');
     expect(transmits).toHaveLength(1);
+    expect(queue.countByState().inflight).toBe(1);
 
-    // Retransmit while the original is still in flight (queued/processing).
+    // Retransmit while the original is still in flight (queued/claimed/inflight).
     const rejected = await client.sendAndWait(TEST_MSG('INT_RJ2'), {
       returnAck: ReturnAckCategory.FIRST,
       timeoutMs: 5000,
@@ -708,7 +716,7 @@ describe('Durable queue integration', () => {
     const counts = queue.countByState();
     expect(counts.nacked).toBe(1);
     // Exactly one live row for the control ID; the duplicate did not enqueue.
-    expect(counts.queued + counts.processing).toBe(1);
+    expect(counts.queued + counts.claimed + counts.inflight).toBe(1);
     expect(nackedRow(queue, 'dq-test', 'INT_RJ2').error_code).toBe('duplicate-rejected');
 
     // The duplicate was rejected at intake; only the original was dispatched.
@@ -719,7 +727,7 @@ describe('Durable queue integration', () => {
   });
 
   test('assignSeqNo: a retransmit dedupes on the original message despite a new sequence number', async () => {
-    // Never reply, so the first row stays queued/processing (no server response).
+    // Never reply, so the first row stays queued/claimed/inflight (no server response).
     startMockServer(() => undefined);
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
@@ -751,7 +759,7 @@ describe('Durable queue integration', () => {
 
     const queue = app.getDurableQueue() as DurableQueue;
     const counts = queue.countByState();
-    expect(counts.queued + counts.processing).toBe(1);
+    expect(counts.queued + counts.claimed + counts.inflight).toBe(1);
     expect(counts.nacked).toBe(0);
 
     await client.close();
@@ -836,7 +844,7 @@ describe('Durable queue integration', () => {
   });
 
   test('assignSeqNo: a content-mismatch reject records the inbound MSH.13 on its nacked audit row, not a fresh candidate', async () => {
-    // No reply, so the first row stays queued/processing (still a "seen" prior row).
+    // No reply, so the first row stays queued/claimed/inflight (still a "seen" prior row).
     startMockServer(() => undefined);
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
@@ -998,7 +1006,7 @@ describe('Durable queue integration', () => {
     const counts = queue.countByState();
     expect(counts.processed).toBe(1); // the retransmit went all the way through
     expect(counts.nacked).toBe(1); // the storage-error audit row from the first attempt
-    expect(counts.queued + counts.processing + counts.failed + counts.rejected).toBe(0);
+    expect(counts.queued + counts.claimed + counts.inflight + counts.failed + counts.rejected).toBe(0);
 
     await client.close();
     await app.stop();
@@ -1061,7 +1069,8 @@ describe('Durable queue integration', () => {
     expect(queue.countByState()).toMatchObject({
       processed: 1,
       queued: 0,
-      processing: 0,
+      claimed: 0,
+      inflight: 0,
       failed: 0,
       rejected: 0,
       nacked: 0,
@@ -1189,7 +1198,8 @@ describe('Durable queue integration', () => {
     expect(queue.countByState()).toMatchObject({
       processed: 1,
       queued: 0,
-      processing: 0,
+      claimed: 0,
+      inflight: 0,
       failed: 0,
       rejected: 0,
       nacked: 0,
@@ -1199,7 +1209,7 @@ describe('Durable queue integration', () => {
     await app.stop();
   });
 
-  test('restart recovery: rows left in processing across process boundary become failed', async () => {
+  test('restart recovery: a row left inflight across a process boundary becomes failed', async () => {
     // We don't kill the App mid-flight (worker.stop() drains gracefully). Instead
     // we simulate the crash directly against the underlying DB — the same state
     // a SIGKILL would leave — and confirm that the next App.start() picks it up
@@ -1222,8 +1232,12 @@ describe('Durable queue integration', () => {
       ],
     });
 
-    // Pre-stage a "crashed mid-flight" row directly: insert + claim, then close
-    // the DB without finalizing. On next open, the row is still in processing.
+    // Pre-stage a "crashed mid-flight" row directly: insert + claim + mark sent
+    // (so it's `inflight` — the request reached the wire and its outcome is
+    // ambiguous), then close the DB without finalizing. On next open, the row is
+    // still `inflight`. (The claimed-but-unsent → requeued path is covered by the
+    // recoverOnStartup unit test; here we exercise the App.start() wiring for the
+    // ambiguous case that must surface as `failed`.)
     {
       const queue = DurableQueue.open({
         path: queuePath,
@@ -1243,7 +1257,8 @@ describe('Durable queue integration', () => {
         receivedAt: Date.now(),
       });
       expect(r.kind).toBe('inserted');
-      queue.claimNext('dq-test'); // → processing
+      queue.claimNext('dq-test'); // → claimed
+      queue.markSent('cb-crashed'); // → inflight (request reached the wire)
       queue.close();
     }
 
@@ -1252,7 +1267,8 @@ describe('Durable queue integration', () => {
     await app.start();
     const queue = app.getDurableQueue() as DurableQueue;
     const counts = queue.countByState();
-    expect(counts.processing).toBe(0);
+    expect(counts.inflight).toBe(0);
+    expect(counts.claimed).toBe(0);
     expect(counts.failed).toBe(1);
     const recovered = queue.findSeenByControlId('dq-test', 'CRASHED');
     expect(recovered?.errorCode).toBe('interrupted');
@@ -1520,7 +1536,7 @@ describe('Durable queue integration', () => {
 
       // Accounting: every acknowledged message is in some real state, none vanished.
       const counts = reopened.countByState();
-      const accounted = counts.processed + counts.queued + counts.processing + counts.failed;
+      const accounted = counts.processed + counts.queued + counts.claimed + counts.inflight + counts.failed;
       expect(accounted).toBeGreaterThanOrEqual(committed.length);
       // We never NAK'd or rejected anything on the happy intake path.
       expect(counts.nacked).toBe(0);
@@ -1544,7 +1560,7 @@ describe('Durable queue integration', () => {
       const controlId = Hl7Message.parse(cmd.body).getSegment('MSH')?.getField(10)?.toString() ?? '';
       transmits.push({ channel: cmd.channel, controlId });
       if (cmd.channel === 'oru') {
-        // Stalled downstream: never reply. The oru worker parks in `processing`.
+        // Stalled downstream: never reply. The oru worker parks the row `inflight`.
         return undefined;
       }
       const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
@@ -1588,14 +1604,14 @@ describe('Durable queue integration', () => {
     const adtClient = new Hl7Client({ host: 'localhost', port: adtPort });
 
     // Stall the oru channel first: 3 messages all get CA at intake, the worker
-    // claims ORU_1 (→ processing, then hangs), ORU_2/ORU_3 queue behind it.
+    // claims ORU_1 (→ inflight, then hangs), ORU_2/ORU_3 queue behind it.
     for (const id of ['ORU_1', 'ORU_2', 'ORU_3']) {
       const ack = await oruClient.sendAndWait(TEST_MSG(id), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
       expect(ack.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
     }
     // Wait until the oru worker has actually claimed + dispatched ORU_1.
-    await waitForRow(queue, () => queue.getChannelDepth('oru').processing === 1, 3000);
-    expect(queue.getChannelDepth('oru')).toMatchObject({ processing: 1, queued: 2 });
+    await waitForRow(queue, () => queue.getChannelDepth('oru').inflight === 1, 3000);
+    expect(queue.getChannelDepth('oru')).toMatchObject({ inflight: 1, queued: 2 });
 
     // Now drive the adt channel. Despite oru being wedged, adt must fully drain.
     for (const id of ['ADT_1', 'ADT_2', 'ADT_3']) {
@@ -1617,8 +1633,8 @@ describe('Durable queue integration', () => {
     // oru is still wedged exactly where it was — the stall is real, not absorbed:
     // its worker is serial, so only ORU_1 was ever dispatched; ORU_2/ORU_3 wait.
     expect(transmits.filter((t) => t.channel === 'oru')).toEqual([{ channel: 'oru', controlId: 'ORU_1' }]);
-    expect(queue.getChannelDepth('oru')).toMatchObject({ processing: 1, queued: 2 });
-    expect(queue.countByState()).toMatchObject({ processed: 3, processing: 1, queued: 2 });
+    expect(queue.getChannelDepth('oru')).toMatchObject({ inflight: 1, queued: 2 });
+    expect(queue.countByState()).toMatchObject({ processed: 3, inflight: 1, queued: 2 });
 
     await oruClient.close();
     await adtClient.close();
@@ -1703,7 +1719,7 @@ describe('Durable queue integration', () => {
 
     // Backpressure: the worker idled (didn't dispatch into the void), so the rows
     // are all parked in `queued` and nothing reached the server.
-    expect(queue.countByState()).toMatchObject({ queued: 4, processing: 0, processed: 0, failed: 0, rejected: 0 });
+    expect(queue.countByState()).toMatchObject({ queued: 4, claimed: 0, inflight: 0, processed: 0, failed: 0, rejected: 0 });
     expect(transmits).toHaveLength(0);
 
     // Server comes back on the same URL → the agent reconnects and drains.
@@ -1714,7 +1730,7 @@ describe('Durable queue integration', () => {
 
     // Zero loss, FIFO preserved across the outage, every ACK delivered.
     expect(transmits).toEqual(['BP_1', 'BP_2', 'BP_3', 'BP_4']);
-    expect(queue.countByState()).toMatchObject({ processed: 4, queued: 0, processing: 0, failed: 0, rejected: 0 });
+    expect(queue.countByState()).toMatchObject({ processed: 4, queued: 0, claimed: 0, inflight: 0, failed: 0, rejected: 0 });
     for (const id of ['BP_1', 'BP_2', 'BP_3', 'BP_4']) {
       expect(queue.findSeenByControlId('dq-test', id)?.ackOutcome).toBe('delivered');
     }
@@ -1827,13 +1843,13 @@ describe('Durable queue integration', () => {
 
     // A (leader) claims HO_1 and wedges on the withheld response; HO_2..4 queue
     // behind it (serial per channel). Only HO_1 is dispatched, by A. Wait on the
-    // dispatch actually landing at the server — claimNext flips the row to
-    // `processing` BEFORE the WS request goes out, so polling DB state alone races
-    // the transmit.
+    // dispatch actually landing at the server — equivalently, the row reaching
+    // `inflight` (claimNext flips it to `claimed`, and it only becomes `inflight`
+    // once the WS request is written to the socket).
     const queue = appB.getDurableQueue() as DurableQueue;
     await waitFor(() => transmits.length === 1, 5000, 'A dispatches HO_1');
     expect(transmits).toEqual(['HO_1']);
-    expect(queue.countByState()).toMatchObject({ processing: 1, queued: 3 });
+    expect(queue.countByState()).toMatchObject({ inflight: 1, queued: 3 });
 
     // Stop the leader. Its in-flight HO_1 becomes `failed` (worker-stopped) and it
     // releases the lease on the way out. Now let the server answer.
@@ -1866,7 +1882,8 @@ describe('Durable queue integration', () => {
       processed: 3,
       failed: 1,
       queued: 0,
-      processing: 0,
+      claimed: 0,
+      inflight: 0,
       nacked: 0,
       rejected: 0,
     });
@@ -1932,7 +1949,7 @@ describe('Durable queue integration', () => {
     const first = await client.sendAndWait(TEST_MSG('STORM'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
     expect(first.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
     await waitFor(() => transmits.length === 1, 5000, 'original dispatched');
-    expect(queue.countByState()).toMatchObject({ processing: 1, queued: 0 });
+    expect(queue.countByState()).toMatchObject({ inflight: 1, queued: 0 });
 
     // Storm: 3 retransmits of the SAME control ID while the original is in flight.
     // Each replays the commit ACK (CA) — none is enqueued or re-dispatched.
@@ -1944,7 +1961,7 @@ describe('Durable queue integration', () => {
       expect(replay.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
     }
     // Still one row, still in flight, and the server saw the body exactly once.
-    expect(queue.countByState()).toMatchObject({ processing: 1, queued: 0, processed: 0, nacked: 0 });
+    expect(queue.countByState()).toMatchObject({ inflight: 1, queued: 0, processed: 0, nacked: 0 });
     expect(transmits).toEqual(['STORM']);
 
     // The slow consumer finally responds → the single row completes and delivers.
@@ -1969,7 +1986,8 @@ describe('Durable queue integration', () => {
     expect(queue.countByState()).toMatchObject({
       processed: 1,
       queued: 0,
-      processing: 0,
+      claimed: 0,
+      inflight: 0,
       failed: 0,
       rejected: 0,
       nacked: 0,
@@ -1981,13 +1999,13 @@ describe('Durable queue integration', () => {
   });
 
   // App.stop() while a row is mid-dispatch: the worker settles the in-flight row to
-  // `failed` (worker-stopped) on its way out rather than leaving it dangling in
-  // `processing`. The message is preserved for operator review/replay — never lost,
+  // `failed` (worker-stopped) on its way out rather than leaving it dangling
+  // `inflight`. The message is preserved for operator review/replay — never lost,
   // never stuck. Real-world trigger: SIGTERM during a rolling restart while a message
   // is awaiting the Bot's response. (Distinct from `restart recovery`, where a hard
-  // crash leaves a `processing` row that recoverOnStartup later promotes; here the
+  // crash leaves an `inflight` row that recoverOnStartup later promotes; here the
   // graceful stop settles the row itself, before the DB is even closed.)
-  test('App.stop() settles an in-flight row to failed (worker-stopped), never left dangling in processing', async () => {
+  test('App.stop() settles an in-flight row to failed (worker-stopped), never left dangling inflight', async () => {
     startMockServer(() => undefined); // never respond — keep the row in flight
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
@@ -2012,8 +2030,9 @@ describe('Durable queue integration', () => {
 
     const ack = await client.sendAndWait(TEST_MSG('DRAIN'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
     expect(ack.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
-    // Worker claims + dispatches it; it parks awaiting the response that never comes.
-    await waitForRow(queue, (c) => c.processing === 1, 3000);
+    // Worker claims + dispatches it; once it's `inflight` the request is on the
+    // wire and it parks awaiting the response that never comes.
+    await waitForRow(queue, (c) => c.inflight === 1, 3000);
 
     // Graceful stop while in flight. stop() closes the queue handle, so inspect via
     // a fresh handle on the same DB (the row's disposition is durable on disk).
@@ -2023,11 +2042,11 @@ describe('Durable queue integration', () => {
     const reopened = DurableQueue.open({ path: dbPath, log: app.log });
     try {
       const row = reopened.findSeenByControlId('dq-test', 'DRAIN');
-      // Settled by the worker on stop — not dangling in `processing`, not lost.
+      // Settled by the worker on stop — not dangling `inflight`, not lost.
       expect(row?.state).toBe('failed');
       expect(row?.errorCode).toBe('worker-stopped');
       expect(row?.ackOutcome).toBe('not_owed');
-      expect(reopened.countByState()).toMatchObject({ failed: 1, processing: 0, queued: 0 });
+      expect(reopened.countByState()).toMatchObject({ failed: 1, claimed: 0, inflight: 0, queued: 0 });
     } finally {
       reopened.close();
     }

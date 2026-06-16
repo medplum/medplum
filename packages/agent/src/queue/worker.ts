@@ -167,8 +167,8 @@ export class ChannelQueueWorker {
       this.applyServerResponse(row, response);
       return true;
     }
-    // processing (a retry is in flight), processed/rejected (already settled), or
-    // queued/nacked — the outcome is owned elsewhere; don't double-apply.
+    // claimed/inflight (a retry is in flight), processed/rejected (already
+    // settled), or queued/nacked — the outcome is owned elsewhere; don't double-apply.
     this.log.warn(
       `Discarding server response for row id=${row.id} in state '${row.state}' (callback=${response.callback})`
     );

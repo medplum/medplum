@@ -12,20 +12,29 @@
  * NOT a Bot-leg failure. See DURABLE_QUEUE_ARCHITECTURE.md §4 for the transition diagram.
  *
  * - `queued`     — inserted, awaiting worker dispatch.
- * - `processing` — worker has claimed it and dispatched to the Medplum server.
+ * - `claimed`    — a worker has claimed the row off the queue, but the
+ *                  `agent:transmit:request` has NOT yet been written to the
+ *                  WebSocket (it's still buffered in the in-memory send queue).
+ *                  A crash here is UNAMBIGUOUS — the server provably never saw
+ *                  it — so recovery returns it to `queued` (no duplicate risk).
+ * - `inflight`   — the request has been written to the socket (`sent_at` stamped)
+ *                  and the worker is awaiting the server's response. A crash here
+ *                  is AMBIGUOUS (the server may have processed it), so recovery
+ *                  marks it `failed` for operator review, never silently retries.
  * - `processed`  — the Bot accepted it (server 2xx). Says nothing about whether
  *                  the source ACK was delivered — see {@link AckOutcome}.
  * - `rejected`   — terminal: the Bot rejected the message itself (permanent 4xx).
  *                  Retrying can never help; the content must be triaged.
  * - `failed`     — terminal-for-now: a transient/ambiguous Bot-leg failure
  *                  (5xx, 429, response timeout, dispatch error, or "interrupted" —
- *                  a row found in `processing` on startup). The retry/operator-
+ *                  a row found `inflight` on startup). The retry/operator-
  *                  review candidate; never confused with a `rejected` message.
  * - `nacked`     — rejected at intake; sender was told NACK and the row exists only for audit.
  */
 export const MessageState = {
   QUEUED: 'queued',
-  PROCESSING: 'processing',
+  CLAIMED: 'claimed',
+  INFLIGHT: 'inflight',
   PROCESSED: 'processed',
   REJECTED: 'rejected',
   FAILED: 'failed',
@@ -166,7 +175,10 @@ export interface InboundRow {
   errorCode: QueueErrorCode | null;
   seqNo: number | null;
   receivedAt: number;
+  /** When the worker claimed the row off the queue (entered `claimed`). */
   processingStartedAt: number | null;
+  /** When the transmit request was written to the WebSocket (entered `inflight`). Null until sent. */
+  sentAt: number | null;
   processedAt: number | null;
   erroredAt: number | null;
 }

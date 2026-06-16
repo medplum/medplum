@@ -45,7 +45,7 @@ This plan replaces the in-memory inbound path with a durable, SQLite-backed FIFO
 |---|---|
 | Durability scope | **Inbound only** (channel → server). Outbound stays in-memory. |
 | Enhanced-mode ACK | **Defer CA until DB commit** — keep `enhancedMode` off the `Hl7Connection` (suppressing its auto-ACK) and have the agent send the ACK via `sendCommitAck()` / `sendCommitNack()`. |
-| Crash recovery | **Requeue `queued` rows; promote `processing` rows to `failed`** for manual review. |
+| Crash recovery | **Requeue `queued` and `claimed` (unsent) rows; promote `inflight` (sent, ambiguous) rows to `failed`** for manual review. |
 | Duplicate control ID | **Configurable per channel** (`duplicateBehavior=reject\|idempotent`), defaulting to `idempotent`. |
 | Serial processing scope | **Per channel.** Different channels proceed in parallel; within a channel, one message in-flight. |
 | DB file location | **Single shared DB next to logs**, one file for the whole agent. |
@@ -74,8 +74,9 @@ This plan replaces the in-memory inbound path with a durable, SQLite-backed FIFO
                         │                                      │
                         │  loop:                               │
                         │   - SELECT next queued row           │
-                        │   - UPDATE → processing              │
-                        │   - send AgentTransmitRequest via WS │
+                        │   - UPDATE → claimed                  │
+                        │   - send AgentTransmitRequest via WS  │
+                        │     (on socket write: UPDATE→inflight)│
                         │   - await agent:transmit:response    │  ┌─────────────────────────┐
                         │   - sendToRemote(app-level ACK)      │──►  Medplum server (WS)    │
                         │   - UPDATE → processed/rejected/failed│  └─────────────────────────┘
@@ -86,7 +87,7 @@ Key components introduced:
 
 | New module | Responsibility |
 |---|---|
-| `src/queue/durable-queue.ts` | Owns the `node:sqlite` Database handle. Exposes typed CRUD: `enqueue`, `claimNext`, `markProcessed`, `markRejected`, `markFailed`, `setAckOutcome`, `recoverOnStartup`, `purge`. |
+| `src/queue/durable-queue.ts` | Owns the `node:sqlite` Database handle. Exposes typed CRUD: `enqueue`, `claimNext`, `markSent`, `markProcessed`, `markRejected`, `markFailed`, `setAckOutcome`, `recoverOnStartup`, `purge`. |
 | `src/queue/schema.ts` | DDL + migration runner (versioned). |
 | `src/queue/worker.ts` | `ChannelQueueWorker` — one per channel, serial dequeue loop. Wires WS responses back to the row. |
 | `src/queue/types.ts` | `MessageState`, `InboundRow`, lifecycle event types. |
@@ -137,7 +138,8 @@ CREATE TABLE IF NOT EXISTS inbound_hl7_messages (
   error_code         TEXT,                         -- machine-readable QueueErrorCode (Bot-leg failure or intake-reject reason)
   seq_no             INTEGER,                      -- MSH.13 assigned by agent (if assignSeqNo)
   received_at        INTEGER NOT NULL,             -- ms epoch (handleMessage entry); also the commit timestamp (CA fires synchronously after the durable write)
-  processing_started_at INTEGER,
+  processing_started_at INTEGER,                   -- when the worker claimed the row (entered 'claimed')
+  sent_at            INTEGER,                      -- when the request was written to the socket (entered 'inflight'); NULL discriminates claimed-but-unsent
   processed_at       INTEGER,                      -- terminal state timestamp
   errored_at         INTEGER
 ) STRICT;
@@ -157,7 +159,7 @@ CREATE INDEX IF NOT EXISTS idx_inbound_state_processed_at
 CREATE UNIQUE INDEX IF NOT EXISTS uq_inbound_dup_active
   ON inbound_hl7_messages (channel_name, msg_control_id)
   WHERE msg_control_id IS NOT NULL
-    AND state IN ('queued', 'processing');
+    AND state IN ('queued', 'claimed', 'inflight');
 
 -- Read index for the per-message intake dedup lookup: the latest non-nacked row
 -- for a (channel, control_id) across ALL states (the partial-unique index above
@@ -215,20 +217,25 @@ the stored ACK (§8) and flips the row to `delivered`.
                       │ INSERT (channel.handleMessage, before CA)
                       ▼
                 ┌───────────┐
-   recovery ───►│  queued   │◄──── (startup: requeue prior queued)
+   recovery ───►│  queued   │◄──── (startup: requeue prior queued AND claimed-but-unsent)
                 └─────┬─────┘
                       │ worker: claim
                       ▼
                 ┌───────────┐
-                │processing │
+                │  claimed  │──── crash before socket write ──► (startup: requeue, no dup risk)
+                └─────┬─────┘
+                      │ request written to socket (markSent, sent_at)
+                      ▼
+                ┌───────────┐
+                │ inflight  │
                 └─┬──┬──┬───┘
-   server 4xx ────┘  │  └──────── 5xx/429/timeout, or crash before write
+   server 4xx ────┘  │  └──────── 5xx/429/timeout, or crash after socket write
    (permanent)       │                          │
         ▼            │                          ▼
    ┌──────────┐      │                   ┌────────────┐
    │ rejected │      │                   │   failed   │ (transient/ambiguous;
-   └──────────┘      │                   └────────────┘  interrupted rows land
-                     ▼                                    here on startup — §10)
+   └──────────┘      │                   └────────────┘  interrupted inflight rows
+                     ▼                                    land here on startup — §10)
    ┌─────────┐  server 2xx → state=processed; ack leg recorded separately:
    │processed│      ack_outcome = delivered (ACK sent) | undelivered (source gone)
    └────┬────┘                                    │
@@ -244,17 +251,18 @@ the stored ACK (§8) and flips the row to `delivered`.
 | State | Set when | Set by | Terminal? |
 |---|---|---|---|
 | `queued` | row inserted, before WS send | `DurableQueue.enqueue` | no |
-| `processing` | worker has claimed it and dispatched `agent:transmit:request` | `ChannelQueueWorker.claimNext` | no |
+| `claimed` | worker claimed the row off the queue, but the `agent:transmit:request` is not yet on the wire (still buffered in the in-memory WS queue) | `DurableQueue.claimNext` | no |
+| `inflight` | the request was written to the socket (`sent_at` stamped); awaiting the server response | `DurableQueue.markSent` (from `App.sendToWebSocket`) | no |
 | `processed` | server returned 2xx (the Bot accepted it). Says nothing about the source ACK — see `ack_outcome` | `ChannelQueueWorker.markProcessed` | yes |
 | `rejected` | server returned a permanent 4xx (other than 429) — the message itself was rejected; retrying can never help | `ChannelQueueWorker.markRejected` | yes (never retried) |
-| `failed` | transient/ambiguous Bot-leg failure: 5xx, 429, response timeout, dispatch error, or row found in `processing` on startup (interrupted) | `ChannelQueueWorker.markFailed` + `DurableQueue.recoverOnStartup` | yes (retry/review candidate) |
+| `failed` | transient/ambiguous Bot-leg failure: 5xx, 429, response timeout, dispatch error, or a row found `inflight` on startup (interrupted) | `ChannelQueueWorker.markFailed` + `DurableQueue.recoverOnStartup` | yes (retry/review candidate) |
 | `nacked` | the row was rejected at intake (DB error, duplicate-reject, malformed) before it ever queued — audit only | `DurableQueue.enqueueRejected` | yes |
 
 **Source-leg outcomes** (`ack_outcome`), exhaustively:
 
 | Outcome | Meaning | Set by |
 |---|---|---|
-| `pending` | owed but not yet resolved (the default while queued/processing; also left on interrupted `failed` rows where the leg is genuinely unknown) | default / `recoverOnStartup` |
+| `pending` | owed but not yet resolved (the default while queued/claimed/inflight; also left on interrupted `failed` rows where the leg is genuinely unknown) | default / `recoverOnStartup` |
 | `delivered` | the source received the app-level ACK (incl. policy-suppressed no-op sends); also set when a retransmit replays a previously-undelivered ACK | `markProcessed(…, DELIVERED)` / `setAckOutcome` |
 | `undelivered` | the Bot accepted the message but the ACK couldn't reach the source (connection closed) — the actionable signal | `markProcessed(…, UNDELIVERED)` |
 | `not_owed` | no app-level ACK will be delivered: intake-`nacked`, or the Bot leg ended `rejected`/`failed` | `enqueueRejected` / `markRejected` / `markFailed` |
@@ -271,9 +279,11 @@ The split is also what keeps the (future) Path-2 retry layer safe: it re-dispatc
 `failed` rows only, never `rejected` (can't help) and never `processed` +
 `undelivered` (the Bot already has it — re-dispatching would double-process
 upstream and loop against the dead source). If the worker crashes between the
-server response and sending the app-level ACK, the row is in `processing` on
+server response and sending the app-level ACK, the row is `inflight` on
 restart and goes to `failed` (`interrupted`); it preserves `server_response_body`
 and `server_status_code` so an operator can manually replay the ACK if needed.
+(A row that crashed *before* the request reached the socket is `claimed`, not
+`inflight`, and recovery requeues it instead — it provably never reached the server.)
 
 > **Note for the Path-2 retry layer (not yet built):** `failed` is not uniform —
 > it spans *transient* codes (`server-error`/5xx, `server-rate-limited`/429) and
@@ -413,7 +423,7 @@ Per-channel URL query parameters (parsed in `configureHl7ServerAndConnections`, 
 
 | Param | Values | Default | Meaning |
 |---|---|---|---|
-| `duplicateBehavior` | `reject` \| `idempotent` | `idempotent` | What to do when a row with the same `(channel, MSH.10)` is still in `queued` or `processing`. `reject` sends `CR` (enhanced) / `AR` (aaMode) and inserts a `nacked` row; `idempotent` returns the prior stored ACK (or a synthetic AA) and does not re-insert. |
+| `duplicateBehavior` | `reject` \| `idempotent` | `idempotent` | What to do when a row with the same `(channel, MSH.10)` is still in `queued`, `claimed`, or `inflight`. `reject` sends `CR` (enhanced) / `AR` (aaMode) and inserts a `nacked` row; `idempotent` returns the prior stored ACK (or a synthetic AA) and does not re-insert. |
 
 `Agent.setting` is the established pattern (see memory `[[feedback_project_settings_pattern]]`).
 
@@ -487,14 +497,14 @@ Worker tick algorithm:
 loop:
   if stopped: return
   row = queue.claimNext(channelName)        // single UPDATE ... RETURNING the next
-                                             // queued row, sets state=processing,
+                                             // queued row, sets state=claimed,
                                              // processing_started_at, attempt_count++
   if row is null: await notification or 250 ms timeout → continue
   pendingResponse = new Deferred<AgentTransmitResponse>()
   workerPending.set(row.callback_id, { row, pendingResponse })
-  app.addToWebSocketQueue({
-    type: 'agent:transmit:request',
-    channel: row.channel_name,
+  app.addToWebSocketQueue({                  // App.sendToWebSocket flips the row
+    type: 'agent:transmit:request',          // claimed → inflight (markSent, sent_at)
+    channel: row.channel_name,               // the instant the frame hits the socket
     remote: row.remote,
     contentType: ContentType.HL7_V2,
     body: row.body.toString(row.encoding ?? 'utf8'),
@@ -532,7 +542,7 @@ Notes:
 - **One worker per channel**, owned by `AgentHl7Channel`. Started in `start()`, stopped in `stop()`. Channel close drains its worker before closing the TCP server.
 - **Cross-process correlation by `callback_id`**, not by message control ID — the server echoes whatever `callback` we send. We mint a UUID-based callback per row, indexed.
 - **WS dispatch is queued** (not synchronous) — `addToWebSocketQueue` still drives the existing `webSocketQueue` for actual transport. The durable queue is the *source of truth*; the in-memory WS queue is just a fan-out buffer that gets re-filled from SQLite on restart for `queued` rows.
-- **On WS disconnect** while a row is `processing`, the worker checks whether its `agent:transmit:request` is still sitting unsent in the in-memory WS queue. If it is, the server provably never saw it — the request is removed and the row is returned to `queued` (`DurableQueue.requeue`, which also un-counts the attempt), so it retries on reconnect with zero duplicate-delivery risk. If the request already went out on the wire, delivery is ambiguous (the server may have processed it and the response was lost) and the row is left to the response timeout → `failed` — same conservative stance as `recoverOnStartup`.
+- **On WS disconnect** while a row is in flight, the worker checks whether its `agent:transmit:request` is still sitting unsent in the in-memory WS queue. If it is, the row is still `claimed`, the server provably never saw it — the request is removed and the row is returned to `queued` (`DurableQueue.requeue`, which also un-counts the attempt), so it retries on reconnect with zero duplicate-delivery risk. If the request already went out on the wire (the row is `inflight`), delivery is ambiguous (the server may have processed it and the response was lost) and the row is left to the response timeout → `failed` — same conservative stance as `recoverOnStartup`. The `claimed`/`inflight` split mirrors this same unsent-vs-sent distinction durably on disk.
 - **Backpressure**: while the WS is disconnected (`app.isLive() === false`), the worker loop idles without claiming rows — no dispatch is started, no response timer runs. Rows accumulate in `queued` — that's exactly the point. On `agent:connect:response` the app notifies every channel worker so draining starts immediately.
 
 ### 9.1 Wiring server responses back to rows
@@ -559,17 +569,27 @@ case 'agent:transmit:response': {
 `DurableQueue.recoverOnStartup()` runs once after migrations, before any channel starts:
 
 ```sql
--- 1. Any row in `processing` is suspect — we don't know if the Bot processed it
---    or whether the source ACK was owed/sent. It lands in `failed` (interrupted),
---    the retry/review bucket, with ack_outcome left `pending` (genuinely unknown).
+-- 1. Any `inflight` row is ambiguous — the request reached the wire but we never
+--    saw the response, so we don't know if the Bot processed it or whether the
+--    source ACK was owed/sent. It lands in `failed` (interrupted), the retry/review
+--    bucket, with ack_outcome left `pending` (genuinely unknown).
 UPDATE inbound_hl7_messages
    SET state = 'failed',
        errored_at = $now,
-       last_error = COALESCE(last_error, 'interrupted: process restart while processing'),
+       last_error = COALESCE(last_error, 'interrupted: process restart while inflight'),
        error_code = COALESCE(error_code, 'interrupted')
- WHERE state = 'processing';
+ WHERE state = 'inflight';
 
--- 2. `queued` rows resume automatically — the worker will pick them up.
+-- 2. Any `claimed` row provably never left the process (sent_at is NULL — the
+--    request never hit the socket), so there is no duplicate-delivery risk: return
+--    it to `queued` and un-count the claim's attempt. The worker re-dispatches it.
+UPDATE inbound_hl7_messages
+   SET state = 'queued',
+       processing_started_at = NULL,
+       attempt_count = MAX(0, attempt_count - 1)
+ WHERE state = 'claimed';
+
+-- 3. `queued` rows resume automatically — the worker will pick them up.
 -- (No DDL change; just here for clarity.)
 ```
 
@@ -630,8 +650,8 @@ Add to `AgentStats` (defined in `@medplum/core`):
 durableQueue?: {
   enabled: boolean;
   dbSizeBytes: number;
-  countsByState: { queued: number; processing: number; processed: number; rejected: number; failed: number; nacked: number };
-  channelDepth: Record<string, { queued: number; processing: number; oldestQueuedAgeMs: number | null }>;
+  countsByState: { queued: number; claimed: number; inflight: number; processed: number; rejected: number; failed: number; nacked: number };
+  channelDepth: Record<string, { queued: number; claimed: number; inflight: number; oldestQueuedAgeMs: number | null }>;
   lastSweepAt: number | null;
   lastSweepDeleted: { processed: number; errored: number };
 };
@@ -697,7 +717,7 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 - `claimNext` returns FIFO order per channel; ignores other channels' rows.
 - `claimNext` returns `null` when no `queued` rows for that channel.
 - `markProcessed` / `markRejected` / `markFailed` / `setAckOutcome` / `recordServerResponse` set the right state, ack_outcome, and timestamps and don't disturb other rows.
-- `recoverOnStartup` promotes `processing` → `failed` (interrupted, ack_outcome left `pending`), leaves `queued` untouched, is idempotent (re-running yields zero changes).
+- `recoverOnStartup` promotes `inflight` → `failed` (interrupted, ack_outcome left `pending`), requeues `claimed` → `queued` (un-counting the attempt), leaves `queued` untouched, is idempotent (re-running yields `{ requeued: 0, failed: 0 }`).
 - Schema migration: open against an empty file (v0) → ends at v1. Re-open is a no-op.
 
 `worker.test.ts`:
@@ -723,7 +743,7 @@ Extend `packages/agent/src/hl7.test.ts`:
 - Spin up an in-process HL7 client + agent + mock Medplum WS server.
 - Send 10 messages with `enhanced=true&durableQueue=true`: assert CA arrives after row commits (insert SQLite trigger or pre-INSERT hook into a test queue to assert ordering).
 - Simulate DB write failure (point at a read-only path, or mock the prepared statement to throw): assert source receives CR, no row in DB.
-- Simulate process restart mid-flight: stop the App while a row is `processing`, restart with same DB path, assert it surfaces as `failed` (interrupted) and queued ones complete.
+- Simulate process restart mid-flight: stop the App while a row is `inflight`, restart with same DB path, assert it surfaces as `failed` (interrupted) and queued ones complete; a row left `claimed` (unsent) instead requeues and re-dispatches.
 - ACK delivery failure: Bot returns 2xx but the source connection has closed → row is `processed`+`undelivered`, never re-dispatched (upstream hit exactly once); a retransmit replays the stored ACK and flips it to `delivered`.
 - Duplicate MSH.10 in both modes.
 
