@@ -35,6 +35,7 @@ type AvailabilityOptions = {
   duration?: number;
   availability: SchedulingParametersExtensionExtension;
   timezone?: string;
+  alignmentTimezone?: string;
 };
 
 const fourDayWorkWeek = {
@@ -198,7 +199,7 @@ describe('Schedule/:id/$find', () => {
 
   function makeSchedulingExtension(availability: AvailabilityOptions[]): Extension[] {
     return availability.map((options) => {
-      const { availability, timezone, service, ...durations } = options;
+      const { availability, timezone, alignmentTimezone, service, ...durations } = options;
 
       const extension = {
         url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -213,6 +214,13 @@ describe('Schedule/:id/$find', () => {
         extension.extension.push({
           url: 'timezone',
           valueCode: timezone,
+        });
+      }
+
+      if (alignmentTimezone) {
+        extension.extension.push({
+          url: 'alignmentTimezone',
+          valueCode: alignmentTimezone,
         });
       }
 
@@ -1222,6 +1230,10 @@ describe('Appointment/$find', () => {
               url: 'duration',
               valueDuration: { value: 20, unit: 'min' },
             },
+            {
+              url: 'alignmentTimezone',
+              valueCode: 'America/Chicago',
+            },
           ],
         },
       ],
@@ -1252,7 +1264,7 @@ describe('Appointment/$find', () => {
 
   function makeSchedulingExtension(availability: AvailabilityOptions[]): Extension[] {
     return availability.map((options) => {
-      const { availability, timezone, service, ...durations } = options;
+      const { availability, timezone, alignmentTimezone, service, ...durations } = options;
 
       const extension = {
         url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -1267,6 +1279,13 @@ describe('Appointment/$find', () => {
         extension.extension.push({
           url: 'timezone',
           valueCode: timezone,
+        });
+      }
+
+      if (alignmentTimezone) {
+        extension.extension.push({
+          url: 'alignmentTimezone',
+          valueCode: alignmentTimezone,
         });
       }
 
@@ -1740,6 +1759,47 @@ describe('Appointment/$find', () => {
     ]);
   });
 
+  test('errors when `alignmentTimezone` scheduling parameter differs across schedules', async () => {
+    // ScheduleA inherits `alignmentTimezone` from the service and gets `America/Chicago`.
+    const scheduleA = await makeSchedule(
+      [
+        {
+          service: genericVisit,
+          availability: monTueAvailability,
+        },
+      ],
+      { actor: [createReference(practitioner)] }
+    );
+
+    // ScheduleB explicitly sets `alignmentTimezone` to `America/New_York`
+    const scheduleB = await makeSchedule(
+      [
+        {
+          service: genericVisit,
+          availability: monTueAvailability,
+          alignmentTimezone: 'America/New_York',
+        },
+      ],
+      { actor: [createReference(location)] }
+    );
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+    });
+    expect(response.status).toBe(400);
+    expect(response.body.issue[0].details.text).toBe(
+      "Scheduling parameters attribute 'alignmentTimezone' does not match"
+    );
+
+    expect(response.body.issue[0].expression).toEqual([
+      'Parameters.service-type-reference.extension[0]',
+      'Parameters.schedule[1].extension[0]',
+    ]);
+  });
+
   test('each schedule applies its own bufferBefore/bufferAfter independently', async () => {
     // scheduleA (practitioner): bufferBefore=30, duration=60, Mon/Tue 9am-5pm
     const scheduleA = await makeSchedule(
@@ -2022,5 +2082,44 @@ describe('Appointment/$find', () => {
         },
       ],
     });
+  });
+
+  test('alignmentTimezone anchors the slot grid to local midnight', async () => {
+    // America/Chicago in December is CST (UTC-6). The Chicago midnight grid with
+    // alignment=50 has grid starts at 10:00, 10:50, 11:40 CST within the 09:30-12:30
+    // availability window. UTC anchoring would give 09:50, 10:40, 11:30 CST instead.
+    const schedule = await makeSchedule(
+      [
+        {
+          service: genericVisit,
+          availability: fourDayWorkWeek,
+          duration: 40,
+          alignmentInterval: 50,
+          alignmentTimezone: 'America/Chicago',
+          timezone: 'America/Chicago',
+        },
+      ],
+      { actor: [createReference(practitioner)] }
+    );
+    // Search Monday December 1, 2025, 09:30-12:30 CST window.
+    const response = await makeRequest({
+      start: new Date('2025-12-01T09:30:00.000-06:00').toISOString(),
+      end: new Date('2025-12-01T12:30:00.000-06:00').toISOString(),
+      schedule: [`Schedule/${schedule.id}`],
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+    });
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      resourceType: 'Bundle',
+      type: 'searchset',
+    });
+
+    const startTimes = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+    expect(startTimes).toEqual([
+      new Date('2025-12-01T10:00:00.000-06:00').toISOString(),
+      new Date('2025-12-01T10:50:00.000-06:00').toISOString(),
+      new Date('2025-12-01T11:40:00.000-06:00').toISOString(),
+    ]);
   });
 });

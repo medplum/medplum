@@ -33,6 +33,7 @@ describe('getHealthcareServiceSchedulingParameters', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'Etc/UTC',
       service: { reference: 'HealthcareService/hs-12345' },
     });
   });
@@ -63,6 +64,7 @@ describe('getHealthcareServiceSchedulingParameters', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'Etc/UTC',
       service: { reference: 'HealthcareService/hs-12345' },
     });
   });
@@ -93,6 +95,7 @@ describe('getHealthcareServiceSchedulingParameters', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'Etc/UTC',
       duration: 120,
       service: { reference: 'HealthcareService/hs-12345' },
     });
@@ -122,6 +125,7 @@ describe('getHealthcareServiceSchedulingParameters', () => {
               { url: 'bufferAfter', valueDuration: { unit: 'min', value: 20 } },
               { url: 'alignmentInterval', valueDuration: { unit: 'min', value: 30 } },
               { url: 'alignmentOffset', valueDuration: { unit: 'min', value: 15 } },
+              { url: 'alignmentTimezone', valueCode: 'America/Los_Angeles' },
               { url: 'timezone', valueCode: 'America/Phoenix' },
             ],
           },
@@ -147,6 +151,7 @@ describe('getHealthcareServiceSchedulingParameters', () => {
       bufferAfter: 20,
       alignmentInterval: 30,
       alignmentOffset: 15,
+      alignmentTimezone: 'America/Los_Angeles',
       duration: 120,
       service: { reference: 'HealthcareService/hs-12345' },
       timezone: 'America/Phoenix',
@@ -350,6 +355,7 @@ describe('getScheduleSchedulingParameters', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'Etc/UTC',
       duration: 120,
       service: { reference: 'HealthcareService/hs-12345' },
     });
@@ -366,6 +372,7 @@ describe('getScheduleSchedulingParameters', () => {
             availableEndTime: '17:00:00',
           },
         ],
+
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -375,6 +382,7 @@ describe('getScheduleSchedulingParameters', () => {
               { url: 'bufferAfter', valueDuration: { unit: 'min', value: 20 } },
               { url: 'alignmentInterval', valueDuration: { unit: 'min', value: 30 } },
               { url: 'alignmentOffset', valueDuration: { unit: 'min', value: 15 } },
+              { url: 'alignmentTimezone', valueCode: 'America/Los_Angeles' },
               { url: 'timezone', valueCode: 'America/Phoenix' },
             ],
           },
@@ -396,6 +404,7 @@ describe('getScheduleSchedulingParameters', () => {
       bufferAfter: 20,
       alignmentInterval: 30,
       alignmentOffset: 15,
+      alignmentTimezone: 'America/Los_Angeles',
       duration: 120,
       service: { reference: 'HealthcareService/hs-12345' },
       timezone: 'America/Phoenix',
@@ -422,6 +431,7 @@ describe('getScheduleSchedulingParameters', () => {
               { url: 'bufferAfter', valueDuration: { unit: 'min', value: 20 } },
               { url: 'alignmentInterval', valueDuration: { unit: 'min', value: 30 } },
               { url: 'alignmentOffset', valueDuration: { unit: 'min', value: 15 } },
+              { url: 'alignmentTimezone', valueCode: 'America/Los_Angeles' },
               { url: 'timezone', valueCode: 'America/Phoenix' },
             ],
           },
@@ -442,6 +452,7 @@ describe('getScheduleSchedulingParameters', () => {
               { url: 'bufferAfter', valueDuration: { unit: 'min', value: 24 } },
               { url: 'alignmentInterval', valueDuration: { unit: 'min', value: 45 } },
               { url: 'alignmentOffset', valueDuration: { unit: 'min', value: 5 } },
+              { url: 'alignmentTimezone', valueCode: 'America/Chicago' },
               { url: 'timezone', valueCode: 'America/New_York' },
               {
                 url: 'availability',
@@ -493,6 +504,7 @@ describe('getScheduleSchedulingParameters', () => {
       bufferAfter: 24,
       alignmentInterval: 45,
       alignmentOffset: 5,
+      alignmentTimezone: 'America/Chicago',
       duration: 180,
       service: { reference: 'HealthcareService/hs-12345' },
       timezone: 'America/New_York',

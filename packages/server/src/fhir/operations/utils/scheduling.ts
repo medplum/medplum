@@ -42,7 +42,7 @@ import { uniqueOn } from './terminology';
 type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 const dayNames: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
+export function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
   let t = Temporal.Instant.fromEpochMilliseconds(interval.start.valueOf())
     .toZonedDateTimeISO(timeZone)
     .withPlainTime({ hour: 0, minute: 0, second: 0, millisecond: 0 });
