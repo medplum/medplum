@@ -71,7 +71,7 @@ async function processEventStream(
         headersParsed = result.headersParsed;
         if (headersParsed && result.headers) {
           wrapperStatusCode = result.headers.statusCode || 200;
-          if (isWrapperJsonResponse(result.headers.headers)) {
+          if (result.headers.nonStreamingResponse) {
             bufferingWrapperResponse = true;
             wrapperHeaders = result.headers.headers;
             wrapperBody += result.buffer;
@@ -135,7 +135,7 @@ function processStreamingHeaders(
 ): {
   headersParsed: boolean;
   buffer: string;
-  headers?: { statusCode?: number; headers?: Record<string, string> };
+  headers?: { statusCode?: number; headers?: Record<string, string>; nonStreamingResponse?: boolean };
   error?: string;
 } {
   if (buffer.length > MAX_HEADER_SIZE) {
@@ -164,19 +164,6 @@ function processStreamingHeaders(
       error: `Failed to parse streaming headers: ${headersLine} - ${String(err)}`,
     };
   }
-}
-
-function isWrapperJsonResponse(headers: Record<string, string> | undefined): boolean {
-  return getHeader(headers, 'content-type')?.toLowerCase().includes('application/json') === true;
-}
-
-function getHeader(headers: Record<string, string> | undefined, name: string): string | undefined {
-  if (!headers) {
-    return undefined;
-  }
-  const lowerName = name.toLowerCase();
-  const key = Object.keys(headers).find((k) => k.toLowerCase() === lowerName);
-  return key ? headers[key] : undefined;
 }
 
 function parseWrapperJsonResponse(statusCode: number, body: string, logResult: string): BotExecutionResult | undefined {

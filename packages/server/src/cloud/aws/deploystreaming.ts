@@ -135,6 +135,7 @@ class BotResponseStream {
   `
 function writeResponse(responseStream, statusCode, body) {
   responseStream.write(JSON.stringify({
+    nonStreamingResponse: true,
     statusCode,
     headers: { 'Content-Type': 'application/json' } }) + "\\n");
   if (body !== undefined) {
