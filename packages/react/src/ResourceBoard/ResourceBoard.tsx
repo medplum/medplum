@@ -59,10 +59,7 @@ export interface ResourceBoardProps {
   readonly loadItems?: (search: SearchRequest, medplum: MedplumClient) => Promise<ResourceBoardLoadResult>;
   /**
    * Selected-resource resolution. Default: find in items by id, else
-   * `medplum.readResource(search.resourceType, id)`. May return a different resource
-   * than the one matching the id (e.g. a child message resolving to its parent thread).
-   * Re-runs when `selectedId` or the loaded items change (not on identity change,
-   * so inline functions are safe).
+   * `medplum.readResource(search.resourceType, id)`.
    */
   readonly resolveSelected?: (id: string, items: Resource[], medplum: MedplumClient) => Promise<Resource | undefined>;
 
@@ -75,11 +72,6 @@ export interface ResourceBoardProps {
   readonly headerActions?: ReactNode;
 
   // List
-  /**
-   * Renders one list item's content. The board wraps each item in a container that
-   * owns the standard list-item chrome (hover and selected backgrounds), so this only
-   * needs to render content; use `ctx.selected` for any selection-dependent styling.
-   */
   readonly renderItem: (item: Resource, ctx: ResourceBoardItemContext) => ReactNode;
   /** Shown when the list loads empty. Default: dimmed "No items found". */
   readonly emptyList?: ReactNode;
@@ -89,11 +81,6 @@ export interface ResourceBoardProps {
   readonly listWidth?: number;
 
   // Detail
-  /**
-   * Renders the detail area for the resolved selected resource. The detail area is a
-   * flex-row container with `flex: 1` remaining width; the render prop may return
-   * multiple flex children (e.g. a main panel plus a right sidebar).
-   */
   readonly renderDetail: (selected: Resource, ctx: ResourceBoardDetailContext) => ReactNode;
   /** Shown when nothing is selected or the selection cannot be resolved. */
   readonly emptyDetail?: ReactNode;
@@ -124,7 +111,7 @@ const HEADER_HEIGHT = 64;
 /**
  * ResourceBoard is a generic master-detail shell: a left sidebar with tabs, header
  * actions, a searchable resource list, and pagination, plus a detail area for the
- * selected resource. It owns data fetching (like SearchControl) with escape hatches
+ * selected resource. It owns data fetching with escape hatches
  * for custom loading and selection resolution.
  * @param props - The ResourceBoard React props.
  * @returns The ResourceBoard React node.
