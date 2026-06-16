@@ -40,10 +40,10 @@ import type {
 } from '../../ResourceBoard/ResourceBoard';
 import { ResourceBoard } from '../../ResourceBoard/ResourceBoard';
 import { ThreadChat } from '../ThreadChat/ThreadChat';
-import { ThreadListItem } from './ThreadListItem';
 import { NewTopicDialog } from './NewTopicDialog';
 import { ParticipantFilter } from './ParticipantFilter';
 import classes from './ThreadInbox.module.css';
+import { ThreadListItem } from './ThreadListItem';
 
 /**
  * ThreadInbox is a component that displays a list of threads and allows the user to select a thread to view.
