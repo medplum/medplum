@@ -17,11 +17,18 @@
 # - Adjust the configurations as needed to fit the specific requirements of your environment.
 # - Apply the Terraform configuration to create and manage the Cloud SQL instance.
 
+# Strong password generated when var.db_password is not supplied.
+# special=false keeps it safe to embed in JSON/connection strings without escaping.
+resource "random_password" "db" {
+  length  = 32
+  special = false
+}
+
 module "sql-db" {
   source  = "terraform-google-modules/sql-db/google//modules/postgresql"
   version = "~> 21.0.0"
 
-  name                 = var.pg_ha_name
+  name                 = local.pg_name
   random_instance_name = true
   project_id           = var.project_id
   database_version     = "POSTGRES_16"
@@ -68,7 +75,7 @@ module "sql-db" {
     }
   ]
   // Additional configurations
-  db_name      = var.pg_ha_name
+  db_name      = local.pg_name
   db_charset   = "UTF8"
   db_collation = "en_US.UTF8"
 
@@ -81,7 +88,7 @@ module "sql-db" {
   ]
 
   user_name     = "medplum"
-  user_password = "medplum"
+  user_password = local.db_password
 
   depends_on = [
     google_service_networking_connection.private_service_access,

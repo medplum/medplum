@@ -13,23 +13,23 @@ module "vpc" {
   version = "~> 9.2.0"
 
   project_id   = var.project_id
-  network_name = var.vpc_name
+  network_name = local.vpc_name
 
   subnets = [
     {
-      subnet_name              = "medplum-us-west1-sn-gke-01"
+      subnet_name              = local.subnet_gke
       subnet_ip                = "10.0.0.0/20"
       subnet_region            = var.region
       private_ip_google_access = true
     },
     {
-      subnet_name              = "medplum-us-west1-sn-psa-01"
+      subnet_name              = local.subnet_psa
       subnet_ip                = "192.168.32.0/20"
       subnet_region            = var.region
       private_ip_google_access = true
     },
     {
-      subnet_name              = "medplum-us-west1-sn-proxy-only-01"
+      subnet_name              = local.subnet_proxy
       subnet_ip                = "10.12.0.0/23"
       subnet_region            = var.region
       private_ip_google_access = true
@@ -39,13 +39,13 @@ module "vpc" {
   ]
 
   secondary_ranges = {
-    medplum-us-west1-sn-gke-01 = [
+    (local.subnet_gke) = [
       {
-        range_name    = "medplum-gke-pods"
+        range_name    = local.pods_range
         ip_cidr_range = "10.4.0.0/14"
       },
       {
-        range_name    = "medplum-gke-services"
+        range_name    = local.services_range
         ip_cidr_range = "10.8.0.0/20"
       },
     ]
@@ -55,7 +55,7 @@ module "vpc" {
 
 ## Private Service Access for VPC
 resource "google_compute_global_address" "psa_reserved_ip" {
-  name          = "medplum-psa-reserved-ip"
+  name          = local.psa_reserved_ip_name
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 20
@@ -82,15 +82,15 @@ module "cloud-nat" {
   version       = "~> 5.3.0"
   project_id    = var.project_id
   region        = var.region
-  name          = "${var.region}-medplum-gke-router"
+  name          = local.nat_router_name
   network       = module.vpc.network_name
   create_router = true
-  router        = "${var.region}-medplum-gke-outbound-gateway"
+  router        = local.nat_gateway_name
 }
 
 ##  Ingress ip for external load balancer
 resource "google_compute_global_address" "external_ip" {
-  name         = "medplum-external-ip"
+  name         = local.external_ip_name
   project      = var.project_id
   address_type = "EXTERNAL"
 }
@@ -104,7 +104,7 @@ module "firewall_rules" {
 
   rules = [
     {
-      name        = "allow-health-checks-ingress"
+      name        = local.fw_health_check_name
       description = "Allow ingress traffic from Google health checks"
       direction   = "INGRESS"
       priority    = 150
@@ -121,7 +121,7 @@ module "firewall_rules" {
       source_tags             = null
       source_service_accounts = null
       target_service_accounts = null
-      target_tags             = ["gke-medplum-gke"]
+      target_tags             = [local.gke_node_tag]
       allow = [{
         protocol = "tcp"
         ports    = ["1-65535"]
@@ -140,6 +140,6 @@ module "firewall_rules" {
 resource "google_compute_ssl_policy" "ssl-policy" {
   provider        = google-beta
   project         = var.project_id
-  name            = "medplum-ssl-policy"
+  name            = local.ssl_policy_name
   min_tls_version = "TLS_1_2"
 }

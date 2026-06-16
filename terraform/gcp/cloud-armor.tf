@@ -1,6 +1,6 @@
 # Cloud Armor security policy
 resource "google_compute_security_policy" "edge_security_policy" {
-  name        = "edge-security-policy"
+  name        = local.edge_security_policy_name
   project     = var.project_id
   description = "edge security policy for Cloud Armor"
   type        = "CLOUD_ARMOR_EDGE"
@@ -21,7 +21,7 @@ resource "google_compute_security_policy" "edge_security_policy" {
 
 # Google Cloud Armor security policy for GKE Ingress
 resource "google_compute_security_policy" "ingress_security_policy" {
-  name        = "ingress-security-policy"
+  name        = local.ingress_security_policy_name
   description = "Security policy with WAF rules for GKE Ingress"
 
   # WAF rules for GKE Ingress
