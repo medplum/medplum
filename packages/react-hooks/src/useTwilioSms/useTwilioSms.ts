@@ -44,7 +44,10 @@ export interface UseTwilioSmsReturn {
  * `patientHasPhone` controls whether the send button should be enabled once the UI is visible.
  * Delivery status is tracked per-message via the caller's subscription (e.g. BaseChat's thread subscription).
  *
- * @param options - Patient to send to, optional sender reference, and optional thread reference for associating the message with an existing thread.
+ * @param options - Hook options.
+ * @param options.patient - Patient to send the SMS to.
+ * @param options.sender - Optional reference to the sender (Practitioner, Organization, or PractitionerRole).
+ * @param options.threadRef - Optional thread reference for associating the SMS with an existing thread.
  * @returns Send function, loading/error state, and availability flags.
  */
 export function useTwilioSms({ patient, sender, threadRef }: UseTwilioSmsOptions): UseTwilioSmsReturn {
