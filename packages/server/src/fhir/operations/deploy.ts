@@ -40,7 +40,7 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const filename = req.body.filename ?? 'index.js';
 
   try {
-    const warning = await deployBot(ctx.repo, bot, code, filename);
+    const { warning } = await deployBot(ctx.repo, bot, code, filename);
     if (warning) {
       const outcome: OperationOutcome = {
         ...allOk,
@@ -61,7 +61,16 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   }
 }
 
+const MISSING_PROJECT_WARNING = 'Could not determine Project for Bot';
 const MISSING_MEMBERSHIP_WARNING = 'Could not find ProjectMembership for Bot';
+
+/**
+ * The result of deploying a bot.
+ */
+export type DeployResult = {
+  /** A warning message surfaced to the caller, if any (e.g. a missing ProjectMembership). */
+  warning?: string;
+};
 
 /**
  * Deploys a bot to the cloud.
@@ -69,14 +78,14 @@ const MISSING_MEMBERSHIP_WARNING = 'Could not find ProjectMembership for Bot';
  * @param bot - The bot to deploy.
  * @param code - The code to deploy. If not provided, the existing code will be used.
  * @param filename - The filename to use for the code. If not provided, 'index.js' will be used.
- * @returns A warning message if the bot is missing a ProjectMembership, or undefined if no warnings.
+ * @returns A result containing a warning message if the bot is missing a Project or ProjectMembership.
  */
 export async function deployBot(
   repo: Repository,
   bot: WithId<Bot>,
   code?: string,
   filename?: string
-): Promise<string | undefined> {
+): Promise<DeployResult> {
   if (!code && !bot.executableCode?.url) {
     throw new OperationOutcomeError(badRequest('Bot missing executable code'));
   }
@@ -85,16 +94,16 @@ export async function deployBot(
     throw new OperationOutcomeError(badRequest('Bots not enabled'));
   }
 
-  let warning: string | undefined;
+  const result: DeployResult = {};
   if (!bot.runAsUser) {
     const project = bot.meta?.project;
     if (!project) {
-      warning = MISSING_MEMBERSHIP_WARNING;
-      getLogger().warn(MISSING_MEMBERSHIP_WARNING, { botId: bot.id });
+      result.warning = MISSING_PROJECT_WARNING;
+      getLogger().warn(MISSING_PROJECT_WARNING, { botId: bot.id });
     } else {
       const membership = await findProjectMembership(project, createReference(bot));
       if (!membership) {
-        warning = MISSING_MEMBERSHIP_WARNING;
+        result.warning = MISSING_MEMBERSHIP_WARNING;
         getLogger().warn(MISSING_MEMBERSHIP_WARNING, { botId: bot.id, project });
       }
     }
@@ -150,5 +159,5 @@ export async function deployBot(
     await deployFissionBot(latestBot, codeToDeploy as string);
   }
 
-  return warning;
+  return result;
 }

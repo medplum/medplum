@@ -292,6 +292,11 @@ describe('Deploy', () => {
       });
     expect(res2.status).toBe(200);
     expect(deployLambdaSpy).toHaveBeenCalled();
+
+    // Verify no warning is returned since runAsUser bypasses the ProjectMembership check
+    expect(res2.body.issue).toHaveLength(1);
+    expect(res2.body.issue[0].severity).toBe('information');
+    expect(res2.body.issue[0].details.text).toBe('All OK');
   });
 
   test('Bots not enabled', async () => {

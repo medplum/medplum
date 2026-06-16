@@ -452,6 +452,7 @@ describe('Deploy', () => {
       name: 'Test Bot',
       runtimeVersion: 'awslambda',
       timeout: DEFAULT_LAMBDA_TIMEOUT,
+      executableCode: expect.objectContaining({ url: expect.any(String) }),
     });
 
     expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
