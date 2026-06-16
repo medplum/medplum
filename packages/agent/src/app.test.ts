@@ -342,6 +342,274 @@ describe('App', () => {
     mockServer.stop();
   });
 
+  test('Attempt to reconnect when WebSocket is open but agent never becomes live', async () => {
+    const state = {
+      connectRequestCount: 0,
+      respondToConnect: false,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          state.connectRequestCount += 1;
+          // Simulate the server failing to process the connect request (e.g. a transient error
+          // while validating the token or reading the Agent resource) -- the socket stays open
+          // but no `agent:connect:response` is ever sent
+          if (state.respondToConnect) {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          }
+        }
+        // Keep answering heartbeats so that, once we're live, the connection stays up and the
+        // final liveness assertion isn't racing against the missed-heartbeat reconnect.
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // Bail out of the polling loops after this long so a regression fails on the assertions below
+    // (with a useful message) instead of hanging until the whole test times out.
+    const WAIT_TIMEOUT_MS = 5000;
+
+    // Wait for the first connect request, which goes unanswered -- the agent is stuck
+    // open-but-not-live
+    let deadline = Date.now() + WAIT_TIMEOUT_MS;
+    while (state.connectRequestCount < 1 && Date.now() < deadline) {
+      await sleep(50);
+    }
+    expect(state.connectRequestCount).toBeGreaterThanOrEqual(1);
+    expect(app.getStats().live).toBe(false);
+
+    // The agent should notice it never became live and force a reconnect, which re-sends the
+    // connect request -- this time we answer it, so the agent should fully recover to live
+    state.respondToConnect = true;
+    deadline = Date.now() + WAIT_TIMEOUT_MS;
+    while (!app.getStats().live && Date.now() < deadline) {
+      await sleep(50);
+    }
+
+    expect(state.connectRequestCount).toBeGreaterThanOrEqual(2);
+    expect(app.getStats().live).toBe(true);
+
+    await app.stop();
+    mockServer.stop();
+  });
+
+  test('WebSocket queue worker recovers after a failed send', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      live: false,
+      transmitRequestCount: 0,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        }
+        if (command.type === 'agent:transmit:request') {
+          state.transmitRequestCount += 1;
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    // Long heartbeat period so the heartbeat retry doesn't interfere with this test --
+    // recovery should be driven by the next enqueued message alone
+    app.heartbeatPeriod = 30_000;
+    await app.start();
+
+    // Wait for the WebSocket to connect and the agent to become live
+    while (!state.mySocket) {
+      await sleep(50);
+    }
+    while (!app.getStats().live) {
+      await sleep(50);
+    }
+
+    // Channel messages carry an accessToken, which makes the queue worker refresh the token
+    // before sending. Make the next refresh fail, like when the token endpoint is unreachable
+    const refreshSpy = vi.spyOn(medplum, 'refreshIfExpired').mockRejectedValueOnce(new Error('Network failure'));
+
+    const transmitRequest = {
+      type: 'agent:transmit:request',
+      accessToken: 'placeholder',
+      channel: 'test',
+      remote: 'mllp://127.0.0.1:9001',
+      contentType: ContentType.HL7_V2,
+      body: 'MSH|^~\\&|A|B|C|D|20240101000000||ADT^A01|1|P|2.5\r',
+    } satisfies AgentTransmitRequest;
+
+    app.addToWebSocketQueue(transmitRequest);
+
+    // Wait for the failed send attempt
+    while (refreshSpy.mock.calls.length < 1) {
+      await sleep(50);
+    }
+    await sleep(100);
+    expect(state.transmitRequestCount).toStrictEqual(0);
+
+    // Queueing the next message must restart the worker and drain BOTH messages
+    // (the failed message was put back on the queue)
+    app.addToWebSocketQueue({ ...transmitRequest, body: transmitRequest.body.replace('|1|', '|2|') });
+
+    while (state.transmitRequestCount < 2) {
+      await sleep(50);
+    }
+    expect(state.transmitRequestCount).toStrictEqual(2);
+
+    refreshSpy.mockRestore();
+    await app.stop();
+    mockServer.stop();
+  });
+
+  test('Reconnects when sending the connect request throws (token refresh fails)', async () => {
+    const state = {
+      connectRequestCount: 0,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          state.connectRequestCount += 1;
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        }
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    // The connect request carries an accessToken, so `sendToWebSocket` refreshes the token before
+    // sending. Make the first refresh fail -- like when the token endpoint is briefly unreachable
+    // right after a network blip. The send throws inside the `open` handler; an uncaught error there
+    // would crash the process. Instead it's logged, the agent stays not-live, and the heartbeat
+    // forces a reconnect that re-sends the connect request (this time the refresh succeeds).
+    const refreshSpy = vi.spyOn(medplum, 'refreshIfExpired').mockRejectedValueOnce(new Error('Network failure'));
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // The first connect attempt fails before reaching the server, so no connect request is recorded
+    // until the reconnect re-sends it with a working token.
+    while (!app.getStats().live) {
+      await sleep(50);
+    }
+
+    expect(refreshSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(state.connectRequestCount).toBeGreaterThanOrEqual(1);
+    expect(app.getStats().live).toBe(true);
+
+    refreshSpy.mockRestore();
+    await app.stop();
+    mockServer.stop();
+  });
+
+  test('WebSocket queue worker is restarted by the heartbeat after a failed send', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      transmitRequestCount: 0,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        }
+        // Keep responding to heartbeats so the connection stays live and the queue recovery is
+        // driven purely by the heartbeat retry -- not by a reconnect re-draining the queue.
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+        }
+        if (command.type === 'agent:transmit:request') {
+          state.transmitRequestCount += 1;
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    // Short heartbeat period so the heartbeat retry kicks in quickly. Recovery here must come from
+    // the heartbeat alone -- no second message is enqueued to restart the worker.
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    while (!state.mySocket) {
+      await sleep(50);
+    }
+    while (!app.getStats().live) {
+      await sleep(50);
+    }
+
+    // Channel messages carry an accessToken, which makes the queue worker refresh the token
+    // before sending. Make the next refresh fail, like when the token endpoint is unreachable.
+    const refreshSpy = vi.spyOn(medplum, 'refreshIfExpired').mockRejectedValueOnce(new Error('Network failure'));
+
+    const transmitRequest = {
+      type: 'agent:transmit:request',
+      accessToken: 'placeholder',
+      channel: 'test',
+      remote: 'mllp://127.0.0.1:9001',
+      contentType: ContentType.HL7_V2,
+      body: 'MSH|^~\\&|A|B|C|D|20240101000000||ADT^A01|1|P|2.5\r',
+    } satisfies AgentTransmitRequest;
+
+    app.addToWebSocketQueue(transmitRequest);
+
+    // Nothing else is enqueued, so the only thing that can restart the worker (which cleared itself
+    // after the failed send put the message back on the queue) is the heartbeat's queue check.
+    while (state.transmitRequestCount < 1) {
+      await sleep(50);
+    }
+    expect(state.transmitRequestCount).toStrictEqual(1);
+
+    // The first send failed on the token refresh and requeued the message; the heartbeat retry
+    // refreshed again and re-sent it -- so the token was refreshed at least twice for this message.
+    expect(refreshSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+    refreshSpy.mockRestore();
+    await app.stop();
+    mockServer.stop();
+  });
+
   test('Empty endpoint URL', async () => {
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
