@@ -30,6 +30,7 @@ export * from './BackboneElementInput/BackboneElementInput';
 export * from './CalendarDateInput/CalendarDateInput';
 export * from './CalendarInput/CalendarInput';
 export * from './chat/BaseChat/BaseChat';
+export * from './chat/BaseChat/DocumentPicker';
 export * from './chat/ChatModal/ChatModal';
 export * from './chat/ThreadChat/ThreadChat';
 export * from './chat/ThreadInbox/ChatList';
