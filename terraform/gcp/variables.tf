@@ -12,6 +12,12 @@ variable "project_id" {
   type        = string
 }
 
+variable "namespace" {
+  description = "Prefix applied to all named GCP resources so multiple deployments can coexist in one project. See locals.tf."
+  type        = string
+  default     = "medplum"
+}
+
 variable "app_domain" {
   description = "value for the static asset domain"
   type        = string
@@ -55,18 +61,17 @@ variable "master_authorized_networks" {
   }))
 }
 
-# VPC
-variable "vpc_name" {
-  description = "The name for the VPC"
+variable "db_password" {
+  description = "Password for the Cloud SQL 'medplum' user. If null, a strong random password is generated (retrieve via `terraform output -raw db_password`)."
   type        = string
-  default     = "medplum-gke-vpc"
+  default     = null
+  sensitive   = true
 }
 
-## Postgres
-variable "pg_ha_name" {
-  description = "The name for the HA Postgres instance"
-  type        = string
-  default     = "medplum-pg-ha"
+variable "gke_zones" {
+  description = "The zones for the GKE autopilot cluster. Must be within var.region."
+  type        = list(string)
+  default     = ["us-west1-a", "us-west1-b"]
 }
 
 # Private Service

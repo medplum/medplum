@@ -22,3 +22,7 @@ output "redis_ip_address" {
 output "postgres_ip_address" {
   value = module.sql-db.instance_ip_address[0].ip_address
 }
+output "db_password" {
+  value     = local.db_password
+  sensitive = true
+}
