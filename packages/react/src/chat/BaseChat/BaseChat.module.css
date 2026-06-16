@@ -22,24 +22,183 @@
 }
 
 .chatScrollArea {
-  padding: var(--mantine-spacing-xs);
+  padding: 0 var(--mantine-spacing-lg);
+}
+
+.chatScrollAreaViewport {
+  padding-top: var(--mantine-spacing-lg);
 }
 
 .chatInputContainer {
-  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
   flex-shrink: 0;
-  padding: 6px 8px;
-  position: relative;
+  padding-block: var(--mantine-spacing-lg);
+  margin-inline: var(--mantine-spacing-lg);
+  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 }
 
-.chatPendingFile {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  right: 0;
-  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
-  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-3));
-  padding: 4px 8px;
+.chatInputBox {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
+  border-radius: var(--mantine-radius-lg);
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  padding-inline: 10px;
+  transition: border-color 100ms ease;
+
+  &:focus-within {
+    border-color: var(--mantine-color-blue-filled);
+  }
+
+  &[data-disabled] {
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+    border-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+
+    &:focus-within {
+      border-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+    }
+  }
+}
+
+.chatAttachmentPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 1.75rem;
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  border-radius: var(--mantine-radius-xl);
+  padding-inline: 8px 6px;
+  max-width: 100%;
+  align-self: flex-start;
+  margin: 14px 4px 10px;
+}
+
+.chatInputBox[data-scrollable='true'] .chatAttachmentPill {
+  margin-bottom: 14px;
+}
+
+.chatAttachmentPillDismiss {
+  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-5));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+
+  &:hover {
+    color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+  }
+}
+
+.chatTextareaRoot {
+  /* When textarea is first child (no pill), add scrollable top padding */
+  &:first-child .chatTextarea {
+    padding-top: 14px;
+  }
+}
+
+.chatTextarea {
+  border: none;
+  background: transparent;
+  padding: 0 8px;
+  min-height: unset;
+
+  &:focus {
+    border: none;
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* The disabled gray comes from the outer box; keep the textarea itself transparent */
+  &:disabled {
+    background: transparent;
+    opacity: 1;
+    color: var(--mantine-color-placeholder);
+  }
+}
+
+.chatActionBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+
+/* Subtle action bar buttons: gray-0 on hover, gray-1 while their menu/popover is open.
+   No hover effect while selected. */
+.subtleActionButton {
+  /* Keep the dark-scheme icons close to white; the default "dark" subtle color is too dim on a dark-6 box.
+     !important is needed to beat Mantine's inline --ai-color; disabled state sets `color` directly so it's unaffected. */
+  --ai-color: light-dark(var(--mantine-color-dark-light-color), var(--mantine-color-dark-0)) !important;
+
+  &:hover:not(:disabled):not([data-disabled]):not([data-selected]) {
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
+  }
+
+  &[data-selected] {
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-4));
+  }
+}
+
+/* Filled send: Mantine's disabled filled styles are nearly invisible on the dark-6 input box */
+.sendActionButton:disabled,
+.sendActionButton[data-disabled] {
+  --ai-bg: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4)) !important;
+  --ai-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-1)) !important;
+  --ai-bd: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4)) !important;
+  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5)) !important;
+  color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3)) !important;
+  opacity: 1 !important;
+}
+
+/* Listening indicator, matching the Patient Intake Questionnaire recording status */
+.listeningStatus {
+  display: flex;
+  align-items: center;
+  /* Match the patient pill: 4px group gap + 2px label margin = 6px between dot and label */
+  gap: 4px;
+  min-width: 0;
+  height: 32px;
+}
+
+.listeningDotWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* 16px dot with an 8px offset centers it on the paperclip icon it temporarily replaces */
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+  /* Static gray at the pulse's smallest size while connecting; turns red and pulses up once listening */
+  color: var(--mantine-color-gray-5);
+  transform: scale(0.8);
+
+  & svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.listeningStatus[data-state='recording'] .listeningDotWrapper {
+  color: var(--mantine-color-red-6);
+  animation: recordingPulse 2.5s ease-in-out infinite;
+}
+
+.listeningLabel {
+  color: var(--mantine-color-gray-6);
+  white-space: nowrap;
+}
+
+@keyframes recordingPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .chatBubbleOuterWrap {
@@ -79,16 +238,6 @@
   text-align: right;
 }
 
-.chatPendingFile {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  right: 0;
-  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
-  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-3));
-  padding: 4px 8px;
-}
-
 .chatBubbleAttachmentWithText {
   margin-top: 6px;
 }
@@ -99,6 +248,44 @@
   align-items: center;
 }
 
-.chatBubbleMenu {
-  align-self: center;
+.chatBubbleAttachmentRowLeft {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  margin-bottom: 4px;
+}
+
+.chatBubbleAttachmentRowRight {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  margin-bottom: 4px;
+}
+
+.chatBubbleMenuInline {
+  flex-shrink: 0;
+}
+
+.chatBubbleMenuItem {
+  padding-inline: var(--mantine-spacing-sm);
+  padding-inline-end: var(--mantine-spacing-lg);
+  padding-block: var(--mantine-spacing-xs);
+}
+
+/* Rounded hover highlight on the attach menu options */
+.attachMenuDropdown :global(.mantine-Menu-item) {
+  border-radius: 4px;
+}
+
+.truncatedMenuItem {
+  overflow: hidden;
+
+  & :global(.mantine-Menu-itemLabel) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
 }

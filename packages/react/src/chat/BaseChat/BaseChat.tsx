@@ -12,22 +12,28 @@ import {
   Skeleton,
   Stack,
   Text,
-  TextInput,
+  Textarea,
   Title,
+  Tooltip,
 } from '@mantine/core';
-import { useResizeObserver } from '@mantine/hooks';
+import { useDisclosure, useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import type { ProfileResource, WithId } from '@medplum/core';
 import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { Attachment, Bundle, Communication, DocumentReference, Reference } from '@medplum/fhirtypes';
-import { useCachedBinaryUrl, useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
+import { useCachedBinaryUrl, useDictation, useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
 import {
   IconArrowRight,
-  IconDots,
-  IconDownload,
-  IconFileExport,
+  IconBrowserShare,
+  IconCheck,
+  IconCircleFilled,
+  IconEye,
+  IconFiles,
   IconFileText,
+  IconHistory,
+  IconMicrophone,
   IconPaperclip,
+  IconUpload,
   IconX,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -35,7 +41,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';
-import { DocumentPicker } from './DocumentPicker';
+import { DocumentPickerList, truncateMiddle } from './DocumentPicker';
 
 /**
  * Returns the URL only when its scheme is http or https, blocking javascript: / data: XSS vectors.
@@ -118,6 +124,7 @@ export interface BaseChatProps extends PaperProps {
   readonly excludeHeader?: boolean;
   readonly onError?: (err: Error) => void;
   readonly uploadEnabled?: boolean;
+  readonly dictationEnabled?: boolean;
   readonly attachmentSubjectRef?: Reference;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
 }
@@ -143,13 +150,14 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     onError,
     excludeHeader = false,
     uploadEnabled = false,
+    dictationEnabled = false,
     attachmentSubjectRef,
     onViewInDocuments,
     ...paperProps
   } = props;
   const medplum = useMedplum();
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const firstScrollRef = useRef(true);
   const initialLoadRef = useRef(true);
@@ -159,8 +167,94 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const [loading, setLoading] = useState(true);
   const [pendingFile, setPendingFile] = useState<File | undefined>(undefined);
   const [pendingDocRef, setPendingDocRef] = useState<DocumentReference | undefined>(undefined);
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [scrollable, setScrollable] = useState(false);
+  // The textarea is uncontrolled, so mirror whether it has text to drive the send button state
+  const [hasText, setHasText] = useState(false);
+
+  // Track whether the textarea has grown past its max height and become scrollable
+  const handleInput = useCallback(() => {
+    const el = inputRef.current;
+    if (el) {
+      setScrollable(el.scrollHeight > el.clientHeight + 1);
+      setHasText(el.value.trim().length > 0);
+    }
+  }, []);
+  const [pickerOpen, pickerHandlers] = useDisclosure(false);
+  // The attach popover swaps between its root menu and the recent-documents view in place
+  const [pickerView, setPickerView] = useState<'menu' | 'recent'>('menu');
+  const pickerDropdownRef = useRef<HTMLDivElement>(null);
+  const inputBoxRef = useRef<HTMLDivElement>(null);
+  // Attach menu target width: the base 220 widened by ~a third, but never wider than the input box less 10px
+  const [attachMenuWidth, setAttachMenuWidth] = useState(293);
+
+  useEffect(() => {
+    if (!pickerOpen) {
+      return undefined;
+    }
+    // The dropdown is anchored under the paperclip, ~10px in from the box's left edge (the box's
+    // padding-inline). Subtract that left inset plus another ~10px so the right edge sits inside the
+    // input box rather than aligning with (or overflowing) it. Otherwise use the wider default.
+    const boxWidth = inputBoxRef.current?.offsetWidth;
+    setAttachMenuWidth(boxWidth ? Math.min(293, boxWidth - 20) : 293);
+    const handler = (e: MouseEvent): void => {
+      // Skip the attach button itself; its own onClick toggles the menu. Closing here would let the
+      // button's click re-open it after this handler's re-render flips pickerOpen back to false.
+      if (
+        pickerDropdownRef.current &&
+        !pickerDropdownRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement).closest('[aria-label="Attach file"]')
+      ) {
+        pickerHandlers.close();
+      }
+    };
+    // Delay registration so the opening click doesn't immediately close
+    const raf = requestAnimationFrame(() => {
+      document.addEventListener('mousedown', handler);
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('mousedown', handler);
+    };
+  }, [pickerOpen, pickerHandlers]);
+
+  // Re-focus textarea when picker closes
+  const prevPickerOpen = useRef(false);
+  useEffect(() => {
+    if (prevPickerOpen.current && !pickerOpen) {
+      inputRef.current?.focus();
+      // View is reset to the root menu on open, not here, so the recent view stays visible
+      // through the close transition instead of flashing the root menu
+    }
+    prevPickerOpen.current = pickerOpen;
+  }, [pickerOpen]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // The textarea is uncontrolled, so write through the native setter and fire an
+  // input event so the autosize/scrollable handlers run
+  const setInputValue = useCallback((value: string): void => {
+    const el = inputRef.current;
+    if (!el) {
+      return;
+    }
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+    setter?.call(el, value);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }, []);
+
+  // Dictation: speech streams into the textarea; the user accepts or cancels, nothing auto-sends
+  const {
+    dictating,
+    isRecording: isDictationRecording,
+    startDictation,
+    cancelDictation,
+    acceptDictation,
+  } = useDictation({
+    getValue: () => inputRef.current?.value ?? '',
+    setValue: setInputValue,
+    focusInput: () => inputRef.current?.focus(),
+    onError: (err) => showError(normalizeErrorString(err)),
+  });
 
   if (!loading) {
     initialLoadRef.current = false;
@@ -246,6 +340,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       if (inputRef.current) {
         inputRef.current.value = '';
       }
+      setScrollable(false);
+      setHasText(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -297,21 +393,15 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     }
   });
 
-  const myLastDeliveredId = useMemo<string>(() => {
-    let i = communications.length;
-
-    while (i--) {
-      const comm = communications[i];
-      if (comm.sender?.reference === profileRefStr && comm.received) {
-        return comm.id as string;
-      }
-    }
-
-    return '';
-  }, [communications, profileRefStr]);
-
   if (!profile) {
     return null;
+  }
+
+  let inputPlaceholder = 'Replies are disabled';
+  if (dictating) {
+    inputPlaceholder = 'Start speaking—your transcribed words will appear here.';
+  } else if (!inputDisabled) {
+    inputPlaceholder = 'Type a message...';
   }
 
   return (
@@ -338,7 +428,12 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
             </Group>
           </Stack>
         ) : (
-          <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} h={parentRect.height}>
+          <ScrollArea
+            viewportRef={scrollAreaRef}
+            className={classes.chatScrollArea}
+            classNames={{ viewport: classes.chatScrollAreaViewport }}
+            h={parentRect.height}
+          >
             {/* We don't wrap our scrollarea or scrollarea children with this overlay since it seems to break the rendering of the virtual scroll element */}
             {/* Instead we manually set the width and height to match the parent and use absolute positioning */}
             <LoadingOverlay
@@ -349,7 +444,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
               const prevCommunication = i > 0 ? communications[i - 1] : undefined;
               const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
               const currCommTime = parseSentTime(c);
-              const showDelivered = !!c.received && c.id === myLastDeliveredId;
               const payloads = c.payload ?? [];
               const contentRef = payloads.find((p) => p.contentReference)?.contentReference;
               const contentAttachment = payloads.find((p) => p.contentAttachment)?.contentAttachment;
@@ -371,20 +465,13 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                   )}
                   {isSender ? (
                     <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
-                      <div className={classes.chatBubbleMenu}>{menu}</div>
-                      <ChatBubble alignment="right" communication={c} showDelivered={showDelivered} />
-                      <ResourceAvatar
-                        radius="xl"
-                        color="orange"
-                        value={c.sender}
-                        mb={!showDelivered ? 'sm' : undefined}
-                      />
+                      <ChatBubble alignment="right" communication={c} menu={menu} />
+                      <ResourceAvatar radius="xl" color="orange" value={c.sender} mb="sm" />
                     </Group>
                   ) : (
                     <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
                       <ResourceAvatar radius="xl" value={c.sender} mb="sm" />
-                      <ChatBubble alignment="left" communication={c} />
-                      <div className={classes.chatBubbleMenu}>{menu}</div>
+                      <ChatBubble alignment="left" communication={c} menu={menu} />
                     </Group>
                   )}
                 </Stack>
@@ -394,31 +481,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         )}
       </div>
       <div className={classes.chatInputContainer}>
-        {(pendingFile || pendingDocRef) && (
-          <Group className={classes.chatPendingFile} gap={4} align="center" wrap="nowrap">
-            {pendingDocRef ? <IconFileText size="0.75rem" /> : <IconPaperclip size="0.75rem" />}
-            <Text fz="xs" c="dimmed" flex={1} truncate>
-              {pendingDocRef
-                ? (pendingDocRef.description ?? pendingDocRef.content?.[0]?.attachment?.title ?? 'Document')
-                : pendingFile?.name}
-            </Text>
-            <ActionIcon
-              size="xs"
-              variant="subtle"
-              color="red"
-              onClick={() => {
-                setPendingDocRef(undefined);
-                setPendingFile(undefined);
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = '';
-                }
-              }}
-              aria-label="Remove attachment"
-            >
-              <IconX size="0.75rem" />
-            </ActionIcon>
-          </Group>
-        )}
         <input
           ref={fileInputRef}
           type="file"
@@ -433,68 +495,251 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
           }}
         />
         <Form onSubmit={sendMessageInternal}>
-          <TextInput
-            ref={inputRef}
-            name="message"
-            placeholder={!inputDisabled ? 'Type a message...' : 'Replies are disabled'}
-            radius="xl"
-            leftSectionWidth={42}
-            rightSectionWidth={42}
-            disabled={inputDisabled}
-            leftSection={
-              !inputDisabled && uploadEnabled ? (
-                <Popover
-                  opened={pickerOpen}
-                  onChange={setPickerOpen}
-                  position="top-start"
-                  withArrow
-                  shadow="md"
-                  withinPortal
-                >
+          <div
+            ref={inputBoxRef}
+            className={classes.chatInputBox}
+            data-disabled={inputDisabled || undefined}
+            data-scrollable={scrollable ? 'true' : undefined}
+            onMouseDown={(e: React.MouseEvent) => {
+              // Keep textarea focused when clicking anywhere in the input box
+              if (!(e.target instanceof HTMLTextAreaElement) && !(e.target instanceof HTMLInputElement)) {
+                e.preventDefault();
+                inputRef.current?.focus();
+              }
+            }}
+          >
+            {(pendingFile || pendingDocRef) &&
+              (() => {
+                const fullName = pendingDocRef
+                  ? (pendingDocRef.description ?? pendingDocRef.content?.[0]?.attachment?.title ?? 'Document')
+                  : (pendingFile?.name ?? 'File');
+                const displayName = truncateMiddle(fullName, 24);
+                const isTruncated = displayName !== fullName;
+                return (
+                  <Tooltip label={fullName} openDelay={500} position="top" disabled={!isTruncated}>
+                    <div className={classes.chatAttachmentPill}>
+                      {pendingDocRef ? (
+                        <IconFileText size="0.875rem" color="var(--mantine-color-dimmed)" />
+                      ) : (
+                        <IconPaperclip size="0.875rem" color="var(--mantine-color-dimmed)" />
+                      )}
+                      <Text fz="xs">{displayName}</Text>
+                      <span
+                        className={classes.chatAttachmentPillDismiss}
+                        role="button"
+                        tabIndex={0}
+                        onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                        onClick={() => {
+                          setPendingDocRef(undefined);
+                          setPendingFile(undefined);
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                          inputRef.current?.focus();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setPendingDocRef(undefined);
+                            setPendingFile(undefined);
+                            if (fileInputRef.current) {
+                              fileInputRef.current.value = '';
+                            }
+                            inputRef.current?.focus();
+                          }
+                        }}
+                        aria-label="Remove attachment"
+                      >
+                        <IconX size="0.75rem" />
+                      </span>
+                    </div>
+                  </Tooltip>
+                );
+              })()}
+            <Textarea
+              ref={inputRef}
+              name="message"
+              placeholder={inputPlaceholder}
+              disabled={inputDisabled}
+              autoFocus={!inputDisabled}
+              autosize
+              minRows={1}
+              maxRows={6}
+              classNames={{ root: classes.chatTextareaRoot, input: classes.chatTextarea }}
+              onChange={handleInput}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  // Enter during dictation only confirms the transcript; Send submits explicitly
+                  if (dictating) {
+                    acceptDictation();
+                    return;
+                  }
+                  e.currentTarget.form?.requestSubmit();
+                }
+              }}
+            />
+            <div className={classes.chatActionBar}>
+              {dictating && (
+                <div className={classes.listeningStatus} data-state={isDictationRecording ? 'recording' : 'connecting'}>
+                  <span className={classes.listeningDotWrapper} aria-hidden>
+                    <IconCircleFilled size={16} />
+                  </span>
+                  <Text fz="xs" fw={400} ml={2} className={classes.listeningLabel} aria-live="polite">
+                    {isDictationRecording ? 'Listening…' : 'Connecting…'}
+                  </Text>
+                </div>
+              )}
+              {!dictating && !inputDisabled && uploadEnabled && (
+                <Popover opened={pickerOpen} position="top-start" shadow="md" radius="md">
                   <Popover.Target>
-                    <ActionIcon
-                      onClick={() => setPickerOpen((o) => !o)}
-                      size="1.5rem"
-                      radius="xl"
-                      color={pendingFile || pendingDocRef ? 'blue' : 'gray'}
-                      variant={pendingFile || pendingDocRef ? 'filled' : 'subtle'}
-                      aria-label="Attach file"
-                    >
-                      <IconPaperclip size="1rem" stroke={1.5} />
-                    </ActionIcon>
+                    <Tooltip label="Attach" position="top" openDelay={100} disabled={pickerOpen}>
+                      <ActionIcon
+                        type="button"
+                        onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                        onClick={() => {
+                          if (pickerOpen) {
+                            pickerHandlers.close();
+                          } else {
+                            // Reset to the root menu before opening so it's never visible during the
+                            // close transition (resetting on close flashes the root menu over the fade-out)
+                            setPickerView('menu');
+                            pickerHandlers.open();
+                            inputRef.current?.focus();
+                          }
+                        }}
+                        size={32}
+                        radius="xl"
+                        color="dark"
+                        variant="subtle"
+                        className={classes.subtleActionButton}
+                        data-selected={pickerOpen || undefined}
+                        aria-label="Attach file"
+                      >
+                        <IconPaperclip size={16} stroke={2} />
+                      </ActionIcon>
+                    </Tooltip>
                   </Popover.Target>
-                  <Popover.Dropdown p={0}>
-                    <DocumentPicker
-                      subjectRef={attachmentSubjectRef}
-                      onSelect={(doc) => {
-                        setPendingDocRef(doc);
-                        setPendingFile(undefined);
-                        setPickerOpen(false);
-                      }}
-                      onUpload={() => {
-                        setPickerOpen(false);
-                        fileInputRef.current?.click();
-                      }}
-                    />
+                  <Popover.Dropdown
+                    ref={pickerDropdownRef}
+                    className={classes.attachMenuDropdown}
+                    p={4}
+                    {...(pickerView === 'recent' ? { w: attachMenuWidth } : { miw: 220 })}
+                    onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                    onFocusCapture={(e: React.FocusEvent) => {
+                      // Allow focus on the search input, redirect everything else back to textarea
+                      if (!(e.target instanceof HTMLInputElement)) {
+                        e.preventDefault();
+                        inputRef.current?.focus();
+                      }
+                    }}
+                  >
+                    <Menu closeOnItemClick={false}>
+                      {pickerView === 'recent' ? (
+                        <DocumentPickerList
+                          subjectRef={attachmentSubjectRef}
+                          onSelect={(doc) => {
+                            setPendingDocRef(doc);
+                            setPendingFile(undefined);
+                            pickerHandlers.close();
+                          }}
+                        />
+                      ) : (
+                        <>
+                          <Menu.Item
+                            leftSection={<IconHistory size={16} color="var(--mantine-color-dimmed)" />}
+                            onClick={() => setPickerView('recent')}
+                          >
+                            <Text size="sm">Recent Documents</Text>
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconUpload size={16} color="var(--mantine-color-dimmed)" />}
+                            onClick={() => {
+                              pickerHandlers.close();
+                              fileInputRef.current?.click();
+                            }}
+                          >
+                            <Text size="sm">Upload a file or image</Text>
+                          </Menu.Item>
+                        </>
+                      )}
+                    </Menu>
                   </Popover.Dropdown>
                 </Popover>
-              ) : undefined
-            }
-            rightSection={
-              !inputDisabled ? (
-                <ActionIcon
-                  type="submit"
-                  size="1.5rem"
-                  radius="xl"
-                  color="blue"
-                  variant="filled"
-                  aria-label="Send message"
-                >
-                  <IconArrowRight size="1rem" stroke={1.5} />
-                </ActionIcon>
-              ) : undefined
-            }
-          />
+              )}
+              {!dictating && (inputDisabled || !uploadEnabled) && <div />}
+              {!inputDisabled && (
+                <Group gap={8}>
+                  {dictating ? (
+                    <>
+                      <Tooltip label="Cancel" position="top" openDelay={100}>
+                        <ActionIcon
+                          type="button"
+                          onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                          onClick={cancelDictation}
+                          size={32}
+                          radius="xl"
+                          color="dark"
+                          variant="subtle"
+                          className={classes.subtleActionButton}
+                          aria-label="Cancel dictation"
+                        >
+                          <IconX size={16} stroke={2} />
+                        </ActionIcon>
+                      </Tooltip>
+                      <Tooltip label="Accept" position="top" openDelay={100}>
+                        <ActionIcon
+                          type="button"
+                          onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                          onClick={acceptDictation}
+                          size={32}
+                          radius="xl"
+                          color="blue"
+                          variant="filled"
+                          aria-label="Accept dictated text"
+                        >
+                          <IconCheck size={16} stroke={2} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </>
+                  ) : (
+                    <>
+                      {dictationEnabled && (
+                        <Tooltip label="Dictate" position="top" openDelay={100}>
+                          <ActionIcon
+                            type="button"
+                            onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                            onClick={startDictation}
+                            size={32}
+                            radius="xl"
+                            color="dark"
+                            variant="subtle"
+                            className={classes.subtleActionButton}
+                            aria-label="Dictate"
+                          >
+                            <IconMicrophone size={16} stroke={2} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                      <Tooltip label="Send" position="top" openDelay={100}>
+                        <ActionIcon
+                          type="submit"
+                          size={32}
+                          radius="xl"
+                          color="blue"
+                          variant="filled"
+                          className={classes.sendActionButton}
+                          aria-label="Send message"
+                          disabled={!hasText && !pendingFile && !pendingDocRef}
+                        >
+                          <IconArrowRight size={16} stroke={2} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </>
+                  )}
+                </Group>
+              )}
+            </div>
+          </div>
         </Form>
       </div>
     </Paper>
@@ -504,17 +749,17 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 interface ChatBubbleProps {
   readonly communication: Communication;
   readonly alignment: 'left' | 'right';
-  readonly showDelivered?: boolean;
+  readonly menu?: JSX.Element | null;
 }
 
 function ChatBubble(props: ChatBubbleProps): JSX.Element {
-  const { communication, alignment, showDelivered } = props;
+  const { communication, alignment, menu } = props;
   const payloads = communication.payload ?? [];
   const textContent = payloads.find((p) => p.contentString)?.contentString ?? '';
   const contentRef = payloads.find((p) => p.contentReference)?.contentReference;
   const attachment = payloads.find((p) => p.contentAttachment)?.contentAttachment;
+  const hasAttachment = !!(contentRef || attachment);
   const sentTime = new Date(communication.sent ?? -1);
-  const seenTime = new Date(communication.received ?? -1);
   const senderResource = useResource(communication.sender);
   return (
     <div className={classes.chatBubbleOuterWrap}>
@@ -533,21 +778,35 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
             : sentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
         </Text>
       </Text>
-      <div
-        className={
-          alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
-        }
-      >
-        <div className={classes.chatBubble}>
-          {textContent && <span>{textContent}</span>}
-          {contentRef && <ChatBubbleDocumentReference reference={contentRef} hasText={!!textContent} />}
-          {attachment && <ChatBubbleAttachment attachment={attachment} hasText={!!textContent} />}
+      {hasAttachment && (
+        <div
+          className={alignment === 'left' ? classes.chatBubbleAttachmentRowLeft : classes.chatBubbleAttachmentRowRight}
+        >
+          <div className={classes.chatBubble}>
+            {contentRef && <ChatBubbleDocumentReference reference={contentRef} hasText={false} />}
+            {attachment && <ChatBubbleAttachment attachment={attachment} hasText={false} />}
+          </div>
+          {menu && <div className={classes.chatBubbleMenuInline}>{menu}</div>}
         </div>
-      </div>
-      {showDelivered && (
-        <div style={{ textAlign: 'right' }}>
-          Delivered {seenTime.getHours()}:{seenTime.getMinutes().toString().length === 1 ? '0' : ''}
-          {seenTime.getMinutes()}
+      )}
+      {textContent && (
+        <div
+          className={
+            alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
+          }
+        >
+          <div className={classes.chatBubble}>
+            <span>{textContent}</span>
+          </div>
+        </div>
+      )}
+      {!hasAttachment && !textContent && (
+        <div
+          className={
+            alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
+          }
+        >
+          <div className={classes.chatBubble} />
         </div>
       )}
     </div>
@@ -579,11 +838,22 @@ interface ChatBubbleDocumentReferenceProps {
   readonly hasText: boolean;
 }
 
-function ChatBubbleDocumentReference({ reference, hasText }: ChatBubbleDocumentReferenceProps): JSX.Element | null {
+function ChatBubbleDocumentReference({ reference, hasText }: ChatBubbleDocumentReferenceProps): JSX.Element {
   const docRef = useResource<DocumentReference>(reference as Reference<DocumentReference>);
   const attachment = docRef?.content?.[0]?.attachment;
   if (!attachment) {
-    return null;
+    return (
+      <div className={hasText ? classes.chatBubbleAttachmentWithText : undefined}>
+        <Group gap={4} wrap="nowrap">
+          <span className={classes.chatBubbleAttachmentIcon}>
+            <IconPaperclip size="0.75rem" />
+          </span>
+          <Text fz="xs" truncate>
+            <Skeleton height="0.75rem" width={120} radius="sm" display="inline-block" />
+          </Text>
+        </Group>
+      </div>
+    );
   }
   return <ChatBubbleAttachment attachment={attachment} hasText={hasText} />;
 }
@@ -595,13 +865,12 @@ interface ChatBubbleMenuProps {
 }
 
 function ChatBubbleMenu({ contentRef, contentAttachment, onViewInDocuments }: ChatBubbleMenuProps): JSX.Element {
+  const [menuOpen, setMenuOpen] = useState(false);
   const docRef = useResource<DocumentReference>(contentRef as Reference<DocumentReference> | undefined);
   const attachment = contentRef ? docRef?.content?.[0]?.attachment : contentAttachment;
   const cachedUrl = useCachedBinaryUrl(attachment?.url);
 
-  const handleDownload = (): void => {
-    // Navigation requests don't include an Origin header so CORS never applies.
-    // fetch() / medplum.download() both send Origin which CloudFront rejects.
+  const handleOpenInBrowser = (): void => {
     const href = toSafeUrl(cachedUrl ?? attachment?.url);
     if (!href) {
       return;
@@ -610,23 +879,36 @@ function ChatBubbleMenu({ contentRef, contentAttachment, onViewInDocuments }: Ch
   };
 
   return (
-    <Menu withinPortal position="bottom-start" shadow="md">
+    <Menu withinPortal position="bottom-start" shadow="md" radius="md" onChange={setMenuOpen}>
       <Menu.Target>
-        <ActionIcon variant="outline" color="gray" radius="xl" size="sm" aria-label="Attachment options">
-          <IconDots size="0.75rem" />
-        </ActionIcon>
+        <Tooltip label="Open Attachment" position="top" openDelay={100} disabled={menuOpen}>
+          <ActionIcon
+            variant="transparent"
+            radius="xl"
+            size={32}
+            className="outline-icon-button"
+            aria-label="Open Attachment"
+          >
+            <IconEye size={16} />
+          </ActionIcon>
+        </Tooltip>
       </Menu.Target>
       <Menu.Dropdown>
         {contentRef && onViewInDocuments && (
           <Menu.Item
-            leftSection={<IconFileExport size="0.9rem" />}
+            className={classes.chatBubbleMenuItem}
+            leftSection={<IconFiles size={16} color="var(--mantine-color-dimmed)" />}
             onClick={() => onViewInDocuments(contentRef as Reference<DocumentReference>)}
           >
-            View in Documents
+            <Text size="sm">Open in Documents</Text>
           </Menu.Item>
         )}
-        <Menu.Item leftSection={<IconDownload size="0.9rem" />} onClick={handleDownload}>
-          Download
+        <Menu.Item
+          className={classes.chatBubbleMenuItem}
+          leftSection={<IconBrowserShare size={16} color="var(--mantine-color-dimmed)" />}
+          onClick={handleOpenInBrowser}
+        >
+          <Text size="sm">Open in Browser</Text>
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>

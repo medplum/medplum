@@ -59,15 +59,7 @@ export const Basic = (): JSX.Element => {
   );
 };
 
-export const DeliveredTimestamps = (): JSX.Element => {
-  const sent1 = new Date();
-  const received1 = new Date(sent1);
-  received1.setMilliseconds(sent1.getMilliseconds() + 100);
-  const sent2 = new Date(sent1);
-  sent2.setSeconds(sent1.getSeconds() + 1);
-  const received2 = new Date(sent2);
-  received2.setMilliseconds(sent2.getMilliseconds() + 100);
-
+export const WithAttachments = (): JSX.Element => {
   return (
     <Document>
       <div style={{ width: 360, height: 400, margin: '0 auto' }}>
@@ -81,25 +73,71 @@ export const DeliveredTimestamps = (): JSX.Element => {
               sender: createReference(DrAliceSmith),
               recipient: [createReference(HomerSimpson)],
               status: 'completed',
-              payload: [
-                { contentString: 'Hi, Homer. Can you come in to discuss treatment for your radiation poisoning?' },
-              ],
-              sent: sent1.toISOString(),
-              received: received1.toISOString(),
+              payload: [{ contentString: 'Click the paperclip to attach a document — or open one of these:' }],
+              sent: new Date().toISOString(),
             },
             {
+              // Inline file attachment: shows the attachment chip + an "Open in Browser" menu
               id: 'message-2',
               resourceType: 'Communication',
-              sender: createReference(HomerSimpson),
-              recipient: [createReference(DrAliceSmith)],
+              sender: createReference(DrAliceSmith),
+              recipient: [createReference(HomerSimpson)],
               status: 'completed',
-              payload: [{ contentString: 'Aww, not again... Doh!' }],
-              sent: sent2.toISOString(),
-              received: received2.toISOString(),
+              payload: [
+                {
+                  contentAttachment: {
+                    title: 'lab-results.pdf',
+                    url: 'https://example.com/lab-results.pdf',
+                    contentType: 'application/pdf',
+                  },
+                },
+              ],
+              sent: new Date().toISOString(),
+            },
+            {
+              // DocumentReference attachment: adds an "Open in Documents" menu item via onViewInDocuments
+              id: 'message-3',
+              resourceType: 'Communication',
+              sender: createReference(DrAliceSmith),
+              recipient: [createReference(HomerSimpson)],
+              status: 'completed',
+              payload: [{ contentReference: { reference: 'DocumentReference/care-plan', display: 'Care Plan' } }],
+              sent: new Date().toISOString(),
             },
           ]}
           setCommunications={() => undefined}
           sendMessage={() => undefined}
+          uploadEnabled
+          attachmentSubjectRef={createReference(HomerSimpson)}
+          onViewInDocuments={() => undefined}
+        />
+      </div>
+    </Document>
+  );
+};
+
+export const WithDictation = (): JSX.Element => {
+  return (
+    <Document>
+      <div style={{ width: 360, height: 400, margin: '0 auto' }}>
+        <BaseChat
+          title="Chat with Homer Simpson"
+          query={`sender=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}&recipient=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}`}
+          communications={[
+            {
+              id: 'message-1',
+              resourceType: 'Communication',
+              sender: createReference(DrAliceSmith),
+              recipient: [createReference(HomerSimpson)],
+              status: 'completed',
+              payload: [{ contentString: 'Tap the microphone to dictate a reply (requires the ai-realtime feature).' }],
+              sent: new Date().toISOString(),
+            },
+          ]}
+          setCommunications={() => undefined}
+          sendMessage={() => undefined}
+          uploadEnabled
+          dictationEnabled
         />
       </div>
     </Document>
