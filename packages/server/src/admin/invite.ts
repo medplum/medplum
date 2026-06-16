@@ -337,6 +337,8 @@ async function upsertProjectMembership(
     ...request.membership,
   };
 
+  // Patients only. RelatedPerson and Practitioner invites are unchanged.
+  // Also applies on upsert when no policy is provided in the request.
   if (
     request.resourceType === 'Patient' &&
     !partialMembership.accessPolicy &&

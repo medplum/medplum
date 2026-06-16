@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import type { AccessPolicy, BundleEntry, Practitioner, ProjectMembership, User } from '@medplum/fhirtypes';
+import type {
+  AccessPolicy,
+  BundleEntry,
+  Patient,
+  Practitioner,
+  ProjectMembership,
+  RelatedPerson,
+  User,
+} from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
@@ -1646,6 +1654,46 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         externalId: randomUUID(),
         sendEmail: false,
+      });
+
+      expect(membership.accessPolicy).toBeUndefined();
+    }));
+
+  test('Invite RelatedPerson does not apply defaultPatientAccessPolicy', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Patient Policy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      const relatedPerson = await systemRepo.createResource<RelatedPerson>({
+        resourceType: 'RelatedPerson',
+        meta: { project: project.id },
+        patient: createReference(patient),
+        name: [{ given: ['Bob'], family: 'Jones' }],
+      });
+      const projectWithDefault = await systemRepo.updateResource({
+        ...project,
+        defaultPatientAccessPolicy: createReference(defaultAccessPolicy),
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithDefault,
+        resourceType: 'RelatedPerson',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+        membership: {
+          profile: createReference(relatedPerson),
+        },
       });
 
       expect(membership.accessPolicy).toBeUndefined();
