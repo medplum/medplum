@@ -72,14 +72,13 @@ async function processEventStream(
         }
         if (result.preambleParsed) {
           preambleParsed = true;
-          const statusCode = result.preamble.statusCode || 200;
           if (result.preamble.nonStreamingResponse) {
             // nonStreamingResponse true means that streaming was not used in the user's handler
             // response body can also be parsed and included in the BotExecutionResult.returnValue
             responseChunks = [result.buffer];
           }
 
-          responseStream.startStreaming(statusCode, result.preamble.headers || {});
+          responseStream.startStreaming(result.preamble.statusCode || 200, result.preamble.headers || {});
           if (result.buffer) {
             responseStream.write(result.buffer);
           }
@@ -118,15 +117,16 @@ async function processEventStream(
 
   // make a best effort to parse the response body, but it's possible that streaming response was not JSON
   // or that the stream was not used correctly, so handle errors gracefully
-  let returnValue: BotExecutionResult['returnValue'];
   if (responseChunks && responseChunks.length > 0) {
     try {
-      returnValue = JSON.parse(responseChunks.join(''));
-    } catch {
-      getLogger().error('Failed to parse streaming response body');
+      const returnValue = JSON.parse(responseChunks.join(''));
+      return { success: true, logResult, returnValue };
+    } catch (err) {
+      getLogger().error('Failed to parse streaming response body', { err: normalizeErrorString(err) });
     }
   }
-  return { success: true, logResult, returnValue };
+
+  return { success: true, logResult };
 }
 
 const MAX_HEADER_SIZE = 65536; // 64KB
