@@ -27,6 +27,7 @@ type CancelParameters = {};
  * Endpoints:
  *   [fhir base]/Appointment/:id/$cancel
  *
+ * @experimental - Scheduling Alpha API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */
@@ -36,9 +37,9 @@ export async function appointmentCancelHandler(req: FhirRequest): Promise<FhirRe
   const appointmentId = req.params.id;
 
   const updatedAppointment = await ctx.repo.withTransaction(
-    async () => {
-      const appointment = await ctx.repo.readResource<Appointment>('Appointment', appointmentId);
-      const slots = await ctx.repo
+    async (txRepo) => {
+      const appointment = await txRepo.readResource<Appointment>('Appointment', appointmentId);
+      const slots = await txRepo
         .readReferences(appointment.slot ?? [])
         .then((slots) => withPaths(slots, 'appointment.slot'));
       assertAllLoaded(slots, 'Loading slots failed');
@@ -49,8 +50,8 @@ export async function appointmentCancelHandler(req: FhirRequest): Promise<FhirRe
 
       appointment.status = 'cancelled';
 
-      const updatedAppointment = await ctx.repo.updateResource(appointment);
-      await Promise.all(slots.map((slot) => ctx.repo.deleteResource('Slot', slot.id)));
+      const updatedAppointment = await txRepo.updateResource(appointment);
+      await Promise.all(slots.map((slot) => txRepo.deleteResource('Slot', slot.id)));
       return updatedAppointment;
     },
     { serializable: true }

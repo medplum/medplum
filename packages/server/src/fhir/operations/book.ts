@@ -82,6 +82,7 @@ async function bookFromProposedAppointmentHandler(proposedAppointment: Appointme
  * Endpoints:
  *   [fhir base]/Appointment/$book
  *
+ * @experimental - Scheduling Alpha API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */
@@ -101,6 +102,10 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
 
     return bookFromProposedAppointmentHandler(params.appointment);
   }
+
+  // The code path below was deprecated during the Scheduling Alpha window. It is retained
+  // for a brief time to allow users to transition to the new `appointment` input format.
+  ctx.logger.info('Deprecated $book slot handler invoked');
 
   const proposedSlots = withPaths(params.slot, 'Parameters.slot');
 
@@ -179,7 +184,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   );
 
   const createdResources = await ctx.repo.withTransaction(
-    async () => {
+    async (txRepo) => {
       const bufferSlots: Slot[] = [];
 
       await Promise.all(
@@ -191,18 +196,18 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           const parameters = parameterGroup.get(schedule);
           assert(parameters);
 
-          if (parameters.duration !== durationMinutes) {
+          if (parameters.get('duration') !== durationMinutes) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
           }
 
           const range = {
-            start: addMinutes(startDate, -1 * parameters.bufferBefore),
-            end: addMinutes(endDate, parameters.bufferAfter),
+            start: addMinutes(startDate, -1 * parameters.get('bufferBefore')),
+            end: addMinutes(endDate, parameters.get('bufferAfter')),
           };
           const searchStart = range.start.toISOString();
           const searchEnd = range.end.toISOString();
 
-          const existingSlots = await slotsOverlappingInterval(ctx.repo, [schedule], range);
+          const existingSlots = await slotsOverlappingInterval(txRepo, [schedule], range);
 
           // If there exists busy slots overlapping with the requested booking time,
           // we can bail out now with an informative error message.
@@ -220,7 +225,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           }
 
           const availability = applyExistingSlots({
-            availability: resolveAvailability(parameters, range, parameters.timezone),
+            availability: resolveAvailability(parameters, range, parameters.get('timezone')),
             slots: existingSlots,
             range,
             serviceType: healthcareService.type,
@@ -234,7 +239,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             throw new OperationOutcomeError(badRequest('No availability found at this time'));
           }
 
-          if (parameters.bufferBefore) {
+          if (parameters.get('bufferBefore')) {
             bufferSlots.push({
               resourceType: 'Slot',
               status: 'busy-unavailable',
@@ -244,7 +249,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             });
           }
 
-          if (parameters.bufferAfter) {
+          if (parameters.get('bufferAfter')) {
             bufferSlots.push({
               resourceType: 'Slot',
               status: 'busy-unavailable',
@@ -270,15 +275,15 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
 
       const createdSlots = await Promise.all(
         proposedSlots.map((slot) =>
-          ctx.repo.createResource({
+          txRepo.createResource({
             ...slot,
             status: 'busy',
           })
         )
       );
-      const createdBufferSlots = await Promise.all(bufferSlots.map((slot) => ctx.repo.createResource(slot)));
+      const createdBufferSlots = await Promise.all(bufferSlots.map((slot) => txRepo.createResource(slot)));
 
-      const appointment = await ctx.repo.createResource<Appointment>({
+      const appointment = await txRepo.createResource<Appointment>({
         resourceType: 'Appointment',
         status: 'booked',
         slot: createdSlots.map((slot) => ({ reference: getReferenceString(slot) })),

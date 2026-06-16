@@ -59,12 +59,12 @@ npm run build
 2. Create a new ClientApplication resource (https://app.medplum.com/ClientApplication)
 3. Fill in the required fields:
 
-| Field | Value | Purpose |
-|---|---|---|
-| **Name** | `SMART on FHIR Demo` (or any label) | Identifies the app in your project |
-| **Redirect URI** | `http://localhost:8001/launch` | OAuth callback for all SMART launch flows (EHR and standalone) |
-| **Redirect URI** | `http://localhost:8001/setup` | OAuth callback for the demo data setup page |
-| **Launch URI** | `http://localhost:8001/launch` | The URL Medplum opens when you click **Launch** from the Apps tab (EHR launch) |
+| Field            | Value                               | Purpose                                                                        |
+| ---------------- | ----------------------------------- | ------------------------------------------------------------------------------ |
+| **Name**         | `SMART on FHIR Demo` (or any label) | Identifies the app in your project                                             |
+| **Redirect URI** | `http://localhost:8001/launch`      | OAuth callback for all SMART launch flows (EHR and standalone)                 |
+| **Redirect URI** | `http://localhost:8001/setup`       | OAuth callback for the demo data setup page                                    |
+| **Launch URI**   | `http://localhost:8001/launch`      | The URL Medplum opens when you click **Launch** from the Apps tab (EHR launch) |
 
 > **Note:** Medplum validates the redirect URI on every token request and will reject requests with unregistered URIs.
 
@@ -72,11 +72,12 @@ npm run build
 
 ### 2. Configure the App
 
-Open [src/config.ts](./src/config.ts) and set:
+Open `.env` and set:
 
-```typescript
-export const MEDPLUM_CLIENT_ID = '<your-client-id>';
+```dotenv
+MEDPLUM_CLIENT_ID=<your-client-id>
 ```
+
 ---
 
 ## Creating Demo Data (First Time Only)
@@ -142,11 +143,11 @@ Synthetic adults with name, birth date, and gender. Conformant to the **US Core 
 
 Each patient receives:
 
-| Type | LOINC Code | Profile | Count |
-|---|---|---|---|
+| Type                                                   | LOINC Code                      | Profile                | Count                      |
+| ------------------------------------------------------ | ------------------------------- | ---------------------- | -------------------------- |
 | Blood pressure panel (systolic + diastolic components) | `55284-4` / `8480-6` / `8462-4` | US Core Blood Pressure | 5 readings, ~1 month apart |
-| Body weight | `29463-7` | US Core Body Weight | 1 (current) |
-| BMI | `39156-5` | US Core BMI | 1 (current) |
+| Body weight                                            | `29463-7`                       | US Core Body Weight    | 1 (current)                |
+| BMI                                                    | `39156-5`                       | US Core BMI            | 1 (current)                |
 
 All observations use UCUM units (`mm[Hg]`, `kg`, `kg/m2`) and are categorized as `vital-signs`.
 
@@ -154,20 +155,20 @@ All observations use UCUM units (`mm[Hg]`, `kg`, `kg/m2`) and are categorized as
 
 Cardiovascular and chronic disease risk factors drawn from a pool of 12 conditions, coded with **SNOMED CT**:
 
-| SNOMED Code | Display |
-|---|---|
-| 38341003 | Hypertension |
-| 44054006 | Type 2 diabetes mellitus |
-| 13644009 | Hypercholesterolemia |
-| 414916001 | Obesity |
-| 77386006 | Smoking |
-| 59621000 | Essential hypertension |
-| 40930008 | Hypothyroidism |
-| 73211009 | Diabetes mellitus |
-| 230690007 | Stroke |
-| 22298006 | Myocardial infarction |
-| 195967001 | Asthma |
-| 13645005 | Chronic obstructive lung disease |
+| SNOMED Code | Display                          |
+| ----------- | -------------------------------- |
+| 38341003    | Hypertension                     |
+| 44054006    | Type 2 diabetes mellitus         |
+| 13644009    | Hypercholesterolemia             |
+| 414916001   | Obesity                          |
+| 77386006    | Smoking                          |
+| 59621000    | Essential hypertension           |
+| 40930008    | Hypothyroidism                   |
+| 73211009    | Diabetes mellitus                |
+| 230690007   | Stroke                           |
+| 22298006    | Myocardial infarction            |
+| 195967001   | Asthma                           |
+| 13645005    | Chronic obstructive lung disease |
 
 Conditions are created as `problem-list-item` with `active` / `confirmed` status, conformant to the **US Core Condition Problems and Health Concerns** profile.
 
@@ -189,27 +190,31 @@ This is a **demonstration app** and is not intended for production use.
 ### "Missing iss parameter for EHR launch"
 
 The `iss` query parameter was not present when the app loaded at `/launch`. This means the EHR did not initiate the launch correctly. Verify that:
+
 - The **Launch URI** in Medplum is set to `http://localhost:8001/launch` (not the root `/`)
 - You are clicking your **ClientApplication** from the Medplum Apps tab, not navigating directly to the launch URL
 
 ### "Failed to fetch SMART configuration"
 
 The app could not retrieve `/.well-known/smart-configuration` from the FHIR server. Common causes:
+
 - The FHIR server URL (`iss`) is incorrect or unreachable
 
 ### "State parameter mismatch — possible security issue"
 
 The `state` value returned by the OAuth server does not match the value stored in `sessionStorage` before the redirect. Common causes:
+
 - The browser session was cleared between the authorization request and the callback
 - The callback URL was opened in a different tab or browser
 
 ### "Client ID not configured"
 
-`MEDPLUM_CLIENT_ID` in [src/config.ts] is still set to the placeholder `'your-client-id'`. Update it with the Client ID from your Medplum `ClientApplication`.
+`MEDPLUM_CLIENT_ID` in `.env` is still empty. Update it with the Client ID from your Medplum `ClientApplication`.
 
 ### "Authorization error: …"
 
 The OAuth server returned an error in the callback URL (e.g. `?error=access_denied`). Check the full error description displayed in the UI. Common causes:
+
 - The redirect URI registered in the `ClientApplication` does not exactly match `http://localhost:8001/launch`
 - The requested scopes were denied
 - The client ID does not exist in the project
@@ -222,11 +227,12 @@ Another process is already using port 8001. Either stop that process or override
 VITE_PORT=8002 npm run dev
 ```
 
-Note: if you change the port you must also update the redirect URIs in your `ClientApplication` and in [src/config.ts](./src/config.ts).
+Note: if you change the port you must also update the redirect URIs in your `ClientApplication`.
 
 ### "No authentication data found. Please launch the app again."
 
 The app navigated to `/patient` but the expected `sessionStorage` keys (`smart_access_token`, `smart_patient`) are missing. This happens when:
+
 - The page was refreshed after the session expired
 - The URL was opened directly without going through the launch flow
 
