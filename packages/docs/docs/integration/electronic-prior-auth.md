@@ -4,8 +4,10 @@ sidebar_position: 100
 
 # Electronic Prior Auth
 
-:::info[]
-Medplum CMS-0057-F Electronic Prior Auth is currently in alpha.
+:::info[Alpha]
+
+Medplum CMS-0057-F Electronic Prior Auth is currently in [alpha](/docs/compliance/alpha-beta).
+
 :::
 
 This document describes the recommended process for establishing connectivity and beginning CRD (Coverage Requirements Discovery) testing with Medplum.

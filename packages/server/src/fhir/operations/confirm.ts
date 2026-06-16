@@ -26,6 +26,7 @@ const confirmOperation = makeOperationDefinition(
  * Endpoints:
  *   [fhir base]/Appointment/:id/$confirm
  *
+ * @experimental - Scheduling Alpha API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */

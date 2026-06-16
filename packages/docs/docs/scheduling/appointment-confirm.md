@@ -2,7 +2,7 @@
 
 :::info[Alpha]
 
-The `$confirm` operation is currently in alpha.
+The `$confirm` operation is currently in [alpha](/docs/compliance/alpha-beta).
 
 :::
 
