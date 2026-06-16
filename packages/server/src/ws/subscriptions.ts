@@ -68,23 +68,63 @@ const wsToSubLookup = new Map<WebSocket, Map<string, WebSocketSubMetadata>>();
 const subToWsLookup = new Map<string, Set<WebSocket>>();
 
 let redisSubscriber: Redis | undefined;
+let setupSubscriptionHandlerPromise: Promise<void> | undefined;
 let heartbeatHandler: (() => void) | undefined;
 
 let subscriptionEventsFired = 0;
 let subscriptionMessagesSent = 0;
 let subscriptionMessagesReceived = 0;
 
+function ensureSubscriptionHandler(): Promise<void> {
+  // On failure, reset so the next bind retries -- otherwise a transient Redis error
+  // would permanently prevent subscription events from being delivered
+  setupSubscriptionHandlerPromise ??= setupSubscriptionHandler().catch((err) => {
+    setupSubscriptionHandlerPromise = undefined;
+    redisSubscriber?.disconnect();
+    redisSubscriber = undefined;
+    throw err;
+  });
+  return setupSubscriptionHandlerPromise;
+}
+
+/**
+ * Releases the module-level resources used to deliver WebSocket subscription events.
+ * Called during WebSocket server shutdown so that a later initWebSockets starts from a
+ * clean state instead of reusing a disconnected Redis subscriber.
+ */
+export function cleanupR4SubscriptionResources(): void {
+  setupSubscriptionHandlerPromise = undefined;
+  if (redisSubscriber) {
+    redisSubscriber.disconnect();
+    redisSubscriber = undefined;
+  }
+  if (heartbeatHandler) {
+    heartbeat.removeEventListener('heartbeat', heartbeatHandler);
+    heartbeatHandler = undefined;
+  }
+}
+
 async function setupSubscriptionHandler(): Promise<void> {
   const subscriber = getPubSubRedisSubscriber();
   redisSubscriber = subscriber;
   subscriber.on('end', () => {
+    // Only reset module state if this subscriber is still the current generation --
+    // a stale end event from an already-replaced subscriber must not tear down its successor.
+    // Clearing the setup promise lets the next bind recreate the connection.
     if (redisSubscriber === subscriber) {
       redisSubscriber = undefined;
+      setupSubscriptionHandlerPromise = undefined;
     }
   });
   subscriber.on('message', async (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
-    const subEventPayload = JSON.parse(events) as V1SubEventPayload | V2SubEventPayload;
+    let subEventPayload: V1SubEventPayload | V2SubEventPayload;
+    try {
+      subEventPayload = JSON.parse(events) as V1SubEventPayload | V2SubEventPayload;
+    } catch (err) {
+      globalLogger.error(`[WS]: Failed to parse subscription event payload: ${normalizeErrorString(err)}`, { channel });
+      return;
+    }
     let resource: WithId<Resource>;
     let subEventArgsArr: [string, SubEventsOptions][];
 
@@ -353,9 +393,7 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
       return;
     }
 
-    if (!redisSubscriber) {
-      await setupSubscriptionHandler();
-    }
+    await ensureSubscriptionHandler();
     const cacheEntryStr = await redis.get(`Subscription/${verifiedToken.subscription_id}`);
     if (!cacheEntryStr) {
       globalLogger.warn('[WS] Failed to retrieve subscription cache entry when binding to token', {
@@ -454,7 +492,13 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
     subscriptionMessagesReceived++;
     const rawDataStr = (data as Buffer).toString();
     globalLogger.debug('[WS] received data', { data: rawDataStr });
-    const msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;
+    let msg: SubscriptionClientMsg;
+    try {
+      msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;
+    } catch (err) {
+      globalLogger.error(`[WS]: Failed to parse client message: ${normalizeErrorString(err)}`, { socketId });
+      return;
+    }
     if (msg.type === 'ping') {
       socket.send(JSON.stringify({ type: 'pong' }));
       subscriptionMessagesSent++;
@@ -674,13 +718,6 @@ export async function markInMemorySubscriptionsInactive(
         globalLogger.debug('Attempted to remove user subscription tracking when Redis is closed');
       }
     }
-  }
-}
-
-export function closeWebSocketSubscriptionHandler(): void {
-  if (redisSubscriber) {
-    redisSubscriber.disconnect();
-    redisSubscriber = undefined;
   }
 }
 
