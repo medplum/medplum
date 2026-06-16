@@ -42,6 +42,12 @@ export interface BotExecutionContext extends BotExecutionRequest {
 }
 
 export interface BotExecutionResult {
+  /**
+   * true if Medplum invoked the configured runtime, the handler completed without throwing,
+   * and the handler did not return a non-OK `OperationOutcome`
+   * false runtime failed, handler threw, execution was rejected or timed out, or handler
+   * returned a non-OK `OperationOutcome`
+   */
   readonly success: boolean;
   readonly logResult: string;
   readonly returnValue?: any;

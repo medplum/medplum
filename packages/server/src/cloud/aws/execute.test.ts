@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
-import { ContentType } from '@medplum/core';
+import { badRequest, ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -230,5 +230,21 @@ describe('Execute', () => {
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('input');
+  });
+
+  test('Returned non-OK OperationOutcome marks execution as failure', async () => {
+    const outcome = badRequest('Returned problem');
+    mockLambdaClient.on(InvokeCommand).callsFake(() => ({
+      LogResult: Buffer.from('END RequestId: 123').toString('base64'),
+      Payload: new TextEncoder().encode(JSON.stringify(outcome)),
+    }));
+
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject(outcome);
   });
 });

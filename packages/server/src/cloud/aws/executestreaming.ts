@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { InvokeWithResponseStreamCommand } from '@aws-sdk/client-lambda';
-import { normalizeErrorString } from '@medplum/core';
+import { isOperationOutcome, normalizeErrorString } from '@medplum/core';
 import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import {
@@ -53,19 +53,40 @@ async function processEventStream(
 ): Promise<BotExecutionResult> {
   const decoder = new TextDecoder();
   let headersParsed = false;
+  let bufferingWrapperResponse = false;
   let buffer = '';
   let logResult = '';
+  let wrapperStatusCode = 200;
+  let wrapperHeaders: Record<string, string> | undefined = undefined;
+  let wrapperBody = '';
 
   for await (const event of eventStream) {
     if (event.PayloadChunk?.Payload) {
       const chunk = decoder.decode(event.PayloadChunk.Payload);
       if (!headersParsed) {
-        const result = processStreamingHeaders(buffer + chunk, responseStream);
+        const result = processStreamingHeaders(buffer + chunk);
         if (result.error) {
           return { success: false, logResult: sanitizeLogResult(result.error) };
         }
         headersParsed = result.headersParsed;
-        buffer = result.buffer;
+        if (headersParsed && result.headers) {
+          wrapperStatusCode = result.headers.statusCode || 200;
+          if (isWrapperJsonResponse(result.headers.headers)) {
+            bufferingWrapperResponse = true;
+            wrapperHeaders = result.headers.headers;
+            wrapperBody += result.buffer;
+          } else {
+            responseStream.startStreaming(wrapperStatusCode, result.headers.headers || {});
+            if (result.buffer) {
+              responseStream.write(result.buffer);
+            }
+          }
+          buffer = '';
+        } else {
+          buffer = result.buffer;
+        }
+      } else if (bufferingWrapperResponse) {
+        wrapperBody += chunk;
       } else {
         responseStream.write(chunk);
         // Flush to ensure data is sent immediately to client
@@ -90,6 +111,19 @@ async function processEventStream(
     }
   }
 
+  if (bufferingWrapperResponse) {
+    const result = parseWrapperJsonResponse(wrapperStatusCode, wrapperBody, logResult);
+    if (result) {
+      return result;
+    }
+    responseStream.startStreaming(wrapperStatusCode, wrapperHeaders || {});
+    if (wrapperBody) {
+      responseStream.write(wrapperBody);
+    }
+    responseStream.end();
+    return { success: wrapperStatusCode >= 200 && wrapperStatusCode < 400, logResult };
+  }
+
   responseStream.end();
   return { success: true, logResult };
 }
@@ -97,9 +131,13 @@ async function processEventStream(
 const MAX_HEADER_SIZE = 65536; // 64KB
 
 function processStreamingHeaders(
-  buffer: string,
-  responseStream: NonNullable<BotExecutionContext['responseStream']>
-): { headersParsed: boolean; buffer: string; error?: string } {
+  buffer: string
+): {
+  headersParsed: boolean;
+  buffer: string;
+  headers?: { statusCode?: number; headers?: Record<string, string> };
+  error?: string;
+} {
   if (buffer.length > MAX_HEADER_SIZE) {
     return {
       headersParsed: false,
@@ -118,13 +156,7 @@ function processStreamingHeaders(
 
   try {
     const headersJson = JSON.parse(headersLine);
-    responseStream.startStreaming(headersJson.statusCode || 200, headersJson.headers || {});
-
-    if (remainingData) {
-      responseStream.write(remainingData);
-    }
-
-    return { headersParsed: true, buffer: '' };
+    return { headersParsed: true, buffer: remainingData, headers: headersJson };
   } catch (err) {
     return {
       headersParsed: false,
@@ -132,4 +164,36 @@ function processStreamingHeaders(
       error: `Failed to parse streaming headers: ${headersLine} - ${String(err)}`,
     };
   }
+}
+
+function isWrapperJsonResponse(headers: Record<string, string> | undefined): boolean {
+  return getHeader(headers, 'content-type')?.toLowerCase().includes('application/json') === true;
+}
+
+function getHeader(headers: Record<string, string> | undefined, name: string): string | undefined {
+  if (!headers) {
+    return undefined;
+  }
+  const lowerName = name.toLowerCase();
+  const key = Object.keys(headers).find((k) => k.toLowerCase() === lowerName);
+  return key ? headers[key] : undefined;
+}
+
+function parseWrapperJsonResponse(statusCode: number, body: string, logResult: string): BotExecutionResult | undefined {
+  let returnValue: unknown;
+  try {
+    returnValue = body ? JSON.parse(body) : undefined;
+  } catch {
+    return undefined;
+  }
+
+  if (!isOperationOutcome(returnValue)) {
+    return undefined;
+  }
+
+  return {
+    success: statusCode >= 200 && statusCode < 300,
+    logResult,
+    returnValue,
+  };
 }
