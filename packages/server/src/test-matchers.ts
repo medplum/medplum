@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { equals, iterableEquality } from '@jest/expect-utils';
 import { expect } from 'vitest';
 
 interface CustomMatchers<R = unknown> {
@@ -37,9 +36,8 @@ expect.extend({
       };
     }
     const remaining = [...received];
-    const customTesters = [...this.customTesters, iterableEquality];
     for (const item of expected) {
-      const idx = remaining.findIndex((r) => equals(r, item, customTesters));
+      const idx = remaining.findIndex((r) => this.equals(r, item));
       if (idx === -1) {
         return {
           pass: false,
