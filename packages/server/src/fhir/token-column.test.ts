@@ -3,6 +3,11 @@
 import type { Filter } from '@medplum/core';
 import { Operator, getSearchParameter, isUUID } from '@medplum/core';
 import type { ResearchStudy } from '@medplum/fhirtypes';
+import express from 'express';
+import { initApp } from '../app';
+import { loadTestConfig } from '../config/loader';
+import { createTestProject } from '../test.setup';
+import type { Repository } from './repo';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { Column, Condition, Disjunction, Negation, SqlBuilder, TypedCondition } from './sql';
@@ -15,6 +20,7 @@ import {
 } from './token-column';
 
 const DELIM = '\x01';
+const app = express();
 
 function getConditionColumn(condition: Condition): Column {
   const { column } = condition;
@@ -26,7 +32,9 @@ function getConditionColumn(condition: Condition): Column {
 }
 
 describe('buildTokenColumns', () => {
-  beforeAll(() => {
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
     loadStructureDefinitions();
   });
 
@@ -134,12 +142,15 @@ describe('buildTokenColumns', () => {
 });
 
 describe('buildTokenColumnsSearchFilter', () => {
-  beforeAll(() => {
+  let repo: Repository;
+
+  beforeAll(async () => {
     loadStructureDefinitions();
+    ({ repo } = await createTestProject({ withRepo: true }));
   });
 
   describe('EQUALS operator', () => {
-    test('search with system and code', () => {
+    test('search with system and code', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -151,7 +162,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'http://example.com|12345',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(Condition);
       const cond = expr as Condition;
@@ -164,7 +175,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.parameter).toEqual([expectedHash]);
     });
 
-    test('search with code only (no system)', () => {
+    test('search with code only (no system)', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -176,7 +187,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '12345',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(Condition);
       const cond = expr as Condition;
@@ -187,7 +198,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.parameter).toEqual([expectedHash]);
     });
 
-    test('search with system only (trailing pipe)', () => {
+    test('search with system only (trailing pipe)', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -199,7 +210,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'http://example.com|',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(Condition);
       const cond = expr as Condition;
@@ -210,7 +221,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.parameter).toEqual([expectedHash]);
     });
 
-    test('search with empty system (leading pipe)', () => {
+    test('search with empty system (leading pipe)', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -222,7 +233,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '|12345',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(Condition);
       const cond = expr as Condition;
@@ -234,7 +245,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.parameter).toEqual([expectedHash]);
     });
 
-    test('search with comma-separated values (OR)', () => {
+    test('search with comma-separated values (OR)', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -246,7 +257,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '12345,67890',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(Condition);
       const cond = expr as Condition;
@@ -258,7 +269,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.parameter).toEqual([expectedHash1, expectedHash2]);
     });
 
-    test('search is case-sensitive for identifiers', () => {
+    test('search is case-sensitive for identifiers', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -270,7 +281,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'ABC123',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       const cond = expr as Condition;
 
@@ -279,7 +290,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.parameter).toEqual([expectedHash]);
     });
 
-    test('non-dedicated columns include code prefix', () => {
+    test('non-dedicated columns include code prefix', async () => {
       const param = getSearchParameter('ResearchStudy', 'focus');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -291,7 +302,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'http://example.com|test',
       };
 
-      const expr = buildTokenColumnsSearchFilter('ResearchStudy', 'ResearchStudy', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'ResearchStudy', 'ResearchStudy', param, filter);
 
       const cond = expr as Condition;
 
@@ -304,7 +315,7 @@ describe('buildTokenColumnsSearchFilter', () => {
   });
 
   describe('NOT and NOT_EQUALS operators', () => {
-    test('NOT operator with single value', () => {
+    test('NOT operator with single value', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -316,14 +327,14 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '12345',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(Negation);
       const negation = expr as Negation;
       expect(negation.expression).toBeInstanceOf(Condition);
     });
 
-    test('NOT_EQUALS operator with single value', () => {
+    test('NOT_EQUALS operator with single value', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -335,14 +346,14 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '12345',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(Negation);
       const negation = expr as Negation;
       expect(negation.expression).toBeInstanceOf(Condition);
     });
 
-    test('NOT operator with comma-separated values', () => {
+    test('NOT operator with comma-separated values', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -354,7 +365,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '12345,67890',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(Negation);
       const negation = expr as Negation;
@@ -370,7 +381,7 @@ describe('buildTokenColumnsSearchFilter', () => {
   });
 
   describe('TEXT and CONTAINS operators', () => {
-    test('TEXT operator searches text column', () => {
+    test('TEXT operator searches text column', async () => {
       const param = getSearchParameter('Patient', 'telecom');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -382,7 +393,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '555',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(Disjunction);
       const disjunction = expr as Disjunction;
@@ -399,7 +410,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.parameter).toContain(ARRAY_DELIM);
     });
 
-    test('CONTAINS operator searches text column', () => {
+    test('CONTAINS operator searches text column', async () => {
       const param = getSearchParameter('Patient', 'telecom');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -411,7 +422,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '555',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(Disjunction);
       const disjunction = expr as Disjunction;
@@ -419,7 +430,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.operator).toBe('TOKEN_ARRAY_IREGEX');
     });
 
-    test('TEXT operator with regex special characters escaped', () => {
+    test('TEXT operator with regex special characters escaped', async () => {
       const param = getSearchParameter('Patient', 'telecom');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -431,7 +442,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'test.value*',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       const disjunction = expr as Disjunction;
       const cond = disjunction.expressions[0] as TypedCondition<'TOKEN_ARRAY_IREGEX'>;
@@ -440,7 +451,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.parameter).toContain('test\\.value\\*');
     });
 
-    test('TEXT operator with non-dedicated columns includes code prefix', () => {
+    test('TEXT operator with non-dedicated columns includes code prefix', async () => {
       const param = getSearchParameter('ResearchStudy', 'focus');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -452,7 +463,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'test',
       };
 
-      const expr = buildTokenColumnsSearchFilter('ResearchStudy', 'ResearchStudy', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'ResearchStudy', 'ResearchStudy', param, filter);
 
       const disjunction = expr as Disjunction;
       const cond = disjunction.expressions[0] as TypedCondition<'TOKEN_ARRAY_IREGEX'>;
@@ -464,7 +475,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.parameter).toContain(ARRAY_DELIM + 'focus' + DELIM);
     });
 
-    test('TEXT operator with comma-separated values (OR)', () => {
+    test('TEXT operator with comma-separated values (OR)', async () => {
       const param = getSearchParameter('Patient', 'telecom');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -476,7 +487,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '555,777',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(Disjunction);
       const disjunction = expr as Disjunction;
@@ -494,7 +505,7 @@ describe('buildTokenColumnsSearchFilter', () => {
   });
 
   describe('MISSING and PRESENT operators', () => {
-    test('MISSING operator with true value (dedicated columns)', () => {
+    test('MISSING operator with true value (dedicated columns)', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -506,7 +517,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'true',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(TypedCondition);
       const cond = expr as TypedCondition<'ARRAY_EMPTY'>;
@@ -515,7 +526,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.parameterType).toBe('UUID[]');
     });
 
-    test('MISSING operator with false value (dedicated columns)', () => {
+    test('MISSING operator with false value (dedicated columns)', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -527,7 +538,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'false',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(TypedCondition);
       const cond = expr as TypedCondition<'ARRAY_NOT_EMPTY'>;
@@ -535,7 +546,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(getConditionColumn(cond).actualColumnName).toBe('__identifier');
     });
 
-    test('PRESENT operator with true value (dedicated columns)', () => {
+    test('PRESENT operator with true value (dedicated columns)', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -547,14 +558,14 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'true',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(TypedCondition);
       const cond = expr as TypedCondition<'ARRAY_NOT_EMPTY'>;
       expect(cond.operator).toBe('ARRAY_NOT_EMPTY');
     });
 
-    test('PRESENT operator with false value (dedicated columns)', () => {
+    test('PRESENT operator with false value (dedicated columns)', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -566,14 +577,14 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'false',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       expect(expr).toBeInstanceOf(TypedCondition);
       const cond = expr as TypedCondition<'ARRAY_EMPTY'>;
       expect(cond.operator).toBe('ARRAY_EMPTY');
     });
 
-    test('MISSING operator with non-dedicated columns', () => {
+    test('MISSING operator with non-dedicated columns', async () => {
       const param = getSearchParameter('ResearchStudy', 'focus');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -585,7 +596,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'true',
       };
 
-      const expr = buildTokenColumnsSearchFilter('ResearchStudy', 'ResearchStudy', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'ResearchStudy', 'ResearchStudy', param, filter);
 
       expect(expr).toBeInstanceOf(Negation);
       const negation = expr as Negation;
@@ -600,7 +611,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(cond.parameter).toBe(expectedHash);
     });
 
-    test('PRESENT operator with non-dedicated columns', () => {
+    test('PRESENT operator with non-dedicated columns', async () => {
       const param = getSearchParameter('ResearchStudy', 'focus');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -612,7 +623,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'true',
       };
 
-      const expr = buildTokenColumnsSearchFilter('ResearchStudy', 'ResearchStudy', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'ResearchStudy', 'ResearchStudy', param, filter);
 
       expect(expr).toBeInstanceOf(TypedCondition);
       const cond = expr as TypedCondition<'ARRAY_OVERLAPS'>;
@@ -625,7 +636,7 @@ describe('buildTokenColumnsSearchFilter', () => {
   });
 
   describe('EXACT operator', () => {
-    test('EXACT operator behaves like EQUALS', () => {
+    test('EXACT operator behaves like EQUALS', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -637,7 +648,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '12345',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter) as Condition;
+      const expr = (await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter)) as Condition;
 
       expect(expr).toBeInstanceOf(Condition);
       expect(expr.operator).toBe('ARRAY_OVERLAPS');
@@ -645,7 +656,7 @@ describe('buildTokenColumnsSearchFilter', () => {
   });
 
   describe('unsupported operators', () => {
-    test('IN operator throws error', () => {
+    test('IN operator throws error', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -657,10 +668,10 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'test',
       };
 
-      expect(() => buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter)).toThrow();
+      await expect(buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter)).rejects.toThrow();
     });
 
-    test('STARTS_WITH operator throws error', () => {
+    test('STARTS_WITH operator throws error', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -672,10 +683,10 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'test',
       };
 
-      expect(() => buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter)).toThrow();
+      await expect(buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter)).rejects.toThrow();
     });
 
-    test('GREATER_THAN operator throws error', () => {
+    test('GREATER_THAN operator throws error', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -687,12 +698,12 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'test',
       };
 
-      expect(() => buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter)).toThrow();
+      await expect(buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter)).rejects.toThrow();
     });
   });
 
   describe('SQL generation', () => {
-    test('generates valid SQL for simple equals search', () => {
+    test('generates valid SQL for simple equals search', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -704,7 +715,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '12345',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       const builder = new SqlBuilder();
       expr.buildSql(builder);
@@ -715,7 +726,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(sql).toContain('ARRAY[');
     });
 
-    test('generates valid SQL for NOT search', () => {
+    test('generates valid SQL for NOT search', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -727,7 +738,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '12345',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       const builder = new SqlBuilder();
       expr.buildSql(builder);
@@ -737,7 +748,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(sql).toContain('"Patient"."__identifier"');
     });
 
-    test('generates valid SQL for TEXT search', () => {
+    test('generates valid SQL for TEXT search', async () => {
       const param = getSearchParameter('Patient', 'telecom');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -749,7 +760,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: '555',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       const builder = new SqlBuilder();
       expr.buildSql(builder);
@@ -759,7 +770,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(sql).toContain('~*');
     });
 
-    test('generates valid SQL for MISSING search with dedicated columns', () => {
+    test('generates valid SQL for MISSING search with dedicated columns', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -771,7 +782,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'true',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       const builder = new SqlBuilder();
       expr.buildSql(builder);
@@ -781,7 +792,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       expect(sql).toContain('ARRAY[]');
     });
 
-    test('generates valid SQL for PRESENT search with dedicated columns', () => {
+    test('generates valid SQL for PRESENT search with dedicated columns', async () => {
       const param = getSearchParameter('Patient', 'identifier');
       if (!param) {
         throw new Error('Missing search parameter');
@@ -793,7 +804,7 @@ describe('buildTokenColumnsSearchFilter', () => {
         value: 'true',
       };
 
-      const expr = buildTokenColumnsSearchFilter('Patient', 'Patient', param, filter);
+      const expr = await buildTokenColumnsSearchFilter(repo, 'Patient', 'Patient', param, filter);
 
       const builder = new SqlBuilder();
       expr.buildSql(builder);

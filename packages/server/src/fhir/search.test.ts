@@ -22,6 +22,8 @@ import type {
   Bundle,
   BundleEntry,
   CareTeam,
+  CodeSystem,
+  CodeSystemConcept,
   Coding,
   Communication,
   Composition,
@@ -3502,6 +3504,93 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         filters: [{ code: 'code', operator: Operator.TEXT, value: obs2.code?.coding?.[0]?.display as string }],
       });
       expect(result2.entry?.[0]?.resource?.id).toStrictEqual(obs2.id);
+    }));
+
+  test('Token :below search', () =>
+    withTestContext(async () => {
+      const codeSystem = await repo.createResource<CodeSystem>({
+        resourceType: 'CodeSystem',
+        status: 'unknown',
+        url: `http://example.com/CodeSystem/${randomUUID()}`,
+        content: 'complete',
+        hierarchyMeaning: 'is-a',
+        concept: [
+          {
+            code: 'PAR',
+            display: 'Parent',
+            concept: [
+              {
+                code: 'CHD',
+                display: 'Child',
+                concept: [
+                  {
+                    code: 'GKD',
+                    display: 'Grandkid',
+                  },
+                ],
+              },
+              {
+                code: 'SIB',
+                display: 'Sibling',
+              },
+            ],
+          },
+          {
+            code: 'UNC',
+            display: 'Uncle',
+          },
+        ],
+      });
+      const system = codeSystem.url;
+
+      const obs1 = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system, code: 'GKD' }] },
+      });
+
+      const obs2 = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system, code: 'SIB' }] },
+      });
+
+      const results = await repo.search({
+        resourceType: 'Observation',
+        filters: [{ code: 'code', operator: Operator.BELOW, value: `${system}|PAR` }],
+      });
+      expect(results.entry).toHaveLength(2);
+      expect(results.entry?.map((e) => e.resource?.id)).toStrictEqual(expect.arrayContaining([obs1.id, obs2.id]));
+    }));
+
+  test('Token :below returns error on large expansion', () =>
+    withTestContext(async () => {
+      const childCodes: CodeSystemConcept[] = [];
+      for (let i = 0; i < 250; i++) {
+        childCodes.push({ code: 'KID_' + i });
+      }
+      const codeSystem = await repo.createResource<CodeSystem>({
+        resourceType: 'CodeSystem',
+        status: 'unknown',
+        url: `http://example.com/CodeSystem/${randomUUID()}`,
+        content: 'complete',
+        hierarchyMeaning: 'is-a',
+        concept: [
+          {
+            code: 'PAR',
+            display: 'Parent',
+            concept: childCodes,
+          },
+        ],
+      });
+      const system = codeSystem.url;
+
+      await expect(
+        repo.search({
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.BELOW, value: `${system}|PAR` }],
+        })
+      ).rejects.toThrow('too many results');
     }));
 
   test.each<[number, string]>([

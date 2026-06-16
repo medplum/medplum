@@ -553,7 +553,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
-    this.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.READ);
+    await this.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.READ);
 
     const rows = await builder.execute(this.getDatabaseClient(DatabaseMode.READER));
     if (rows.length === 0) {
@@ -1519,12 +1519,16 @@ export class Repository extends FhirRepository implements Disposable {
    * @param resourceType - The resource type for compartments.
    * @param interaction - The FHIR interaction being performed.
    */
-  addSecurityFilters(builder: SelectQuery, resourceType: string, interaction: AccessPolicyInteraction): void {
+  async addSecurityFilters(
+    builder: SelectQuery,
+    resourceType: string,
+    interaction: AccessPolicyInteraction
+  ): Promise<void> {
     // No compartment restrictions for admins.
     if (!this.isSuperAdmin()) {
       this.addProjectFilters(builder, resourceType);
     }
-    this.addAccessPolicyFilters(builder, resourceType, interaction);
+    await this.addAccessPolicyFilters(builder, resourceType, interaction);
   }
 
   /**
@@ -1577,11 +1581,11 @@ export class Repository extends FhirRepository implements Disposable {
    * @param resourceType - The resource type being read or searched.
    * @param interaction - The FHIR interaction being performed.
    */
-  private addAccessPolicyFilters(
+  private async addAccessPolicyFilters(
     builder: SelectQuery,
     resourceType: string,
     interaction: AccessPolicyInteraction
-  ): void {
+  ): Promise<void> {
     const accessPolicy = this.context.accessPolicy;
     if (!accessPolicy?.resource) {
       return;
@@ -1625,7 +1629,7 @@ export class Repository extends FhirRepository implements Disposable {
             criteria = resourceType + '?' + criteria.slice(queryIndex + 1);
           }
           const searchRequest = parseSearchRequest(criteria);
-          const accessPolicyExpression = buildSearchExpression(
+          const accessPolicyExpression = await buildSearchExpression(
             this,
             builder,
             searchRequest.resourceType,

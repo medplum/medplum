@@ -21,6 +21,7 @@ const TOO_MANY_REQUESTS_ID = 'too-many-requests';
 const ACCEPTED_ID = 'accepted';
 const SERVER_TIMEOUT_ID = 'server-timeout';
 const BUSINESS_RULE = 'business-rule';
+const TOO_COSTLY_ID = 'too-costly';
 
 export const allOk: OperationOutcome = {
   resourceType: 'OperationOutcome',
@@ -362,6 +363,20 @@ export function businessRule(key: string, message: string): OperationOutcome {
   };
 }
 
+export function tooCostly(text: string): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: TOO_COSTLY_ID,
+    issue: [
+      {
+        severity: 'error',
+        code: 'too-costly',
+        details: { text },
+      },
+    ],
+  };
+}
+
 /**
  * Returns true if the input is an Error object.
  * This should be replaced with `Error.isError` when it is more widely supported.
@@ -457,6 +472,7 @@ export function getStatus(outcome: OperationOutcome): number {
     case UNSUPPORTED_MEDIA_TYPE_ID:
       return 415;
     case BUSINESS_RULE:
+    case TOO_COSTLY_ID:
       return 422;
     case TOO_MANY_REQUESTS_ID:
       return 429;

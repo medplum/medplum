@@ -2,15 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Filter, SortRule } from '@medplum/core';
 import {
+  badRequest,
   Operator as FhirOperator,
   invalidSearchOperator,
   OperationOutcomeError,
   splitN,
   splitSearchOnComma,
+  tooCostly,
 } from '@medplum/core';
-import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { CodeSystem, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { NIL, v5 } from 'uuid';
 import type { ArrayColumnPaddingConfig } from '../config/types';
+import { DatabaseMode } from '../database';
+import { expansionQuery, hydrateCodeSystemProperties } from './operations/expand';
+import { findTerminologyResource } from './operations/utils/terminology';
+import type { Repository } from './repo';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
@@ -166,12 +172,13 @@ export function addTokenColumnsOrderBy(
   selectQuery.orderBy(new Column(undefined, impl.sortColumnName), sortRule.descending);
 }
 
-export function buildTokenColumnsSearchFilter(
+export async function buildTokenColumnsSearchFilter(
+  repo: Repository,
   resourceType: ResourceType,
   tableName: string,
   param: SearchParameter,
   filter: Filter
-): Expression {
+): Promise<Expression> {
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy !== 'token-column') {
     throw new Error('Invalid search strategy: ' + impl.searchStrategy);
@@ -236,6 +243,39 @@ export function buildTokenColumnsSearchFilter(
         return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_EMPTY', undefined, 'UUID[]');
       }
     }
+    case FhirOperator.BELOW: {
+      const [system, code] = splitN(filter.value, '|', 2);
+      if (!system || !code) {
+        throw new OperationOutcomeError(badRequest('Coding used with :below modifier must include system URL'));
+      }
+      const codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', system);
+      const db = repo.getDatabaseClient(DatabaseMode.READER);
+      await hydrateCodeSystemProperties(db, codeSystem);
+
+      const findCodings = expansionQuery(
+        { system, filter: [{ property: 'concept', op: 'is-a', value: code }] },
+        codeSystem,
+        { count: 100 }
+      );
+      const results = await findCodings?.execute(db);
+      if (results && results.length > 100) {
+        throw new OperationOutcomeError(tooCostly('Expansion of child codes returned too many results'));
+      }
+
+      if (results) {
+        const tokenHashes = results.map((r) => buildTokenHash(`${system}|${r.code}`, param.code, impl));
+        return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_OVERLAPS', tokenHashes, 'UUID[]');
+      } else {
+        // Fall back to selecting only the speified parent code
+        return buildTokenColumnsWhereConditionEqualsAndExact(
+          impl,
+          tableName,
+          filter.code,
+          FhirOperator.EQUALS,
+          filter.value
+        );
+      }
+    }
     case FhirOperator.IN:
     case FhirOperator.NOT_IN:
     case FhirOperator.STARTS_WITH:
@@ -249,7 +289,6 @@ export function buildTokenColumnsSearchFilter(
     case FhirOperator.IDENTIFIER:
     case FhirOperator.ITERATE:
     case FhirOperator.ABOVE:
-    case FhirOperator.BELOW:
     case FhirOperator.OF_TYPE:
       throw new OperationOutcomeError(invalidSearchOperator(filter.operator, param.id ?? param.code));
     default: {
@@ -371,6 +410,33 @@ function buildTokenColumnsWhereConditionEqualsAndExact(
     'UUID[]'
   );
   return condition;
+}
+
+function buildTokenHash(token: string, code: string, impl: TokenColumnSearchParameterImplementation): string {
+  let system: string;
+  let value: string;
+  let searchString: string;
+  const parts = splitN(token, '|', 2);
+  if (parts.length === 2) {
+    // If query is "|foo", searching for "foo" values without a system, aka NULL_SYSTEM
+    system = parts[0] || NULL_SYSTEM; // Use || instead of ?? to handle empty strings
+    value = parts[1];
+    if (value) {
+      value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
+      searchString = system + DELIM + value;
+    } else {
+      searchString = system;
+    }
+  } else {
+    value = token;
+    value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
+    searchString = DELIM + value;
+  }
+
+  if (!impl.hasDedicatedColumns) {
+    searchString = code + DELIM + searchString;
+  }
+  return hashTokenColumnValue(searchString);
 }
 
 export function escapeRegexString(str: string): string {
