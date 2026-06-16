@@ -3,14 +3,14 @@
 import type { Bot } from '@medplum/fhirtypes';
 import { CREATE_PDF_CODE, createBotZipFile, deployLambdaInternal } from './deploy';
 
-const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
+const CJS_PREFIX = `const { ContentType, getStatus, Hl7Message, isOperationOutcome, MedplumClient, OperationOutcomeError } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
 const userCode = require("./user.cjs");
 
 exports.handler = awslambda.streamifyResponse(async (event, responseStream) => {
 `;
 
-const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient } from '@medplum/core';
+const ESM_PREFIX = `import { ContentType, getStatus, Hl7Message, isOperationOutcome, MedplumClient, OperationOutcomeError } from '@medplum/core';
 import PdfPrinter from 'pdfmake';
 import * as userCode from './user.mjs';
 
@@ -50,6 +50,14 @@ const WRAPPER_CODE =
       writeResponse(responseStream, 200, result);
     }
   } catch (err) {
+    if (err instanceof OperationOutcomeError || isOperationOutcome(err)) {
+      const outcome = err instanceof OperationOutcomeError ? err.outcome : err;
+      if (!streaming || !botResponseStream?.streamStarted) {
+        writeResponse(responseStream, getStatus(outcome), outcome, ContentType.FHIR_JSON);
+      }
+      return;
+    }
+
     let errorResponse;
     if (err instanceof Error) {
       console.log("Unhandled error: " + err.message + "\\n" + err.stack);
@@ -126,10 +134,10 @@ class BotResponseStream {
 ` +
   CREATE_PDF_CODE +
   `
-function writeResponse(responseStream, statusCode, body) {
+function writeResponse(responseStream, statusCode, body, contentType = 'application/json') {
   responseStream.write(JSON.stringify({
     statusCode,
-    headers: { 'Content-Type': 'application/json' } }) + "\\n");
+    headers: { 'Content-Type': contentType } }) + "\\n");
   if (body !== undefined) {
     responseStream.write(JSON.stringify(body));
   }

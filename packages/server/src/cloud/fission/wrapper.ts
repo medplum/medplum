@@ -66,7 +66,11 @@ module.exports = async function (context) {
       }),
     };
   } catch (err) {
-    if (err instanceof Error) {
+    let errStatus = 400;
+    if (err instanceof OperationOutcomeError || isOperationOutcome(err)) {
+      const outcome = err instanceof OperationOutcomeError ? err.outcome : err;
+      errStatus = 200; // getStatus(outcome)
+    else if (err instanceof Error) {
       console.error('Unhandled error: ' + err.message + '\\n' + err.stack);
     } else if (typeof err === 'object') {
       console.error('Unhandled error: ' + JSON.stringify(err, undefined, 2));
@@ -74,7 +78,7 @@ module.exports = async function (context) {
       console.error('Unhandled error: ' + err);
     }
     return {
-      status: 400,
+      status: errStatus,
       body: JSON.stringify({
         returnValue: normalizeOperationOutcome(err),
         logResult: logOutput.join('\\n'),

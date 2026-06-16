@@ -29,6 +29,7 @@ export async function executeFissionBot(request: BotExecutionContext): Promise<B
     const body = JSON.stringify(payload);
     const response = await executeFissionFunction(bot.id, body);
     const responseBody = response ? JSON.parse(response) : undefined;
+    // if responseBody.returnValue is an OperationOutcome, should success reflect isOk(responseBody.returnValue)?
     return {
       success: true,
       logResult: responseBody?.logResult ?? '',

@@ -28,14 +28,14 @@ export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;
 export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
 
-const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
+const CJS_PREFIX = `const { ContentType, Hl7Message, isOperationOutcome, MedplumClient, OperationOutcomeError } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
 const userCode = require("./user.cjs");
 
 exports.handler = async (event, context) => {
 `;
 
-const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient } from '@medplum/core';
+const ESM_PREFIX = `import { ContentType, Hl7Message, isOperationOutcome, MedplumClient, OperationOutcomeError } from '@medplum/core';
 import PdfPrinter from 'pdfmake';
 import * as userCode from './user.mjs';
 
@@ -100,7 +100,11 @@ const WRAPPER_CODE =
     }
     return result;
   } catch (err) {
-    if (err instanceof Error) {
+    if (err instanceof OperationOutcomeError) {
+      return err.outcome;
+    } else if (isOperationOutcome(err)) {
+      return err;
+    } else if (err instanceof Error) {
       console.log("Unhandled error: " + err.message + "\\n" + err.stack);
     } else if (typeof err === "object") {
       console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));

@@ -331,11 +331,7 @@ export function getJsFileExtension(bot: Bot, code: string): string {
  * @param result - The bot execution result.
  * @returns A promise that resolves when the response is sent.
  */
-export async function sendBotResponse(
-  req: Request,
-  res: Response,
-  result: OperationOutcome | BotExecutionResult
-): Promise<void> {
+export async function sendBotResponse(req: Request, res: Response, result: BotExecutionResult): Promise<void> {
   if (isOperationOutcome(result)) {
     sendOutcome(res, result);
     return;

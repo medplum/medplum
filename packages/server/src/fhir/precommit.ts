@@ -9,6 +9,7 @@ import {
   getDataType,
   getExtension,
   getReferenceString,
+  isOperationOutcome,
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
@@ -133,6 +134,10 @@ export async function preCommitValidation<T extends Resource>(
       requestTime: new Date().toISOString(),
       headers: headers,
     });
+
+    if (isOperationOutcome(botResult.returnValue)) {
+      // TODO: something
+    }
 
     if (!botResult.success) {
       throw new OperationOutcomeError(normalizeOperationOutcome(botResult.returnValue));

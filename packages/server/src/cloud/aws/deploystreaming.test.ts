@@ -187,6 +187,8 @@ describe('Deploy Streaming', () => {
     expect(indexContent).toContain('BotResponseStream');
     expect(indexContent).toContain('startStreaming');
     expect(indexContent).toContain('writeResponse');
+    expect(indexContent).toContain('OperationOutcomeError');
+    expect(indexContent).toContain('getStatus(outcome)');
 
     mockLambdaClient.resetHistory();
 
@@ -277,6 +279,7 @@ describe('Deploy Streaming', () => {
 
     // Streaming-specific: writeResponse helper
     expect(indexContent).toContain('writeResponse');
+    expect(indexContent).toContain('ContentType.FHIR_JSON');
 
     // Contains createPdf function
     expect(indexContent).toContain('createPdf');

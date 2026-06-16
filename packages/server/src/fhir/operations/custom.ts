@@ -93,8 +93,8 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
     defaultHeaders: getBotDefaultHeaders(req, bot),
   });
 
-  if (isOperationOutcome(result)) {
-    return [result];
+  if (isOperationOutcome(result.returnValue)) {
+    return [result.returnValue];
   }
 
   if (!result.success) {
