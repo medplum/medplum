@@ -384,30 +384,45 @@ describe('FHIR Repo', () => {
     test('skips siblings sharing the same lastUpdated and warns', () =>
       withTestContext(async () => {
         const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+        // Fake only the clock (not timer fns) so consecutive updates can be
+        // forced to share the exact same server-assigned `lastUpdated`.
+        jest.useFakeTimers({
+          doNotFake: [
+            'setTimeout',
+            'setInterval',
+            'setImmediate',
+            'clearTimeout',
+            'clearInterval',
+            'clearImmediate',
+            'nextTick',
+            'queueMicrotask',
+            'hrtime',
+            'performance',
+          ],
+        });
         try {
           const base = Date.now();
-          const sharedTs = new Date(base - 1000).toISOString();
-          const v1 = await systemRepo.createResource<Patient>({
-            resourceType: 'Patient',
-            meta: { lastUpdated: new Date(base - 2000).toISOString() },
-          });
+          // v1 in the past
+          jest.setSystemTime(base - 2000);
+          const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+          // v2 and v3 share the same instant -> tie among priors
+          jest.setSystemTime(base - 1000);
           const v2 = await systemRepo.updateResource<Patient>({
             resourceType: 'Patient',
             id: v1.id,
             active: true,
-            meta: { lastUpdated: sharedTs },
           });
           const v3 = await systemRepo.updateResource<Patient>({
             resourceType: 'Patient',
             id: v1.id,
             active: false,
-            meta: { lastUpdated: sharedTs },
           });
+          // v4 is the newest, with a unique timestamp
+          jest.setSystemTime(base);
           const v4 = await systemRepo.updateResource<Patient>({
             resourceType: 'Patient',
             id: v1.id,
             active: true,
-            meta: { lastUpdated: new Date(base).toISOString() },
           });
 
           const prev = await systemRepo.readPreviousVersion<Patient>(v4);
@@ -421,6 +436,7 @@ describe('FHIR Repo', () => {
             })
           );
         } finally {
+          jest.useRealTimers();
           warnSpy.mockRestore();
         }
       }));
@@ -428,24 +444,36 @@ describe('FHIR Repo', () => {
     test('warns when incoming resource ties with chosen prior', () =>
       withTestContext(async () => {
         const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+        jest.useFakeTimers({
+          doNotFake: [
+            'setTimeout',
+            'setInterval',
+            'setImmediate',
+            'clearTimeout',
+            'clearInterval',
+            'clearImmediate',
+            'nextTick',
+            'queueMicrotask',
+            'hrtime',
+            'performance',
+          ],
+        });
         try {
           const base = Date.now();
-          const sharedTs = new Date(base).toISOString();
-          const v1 = await systemRepo.createResource<Patient>({
-            resourceType: 'Patient',
-            meta: { lastUpdated: new Date(base - 1000).toISOString() },
-          });
+          jest.setSystemTime(base - 1000);
+          const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+          // v2 and v3 share the same instant; v3 is the incoming resource, so it
+          // ties with its chosen prior (v2).
+          jest.setSystemTime(base);
           const v2 = await systemRepo.updateResource<Patient>({
             resourceType: 'Patient',
             id: v1.id,
             active: true,
-            meta: { lastUpdated: sharedTs },
           });
           const v3 = await systemRepo.updateResource<Patient>({
             resourceType: 'Patient',
             id: v1.id,
             active: false,
-            meta: { lastUpdated: sharedTs },
           });
 
           const prev = await systemRepo.readPreviousVersion<Patient>(v3);
@@ -458,6 +486,7 @@ describe('FHIR Repo', () => {
             })
           );
         } finally {
+          jest.useRealTimers();
           warnSpy.mockRestore();
         }
       }));
