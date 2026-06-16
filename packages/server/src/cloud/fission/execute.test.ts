@@ -53,8 +53,7 @@ describe('Execute Fission bots', () => {
       Promise.resolve({
         status: 200,
         ok: true,
-        text: async () =>
-          JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } }),
+        text: async () => JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } }),
       })
     );
 
