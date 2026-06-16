@@ -969,11 +969,11 @@ async function autoDisableSubscription(
       { op: 'add', path: '/error', value: errorMessage },
     ];
 
-    await systemRepo.withTransaction(async () => {
-      await systemRepo.patchResource('Subscription', subscription.id, patch);
+    await systemRepo.withTransaction(async (txRepo) => {
+      await txRepo.patchResource('Subscription', subscription.id, patch);
 
       await createSubscriptionAuditEvent(
-        systemRepo,
+        txRepo,
         subscription,
         new Date().toISOString(),
         AuditEventOutcome.SeriousFailure,

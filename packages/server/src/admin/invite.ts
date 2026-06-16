@@ -86,7 +86,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   let user: WithId<User>;
   if (email) {
     const { resource: result, outcome } = await systemRepo.withTransaction(
-      async () => {
+      async (txRepo) => {
         // If inviting with an email address, check for existing memberships
         // tied to this project/email combination that are at a different scope
         // than the one we would create. This avoids confusion of someone
@@ -98,7 +98,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
             ? { code: 'user:User.project', operator: Operator.MISSING, value: 'true' }
             : { code: 'user:User.project', operator: Operator.EXACT, value: `Project/${project.id}` };
 
-          const existingMemberships = await systemRepo.searchResources<ProjectMembership>({
+          const existingMemberships = await txRepo.searchResources<ProjectMembership>({
             resourceType: 'ProjectMembership',
             filters: [
               { code: 'user:User.email', operator: Operator.EXACT, value: email },
@@ -126,7 +126,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
           ],
         };
 
-        return systemRepo.conditionalCreate(userResource, searchRequest);
+        return txRepo.conditionalCreate(userResource, searchRequest);
       },
       { serializable: true }
     );
@@ -343,8 +343,8 @@ async function upsertProjectMembership(
 
   // Upsert ProjectMembership resource to connect User to profile resource in the given Project
   const membership = await systemRepo.withTransaction(
-    async () => {
-      const existingMembership = await searchForExistingMembership(systemRepo, user, project);
+    async (txRepo) => {
+      const existingMembership = await searchForExistingMembership(txRepo, user, project);
       if (existingMembership) {
         if (!request.upsert) {
           throw new OperationOutcomeError(conflict('User is already a member of this project'));
@@ -358,7 +358,7 @@ async function upsertProjectMembership(
 
         // Update the existing membership
         // Be careful to preserve the critical properties: id, project, user, and profile
-        return systemRepo.updateResource<ProjectMembership>({
+        return txRepo.updateResource<ProjectMembership>({
           ...existingMembership,
           ...partialMembership,
           resourceType: 'ProjectMembership',
@@ -368,7 +368,7 @@ async function upsertProjectMembership(
           profile: createReference(profile),
         });
       } else {
-        return createProjectMembership(systemRepo, user, project, profile, partialMembership);
+        return createProjectMembership(txRepo, user, project, profile, partialMembership);
       }
     },
     { serializable: true }
