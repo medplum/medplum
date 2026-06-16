@@ -907,7 +907,7 @@ export class Repository extends FhirRepository implements Disposable {
       ...updated.meta,
       versionId: this.generateId(),
       lastUpdated: this.getLastUpdated(existing, validatedResource),
-      author: this.getAuthor(validatedResource),
+      author: this.getAuthor(),
       onBehalfOf: this.context.onBehalfOf,
     };
 
@@ -1842,7 +1842,7 @@ export class Repository extends FhirRepository implements Disposable {
    * meta.author is server-controlled and is never taken from the request body.
    * @returns The author value.
    */
-  getAuthor(_resource?: Resource): Reference {
+  getAuthor(): Reference {
     return this.context.author;
   }
 
