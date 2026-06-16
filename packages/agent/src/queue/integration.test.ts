@@ -1913,6 +1913,114 @@ describe('Durable queue integration', () => {
     await appB.stop();
   });
 
+  // Loss of leadership *mid-run*. The handoff test above covers the graceful case —
+  // the leader calls App.stop(), which releases the lease and drains workers through
+  // the shutdown path. This covers the ungraceful case the lease TTL actually exists
+  // for: the leader keeps running but loses its lease to a peer (it stalled past the
+  // TTL — a long GC pause, a suspended host — so its renewal lapsed and a peer
+  // claimed the free lease). A graceful stop NEVER fires `onLostQueueLeadership`; only
+  // a failed heartbeat does. The contract that path must honor: the moment the leader
+  // notices (on its next heartbeat), it drains its worker and stops claiming and
+  // dispatching from the now peer-owned queue — settling whatever it had in flight to
+  // `failed` (worker-stopped) and leaving the rest untouched for the new owner.
+  //
+  // We wedge one row in flight (server withholds its response), then yank the lease
+  // out from under the still-running leader and watch it step down and drain. No
+  // second App is needed: the peer is just the lease row a peer's lease manager would
+  // have written, and the point under test is what the *demoted* leader does.
+  test('loss of leadership mid-run: a leader that loses its lease drains its worker and stops driving the queue', async () => {
+    // Server records every dispatch but never answers — the worker's dispatch leg
+    // wedges (60s response timeout, far longer than this test runs), so the claimed
+    // row sits in `inflight` until the lease loss settles it. The source still gets
+    // its CA: under enhanced mode that's the commit ACK minted at intake, independent
+    // of the server.
+    const transmits: string[] = [];
+    startMockServer((cmd) => {
+      transmits.push(Hl7Message.parse(cmd.body).getSegment('MSH')?.getField(10)?.toString() ?? '');
+      return undefined; // withhold — wedge the leader's worker on the in-flight row
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Leader-Loss Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    await waitFor(() => app.isQueueLeader(), 5000, 'app acquires lease');
+
+    // Source pushes three messages. LL_1 is claimed and dispatched (then wedges on the
+    // withheld response); LL_2/LL_3 queue behind it (serial per channel). Each send
+    // still resolves on the commit CA.
+    const client = new Hl7Client({ host: 'localhost', port });
+    for (const id of ['LL_1', 'LL_2', 'LL_3']) {
+      const ack = await client.sendAndWait(TEST_MSG(id), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+      expect(ack.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+    }
+
+    const queue = app.getDurableQueue() as DurableQueue;
+    await waitFor(() => transmits.length === 1, 5000, 'leader dispatches LL_1');
+    expect(transmits).toEqual(['LL_1']);
+    expect(queue.countByState()).toMatchObject({ inflight: 1, queued: 2 });
+
+    // --- The loss event ---
+    // Simulate the leader stalling past its TTL: a peer finds the lease lapsed and
+    // claims it. `releaseLease` + `tryAcquireLease` models the lapse-then-claim a
+    // peer's lease manager performs once our renewal window passes without a
+    // heartbeat. The leader is oblivious — in memory it still believes it's leader
+    // until its next heartbeat fails the holder check.
+    const held = queue.getCurrentLease();
+    expect(held).not.toBeNull();
+    queue.releaseLease((held as { holder: string }).holder);
+    expect(queue.tryAcquireLease('peer-b-holder', 60_000)).toBe(true);
+
+    // On its next heartbeat the leader discovers the lease is gone, fires
+    // onLostQueueLeadership, and steps down. Detection latency is bounded by the
+    // heartbeat interval (default 10s); 15s leaves comfortable margin.
+    await waitFor(() => !app.isQueueLeader(), 15_000, 'leader detects the lost lease and steps down');
+
+    // Draining is fire-and-forget, so wait for the in-flight LL_1 to actually settle.
+    // It lands in `failed`/`worker-stopped` — the identical settlement App.stop()
+    // produces, but reached via lease loss rather than shutdown. It owes no ACK: the
+    // source already has its commit CA.
+    await waitForRow(queue, (c) => c.failed === 1, 10_000);
+    const ll1 = queue.findSeenByControlId('dq-test', 'LL_1');
+    expect(ll1?.state).toBe('failed');
+    expect(ll1?.errorCode).toBe('worker-stopped');
+    expect(ll1?.ackOutcome).toBe('not_owed');
+
+    // The demoted leader stopped driving the queue: LL_2/LL_3 are still `queued`,
+    // never dispatched. A leader that kept claiming after losing its lease would
+    // fight the new owner over the same rows — exactly what onLostQueueLeadership
+    // exists to prevent.
+    expect(transmits).toEqual(['LL_1']);
+    expect(queue.countByState()).toMatchObject({
+      queued: 2,
+      inflight: 0,
+      claimed: 0,
+      processed: 0,
+      failed: 1,
+      nacked: 0,
+      rejected: 0,
+    });
+    // The peer now owns the lease; the demoted process did not reclaim it.
+    expect(queue.getCurrentLease()?.holder).toBe('peer-b-holder');
+    expect(app.isQueueLeader()).toBe(false);
+
+    await client.close();
+    await app.stop();
+  });
+
   // Slow-consumer retransmit storm: the downstream Bot is slow, so the source's
   // app-level ACK is delayed and it resends the SAME control ID several times while
   // the original is still in flight. Idempotent mode (the default) must absorb every
