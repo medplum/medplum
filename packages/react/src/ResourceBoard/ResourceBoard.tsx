@@ -1,19 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Center, Divider, Flex, Group, Pagination, Paper, ScrollArea, Stack, Tabs, Text } from '@mantine/core';
+import { Center, Divider, Flex, Group, Pagination, ScrollArea, Stack, Tabs, Text } from '@mantine/core';
 import type { MedplumClient, SearchRequest } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
-import { useMedplumNavigate } from '@medplum/react-hooks';
+import type { ResourceBoardLoadResult } from '@medplum/react-hooks';
+import { useMedplumNavigate, useResourceBoard } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { Fragment } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import classes from './ResourceBoard.module.css';
 import { ResourceBoardSkeleton } from './ResourceBoardSkeleton';
-import type { ResourceBoardLoadResult } from './useResourceBoardData';
-import { useResourceBoardData } from './useResourceBoardData';
 
-export type { ResourceBoardLoadResult } from './useResourceBoardData';
+export type { ResourceBoardLoadResult } from '@medplum/react-hooks';
 
 export interface ResourceBoardTab {
   /**
@@ -37,6 +36,12 @@ export interface ResourceBoardItemContext {
   readonly index: number;
   /** Full current page of items, for neighbor-aware rendering (e.g. divider hiding). */
   readonly items: Resource[];
+  /**
+   * Standard list-item styling for the item's root anchor or button element:
+   * block layout, hover and selected backgrounds, and a native `<button>` reset.
+   * Already reflects the selected state.
+   */
+  readonly className: string;
 }
 
 export interface ResourceBoardDetailContext {
@@ -77,7 +82,11 @@ export interface ResourceBoardProps {
   readonly headerActions?: ReactNode;
 
   // List
-  /** Renders one list item. Selection styling is the consumer's responsibility via `ctx.selected`. */
+  /**
+   * Renders one list item. Apply `ctx.className` to the item's root anchor or button
+   * for the standard list-item styling (hover and selected backgrounds included),
+   * or style from scratch using `ctx.selected`.
+   */
   readonly renderItem: (item: Resource, ctx: ResourceBoardItemContext) => ReactNode;
   /** Shown when the list loads empty. Default: dimmed "No items found". */
   readonly emptyList?: ReactNode;
@@ -144,7 +153,7 @@ export function ResourceBoard(props: ResourceBoardProps): JSX.Element {
 
   // Hooks
   const navigate = useMedplumNavigate();
-  const { items, total, loading, selected, memoizedSearch, refresh } = useResourceBoardData(props);
+  const { items, total, loading, selected, memoizedSearch, refresh } = useResourceBoard(props);
 
   // Derived variables
   const count = memoizedSearch.count ?? DEFAULT_SEARCH_COUNT;
@@ -168,61 +177,65 @@ export function ResourceBoard(props: ResourceBoardProps): JSX.Element {
 
   return (
     <Flex direction="row" h="100%" w="100%" className={classes.container}>
-      <Flex direction="column" w={listWidth} h="100%" className={classes.sidebar}>
-        <Paper className={classes.sidebarPaper}>
-          {(tabs || headerActions) && (
-            <>
-              <Flex h={HEADER_HEIGHT} align="center" justify="space-between" p="md">
-                {tabs ? (
-                  <Tabs
-                    value={activeTab ?? null}
-                    onChange={handleTabChange}
-                    variant="unstyled"
-                    classNames={{ list: classes.tabsList, tab: classes.tab }}
-                  >
-                    <Tabs.List>
-                      {tabs.map((tab) => (
-                        <Tabs.Tab key={tab.value} value={tab.value}>
-                          <MedplumLink className={classes.tabLink} to={tab.uri}>
-                            {tab.label}
-                          </MedplumLink>
-                        </Tabs.Tab>
-                      ))}
-                    </Tabs.List>
-                  </Tabs>
-                ) : (
-                  <span />
-                )}
-                {headerActions && <Group gap="xs">{headerActions}</Group>}
-              </Flex>
-              <Divider />
-            </>
-          )}
-          <ScrollArea flex={1} scrollbarSize={10} type="hover" scrollHideDelay={250}>
-            {loading && (skeleton ?? <ResourceBoardSkeleton />)}
-            {!loading && items.length === 0 && (emptyList ?? <DefaultEmptyList />)}
-            {!loading &&
-              items.map((item, index) => (
+      <Flex direction="column" w={listWidth} h="100%" className={classes.shell}>
+        {(tabs || headerActions) && (
+          <>
+            <Flex h={HEADER_HEIGHT} align="center" justify="space-between" p="md">
+              {tabs ? (
+                <Tabs
+                  value={activeTab ?? null}
+                  onChange={handleTabChange}
+                  variant="unstyled"
+                  className={classes.pillTabs}
+                >
+                  <Tabs.List>
+                    {tabs.map((tab) => (
+                      <Tabs.Tab key={tab.value} value={tab.value}>
+                        <MedplumLink className={classes.tabLink} to={tab.uri}>
+                          {tab.label}
+                        </MedplumLink>
+                      </Tabs.Tab>
+                    ))}
+                  </Tabs.List>
+                </Tabs>
+              ) : (
+                <span />
+              )}
+              {headerActions && <Group gap="xs">{headerActions}</Group>}
+            </Flex>
+            <Divider />
+          </>
+        )}
+        <ScrollArea flex={1} scrollbarSize={10} type="hover" scrollHideDelay={250}>
+          {loading && (skeleton ?? <ResourceBoardSkeleton />)}
+          {!loading && items.length === 0 && (emptyList ?? <DefaultEmptyList />)}
+          {!loading &&
+            items.map((item, index) => {
+              const isSelected = item.id !== undefined && item.id === selectedKey;
+              return (
                 <Fragment key={item.id ?? index}>
-                  {renderItem(item, { selected: item.id !== undefined && item.id === selectedKey, index, items })}
+                  {renderItem(item, {
+                    selected: isSelected,
+                    index,
+                    items,
+                    className: isSelected ? `${classes.item} ${classes.selected}` : classes.item,
+                  })}
                 </Fragment>
-              ))}
-          </ScrollArea>
-          {showPagination && (
-            <Box p="md">
-              <Center>
-                <Pagination
-                  value={currentPage}
-                  total={pageCount}
-                  onChange={handlePageChange}
-                  size="sm"
-                  siblings={1}
-                  boundaries={1}
-                />
-              </Center>
-            </Box>
-          )}
-        </Paper>
+              );
+            })}
+        </ScrollArea>
+        {showPagination && (
+          <div className={classes.footer}>
+            <Pagination
+              value={currentPage}
+              total={pageCount}
+              onChange={handlePageChange}
+              size="sm"
+              siblings={1}
+              boundaries={1}
+            />
+          </div>
+        )}
       </Flex>
       {selected !== undefined ? (
         renderDetail(selected, { refresh })

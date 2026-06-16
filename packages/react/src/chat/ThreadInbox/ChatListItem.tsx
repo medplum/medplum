@@ -15,10 +15,16 @@ export interface ChatListItemProps {
   lastCommunication: Communication | undefined;
   isSelected: boolean;
   getThreadUri: (topic: Communication) => string;
+  /**
+   * Class for the root link element, e.g. ResourceBoard's `ctx.className`.
+   * When provided it replaces the built-in container styling (padding and
+   * hover/selected backgrounds), which are expected to come from the class.
+   */
+  className?: string;
 }
 
 export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
-  const { topic, lastCommunication, isSelected, getThreadUri } = props;
+  const { topic, lastCommunication, isSelected, getThreadUri, className } = props;
   const patientResource = useResource(topic.subject as Reference<Patient>);
   const patientName = formatHumanName(patientResource?.name?.[0]);
   const lastMsg = lastCommunication?.payload?.[0]?.contentString;
@@ -28,14 +34,18 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
   const topicName = topic.topic?.text ?? content;
 
   return (
-    <MedplumLink to={getThreadUri(topic)} underline="never">
+    <MedplumLink to={getThreadUri(topic)} underline="never" className={className}>
       <Group
-        p="xs"
+        p={className ? undefined : 'xs'}
         align="center"
         wrap="nowrap"
-        className={cx(classes.contentContainer, {
-          [classes.selected]: isSelected,
-        })}
+        className={
+          className
+            ? undefined
+            : cx(classes.contentContainer, {
+                [classes.selected]: isSelected,
+              })
+        }
       >
         <ResourceAvatar value={topic.subject} radius="xl" size={36} />
         <Stack gap={0}>
