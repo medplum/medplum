@@ -20,7 +20,14 @@ import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
-import { addTestUser, createTestProject, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import {
+  addTestUser,
+  createTestProject,
+  initTestAuth,
+  setupPwnedPasswordMock,
+  setupRecaptchaMock,
+  withTestContext,
+} from '../test.setup';
 import { inviteUser } from './invite';
 
 jest.mock('hibp');
@@ -1568,8 +1575,7 @@ describe('Admin Invite', () => {
       });
 
       expect(membership.accessPolicy?.reference).toBe(getReferenceString(defaultAccessPolicy));
-    })
-  );
+    }));
 
   test('Invite Patient uses explicit access policy over defaultPatientAccessPolicy', () =>
     withTestContext(async () => {
@@ -1601,8 +1607,7 @@ describe('Admin Invite', () => {
       });
 
       expect(membership.accessPolicy?.reference).toBe(getReferenceString(explicitAccessPolicy));
-    })
-  );
+    }));
 
   test('Invite Patient without explicit policy and no defaultPatientAccessPolicy', () =>
     withTestContext(async () => {
@@ -1618,8 +1623,7 @@ describe('Admin Invite', () => {
       });
 
       expect(membership.accessPolicy).toBeUndefined();
-    })
-  );
+    }));
 
   test('Invite Practitioner does not apply defaultPatientAccessPolicy', () =>
     withTestContext(async () => {
@@ -1645,6 +1649,5 @@ describe('Admin Invite', () => {
       });
 
       expect(membership.accessPolicy).toBeUndefined();
-    })
-  );
+    }));
 });
