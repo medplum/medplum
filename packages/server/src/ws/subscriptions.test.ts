@@ -2135,7 +2135,7 @@ describe('Subscription Heartbeat', () => {
 
   test('Logs and ignores a client message that is not valid JSON', () =>
     withTestContext(async () => {
-      const errorSpy = jest.spyOn(globalLogger, 'error');
+      const errorSpy = vi.spyOn(globalLogger, 'error');
       try {
         await request(server)
           .ws('/ws/subscriptions-r4')
@@ -2169,9 +2169,9 @@ describe('Subscription Heartbeat', () => {
       const res = await request(server)
         .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
-      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+      const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
 
-      const errorSpy = jest.spyOn(globalLogger, 'error');
+      const errorSpy = vi.spyOn(globalLogger, 'error');
       try {
         await request(server)
           .ws('/ws/subscriptions-r4')
@@ -2224,14 +2224,14 @@ describe('Subscription Heartbeat', () => {
       const res = await request(server)
         .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
-      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+      const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
 
       // Reset module state so the next bind triggers a fresh setupSubscriptionHandler
       cleanupR4SubscriptionResources();
 
-      const errorSpy = jest.spyOn(globalLogger, 'error');
+      const errorSpy = vi.spyOn(globalLogger, 'error');
       // Fail the first attempt to create the redis subscriber
-      const subscriberSpy = jest.spyOn(redisModule, 'getPubSubRedisSubscriber').mockImplementationOnce(() => {
+      const subscriberSpy = vi.spyOn(redisModule, 'getPubSubRedisSubscriber').mockImplementationOnce(() => {
         throw new Error('Redis unavailable');
       });
 

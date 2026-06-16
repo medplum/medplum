@@ -461,12 +461,12 @@ describe('Agent WebSockets', () => {
   });
 
   test('Logs when updating agent status fails on disconnect', async () => {
-    const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
     // Simulate Redis being unavailable (e.g. closing during shutdown) so the disconnect
     // status update rejects -- the close handler must catch it, not leak the rejection
-    const cacheSpy = jest.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
-      get: jest.fn().mockRejectedValue(new Error('Connection is closed.')),
-      set: jest.fn(),
+    const cacheSpy = vi.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
+      get: vi.fn().mockRejectedValue(new Error('Connection is closed.')),
+      set: vi.fn(),
     } as any);
 
     try {

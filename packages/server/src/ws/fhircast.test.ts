@@ -954,23 +954,23 @@ describe('FHIRcast WebSocket', () => {
 
     test('Logs and ignores a client message that is not valid JSON', () =>
       withTestContext(async () => {
-        const cacheSpy = jest.spyOn(redis, 'getCacheRedis').mockReturnValue({
-          get: jest.fn().mockResolvedValue('project-id:my-topic'),
+        const cacheSpy = vi.spyOn(redis, 'getCacheRedis').mockReturnValue({
+          get: vi.fn().mockResolvedValue('project-id:my-topic'),
         } as any);
-        const subscriberSpy = jest.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
-          subscribe: jest.fn().mockResolvedValue(undefined),
-          on: jest.fn(),
-          disconnect: jest.fn(),
+        const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+          subscribe: vi.fn().mockResolvedValue(undefined),
+          on: vi.fn(),
+          disconnect: vi.fn(),
         } as any);
-        const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+        const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
 
         const handlers: Record<string, (...args: any[]) => any> = {};
         const socket = {
-          on: jest.fn((event: string, cb: (...args: any[]) => any) => {
+          on: vi.fn((event: string, cb: (...args: any[]) => any) => {
             handlers[event] = cb;
           }),
-          send: jest.fn(),
-          close: jest.fn(),
+          send: vi.fn(),
+          close: vi.fn(),
         } as unknown as WebSocket;
         const req = { url: '/ws/fhircast/some-endpoint' } as IncomingMessage;
 

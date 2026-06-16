@@ -156,10 +156,10 @@ describe('WebSocket shutdown', () => {
 
   test('A handler that throws closes the socket with 1011 Internal Error', async () => {
     const { port } = await initTestApp();
-    const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
     // The echo handler grabs a Redis subscriber before its own try/catch, so a throw here
     // surfaces to the connection listener, which must close the socket with 1011
-    const subscriberSpy = jest.spyOn(redisModule, 'getPubSubRedisSubscriber').mockImplementation(() => {
+    const subscriberSpy = vi.spyOn(redisModule, 'getPubSubRedisSubscriber').mockImplementation(() => {
       throw new Error('Redis unavailable');
     });
 
