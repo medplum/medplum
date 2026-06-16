@@ -24,7 +24,7 @@ import type {
 import { r4ProjectId } from '../../constants';
 import { requireSuperAdmin } from '../../context';
 import { globalLogger } from '../../logger';
-import type { Repository } from '../repo';
+import type { Repository, SystemRepository } from '../repo';
 import { parseInputParameters } from './utils/parameters';
 
 const op = getDefinitionResource<OperationDefinition>(
@@ -127,12 +127,12 @@ async function processTerminologyDefinitionEntry(
 }
 
 async function replaceExisting<T extends Resource & { url?: string }>(
-  repo: Repository,
+  repo: SystemRepository,
   resource: T,
   projectId: string
 ): Promise<WithId<T>> {
   const systemRepo = repo.getSystemRepo();
-  return systemRepo.withTransaction(async () => {
+  return systemRepo.withTransaction(async (systemRepo) => {
     if (resource.url) {
       const bundle = await systemRepo.search({
         resourceType: resource.resourceType,
