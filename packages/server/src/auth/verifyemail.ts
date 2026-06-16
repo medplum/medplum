@@ -6,6 +6,7 @@ import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
+import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { timingSafeEqualStr } from '../oauth/utils';
@@ -37,9 +38,9 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
 
   const user = await systemRepo.readReference(securityRequest.user);
 
-  await systemRepo.withTransaction(async () => {
-    await systemRepo.updateResource<User>({ ...user, emailVerified: true });
-    await systemRepo.updateResource<UserSecurityRequest>({ ...securityRequest, used: true });
+  await systemRepo.withTransaction(async (txRepo) => {
+    await txRepo.updateResource<User>({ ...user, emailVerified: true });
+    await txRepo.updateResource<UserSecurityRequest>({ ...securityRequest, used: true });
   });
 
   if (securityRequest.redirectUri) {
@@ -53,13 +54,17 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
 /**
  * Creates a "verify email" request for the user.
  * Returns the created UserSecurityRequest, which contains the secret that should be sent in the verification email.
+ * @param systemRepo - The system repository to use for creating the request.
  * @param user - The user to create the request for.
  * @param redirectUri - Optional URI for redirection to the client application.
  * @returns The created UserSecurityRequest.
  */
-export async function verifyEmail(user: User, redirectUri?: string): Promise<WithId<UserSecurityRequest>> {
+export async function verifyEmail(
+  systemRepo: SystemRepository,
+  user: User,
+  redirectUri?: string
+): Promise<WithId<UserSecurityRequest>> {
   // Create the email verification request
-  const systemRepo = getGlobalSystemRepo();
   return systemRepo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
     meta: { project: resolveId(user.project) },

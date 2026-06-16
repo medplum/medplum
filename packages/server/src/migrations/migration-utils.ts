@@ -131,9 +131,9 @@ export async function preparePostDeployMigrationAsyncJob(
   version: number
 ): Promise<WithId<AsyncJob>> {
   return systemRepo.withTransaction(
-    async () => {
+    async (txRepo) => {
       // Check if there is already a migration job in progress
-      const existingJobs = await systemRepo.searchResources<AsyncJob>(
+      const existingJobs = await txRepo.searchResources<AsyncJob>(
         parseSearchRequest(
           `AsyncJob?status=${InProgressAsyncJobStatuses.join(',')}&type=data-migration&_count=2&_project:missing=true`
         )
@@ -156,7 +156,7 @@ export async function preparePostDeployMigrationAsyncJob(
           )
         );
       }
-      const asyncJob = await upsertPostDeployMigrationAsyncJob(systemRepo, version, existingJob);
+      const asyncJob = await upsertPostDeployMigrationAsyncJob(txRepo, version, existingJob);
 
       return asyncJob;
     },

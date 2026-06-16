@@ -6,7 +6,6 @@ import { IconMedicineSyrup, IconReportMedical, IconRobot, IconUser } from '@tabl
 import { Suspense } from 'react';
 import type { JSX } from 'react';
 import { Route, Routes } from 'react-router';
-import { getConfig } from './config';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { MedicationPage } from './pages/MedicationPage';
@@ -26,7 +25,12 @@ export function App(): JSX.Element | null {
   }
 
   return (
-    <photon-client id={getConfig().photonClientId} org={getConfig().photonOrgId} dev-mode="true" auto-login="true">
+    <photon-client
+      id={import.meta.env.PHOTON_CLIENT_ID}
+      org={import.meta.env.PHOTON_ORG_ID}
+      dev-mode="true"
+      auto-login="true"
+    >
       <AppShell
         logo={<Logo size={24} />}
         menus={[

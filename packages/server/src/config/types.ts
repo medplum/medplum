@@ -86,6 +86,7 @@ export interface MedplumServerConfig {
   accurateCountThreshold: number;
   maxSearchOffset?: number;
   base64BinaryMaxBytes?: number;
+  inlineAttachmentsMaxTotalBytes?: number;
   defaultSuperAdminEmail?: string;
   defaultSuperAdminPassword?: string;
   defaultSuperAdminClientId?: string;

@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Pool, PoolClient } from 'pg';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
+import type { PgQueryable } from '../sql';
 import { isValidTableName, replaceNullWithUndefinedInRows, SqlBuilder } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import {
@@ -79,7 +79,7 @@ async function getDefaultGinPendingListLimit(): Promise<number> {
   return Number(defaultStatisticsTarget.rows[0].setting);
 }
 
-async function getGinIndexInfo(client: PoolClient | Pool, tableNames: string[]): Promise<GinIndexInfo[]> {
+async function getGinIndexInfo(client: PgQueryable, tableNames: string[]): Promise<GinIndexInfo[]> {
   const schemaName = 'public';
   const builder = new SqlBuilder();
   const sql = `SELECT
