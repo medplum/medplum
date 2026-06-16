@@ -33,13 +33,23 @@
 
 .foundationsNav {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* Ten foundations → two even rows of five. */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   margin: 24px 0 0;
 }
 
+@media (max-width: 600px) {
+  .foundationsNav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .navChip {
-  display: inline-flex;
+  /* Fill the grid cell so every chip is the same width; the grid (5 equal columns)
+     then yields two uniform rows of five. Text is kept to one line via nowrap. */
+  display: flex;
+  width: 100%;
   align-items: center;
   gap: 8px;
   font-family: 'Poppins', system-ui, sans-serif;
@@ -51,6 +61,8 @@
   border-radius: 9999px;
   padding: 6px 14px 6px 7px;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
   transition: all 120ms ease;
 }
 

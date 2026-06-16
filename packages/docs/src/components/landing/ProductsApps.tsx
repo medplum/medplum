@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import type { JSX } from 'react';
-import type { AppItem } from '../../data/platform-content';
-import { FEATURED_APPS } from '../../data/platform-content';
-import styles from './PlatformApps.module.css';
+import type { AppItem } from '../../data/products-content';
+import { FEATURED_APPS } from '../../data/products-content';
+import styles from './ProductsApps.module.css';
 
 function ScreenshotPlaceholder({ caption }: { caption: string }): JSX.Element {
   return (
@@ -60,7 +60,7 @@ function ReferenceAppCard({ app }: { app: AppItem }): JSX.Element {
   );
 }
 
-export function PlatformApps(): JSX.Element {
+export function ProductsApps(): JSX.Element {
   return (
     <div id="apps" className={styles.section}>
       <div className={styles.sectionHeader}>

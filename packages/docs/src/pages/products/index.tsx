@@ -2,33 +2,33 @@
 // SPDX-License-Identifier: Apache-2.0
 import Layout from '@theme/Layout';
 import type { JSX } from 'react';
-import { PlatformApps } from '../../components/landing/PlatformApps';
-import { PlatformCta } from '../../components/landing/PlatformCta';
-import { PlatformFoundations } from '../../components/landing/PlatformFoundations';
-import { PlatformHero } from '../../components/landing/PlatformHero';
-import { PlatformThreeTierIntro } from '../../components/landing/PlatformThreeTierIntro';
-import { PlatformWorkflows } from '../../components/landing/PlatformWorkflows';
+import { ProductsApps } from '../../components/landing/ProductsApps';
+import { ProductsCapabilities } from '../../components/landing/ProductsCapabilities';
+import { ProductsCta } from '../../components/landing/ProductsCta';
+import { ProductsFoundations } from '../../components/landing/ProductsFoundations';
+import { ProductsHero } from '../../components/landing/ProductsHero';
+import { ProductsThreeTierIntro } from '../../components/landing/ProductsThreeTierIntro';
 import styles from './products.module.css';
 
 export default function ProductsPage(): JSX.Element {
   return (
     <Layout title="Products" description="The platform underneath your healthcare product">
       <div className={styles.page}>
-        <PlatformHero />
-        {/* The three-tier intro doubles as the section nav — its Apps/Workflows/Foundations
+        <ProductsHero />
+        {/* The three-tier intro doubles as the section nav — its Apps/Capabilities/Foundations
             rows jump to each section, so a separate anchor-link row is redundant. */}
-        <PlatformThreeTierIntro />
+        <ProductsThreeTierIntro />
 
         <section className={styles.stackedSections}>
           <div className={styles.container}>
-            <PlatformApps />
-            <PlatformWorkflows />
-            <PlatformFoundations />
+            <ProductsApps />
+            <ProductsCapabilities />
+            <ProductsFoundations />
           </div>
         </section>
       </div>
 
-      <PlatformCta />
+      <ProductsCta />
     </Layout>
   );
 }

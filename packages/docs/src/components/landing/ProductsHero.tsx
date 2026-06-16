@@ -4,9 +4,9 @@ import Link from '@docusaurus/Link';
 import { IconArrowRight } from '@tabler/icons-react';
 import type { CSSProperties, JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { HERO_HEADLINE, HERO_SUB } from '../../data/platform-content';
+import { HERO_HEADLINE, HERO_SUB } from '../../data/products-content';
 import { BuildDropdown } from './BuildDropdown';
-import styles from './PlatformHero.module.css';
+import styles from './ProductsHero.module.css';
 
 /* The hero plays a three-beat story when scrolled into view:
    1. the code "writes" (lines stagger in),
@@ -138,7 +138,7 @@ function HeroStack(): JSX.Element {
   );
 }
 
-export function PlatformHero(): JSX.Element {
+export function ProductsHero(): JSX.Element {
   return (
     <section className={styles.section}>
       <div className={styles.container}>

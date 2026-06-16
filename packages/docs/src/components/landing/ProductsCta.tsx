@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import type { JSX } from 'react';
-import styles from './PlatformCta.module.css';
+import styles from './ProductsCta.module.css';
 
-export function PlatformCta(): JSX.Element {
+export function ProductsCta(): JSX.Element {
   return (
     <section className={styles.section}>
       <div className={styles.inner}>

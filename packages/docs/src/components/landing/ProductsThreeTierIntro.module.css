@@ -139,7 +139,7 @@
   background: #e5dbff;
 }
 
-.tierRowWorkflows {
+.tierRowCapabilities {
   background: #f3d9fa;
 }
 
@@ -160,7 +160,7 @@
   background: #845ef7;
 }
 
-.tierStripeWorkflows {
+.tierStripeCapabilities {
   background: var(--oc-grape-8);
 }
 
@@ -216,7 +216,7 @@
   background: rgba(133, 94, 247, 0.2);
 }
 
-[data-theme='dark'] .tierRowWorkflows {
+[data-theme='dark'] .tierRowCapabilities {
   background: rgba(190, 75, 219, 0.2);
 }
 
