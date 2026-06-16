@@ -245,9 +245,9 @@ export class ChannelQueueWorker {
       const row = this.queue.claimNext(this.channelName);
       if (row) {
         await this.process(row);
+      } else {
+        await this.waitForWork();
       }
-
-      await this.waitForWork();
     }
   }
 

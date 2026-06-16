@@ -30,10 +30,10 @@ import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import type * as NodeFs from 'node:fs';
-import { existsSync, openSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, openSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
-import { platform } from 'node:os';
-import { resolve } from 'node:path';
+import { platform, tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
 import { AgentByteStreamChannel } from './bytestream';
@@ -721,6 +721,113 @@ describe('App', () => {
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unsupported endpoint type: foo:'));
     console.log = originalConsoleLog;
+  });
+
+  // The durable-queue wiring in app.ts (reconcileDurableQueue → open/close the DB,
+  // start/stop the lease manager) has no direct coverage in app.test.ts; it's only
+  // exercised indirectly by the queue integration suite. This pins the toggle
+  // itself: flipping the `durableQueue` setting across a reloadConfig opens the
+  // queue (and, as the sole process, acquires the lease) and closes it again.
+  test('durableQueue setting toggles the queue on and off across reloadConfig', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotAgentReloadResponse: false,
+    };
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+          case 'agent:reloadconfig:response':
+            state.gotAgentReloadResponse = true;
+            break;
+          default:
+            break;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const dir = mkdtempSync(join(tmpdir(), 'dq-toggle-'));
+    const dbPath = join(dir, 'queue.sqlite');
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Toggle Agent',
+      status: 'active',
+      channel: [],
+      setting: [
+        { name: 'durableQueue', valueBoolean: false },
+        { name: 'queueDbPath', valueString: dbPath },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    app.heartbeatPeriod = 100;
+    await app.start();
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Updates the durableQueue setting, sends a reloadconfig request, waits for the ack.
+    async function reloadWith(durableQueueOn: boolean): Promise<void> {
+      await medplum.updateResource<Agent>({
+        ...agent,
+        setting: [
+          { name: 'durableQueue', valueBoolean: durableQueueOn },
+          { name: 'queueDbPath', valueString: dbPath },
+        ],
+      });
+      state.gotAgentReloadResponse = false;
+      state.mySocket?.send(
+        JSON.stringify({
+          type: 'agent:reloadconfig:request',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentReloadConfigRequest)
+      );
+      const start = Date.now();
+      while (!state.gotAgentReloadResponse) {
+        if (Date.now() - start > 3000) {
+          throw new Error('Timed out waiting for reloadconfig:response');
+        }
+        await sleep(50);
+      }
+    }
+
+    // Starts OFF: no queue handle, not a leader, no DB file on disk.
+    expect(app.getDurableQueue()).toBeUndefined();
+    expect(app.isQueueLeader()).toBe(false);
+    expect(existsSync(dbPath)).toBe(false);
+
+    // Flip ON → the queue opens, the DB file is created, and (as the only process)
+    // we acquire the lease.
+    await reloadWith(true);
+    expect(app.getDurableQueue()).toBeDefined();
+    expect(existsSync(dbPath)).toBe(true);
+    const leaderStart = Date.now();
+    while (!app.isQueueLeader()) {
+      if (Date.now() - leaderStart > 5000) {
+        throw new Error('Did not become queue leader after enabling durableQueue');
+      }
+      await sleep(25);
+    }
+
+    // Flip OFF → the queue closes and the lease is released.
+    await reloadWith(false);
+    expect(app.getDurableQueue()).toBeUndefined();
+    expect(app.isQueueLeader()).toBe(false);
+
+    await app.stop();
+    mockServer.stop();
+    rmSync(dir, { recursive: true, force: true });
   });
 
   test('Reload config', async () => {
