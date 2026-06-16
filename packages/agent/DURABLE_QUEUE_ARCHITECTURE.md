@@ -44,7 +44,7 @@ This plan replaces the in-memory inbound path with a durable, SQLite-backed FIFO
 | Decision | Choice |
 |---|---|
 | Durability scope | **Inbound only** (channel → server). Outbound stays in-memory. |
-| Enhanced-mode ACK | **Defer CA until DB commit** — modify `@medplum/hl7` to expose explicit `ackCommit()` / `nackCommit()`. |
+| Enhanced-mode ACK | **Defer CA until DB commit** — keep `enhancedMode` off the `Hl7Connection` (suppressing its auto-ACK) and have the agent send the ACK via `sendCommitAck()` / `sendCommitNack()`. |
 | Crash recovery | **Requeue `queued` rows; promote `processing` rows to `failed`** for manual review. |
 | Duplicate control ID | **Configurable per channel** (`duplicateBehavior=reject\|idempotent`), defaulting to `idempotent`. |
 | Serial processing scope | **Per channel.** Different channels proceed in parallel; within a channel, one message in-flight. |
@@ -62,10 +62,10 @@ This plan replaces the in-memory inbound path with a durable, SQLite-backed FIFO
    (HL7 over TCP)       │                                      │
                         │  on message:                         │
                         │   1. INSERT row (state=queued)       │  ┌─────────────────────────┐
-                        │   2. on commit → connection.ackCommit│──►  inbound_hl7_messages   │
+                        │   2. on commit → sendCommitAck       │──►  inbound_hl7_messages   │
                         │      (sends CA in enhanced mode)     │  │  (SQLite, WAL, sync=NRM)│
                         │   3. on dup-reject / DB error →      │  └────────┬────────────────┘
-                        │      connection.nackCommit (CR/AR)   │           │
+                        │      sendCommitNack (CR/AR)          │           │
                         └──────────────────┬───────────────────┘           │
                                            │ wake worker                   │
                                            ▼                               │
@@ -91,7 +91,7 @@ Key components introduced:
 | `src/queue/worker.ts` | `ChannelQueueWorker` — one per channel, serial dequeue loop. Wires WS responses back to the row. |
 | `src/queue/types.ts` | `MessageState`, `InboundRow`, lifecycle event types. |
 | `src/queue/retention.ts` | Background sweeper for time + size purge. |
-| `packages/hl7/src/connection.ts` | New `setDeferredCommitAck(true)` mode + `ackCommit()` / `nackCommit(code, reason)` methods (see §6). |
+| `packages/agent/src/hl7.ts` | Agent-side commit ACKs: keep `enhancedMode` off the `Hl7Connection` (suppressing its auto-ACK) and send CA/AA/CE/CR/AE/AR via `AgentHl7ChannelConnection.sendCommitAck()` / `sendCommitNack(code, reason)` after the DB write (see §6). |
 
 ---
 
@@ -133,10 +133,10 @@ CREATE TABLE IF NOT EXISTS inbound_hl7_messages (
   server_response_body  BLOB,                      -- raw agent:transmit:response body when received
   server_status_code INTEGER,                      -- statusCode from agent:transmit:response
   ack_outcome        TEXT    NOT NULL DEFAULT 'pending', -- source leg, independent of state; see §4
-  last_error         TEXT,
+  last_error         TEXT,                         -- human-readable failure detail
+  error_code         TEXT,                         -- machine-readable QueueErrorCode (Bot-leg failure or intake-reject reason)
   seq_no             INTEGER,                      -- MSH.13 assigned by agent (if assignSeqNo)
-  received_at        INTEGER NOT NULL,             -- ms epoch (handleMessage entry)
-  committed_at       INTEGER,                      -- ms epoch — write that triggered CA
+  received_at        INTEGER NOT NULL,             -- ms epoch (handleMessage entry); also the commit timestamp (CA fires synchronously after the durable write)
   processing_started_at INTEGER,
   processed_at       INTEGER,                      -- terminal state timestamp
   errored_at         INTEGER
@@ -151,11 +151,22 @@ CREATE INDEX IF NOT EXISTS idx_inbound_state_processed_at
   ON inbound_hl7_messages (state, processed_at);
 
 -- Duplicate detection (configurable, see §8). Partial unique to avoid blocking when
--- duplicateBehavior=idempotent or when MSH.10 is null.
+-- duplicateBehavior=idempotent or when MSH.10 is null. This is the insert-race
+-- correctness guard (the enqueue() unique-conflict catch path), scoped to the
+-- active window so it never blocks a legitimate re-send of a long-settled message.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_inbound_dup_active
   ON inbound_hl7_messages (channel_name, msg_control_id)
   WHERE msg_control_id IS NOT NULL
     AND state IN ('queued', 'processing');
+
+-- Read index for the per-message intake dedup lookup: the latest non-nacked row
+-- for a (channel, control_id) across ALL states (the partial-unique index above
+-- only covers the active window). Without it the lookup scans the channel's whole
+-- history every message; the trailing id makes ORDER BY id DESC LIMIT 1 a seek.
+CREATE INDEX IF NOT EXISTS idx_inbound_dup_lookup
+  ON inbound_hl7_messages (channel_name, msg_control_id, id)
+  WHERE msg_control_id IS NOT NULL
+    AND state != 'nacked';
 
 -- Correlate WS callback IDs (what the server echoes back) to rows in O(1).
 CREATE UNIQUE INDEX IF NOT EXISTS uq_inbound_callback
@@ -248,11 +259,13 @@ the stored ACK (§8) and flips the row to `delivered`.
 | `undelivered` | the Bot accepted the message but the ACK couldn't reach the source (connection closed) — the actionable signal | `markProcessed(…, UNDELIVERED)` |
 | `not_owed` | no app-level ACK will be delivered: intake-`nacked`, or the Bot leg ended `rejected`/`failed` | `enqueueRejected` / `markRejected` / `markFailed` |
 
-`nacked` is distinct from the Bot-leg failures. `rejected`/`failed` rows have a
-`committed_at` (we successfully ACKed CA, then later failed downstream).
-`nacked` rows have `ack_outcome='not_owed'` with a non-AA code and no
-`committed_at` — they exist for forensics but were never told to the sender as
-committed.
+`nacked` is distinct from the Bot-leg failures: `rejected`/`failed` rows were
+committed (we ACKed CA, then later failed downstream), whereas `nacked` rows were
+NACKed at intake and never told to the sender as committed. The `state` column
+records that distinction directly — there is no separate `committed_at` column,
+since the durable write that triggers CA happens synchronously at intake and would
+always equal `received_at`. `nacked` rows carry `ack_outcome='not_owed'` with a
+non-AA code and exist for forensics only.
 
 The split is also what keeps the (future) Path-2 retry layer safe: it re-dispatches
 `failed` rows only, never `rejected` (can't help) and never `processed` +
@@ -346,9 +359,9 @@ The user requested `node:sqlite` specifically. It's the same C library, comparab
 
 ---
 
-## 6. Enhanced-mode ACK Deferral (`@medplum/hl7` changes)
+## 6. Enhanced-mode ACK Deferral (agent-side, no `@medplum/hl7` changes)
 
-### 6.1 Current behavior (to be changed)
+### 6.1 Library behavior we work around
 
 `packages/hl7/src/connection.ts:123-135` runs as a listener on `'message'`:
 
@@ -364,25 +377,18 @@ if (response) {
 }
 ```
 
-This fires synchronously, before any application code, every time the parser yields a message. There's no hook to defer it.
+This fires synchronously, before any application code, every time the parser yields a message. There's no hook to defer it. Rather than add a deferral flag to the library, the agent simply **does not give the durable-mode connection an `enhancedMode`** — the auto-send block above only runs when `enhancedMode` is set, so leaving it `undefined` suppresses the synchronous CA/AA entirely. The agent then sends the commit ACK itself, after the DB write.
 
-### 6.2 Proposed API
+### 6.2 Agent-side commit ACK API
 
-Add to `Hl7Connection`:
+The agent's `AgentHl7Channel` retains the real `enhancedMode` (exposed via `getEnhancedMode()`) even though the underlying `Hl7Connection` is left with none. `AgentHl7ChannelConnection` sends commit ACKs through two private helpers:
 
 ```ts
 /**
- * When true, the connection will NOT auto-send CA/AA on message receipt.
- * The application MUST call `ackCommit(message)` or `nackCommit(message, code, reason)`
- * after persisting the message. Only meaningful when enhancedMode is set.
- */
-setDeferredCommitAck(deferred: boolean): void;
-
-/**
  * Send the configured commit ACK (CA in standard, AA in aaMode) for `message`.
- * Idempotent: a second call for the same MSH.10 is a no-op.
+ * No-op when the channel has no enhancedMode.
  */
-ackCommit(message: Hl7Message): void;
+private sendCommitAck(message: Hl7Message): void;
 
 /**
  * Send a negative commit ACK, with an optional human-readable reason recorded
@@ -395,22 +401,22 @@ ackCommit(message: Hl7Message): void;
  * Retryable codes do NOT consume the already-acked slot, so the eventual
  * successful retry can still send its commit ACK.
  */
-nackCommit(message: Hl7Message, code: 'CR' | 'CE' | 'AR' | 'AE', reason?: string): void;
+private sendCommitNack(message: Hl7Message, code: NackCommitCode, reason?: string): void;
 ```
 
-Implementation:
+Implementation notes:
 
-1. The `'message'` listener checks `this.deferredCommitAck`. If true, it skips the auto-send block but still goes through the `pendingMessages` / `returnAck` logic for outbound `sendAndWait` paths (which is unaffected — that's an inbound vs. outbound concern).
-2. `ackCommit` / `nackCommit` reuse `event.message.buildAck({ ackCode, ... })` and call `this.send()`. They dispatch `Hl7EnhancedAckSentEvent` so existing observers (`channel.handleEnhancedAckSent` in `hl7.ts:267`) keep working.
-3. A short-lived `Set<string>` of "already CA-acked MSH.10s" prevents double-ACK if `ackCommit` is called twice (e.g. enqueue retry that internally idempotent-resolves).
+1. Because the durable-mode `Hl7Connection` carries no `enhancedMode`, its `'message'` listener never auto-sends; the outbound `sendAndWait` / `returnAck` paths are unaffected (that's an inbound vs. outbound concern).
+2. `sendCommitAck` / `sendCommitNack` build the ACK with the channel's real `enhancedMode` and call `connection.send()`.
+3. The agent only sends one commit ACK per message in the normal flow; the duplicate handling in §8 replays the prior stored ACK rather than re-acking, so no separate idempotency set is needed on the connection.
 
 ### 6.3 Backward compatibility
 
-`deferredCommitAck` defaults to `false`. All existing callers (and `enhanced=true` channels not yet opted into the durable queue) keep their current behavior. The agent opts in per channel only when `durableQueue` is enabled (see §7).
+Non-durable channels are unchanged: when `durableQueue` is off, the connection keeps its `enhancedMode` and the library's synchronous auto-ACK behaves exactly as today. The agent only takes over commit ACKs per channel when `durableQueue` is enabled (see §7).
 
 ### 6.4 aaMode subtlety
 
-In `enhancedMode=aaMode`, the sender expects an **AA** as the immediate ACK; there is no separate app-level AA that follows. With deferral on:
+In `enhancedMode=aaMode`, the sender expects an **AA** as the immediate ACK; there is no separate app-level AA that follows. With the agent owning the commit ACK:
 
 - On successful commit, send AA.
 - On a *storage* failure, send AE (Application Error) — the retryable code. The failure is transient (disk full, DB locked), so we want the sender to retransmit; because we never committed, the resend is accepted fresh. On a terminal *rejection* (duplicate), send AR — a hard reject the sender must not retry.
@@ -462,23 +468,23 @@ The runtime path replacing today's `AgentHl7ChannelConnection.handleMessage` (`h
 
 ```
 1. Hl7Server parses bytes off the wire.
-2. Hl7Connection fires 'message' (deferred CA mode → no auto-CA yet).
+2. Hl7Connection fires 'message' (durable mode → connection has no enhancedMode → no auto-CA yet).
 3. AgentHl7ChannelConnection.handleMessage:
    a. Parse MSH.10 (control ID), MSH.9 (type), MSH.13 (seq, if assignSeqNo).
    b. Generate callbackId = "Agent/<agentId>-<uuid>".
    c. queue.enqueueOrHandleDuplicate({...}) — synchronous SQLite call.
         - On unique-index conflict + duplicateBehavior=idempotent: load prior row,
-          replay its stored ACK to the source (if available) via connection.ackCommit
-          or send synthetic AA, do NOT re-insert, return early. No CA via the deferred
-          API needed — we're literally re-asserting the prior commit promise.
-        - On unique-index conflict + duplicateBehavior=reject: connection.nackCommit(
+          replay its stored ACK to the source (if available) via sendCommitAck
+          or send synthetic AA, do NOT re-insert, return early. We're literally
+          re-asserting the prior commit promise.
+        - On unique-index conflict + duplicateBehavior=reject: sendCommitNack(
           msg, 'CR', 'duplicate control id'); INSERT a `nacked` audit row; return.
-        - On other DB error: connection.nackCommit(msg, 'CE', errorMessage)
+        - On other DB error: sendCommitNack(msg, 'CE', errorMessage)
           (retryable — a storage error is transient, so the peer may retransmit);
           attempt INSERT of a `nacked` row best-effort (different DB handle session
           to avoid cascading on a transient error). Return.
-   d. On successful INSERT → connection.ackCommit(message). Source now holds a
-      durable CA. committed_at column set.
+   d. On successful INSERT → sendCommitAck(message). Source now holds a
+      durable CA (the row's received_at is the commit timestamp).
    e. Notify the channel's ChannelQueueWorker that work is available (in-memory wake
       signal, see §9).
 4. Worker picks it up serially (see §9).
@@ -488,11 +494,11 @@ Failure handling matrix:
 
 | Failure point | Source sees | Row state |
 |---|---|---|
-| Body parse fails before INSERT (no MSH.10) | `CR`/`AR` (nackCommit with 'malformed') in enhanced mode; nothing in standard mode (current behavior) | `nacked` (with `msg_control_id=NULL`, `last_error='unparseable'`) — best effort |
-| INSERT fails (disk full, permission, corrupted DB) | `CE`/`AE` (nackCommit with 'storage error') — retryable, so the peer can retransmit | best-effort `nacked` write to a separate journal log file (DB is presumed unwritable) |
-| Duplicate (reject mode) | `CR`/`AR` (nackCommit with 'duplicate') — terminal | `nacked` |
+| Body parse fails before INSERT (no MSH.10) | `CR`/`AR` (sendCommitNack with 'malformed') in enhanced mode; nothing in standard mode (current behavior) | `nacked` (with `msg_control_id=NULL`, `last_error='unparseable'`) — best effort |
+| INSERT fails (disk full, permission, corrupted DB) | `CE`/`AE` (sendCommitNack with 'storage error') — retryable, so the peer can retransmit | best-effort `nacked` write to a separate journal log file (DB is presumed unwritable) |
+| Duplicate (reject mode) | `CR`/`AR` (sendCommitNack with 'duplicate') — terminal | `nacked` |
 | Duplicate (idempotent mode) | prior stored ACK (or synthetic AA) | none (no new row) |
-| INSERT succeeds | `CA`/`AA` (ackCommit) | `queued` |
+| INSERT succeeds | `CA`/`AA` (sendCommitAck) | `queued` |
 
 ---
 
@@ -703,9 +709,6 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 - `packages/agent/src/queue/retention.test.ts` — retention/purge tests.
 
 **Modified:**
-- `packages/hl7/src/connection.ts` — add `setDeferredCommitAck`, `ackCommit`, `nackCommit`, internal `ackedControlIds: Set<string>` (sized-bounded, e.g. last 10k), suppress auto-CA when deferred.
-- `packages/hl7/src/connection.test.ts` — cover deferred mode, double-ack idempotency, AR/CR semantics in aaMode.
-- `packages/hl7/src/index.ts` — export new types.
 - `packages/agent/src/app.ts` —
   - On construction, open `DurableQueue` if `durableQueue` setting is on.
   - In WS message handler, route `agent:transmit:response` through the worker first (§9.1).
@@ -713,9 +716,10 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
   - In `reloadConfig`, propagate `queueDbPath`, retention settings, etc.
 - `packages/agent/src/hl7.ts` —
   - `AgentHl7Channel.start()` instantiates a `ChannelQueueWorker`; `stop()` drains it.
-  - `configureHl7ServerAndConnections()` calls `setDeferredCommitAck(true)` on each `Hl7Connection` when `app.queue` exists.
+  - `configureHl7ServerAndConnections()` leaves each `Hl7Connection`'s `enhancedMode` unset (via `setEnhancedMode(undefined)`) when `app.queue` exists, suppressing the library's auto-ACK; the channel keeps the real mode for `getEnhancedMode()`.
+  - Adds the private `sendCommitAck` / `sendCommitNack` helpers (commit-ACK code `NackCommitCode`).
   - Parse new `duplicateBehavior` query param (default `idempotent`).
-  - `AgentHl7ChannelConnection.handleMessage()` becomes the §8 flow: persist → ackCommit → notify worker. `sendToRemote()` returns `boolean` so the worker can detect failure.
+  - `AgentHl7ChannelConnection.handleMessage()` becomes the §8 flow: persist → sendCommitAck → notify worker. `sendToRemote()` returns `boolean` so the worker can detect failure.
 - `packages/agent/src/channel.ts` (`BaseChannel`) — extend interface with `sendToRemote(msg): boolean` (returns success).
 - `packages/agent/package.json` — no new deps (Node built-in). Ensure SEA bootstrap passes `--experimental-sqlite` on Node 22.
 - `packages/agent/esbuild.mjs` — mark `node:sqlite` as external (it is by default for `node:` prefix).
@@ -752,10 +756,9 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 - Size-based cap forces deletion past time window, but respects the errored floor for `rejected`/`failed`/`nacked` and `processed`+`undelivered`.
 - Sweep is no-op when below thresholds.
 
-`@medplum/hl7 connection.test.ts`:
-- Deferred mode: auto-CA suppressed; `ackCommit` sends CA; `nackCommit` sends CR.
-- Double `ackCommit` for same MSH.10 → only one ACK on wire.
-- aaMode + deferred: `ackCommit` sends AA, `nackCommit` sends AR.
+`hl7-connection.test.ts` (agent-side commit ACK):
+- Durable mode (connection enhancedMode unset): library auto-CA suppressed; `sendCommitAck` sends CA; `sendCommitNack` sends CR.
+- aaMode: `sendCommitAck` sends AA, `sendCommitNack` sends AR.
 
 ### 14.2 Integration tests
 

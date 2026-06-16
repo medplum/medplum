@@ -705,7 +705,10 @@ export class App {
     // sit as a follower until the lease is free, then take over.
     if (!this.leaseManager) {
       this.leaseManager = new QueueLeaseManager({ queue: this.durableQueue, log: this.log });
-      this.leaseManager.start(() => this.onBecameQueueLeader());
+      this.leaseManager.start(
+        () => this.onBecameQueueLeader(),
+        () => this.onLostQueueLeadership()
+      );
     }
 
     // (Re)start the retention sweeper with the latest settings. The sweeper runs
@@ -759,6 +762,21 @@ export class App {
     for (const channel of this.channels.values()) {
       if (channel instanceof AgentHl7Channel) {
         channel.onBecameQueueLeader();
+      }
+    }
+  }
+
+  /**
+   * Called by the {@link QueueLeaseManager} when a heartbeat discovers a peer
+   * stole the lease. Stops every channel worker so the demoted process stops
+   * claiming and dispatching rows from the now peer-owned queue. A later
+   * re-acquisition fires {@link onBecameQueueLeader} again, which restarts the
+   * workers.
+   */
+  private onLostQueueLeadership(): void {
+    for (const channel of this.channels.values()) {
+      if (channel instanceof AgentHl7Channel) {
+        channel.onLostQueueLeadership();
       }
     }
   }

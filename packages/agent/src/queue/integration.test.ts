@@ -5,7 +5,7 @@
  * End-to-end integration tests for the durable inbound queue.
  *
  * These spin up a full {@link App} (with a mocked Medplum WS server) and a real
- * HL7 client, then drive scenarios from DURABLE_QUEUE_PLAN.md §14.2. The unit
+ * HL7 client, then drive scenarios from DURABLE_QUEUE_ARCHITECTURE.md §14.2. The unit
  * tests in `durable-queue.test.ts` / `worker.test.ts` / `retention.test.ts`
  * cover the individual components; this file is about the contract those
  * components implement *together* — specifically, that the durable CA promise
@@ -154,6 +154,70 @@ describe('Durable queue integration', () => {
     expect(counts.rejected).toBe(0);
     // The happy path delivered the ACK back to the source.
     expect(queue.findSeenByControlId('dq-test', 'INT_001')?.ackOutcome).toBe('delivered');
+
+    await client.close();
+    await app.stop();
+  });
+
+  // Regression: in durable aaMode the source's only ACK is the commit AA sent at
+  // intake — the worker suppresses the Bot's app-level AA (it never goes through
+  // sendToRemote, see applyServerResponse). So the pending RTT entry recorded at
+  // intake (handleMessage → recordMessageSent) MUST be balanced by the commit ACK
+  // (handleMessageDurable → recordImmediateAck). Without that, EVERY committed
+  // aaMode message lingers in the pending-RTT map and is eventually GC'd with a
+  // "never got response" warning, and getPendingCount() never returns to 0.
+  test('aaMode happy path: the commit AA balances the pending RTT entry (no dangling pending message)', async () => {
+    startMockServer((cmd) => {
+      // Reply 200 with an AA. In aaMode this app-level AA is suppressed at the
+      // worker and never forwarded to the source, so it can't balance the entry —
+      // the commit AA from intake is the only thing that can.
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: ack.toString(),
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=aa',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+
+    const client = new Hl7Client({ host: 'localhost', port });
+    const response = await client.sendAndWait(TEST_MSG('INT_AA'), {
+      // In aaMode the first (and only) ACK to the source is the commit AA.
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(response.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
+
+    // The worker processes the row (and suppresses the Bot's app-level AA).
+    const queue = app.getDurableQueue() as DurableQueue;
+    await waitForRow(queue, (counts) => counts.processed === 1, 3000);
+
+    // The commit AA balanced the entry recorded at intake: nothing dangles in the
+    // pending-RTT map, so no message will be GC'd with a "never got response"
+    // warning. (Pre-fix this stayed at 1 forever.)
+    const channel = app.channels.get('dq-test') as unknown as AgentHl7Channel;
+    expect(channel.stats.getPendingCount()).toBe(0);
 
     await client.close();
     await app.stop();
@@ -622,6 +686,109 @@ describe('Durable queue integration', () => {
     await app.stop();
   });
 
+  test('assignSeqNo: a content-mismatch reject records the inbound MSH.13 on its nacked audit row, not a fresh candidate', async () => {
+    // No reply, so the first row stays queued/processing (still a "seen" prior row).
+    startMockServer(() => undefined);
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&assignSeqNo=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    // First MM commits and is assigned sequence 0.
+    const first = await client.sendAndWait(TEST_MSG('MM'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(first.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    // Same control ID, different PID → a different message reusing a committed ID.
+    // It carries its own MSH.13 (77) so we can prove the audit row records the
+    // *inbound* sequence field, never a freshly-peeked candidate (which would be 1).
+    const mismatched = Hl7Message.parse(
+      'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MM|P|2.5|77\r' +
+        'PID|||PATID9999^5^M11||SMITH^JANE^B||19700101|F\r'
+    );
+    const rejected = await client.sendAndWait(mismatched, { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(rejected.getSegment('MSA')?.getField(1)?.toString()).toBe('CR');
+
+    const queue = app.getDurableQueue() as DurableQueue;
+    // The nacked audit row carries the inbound MSH.13 (77), NOT a fresh candidate (1).
+    expect(nackedSeqNo(queue, 'dq-test', 'MM')).toBe(77);
+    // The committed original keeps sequence 0, untouched by the collision.
+    expect(queue.findSeenByControlId('dq-test', 'MM')?.seqNo).toBe(0);
+
+    // The rejected collision consumed no sequence number: the next fresh message
+    // gets sequence 1, not 2.
+    await client.sendAndWait(TEST_MSG('FRESH'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(queue.findSeenByControlId('dq-test', 'FRESH')?.seqNo).toBe(1);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('assignSeqNo: a storage error records the peeked candidate on its nacked audit row', async () => {
+    startMockServer(() => undefined);
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&assignSeqNo=true',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    // Fail the *insert* of X's queued row — not the peek/stamp that precedes it —
+    // so the candidate sequence 0 was assigned into MSH.13 before the write failed.
+    // A BEFORE INSERT trigger is a faithful stand-in for a disk/IO error: it aborts
+    // the real INSERT at exactly the point a storage failure would, after assignment.
+    // (The audit row is written with state 'nacked', so the trigger skips it.)
+    queue.getDb().exec(`
+      CREATE TEMP TRIGGER fail_insert_x BEFORE INSERT ON inbound_hl7_messages
+      WHEN NEW.msg_control_id = 'X' AND NEW.state = 'queued'
+      BEGIN SELECT RAISE(ABORT, 'simulated disk full'); END;
+    `);
+
+    const failed = await client.sendAndWait(TEST_MSG('X'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    // A storage error is transient → CE (the retryable commit code), not a reject.
+    expect(failed.getSegment('MSA')?.getField(1)?.toString()).toBe('CE');
+
+    // The audit row records the candidate (0) that was peeked + stamped into MSH.13
+    // before the insert failed — even though the counter itself never advanced.
+    expect(nackedSeqNo(queue, 'dq-test', 'X')).toBe(0);
+
+    // Drop the trigger so the next message can be inserted normally.
+    queue.getDb().exec('DROP TRIGGER fail_insert_x');
+
+    // The counter never advanced: the next message reuses sequence 0.
+    await client.sendAndWait(TEST_MSG('Y'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    expect(queue.findSeenByControlId('dq-test', 'Y')?.seqNo).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
   test('storage error is retryable by the peer: a CE retransmit is accepted fresh and processed', async () => {
     // A successfully-enqueued message reaches `processed` (200 + AA).
     startMockServer((cmd) => {
@@ -804,7 +971,7 @@ describe('Durable queue integration', () => {
           } satisfies AgentTransmitResponse;
           // Defer the server reply until the test has closed the source
           // connection, so the worker's app-level ACK lands on a dead socket.
-          void replyGate.then(() => socket.send(Buffer.from(JSON.stringify(reply))));
+          replyGate.then(() => socket.send(Buffer.from(JSON.stringify(reply)))).catch(() => undefined);
         }
       });
     });
@@ -944,6 +1111,181 @@ describe('Durable queue integration', () => {
     expect(recovered?.ackOutcome).toBe('pending');
     await app.stop();
   });
+
+  test('non-UTF-8 channel encoding (iso-8859-1): message is accepted, CA sent, and forwarded text preserved', async () => {
+    // Regression: the durable path used to re-encode via `Buffer.from(text,
+    // channelEncoding)`. For an encoding Node's Buffer doesn't natively know
+    // (iso-8859-1, windows-1252, ...) that throws ERR_UNKNOWN_ENCODING, so the
+    // message was dropped at intake with NO ACK and the sender retransmitted
+    // forever. The forwarded body must equal the decoded HL7 text — same as the
+    // legacy path — regardless of the wire encoding.
+    let forwardedBody: string | undefined;
+    startMockServer((cmd) => {
+      forwardedBody = cmd.body;
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: ack.toString(),
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&encoding=iso-8859-1',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+
+    // A Latin-1 name (José) — a byte iso-8859-1 represents but UTF-8 encodes
+    // differently — to prove the decode/forward round-trips the text, not bytes.
+    const msg = Hl7Message.parse(
+      `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|ISO_001|P|2.5\r` +
+        'PID|||PATID1234^5^M11||JOSÉ^WILLIAM^A^III||19610615|M\r'
+    );
+    // The client must speak the same wire encoding as the channel.
+    const client = new Hl7Client({ host: 'localhost', port, encoding: 'iso-8859-1' });
+    const response = await client.sendAndWait(msg, {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    // Pre-fix this never arrived — intake threw and dropped the message.
+    expect(response.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    await waitForRow(queue, (counts) => counts.processed === 1, 3000);
+    // The forwarded body is the decoded HL7 text with the accented name intact.
+    expect(forwardedBody).toContain('JOSÉ');
+    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, failed: 0, rejected: 0, nacked: 0 });
+
+    await client.close();
+    await app.stop();
+  });
+
+  // The durable CA promise must hold even under a concurrent shutdown: if a
+  // source is *spamming* a channel at the exact moment App.stop() tears the
+  // agent down, then for every message the source received a commit ACK (CA)
+  // for, a durable row MUST survive the shutdown. The agent commits (enqueue
+  // transaction) BEFORE sending the CA (hl7.ts: sendCommitAck fires only after
+  // enqueue returns), so a CA the source observed is a promise the row is
+  // persisted — and that promise can't be broken by stop() racing the intake,
+  // the server.stop(), or the DB close. We never assert *processed* here: an
+  // in-flight dispatch is rejected → failed on stop by design. The contract is
+  // "no acknowledged message is lost," not "every message is delivered."
+  test('spam-while-stopping: every CA the source received survives App.stop()', async () => {
+    // Reply 200/AA so any row the worker manages to claim before drain processes
+    // cleanly — but most rows won't be reached before stop; that's the point.
+    startMockServer((cmd) => {
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: ack.toString(),
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true',
+    });
+    const queuePath = join(dir, 'queue.sqlite');
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: queuePath },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+
+    // Control IDs the source got a CA for — i.e. the agent *promised* are committed.
+    const committed: string[] = [];
+    const client = new Hl7Client({ host: 'localhost', port });
+    let seq = 0;
+
+    // A tight loop hammering the channel. It only stops when the connection drops
+    // (the server is being torn down) — i.e. it keeps firing straight through the
+    // shutdown window so messages are genuinely in flight when stop() lands.
+    const spamLoop = (async () => {
+      for (;;) {
+        const cid = `SPAM_${seq++}`;
+        let response;
+        try {
+          response = await client.sendAndWait(TEST_MSG(cid), {
+            // FIRST ACK in enhanced mode is the deferred commit CA.
+            returnAck: ReturnAckCategory.FIRST,
+            timeoutMs: 2000,
+          });
+        } catch {
+          // Connection closed / refused mid-shutdown: this message was NOT
+          // acknowledged, so the agent made no commit promise about it. Expected.
+          return;
+        }
+        if (response.getSegment('MSA')?.getField(1)?.toString() === 'CA') {
+          committed.push(cid);
+        }
+      }
+    })();
+
+    // Let a burst of messages get committed, then pull the plug while the loop is
+    // still firing — stop() now races live intake, drain, and DB teardown.
+    const startWait = Date.now();
+    while (committed.length < 5 && Date.now() - startWait < 5000) {
+      await sleep(10);
+    }
+    expect(committed.length).toBeGreaterThanOrEqual(5);
+
+    await app.stop(); // concurrent with spamLoop still sending
+    await spamLoop; // resolves once the source's connection drops
+    await client.close();
+
+    // App.stop() closed the queue DB; reopen the same file to inspect what
+    // survived. (No App.start(), so recoverOnStartup does NOT run — we want the
+    // raw post-shutdown state, not the post-recovery state.)
+    const reopened = DurableQueue.open({
+      path: queuePath,
+      log: console as unknown as Parameters<typeof DurableQueue.open>[0]['log'],
+    });
+    try {
+      // THE INVARIANT: every CA the source observed has a durable row. A missing
+      // one would be a dishonest CA — the agent claimed a commit it then lost.
+      const missing = committed.filter((cid) => !reopened.findSeenByControlId('dq-test', cid));
+      expect(missing).toEqual([]);
+
+      // Accounting: every acknowledged message is in some real state, none vanished.
+      const counts = reopened.countByState();
+      const accounted = counts.processed + counts.queued + counts.processing + counts.failed;
+      expect(accounted).toBeGreaterThanOrEqual(committed.length);
+      // We never NAK'd or rejected anything on the happy intake path.
+      expect(counts.nacked).toBe(0);
+      expect(counts.rejected).toBe(0);
+    } finally {
+      reopened.close();
+    }
+  });
 });
 
 /**
@@ -968,4 +1310,29 @@ async function waitForRow(
   throw new Error(
     `waitForRow: predicate not satisfied after ${timeoutMs}ms; counts=${JSON.stringify(queue.countByState())}`
   );
+}
+
+/**
+ * Reads the `seq_no` of the most recent `nacked` audit row for a control ID.
+ * {@link DurableQueue.findSeenByControlId} deliberately excludes `nacked` rows,
+ * so audit-row assertions go straight through the raw handle.
+ * @param queue - The queue to read from.
+ * @param channelName - Channel the row belongs to.
+ * @param msgControlId - MSH.10 to look up.
+ * @returns The audit row's `seq_no` (which may be SQL NULL → `null`).
+ * @throws If no `nacked` row exists for the control ID.
+ */
+function nackedSeqNo(queue: DurableQueue, channelName: string, msgControlId: string): number | null {
+  const row = queue
+    .getDb()
+    .prepare(
+      `SELECT seq_no FROM inbound_hl7_messages
+        WHERE channel_name = ? AND msg_control_id = ? AND state = 'nacked'
+        ORDER BY id DESC LIMIT 1`
+    )
+    .get(channelName, msgControlId) as { seq_no: number | null } | undefined;
+  if (!row) {
+    throw new Error(`nackedSeqNo: no nacked row for ${channelName}/${msgControlId}`);
+  }
+  return row.seq_no;
 }

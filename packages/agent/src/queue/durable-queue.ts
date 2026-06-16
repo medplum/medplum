@@ -5,6 +5,14 @@ import type { ILogger } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
+import {
+  CLAIM_NEXT,
+  FIND_BY_CALLBACK,
+  FIND_SEEN_BY_CONTROL_ID,
+  LIST_QUEUED_IDS_FOR_CHANNEL,
+  RECOVER_PROCESSING,
+  RECOVER_PROCESSING_GUARANTEED,
+} from './queries';
 import { runMigrations } from './schema';
 import type {
   AckOutcome,
@@ -15,11 +23,7 @@ import type {
   MessageState,
   QueueErrorCode,
 } from './types';
-import {
-  AckOutcome as AckOutcomeValues,
-  MessageState as MessageStateValues,
-  QueueErrorCode as QueueErrorCodeValues,
-} from './types';
+import { AckOutcome as AckOutcomeValues, MessageState as MessageStateValues } from './types';
 
 export interface DurableQueueOptions {
   /** Filesystem path to the SQLite DB file. */
@@ -43,7 +47,7 @@ export interface ChannelDepth {
  *
  * One instance owns one synchronous `node:sqlite` connection plus a bag of
  * prepared statements covering the hot path. All channel intake and worker
- * dispatch goes through this object. See DURABLE_QUEUE_PLAN.md §3, §5.
+ * dispatch goes through this object. See DURABLE_QUEUE_ARCHITECTURE.md §3, §5.
  *
  * The class is designed to be opened once at agent startup, used for the
  * lifetime of the process, and closed exactly once during {@link DurableQueue.close}.
@@ -85,6 +89,7 @@ export class DurableQueue {
   private readonly heartbeatLeaseStmt: StatementSync;
   private readonly releaseLeaseStmt: StatementSync;
   private readonly getLeaseStmt: StatementSync;
+  private readonly checkpointStmt: StatementSync;
 
   constructor(db: DatabaseSync, options: DurableQueueOptions) {
     this.db = db;
@@ -113,9 +118,9 @@ export class DurableQueue {
       INSERT INTO inbound_hl7_messages (
         channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
         enhanced_mode, state, attempt_count, callback_id,
-        seq_no, received_at, committed_at, guaranteed_delivery
+        seq_no, received_at, guaranteed_delivery
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?
       )
     `);
 
@@ -123,9 +128,9 @@ export class DurableQueue {
       INSERT INTO inbound_hl7_messages (
         channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
         enhanced_mode, state, attempt_count, callback_id,
-        ack_outcome, last_error, seq_no, received_at
+        ack_outcome, last_error, error_code, seq_no, received_at
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 'not_owed', ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 'not_owed', ?, ?, ?, ?
       )
     `);
 
@@ -148,45 +153,18 @@ export class DurableQueue {
     // control IDs, so they're not a "real" prior delivery to dedupe against).
     // id DESC returns the most recent in the unlikely event legacy duplicates
     // predate the dedupe-on-intake logic.
-    this.findSeenByControlIdStmt = this.db.prepare(`
-      SELECT * FROM inbound_hl7_messages
-       WHERE channel_name = ?
-         AND msg_control_id = ?
-         AND state != 'nacked'
-       ORDER BY id DESC
-       LIMIT 1
-    `);
+    this.findSeenByControlIdStmt = this.db.prepare(FIND_SEEN_BY_CONTROL_ID);
 
     // FIFO claim: take the lowest-id queued row for this channel, flip it to
     // processing in the same statement so concurrent workers can't double-claim.
     // node:sqlite is synchronous and the agent is single-process, so RETURNING is
-    // enough — no advisory locking needed.
-    //
-    // The next_attempt_at predicate sits on the OUTER update, not the inner
-    // select, on purpose: a head row waiting out its retry backoff blocks the
-    // whole channel (claim returns null) instead of letting younger rows skip
-    // ahead. Head-of-line blocking is what preserves the per-channel FIFO
-    // ordering guarantee (§1.1) across retries. The claim also clears
-    // next_attempt_at so a re-claimed retry row carries no stale schedule.
-    this.claimNextStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = 'processing',
-             processing_started_at = ?,
-             attempt_count = attempt_count + 1,
-             next_attempt_at = NULL
-       WHERE id = (
-         SELECT id FROM inbound_hl7_messages
-          WHERE channel_name = ? AND state = 'queued'
-          ORDER BY id ASC
-          LIMIT 1
-       )
-       AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
-       RETURNING *
-    `);
+    // enough — no advisory locking needed. The retry-backoff predicate lives on
+    // the OUTER update (see CLAIM_NEXT) so a head row waiting out its backoff
+    // blocks the channel rather than letting younger rows skip ahead — that
+    // head-of-line blocking is what preserves per-channel FIFO across retries.
+    this.claimNextStmt = this.db.prepare(CLAIM_NEXT);
 
-    this.findByCallbackStmt = this.db.prepare(`
-      SELECT * FROM inbound_hl7_messages WHERE callback_id = ?
-    `);
+    this.findByCallbackStmt = this.db.prepare(FIND_BY_CALLBACK);
 
     this.findByIdStmt = this.db.prepare(`
       SELECT * FROM inbound_hl7_messages WHERE id = ?
@@ -264,35 +242,16 @@ export class DurableQueue {
     // source leg's ack_outcome is left as-is (`pending`): we genuinely don't know
     // whether an ACK was owed. Non-guaranteed channels stop here: `interrupted`
     // is an ambiguous code, so it is review-only, never silently auto-retried.
-    this.recoverProcessingStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = 'failed',
-             errored_at = ?,
-             last_error = COALESCE(last_error, 'interrupted: process restart while processing'),
-             error_code = COALESCE(error_code, '${QueueErrorCodeValues.Interrupted}')
-       WHERE state = 'processing' AND guaranteed_delivery = 0
-    `);
+    this.recoverProcessingStmt = this.db.prepare(RECOVER_PROCESSING);
 
     // Guaranteed-delivery counterpart of the recovery sweep: the operator asked
     // us to keep trying until upstream gives a definitive answer, so an
     // interrupted row goes straight back to the head of its channel's FIFO
     // (duplication risk accepted) instead of parking in `failed`. next_attempt_at
     // is cleared so it is immediately claimable on restart.
-    this.recoverProcessingGuaranteedStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = 'queued',
-             processing_started_at = NULL,
-             next_attempt_at = NULL,
-             last_error = 'interrupted: process restart while processing',
-             error_code = '${QueueErrorCodeValues.Interrupted}'
-       WHERE state = 'processing' AND guaranteed_delivery = 1
-    `);
+    this.recoverProcessingGuaranteedStmt = this.db.prepare(RECOVER_PROCESSING_GUARANTEED);
 
-    this.listQueuedIdsForChannelStmt = this.db.prepare(`
-      SELECT id FROM inbound_hl7_messages
-       WHERE channel_name = ? AND state = 'queued'
-       ORDER BY id ASC
-    `);
+    this.listQueuedIdsForChannelStmt = this.db.prepare(LIST_QUEUED_IDS_FOR_CHANNEL);
 
     this.countByStateStmt = this.db.prepare(`
       SELECT state, COUNT(*) AS n FROM inbound_hl7_messages GROUP BY state
@@ -333,6 +292,11 @@ export class DurableQueue {
     `);
 
     this.getLeaseStmt = this.db.prepare(`SELECT holder, expires_at FROM _lease WHERE id = 1`);
+
+    // Prepared once like every other statement — checkpointWal() runs on every
+    // heartbeat tick and every retention sweep, so re-compiling it per call would
+    // leak GC-finalised statement objects proportional to heartbeat frequency.
+    this.checkpointStmt = this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)');
   }
 
   /**
@@ -391,7 +355,7 @@ export class DurableQueue {
    */
   checkpointWal(): boolean {
     try {
-      const row = this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get() as { busy: number } | undefined;
+      const row = this.checkpointStmt.get() as { busy: number } | undefined;
       if (row?.busy) {
         return false;
       }
@@ -434,25 +398,45 @@ export class DurableQueue {
    * msg_control_id)` — in `queued`, `processing`, `processed`, `rejected`, or
    * `failed` — we don't insert; we surface a `duplicate` result carrying that row so the
    * caller can compare bodies and decide between replaying the prior ACK and
-   * rejecting the collision (§8). The partial unique index remains as a
-   * last-resort guard against an active-window race (not expected in the
-   * single-process agent).
+   * rejecting the collision (§8). This SELECT is the single dedup authority on the
+   * intake path: the partial unique index only covers `queued`/`processing`, so it
+   * can't recognize a retransmit of an already-`processed`/`rejected`/`failed` row —
+   * it remains only as a last-resort guard against an active-window race (not
+   * expected in the single-process agent).
    * @param input - Fields to persist on the new row.
    * @param options - Optional behavior.
-   * @param options.commitSeqNo - When set, advances the channel's persisted
-   *   sequence counter to this value in the SAME transaction as the insert, so a
-   *   crash can never leave the row committed while the counter lags (which would
-   *   reuse the sequence number on restart). Pass the value just peeked via
-   *   {@link peekNextSeqNo} and stamped into the message.
+   * @param options.assignSeqNo - When provided, enqueue assigns the channel's next
+   *   sequence number — but only after the duplicate check passes, so a retransmit
+   *   never consumes one. It peeks the persisted counter (a non-consuming read),
+   *   calls this callback with the candidate so the caller can stamp it into MSH.13
+   *   and return the finalized bytes to persist, then advances the counter in the
+   *   SAME transaction as the insert (so a crash can't store the row while leaving
+   *   the counter behind, which would reuse the number on restart). On a duplicate
+   *   the callback is never invoked.
    * @returns Either the inserted row, or the prior row that owns the MSH.10.
    */
-  enqueue(input: EnqueueInput, options?: { commitSeqNo?: number }): EnqueueResult {
+  enqueue(input: EnqueueInput, options?: { assignSeqNo?: (candidate: number) => Buffer }): EnqueueResult {
     if (input.msgControlId) {
       const existing = this.findSeenByControlId(input.channelName, input.msgControlId);
       if (existing) {
         return { kind: 'duplicate', existing };
       }
     }
+
+    // Not a duplicate — only now assign the sequence number (if configured). Peek
+    // is non-consuming; the counter is advanced (commitSeqNo) inside the insert
+    // transaction below, so a failed insert burns no number and a duplicate (above)
+    // never reaches here.
+    let finalizedMessage = input.finalizedMessage;
+    let seqNo = input.seqNo;
+    let seqNoToCommit: number | undefined;
+    if (options?.assignSeqNo) {
+      const candidate = this.peekNextSeqNo(input.channelName);
+      finalizedMessage = options.assignSeqNo(candidate);
+      seqNo = candidate;
+      seqNoToCommit = candidate;
+    }
+
     try {
       const runInsert = (): number => {
         const info = this.enqueueStmt.run(
@@ -461,12 +445,11 @@ export class DurableQueue {
           input.msgControlId,
           input.msgType,
           toBlob(input.originalMessage),
-          toBlob(input.finalizedMessage),
+          toBlob(finalizedMessage),
           input.encoding,
           input.enhancedMode,
           input.callbackId,
-          input.seqNo,
-          input.receivedAt,
+          seqNo,
           input.receivedAt,
           input.guaranteedDelivery ? 1 : 0
         );
@@ -474,12 +457,12 @@ export class DurableQueue {
       };
 
       let id: number;
-      if (options?.commitSeqNo !== undefined) {
+      if (seqNoToCommit !== undefined) {
         // Atomically insert the row and advance the sequence counter.
         this.db.exec('BEGIN');
         try {
           id = runInsert();
-          this.commitSeqNo(input.channelName, options.commitSeqNo);
+          this.commitSeqNo(input.channelName, seqNoToCommit);
           this.db.exec('COMMIT');
         } catch (txErr) {
           this.db.exec('ROLLBACK');
@@ -509,7 +492,7 @@ export class DurableQueue {
    * Inserts an audit row in the `nacked` terminal state — used when intake
    * rejected the message (duplicate, malformed) but we still want a forensics
    * record. Failure to write this is non-fatal; the caller is expected to log.
-   * @param input - Fields to persist plus the `lastError` describing why we rejected.
+   * @param input - Fields to persist plus the `lastError`/`errorCode` describing why we rejected.
    * @returns The newly inserted audit row, or null if even the audit insert failed.
    */
   enqueueRejected(input: EnqueueRejectedInput): InboundRow | null {
@@ -525,6 +508,7 @@ export class DurableQueue {
         input.enhancedMode,
         input.callbackId,
         input.lastError,
+        input.errorCode,
         input.seqNo,
         input.receivedAt
       );
@@ -901,7 +885,6 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     nextAttemptAt: (raw.next_attempt_at as number | null) ?? null,
     seqNo: (raw.seq_no as number | null) ?? null,
     receivedAt: raw.received_at as number,
-    committedAt: (raw.committed_at as number | null) ?? null,
     processingStartedAt: (raw.processing_started_at as number | null) ?? null,
     processedAt: (raw.processed_at as number | null) ?? null,
     erroredAt: (raw.errored_at as number | null) ?? null,

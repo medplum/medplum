@@ -34,6 +34,7 @@ import {
   AgentHl7ChannelConnection,
   APP_LEVEL_ACK_CODES,
   APP_LEVEL_ACK_MODES,
+  describeAckCode,
   parseAppLevelAckMode,
   parseEnhancedMode,
   resolveMaxConcurrentPerQueue,
@@ -3137,6 +3138,27 @@ describe('resolveMaxConcurrentPerQueue', () => {
   });
 });
 
+describe('describeAckCode', () => {
+  test('labels the positive commit/app ACK codes', () => {
+    expect(describeAckCode('CA')).toBe('Commit ACK (CA)');
+    expect(describeAckCode('AA')).toBe('App ACK (AA)');
+  });
+
+  // Regression: the enhanced-ACK-sent log used to treat anything that wasn't
+  // 'CA' as "Immediate ACK (AA)", so every NACK (CE/CR/AE/AR) was mislabeled.
+  test('labels the NACK codes distinctly instead of falling through to AA', () => {
+    expect(describeAckCode('CE')).toBe('Commit Error (CE)');
+    expect(describeAckCode('CR')).toBe('Commit Reject (CR)');
+    expect(describeAckCode('AE')).toBe('App Error (AE)');
+    expect(describeAckCode('AR')).toBe('App Reject (AR)');
+  });
+
+  test('falls back gracefully for unknown or missing codes', () => {
+    expect(describeAckCode('ZZ')).toBe('ACK (ZZ)');
+    expect(describeAckCode(undefined)).toBe('ACK (unknown)');
+  });
+});
+
 describe('shouldSendAppLevelAck', () => {
   test.each(APP_LEVEL_ACK_CODES)('non enhanced mode always returns true', (ackCode) => {
     expect(
@@ -3296,7 +3318,7 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
     await connection.close();
   });
 
-  test('logs Immediate ACK (AA) when enhanced ACK with AA is sent', async () => {
+  test('logs App ACK (AA) when enhanced ACK with AA is sent', async () => {
     const { channel, channelLog } = createTestChannelWithMockLogger('mllp://localhost:57201?enhanced=aa');
     const mockConnection = createMockHl7Connection();
 
@@ -3310,7 +3332,25 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
     const event = new Hl7EnhancedAckSentEvent(mockConnection, ackMessage);
     mockConnection.dispatchEvent(event);
 
-    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent Immediate ACK (AA) -- ID: MSG00001]'));
+    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent App ACK (AA) -- ID: MSG00001]'));
+    await connection.close();
+  });
+
+  // Regression: NACK codes used to fall through to the "Immediate ACK (AA)" label.
+  test.each([
+    ['CE', 'Commit Error (CE)'],
+    ['CR', 'Commit Reject (CR)'],
+    ['AE', 'App Error (AE)'],
+    ['AR', 'App Reject (AR)'],
+  ])('logs %s as %s instead of mislabeling it as AA', async (ackCode, label) => {
+    const { channel, channelLog } = createTestChannelWithMockLogger('mllp://localhost:57203?enhanced=true');
+    const mockConnection = createMockHl7Connection();
+    const connection = new AgentHl7ChannelConnection(channel, mockConnection);
+
+    const nackMessage = BASE_MESSAGE.buildAck({ ackCode: ackCode as 'CE' | 'CR' | 'AE' | 'AR' });
+    mockConnection.dispatchEvent(new Hl7EnhancedAckSentEvent(mockConnection, nackMessage));
+
+    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining(`[Sent ${label} -- ID: MSG00001]`));
     await connection.close();
   });
 

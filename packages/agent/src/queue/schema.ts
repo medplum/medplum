@@ -10,7 +10,7 @@ import type { DatabaseSync } from 'node:sqlite';
  * `_schema` row that records its version. Once shipped, a migration is never
  * edited in place — append a new version instead.
  *
- * See DURABLE_QUEUE_PLAN.md §3.2.
+ * See DURABLE_QUEUE_ARCHITECTURE.md §3.2.
  */
 export interface Migration {
   version: number;
@@ -64,7 +64,6 @@ export const MIGRATIONS: readonly Migration[] = [
         guaranteed_delivery   INTEGER NOT NULL DEFAULT 0,
         seq_no                INTEGER,
         received_at           INTEGER NOT NULL,
-        committed_at          INTEGER,
         processing_started_at INTEGER,
         processed_at          INTEGER,
         errored_at            INTEGER
@@ -73,6 +72,14 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_inbound_channel_state_id
         ON inbound_hl7_messages (channel_name, state, id);
 
+      -- Also serves the retention phase-3 sweep: its (state IN ... OR ...)
+      -- predicate resolves to a MULTI-INDEX OR over this index's leading state
+      -- column, so the sweep filters by index rather than full-scanning. A
+      -- dedicated COALESCE(errored_at, processed_at) expression index was
+      -- evaluated to also satisfy phase 3's ORDER BY, but SQLite's partial-index
+      -- prover can't match that disjunctive predicate (so a partial index goes
+      -- unused), and a non-partial one would key every queued row as NULL and tax
+      -- the hot intake path -- not worth it for an hourly, size-gated sweep.
       CREATE INDEX IF NOT EXISTS idx_inbound_state_processed_at
         ON inbound_hl7_messages (state, processed_at);
 
@@ -80,6 +87,17 @@ export const MIGRATIONS: readonly Migration[] = [
         ON inbound_hl7_messages (channel_name, msg_control_id)
         WHERE msg_control_id IS NOT NULL
           AND state IN ('queued', 'processing');
+
+      -- Intake dedup reads the most recent prior row for a (channel, control_id)
+      -- across ALL non-nacked states (uq_inbound_dup_active only covers the
+      -- active window). This runs once per inbound message that carries an
+      -- MSH.10, so without it the lookup scans every row for the channel. The
+      -- trailing id makes ORDER BY id DESC LIMIT 1 a reverse index seek; the
+      -- partial predicate matches the query so there's no residual recheck.
+      CREATE INDEX IF NOT EXISTS idx_inbound_dup_lookup
+        ON inbound_hl7_messages (channel_name, msg_control_id, id)
+        WHERE msg_control_id IS NOT NULL
+          AND state != 'nacked';
 
       CREATE UNIQUE INDEX IF NOT EXISTS uq_inbound_callback
         ON inbound_hl7_messages (callback_id);

@@ -4,6 +4,7 @@
 import type { ILogger } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { DurableQueue } from './durable-queue';
+import { RETENTION_PHASE1_DELETE, RETENTION_PHASE2_DELETE, RETENTION_PHASE3_DELETE } from './queries';
 
 /** Default retention window for `processed` rows. */
 export const DEFAULT_RETENTION_DAYS = 7;
@@ -88,11 +89,13 @@ export class RetentionSweeper {
     this.runSweep();
   }
 
-  /** Fire-and-forget wrapper around {@link RetentionSweeper.sweep} that logs failures. */
+  /** Wrapper around {@link RetentionSweeper.sweep} that logs failures instead of throwing. */
   private runSweep(): void {
-    this.sweep().catch((err) => {
+    try {
+      this.sweep();
+    } catch (err) {
       this.log.error(`Retention sweep crashed: ${normalizeErrorString(err)}`);
-    });
+    }
   }
 
   /** Stops the periodic sweep timer. */
@@ -105,10 +108,15 @@ export class RetentionSweeper {
 
   /**
    * Run a single sweep cycle immediately. Safe to call from `start`'s timer or tests.
+   *
+   * Synchronous: every SQLite call here is synchronous, so there is no `await` to
+   * make. Keeping the signature non-`async` means the `running` guard can't be
+   * defeated by a future edit that adds an `await` mid-sweep and opens a
+   * re-entrancy window.
    * @param now - Override the "now" timestamp used for retention comparisons.
    * @returns The deletion counts and DB size after this sweep cycle.
    */
-  async sweep(now: number = Date.now()): Promise<SweepResult> {
+  sweep(now: number = Date.now()): SweepResult {
     if (this.running) {
       // A previous sweep is still running (e.g. on a very slow disk). Skip rather
       // than queue — the next interval will pick up where this one left off.
@@ -127,12 +135,7 @@ export class RetentionSweeper {
       // fully done — it must survive long enough for the source to retransmit
       // (which replays the stored ACK) and is an operator signal — so it's
       // excluded here and protected by the errored floor in phase 3.
-      const phase1 = db
-        .prepare(
-          `DELETE FROM inbound_hl7_messages
-            WHERE state = 'processed' AND ack_outcome != 'undelivered' AND processed_at < ?`
-        )
-        .run(cutoffProcessed);
+      const phase1 = db.prepare(RETENTION_PHASE1_DELETE).run(cutoffProcessed);
 
       let deletedProcessed = Number(phase1.changes);
       let deletedErrored = 0;
@@ -140,15 +143,7 @@ export class RetentionSweeper {
       // Phase 2: size-driven purge of fully-done processed rows in oldest-first batches.
       const sizeBudget = this.maxSizeBytes;
       const batchSize = 1000;
-      const purgeOldestProcessed = db.prepare(`
-        DELETE FROM inbound_hl7_messages
-         WHERE id IN (
-           SELECT id FROM inbound_hl7_messages
-            WHERE state = 'processed' AND ack_outcome != 'undelivered'
-            ORDER BY processed_at ASC
-            LIMIT ?
-         )
-      `);
+      const purgeOldestProcessed = db.prepare(RETENTION_PHASE2_DELETE);
       while (this.queue.getDbSizeBytes() > sizeBudget) {
         const info = purgeOldestProcessed.run(batchSize);
         if (info.changes === 0) {
@@ -166,19 +161,7 @@ export class RetentionSweeper {
       // retransmit against). Ordered by the terminal timestamp, which is
       // errored_at for failures and processed_at for undelivered rows.
       if (this.queue.getDbSizeBytes() > sizeBudget) {
-        const purgeOldestErrored = db.prepare(`
-          DELETE FROM inbound_hl7_messages
-           WHERE id IN (
-             SELECT id FROM inbound_hl7_messages
-              WHERE (
-                      state IN ('rejected', 'failed', 'nacked')
-                      OR (state = 'processed' AND ack_outcome = 'undelivered')
-                    )
-                AND COALESCE(errored_at, processed_at) < ?
-              ORDER BY COALESCE(errored_at, processed_at) ASC
-              LIMIT ?
-           )
-        `);
+        const purgeOldestErrored = db.prepare(RETENTION_PHASE3_DELETE);
         while (this.queue.getDbSizeBytes() > sizeBudget) {
           const info = purgeOldestErrored.run(cutoffErrored, batchSize);
           if (info.changes === 0) {

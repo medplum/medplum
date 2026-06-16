@@ -62,7 +62,6 @@ describe('DurableQueue', () => {
     expect(result.row.state).toBe(MessageState.QUEUED);
     expect(result.row.originalMessage.equals(body)).toBe(true);
     expect(result.row.finalizedMessage.equals(body)).toBe(true);
-    expect(result.row.committedAt).toBe(result.row.receivedAt);
     expect(result.row.attemptCount).toBe(0);
   });
 
@@ -107,6 +106,7 @@ describe('DurableQueue', () => {
     queue.enqueueRejected({
       ...makeEnqueueInput({ msgControlId: 'DUP4', callbackId: 'cb-nack' }),
       lastError: 'rejected',
+      errorCode: QueueErrorCode.DuplicateRejected,
     });
     // A nacked row reuses the control ID for audit only; a fresh intake of the
     // same ID must still insert rather than dedupe against the audit row.
@@ -138,17 +138,39 @@ describe('DurableQueue', () => {
     expect(queue.peekNextSeqNo('B')).toBe(1);
   });
 
-  test('enqueue commitSeqNo advances the counter atomically with the insert, and not on a duplicate', () => {
+  test('enqueue assignSeqNo assigns + commits the counter atomically with the insert, and not on a duplicate', () => {
     expect(queue.peekNextSeqNo('X')).toBe(0);
-    const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP', seqNo: 0 }), { commitSeqNo: 0 });
+
+    // A fresh insert: the callback receives the peeked candidate, and enqueue
+    // persists both the returned finalized bytes and the assigned seq number.
+    const finalized = Buffer.from('finalized-with-seq-0');
+    let stamped: number | undefined;
+    const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP' }), {
+      assignSeqNo: (candidate) => {
+        stamped = candidate;
+        return finalized;
+      },
+    });
     expect(r1.kind).toBe('inserted');
+    expect(stamped).toBe(0);
+    if (r1.kind === 'inserted') {
+      expect(r1.row.seqNo).toBe(0);
+      expect(r1.row.finalizedMessage.equals(finalized)).toBe(true);
+    }
     // The counter advanced as part of the same insert.
     expect(queue.peekNextSeqNo('X')).toBe(1);
 
-    // A duplicate short-circuits before the insert, so the counter is untouched
-    // even though a commitSeqNo candidate was supplied.
-    const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP', seqNo: 1 }), { commitSeqNo: 1 });
+    // A duplicate short-circuits before assignment, so the callback never runs
+    // and the counter is untouched.
+    let called = false;
+    const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'X', msgControlId: 'DUP' }), {
+      assignSeqNo: (candidate) => {
+        called = true;
+        return Buffer.from(`finalized-with-seq-${candidate}`);
+      },
+    });
     expect(r2.kind).toBe('duplicate');
+    expect(called).toBe(false);
     expect(queue.peekNextSeqNo('X')).toBe(1);
   });
 
@@ -397,17 +419,35 @@ describe('DurableQueue', () => {
     expect(queue.getById(normal.row.id)?.state).toBe(MessageState.FAILED);
   });
 
-  test('enqueueRejected creates a nacked audit row with last_error and ack_outcome=not_owed', () => {
+  test('enqueueRejected creates a nacked audit row with last_error, error_code, and ack_outcome=not_owed', () => {
     const row = queue.enqueueRejected({
       ...makeEnqueueInput({ msgControlId: 'NACK1' }),
       lastError: 'duplicate control id',
+      errorCode: QueueErrorCode.DuplicateRejected,
     });
     expect(row?.state).toBe(MessageState.NACKED);
     expect(row?.lastError).toBe('duplicate control id');
+    // The machine-readable code is persisted alongside last_error so tooling can
+    // distinguish nacked reasons (storage error vs. duplicate) without parsing strings.
+    expect(row?.errorCode).toBe(QueueErrorCode.DuplicateRejected);
     // An intake reject was answered synchronously with a NACK; no app-level ACK
     // is ever owed for it.
     expect(row?.ackOutcome).toBe(AckOutcome.NOT_OWED);
-    expect(row?.committedAt).toBeNull();
+  });
+
+  test('enqueueRejected persists distinct error codes for distinct reasons', () => {
+    const storage = queue.enqueueRejected({
+      ...makeEnqueueInput({ msgControlId: 'NACK-STORAGE' }),
+      lastError: 'storage error: disk full',
+      errorCode: QueueErrorCode.StorageError,
+    });
+    const dup = queue.enqueueRejected({
+      ...makeEnqueueInput({ msgControlId: 'NACK-DUP' }),
+      lastError: 'duplicate control id',
+      errorCode: QueueErrorCode.DuplicateRejected,
+    });
+    expect(storage?.errorCode).toBe(QueueErrorCode.StorageError);
+    expect(dup?.errorCode).toBe(QueueErrorCode.DuplicateRejected);
   });
 
   test('countByState reports correct totals across states', () => {
@@ -420,7 +460,11 @@ describe('DurableQueue', () => {
     queue.markProcessed(a.row.id, AckOutcome.DELIVERED);
     queue.claimNext(b.row.channelName); // b → processing
     queue.markFailed(b.row.id, 'x', QueueErrorCode.DispatchFailed);
-    queue.enqueueRejected({ ...makeEnqueueInput({ msgControlId: 'CB-N' }), lastError: 'dup' });
+    queue.enqueueRejected({
+      ...makeEnqueueInput({ msgControlId: 'CB-N' }),
+      lastError: 'dup',
+      errorCode: QueueErrorCode.DuplicateRejected,
+    });
 
     expect(queue.countByState()).toEqual({
       queued: 0,
@@ -549,6 +593,24 @@ describe('DurableQueue', () => {
     queue.enqueue(makeEnqueueInput());
     expect(queue.checkpointWalIfDirty()).toBe(true);
     expect(statSync(walPath).size).toBe(0);
+  });
+
+  test('checkpointWal reuses a prepared statement instead of re-compiling on every call', () => {
+    // Regression: checkpointWal() ran on every heartbeat tick + retention sweep,
+    // and used to call db.prepare() each time — leaking GC-finalised statement
+    // objects proportional to heartbeat frequency. The statement is now prepared
+    // once in the constructor, so checkpointWal() must never call prepare().
+    const db = queue.getDb();
+    const prepareSpy = vi.spyOn(db, 'prepare');
+    try {
+      for (let i = 0; i < 5; i++) {
+        queue.enqueue(makeEnqueueInput());
+        expect(queue.checkpointWal()).toBe(true);
+      }
+      expect(prepareSpy).not.toHaveBeenCalled();
+    } finally {
+      prepareSpy.mockRestore();
+    }
   });
 
   test('close() checkpoints the WAL even when another connection holds the DB open', () => {

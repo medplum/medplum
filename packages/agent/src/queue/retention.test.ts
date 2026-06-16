@@ -242,6 +242,25 @@ describe('RetentionSweeper', () => {
     }
   });
 
+  test('sweep is synchronous and returns a plain SweepResult, not a Promise', () => {
+    // Regression: sweep() was declared `async` despite containing no `await`
+    // (every SQLite call is synchronous). Keeping it non-async guarantees the
+    // `running` re-entrancy guard can't be defeated by a future mid-sweep await.
+    const now = 1_700_000_000_000;
+    seedRow(queue, 'processed', now - 1000, 'SYNC_SWEEP');
+    const sweeper = new RetentionSweeper({
+      queue,
+      log: createMockLogger(),
+      retentionDays: 7,
+      maxSizeMb: 1024,
+      erroredRetentionDays: 90,
+    });
+    const result = sweeper.sweep(now);
+    expect(result).not.toBeInstanceOf(Promise);
+    expect(typeof (result as { then?: unknown }).then).toBe('undefined');
+    expect(result.deletedProcessed).toBe(0);
+  });
+
   test('start/stop are idempotent', () => {
     const sweeper = new RetentionSweeper({ queue, log: createMockLogger(), sweepIntervalSecs: 3600 });
     sweeper.start();
