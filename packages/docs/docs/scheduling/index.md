@@ -3,8 +3,10 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Scheduling
 
-:::info[]
-Medplum Scheduling is currently in alpha.
+:::info[Alpha]
+
+Medplum Scheduling is currently in [alpha](/docs/compliance/alpha-beta).
+
 :::
 
 Welcome to the Medplum Scheduling documentation. We currently support a range of scheduling operations that are available via the FHIR API. The following sections walk through the FHIR resources that are used to model scheduling and how the operations interact with them.

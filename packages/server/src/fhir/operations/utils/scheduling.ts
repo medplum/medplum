@@ -42,7 +42,7 @@ import { uniqueOn } from './terminology';
 type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 const dayNames: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
+export function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
   let t = Temporal.Instant.fromEpochMilliseconds(interval.start.valueOf())
     .toZonedDateTimeISO(timeZone)
     .withPlainTime({ hour: 0, minute: 0, second: 0, millisecond: 0 });
@@ -687,10 +687,10 @@ export async function createProposedAppointment(
   customizer(appointment, slots);
 
   const createdResources = await repo.withTransaction(
-    async () => {
-      await validateAllAvailability(repo, slots, healthcareService, schedulingParametersGroup);
-      const createdSlots = await Promise.all(slots.map((slot) => repo.createResource<Slot>(slot)));
-      const createdAppointment = await repo.createResource<Appointment>({
+    async (txRepo) => {
+      await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
+      const createdSlots = await Promise.all(slots.map((slot) => txRepo.createResource<Slot>(slot)));
+      const createdAppointment = await txRepo.createResource<Appointment>({
         ...appointment,
         slot: createdSlots.map((slot) => createReference(slot)),
       });
