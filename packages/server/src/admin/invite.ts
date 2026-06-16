@@ -337,6 +337,15 @@ async function upsertProjectMembership(
     ...request.membership,
   };
 
+  if (
+    request.resourceType === 'Patient' &&
+    !partialMembership.accessPolicy &&
+    !partialMembership.access?.length &&
+    project.defaultPatientAccessPolicy
+  ) {
+    partialMembership.accessPolicy = project.defaultPatientAccessPolicy;
+  }
+
   if (request.forceNewMembership) {
     return createProjectMembership(systemRepo, user, project, profile, partialMembership);
   }
