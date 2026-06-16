@@ -14,9 +14,10 @@ import { getPostDeployVersion } from '../migration-sql';
 import { getServerVersion } from '../util/version';
 import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration';
 import { InProgressAsyncJobStatuses } from '../workers/utils';
+import * as postDeployMigrations from './data';
 import dataVersionManifest from './data/data-version-manifest.json' with { type: 'json' };
 import type { PostDeployMigration } from './data/types';
-import { MigrationVersion } from './migration-versions';
+import { getPostDeployMigrationVersions, MigrationVersion } from './migration-versions';
 import * as preDeployMigrations from './schema';
 import type { PreDeployMigration } from './schema/types';
 
@@ -37,7 +38,6 @@ export async function getPendingPostDeployMigration(client: Pool | PoolClient): 
     return postDeployVersion;
   }
 
-  const { getPostDeployMigrationVersions } = await import('./migration-versions');
   const allPostDeployVersions = getPostDeployMigrationVersions();
   if (allPostDeployVersions.includes(postDeployVersion + 1)) {
     return postDeployVersion + 1;
@@ -72,9 +72,8 @@ export class MigrationDefinitionNotFoundError extends Error {
   }
 }
 
-export async function getPostDeployMigration(migrationNumber: number): Promise<PostDeployMigration> {
+export function getPostDeployMigration(migrationNumber: number): PostDeployMigration {
   // Get the post-deploy migration from the post-deploy migrations module
-  const postDeployMigrations = await import('./data');
   const migration = (postDeployMigrations as Record<string, { migration: PostDeployMigration } | undefined>)[
     'v' + migrationNumber
   ]?.migration;
@@ -169,8 +168,7 @@ export async function queuePostDeployMigration(
   systemRepo: SystemRepository,
   version: number
 ): Promise<WithId<AsyncJob>> {
-  const { getPostDeployMigration } = await import('./migration-utils');
-  const migration = await getPostDeployMigration(version);
+  const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
 
   // Previously, queueing the bullMQ job was done in the transaction above,

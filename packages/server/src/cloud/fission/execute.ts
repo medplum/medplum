@@ -3,6 +3,7 @@
 import { Hl7Message, createReference, normalizeErrorString } from '@medplum/core';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
+import { executeFissionFunction } from './utils';
 
 /**
  * Executes a Bot with Fission.
@@ -26,7 +27,6 @@ export async function executeFissionBot(request: BotExecutionContext): Promise<B
 
   try {
     const body = JSON.stringify(payload);
-    const { executeFissionFunction } = await import('./utils');
     const response = await executeFissionFunction(bot.id, body);
     const responseBody = response ? JSON.parse(response) : undefined;
     return {

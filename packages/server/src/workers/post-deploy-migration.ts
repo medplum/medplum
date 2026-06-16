@@ -120,7 +120,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
 
   let migration: PostDeployMigration;
   try {
-    migration = await getPostDeployMigration(migrationNumber);
+    migration = getPostDeployMigration(migrationNumber);
   } catch (err: any) {
     if (err instanceof MigrationDefinitionNotFoundError) {
       await moveToDelayedAndThrow(

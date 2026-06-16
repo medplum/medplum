@@ -8,21 +8,8 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, mockFetch } from '../../test.setup';
 import { executeFissionBot } from './execute';
-import type * as FissionUtils from './utils';
-
-const { mockExecuteFissionFunction } = vi.hoisted(() => ({
-  mockExecuteFissionFunction: vi.fn(),
-}));
-
-vi.mock('./utils', async (importOriginal) => {
-  const actual = await importOriginal<typeof FissionUtils>();
-  return {
-    ...actual,
-    executeFissionFunction: mockExecuteFissionFunction,
-  };
-});
 
 describe('Execute Fission bots', () => {
   const app = express();
@@ -47,7 +34,7 @@ describe('Execute Fission bots', () => {
   });
 
   beforeEach(() => {
-    mockExecuteFissionFunction.mockClear();
+    mockFetch.mockClear();
   });
 
   afterEach(() => {
@@ -62,8 +49,13 @@ describe('Execute Fission bots', () => {
       runtimeVersion: 'fission',
     };
 
-    mockExecuteFissionFunction.mockResolvedValueOnce(
-      JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } })
+    mockFetch.mockImplementationOnce(() =>
+      Promise.resolve({
+        status: 200,
+        ok: true,
+        text: async () =>
+          JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } }),
+      })
     );
 
     await expect(
@@ -82,7 +74,10 @@ describe('Execute Fission bots', () => {
       returnValue: { result: 'test result' },
     });
 
-    expect(mockExecuteFissionFunction).toHaveBeenCalledWith(bot.id, expect.any(String));
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining(`bot-${bot.id}`),
+      expect.objectContaining({ method: 'POST' })
+    );
   });
 
   test('Error', async () => {
@@ -93,8 +88,13 @@ describe('Execute Fission bots', () => {
       runtimeVersion: 'fission',
     };
 
-    mockExecuteFissionFunction.mockRejectedValueOnce(
-      new Error('HTTP error! Status: 400, Message: {"success":false,"logResult":"unhandled error"}')
+    mockFetch.mockImplementationOnce(() =>
+      Promise.resolve({
+        status: 400,
+        ok: false,
+        text: async () =>
+          JSON.stringify({ success: false, logResult: 'unhandled error', returnValue: { result: 'unhandled error' } }),
+      })
     );
 
     await expect(
@@ -112,6 +112,9 @@ describe('Execute Fission bots', () => {
       success: false,
     });
 
-    expect(mockExecuteFissionFunction).toHaveBeenCalledWith(bot.id, expect.any(String));
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining(`bot-${bot.id}`),
+      expect.objectContaining({ method: 'POST' })
+    );
   });
 });

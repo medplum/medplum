@@ -162,7 +162,7 @@ describe('Database migrations', () => {
     vi.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
     vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1]);
     vi.spyOn(migrationVersions, 'getLatestPostDeployMigrationVersion').mockReturnValue(1);
-    vi.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation(async (migrationNumber) => {
+    vi.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation((migrationNumber) => {
       if (migrationNumber === 1 && migrationMocks.customMigration) {
         return migrationMocks.customMigration;
       }
@@ -191,7 +191,7 @@ describe('Database migrations', () => {
     vi.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
     vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1]);
     vi.spyOn(migrationVersions, 'getLatestPostDeployMigrationVersion').mockReturnValue(1);
-    vi.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation(async (migrationNumber) => {
+    vi.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation((migrationNumber) => {
       if (migrationNumber === 1 && migrationMocks.customMigration) {
         return migrationMocks.customMigration;
       }
@@ -670,7 +670,7 @@ describe('Database migrations', () => {
       vi.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
       vi.spyOn(migrationVersions, 'getPostDeployMigrationVersions').mockReturnValue([1]);
       vi.spyOn(migrationVersions, 'getLatestPostDeployMigrationVersion').mockReturnValue(1);
-      vi.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation(async (migrationNumber) => {
+      vi.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation((migrationNumber) => {
         if (migrationNumber === 1 && migrationMocks.customMigration) {
           return migrationMocks.customMigration;
         }
