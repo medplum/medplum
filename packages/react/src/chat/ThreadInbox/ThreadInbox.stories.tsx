@@ -28,3 +28,23 @@ export const Basic = (): JSX.Element => {
     </Document>
   );
 };
+
+export const WithAttachmentsAndDictation = (): JSX.Element => {
+  return (
+    <Document>
+      <div style={{ height: 800 }}>
+        <ThreadInbox
+          query="_sort=-_lastUpdated"
+          threadId={undefined}
+          onNew={() => undefined}
+          getThreadUri={(topic: Communication) => `/Communication/${topic.id}`}
+          onChange={() => undefined}
+          inProgressUri="/Communication?status=in-progress"
+          completedUri="/Communication?status=completed"
+          uploadEnabled
+          dictationEnabled
+        />
+      </div>
+    </Document>
+  );
+};

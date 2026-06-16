@@ -14,13 +14,23 @@ export interface ThreadChatProps {
   readonly inputDisabled?: boolean;
   readonly excludeHeader?: boolean;
   readonly uploadEnabled?: boolean;
+  readonly dictationEnabled?: boolean;
   readonly onError?: (err: Error) => void;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
 }
 
 export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
-  const { thread, title, onMessageSent, inputDisabled, excludeHeader, uploadEnabled, onError, onViewInDocuments } =
-    props;
+  const {
+    thread,
+    title,
+    onMessageSent,
+    inputDisabled,
+    excludeHeader,
+    uploadEnabled,
+    dictationEnabled,
+    onError,
+    onViewInDocuments,
+  } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const prevThreadId = usePrevious(thread?.id);
@@ -119,6 +129,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
       inputDisabled={inputDisabled}
       excludeHeader={excludeHeader}
       uploadEnabled={uploadEnabled}
+      dictationEnabled={dictationEnabled}
       onError={onError}
       attachmentSubjectRef={thread.subject}
       onViewInDocuments={onViewInDocuments}

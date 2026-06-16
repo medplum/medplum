@@ -52,3 +52,13 @@ export const WithAttachmentUpload = (): JSX.Element => {
     </Document>
   );
 };
+
+export const WithDictation = (): JSX.Element => {
+  return (
+    <Document>
+      <div style={{ width: 360, height: 400, margin: '0 auto' }}>
+        <ThreadChat thread={ExampleThreadHeader} uploadEnabled dictationEnabled />
+      </div>
+    </Document>
+  );
+};
