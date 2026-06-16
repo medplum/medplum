@@ -297,6 +297,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const scrollContentRef = useRef<HTMLDivElement>(null);
 
   const communicationsRef = useRef(communications);
+  // eslint-disable-next-line react-hooks/immutability, react-hooks/refs
   communicationsRef.current = communications;
 
   useEffect(() => {
@@ -315,10 +316,14 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   useEffect(() => {
     const content = scrollContentRef.current;
     const viewport = scrollAreaRef.current;
-    if (!content || !viewport) return;
+    if (!content || !viewport) {
+      return undefined;
+    }
 
     const observer = new ResizeObserver(() => {
-      if (firstScrollRef.current) return;
+      if (firstScrollRef.current) {
+        return;
+      }
       const { scrollHeight, scrollTop, clientHeight } = viewport;
       if (scrollHeight - scrollTop - clientHeight < 60) {
         viewport.scrollTo({ top: scrollHeight, behavior: 'smooth' });

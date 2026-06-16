@@ -620,7 +620,7 @@ describe('BaseChat', () => {
         observe = vi.fn((el: Element) => {
           this.cb(
             [{ contentRect: new DOMRect(0, 0, 400, 500), target: el, borderBoxSize: [], contentBoxSize: [], devicePixelContentBoxSize: [] }] as ResizeObserverEntry[],
-            this as unknown as ResizeObserver
+            this
           );
         });
         unobserve = vi.fn();
