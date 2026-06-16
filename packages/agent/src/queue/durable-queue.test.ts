@@ -437,7 +437,9 @@ describe('DurableQueue', () => {
 
   test('getChannelDepth reports queued/claimed/inflight/oldest age', () => {
     const t0 = Date.now();
-    queue.enqueue(makeEnqueueInput({ channelName: 'D', msgControlId: 'D1', receivedAt: t0 - 5000, callbackId: 'cb-d1' }));
+    queue.enqueue(
+      makeEnqueueInput({ channelName: 'D', msgControlId: 'D1', receivedAt: t0 - 5000, callbackId: 'cb-d1' })
+    );
     queue.enqueue(makeEnqueueInput({ channelName: 'D', msgControlId: 'D2', receivedAt: t0 - 1000 }));
 
     const depth = queue.getChannelDepth('D', t0);

@@ -463,7 +463,14 @@ describe('Durable queue integration', () => {
       timeoutMs: 5000,
     });
     expect(replay.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
-    expect(queue.countByState()).toMatchObject({ processed: 1, queued: 0, claimed: 0, inflight: 0, failed: 0, rejected: 0 });
+    expect(queue.countByState()).toMatchObject({
+      processed: 1,
+      queued: 0,
+      claimed: 0,
+      inflight: 0,
+      failed: 0,
+      rejected: 0,
+    });
 
     await client.close();
     await app.stop();
@@ -1719,7 +1726,14 @@ describe('Durable queue integration', () => {
 
     // Backpressure: the worker idled (didn't dispatch into the void), so the rows
     // are all parked in `queued` and nothing reached the server.
-    expect(queue.countByState()).toMatchObject({ queued: 4, claimed: 0, inflight: 0, processed: 0, failed: 0, rejected: 0 });
+    expect(queue.countByState()).toMatchObject({
+      queued: 4,
+      claimed: 0,
+      inflight: 0,
+      processed: 0,
+      failed: 0,
+      rejected: 0,
+    });
     expect(transmits).toHaveLength(0);
 
     // Server comes back on the same URL → the agent reconnects and drains.
@@ -1730,7 +1744,14 @@ describe('Durable queue integration', () => {
 
     // Zero loss, FIFO preserved across the outage, every ACK delivered.
     expect(transmits).toEqual(['BP_1', 'BP_2', 'BP_3', 'BP_4']);
-    expect(queue.countByState()).toMatchObject({ processed: 4, queued: 0, claimed: 0, inflight: 0, failed: 0, rejected: 0 });
+    expect(queue.countByState()).toMatchObject({
+      processed: 4,
+      queued: 0,
+      claimed: 0,
+      inflight: 0,
+      failed: 0,
+      rejected: 0,
+    });
     for (const id of ['BP_1', 'BP_2', 'BP_3', 'BP_4']) {
       expect(queue.findSeenByControlId('dq-test', id)?.ackOutcome).toBe('delivered');
     }
