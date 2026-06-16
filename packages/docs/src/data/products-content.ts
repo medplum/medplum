@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export interface WorkflowItem {
+export interface CapabilityItem {
   name: string;
   icon: string;
   short: string;
@@ -41,7 +41,7 @@ export const HERO_SUB =
 export const TIER_INTRO_HEADLINE = 'Build outward from one data model.';
 
 export const TIER_INTRO_SUB =
-  'One standards-based FHIR data model underneath everything. Foundations are what you build with, workflows are what you build on, apps are what you ship.';
+  'One standards-based FHIR data model underneath everything. Foundations are what you build with, capabilities are what you build on, apps are what you ship.';
 
 export const FOUNDATIONS: FoundationItem[] = [
   {
@@ -57,10 +57,10 @@ export const FOUNDATIONS: FoundationItem[] = [
     body: 'A fully typed client for browser and Node. Auth, search, paging, batch bundles, and subscriptions are one method call away.',
   },
   {
-    name: 'React Storybook',
-    icon: 'IconBrandStorybook',
+    name: 'Medplum Component Library',
+    icon: 'IconComponents',
     short: 'Pre-built clinical UI components',
-    body: 'Pre-built clinical UI React components (@medplum/react) — resource forms, search controls, and timelines, browsable in Storybook.',
+    body: 'A library of pre-built, themeable clinical UI React components (@medplum/react) — resource forms, search controls, and timelines — wired to the data model and browsable in Storybook.',
   },
   {
     name: 'Bots',
@@ -87,14 +87,26 @@ export const FOUNDATIONS: FoundationItem[] = [
     body: "Medplum's Auth API: a complete identity provider with OAuth2, OpenID Connect, SMART on FHIR, and MFA — or federate with your own.",
   },
   {
-    name: 'Access Control & Tenancy',
+    name: 'Access Control',
     icon: 'IconShieldLock',
-    short: 'AccessPolicy & multi-tenant Projects',
-    body: 'Fine-grained authorization modeled in FHIR: granular AccessPolicy resources and multi-tenant Projects for clean data isolation.',
+    short: 'Fine-grained AccessPolicy',
+    body: 'Fine-grained authorization modeled in FHIR. Granular AccessPolicy resources control read/write access down to the resource, compartment, and field level.',
+  },
+  {
+    name: 'Multi-Tenancy',
+    icon: 'IconBuildingCommunity',
+    short: 'Project-based data isolation',
+    body: 'Medplum Projects partition every resource into isolated tenants on one deployment — clean data isolation per customer, clinic, or environment, with no shared state between them.',
+  },
+  {
+    name: 'Audit Logging',
+    icon: 'IconHistory',
+    short: 'Compliance-grade audit trail',
+    body: 'Every read, write, and login is captured as a FHIR AuditEvent — a complete, queryable audit trail built in, satisfying the logging requirements behind HIPAA, SOC 2, and ONC certification.',
   },
 ];
 
-export const WORKFLOWS: WorkflowItem[] = [
+export const CAPABILITIES: CapabilityItem[] = [
   {
     name: 'Intake & Registration',
     icon: 'IconClipboardList',

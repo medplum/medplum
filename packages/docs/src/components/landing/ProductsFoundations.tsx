@@ -2,11 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { COMPLIANCE, FOUNDATIONS } from '../../data/platform-content';
-import { FOUNDATION_ICON, Icon, MedplumDiagram } from './PlatformDiagram';
-import styles from './PlatformFoundations.module.css';
+import { COMPLIANCE, FOUNDATIONS } from '../../data/products-content';
+import { FOUNDATION_ICON, Icon, MedplumDiagram } from './ProductsDiagram';
+import styles from './ProductsFoundations.module.css';
 
-export function PlatformFoundations(): JSX.Element {
+/* Shortened labels for the nav chips only, so all ten fit one line and the chips stay a
+   uniform size. The canonical names (used for selection + the detail panel + the diagram)
+   are unchanged. */
+const NAV_LABEL: Record<string, string> = {
+  'FHIR Data Store & API': 'FHIR Datastore & API',
+  'TypeScript / JavaScript SDK': 'TypeScript SDK',
+  'Medplum Component Library': 'Component Library',
+};
+
+export function ProductsFoundations(): JSX.Element {
   /* null = resting state: the diagram shows at full strength until the user picks a
      foundation (pill or diagram region). Picking the active one again deselects. */
   const [activeName, setActiveName] = useState<string | null>(null);
@@ -32,7 +41,7 @@ export function PlatformFoundations(): JSX.Element {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionHeadline}>Foundations</h2>
         <p className={styles.sectionLead}>
-          The primitives that make the rest possible — eight building blocks sharing one FHIR data model. Every workflow
+          The primitives that make the rest possible — ten building blocks sharing one FHIR data model. Every capability
           and app above sits on these. Select one to see where it lives in the architecture.
         </p>
       </div>
@@ -82,7 +91,7 @@ export function PlatformFoundations(): JSX.Element {
             <span className={styles.navChipIcon}>
               <Icon name={FOUNDATION_ICON[f.name]} color="currentColor" size={18} />
             </span>
-            {f.name}
+            {NAV_LABEL[f.name] ?? f.name}
           </button>
         ))}
       </div>
