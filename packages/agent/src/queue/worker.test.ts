@@ -7,7 +7,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { App } from '../app';
-import { createMockLogger } from '../test-utils';
+import { createMockLogger, waitFor } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
 import { AckOutcome, MessageState, QueueErrorCode } from './types';
@@ -538,25 +538,6 @@ describe('ChannelQueueWorker', () => {
     expect(() => worker.onWebSocketDisconnect()).not.toThrow();
   });
 });
-
-/**
- * Polls `predicate` until it returns true or `timeoutMs` elapses.
- * Throws a descriptive error on timeout so the test failure points at the assertion.
- * @param predicate - Condition to wait for.
- * @param timeoutMs - Total time to wait before throwing.
- */
-async function waitFor(predicate: () => boolean, timeoutMs: number = 1000): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    if (predicate()) {
-      return;
-    }
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 10);
-    });
-  }
-  throw new Error(`waitFor timed out after ${timeoutMs}ms`);
-}
 
 function lastCallback(worker: ChannelQueueWorker): string | undefined {
   return (worker as unknown as { pending?: { row: InboundRow } }).pending?.row.callbackId;

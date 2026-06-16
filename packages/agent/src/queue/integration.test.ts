@@ -25,7 +25,7 @@ import { join } from 'node:path';
 import { App } from '../app';
 import type { Channel } from '../channel';
 import type { AgentHl7Channel } from '../hl7';
-import { createEndpointWithRandomPort } from '../test-utils';
+import { createEndpointWithRandomPort, waitFor } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 
 const medplum = new MockClient();
@@ -2056,24 +2056,6 @@ async function waitForRow(
   throw new Error(
     `waitForRow: predicate not satisfied after ${timeoutMs}ms; counts=${JSON.stringify(queue.countByState())}`
   );
-}
-
-/**
- * Polls an arbitrary predicate until it holds or the timeout elapses. Used for
- * non-queue conditions like WebSocket liveness.
- * @param predicate - Condition to wait for.
- * @param timeoutMs - Max time to wait before throwing.
- * @param label - Human-readable description for the timeout error.
- */
-async function waitFor(predicate: () => boolean, timeoutMs: number, label: string): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    if (predicate()) {
-      return;
-    }
-    await sleep(25);
-  }
-  throw new Error(`waitFor: ${label} not satisfied after ${timeoutMs}ms`);
 }
 
 /**

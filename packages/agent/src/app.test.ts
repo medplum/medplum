@@ -41,7 +41,7 @@ import type * as AgentConstants from './constants';
 import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
-import { createEndpointWithRandomPort, getFreePort } from './test-utils';
+import { createEndpointWithRandomPort, getFreePort, waitFor } from './test-utils';
 import { buildManifest, mockFetchForUpgrader } from './upgrader-test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
@@ -2875,18 +2875,13 @@ describe('App', () => {
       }
 
       // Each phase gets its own deadline; surfaces any agent error to aid debugging.
-      async function waitFor(predicate: () => boolean, description: string): Promise<void> {
-        for (let i = 0; i < 25; i++) {
-          if (predicate()) {
-            return;
-          }
+      const waitForPhase = (predicate: () => boolean, description: string): Promise<void> =>
+        waitFor(() => {
           if (state.agentError) {
             throw new Error(`Unexpected agent error while waiting for ${description}: ${state.agentError.body}`);
           }
-          await sleep(100);
-        }
-        throw new Error(`Timeout while waiting for ${description}`);
-      }
+          return predicate();
+        }, 2500, description);
 
       // Phase 1: agent is already on the latest version, so this upgrade is a no-op.
       state.mySocket.send(
@@ -2896,7 +2891,7 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      await waitFor(() => state.upgradeResponseCount >= 1, 'no-op upgrade response');
+      await waitForPhase(() => state.upgradeResponseCount >= 1, 'no-op upgrade response');
 
       // No upgrade should have been spawned for the no-op
       expect(spawnSpy).not.toHaveBeenCalled();
@@ -2917,11 +2912,11 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      await waitFor(() => Boolean(child), 'child to spawn');
+      await waitForPhase(() => Boolean(child), 'child to spawn');
 
       await sleep(100);
       (child as MockChildProcess).emit('message', { type: 'STARTED' });
-      await waitFor(() => state.disconnectCalled, 'disconnect');
+      await waitForPhase(() => state.disconnectCalled, 'disconnect');
 
       // The second request must re-fetch `latest`, see the new version, and actually upgrade
       expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade'], {

@@ -4,28 +4,9 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createMockLogger } from '../test-utils';
+import { createMockLogger, waitFor } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 import { QueueLeaseManager } from './lease-manager';
-
-/**
- * Polls until `predicate` returns true or the timeout elapses. Centralised so the
- * intent (wait for a state transition) is obvious at every callsite.
- * @param predicate - Condition to wait for.
- * @param timeoutMs - Total time to wait before throwing.
- */
-async function waitFor(predicate: () => boolean, timeoutMs: number = 1000): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    if (predicate()) {
-      return;
-    }
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 5);
-    });
-  }
-  throw new Error(`waitFor timed out after ${timeoutMs}ms`);
-}
 
 describe('QueueLeaseManager', () => {
   let dir: string;
