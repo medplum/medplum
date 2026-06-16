@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { InvokeWithResponseStreamCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
-import { ContentType } from '@medplum/core';
+import { badRequest, ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -243,10 +243,8 @@ describe('Execute', () => {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
         });
-        const resultJson = JSON.stringify({
-          resourceType: 'OperationOutcome',
-          issue: [{ severity: 'error', code: 'invalid', details: { text: 'Test error' } }],
-        });
+        const outcome = badRequest('Test error');
+        const resultJson = JSON.stringify(outcome);
 
         async function* createEventStream(): AsyncGenerator<{
           PayloadChunk?: { Payload: Uint8Array };
@@ -271,10 +269,46 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(200);
-      expect(res.headers['content-type']).toBe('application/json');
+      expect(res.status).toBe(400);
+      expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
       expect(res.body.resourceType).toBe('OperationOutcome');
       expect(res.body.issue[0].details.text).toBe('Test error');
+    });
+
+    test('Streaming wrapper generic JSON error preserves HTTP response', async () => {
+      mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
+        const encoder = new TextEncoder();
+        const headersJson = JSON.stringify({
+          statusCode: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const errorJson = JSON.stringify({ errorType: 'Error', errorMessage: 'Something failed', stack: [] });
+
+        async function* createEventStream(): AsyncGenerator<{
+          PayloadChunk?: { Payload: Uint8Array };
+          InvokeComplete?: { LogResult?: string };
+        }> {
+          yield { PayloadChunk: { Payload: encoder.encode(headersJson + '\n') } };
+          yield { PayloadChunk: { Payload: encoder.encode(errorJson) } };
+          yield {
+            InvokeComplete: {
+              LogResult: `U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==`,
+            },
+          };
+        }
+
+        return { EventStream: createEventStream() };
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res.status).toBe(500);
+      expect(res.headers['content-type']).toBe('application/json');
+      expect(res.body).toMatchObject({ errorType: 'Error', errorMessage: 'Something failed' });
     });
   });
 });
