@@ -10,7 +10,7 @@ import { heartbeat } from '../heartbeat';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { publish } from '../pubsub';
-import { awaitPubSubRedisSubscriberReady, getPubSubRedisSubscriber } from '../redis';
+import { getPubSubRedisSubscriber } from '../redis';
 import { getMcpServer } from './server';
 
 export const mcpRouter = Router().use(authenticateRequest);
@@ -47,7 +47,6 @@ mcpRouter.get('/sse', async (req, res) => {
       getLogger().error('Error handling MCP SSE message', err);
     }
   });
-  await awaitPubSubRedisSubscriberReady(redisSubscriber);
   await redisSubscriber.subscribe(getRedisChannelForSessionId(transport.sessionId));
 
   const server = getMcpServer();

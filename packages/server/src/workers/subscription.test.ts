@@ -51,7 +51,7 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import * as redisModule from '../redis';
-import { awaitPubSubRedisSubscriberReady, getPubSubRedisSubscriber } from '../redis';
+import { getPubSubRedisSubscriber } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import type { SubEventsOptions } from '../ws/subscriptions';
@@ -2024,7 +2024,6 @@ describe('Subscription Worker', () => {
         WS_SUBSCRIPTIONS_TEST_CHANNEL,
         actualConstants.WEBSOCKET_SUB_PUBLISH_CHANNEL,
       ]);
-      await awaitPubSubRedisSubscriberReady(subscriber);
       for (const channel of channels) {
         await subscriber.subscribe(channel);
       }

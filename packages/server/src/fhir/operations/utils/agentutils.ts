@@ -21,7 +21,7 @@ import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
 import { getAuthenticatedContext } from '../../../context';
 import { publish } from '../../../pubsub';
-import { awaitPubSubRedisSubscriberReady, getPubSubRedisSubscriber } from '../../../redis';
+import { getPubSubRedisSubscriber } from '../../../redis';
 import type { Repository } from '../../repo';
 import type { AgentPushParameters } from '../agentpush';
 
@@ -178,7 +178,6 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
     message.callback = getReferenceString(agent) + '-' + randomUUID();
 
     const redisSubscriber = getPubSubRedisSubscriber();
-    await awaitPubSubRedisSubscriberReady(redisSubscriber);
     await redisSubscriber.subscribe(message.callback);
 
     const resultPromise = new Promise<[OperationOutcome, T | AgentError]>((resolve, reject) => {

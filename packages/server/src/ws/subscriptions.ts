@@ -29,7 +29,7 @@ import {
   removeUserActiveWebSocketSubscriptions,
   setActiveSubscription,
 } from '../pubsub';
-import { awaitPubSubRedisSubscriberReady, getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -100,7 +100,6 @@ async function setupSubscriptionHandler(): Promise<void> {
     const deadSubscriptionIds = await sendSubscriptionEventNotifications(resource, subEventArgsArr);
     await handleDeadSubscriptions(deadSubscriptionIds);
   });
-  await awaitPubSubRedisSubscriberReady(subscriber);
   await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
 }
 

@@ -16,7 +16,7 @@ import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
 import { publish } from '../pubsub';
-import { awaitPubSubRedisSubscriberReady, getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 
@@ -58,7 +58,7 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
   // According to Redis documentation: http://redis.io/commands/subscribe
   // Once the client enters the subscribed state it is not supposed to issue any other commands,
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
-  let redisSubscriber: ReturnType<typeof getPubSubRedisSubscriber> | undefined = undefined;
+  let redisSubscriber: Redis | undefined = undefined;
 
   const heartbeatHandler = (): void => sendMessage({ type: 'agent:heartbeat:request' });
 
@@ -155,16 +155,16 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
-    // Bind the message listener before subscribing so that messages
+    // Bind the message listener before awaiting the subscribe so that messages
     // published immediately after subscription are not dropped.
     redisSubscriber = getPubSubRedisSubscriber();
+    const subscribed = redisSubscriber.subscribe(getReferenceString(agent));
     redisSubscriber.on('message', (_channel: string, message: string) => {
       // When a message is received, send it to the agent
       socket.send(message, { binary: false });
       agentMessagesSent++;
     });
-    await awaitPubSubRedisSubscriberReady(redisSubscriber);
-    await redisSubscriber.subscribe(getReferenceString(agent));
+    await subscribed;
 
     // Subscribe to heartbeat events
     heartbeat.addEventListener('heartbeat', heartbeatHandler);
