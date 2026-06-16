@@ -30,6 +30,7 @@ import type { Mock, MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import type { ServerInviteResponse } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
+import type * as App from './app';
 import './test-matchers';
 // `fhir/repo`, `fhir/accesspolicy`, `admin/invite`, `oauth/keys`, and `context` are dynamically imported below.
 // Static imports here would load `workers/subscription` (via `fhir/repo`) or `database` (via `oauth/keys` /
@@ -45,6 +46,22 @@ import { requestContextStore } from './request-context-store';
 // supertest v7 can cause websocket tests to hang without this
 setDefaultResultOrder('ipv4first');
 
+// Many integration tests call initApp/shutdownApp in quick succession (e.g. resource-cap.test.ts
+// does both in beforeEach/afterEach). Without serialization, shutdown can overlap the next init,
+// leaving the DB pool or Redis in a bad state and causing intermittent HTTP failures in later tests.
+const { withAppLifecycle } = vi.hoisted(() => {
+  let appLifecycleLock: Promise<unknown> = Promise.resolve();
+  function withAppLifecycle<T>(fn: () => Promise<T>): Promise<T> {
+    const result = appLifecycleLock.then(fn, fn);
+    appLifecycleLock = result.then(
+      () => undefined,
+      () => undefined
+    );
+    return result;
+  }
+  return { withAppLifecycle };
+});
+
 // Share one `node-fetch` mock between setup and test files so `subscription.ts` and
 // tests configure the same `vi.fn()` instance.
 const { mockFetch } = vi.hoisted(() => ({
@@ -55,6 +72,17 @@ vi.mock('node-fetch', () => ({ default: mockFetch }));
 
 export { mockFetch };
 vi.mock('bullmq', async () => import('./__mocks__/bullmq'));
+
+vi.mock('./app', async (importOriginal) => {
+  const actual = await importOriginal<typeof App>();
+  return {
+    ...actual,
+    initApp: (...args: Parameters<typeof actual.initApp>) => withAppLifecycle(() => actual.initApp(...args)),
+    initAppServices: (...args: Parameters<typeof actual.initAppServices>) =>
+      withAppLifecycle(() => actual.initAppServices(...args)),
+    shutdownApp: () => withAppLifecycle(() => actual.shutdownApp()),
+  };
+});
 
 export interface TestProjectOptions {
   project?: Partial<Project>;
