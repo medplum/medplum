@@ -224,8 +224,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     } else if (pendingFile) {
       attachmentName = pendingFile.name;
     }
-    const patientNames =
-      selectedPatients.length > 0 ? selectedPatients.map((p) => getDisplayString(p)) : undefined;
+    const patientNames = selectedPatients.length > 0 ? selectedPatients.map((p) => getDisplayString(p)) : undefined;
 
     const userMessage: Message = { role: 'user', content: text, attachmentName, patientNames };
     const currentMessages = [...messages, userMessage];

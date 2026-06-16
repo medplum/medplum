@@ -78,7 +78,9 @@ export function PatientPicker({ excludeIds, onSelect }: PatientPickerProps): JSX
 
   return (
     <Stack gap={0}>
-      <Menu.Label style={{ padding: 'calc(var(--mantine-spacing-xs) / 2) var(--mantine-spacing-xs)' }}>Patients</Menu.Label>
+      <Menu.Label style={{ padding: 'calc(var(--mantine-spacing-xs) / 2) var(--mantine-spacing-xs)' }}>
+        Patients
+      </Menu.Label>
       {loading ? (
         <Box py="sm" style={{ display: 'flex', justifyContent: 'center' }}>
           <Loader size="xs" />
@@ -88,7 +90,13 @@ export function PatientPicker({ excludeIds, onSelect }: PatientPickerProps): JSX
           {filteredPatients.map((patient) => {
             const displayName = getDisplayString(patient);
             return (
-              <Tooltip key={patient.id} label={displayName} disabled={displayName.length <= 28} openDelay={400} position="top">
+              <Tooltip
+                key={patient.id}
+                label={displayName}
+                disabled={displayName.length <= 28}
+                openDelay={400}
+                position="top"
+              >
                 <Menu.Item
                   leftSection={<ResourceAvatar value={patient} size={24} radius="xl" />}
                   onClick={() => onSelect(patient)}

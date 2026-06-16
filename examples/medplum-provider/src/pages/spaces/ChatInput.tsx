@@ -171,22 +171,21 @@ export function ChatInput({
     startDictation,
     cancelDictation,
     acceptDictation,
-  } =
-    useDictation({
-      model: 'gpt-4o-transcribe',
-      getValue: () => inputRef.current,
-      setValue: (value) => {
-        inputRef.current = value;
-        onInputChange(value);
-      },
-      focusInput: () => textareaRef.current?.focus(),
-      onError: (err) => showErrorNotification(err),
-      onAppend: () => {
-        if (voiceActiveRef.current) {
-          autoSendRef.current?.();
-        }
-      },
-    });
+  } = useDictation({
+    model: 'gpt-4o-transcribe',
+    getValue: () => inputRef.current,
+    setValue: (value) => {
+      inputRef.current = value;
+      onInputChange(value);
+    },
+    focusInput: () => textareaRef.current?.focus(),
+    onError: (err) => showErrorNotification(err),
+    onAppend: () => {
+      if (voiceActiveRef.current) {
+        autoSendRef.current?.();
+      }
+    },
+  });
 
   let mode: InputMode = 'idle';
   if (voiceActive) {
@@ -563,11 +562,7 @@ export function ChatInput({
                   </ActionIcon>
                 </Tooltip>
               ) : (
-                <Tooltip
-                  label={isVoiceEnabled ? 'Voice Mode' : voiceDisabledTooltip}
-                  position="top"
-                  openDelay={100}
-                >
+                <Tooltip label={isVoiceEnabled ? 'Voice Mode' : voiceDisabledTooltip} position="top" openDelay={100}>
                   <ActionIcon
                     onClick={startVoiceMode}
                     size={32}

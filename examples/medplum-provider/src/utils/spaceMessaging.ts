@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import { getReferenceString, isNotFound, OperationOutcomeError } from '@medplum/core';
-import type { Bundle, Communication, DocumentReference, Identifier, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  Communication,
+  DocumentReference,
+  Identifier,
+  Patient,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import type { useMedplum } from '@medplum/react';
 import type { Message } from '../types/spaces';
 import { createConversationTopic, saveMessage } from './spacePersistence';
