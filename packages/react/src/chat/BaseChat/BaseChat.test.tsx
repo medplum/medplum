@@ -26,7 +26,7 @@ const SMSWRIT_MEDIUM: Communication['medium'] = [
   {
     coding: [
       {
-        system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+        system: 'https://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
         code: 'SMSWRIT',
         display: 'SMS Written',
       },
