@@ -469,7 +469,7 @@ describe('FHIR Repo', () => {
 
   test('Super Admin update ignores submitted meta.author', () =>
     withTestContext(async () => {
-      const { client, repo } = await createTestProject({ withRepo: true, superAdmin: true });
+      const { client, repo } = await createTestProject({ withClient: true, withRepo: true, superAdmin: true });
       const fakeAuthor = 'Practitioner/' + randomUUID();
 
       const patient = await repo.createResource<Patient>({
