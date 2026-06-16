@@ -1838,23 +1838,11 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * Returns the author reference.
-   * If the current context is allowed to write meta,
-   * and the provided resource includes an author reference,
-   * then use the provided value.
-   * Otherwise uses the current context profile.
-   * @param resource - The FHIR resource.
+   * Returns the author reference from the repository context.
+   * meta.author is server-controlled and is never taken from the request body.
    * @returns The author value.
    */
-  getAuthor(resource?: Resource): Reference {
-    // If the resource has an author (whether provided or from existing),
-    // and the current context is allowed to write meta,
-    // then use the provided value.
-    const author = resource?.meta?.author;
-    if (author && this.canWriteProtectedMeta()) {
-      return author;
-    }
-
+  getAuthor(_resource?: Resource): Reference {
     return this.context.author;
   }
 
@@ -1928,7 +1916,7 @@ export class Repository extends FhirRepository implements Disposable {
 
   /**
    * Determines if the current user can manually set certain protected meta fields
-   * such as author, project, lastUpdated, etc.
+   * such as project, lastUpdated, etc.
    * @returns True if the current user can manually set protected meta fields.
    */
   private canWriteProtectedMeta(): boolean {
