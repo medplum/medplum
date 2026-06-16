@@ -44,7 +44,9 @@ export async function executeFissionBot(request: BotExecutionContext): Promise<B
   }
 }
 
-function parseFissionResponseBody(body: string): { success?: boolean; logResult?: string; returnValue?: unknown } | undefined {
+function parseFissionResponseBody(
+  body: string
+): { success?: boolean; logResult?: string; returnValue?: unknown } | undefined {
   if (!body) {
     return undefined;
   }
