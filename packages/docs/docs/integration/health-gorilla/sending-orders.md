@@ -239,24 +239,34 @@ Stored as an `identifier` on the `Practitioner` resource with type `AN` and an `
 
 ```json
 {
-  "type": {
-    "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/v2-0203", "code": "AN" }]
-  },
-  "value": "[PHYSICIAN_ACCOUNT_NUMBER]",
-  "assigner": { "reference": "Organization/[PERFORMING_LAB_ORGANIZATION_ID]" }
+  "resourceType": "Practitioner",
+  "identifier": [
+    {
+      "type": {
+        "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/v2-0203", "code": "AN" }]
+      },
+      "value": "[PHYSICIAN_ACCOUNT_NUMBER]",
+      "assigner": { "reference": "Organization/[PERFORMING_LAB_ORGANIZATION_ID]" }
+    }
+  ]
 }
 ```
 
 ### Practice-level account number
 
-Stored as a complex extension on the `Practitioner` resource, keyed by lab. The bot automatically reads it and includes it in the order—no form input required.
+Stored as a nested extension on the `Practitioner` resource, keyed by lab. Each entry has a `lab` sub-extension (reference to the performing lab `Organization`) and a `value` sub-extension (the account number string). The bot automatically reads it and includes it in the order—no form input required.
 
 ```json
 {
-  "url": "https://medplum.com/integrations/health-gorilla/lab-org-account",
+  "resourceType": "Practitioner",
   "extension": [
-    { "url": "lab", "valueReference": { "reference": "Organization/[PERFORMING_LAB_ORGANIZATION_ID]" } },
-    { "url": "value", "valueString": "[PRACTICE_ACCOUNT_NUMBER]" }
+    {
+      "url": "https://medplum.com/integrations/health-gorilla/lab-org-account",
+      "extension": [
+        { "url": "lab", "valueReference": { "reference": "Organization/[PERFORMING_LAB_ORGANIZATION_ID]" } },
+        { "url": "value", "valueString": "[PRACTICE_ACCOUNT_NUMBER]" }
+      ]
+    }
   ]
 }
 ```
