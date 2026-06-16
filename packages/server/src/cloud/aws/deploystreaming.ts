@@ -3,14 +3,14 @@
 import type { Bot } from '@medplum/fhirtypes';
 import { CREATE_PDF_CODE, createBotZipFile, deployLambdaInternal } from './deploy';
 
-const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient, getStatus, isOperationOutcome, normalizeOperationOutcome } = require("@medplum/core");
+const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient, getStatus, OperationOutcomeError, isOperationOutcome, normalizeOperationOutcome } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
 const userCode = require("./user.cjs");
 
 exports.handler = awslambda.streamifyResponse(async (event, responseStream) => {
 `;
 
-const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient, getStatus, isOperationOutcome, normalizeOperationOutcome } from '@medplum/core';
+const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient, getStatus, OperationOutcomeError, isOperationOutcome, normalizeOperationOutcome } from '@medplum/core';
 import PdfPrinter from 'pdfmake';
 import * as userCode from './user.mjs';
 
@@ -50,6 +50,14 @@ const WRAPPER_CODE =
       writeResponse(responseStream, 200, result);
     }
   } catch (err) {
+    if (err instanceof OperationOutcomeError || isOperationOutcome(err)) {
+      const outcome = normalizeOperationOutcome(err);
+      if (!streaming || !botResponseStream?.streamStarted) {
+        writeResponse(responseStream, getStatus(outcome), outcome);
+      }
+      return;
+    }
+
     let errorResponse;
     if (err instanceof Error) {
       console.log("Unhandled error: " + err.message + "\\n" + err.stack);
@@ -72,13 +80,6 @@ const WRAPPER_CODE =
         errorMessage: String(err),
         stack: []
       };
-    }
-    if ((err && err.name === "OperationOutcomeError") || isOperationOutcome(err)) {
-      const outcome = normalizeOperationOutcome(err);
-      if (!streaming || !botResponseStream?.streamStarted) {
-        writeResponse(responseStream, getStatus(outcome), outcome);
-      }
-      return;
     }
     console.error("Invoke Error", JSON.stringify(errorResponse));
     if (!streaming || !botResponseStream?.streamStarted) {
@@ -135,6 +136,7 @@ class BotResponseStream {
   `
 function writeResponse(responseStream, statusCode, body) {
   responseStream.write(JSON.stringify({
+    nonStreamingResponse: true,
     statusCode,
     headers: { 'Content-Type': 'application/json' } }) + "\\n");
   if (body !== undefined) {

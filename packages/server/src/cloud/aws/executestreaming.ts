@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { InvokeWithResponseStreamCommand } from '@aws-sdk/client-lambda';
-import { isOperationOutcome, normalizeErrorString } from '@medplum/core';
+import { normalizeErrorString } from '@medplum/core';
 import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
+import { getLogger } from '../../logger';
 import {
   buildLambdaPayload,
   getExecuteLambdaClient,
@@ -52,46 +53,48 @@ async function processEventStream(
   responseStream: NonNullable<BotExecutionContext['responseStream']>
 ): Promise<BotExecutionResult> {
   const decoder = new TextDecoder();
-  let headersParsed = false;
-  let bufferingWrapperResponse = false;
+  let preambleParsed = false;
   let buffer = '';
   let logResult = '';
-  let wrapperStatusCode = 200;
-  let wrapperHeaders: Record<string, string> | undefined = undefined;
-  let wrapperBody = '';
+  let responseChunks: string[] | undefined;
 
   for await (const event of eventStream) {
     if (event.PayloadChunk?.Payload) {
       const chunk = decoder.decode(event.PayloadChunk.Payload);
-      if (!headersParsed) {
-        const result = processStreamingHeaders(buffer + chunk);
+
+      // A JSON-encoded preamble containing the statusCode and headers and other metadata
+      // to be used in the responseStream must be the first line of the stream delimited by a newline
+      // buffer and attempt to process chunks until the preamble is fully received and parsed.
+      if (!preambleParsed) {
+        const result = processStreamingPreamble(buffer + chunk);
         if (result.error) {
           return { success: false, logResult: sanitizeLogResult(result.error) };
         }
-        headersParsed = result.headersParsed;
-        if (headersParsed && result.headers) {
-          wrapperStatusCode = result.headers.statusCode || 200;
-          if (isWrapperJsonResponse(result.headers.headers)) {
-            bufferingWrapperResponse = true;
-            wrapperHeaders = result.headers.headers;
-            wrapperBody += result.buffer;
-          } else {
-            responseStream.startStreaming(wrapperStatusCode, result.headers.headers || {});
-            if (result.buffer) {
-              responseStream.write(result.buffer);
-            }
+        if (result.preambleParsed) {
+          preambleParsed = true;
+          const statusCode = result.preamble.statusCode || 200;
+          if (result.preamble.nonStreamingResponse) {
+            // nonStreamingResponse true means that streaming was not used in the user's handler
+            // response body can also be parsed and included in the BotExecutionResult.returnValue
+            responseChunks = [result.buffer];
+          }
+
+          responseStream.startStreaming(statusCode, result.preamble.headers || {});
+          if (result.buffer) {
+            responseStream.write(result.buffer);
           }
           buffer = '';
         } else {
           buffer = result.buffer;
         }
-      } else if (bufferingWrapperResponse) {
-        wrapperBody += chunk;
       } else {
         responseStream.write(chunk);
         // Flush to ensure data is sent immediately to client
         if (typeof (responseStream as any).flush === 'function') {
           (responseStream as any).flush();
+        }
+        if (responseChunks) {
+          responseChunks.push(chunk);
         }
       }
     }
@@ -111,36 +114,38 @@ async function processEventStream(
     }
   }
 
-  if (bufferingWrapperResponse) {
-    const result = parseWrapperJsonResponse(wrapperStatusCode, wrapperBody, logResult);
-    if (result) {
-      return result;
-    }
-    responseStream.startStreaming(wrapperStatusCode, wrapperHeaders || {});
-    if (wrapperBody) {
-      responseStream.write(wrapperBody);
-    }
-    responseStream.end();
-    return { success: wrapperStatusCode >= 200 && wrapperStatusCode < 400, logResult };
-  }
-
   responseStream.end();
-  return { success: true, logResult };
+
+  // make a best effort to parse the response body, but it's possible that streaming response was not JSON
+  // or that the stream was not used correctly, so handle errors gracefully
+  let returnValue: BotExecutionResult['returnValue'];
+  if (responseChunks && responseChunks.length > 0) {
+    try {
+      returnValue = JSON.parse(responseChunks.join(''));
+    } catch {
+      getLogger().error('Failed to parse streaming response body');
+    }
+  }
+  return { success: true, logResult, returnValue };
 }
 
 const MAX_HEADER_SIZE = 65536; // 64KB
 
-function processStreamingHeaders(
-  buffer: string
-): {
-  headersParsed: boolean;
+type UnparsedResult = {
+  preambleParsed: false;
   buffer: string;
-  headers?: { statusCode?: number; headers?: Record<string, string> };
   error?: string;
-} {
+};
+type ParsedResult = {
+  preambleParsed: true;
+  buffer: string;
+  preamble: { statusCode?: number; headers?: Record<string, string>; nonStreamingResponse?: boolean };
+  error?: undefined;
+};
+function processStreamingPreamble(buffer: string): ParsedResult | UnparsedResult {
   if (buffer.length > MAX_HEADER_SIZE) {
     return {
-      headersParsed: false,
+      preambleParsed: false,
       buffer: '',
       error: `Streaming headers exceeded maximum size of ${MAX_HEADER_SIZE} bytes`,
     };
@@ -148,52 +153,20 @@ function processStreamingHeaders(
 
   const newlineIndex = buffer.indexOf('\n');
   if (newlineIndex === -1) {
-    return { headersParsed: false, buffer };
+    return { preambleParsed: false, buffer };
   }
 
   const headersLine = buffer.substring(0, newlineIndex);
-  const remainingData = buffer.substring(newlineIndex + 1);
+  const remainingBuffer = buffer.substring(newlineIndex + 1);
 
   try {
-    const headersJson = JSON.parse(headersLine);
-    return { headersParsed: true, buffer: remainingData, headers: headersJson };
+    const preamble = JSON.parse(headersLine);
+    return { preambleParsed: true, buffer: remainingBuffer, preamble };
   } catch (err) {
     return {
-      headersParsed: false,
+      preambleParsed: false,
       buffer: '',
       error: `Failed to parse streaming headers: ${headersLine} - ${String(err)}`,
     };
   }
-}
-
-function isWrapperJsonResponse(headers: Record<string, string> | undefined): boolean {
-  return getHeader(headers, 'content-type')?.toLowerCase().includes('application/json') === true;
-}
-
-function getHeader(headers: Record<string, string> | undefined, name: string): string | undefined {
-  if (!headers) {
-    return undefined;
-  }
-  const lowerName = name.toLowerCase();
-  const key = Object.keys(headers).find((k) => k.toLowerCase() === lowerName);
-  return key ? headers[key] : undefined;
-}
-
-function parseWrapperJsonResponse(statusCode: number, body: string, logResult: string): BotExecutionResult | undefined {
-  let returnValue: unknown;
-  try {
-    returnValue = body ? JSON.parse(body) : undefined;
-  } catch {
-    return undefined;
-  }
-
-  if (!isOperationOutcome(returnValue)) {
-    return undefined;
-  }
-
-  return {
-    success: statusCode >= 200 && statusCode < 300,
-    logResult,
-    returnValue,
-  };
 }
