@@ -204,6 +204,7 @@ async function handler(params: {
         offsetMinutes: commonParameters.alignmentOffset,
         durationMinutes: commonParameters.duration,
         alignment: commonParameters.alignmentInterval,
+        timezone: commonParameters.alignmentTimezone,
         maxCount,
       }),
     pageSize

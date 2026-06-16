@@ -50,7 +50,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 
 To use scheduling APIs for a Schedule and HealthcareService, at least one of them must define the `duration` attribute (used to set how long the scheduled appointment will last). There must be a `timezone` attribute, which may also be defined on the Schedule's actor. (See [Timezone Resolution](#timezone-resolution))
 
-When using scheduling APIs to interact with multiple `Schedule` resources at once, they must be configured with matching `duration`, `alignmentInterval`, and `alignmentOffset` parameters. For this reason, Medplum recommends that these parameters only be set on `HealthcareService` resources.
+When using scheduling APIs to interact with multiple `Schedule` resources at once, they must be configured with matching `duration`, `alignmentInterval`, `alignmentTimezone`, and `alignmentOffset` parameters. For this reason, Medplum recommends that these parameters only be set on `HealthcareService` resources.
 
 #### Extension Fields
 
@@ -62,9 +62,9 @@ When using scheduling APIs to interact with multiple `Schedule` resources at onc
 | `bufferAfter`       | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes (no buffer needed)                | Sets cleanup time needed after appointment end. It must be free at booking time, and will be reserved with a Slot.                                                      |                                                               |                                                           |
 | `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration)               | 60 minutes (appointments start on-the-hour) | Start times must align to this interval (e.g., every 15 minutes)                                                                                                        |                                                               | Recommended to prefer setting this on `HealthcareService` |
 | `alignmentOffset`   | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes                                   | Shifts allowed start times by this offset (e.g., with a 15-minute alignmentInterval and a 5-minute alignmentOffset, valid starts are :05, :20, :35, :50)                |                                                               | Recommended to prefer setting this on `HealthcareService` |
+| `alignmentTimezone` | Code                                                        | 'Etc/UTC'                                   | Anchors the alignment grid to local midnight of the given timezone, keeping start times stable across DST transitions.                                                  |                                                               | Recommended to prefer setting this on `HealthcareService` |
 | `service`           | `Reference(HealthcareService)`                              | *none*                                      | Pointer to the `HealthcareService` that these parameters  should override.                                                                                              | Not permitted                                                 |                                                           |
 | `availability`      | [Nested Extension](#availability-extension)                 | Always available                            | Weekly recurring availability windows. When set, appointments must fit inside these windows.                                                                            | Not permitted (use `HealthcareService.availableTime` instead) |                                                           |
-
 
 <details>
 <summary>Example of the `SchedulingParameters` extension on a `HealthcareService`</summary>
@@ -106,7 +106,14 @@ When using scheduling APIs to interact with multiple `Schedule` resources at onc
         "system": "http://unitsofmeasure.org",
         "code": "min"
       }
-    }
+    },
+
+    // Optional: Timezone for anchoring the alignment grid to local midnight
+    // Independent of `timezone`, which controls availability window interpretation
+    {
+      "url": "alignmentTimezone",
+      "valueCode": "America/New_York"
+    },
 
     // Optional: specify time zone for availability interpretation
     // Falls back to Schedule's actor time zone if not specified
@@ -235,12 +242,47 @@ When using scheduling APIs to interact with multiple `Schedule` resources at onc
         "system": "http://unitsofmeasure.org",
         "code": "min"
       }
+    },
+
+    // Timezone for anchoring the alignment grid to local midnight
+    // Independent of `timezone`, which controls availability window interpretation
+    {
+      "url": "alignmentTimezone",
+      "valueCode": "America/New_York"
     }
   ]
 }
 ```
 
 </details>
+
+### Alignment grid
+
+Medplum Scheduling APIs generate possible appointments by projecting a repeating daily grid. These parameters control that grid:
+
+| Parameter           | Description                            | Default    |
+| ------------------- | -------------------------------------- | ---------- |
+| `alignmentInterval` | How frequently slot start times occur  | 60 minutes |
+| `alignmentOffset`   | Shifts slot start times by this amount | 0 minutes  |
+| `alignmentTimezone` | What timezone the grid is anchored to  | `Etc/UTC`  |
+
+#### `alignmentInterval`
+
+Sets how frequently appointments may begin. For back-to-back scheduling without gaps, set this value to match the `duration` parameter.
+
+#### `alignmentOffset`
+
+Example: to align your appointments starting at 9:15, 10:15, ..., set `alignmentOffset` to 15 minutes (with a 60-minute `alignmentInterval`).
+
+#### `alignmentTimezone`
+
+When clocks change for DST, slots appear to shift by an hour in local time — for example, a 9:00am slot may appear at 8:00am or 10:00am. Setting `alignmentTimezone` anchors the grid to local midnight instead, keeping slot times consistent year-round.
+
+**Relationship to `timezone`:** The two fields serve distinct purposes and can be set independently:
+- `timezone` — which timezone to use when reading `availableStartTime`/`availableEndTime` values
+- `alignmentTimezone` — which timezone's midnight to use as the alignment grid anchor
+
+The rare case in which they differ: a provider whose availability hours and appointment grid are managed in different timezones.
 
 ## Actor Level Availability
 
