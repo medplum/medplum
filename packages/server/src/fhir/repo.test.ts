@@ -452,7 +452,7 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.author?.reference).toStrictEqual('system');
     }));
 
-  test('Create Patient as system on behalf of author', () =>
+  test('Create Patient as system ignores submitted meta.author', () =>
     withTestContext(async () => {
       const author = 'Practitioner/' + randomUUID();
       const patient = await systemRepo.createResource<Patient>({
@@ -465,7 +465,31 @@ describe('FHIR Repo', () => {
         },
       });
 
-      expect(patient.meta?.author?.reference).toStrictEqual(author);
+      expect(patient.meta?.author?.reference).toStrictEqual('system');
+    }));
+
+  test('Super Admin update ignores submitted meta.author', () =>
+    withTestContext(async () => {
+      const { client, repo } = await createTestProject({ withClient: true, withRepo: true, superAdmin: true });
+      const fakeAuthor = 'Practitioner/' + randomUUID();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
+
+      const updated = await repo.updateResource<Patient>({
+        ...patient,
+        name: [{ given: ['Alice'], family: 'Jones' }],
+        meta: {
+          ...patient.meta,
+          author: { reference: fakeAuthor },
+        },
+      });
+
+      expect(updated.meta?.author?.reference).toStrictEqual(getReferenceString(client));
     }));
 
   test('Create Patient as ClientApplication with no author', () =>

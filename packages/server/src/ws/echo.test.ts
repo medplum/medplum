@@ -68,4 +68,35 @@ describe('Echo websocket', () => {
         errorSpy.mockRestore();
       }
     }));
+
+  test('Logs when echoing a message fails', () =>
+    withTestContext(async () => {
+      // A failed subscribe means the in-flight `subscribed` promise rejects; the message
+      // handler must catch that instead of leaking an unhandled rejection on every message
+      const subscribeError = new Error('Connection is closed.');
+      const subscriberSpy = jest.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+        subscribe: jest.fn().mockRejectedValue(subscribeError),
+        on: jest.fn(),
+        disconnect: jest.fn(),
+      } as any);
+      const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+
+      const handlers: Record<string, (...args: any[]) => any> = {};
+      const socket = {
+        on: jest.fn((event: string, cb: (...args: any[]) => any) => {
+          handlers[event] = cb;
+        }),
+        send: jest.fn(),
+      } as unknown as WebSocket;
+
+      try {
+        await handleEchoConnection(socket);
+        // Drive the registered message handler; awaiting the rejected `subscribed` must be caught
+        await handlers.message(Buffer.from('hello'));
+        expect(errorSpy).toHaveBeenCalledWith('[WS] Failed to echo message', { error: subscribeError });
+      } finally {
+        subscriberSpy.mockRestore();
+        errorSpy.mockRestore();
+      }
+    }));
 });

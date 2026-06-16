@@ -951,5 +951,41 @@ describe('FHIRcast WebSocket', () => {
           errorSpy.mockRestore();
         }
       }));
+
+    test('Logs and ignores a client message that is not valid JSON', () =>
+      withTestContext(async () => {
+        const cacheSpy = jest.spyOn(redis, 'getCacheRedis').mockReturnValue({
+          get: jest.fn().mockResolvedValue('project-id:my-topic'),
+        } as any);
+        const subscriberSpy = jest.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+          subscribe: jest.fn().mockResolvedValue(undefined),
+          on: jest.fn(),
+          disconnect: jest.fn(),
+        } as any);
+        const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+
+        const handlers: Record<string, (...args: any[]) => any> = {};
+        const socket = {
+          on: jest.fn((event: string, cb: (...args: any[]) => any) => {
+            handlers[event] = cb;
+          }),
+          send: jest.fn(),
+          close: jest.fn(),
+        } as unknown as WebSocket;
+        const req = { url: '/ws/fhircast/some-endpoint' } as IncomingMessage;
+
+        try {
+          await handleFhircastConnection(socket, req);
+          // A malformed payload must be logged and swallowed, not crash the message handler
+          await handlers.message(Buffer.from('{ not valid json'));
+          expect(errorSpy).toHaveBeenCalledWith('[FHIRcast]: Failed to parse client message', {
+            err: expect.any(SyntaxError),
+          });
+        } finally {
+          cacheSpy.mockRestore();
+          subscriberSpy.mockRestore();
+          errorSpy.mockRestore();
+        }
+      }));
   });
 });
