@@ -519,14 +519,18 @@ export class MemoryRepository extends FhirRepository<undefined> {
   async patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[]
+    patch: Operation[] | Parameters
   ): Promise<WithId<T>> {
     const resource = await this.readResource<T>(resourceType, id);
 
     try {
-      const patchResult = applyPatch(resource, patch).filter(Boolean);
-      if (patchResult.length > 0) {
-        throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
+      if (Array.isArray(patch)) {
+        const patchResult = applyPatch(resource, patch).filter(Boolean);
+        if (patchResult.length > 0) {
+          throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
+        }
+      } else {
+        throw new Error('MemoryRepository does not support FHIRPath Patch');
       }
     } catch (err) {
       throw new OperationOutcomeError(normalizeOperationOutcome(err));
