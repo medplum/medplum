@@ -14,7 +14,8 @@ import {
   Text,
   ThemeIcon,
 } from '@mantine/core';
-import type { Communication, Reference } from '@medplum/fhirtypes';
+import { getDisplayString } from '@medplum/core';
+import type { Communication, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react';
 import {
   IconArrowDown,
@@ -23,8 +24,10 @@ import {
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   IconList,
+  IconPaperclip,
   IconPlus,
   IconRobot,
+  IconUser,
 } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -66,6 +69,9 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
   const [selectedResources, setSelectedResources] = useState<string[] | undefined>();
   const [resourceFromComponent, setResourceFromComponent] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | undefined>(undefined);
+  const [pendingDocRef, setPendingDocRef] = useState<DocumentReference | undefined>(undefined);
+  const [selectedPatients, setSelectedPatients] = useState<Patient[]>([]);
   const [streamingContent, setStreamingContent] = useState<string | undefined>();
   const [streamingComponentCode, setStreamingComponentCode] = useState<string | undefined>();
   const [componentPanelOpen, setComponentPanelOpen] = useState(false);
@@ -202,7 +208,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       return;
     }
     const text = (overrideInput ?? input).trim();
-    if (!text) {
+    // A message can be sent with patient context alone, no text required
+    if (!text && selectedPatients.length === 0) {
       return;
     }
 
@@ -211,12 +218,23 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       setHasStarted(true);
     }
 
-    const userMessage: Message = { role: 'user', content: text };
+    let attachmentName: string | undefined;
+    if (pendingDocRef) {
+      attachmentName = pendingDocRef.description ?? pendingDocRef.content?.[0]?.attachment?.title ?? 'Document';
+    } else if (pendingFile) {
+      attachmentName = pendingFile.name;
+    }
+    const patientNames =
+      selectedPatients.length > 0 ? selectedPatients.map((p) => getDisplayString(p)) : undefined;
+
+    const userMessage: Message = { role: 'user', content: text, attachmentName, patientNames };
     const currentMessages = [...messages, userMessage];
     setMessages(currentMessages);
     isAtBottomRef.current = true;
     setShowScrollButton(false);
     setInput('');
+    setPendingFile(undefined);
+    setPendingDocRef(undefined);
     setCurrentFhirRequest(undefined);
     setStreamingContent(undefined);
     setComponentPreview(undefined);
@@ -237,6 +255,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         setRefreshKey,
         setCurrentFhirRequest,
         onNewTopic,
+        selectedPatients,
         onStreamChunk: (chunk) => {
           setStreamingContent((prev) => (prev ?? '') + chunk);
           setCurrentFhirRequest(undefined);
@@ -364,11 +383,10 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           ) : (
             <ScrollArea
               style={{ flex: 1 }}
-              offsetScrollbars
               viewportRef={scrollViewportRef}
               onScrollPositionChange={handleScrollPositionChange}
             >
-              <Stack gap="xl" p="xs">
+              <Stack gap="xl" py="xl" px={52} w="100%" maw={864} mx="auto">
                 {visibleMessages.map((message, index) => {
                   // FHIR tool calls — show each request paired with its response
                   if (message.role === 'assistant' && message.tool_calls && !message.content) {
@@ -458,6 +476,26 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                         message.role === 'user' ? classes.userMessage : classes.assistantMessage
                       )}
                     >
+                      {message.role === 'user' && message.patientNames && message.patientNames.length > 0 && (
+                        <Stack gap={4} mb={4} align="flex-end">
+                          {message.patientNames.map((name, i) => (
+                            <div key={i} className={classes.contextBubble}>
+                              <Group gap={4} wrap="nowrap">
+                                <IconUser size={12} />
+                                <Text fz="xs">{name}</Text>
+                              </Group>
+                            </div>
+                          ))}
+                        </Stack>
+                      )}
+                      {message.role === 'user' && message.attachmentName && (
+                        <div className={classes.contextBubble} style={{ marginBottom: 4 }}>
+                          <Group gap={4} wrap="nowrap">
+                            <IconPaperclip size={12} />
+                            <Text fz="xs">{message.attachmentName}</Text>
+                          </Group>
+                        </div>
+                      )}
                       {message.content && (
                         <div className={classes.messageContent}>
                           {message.role === 'assistant' ? (
@@ -605,9 +643,23 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
               models={models}
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
-              backgroundColor="transparent"
+              selectedPatients={selectedPatients}
+              onAddPatient={(patient) => {
+                setSelectedPatients((prev) => {
+                  if (prev.some((p) => p.id === patient.id)) {
+                    return prev;
+                  }
+                  return [...prev, patient];
+                });
+              }}
+              onRemovePatient={(patientId) => {
+                setSelectedPatients((prev) => prev.filter((p) => p.id !== patientId));
+              }}
             />
           </div>
+          <Text size="xs" c="gray.6" className={classes.inputDisclaimer}>
+            AI models can make mistakes. Please double-check important information.
+          </Text>
         </div>
       </div>
 

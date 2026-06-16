@@ -131,10 +131,9 @@ describe('SpacesInbox', () => {
       });
 
       const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
 
       await user.type(input, 'Hello AI');
-      await user.click(sendButton);
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
 
       await waitFor(() => {
         expect(medplum.createResource).toHaveBeenCalled();
@@ -150,14 +149,14 @@ describe('SpacesInbox', () => {
     });
 
     test('does not send empty messages', async () => {
-      const user = userEvent.setup();
-
       await act(async () => {
         setup();
       });
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
-      await user.click(sendButton);
 
+      // With an empty input there is no send button (voice mode is offered instead),
+      // so an empty message can never be submitted.
+      expect(screen.queryByRole('button', { name: 'Send message' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Start voice mode' })).toBeInTheDocument();
       expect(medplum.createResource).not.toHaveBeenCalled();
     });
 
@@ -196,10 +195,9 @@ describe('SpacesInbox', () => {
       });
 
       const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
 
       await user.type(input, 'Hello AI');
-      await user.click(sendButton);
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
 
       await waitFor(() => {
         expect(screen.getByText('Hello AI')).toBeInTheDocument();
@@ -251,9 +249,8 @@ describe('SpacesInbox', () => {
       });
 
       const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
       await user.type(input, 'Get patient 123');
-      await user.click(sendButton);
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
 
       await waitFor(
         () => {
@@ -305,10 +302,9 @@ describe('SpacesInbox', () => {
       });
 
       const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
 
       await user.type(input, 'Get nonexistent patient');
-      await user.click(sendButton);
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
 
       await waitFor(() => {
         expect(medplum.get).toHaveBeenCalled();
@@ -362,10 +358,9 @@ describe('SpacesInbox', () => {
       });
 
       const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
 
       await user.type(input, 'Get patient');
-      await user.click(sendButton);
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
 
       await waitFor(() => {
         expect(screen.getByTestId('resource-box')).toBeInTheDocument();
@@ -418,10 +413,9 @@ describe('SpacesInbox', () => {
       });
 
       const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
 
       await user.type(input, 'Get patient');
-      await user.click(sendButton);
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
 
       await waitFor(() => {
         expect(screen.getByTestId('resource-box')).toBeInTheDocument();
@@ -477,10 +471,9 @@ describe('SpacesInbox', () => {
       });
 
       const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
 
       await user.type(input, 'Get patient');
-      await user.click(sendButton);
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
 
       await waitFor(() => {
         expect(screen.getByTestId('resource-box')).toBeInTheDocument();
@@ -517,10 +510,9 @@ describe('SpacesInbox', () => {
       });
 
       const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
 
       await user.type(input, 'Hello AI');
-      await user.click(sendButton);
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
 
       await waitFor(() => {
         expect(screen.getByText(/Error: Bot execution failed/)).toBeInTheDocument();
@@ -572,10 +564,9 @@ describe('SpacesInbox', () => {
       });
 
       const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
 
       await user.type(input, `${method} patient`);
-      await user.click(sendButton);
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
 
       await waitFor(() => {
         expect((medplum as any)[clientMethod]).toHaveBeenCalled();
@@ -629,10 +620,9 @@ describe('SpacesInbox', () => {
       });
 
       const input = screen.getByPlaceholderText('Ask, search, or make anything...');
-      const sendButton = screen.getByRole('button', { name: 'Send message' });
 
       await user.type(input, 'Search patients');
-      await user.click(sendButton);
+      await user.click(screen.getByRole('button', { name: 'Send message' }));
 
       await waitFor(() => {
         expect(medplum.get).toHaveBeenCalled();

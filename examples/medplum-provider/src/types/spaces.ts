@@ -8,4 +8,6 @@ export interface Message {
   tool_call_id?: string;
   resources?: string[];
   componentCode?: string;
+  attachmentName?: string;
+  patientNames?: string[];
 }
