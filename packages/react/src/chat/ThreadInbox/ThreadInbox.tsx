@@ -18,7 +18,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import type { MedplumClient, SearchRequest } from '@medplum/core';
+import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
 import {
   formatSearchQuery,
   getReferenceString,
@@ -26,18 +26,15 @@ import {
   Operator,
   parseSearchRequest,
 } from '@medplum/core';
-import type { Communication, DocumentReference, Patient, Practitioner, Reference, Resource } from '@medplum/fhirtypes';
+import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import type { ResourceBoardLoadResult } from '@medplum/react-hooks';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconChevronDown, IconMessageCircle, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { PatientSummary } from '../../PatientSummary/PatientSummary';
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
-import type {
-  ResourceBoardDetailContext,
-  ResourceBoardLoadResult,
-  ResourceBoardTab,
-} from '../../ResourceBoard/ResourceBoard';
+import type { ResourceBoardDetailContext, ResourceBoardTab } from '../../ResourceBoard/ResourceBoard';
 import { ResourceBoard } from '../../ResourceBoard/ResourceBoard';
 import { ThreadChat } from '../ThreadChat/ThreadChat';
 import { NewTopicDialog } from './NewTopicDialog';
@@ -114,7 +111,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   const lastMessagesRef = useRef<Map<string, Communication>>(new Map());
   // Topics created via NewTopicDialog have no messages yet, so the thread search
   // misses them; they are prepended to the next load only.
-  const pendingTopicsRef = useRef<Communication[]>([]);
+  const pendingTopicsRef = useRef<WithId<Communication>[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // ThreadInbox owns this fetch because it is two coupled steps: the FHIR search for
@@ -123,7 +120,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   // populates lastMessagesRef for renderItem and prepends any topics created since the
   // last load (which have no messages yet, so the search misses them).
   const loadItems = useCallback(
-    async (search: SearchRequest, client: MedplumClient): Promise<ResourceBoardLoadResult> => {
+    async (search: SearchRequest, client: MedplumClient): Promise<ResourceBoardLoadResult<Communication>> => {
       const searchParams = new URLSearchParams(
         formatSearchQuery({ ...search, total: search.total ?? 'accurate', fields: undefined })
       );
@@ -134,8 +131,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
       const bundle = await client.search('Communication', searchParams.toString(), { cache: 'no-cache' });
       const parents =
         bundle.entry
-          ?.map((entry) => entry.resource as Communication)
-          .filter((r): r is Communication => r !== undefined) || [];
+          ?.map((entry) => entry.resource)
+          .filter((r): r is WithId<Communication> => r !== undefined) || [];
 
       const pending = pendingTopicsRef.current;
       pendingTopicsRef.current = [];
@@ -185,7 +182,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
       const response = await client.graphql(fullQuery);
 
       const lastMessages = new Map<string, Communication>();
-      const threads: Communication[] = [];
+      const threads: WithId<Communication>[] = [];
       for (const parent of parents) {
         const safeId = parent.id?.replaceAll('-', '') || '';
         const childList = response.data[`thread_${safeId}`] as Communication[] | undefined;
@@ -206,19 +203,23 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   );
 
   const resolveSelected = useCallback(
-    async (id: string, items: Resource[], client: MedplumClient): Promise<Resource | undefined> => {
+    async (
+      id: string,
+      items: WithId<Communication>[],
+      client: MedplumClient
+    ): Promise<WithId<Communication> | undefined> => {
       const found = items.find((item) => item.id === id);
       if (found) {
         return found;
       }
       // The id may belong to a child message: resolve to its parent thread.
-      const communication: Communication = await client.readResource('Communication', id);
+      const communication = await client.readResource('Communication', id);
       if (communication.partOf === undefined) {
         return communication;
       }
       const parentRef = communication.partOf[0].reference;
       if (parentRef) {
-        return client.readReference({ reference: parentRef });
+        return client.readReference<Communication>({ reference: parentRef });
       }
       return undefined;
     },
@@ -264,7 +265,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   };
 
   const handleNewTopicCompletion = (message: Communication): void => {
-    pendingTopicsRef.current = [message, ...pendingTopicsRef.current];
+    // A freshly created topic always carries a server-assigned id.
+    pendingTopicsRef.current = [message as WithId<Communication>, ...pendingTopicsRef.current];
     setRefreshKey((key) => key + 1);
     onNew(message);
   };
@@ -285,16 +287,16 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     </>
   );
 
-  const renderItem = (item: Resource): JSX.Element => (
+  const renderItem = (item: WithId<Communication>): JSX.Element => (
     <ThreadListItem
-      topic={item as Communication}
-      lastCommunication={item.id ? lastMessagesRef.current.get(item.id) : undefined}
+      topic={item}
+      lastCommunication={lastMessagesRef.current.get(item.id)}
       getThreadUri={getThreadUri}
     />
   );
 
-  const renderDetail = (selected: Resource, ctx: ResourceBoardDetailContext): JSX.Element => {
-    const thread = selected as Communication;
+  const renderDetail = (selected: WithId<Communication>, ctx: ResourceBoardDetailContext): JSX.Element => {
+    const thread = selected;
     return (
       <>
         {/* Main chat area */}
@@ -367,7 +369,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   return (
     <>
       <div className={classes.container}>
-        <ResourceBoard
+        <ResourceBoard<Communication>
           search={currentSearch}
           selectedId={threadId}
           loadItems={loadItems}

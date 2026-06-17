@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Paper, Text, Tooltip } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconPlus } from '@tabler/icons-react';
@@ -14,7 +15,7 @@ export default {
   component: ResourceBoard,
 } as Meta;
 
-const sampleItems: Communication[] = [
+const sampleItems: WithId<Communication>[] = [
   {
     resourceType: 'Communication',
     id: 'comm-1',
@@ -66,10 +67,10 @@ export const Basic = (): JSX.Element => {
   return (
     <Document>
       <div style={{ height: 600 }}>
-        <ResourceBoard
+        <ResourceBoard<Communication>
           search={{ resourceType: 'Communication' }}
-          renderItem={(item) => <ItemRow item={item as Communication} />}
-          renderDetail={(item) => <DetailPanel item={item as Communication} />}
+          renderItem={(item) => <ItemRow item={item} />}
+          renderDetail={(item) => <DetailPanel item={item} />}
         />
       </div>
     </Document>
@@ -82,7 +83,7 @@ export const WithTabsAndActions = (): JSX.Element => {
   return (
     <Document>
       <div style={{ height: 600 }}>
-        <ResourceBoard
+        <ResourceBoard<Communication>
           search={{ resourceType: 'Communication' }}
           selectedId={selectedId}
           loadItems={loadItems}
@@ -100,10 +101,10 @@ export const WithTabsAndActions = (): JSX.Element => {
           }
           renderItem={(item) => (
             <div onClick={() => setSelectedId(item.id)} onKeyDown={() => {}} role="presentation">
-              <ItemRow item={item as Communication} />
+              <ItemRow item={item} />
             </div>
           )}
-          renderDetail={(item) => <DetailPanel item={item as Communication} />}
+          renderDetail={(item) => <DetailPanel item={item} />}
         />
       </div>
     </Document>
@@ -115,12 +116,12 @@ export const CustomLoadItems = (): JSX.Element => {
   return (
     <Document>
       <div style={{ height: 600 }}>
-        <ResourceBoard
+        <ResourceBoard<Communication>
           search={{ resourceType: 'Communication' }}
           selectedId="comm-2"
           loadItems={loadItems}
-          renderItem={(item) => <ItemRow item={item as Communication} />}
-          renderDetail={(item) => <DetailPanel item={item as Communication} />}
+          renderItem={(item) => <ItemRow item={item} />}
+          renderDetail={(item) => <DetailPanel item={item} />}
         />
       </div>
     </Document>

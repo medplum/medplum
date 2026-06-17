@@ -1,45 +1,50 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient, SearchRequest } from '@medplum/core';
+import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
 import { deepEquals, formatSearchQuery } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
-export interface ResourceBoardLoadResult {
-  readonly items: Resource[];
+export interface ResourceBoardLoadResult<T extends Resource = Resource> {
+  readonly items: WithId<T>[];
   readonly total?: number;
 }
 
-export interface UseResourceBoardProps {
+export interface UseResourceBoardProps<T extends Resource = Resource> {
   // Data
   readonly search: SearchRequest;
   readonly selectedId?: string;
-  readonly loadItems?: (search: SearchRequest, medplum: MedplumClient) => Promise<ResourceBoardLoadResult>;
-  readonly resolveSelected?: (id: string, items: Resource[], medplum: MedplumClient) => Promise<Resource | undefined>;
+  readonly loadItems?: (search: SearchRequest, medplum: MedplumClient) => Promise<ResourceBoardLoadResult<T>>;
+  readonly resolveSelected?: (id: string, items: WithId<T>[], medplum: MedplumClient) => Promise<WithId<T> | undefined>;
 
   // Callbacks
-  readonly onSelectFirst?: (item: Resource) => void;
-  readonly onLoad?: (items: Resource[], total: number | undefined) => void;
+  readonly onSelectFirst?: (item: WithId<T>) => void;
+  readonly onLoad?: (items: WithId<T>[], total: number | undefined) => void;
   readonly onError?: (error: unknown) => void;
 }
 
-export interface UseResourceBoardResult {
-  readonly items: Resource[];
+export interface UseResourceBoardResult<T extends Resource = Resource> {
+  readonly items: WithId<T>[];
   readonly total: number | undefined;
   readonly loading: boolean;
-  readonly selected: Resource | undefined;
+  readonly selected: WithId<T> | undefined;
   readonly memoizedSearch: SearchRequest;
   readonly refresh: () => Promise<void>;
 }
 
-async function defaultLoadItems(search: SearchRequest, medplum: MedplumClient): Promise<ResourceBoardLoadResult> {
+async function defaultLoadItems<T extends Resource>(
+  search: SearchRequest,
+  medplum: MedplumClient
+): Promise<ResourceBoardLoadResult<T>> {
   const bundle = await medplum.search(
     search.resourceType,
     formatSearchQuery({ ...search, total: search.total ?? 'accurate', fields: undefined }),
     { cache: 'no-cache' }
   );
-  const items = bundle.entry?.map((entry) => entry.resource).filter((r) => r !== undefined) ?? [];
+  // medplum.search is typed by a runtime string resourceType, so narrow the WithId<Resource>
+  // results to the caller's T.
+  const items = (bundle.entry?.map((entry) => entry.resource).filter((r) => r !== undefined) ?? []) as WithId<T>[];
   return { items, total: bundle.total };
 }
 
@@ -50,19 +55,21 @@ async function defaultLoadItems(search: SearchRequest, medplum: MedplumClient): 
  * @param options - The data options, a subset of the ResourceBoard props.
  * @returns The loaded resources, total, loading state, resolved selection, and refresh helper.
  */
-export function useResourceBoard(options: UseResourceBoardProps): UseResourceBoardResult {
+export function useResourceBoard<T extends Resource = Resource>(
+  options: UseResourceBoardProps<T>
+): UseResourceBoardResult<T> {
   const { search, selectedId, loadItems } = options;
   const medplum = useMedplum();
 
   // State
   const [memoizedSearch, setMemoizedSearch] = useState(search);
   const [prevLoadItems, setPrevLoadItems] = useState<typeof loadItems>(() => loadItems);
-  const [items, setItems] = useState<Resource[]>([]);
+  const [items, setItems] = useState<WithId<T>[]>([]);
   const [total, setTotal] = useState<number | undefined>();
   const [loading, setLoading] = useState(true);
   // The resolved selection is tagged with the id it was resolved for, so a stale
   // value is never shown for a different selectedId.
-  const [selectedState, setSelectedState] = useState<{ id: string; value: Resource | undefined } | undefined>();
+  const [selectedState, setSelectedState] = useState<{ id: string; value: WithId<T> | undefined } | undefined>();
 
   // Refs
   const optionsRef = useRef(options);
@@ -89,7 +96,7 @@ export function useResourceBoard(options: UseResourceBoardProps): UseResourceBoa
     try {
       const result = loadItems
         ? await loadItems(memoizedSearch, medplum)
-        : await defaultLoadItems(memoizedSearch, medplum);
+        : await defaultLoadItems<T>(memoizedSearch, medplum);
       if (requestId !== loadRequestIdRef.current) {
         return;
       }
@@ -126,7 +133,7 @@ export function useResourceBoard(options: UseResourceBoardProps): UseResourceBoa
     if (!selectedId) {
       return;
     }
-    const resolve = async (): Promise<Resource | undefined> => {
+    const resolve = async (): Promise<WithId<T> | undefined> => {
       const custom = optionsRef.current.resolveSelected;
       if (custom) {
         return custom(selectedId, items, medplum);
@@ -135,7 +142,7 @@ export function useResourceBoard(options: UseResourceBoardProps): UseResourceBoa
       if (found !== undefined) {
         return found;
       }
-      return medplum.readResource(resourceType, selectedId);
+      return (await medplum.readResource(resourceType, selectedId)) as WithId<T>;
     };
     const resolveSelection = async (): Promise<void> => {
       try {

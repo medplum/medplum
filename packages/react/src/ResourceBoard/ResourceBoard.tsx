@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Center, Divider, Flex, Group, Pagination, ScrollArea, Stack, Tabs, Text } from '@mantine/core';
-import type { MedplumClient, SearchRequest } from '@medplum/core';
+import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import type { ResourceBoardLoadResult } from '@medplum/react-hooks';
@@ -10,8 +10,6 @@ import type { JSX, ReactNode } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import classes from './ResourceBoard.module.css';
 import { ResourceBoardSkeleton } from './ResourceBoardSkeleton';
-
-export type { ResourceBoardLoadResult } from '@medplum/react-hooks';
 
 export interface ResourceBoardTab {
   /**
@@ -30,11 +28,11 @@ export interface ResourceBoardTab {
   readonly uri: string;
 }
 
-export interface ResourceBoardItemContext {
+export interface ResourceBoardItemContext<T extends Resource = Resource> {
   readonly selected: boolean;
   readonly index: number;
   /** Full current page of items, for neighbor-aware rendering (e.g. divider hiding). */
-  readonly items: Resource[];
+  readonly items: WithId<T>[];
 }
 
 export interface ResourceBoardDetailContext {
@@ -42,7 +40,7 @@ export interface ResourceBoardDetailContext {
   readonly refresh: () => Promise<void>;
 }
 
-export interface ResourceBoardProps {
+export interface ResourceBoardProps<T extends Resource = Resource> {
   // Data
   /**
    * The search definition (resourceType + filters + count/offset), like SearchControl.
@@ -56,12 +54,16 @@ export interface ResourceBoardProps {
    * Custom fetcher replacing the default search (e.g. GraphQL batching, client-side
    * filtering). Re-runs whenever its identity or the search changes — wrap in useCallback.
    */
-  readonly loadItems?: (search: SearchRequest, medplum: MedplumClient) => Promise<ResourceBoardLoadResult>;
+  readonly loadItems?: (search: SearchRequest, medplum: MedplumClient) => Promise<ResourceBoardLoadResult<T>>;
   /**
    * Selected-resource resolution. Default: find in items by id, else
    * `medplum.readResource(search.resourceType, id)`.
    */
-  readonly resolveSelected?: (id: string, items: Resource[], medplum: MedplumClient) => Promise<Resource | undefined>;
+  readonly resolveSelected?: (
+    id: string,
+    items: WithId<T>[],
+    medplum: MedplumClient
+  ) => Promise<WithId<T> | undefined>;
 
   // Sidebar header
   /** Sidebar header tabs. Selecting a tab navigates to its URI. */
@@ -72,7 +74,7 @@ export interface ResourceBoardProps {
   readonly headerActions?: ReactNode;
 
   // List
-  readonly renderItem: (item: Resource, ctx: ResourceBoardItemContext) => ReactNode;
+  readonly renderItem: (item: WithId<T>, ctx: ResourceBoardItemContext<T>) => ReactNode;
   /** Shown when the list loads empty. Default: dimmed "No items found". */
   readonly emptyList?: ReactNode;
   /** Shown while the initial or search-change load is in flight. Default: built-in skeleton rows. */
@@ -81,7 +83,7 @@ export interface ResourceBoardProps {
   readonly listWidth?: number;
 
   // Detail
-  readonly renderDetail: (selected: Resource, ctx: ResourceBoardDetailContext) => ReactNode;
+  readonly renderDetail: (selected: WithId<T>, ctx: ResourceBoardDetailContext) => ReactNode;
   /** Shown when nothing is selected or the selection cannot be resolved. */
   readonly emptyDetail?: ReactNode;
 
@@ -97,9 +99,9 @@ export interface ResourceBoardProps {
    * current search completes with items while `selectedId` is undefined.
    * The consumer decides how to navigate (e.g. with history replace).
    */
-  readonly onSelectFirst?: (item: Resource) => void;
+  readonly onSelectFirst?: (item: WithId<T>) => void;
   /** Fired after every successful load. */
-  readonly onLoad?: (items: Resource[], total: number | undefined) => void;
+  readonly onLoad?: (items: WithId<T>[], total: number | undefined) => void;
   /** List-load and selection-resolution errors. Default: console.error. */
   readonly onError?: (error: unknown) => void;
 }
@@ -116,7 +118,7 @@ const HEADER_HEIGHT = 64;
  * @param props - The ResourceBoard React props.
  * @returns The ResourceBoard React node.
  */
-export function ResourceBoard(props: ResourceBoardProps): JSX.Element {
+export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoardProps<T>): JSX.Element {
   const {
     onChange,
     selectedId,
@@ -133,7 +135,7 @@ export function ResourceBoard(props: ResourceBoardProps): JSX.Element {
 
   // Hooks
   const navigate = useMedplumNavigate();
-  const { items, total, loading, selected, memoizedSearch, refresh } = useResourceBoard(props);
+  const { items, total, loading, selected, memoizedSearch, refresh } = useResourceBoard<T>(props);
 
   // Derived variables
   const count = memoizedSearch.count ?? DEFAULT_SEARCH_COUNT;
