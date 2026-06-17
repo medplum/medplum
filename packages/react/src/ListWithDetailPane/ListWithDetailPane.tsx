@@ -161,12 +161,12 @@ export function ListWithDetailPane<T extends Resource = Resource>(props: ListWit
           </div>
         )}
       </Flex>
-      {selected !== undefined ? (
-        renderDetail(selected, { refresh })
-      ) : (
+      {selected === undefined ? (
         <Flex direction="column" style={{ flex: 1 }} h="100%">
           {emptyDetail ?? <DefaultEmptyDetail />}
         </Flex>
+      ) : (
+        renderDetail(selected, { refresh })
       )}
     </Flex>
   );

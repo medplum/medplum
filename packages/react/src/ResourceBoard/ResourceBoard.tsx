@@ -70,8 +70,6 @@ export interface ResourceBoardProps<T extends Resource = Resource> {
   // Callbacks
   /**
    * Fired by the built-in pagination with the updated offset.
-   * Pagination is hidden when omitted. Resetting the offset when filters
-   * change remains the consumer's responsibility.
    */
   readonly onChange?: (search: SearchRequest) => void;
   /**
@@ -96,8 +94,11 @@ export interface ResourceBoardProps<T extends Resource = Resource> {
  */
 export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoardProps<T>): JSX.Element {
   const {
-    onChange,
+    search,
     selectedId,
+    loadItems,
+    resolveSelected,
+    reloadKey,
     tabs,
     activeTab,
     headerActions,
@@ -107,11 +108,24 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
     listWidth,
     renderDetail,
     emptyDetail,
+    onChange,
+    onSelectFirst,
+    onLoad,
+    onError,
   } = props;
 
   // Hooks
   const navigate = useMedplumNavigate();
-  const { items, total, loading, selected, memoizedSearch, refresh } = useResourceBoard<T>(props);
+  const { items, total, loading, selected, memoizedSearch, refresh } = useResourceBoard<T>({
+    search,
+    selectedId,
+    loadItems,
+    resolveSelected,
+    reloadKey,
+    onSelectFirst,
+    onLoad,
+    onError,
+  });
 
   // Derived variables
   const count = memoizedSearch.count ?? DEFAULT_SEARCH_COUNT;
