@@ -37,11 +37,11 @@ export interface CcdaPatientRole {
 export interface CcdaAddr {
   '@_use'?: 'HP' | 'WP';
   '@_nullFlavor'?: 'UNK';
-  streetAddressLine?: string[];
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  country?: string;
+  streetAddressLine?: (string | CcdaText)[];
+  city?: string | CcdaText;
+  state?: string | CcdaText;
+  postalCode?: string | CcdaText;
+  country?: string | CcdaText;
 }
 
 export interface CcdaPatient {
