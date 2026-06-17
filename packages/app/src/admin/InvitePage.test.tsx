@@ -29,12 +29,7 @@ async function setup(url: string): Promise<void> {
 }
 
 async function fillInviteForm(fields: InviteFormFields = {}): Promise<void> {
-  const {
-    resourceType,
-    firstName = 'George',
-    lastName = 'Washington',
-    email = 'george@example.com',
-  } = fields;
+  const { resourceType, firstName = 'George', lastName = 'Washington', email = 'george@example.com' } = fields;
 
   await act(async () => {
     if (resourceType) {
