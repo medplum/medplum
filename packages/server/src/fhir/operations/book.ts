@@ -82,6 +82,7 @@ async function bookFromProposedAppointmentHandler(proposedAppointment: Appointme
  * Endpoints:
  *   [fhir base]/Appointment/$book
  *
+ * @experimental - Scheduling Alpha API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */
@@ -101,6 +102,10 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
 
     return bookFromProposedAppointmentHandler(params.appointment);
   }
+
+  // The code path below was deprecated during the Scheduling Alpha window. It is retained
+  // for a brief time to allow users to transition to the new `appointment` input format.
+  ctx.logger.info('Deprecated $book slot handler invoked');
 
   const proposedSlots = withPaths(params.slot, 'Parameters.slot');
 
