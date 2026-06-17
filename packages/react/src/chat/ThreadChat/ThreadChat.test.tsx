@@ -488,23 +488,17 @@ describe('ThreadChat', () => {
       content: [{ attachment: { title: 'report.pdf', url: 'https://example.com/report.pdf' } }],
     });
 
-    vi.useFakeTimers();
-
     await setup({ thread, uploadEnabled: true });
 
-    // Open the attach menu, then drill into the recent-documents view
+    // Open the attach menu, then drill into the recent-documents view. Use findByText so the
+    // Popover dropdown and (on-mount, non-debounced) document fetch have time to settle, rather
+    // than racing a synchronous query right after the opening click.
     await act(() => fireEvent.click(screen.getByRole('button', { name: /attach file/i })));
-    await act(() => fireEvent.click(screen.getByText('Recent Documents')));
-
-    // Wait for debounced fetch and document to appear
-    await act(async () => {
-      vi.advanceTimersByTime(300);
-    });
+    const recentItem = await screen.findByText('Recent Documents');
+    await act(() => fireEvent.click(recentItem));
 
     const docButton = await screen.findByText('Attached report');
     await act(() => fireEvent.click(docButton));
-
-    vi.useRealTimers();
 
     // Send message
     act(() => {
