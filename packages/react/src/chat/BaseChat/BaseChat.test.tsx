@@ -737,6 +737,77 @@ describe('BaseChat', () => {
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
+  test('Selecting a recent document shows a removable attachment pill', async () => {
+    await defaultMedplum.createResource<DocumentReference>({
+      resourceType: 'DocumentReference',
+      status: 'current',
+      description: 'Lab summary',
+      content: [{ attachment: { title: 'lab.pdf', url: 'https://example.com/lab.pdf' } }],
+    });
+
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      uploadEnabled: true,
+    });
+
+    // Open the attach menu and drill into the recent-documents view
+    await act(() => fireEvent.click(screen.getByRole('button', { name: /attach file/i })));
+    const recentItem = await screen.findByText('Recent Documents');
+    await act(() => fireEvent.click(recentItem));
+
+    // Pick the document; a pill with its name should appear in the input box
+    const docItem = await screen.findByText('Lab summary');
+    await act(() => fireEvent.click(docItem));
+    expect(await screen.findByText('Lab summary')).toBeInTheDocument();
+
+    // Remove the attachment via keyboard (Enter on the dismiss control); the pill should disappear
+    const removeButton = screen.getByRole('button', { name: /remove attachment/i });
+    await act(() => fireEvent.keyDown(removeButton, { key: 'Enter' }));
+    expect(screen.queryByText('Lab summary')).not.toBeInTheDocument();
+  });
+
+  test('Choosing a file shows a removable attachment pill with the file name', async () => {
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      uploadEnabled: true,
+    });
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['data'], 'scan.png', { type: 'image/png' });
+    await act(() => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    expect(await screen.findByText('scan.png')).toBeInTheDocument();
+
+    // Removing via click clears the pill
+    await act(() => fireEvent.click(screen.getByRole('button', { name: /remove attachment/i })));
+    expect(screen.queryByText('scan.png')).not.toBeInTheDocument();
+  });
+
+  test('Upload menu item opens the file picker', async () => {
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      uploadEnabled: true,
+    });
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const clickSpy = vi.spyOn(fileInput, 'click').mockImplementation(() => undefined);
+
+    await act(() => fireEvent.click(screen.getByRole('button', { name: /attach file/i })));
+    const uploadItem = await screen.findByText('Upload a file or image');
+    await act(() => fireEvent.click(uploadItem));
+
+    expect(clickSpy).toHaveBeenCalled();
+    clickSpy.mockRestore();
+  });
+
   test('Messages with contentAttachment show filename and icon', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
     medplum.setSubscriptionManager(defaultSubManager);
