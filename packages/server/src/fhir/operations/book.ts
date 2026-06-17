@@ -82,7 +82,7 @@ async function bookFromProposedAppointmentHandler(proposedAppointment: Appointme
  * Endpoints:
  *   [fhir base]/Appointment/$book
  *
- * @experimental - Scheduling Alpha API
+ * @experimental - Scheduling Beta API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */

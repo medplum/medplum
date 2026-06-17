@@ -1,13 +1,13 @@
 ---
-sidebar_label: Defining Availability (Alpha)
+sidebar_label: Defining Availability (Beta)
 sidebar_position: 10
 ---
 
 # Defining Availability
 
-:::info[Alpha]
+:::info[Beta]
 
-Medplum Scheduling APIs are currently in [alpha](/docs/compliance/alpha-beta).
+Medplum Scheduling APIs are currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
@@ -443,7 +443,7 @@ The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://h
 
 ### Service Types and HealthcareService
 
-A [HealthcareService](/docs/api/fhir/resources/healthcareservice) gives a mechanism to define common scheduling parameters for an appointment type, which can then be used by multiple [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedules](/docs/api/fhir/resources/schedule). This allows you to define standard appointment durations, buffer times, alignment intervals, and booking limits once and apply them across multiple providers.
+A [HealthcareService](/docs/api/fhir/resources/healthcareservice) gives a mechanism to define common scheduling parameters for an appointment type, which can then be used by multiple [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedules](/docs/api/fhir/resources/schedule). This allows you to define standard appointment durations, buffer times, and grid alignment settings once and apply them across multiple providers.
 
 For a `Schedule` to use the `HealthcareService`'s scheduling parameters, the `Schedule.serviceType` must include a reference to the HealthcareService in its extensions.
 
@@ -856,7 +856,7 @@ A provider who offers different appointment types with varying availability and 
 <details>
 <summary>HealthcareService: New Patient Visit</summary>
 
-This HealthcareService defines a 60-minute new patient visit with 15-minute buffers, 30-minute alignment intervals, and a booking limit of 3 per day.
+This HealthcareService defines a 60-minute new patient visit with 15-minute buffers and 30-minute alignment intervals.
 
 ```tsx
 {
@@ -873,13 +873,7 @@ This HealthcareService defines a 60-minute new patient visit with 15-minute buff
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 1,
-          "unit": "h"
-        }
-      },
+      {"url": "duration", "valueDuration": { "value": 1, "unit": "h" }},
       {"url": "bufferBefore", "valueDuration": {"value": 15, "unit": "min"}},
       {"url": "bufferAfter", "valueDuration": {"value": 15, "unit": "min"}},
       {"url": "alignmentInterval", "valueDuration": {"value": 30, "unit": "min"}}
@@ -917,13 +911,7 @@ It defines default availability of Monday-Friday, 9am-5pm.
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 20,
-          "unit": "min"
-        }
-      },
+      {"url": "duration", "valueDuration": { "value": 20, "unit": "min" }},
       {"url": "bufferBefore", "valueDuration": {"value": 5, "unit": "min"}},
       {"url": "bufferAfter", "valueDuration": {"value": 5, "unit": "min"}},
       {"url": "alignmentInterval", "valueDuration": {"value": 10, "unit": "min"}}
@@ -939,7 +927,7 @@ It defines default availability of Monday-Friday, 9am-5pm.
 
 This schedule declares in its `serviceType` array that it can be booked for New Patient visits and Follow-Up visits.
 
-This Schedule will use the default availability for the "Follow-Up" service (Mon-Fri 9am-5pm). It will override "New Patient Visit" appointment type to only be available on Tuesday and Thursday mornings (9am-1pm).
+This Schedule uses the shared availability from the "Follow-Up" service (Mon-Fri 9am-5pm). It overrides "New Patient Visit" appointment type to only be available on Tuesday and Thursday mornings (9am-1pm).
 
 ```tsx
 {
@@ -1052,7 +1040,7 @@ A bariatric surgery requiring surgeon, OR room, and anesthesiologist coordinatio
 <details>
 <summary>HealthcareService: Bariatric Surgery</summary>
 
-This HealthcareService defines scheduling for a 120-minute surgical procedure with 45/30-minute buffers and multiple booking limits (2 per day, 8 per week).
+This HealthcareService defines scheduling for a 120-minute surgical procedure with 45/30-minute buffers.
 
 ```tsx
 {
@@ -1068,28 +1056,10 @@ This HealthcareService defines scheduling for a 120-minute surgical procedure wi
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 120,
-          "unit": "min"
-        }
-      },
+      {"url": "duration", "valueDuration": { "value": 120, "unit": "min" }},
       {"url": "bufferBefore", "valueDuration": {"value": 45, "unit": "min"}},
       {"url": "bufferAfter", "valueDuration": {"value": 30, "unit": "min"}},
-      {"url": "alignmentInterval", "valueDuration": {"value": 30, "unit": "min"}},
-      {
-        "url": "bookingLimit",
-        "valueTiming": {
-          "repeat": {"frequency": 2, "period": 1, "periodUnit": "d"}
-        }
-      },
-      {
-        "url": "bookingLimit",
-        "valueTiming": {
-          "repeat": {"frequency": 8, "period": 1, "periodUnit": "wk"}
-        }
-      }
+      {"url": "alignmentInterval", "valueDuration": {"value": 30, "unit": "min"}}
     ]
   }]
 }
@@ -1370,3 +1340,9 @@ Let `$find` calculate available windows dynamically.
 #### 3. Transaction Bundles for Multi-Resource Booking
 
 Always use [FHIR transaction bundles](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions) when booking appointments that require multiple resources to ensure atomicity.
+
+## Beta Limitations
+
+The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.
+
+- `bookingLimit` - An upcoming scheduling parameter that will allow you to express how often a given service type may be added to a schedule. This is not yet implemented.

@@ -328,7 +328,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
  * Endpoints:
  *   [fhir base]/Appointment/$find
  *
- * @experimental - Scheduling Alpha API
+ * @experimental - Scheduling Beta API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */

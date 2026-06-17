@@ -1,8 +1,8 @@
 # Appointment $cancel
 
-:::info[Alpha]
+:::info[Beta]
 
-The `$cancel` operation is currently in [alpha](/docs/compliance/alpha-beta).
+The `$cancel` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
@@ -83,7 +83,7 @@ All `Slot` resources that were referenced by the Appointment are deleted and do 
 
 ## Cancellation Logic
 
-`$cancel` performs the following steps inside a serializable transaction:
+`$cancel` performs the following steps atomically inside a database transaction, ensuring safety when concurrent scheduling requests are received.
 
 1. Reads the Appointment identified by the URL `id`
 2. Loads all `Slot` resources listed in `Appointment.slot`
@@ -91,8 +91,6 @@ All `Slot` resources that were referenced by the Appointment are deleted and do 
 4. Sets the Appointment's `status` to `cancelled` and saves it
 5. Deletes all referenced Slots
 6. Returns the updated Appointment
-
-The transaction uses serializable isolation for safety when there are concurrent scheduling operations affecting the same appointment.
 
 ## Error Responses
 

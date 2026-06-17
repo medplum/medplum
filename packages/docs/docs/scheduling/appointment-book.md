@@ -10,9 +10,9 @@ import TabItem from '@theme/TabItem';
 
 # Appointment $book
 
-:::info[Alpha]
+:::info[Beta]
 
-The `$book` operation is currently in [alpha](/docs/compliance/alpha-beta).
+The `$book` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
@@ -97,7 +97,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$book' \
 
 ### Appointment Input
 
-The `appointment` parameter accepts a proposed `Appointment` resource, exactly as returned by [`$find`](/docs/scheduling/appointment-find). The Appointment must include `contained` Slot resources that describe which Schedules to book.
+The `appointment` parameter accepts a proposed `Appointment` resource, exactly as returned by [`$find`](/docs/scheduling/appointment-find). The Appointment must include `contained` Slot resources that describe when to book each Schedule.
 
 ```json
 {
@@ -244,16 +244,14 @@ Returns `201 Created` with a [`Bundle`](/docs/api/fhir/resources/bundle) wrappin
 
 ## Booking Logic
 
-`$book` performs the following steps atomically inside a database transaction:
+`$book` performs the following steps atomically inside a database transaction, ensuring safety when concurrent booking requests are received.
 
 1. Validates that each proposed Slot's start/end matches a valid slot duration defined in the Schedule's `SchedulingParameters`
 2. Loads existing Slots in the time window (including buffer margins) for each Schedule
 3. Checks that no existing busy Slot overlaps the requested time
-4. Verifies the requested time falls within the Schedule's defined availability windows
-5. Creates the `Appointment`, busy `Slot`(s), and any buffer `Slot`(s) atomically
+4. Verifies the requested time falls within the Schedule's defined availability windows or existing slots with status `free`
+5. Creates the `Appointment`, busy `Slot`(s), and any buffer `Slot`(s)
 6. Returns all created resources in the response Bundle
-
-The transaction uses serializable isolation to prevent double-booking under concurrent requests.
 
 ## Error Responses
 
@@ -284,10 +282,16 @@ The transaction uses serializable isolation to prevent double-booking under conc
 }
 ```
 
+## Beta Limitations
+
+The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.
+
+- `bookingLimit` - An upcoming scheduling parameter that will allow you to express how often a given service type may be added to a schedule. This is not yet enforced in `$book`.
+
 ## Related
 
 - [Appointment `$find`](/docs/scheduling/appointment-find) - Find available Slots before booking
-- [Appointment `$hold`](/docs/scheduling/appointment-hold) - Optionally reserve a slot before confirming
+- [Appointment `$hold`](/docs/scheduling/appointment-hold) - Reserve an unconfirmed appointment
 - [Defining Availability](/docs/scheduling/defining-availability) - How to configure `SchedulingParameters` on a Schedule
 - [Scheduling Overview](/docs/scheduling) - High-level scheduling concepts
 - [`Appointment` resource](/docs/api/fhir/resources/appointment)

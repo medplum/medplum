@@ -5,9 +5,9 @@ sidebar_position: 2
 
 # Appointment $find
 
-:::info[Alpha]
+:::info[Beta]
 
-The `$find` operation is currently in [alpha](/docs/compliance/alpha-beta).
+The `$find` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
@@ -186,9 +186,10 @@ The Appointments are virtual — they are not persisted in the FHIR store. Each 
 
 1. Reading each Schedule's `SchedulingParameters` extension to determine recurring availability windows, slot duration, buffer times, and alignment constraints
 2. Fetching existing Slot resources for each Schedule in the requested range (busy, busy-tentative, busy-unavailable, and free slots)
-3. Subtracting occupied time (including buffer windows around booked slots) from the availability windows
-4. Applying alignment intervals and offsets to produce valid start times
-5. Returning Appointments up to `_count`
+3. Adding time for existing Slot resources with status `free`
+4. Subtracting occupied time for existing Slot resources with status `busy`, `busy-tentative`, or `busy-unavailable`.
+5. Applying alignment intervals and offsets to produce valid start times
+6. Returning Appointments up to `_count`
 
 See [Defining Availability](/docs/scheduling/defining-availability) for full details on how `SchedulingParameters` are configured.
 
@@ -238,9 +239,17 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
   "issue": [{ "severity": "error", "code": "invalid", "details": { "text": "Schedule is not schedulable for requested service type" } }]
 }
 ```
+
+## Beta Limitations
+
+The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.
+
+- `bookingLimit` - An upcoming scheduling parameter that will allow you to express how often a given service type may be added to a schedule. This is not yet enforced in `$find`.
+
 ## Related
 
 - [Appointment `$book`](/docs/scheduling/appointment-book) - Book one of the returned Appointments
+- [Appointment `$hold`](/docs/scheduling/appointment-hold) - Reserve one of the returned Appointments
 - [Defining Availability](/docs/scheduling/defining-availability) - How to configure `SchedulingParameters` on a Schedule
 - [Scheduling Overview](/docs/scheduling) - High-level scheduling concepts
 - [`Schedule` resource](/docs/api/fhir/resources/schedule)
