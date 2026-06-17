@@ -1,0 +1,13 @@
+.wideLabel {
+  flex-grow: 1;
+}
+
+.calendar {
+  /* `timeGridWeek` view in a flex container can behave weirdly when
+   * the viewport size changes and there is no concrete size. Setting
+   * `min-width` seems to resolve these issues.
+   *
+   * @see https://github.com/fullcalendar/fullcalendar/issues/8076
+   * */
+  min-width: 0px;
+}
