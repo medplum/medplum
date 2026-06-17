@@ -199,7 +199,6 @@ describe('Execute', () => {
       mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
         const encoder = new TextEncoder();
         const headersJson = JSON.stringify({
-          statusCode: 200,
           headers: { 'Content-Type': 'text/event-stream' },
         });
 
@@ -313,20 +312,17 @@ describe('Execute', () => {
       expect(res.body).toMatchObject({ errorType: 'Error', errorMessage: 'Something failed' });
     });
 
-    test('Streaming execution with JSON content type still streams', async () => {
+    test('Streaming execution with JSON content still streams', async () => {
       mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
         const encoder = new TextEncoder();
-        const headersJson = JSON.stringify({
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        const headersJson = JSON.stringify({}); // statusCode and headers optional
 
         async function* createEventStream(): AsyncGenerator<{
           PayloadChunk?: { Payload: Uint8Array };
           InvokeComplete?: { LogResult?: string };
         }> {
-          yield { PayloadChunk: { Payload: encoder.encode(headersJson + '\n') } };
-          yield { PayloadChunk: { Payload: encoder.encode('{"chunks":[') } };
+          yield { PayloadChunk: { Payload: encoder.encode(headersJson + '\n{') } };
+          yield { PayloadChunk: { Payload: encoder.encode('"chunks":[') } };
           yield { PayloadChunk: { Payload: encoder.encode('{"chunk":1},') } };
           yield { PayloadChunk: { Payload: encoder.encode('{"chunk":2}]}') } };
           yield {
@@ -346,8 +342,8 @@ describe('Execute', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
       expect(res.status).toBe(200);
-      expect(res.headers['content-type']).toBe('application/json');
-      expect(res.body).toStrictEqual({ chunks: [{ chunk: 1 }, { chunk: 2 }] });
+      expect(res.body).toStrictEqual({}); // since content-type is not application/json, supertest does not parse the body and leaves it as an empty object
+      expect(JSON.parse(res.text)).toStrictEqual({ chunks: [{ chunk: 1 }, { chunk: 2 }] });
     });
   });
 });
