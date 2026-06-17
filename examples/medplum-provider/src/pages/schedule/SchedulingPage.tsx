@@ -17,12 +17,12 @@ import {
   useMantineColorScheme,
   useMantineTheme,
 } from '@mantine/core';
-import { getReferenceString, parseReference } from '@medplum/core';
+import { EMPTY, getReferenceString, parseReference } from '@medplum/core';
 import type { Appointment, Reference, ResourceType, Schedule, Slot } from '@medplum/fhirtypes';
 import { ReferenceDisplay } from '@medplum/react';
 import { useSearchResources } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useNotifyOnError } from '../../hooks/useNotifyOnError';
 import type { Range } from '../../types/scheduling';
@@ -81,6 +81,52 @@ function slotToEvent(slot: Slot): EventInput {
     start: slot.start,
     end: slot.end,
   };
+}
+
+type ScheduleSlotsLoaderProps = {
+  scheduleRef: string;
+  range: Range;
+  onResult: (scheduleRef: string, slots: Slot[], loading: boolean) => void;
+};
+
+function ScheduleSlotsLoader({ scheduleRef, range, onResult }: ScheduleSlotsLoaderProps): null {
+  const [slots, loading, outcome] = useSearchResources('Slot', [
+    ['_count', '1000'],
+    ['schedule', scheduleRef],
+    ['start', `ge${range.start.toISOString()}`],
+    ['start', `le${range.end.toISOString()}`],
+    ['status:not', 'entered-in-error'],
+  ]);
+  useNotifyOnError(outcome);
+
+  useEffect(() => {
+    onResult(scheduleRef, slots ?? [], loading);
+  }, [scheduleRef, slots, loading, onResult]);
+
+  return null;
+}
+
+type ActorAppointmentsLoaderProps = {
+  actorRef: string;
+  range: Range;
+  onResult: (actorRef: string, appointments: Appointment[], loading: boolean) => void;
+};
+
+function ActorAppointmentsLoader({ actorRef, range, onResult }: ActorAppointmentsLoaderProps): null {
+  const [appointments, loading, outcome] = useSearchResources('Appointment', [
+    ['_count', '1000'],
+    ['actor', actorRef],
+    ['date', `ge${range.start.toISOString()}`],
+    ['date', `le${range.end.toISOString()}`],
+    ['status:not', 'cancelled'],
+  ]);
+  useNotifyOnError(outcome);
+
+  useEffect(() => {
+    onResult(actorRef, appointments ?? [], loading);
+  }, [actorRef, appointments, loading, onResult]);
+
+  return null;
 }
 
 type ActorChooserProps = {
@@ -173,64 +219,82 @@ export function SchedulingPage(): JSX.Element | null {
     [allSchedules, actors]
   );
 
-  // Search for slots on any selected calendar in the given range.
-  const [slots, slotsLoading, slotsOutcome] = useSearchResources(
-    'Slot',
-    selectedSchedules?.length && range
-      ? [
-          ['_count', '1000'],
-          ['schedule', selectedSchedules.map((schedule) => getReferenceString(schedule)).join(',')],
-          ['start', `ge${range.start.toISOString()}`],
-          ['start', `le${range.end.toISOString()}`],
-          ['status', 'free,busy-unavailable'],
-        ]
-      : undefined,
-    { enabled: !!selectedSchedules?.length && !!range }
-  );
-  useNotifyOnError(slotsOutcome);
+  // Slots are fetched per-schedule via ScheduleSlotsLoader components rendered below.
+  const [slotsMap, setSlotsMap] = useState<Map<string, Slot[]>>(new Map());
+  const [loadingScheduleRefs, setLoadingScheduleRefs] = useState<Set<string>>(new Set());
 
-  // Search for appointments related to any selected actor in the given range.
-  const [appointments, appointmentsLoading, appointmentsOutcome] = useSearchResources(
-    'Appointment',
-    actors.length && range
-      ? [
-          ['_count', '1000'],
-          ['actor', actors.join(',')],
-          ['date', `ge${range.start.toISOString()}`],
-          ['date', `le${range.end.toISOString()}`],
-          ['status:not', 'cancelled'],
-        ]
-      : undefined,
-    { enabled: !!actors.length && !!range }
-  );
-  useNotifyOnError(appointmentsOutcome);
+  const handleSlotResult = useCallback((scheduleRef: string, slots: Slot[], loading: boolean) => {
+    setSlotsMap((prev) => new Map(prev).set(scheduleRef, slots));
+    setLoadingScheduleRefs((prev) => {
+      const next = new Set(prev);
+      if (loading) {
+        next.add(scheduleRef);
+      } else {
+        next.delete(scheduleRef);
+      }
+      return next;
+    });
+  }, []);
+
+  // Appointments are fetched per-actor via ActorAppointmentsLoader components rendered below.
+  const [appointmentsMap, setAppointmentsMap] = useState<Map<string, Appointment[]>>(new Map());
+  const [loadingActorRefs, setLoadingActorRefs] = useState<Set<string>>(new Set());
+
+  const handleAppointmentResult = useCallback((actorRef: string, appointments: Appointment[], loading: boolean) => {
+    setAppointmentsMap((prev) => new Map(prev).set(actorRef, appointments));
+    setLoadingActorRefs((prev) => {
+      const next = new Set(prev);
+      if (loading) {
+        next.add(actorRef);
+      } else {
+        next.delete(actorRef);
+      }
+      return next;
+    });
+  }, []);
 
   // Q: SchedulePage.tsx merged overlapping slots on a single calendar into a
   // single display slot; is that desirable in the multi-calendar view?
 
-  const loading = allSchedulesLoading || slotsLoading || appointmentsLoading;
+  const loading = allSchedulesLoading || loadingScheduleRefs.size > 0 || loadingActorRefs.size > 0;
 
   const eventSources = useMemo(() => {
     return actors.flatMap((actor) => {
       const colorTheme = colorThemeForId(actor);
-      const apts = (appointments ?? []).filter((appointment) =>
-        appointment.participant.some(
-          (participant) => participant.actor && getReferenceString(participant.actor) === actor
-        )
-      );
+      const apts = appointmentsMap.get(actor) ?? [];
+
+      const appointmentBySlot = apts.reduce<Record<string, Appointment>>((acc, appointment) => {
+        (appointment.slot ?? EMPTY).forEach((slotRef) => {
+          const key = getReferenceString(slotRef);
+          if (key) {
+            acc[key] = appointment;
+          }
+        });
+        return acc;
+      }, {});
 
       const appointmentSource = {
         events: apts.map((apt) => appointmentToEvent(apt)),
         color: getThemeColor(colorTheme.appointment, theme),
       } satisfies EventSourceInput;
 
-      const scheduleRefs = new Set(
-        allSchedules
-          ?.filter((schedule) => schedule.actor.some((x) => getReferenceString(x) === actor))
-          .map((schedule) => getReferenceString(schedule))
-      );
+      const scheduleRefs = (allSchedules ?? [])
+        .filter((schedule) => schedule.actor.some((x) => getReferenceString(x) === actor))
+        .map((schedule) => getReferenceString(schedule));
 
-      const mySlots = (slots ?? []).filter((slot) => scheduleRefs.has(getReferenceString(slot.schedule) as string));
+      const mySlots = scheduleRefs
+        .flatMap((ref) => slotsMap.get(ref) ?? [])
+        .filter((slot) => {
+          // don't show slots that are exact matches for the appointment that references them
+          const key = getReferenceString(slot);
+          if (key && appointmentBySlot[key]) {
+            const appointment = appointmentBySlot[key];
+            if (slot.start === appointment.start && slot.end === appointment.end) {
+              return false;
+            }
+          }
+          return true;
+        });
 
       const slotSource = {
         events: mySlots.map(slotToEvent),
@@ -239,34 +303,50 @@ export function SchedulingPage(): JSX.Element | null {
 
       return [appointmentSource, slotSource];
     });
-  }, [appointments, slots, allSchedules, actors, theme]);
+  }, [appointmentsMap, slotsMap, allSchedules, actors, theme]);
 
   return (
-    <Grid gutter="md" p="md">
-      <Grid.Col span={3}>
-        <ActorChooser
-          schedules={allSchedules ?? []}
-          selected={actors}
-          onChange={(actor: string[]) => setSearchParams({ actor })}
-        />
-      </Grid.Col>
-      <Grid.Col span="auto" pos="relative">
-        <LoadingOverlay visible={loading} />
-        <FullCalendar
-          plugins={[themePlugin, timeGridPlugin]}
-          initialView="timeGridWeek"
-          datesSet={setRange}
-          eventSources={eventSources}
-          slotDuration="00:15:00"
-          height="95vh"
-          headerToolbar={{
-            left: 'title',
-            right: 'prev,today,next',
-          }}
-          allDaySlot={false}
-          colorScheme={colorScheme}
-        />
-      </Grid.Col>
-    </Grid>
+    <>
+      {range &&
+        selectedSchedules?.map((schedule) => {
+          const ref = getReferenceString(schedule);
+          return <ScheduleSlotsLoader key={ref} scheduleRef={ref} range={range} onResult={handleSlotResult} />;
+        })}
+      {range &&
+        actors.map((actorRef) => (
+          <ActorAppointmentsLoader
+            key={actorRef}
+            actorRef={actorRef}
+            range={range}
+            onResult={handleAppointmentResult}
+          />
+        ))}
+      <Grid gutter="md" p="md">
+        <Grid.Col span={3}>
+          <ActorChooser
+            schedules={allSchedules ?? []}
+            selected={actors}
+            onChange={(actor: string[]) => setSearchParams({ actor })}
+          />
+        </Grid.Col>
+        <Grid.Col span="auto" pos="relative">
+          <LoadingOverlay visible={loading} />
+          <FullCalendar
+            plugins={[themePlugin, timeGridPlugin]}
+            initialView="timeGridWeek"
+            datesSet={setRange}
+            eventSources={eventSources}
+            slotDuration="00:15:00"
+            height="95vh"
+            headerToolbar={{
+              left: 'title',
+              right: 'prev,today,next',
+            }}
+            allDaySlot={false}
+            colorScheme={colorScheme}
+          />
+        </Grid.Col>
+      </Grid>
+    </>
   );
 }
