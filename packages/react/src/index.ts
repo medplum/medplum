@@ -35,7 +35,6 @@ export * from './chat/ThreadChat/ThreadChat';
 export * from './chat/ThreadInbox/NewTopicDialog';
 export * from './chat/ThreadInbox/ParticipantFilter';
 export * from './chat/ThreadInbox/ThreadInbox';
-export * from './chat/ThreadInbox/ThreadListItem';
 export * from './CheckboxFormSection/CheckboxFormSection';
 export * from './CodeableConceptDisplay/CodeableConceptDisplay';
 export * from './CodeableConceptInput/CodeableConceptInput';
