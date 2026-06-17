@@ -28,12 +28,10 @@ export async function executeFissionBot(request: BotExecutionContext): Promise<B
   try {
     const body = JSON.stringify(payload);
     const response = await executeFissionFunction(bot.id, body);
-    const responseBody = parseFissionResponseBody(response.body);
+    const responseBody = response.body ? JSON.parse(response.body) : undefined;
     return {
       success: response.ok && responseBody?.success !== false,
-      logResult:
-        responseBody?.logResult ??
-        (response.ok ? '' : `HTTP error! Status: ${response.status}, Message: ${response.body}`),
+      logResult: responseBody?.logResult ?? '',
       returnValue: responseBody?.returnValue,
     };
   } catch (err) {
@@ -41,18 +39,5 @@ export async function executeFissionBot(request: BotExecutionContext): Promise<B
       success: false,
       logResult: normalizeErrorString(err),
     };
-  }
-}
-
-function parseFissionResponseBody(
-  body: string
-): { success?: boolean; logResult?: string; returnValue?: unknown } | undefined {
-  if (!body) {
-    return undefined;
-  }
-  try {
-    return JSON.parse(body);
-  } catch {
-    return undefined;
   }
 }
