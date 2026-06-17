@@ -17,24 +17,27 @@ module "vpc" {
 
   subnets = [
     {
-      subnet_name              = local.subnet_gke
-      subnet_ip                = "10.0.0.0/20"
-      subnet_region            = var.region
-      private_ip_google_access = true
+      subnet_name   = local.subnet_gke
+      subnet_ip     = "10.0.0.0/20"
+      subnet_region = var.region
+      # Private Google Access lets the private GKE nodes reach Google APIs over
+      # Google's internal network. The network module reads this from
+      # `subnet_private_access` (not `private_ip_google_access`); GKE also enables
+      # it for private clusters, so setting it here keeps Terraform in sync.
+      subnet_private_access = "true"
     },
     {
-      subnet_name              = local.subnet_psa
-      subnet_ip                = "192.168.32.0/20"
-      subnet_region            = var.region
-      private_ip_google_access = true
+      subnet_name   = local.subnet_psa
+      subnet_ip     = "192.168.32.0/20"
+      subnet_region = var.region
     },
     {
-      subnet_name              = local.subnet_proxy
-      subnet_ip                = "10.12.0.0/23"
-      subnet_region            = var.region
-      private_ip_google_access = true
-      purpose                  = "REGIONAL_MANAGED_PROXY"
-      role                     = "ACTIVE"
+      # Proxy-only subnets (REGIONAL_MANAGED_PROXY) cannot have Private Google Access.
+      subnet_name   = local.subnet_proxy
+      subnet_ip     = "10.12.0.0/23"
+      subnet_region = var.region
+      purpose       = "REGIONAL_MANAGED_PROXY"
+      role          = "ACTIVE"
     }
   ]
 
