@@ -140,7 +140,7 @@ type ParsedResult = {
   preambleParsed: true;
   buffer: string;
   preamble: { statusCode?: number; headers?: Record<string, string>; nonStreamingResponse?: boolean };
-  error?: undefined;
+  error?: never;
 };
 function processStreamingPreamble(buffer: string): ParsedResult | UnparsedResult {
   if (buffer.length > MAX_HEADER_SIZE) {
