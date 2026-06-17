@@ -9,7 +9,7 @@
   "googleClientSecret": "",
   "recaptchaSiteKey": "6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq",
   "recaptchaSecretKey": "6LfHdsYdAAAAAH9dN154jbJ3zpQife3xaiTvPChL",
-  "botLambdaRoleArn": "",
+  "botLambdaRoleArn": "arn:aws:iam::462446642923:role/MedplumStaging-BackEndBotLambdaRoleBBE7DB26-MoYo49FzFDVn",
   "botLambdaLayerName": "medplum-bot-layer",
   "vmContextBotsEnabled": true,
   "defaultBotRuntimeVersion": "vmcontext",

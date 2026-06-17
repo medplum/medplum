@@ -200,6 +200,106 @@ describe('BotEditor', () => {
     expect(check.sourceCode?.url).toBeDefined();
   });
 
+  function mockSseResponse(chunks: string[], ok = true, status = 200, errorBody?: unknown): Response {
+    let index = 0;
+    const reader = {
+      read: async () => {
+        if (index < chunks.length) {
+          return { done: false, value: chunks[index++] };
+        }
+        return { done: true, value: undefined };
+      },
+    };
+    return {
+      ok,
+      status,
+      text: async () => (typeof errorBody === 'string' ? errorBody : JSON.stringify(errorBody)),
+      // pipeThrough ignores the decoder in tests; chunks are already strings
+      body: { pipeThrough: () => ({ getReader: () => reader }) },
+    } as unknown as Response;
+  }
+
+  test('Execute with SSE', async () => {
+    const medplum = new MockClient();
+    const downloadResponse = vi
+      .spyOn(medplum, 'downloadResponse')
+      .mockResolvedValue(
+        mockSseResponse(['event: progress\ndata: step 1\n\n', 'event: progress\ndata: step 2\n\ndata: done\n\n'])
+      );
+
+    await setup('/Bot/123/editor', medplum);
+    expect(await screen.findByText('Execute')).toBeInTheDocument();
+
+    // Open the split-button dropdown and choose the SSE option
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Execute options'));
+    });
+    const sseButton = await screen.findByText('Execute SSE');
+    await act(async () => {
+      fireEvent.click(sseButton);
+    });
+
+    expect(await screen.findByText('Stream complete')).toBeInTheDocument();
+    expect(screen.getByTestId('sse-output')).toBeInTheDocument();
+    expect(screen.getByText('step 1')).toBeInTheDocument();
+    expect(screen.getByText('step 2')).toBeInTheDocument();
+    expect(screen.getByText('done')).toBeInTheDocument();
+
+    // The request was sent with the event-stream Accept header
+    expect(downloadResponse).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ Accept: 'text/event-stream' }),
+      })
+    );
+  });
+
+  test('Streaming bot defaults to Execute SSE', async () => {
+    const medplum = new MockClient();
+    const streamingBot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      streamingEnabled: true,
+    });
+    const downloadResponse = vi
+      .spyOn(medplum, 'downloadResponse')
+      .mockResolvedValue(mockSseResponse(['data: streamed\n\n']));
+
+    await setup(`/Bot/${streamingBot.id}/editor`, medplum);
+
+    // The primary button defaults to SSE, and there is no synchronous "Execute" button
+    expect(await screen.findByText('Execute SSE')).toBeInTheDocument();
+    expect(screen.queryByText('Execute')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Execute SSE'));
+    });
+
+    expect(await screen.findByText('Stream complete')).toBeInTheDocument();
+    expect(screen.getByText('streamed')).toBeInTheDocument();
+    expect(downloadResponse).toHaveBeenCalled();
+  });
+
+  test('Execute with SSE error', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'downloadResponse').mockResolvedValue(
+      mockSseResponse([], false, 400, badRequest('Bot is not enabled'))
+    );
+
+    await setup('/Bot/123/editor', medplum);
+    expect(await screen.findByText('Execute')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Execute options'));
+    });
+    const sseButton = await screen.findByText('Execute SSE');
+    await act(async () => {
+      fireEvent.click(sseButton);
+    });
+
+    expect(await screen.findByText('Bot is not enabled')).toBeInTheDocument();
+  });
+
   test('HL7 input', async () => {
     await setup('/Bot/123/editor');
     expect(await screen.findByText('Execute')).toBeInTheDocument();
