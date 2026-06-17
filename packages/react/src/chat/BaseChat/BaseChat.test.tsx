@@ -762,9 +762,9 @@ describe('BaseChat', () => {
     await act(() => fireEvent.click(docItem));
     expect(await screen.findByText('Lab summary')).toBeInTheDocument();
 
-    // Remove the attachment via keyboard (Enter on the dismiss control); the pill should disappear
+    // Remove the attachment; the pill should disappear
     const removeButton = screen.getByRole('button', { name: /remove attachment/i });
-    await act(() => fireEvent.keyDown(removeButton, { key: 'Enter' }));
+    await act(() => fireEvent.click(removeButton));
     expect(screen.queryByText('Lab summary')).not.toBeInTheDocument();
   });
 

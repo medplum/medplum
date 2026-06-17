@@ -90,11 +90,11 @@ export function DocumentPickerList({ subjectRef, onSelect }: DocumentPickerListP
   // Fetch immediately on mount (when attach menu opens), debounce subsequent search changes
   const mountedRef = useRef(false);
   useEffect(() => {
-    if (!mountedRef.current) {
+    if (mountedRef.current) {
+      debouncedLoadDocs(search);
+    } else {
       mountedRef.current = true;
       loadDocs(search).catch(() => undefined);
-    } else {
-      debouncedLoadDocs(search);
     }
   }, [search, loadDocs, debouncedLoadDocs]);
 

@@ -524,10 +524,9 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                         <IconPaperclip size="0.875rem" color="var(--mantine-color-dimmed)" />
                       )}
                       <Text fz="xs">{displayName}</Text>
-                      <span
+                      <button
+                        type="button"
                         className={classes.chatAttachmentPillDismiss}
-                        role="button"
-                        tabIndex={0}
                         onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
                         onClick={() => {
                           setPendingDocRef(undefined);
@@ -537,20 +536,10 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                           }
                           inputRef.current?.focus();
                         }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            setPendingDocRef(undefined);
-                            setPendingFile(undefined);
-                            if (fileInputRef.current) {
-                              fileInputRef.current.value = '';
-                            }
-                            inputRef.current?.focus();
-                          }
-                        }}
                         aria-label="Remove attachment"
                       >
                         <IconX size="0.75rem" />
-                      </span>
+                      </button>
                     </div>
                   </Tooltip>
                 );

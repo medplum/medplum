@@ -77,6 +77,9 @@
 }
 
 .chatAttachmentPillDismiss {
+  background: none;
+  border: none;
+  padding: 0;
   color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-5));
   cursor: pointer;
   display: flex;
