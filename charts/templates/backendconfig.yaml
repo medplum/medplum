@@ -8,7 +8,7 @@ metadata:
     {{- include "medplum.labels" . | nindent 4 }}
 spec:
   securityPolicy:
-    name: ingress-security-policy
+    name: {{ .Values.ingress.securityPolicy | default "ingress-security-policy" }}
   cdn:
     enabled: true
     cachePolicy:

@@ -110,3 +110,9 @@ ingress:
   domain: ''
   # Set your TLS secret name (Azure only)
   tlsSecretName: ''
+  # GCP only: name of the pre-provisioned global static IP for the ingress.
+  # Terraform names this "<namespace>-external-ip" (default namespace: medplum-external-ip).
+  staticIpName: medplum-external-ip
+  # GCP only: name of the Cloud Armor security policy attached via BackendConfig.
+  # Terraform names this "<namespace>-ingress-security-policy" (default: ingress-security-policy).
+  securityPolicy: ingress-security-policy

@@ -8,7 +8,7 @@ metadata:
     {{- include "medplum.labels" . | nindent 4 }}
   annotations:
     ingressClassName: "gce"
-    kubernetes.io/ingress.global-static-ip-name: medplum-external-ip
+    kubernetes.io/ingress.global-static-ip-name: {{ .Values.ingress.staticIpName | default "medplum-external-ip" }}
     networking.gke.io/managed-certificates: {{ include "medplum.fullname" . }}
     networking.gke.io/v1beta1.FrontendConfig: {{ include "medplum.fullname" . }}
 spec:
