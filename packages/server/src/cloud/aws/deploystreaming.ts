@@ -85,6 +85,10 @@ const WRAPPER_CODE =
     if (!streaming || !botResponseStream?.streamStarted) {
       writeResponse(responseStream, 500, errorResponse);
     }
+  } finally {
+    if (botResponseStream?.streamStarted) {
+      botResponseStream.end();
+    }
   }
 });
 
