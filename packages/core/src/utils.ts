@@ -24,7 +24,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { arrayify } from './array';
 import { getTypedPropertyValue } from './fhirpath/utils';
-import { formatCodeableConcept, formatHumanName } from './format';
+import { formatCodeableConcept, formatDateTime, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference, isResource } from './types';
 
@@ -184,6 +184,9 @@ export function getDisplayString(resource: Resource): string {
       return profileName;
     }
   }
+  if (resource.resourceType === 'Appointment' && resource.serviceType?.[0]) {
+    return formatCodeableConcept(resource.serviceType[0]);
+  }
   if (resource.resourceType === 'Device') {
     const deviceName = getDeviceDisplayString(resource);
     if (deviceName) {
@@ -192,6 +195,9 @@ export function getDisplayString(resource: Resource): string {
   }
   if (resource.resourceType === 'MedicationRequest' && resource.medicationCodeableConcept) {
     return formatCodeableConcept(resource.medicationCodeableConcept);
+  }
+  if (resource.resourceType === 'Slot' && (resource.start || resource.end)) {
+    return `${formatDateTime(resource.start)} - ${formatDateTime(resource.end)}`;
   }
   if (resource.resourceType === 'Subscription' && resource.criteria) {
     return resource.criteria;
