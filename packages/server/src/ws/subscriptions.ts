@@ -418,6 +418,11 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
       membershipId: verifiedToken.membership_id,
     });
     subscribeWsToSubscription(socket, verifiedToken.subscription_id, rawToken, criteriaResourceType);
+    // Send a handshake to notify client that this subscription is active for this connection
+    // IMPORTANT: Send handshake BEFORE ensureHeartbeatHandler() to prevent a race condition
+    // where the heartbeat fires and delivers a heartbeat message before the handshake.
+    socket.send(JSON.stringify(createHandshakeBundle(verifiedToken.subscription_id)));
+    subscriptionMessagesSent++;
     ensureHeartbeatHandler();
     if (!userRef) {
       userRef = verifiedToken.profile;
@@ -433,9 +438,6 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
       projectId: socketProjectId,
       userSubscriptions: userSubCount,
     });
-    // Send a handshake to notify client that this subscription is active for this connection
-    socket.send(JSON.stringify(createHandshakeBundle(verifiedToken.subscription_id)));
-    subscriptionMessagesSent++;
 
     onDisconnect = async (): Promise<void> => {
       const subEntries = wsToSubLookup.get(socket);
