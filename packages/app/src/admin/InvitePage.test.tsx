@@ -9,6 +9,13 @@ import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
+interface InviteFormFields {
+  resourceType?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+}
+
 async function setup(url: string): Promise<void> {
   await act(async () => {
     render(
@@ -21,22 +28,41 @@ async function setup(url: string): Promise<void> {
   });
 }
 
-async function fillAndSubmitInviteForm(): Promise<void> {
+async function fillInviteForm(fields: InviteFormFields = {}): Promise<void> {
+  const {
+    resourceType,
+    firstName = 'George',
+    lastName = 'Washington',
+    email = 'george@example.com',
+  } = fields;
+
   await act(async () => {
+    if (resourceType) {
+      fireEvent.change(screen.getByLabelText('Role'), {
+        target: { value: resourceType },
+      });
+    }
     fireEvent.change(screen.getByLabelText('First Name *'), {
-      target: { value: 'George' },
+      target: { value: firstName },
     });
     fireEvent.change(screen.getByLabelText('Last Name *'), {
-      target: { value: 'Washington' },
+      target: { value: lastName },
     });
     fireEvent.change(screen.getByLabelText('Email *'), {
-      target: { value: 'george@example.com' },
+      target: { value: email },
     });
   });
+}
 
+async function submitInviteForm(): Promise<void> {
   await act(async () => {
     fireEvent.click(screen.getByText('Invite'));
   });
+}
+
+async function fillAndSubmitInviteForm(fields?: InviteFormFields): Promise<void> {
+  await fillInviteForm(fields);
+  await submitInviteForm();
 }
 
 describe('InvitePage', () => {
@@ -73,22 +99,7 @@ describe('InvitePage', () => {
   test('Submit success', async () => {
     await setup('/admin/invite');
     expect(await screen.findByText('Invite')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('First Name *'), {
-        target: { value: 'George' },
-      });
-      fireEvent.change(screen.getByLabelText('Last Name *'), {
-        target: { value: 'Washington' },
-      });
-      fireEvent.change(screen.getByLabelText('Email *'), {
-        target: { value: 'george@example.com' },
-      });
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Invite'));
-    });
+    await fillAndSubmitInviteForm();
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
     expect(screen.getByText('Email sent')).toBeInTheDocument();
@@ -97,18 +108,7 @@ describe('InvitePage', () => {
   test('Submit with access policy', async () => {
     await setup('/admin/invite');
     expect(await screen.findByText('Invite')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('First Name *'), {
-        target: { value: 'George' },
-      });
-      fireEvent.change(screen.getByLabelText('Last Name *'), {
-        target: { value: 'Washington' },
-      });
-      fireEvent.change(screen.getByLabelText('Email *'), {
-        target: { value: 'george@example.com' },
-      });
-    });
+    await fillInviteForm();
 
     const input = screen.getByPlaceholderText('Access Policy');
 
@@ -132,9 +132,7 @@ describe('InvitePage', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Invite'));
-    });
+    await submitInviteForm();
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });
@@ -142,24 +140,11 @@ describe('InvitePage', () => {
   test('Invite patient', async () => {
     await setup('/admin/invite');
     expect(await screen.findByText('Invite')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('Role'), {
-        target: { value: 'Patient' },
-      });
-      fireEvent.change(screen.getByLabelText('First Name *'), {
-        target: { value: 'Peggy' },
-      });
-      fireEvent.change(screen.getByLabelText('Last Name *'), {
-        target: { value: 'Patient' },
-      });
-      fireEvent.change(screen.getByLabelText('Email *'), {
-        target: { value: 'peggypatient@example.com' },
-      });
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Invite'));
+    await fillAndSubmitInviteForm({
+      resourceType: 'Patient',
+      firstName: 'Peggy',
+      lastName: 'Patient',
+      email: 'peggypatient@example.com',
     });
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
@@ -168,29 +153,18 @@ describe('InvitePage', () => {
   test('Invite admin', async () => {
     await setup('/admin/invite');
     expect(await screen.findByText('Invite')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('Role'), {
-        target: { value: 'Practitioner' },
-      });
-      fireEvent.change(screen.getByLabelText('First Name *'), {
-        target: { value: 'Patty' },
-      });
-      fireEvent.change(screen.getByLabelText('Last Name *'), {
-        target: { value: 'Practitioner' },
-      });
-      fireEvent.change(screen.getByLabelText('Email *'), {
-        target: { value: 'pattypractitioner@example.com' },
-      });
+    await fillInviteForm({
+      resourceType: 'Practitioner',
+      firstName: 'Patty',
+      lastName: 'Practitioner',
+      email: 'pattypractitioner@example.com',
     });
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Admin'));
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Invite'));
-    });
+    await submitInviteForm();
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });
@@ -198,29 +172,18 @@ describe('InvitePage', () => {
   test('Invite project scoped user', async () => {
     await setup('/admin/invite');
     expect(await screen.findByText('Invite')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('Role'), {
-        target: { value: 'Practitioner' },
-      });
-      fireEvent.change(screen.getByLabelText('First Name *'), {
-        target: { value: 'Patty' },
-      });
-      fireEvent.change(screen.getByLabelText('Last Name *'), {
-        target: { value: 'Practitioner' },
-      });
-      fireEvent.change(screen.getByLabelText('Email *'), {
-        target: { value: 'pattypractitioner@example.com' },
-      });
+    await fillInviteForm({
+      resourceType: 'Practitioner',
+      firstName: 'Patty',
+      lastName: 'Practitioner',
+      email: 'pattypractitioner@example.com',
     });
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Project scoped'));
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Invite'));
-    });
+    await submitInviteForm();
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });
@@ -228,26 +191,13 @@ describe('InvitePage', () => {
   test('Do not send email', async () => {
     await setup('/admin/invite');
     expect(await screen.findByText('Invite')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('First Name *'), {
-        target: { value: 'George' },
-      });
-      fireEvent.change(screen.getByLabelText('Last Name *'), {
-        target: { value: 'Washington' },
-      });
-      fireEvent.change(screen.getByLabelText('Email *'), {
-        target: { value: 'george@example.com' },
-      });
-    });
+    await fillInviteForm();
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Send email'));
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Invite'));
-    });
+    await submitInviteForm();
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
     expect(screen.queryByText('Email sent')).not.toBeInTheDocument();
@@ -257,25 +207,14 @@ describe('InvitePage', () => {
     await setup('/admin/invite');
     expect(await screen.findByText('Invite')).toBeInTheDocument();
 
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('First Name *'), {
-        target: { value: 'George' },
-      });
-      fireEvent.change(screen.getByLabelText('Last Name *'), {
-        target: { value: 'Washington' },
-      });
-      fireEvent.change(screen.getByLabelText('Email *'), {
-        target: { value: '' },
-      });
-    });
+    await fillInviteForm({ email: '' });
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Send email'));
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Invite'));
-    });
+    await submitInviteForm();
+
     expect(screen.queryByText('success')).not.toBeInTheDocument();
     expect(screen.queryByText('Email sent')).not.toBeInTheDocument();
   });

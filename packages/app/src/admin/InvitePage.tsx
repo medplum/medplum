@@ -35,7 +35,6 @@ export function InvitePage(): JSX.Element {
   const handleSubmit = useCallback(
     (formData: Record<string, string>): Promise<void> => {
       setError(undefined);
-      setOutcome(undefined);
       const body = {
         resourceType: formData.resourceType as 'Practitioner' | 'Patient' | 'RelatedPerson',
         firstName: formData.firstName,
@@ -62,7 +61,7 @@ export function InvitePage(): JSX.Element {
           showNotification({ color: 'green', message: 'Invite success' });
         })
         .catch((err) => {
-          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+          showNotification({ color: 'red', message: normalizeErrorString(err) });
           setError(normalizeOperationOutcome(err));
         });
     },
