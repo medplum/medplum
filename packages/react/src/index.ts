@@ -65,6 +65,7 @@ export * from './IdentifierDisplay/IdentifierDisplay';
 export * from './IdentifierInput/IdentifierInput';
 export * from './InfoBar/InfoBar';
 export * from './LinkTabs/LinkTabs';
+export * from './ListWithDetailPane/ListWithDetailPane';
 export * from './Loading/Loading';
 export * from './Logo/Logo';
 export * from './MeasureReportDisplay/MeasureReportDisplay';

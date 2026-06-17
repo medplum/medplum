@@ -6,12 +6,12 @@ import type { Communication } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useState } from 'react';
-import { ResourceBoard } from './ResourceBoard';
+import { useState } from 'react';
+import { ListWithDetailPane } from './ListWithDetailPane';
 
 export default {
-  title: 'Medplum/ResourceBoard',
-  component: ResourceBoard,
+  title: 'Medplum/ListWithDetailPane',
+  component: ListWithDetailPane,
 } as Meta;
 
 const sampleItems: WithId<Communication>[] = [
@@ -38,6 +38,17 @@ const sampleItems: WithId<Communication>[] = [
   },
 ];
 
+const tabs = [
+  { value: 'in-progress', label: 'In Progress', uri: '/in-progress' },
+  { value: 'completed', label: 'Completed', uri: '/completed' },
+];
+
+// The component fills its container, so the stories just give it a fixed height
+// (no Document/Panel wrapper, which would add card padding around it).
+function Frame(props: { readonly children: JSX.Element }): JSX.Element {
+  return <div style={{ height: 600 }}>{props.children}</div>;
+}
+
 function ItemRow(props: { readonly item: Communication }): JSX.Element {
   return (
     <Box p="sm">
@@ -62,17 +73,61 @@ function DetailPanel(props: { readonly item: Communication }): JSX.Element {
   );
 }
 
-// The board fills its container, so the stories just give it a fixed height
-// (no Document/Panel wrapper, which would add card padding around it).
-function Frame(props: { readonly children: JSX.Element }): JSX.Element {
-  return <div style={{ height: 600 }}>{props.children}</div>;
-}
-
 export const Basic = (): JSX.Element => {
+  const tabs = [
+    { value: 'in-progress', label: 'In Progress', uri: '/in-progress' },
+    { value: 'completed', label: 'Completed', uri: '/completed' },
+  ];
+
+  const headerActions = (
+    <Tooltip label="New item" position="bottom">
+      <ActionIcon radius="xl" variant="filled" color="blue" size={32}>
+        <IconPlus size={16} />
+      </ActionIcon>
+    </Tooltip>
+  );
+
+  const [selectedId, setSelectedId] = useState<string | undefined>('comm-1');
+  const [page, setPage] = useState(1);
+
+  const selected = sampleItems.find((item) => item.id === selectedId);
+
   return (
     <Frame>
-      <ResourceBoard<Communication>
-        search={{ resourceType: 'Communication' }}
+      <ListWithDetailPane<Communication>
+        items={sampleItems}
+        loading={false}
+        selectedKey={selectedId}
+        selected={selected}
+        refresh={async () => {}}
+        tabs={tabs}
+        activeTab="in-progress"
+        onTabChange={() => {}}
+        headerActions={headerActions}
+        renderItem={(item) => (
+          <div onClick={() => setSelectedId(item.id)} onKeyDown={() => {}} role="presentation">
+            <ItemRow item={item} />
+          </div>
+        )}
+        renderDetail={(item) => <DetailPanel item={item} />}
+        page={page}
+        pageCount={3}
+        onPageChange={setPage}
+      />
+    </Frame>
+  );
+};
+
+export const Loading = (): JSX.Element => {
+  return (
+    <Frame>
+      <ListWithDetailPane<Communication>
+        items={[]}
+        loading={true}
+        selected={undefined}
+        refresh={async () => {}}
+        tabs={tabs}
+        activeTab="in-progress"
         renderItem={(item) => <ItemRow item={item} />}
         renderDetail={(item) => <DetailPanel item={item} />}
       />
@@ -80,46 +135,14 @@ export const Basic = (): JSX.Element => {
   );
 };
 
-export const WithTabsAndActions = (): JSX.Element => {
-  const [selectedId, setSelectedId] = useState<string | undefined>('comm-1');
-  const loadItems = useCallback(async () => ({ items: sampleItems, total: sampleItems.length }), []);
+export const Empty = (): JSX.Element => {
   return (
     <Frame>
-      <ResourceBoard<Communication>
-        search={{ resourceType: 'Communication' }}
-        selectedId={selectedId}
-        loadItems={loadItems}
-        tabs={[
-          { value: 'in-progress', label: 'In Progress', uri: '/in-progress' },
-          { value: 'completed', label: 'Completed', uri: '/completed' },
-        ]}
-        activeTab="in-progress"
-        headerActions={
-          <Tooltip label="New item" position="bottom">
-            <ActionIcon radius="xl" variant="filled" color="blue" size={32}>
-              <IconPlus size={16} />
-            </ActionIcon>
-          </Tooltip>
-        }
-        renderItem={(item) => (
-          <div onClick={() => setSelectedId(item.id)} onKeyDown={() => {}} role="presentation">
-            <ItemRow item={item} />
-          </div>
-        )}
-        renderDetail={(item) => <DetailPanel item={item} />}
-      />
-    </Frame>
-  );
-};
-
-export const CustomLoadItems = (): JSX.Element => {
-  const loadItems = useCallback(async () => ({ items: sampleItems, total: sampleItems.length }), []);
-  return (
-    <Frame>
-      <ResourceBoard<Communication>
-        search={{ resourceType: 'Communication' }}
-        selectedId="comm-2"
-        loadItems={loadItems}
+      <ListWithDetailPane<Communication>
+        items={[]}
+        loading={false}
+        selected={undefined}
+        refresh={async () => {}}
         renderItem={(item) => <ItemRow item={item} />}
         renderDetail={(item) => <DetailPanel item={item} />}
       />

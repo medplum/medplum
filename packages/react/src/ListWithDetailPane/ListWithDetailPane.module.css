@@ -16,7 +16,7 @@
   border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 }
 
-/* Per-item chrome wrapper. The board renders this `<div>` around each item's
+/* Per-item chrome wrapper. The list renders this `<div>` around each item's
    content (from `renderItem`), so it owns the hover/selected backgrounds. It
    deliberately has no padding: the item's content provides its own padding so a
    navigational item (a link) can fill this wrapper and keep the whole row clickable. */
@@ -50,10 +50,10 @@
   padding-block: 15px;
 }
 
-/* Header text style for board headers that show a plain title (no pill
-   tabs). Matches the pill-tab text style (14px / weight 450) so a header that
-   reads "Recent" or "Patients" sits at the same optical weight as a header
-   that reads "My Tasks" / "All Tasks" pill-tab pair.
+/* Header text style for headers that show a plain title (no pill tabs). Matches
+   the pill-tab text style (14px / weight 450) so a header that reads "Recent" or
+   "Patients" sits at the same optical weight as a header that reads
+   "My Tasks" / "All Tasks" pill-tab pair.
 
    `padding-inline-start` matches the internal horizontal padding of a pill
    tab, so when this element lives in a `pl="xs"` header bar it lines up

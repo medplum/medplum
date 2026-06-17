@@ -1,44 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Center, Divider, Flex, Group, Pagination, ScrollArea, Stack, Tabs, Text } from '@mantine/core';
 import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import type { ResourceBoardLoadResult } from '@medplum/react-hooks';
 import { useMedplumNavigate, useResourceBoard } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
-import classes from './ResourceBoard.module.css';
-import { ResourceBoardSkeleton } from './ResourceBoardSkeleton';
+import type {
+  ListWithDetailPaneDetailContext,
+  ListWithDetailPaneItemContext,
+  ListWithDetailPaneTab,
+} from '../ListWithDetailPane/ListWithDetailPane';
+import { ListWithDetailPane } from '../ListWithDetailPane/ListWithDetailPane';
 
-export interface ResourceBoardTab {
-  /**
-   * The tab's logical identity, matched against the `activeTab` prop to determine
-   * which tab is active. The board cannot derive activeness from the current URL
-   * (it has no router access), so consumers derive this key from the URL themselves.
-   */
-  readonly value: string;
-  /** The tab's display label. */
-  readonly label: ReactNode;
-  /**
-   * URI navigated to (via useMedplumNavigate) when this tab is selected.
-   * Also rendered as the tab's anchor href, so browser link affordances
-   * (right click, middle click, ctrl/meta click) work.
-   */
-  readonly uri: string;
-}
-
-export interface ResourceBoardItemContext<T extends Resource = Resource> {
-  readonly selected: boolean;
-  readonly index: number;
-  /** Full current page of items, for neighbor-aware rendering (e.g. divider hiding). */
-  readonly items: WithId<T>[];
-}
-
-export interface ResourceBoardDetailContext {
-  /** Re-runs the item load and re-resolves the selected resource. Does not show the skeleton. */
-  readonly refresh: () => Promise<void>;
-}
+// The list/detail shell now lives in ListWithDetailPane; these aliases keep the
+// ResourceBoard public API stable for existing consumers.
+export type ResourceBoardTab = ListWithDetailPaneTab;
+export type ResourceBoardItemContext<T extends Resource = Resource> = ListWithDetailPaneItemContext<T>;
+export type ResourceBoardDetailContext = ListWithDetailPaneDetailContext;
 
 export interface ResourceBoardProps<T extends Resource = Resource> {
   // Data
@@ -60,6 +39,11 @@ export interface ResourceBoardProps<T extends Resource = Resource> {
    * `medplum.readResource(search.resourceType, id)`.
    */
   readonly resolveSelected?: (id: string, items: WithId<T>[], medplum: MedplumClient) => Promise<WithId<T> | undefined>;
+  /**
+   * Manual refresh trigger: change this value (e.g. a counter) to re-run the load
+   * without changing the search. Reloads in place — no skeleton.
+   */
+  readonly reloadKey?: unknown;
 
   // Sidebar header
   /** Sidebar header tabs. Selecting a tab navigates to its URI. */
@@ -102,15 +86,11 @@ export interface ResourceBoardProps<T extends Resource = Resource> {
   readonly onError?: (error: unknown) => void;
 }
 
-// Configs
-const DEFAULT_LIST_WIDTH = 350;
-const HEADER_HEIGHT = 64;
-
 /**
- * ResourceBoard is a generic master-detail shell: a left sidebar with tabs, header
- * actions, a searchable resource list, and pagination, plus a detail area for the
- * selected resource. It owns data fetching with escape hatches
- * for custom loading and selection resolution.
+ * ResourceBoard is a generic master-detail board: it owns data fetching (list search,
+ * selection resolution, background refresh via useResourceBoard) and renders the
+ * presentational shell with ListWithDetailPane. Escape hatches allow custom loading
+ * and selection resolution.
  * @param props - The ResourceBoard React props.
  * @returns The ResourceBoard React node.
  */
@@ -124,7 +104,7 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
     renderItem,
     emptyList,
     skeleton,
-    listWidth = DEFAULT_LIST_WIDTH,
+    listWidth,
     renderDetail,
     emptyDetail,
   } = props;
@@ -137,14 +117,12 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
   const count = memoizedSearch.count ?? DEFAULT_SEARCH_COUNT;
   const offset = memoizedSearch.offset ?? 0;
   const currentPage = Math.floor(offset / count) + 1;
+  // `total` persists between loads, so the footer stays mounted and paging doesn't flicker.
   const pageCount = total !== undefined ? Math.ceil(total / count) : 0;
-  // Stays mounted across loads so paging doesn't flicker the footer; `total` persists
-  // between loads (only the list area swaps to the skeleton).
-  const showPagination = !!onChange && total !== undefined && total > count;
   const selectedKey = selected?.id ?? selectedId;
 
   // Methods
-  const handleTabChange = (value: string | null): void => {
+  const handleTabChange = (value: string): void => {
     const tab = tabs?.find((t) => t.value === value);
     if (tab) {
       navigate(tab.uri);
@@ -156,94 +134,25 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
   };
 
   return (
-    <Flex direction="row" h="100%" w="100%" className={classes.container}>
-      <Flex direction="column" w={listWidth} h="100%" className={classes.shell}>
-        {(tabs || headerActions) && (
-          <>
-            <Flex h={HEADER_HEIGHT} align="center" justify="space-between" p="md">
-              {tabs ? (
-                <Tabs
-                  value={activeTab ?? null}
-                  onChange={handleTabChange}
-                  variant="unstyled"
-                  className={classes.pillTabs}
-                >
-                  <Tabs.List>
-                    {tabs.map((tab) => (
-                      <Tabs.Tab key={tab.value} value={tab.value}>
-                        <MedplumLink className={classes.tabLink} to={tab.uri}>
-                          {tab.label}
-                        </MedplumLink>
-                      </Tabs.Tab>
-                    ))}
-                  </Tabs.List>
-                </Tabs>
-              ) : (
-                <span />
-              )}
-              {headerActions && <Group gap="xs">{headerActions}</Group>}
-            </Flex>
-            <Divider />
-          </>
-        )}
-        <ScrollArea flex={1} scrollbarSize={10} type="hover" scrollHideDelay={250}>
-          {loading && (skeleton ?? <ResourceBoardSkeleton />)}
-          {!loading && items.length === 0 && (emptyList ?? <DefaultEmptyList />)}
-          {!loading &&
-            items.map((item, index) => {
-              const isSelected = item.id !== undefined && item.id === selectedKey;
-              return (
-                <div
-                  key={item.id ?? index}
-                  className={isSelected ? `${classes.item} ${classes.selected}` : classes.item}
-                >
-                  {renderItem(item, { selected: isSelected, index, items })}
-                </div>
-              );
-            })}
-        </ScrollArea>
-        {showPagination && (
-          <div className={classes.footer}>
-            <Pagination
-              value={currentPage}
-              total={pageCount}
-              onChange={handlePageChange}
-              size="sm"
-              siblings={1}
-              boundaries={1}
-            />
-          </div>
-        )}
-      </Flex>
-      {selected !== undefined ? (
-        renderDetail(selected, { refresh })
-      ) : (
-        <Flex direction="column" style={{ flex: 1 }} h="100%">
-          {emptyDetail ?? <DefaultEmptyDetail />}
-        </Flex>
-      )}
-    </Flex>
-  );
-}
-
-function DefaultEmptyList(): JSX.Element {
-  return (
-    <Flex direction="column" h="100%" justify="center" align="center" pt="xl">
-      <Text c="dimmed" fw={500}>
-        No items found
-      </Text>
-    </Flex>
-  );
-}
-
-function DefaultEmptyDetail(): JSX.Element {
-  return (
-    <Center h="100%" w="100%">
-      <Stack align="center" gap="xs">
-        <Text size="sm" c="dimmed" ta="center">
-          Select an item from the list to view details
-        </Text>
-      </Stack>
-    </Center>
+    <ListWithDetailPane<T>
+      items={items}
+      loading={loading}
+      selectedKey={selectedKey}
+      renderItem={renderItem}
+      emptyList={emptyList}
+      skeleton={skeleton}
+      listWidth={listWidth}
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
+      headerActions={headerActions}
+      selected={selected}
+      renderDetail={renderDetail}
+      emptyDetail={emptyDetail}
+      refresh={refresh}
+      page={currentPage}
+      pageCount={pageCount}
+      onPageChange={onChange ? handlePageChange : undefined}
+    />
   );
 }

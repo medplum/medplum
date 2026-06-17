@@ -14,11 +14,11 @@ const SKELETON_WIDTHS = [
 ];
 
 /**
- * ResourceBoardSkeleton is the default loading placeholder for the ResourceBoard list.
+ * ListWithDetailPaneSkeleton is the default loading placeholder for the list sidebar.
  * It renders a few rows of varied-width skeleton lines separated by dividers.
- * @returns The ResourceBoardSkeleton React node.
+ * @returns The ListWithDetailPaneSkeleton React node.
  */
-export function ResourceBoardSkeleton(): JSX.Element {
+export function ListWithDetailPaneSkeleton(): JSX.Element {
   return (
     <Stack gap="md" p="md">
       {SKELETON_WIDTHS.map((widths, index) => (

@@ -17,6 +17,11 @@ export interface UseResourceBoardProps<T extends Resource = Resource> {
   readonly selectedId?: string;
   readonly loadItems?: (search: SearchRequest, medplum: MedplumClient) => Promise<ResourceBoardLoadResult<T>>;
   readonly resolveSelected?: (id: string, items: WithId<T>[], medplum: MedplumClient) => Promise<WithId<T> | undefined>;
+  /**
+   * Manual refresh trigger: change this value (e.g. a counter) to re-run the load
+   * without changing the search. Reloads in place — no skeleton — like `refresh()`.
+   */
+  readonly reloadKey?: unknown;
 
   // Callbacks
   readonly onSelectFirst?: (item: WithId<T>) => void;
@@ -58,7 +63,7 @@ async function defaultLoadItems<T extends Resource>(
 export function useResourceBoard<T extends Resource = Resource>(
   options: UseResourceBoardProps<T>
 ): UseResourceBoardResult<T> {
-  const { search, selectedId, loadItems } = options;
+  const { search, selectedId, loadItems, reloadKey } = options;
   const medplum = useMedplum();
 
   // State
@@ -115,11 +120,11 @@ export function useResourceBoard<T extends Resource = Resource>(
     optionsRef.current = options;
   });
 
-  // A change to loadItems re-runs executeLoad (it's a dependency below), so the new
-  // items load without showing the skeleton — the list updates in place.
+  // A change to executeLoad (new search/fetcher) or to reloadKey (manual refresh)
+  // re-runs the load. reloadKey reloads in place — no skeleton.
   useEffect(() => {
     executeLoad().catch(console.error);
-  }, [executeLoad]);
+  }, [executeLoad, reloadKey]);
 
   // Re-resolves when selectedId or the loaded items change.
   // resolveSelected is read from a ref so unstable identities do not retrigger resolution.
