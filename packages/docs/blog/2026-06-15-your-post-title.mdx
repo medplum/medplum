@@ -1,102 +1,127 @@
 ---
 slug: fde
-title: 'Forward Deployed Engineering, Medplum-Style!'
+title: 'Forward Deployed Engineering, Medplum-Style'
 authors: maddyli
-tags: []
+tags: [forward-deployed-engineering, hiring, customers]
 ---
 
 # Forward Deployed Engineering, Medplum-Style
 
-Forward Deployed Engineering is the hottest new role in tech. This post goes over the Forward Deployed Engineering role, and
-the flavor of Forward Deployed Engineering we do at Medplum.
+You have probably noticed that "Forward Deployed Engineer" is having a moment. Over the last couple of years the role has spread from
+a palantir-specific curiosity to the role every enterprise software company suddenly wants to hire for.
+OpenAI, Anthropic, Ramp, and dozens of others have stood up FDE teams, and the VC blog and tech newsletters alike have declared it
+the hottest new role in tech.
+
+We are excited about it too. However, healthtech has been doing this for more than 40 years.
+
+At Medplum, forward deployed engineering is not a trend we picked up. Healthtech companies have always built software in a "forward-deployed"
+manner, embedding engineers directly in the clinic to learn directly from interactions between healthcare providers and patients. This post is
+about what an FDE is, why healthcare got here early, how we think about the role at Medplum, and the values our team lives by. And, if any of
+this resonates, we would love to hear from you.
 
 ## What is a Forward Deployed Engineer?
 
-Forward Deployed Engineers (FDEs) were first coined by Palantir, and initially, these engineers were literally deployed at
-military bases to build and deploy software. Over time, other companies like Scale and C3 AI adopted the title for
-engineers that worked directly work with customers, discovering that engineering talent that could communicate with and often work
-directly alongside customers to implement on-the-ground solutions lead to better solutions for customers and better product feedback.
+Forward Deployed Engineers (FDEs) were first coined by Palantir, and initially, these engineers were literally deployed at military bases and
+other customers sites to build and deploy software. Sitting next to the people using the product meant engineers understood the real problem and
+could iterate in hours instead of quarters. For over a decade it stayed mostly a Palantir thing. Then it spread across enterprise software: Scale
+AI and C3 AI took the title directly, and Databricks and Snowflake built equivalents.
 
-### Why has FDE become so popular?
+In the last two years, AI has made building software easier and cheaper, shifting the bottleneck for growth to everything around
+the code itself: integrating with messy existing systems, mapping a product onto a customer's actual workflow, and getting them to adoption.
+That work is irreducibly human and contextual, and it is where FDEs live. Over the last two years OpenAI, Anthropic, Ramp, and ElevenLabs have
+all built FDE functions of their own.
+[Leo Mehr's post on Ramp's FDE team](https://engineering.ramp.com/post/forward-deployed-engineering) is some of the best writing on this shift.
 
-In the last couple of years, AI has made building software easier and easier, shifting the bottleneck for growth from building
-products themselves to being able to tightly deliver solutions customers will use. Players from Open AI and Anthropic to
-Ramp and ElevenLabs have adopted FDE functions in order to speed up product discovery and deployment.
+## FDE is table stakes in healthcare
 
-### How do we do FDE at Medplum?
+While enterprise tech treats forward deployed as a new idea, healthcare buyers have expected white-glove, on-the-ground engineering for as long as the industry has existed.
 
-### What are we looking for in an FDE?
+Consider Epic, the largest healthtech player in the United States. Judy Faulkner founded what became Epic Systems in 1979, building a system to
+track patient data over time for a single group of physicians. For roughly the first decade, Faulkner and her team kept building one-off solutions
+for physician groups, using what they learned in the field to eventually ship EpicCare, their first EHR, in 1992. The philosophy of designing software
+from inside the doctor's office never left. To this day Epic sends all engineers on "immersion trips" — they sit in on patient visits and watch clinicians
+use the software in the room where the work actually happens.
 
-While enterprise buyers today may see the Forward Deployed model as a novel new implementation pattern, healthtech buyers have
-long expected white-glove style deployments. Judy Faulkner, founder of Epic Systems and largest player in the electronic health
-record (EHR) space, famously founded the company in 1979 by building one-off solutions for physician groups before launching
-their flagship product, EpicCare, in 1992. To this day, Epic continues require developers to go on "immersion trips" to hospitals,
-having them sit directly in patient visits and observe clinicians using their products.
+Healthcare systems are complex and bureaucratic, the stakes are high, and the largest vendor in the market built its reputation and empire by
+putting engineers on-site. Buyers have come to expect exactly that. So for a company like Medplum, the FDE function is not optional.
 
-##
+What is different for us is the surface area. Medplum is an open-source, FHIR-native developer platform. Our customers are not buying a finished
+clinical workflow off the shelf; they are building on top of us. So our version of an immersion trip is going deep on a customer's integration and
+interoperability problems — their data model, their existing systems, the standards they need to speak — and building alongside them.
 
-We don't have any product managers at Medplum (as of this post!), and as such FDEs are responsible for bringing customer requests back and
-helping set the tone of our product roadmap.
+## How we run FDE, and how it folds into Medplum's strategy
 
-One concept the Medplum FDE team strives to inherit from our customers: bedside manner.
+In healthcare, the complexity and the revenue concentrate in the same place: large, sophisticated organizations with real integration challenges.
+Those are precisely the customers who will not succeed on self-serve SaaS alone, and precisely the customers worth winning. FDE is the engineering
+capability that lets us land them, get them to production, and keep them there. It is how Medplum moves upmarket. An FDE team is not a cost of
+doing enterprise business; it is the thing that makes Medplum's enterprise business possible.
 
-In a nutshell, bedside manner is a clinician’s approach towards a patient: jargon-less communication, respecting time and privacy, active listening, respectful and warm nonverbal cues. This allows for a better clinician-patient relationship, with clearer communication, more trust and honesty, and higher satisfaction with care.
+To do that well, we map FDEs to the entire customer lifecycle rather than siloing it to a single function. The same person who scopes a pilot is there
+for our customers through implementation and rollout and into long-tail support. Context never gets lost in a handoff, relationships compound, and we
+stay accountable for whether a customer is actually getting value — not just whether we closed the deal or hit an implementation milestone.
 
-While the stakes of good FDE bedside manner are not nearly as high, building trust with customers is an essential part of the FDE job. Let me be clear: this does not mean that Medplum FDE’s are not expected to have engineering fluency. Clinicians must be both knowledgeable and have good bedside manner to be effective. However, we explicitly train our FDE’s, many of whom have pure software engineering backgrounds, in these skills in order to build that extra level of trust with customers.
+There's a structural quirk that also shapes our role: Medplum has no product managers (as of this writing!). That means our FDEs are the primary
+conduit between what customers actually need and what we build. When you are in the room with the customer and you also influence the roadmap, the
+loop between "this is broken for a real user" and "this is fixed in the platform" gets very short.
 
-If this sounds at all interesting, we’re hiring:
+// i want to add a part here about how medplum FDE pushes code directly onto our open source repo, and how this is common and expected
 
-Forward Deployed Engineering was first coined by Palantir, and initally, these engineers were literally deployed at military
-bases to build and deploy software. Over time, other companies like Scale and C3 AI adopted the title for
-engineers deployed to work directly with customers, discovering that they needed talent who had solid
-technical foundations, but more importantly excellent communication skills, to get products deployed
-at large enterprises.
+## Bedside manner, and the values behind it
 
-In the last couple years, AI has made building software easier and easier, and the bottleneck for growth has shifted from
-products themselves to deploying software, especially in the enterprise market. Players from Open AI and Anthropic to Databricks and Ramp
-and Decagon and ElevenLabs have implemented FDE functions in order to overcome this very hurdle.
-[Leo at Ramp](https://ramp.com/fde) talks about this extensively in his role on the subject.
+There is a concept we borrow directly from our customers: bedside manner.
 
-Healthcare is its own beast, and healthtech in particular has developed some unique patterns. While
-the FDE model has only recently caught on in the tech market, the largest healthtech players like
-Epic Systems were built with customer-facing software engineering at its core.
+Bedside manner is a clinician's way of relating to a patient — communicating without jargon, respecting the patient's time and privacy, listening
+actively, and carrying warmth in the small nonverbal cues. It is what produces a good clinician-patient relationship: clearer communication, more
+trust and honesty, higher satisfaction with care.
 
-Judy Faulkner started the foundations for Epic Systems in 1979 by building a system to track patient data
-over time for a group of physicians. For the first decade or so, Faulkner and her team continued to build one-off
-solutions for physician groups, using this feedback to eventually launch
-EpicCare, its first EMR, in 1992. The philosophy of designing software using time spent in the doctor's office
-continues to this day.
-To this day, Epic Systems continues to operate in a similar manner, famously
-requiring that engineers embark on "immersion trips", spending time inside of hospitals, next to doctors
-during patients visits, to learn how their software is being used.
+The stakes of FDE bedside manner are obviously lower, but the mechanism is identical: trust is built in how you show up, and trust is the whole job.
+Let me be clear about what this is _not_ — it is not a substitute for engineering depth. A great clinician is both deeply knowledgeable and has
+excellent bedside manner; one without the other does not work. The same is true of an FDE. We hire strong engineers, many of them from pure software
+backgrounds, and then we explicitly train the relational skills, because both halves are the job.
 
-As such, the FDE function is almost expected in healthcare: systems are complex and bureaucratic, and healthcare buyers see the
-largest players in the game sending engineers to their offices. As such, Medplum must do the same.
+Our six values make this concrete. They fall into three pairs.
 
-## What does a Medplum FDE do?
+### Bedside manner: empathy and expertise
 
-The easiest way to describe the work a Medplum FDE does is through the values we uphold.
+**Develop Customer Empathy.** Always assume the best of a customer. Steel-man their position before you argue with it. Know exactly what you have committed to, and hold yourself absolutely accountable to it.
 
-Customer Empathy:
+**Present Expertise.** An FDE is not a router or a recorder — you are _the_ expert in the room. Be comfortable telling a customer what they need, and present it calmly and confidently. Confidence, delivered with empathy, is what instills trust.
 
-## What makes a Medplum FDE?
+These two are bedside manner in full: the warmth to assume good faith and the authority to lead. Empathy without expertise is a pleasant meeting
+that goes nowhere. Expertise without empathy is a correct answer nobody acts on.
 
-{/* Intro: 1–3 paragraphs. Set up the problem or topic and why it matters to the reader. */}
+### Drive: keep moving, keep improving
 
-{/* truncate */}
+**Keep the Ball in Our Court.** There is always an action we can take to move a customer forward, and we follow through on our own ideas. Even when we are waiting on someone else, the wait is a deliberate move with a clear objective — never a stall.
 
-## TODO: First Section
+**Continually Improve.** We do more with less by automating our own jobs. The FDE who automates a task out of existence has just bought time for the next customer.
 
-{/* Main content goes here. */}
+### Rigor: zero ambiguity, built to last
 
-## TODO: Second Section
+**Leave Zero Ambiguity.** Internally, everything is written down — preferably in a public channel — so understanding is shared and nothing is lost when context changes hands. Externally, we relentlessly seek ground truth from the customer and validate every assumption rather than guessing.
 
-{/* More content, examples, or walkthrough. */}
+**Build Resilience.** Assume chaos and plan for it. Cultivate more than one relationship inside each account. Write defensive, well-tested code. Build redundant team processes so that no single point of failure — a person, a relationship, a script — can take a customer down.
 
-## TODO: Third Section (optional)
+It is worth noting that this last pair is not in the standard FDE playbook. Most FDE writing stops at empathy and hustle. We hold ourselves to
+writing everything down and engineering for failure because healthcare is unforgiving in a way most software is not: the systems are chaotic,
+the data is sensitive, and the cost of an outage or a misunderstanding is measured in patient care, not just churn.
 
-{/* Add or remove sections as needed. */}
+## Who thrives here
 
----
+If you are reading this as a prospective FDE, here is what we actually screen for.
 
-{/* Closing: summarize the key takeaway and link to related docs, guides, or next steps. */}
+Drive comes first. It is the best predictor we have found of who will be great at this job — more than any credential. The FDEs who thrive are the ones who take a problem personally and will not let it sit.
+
+Engineering fundamentals are a bar to clear, not a number to maximize. You need to be a genuinely capable engineer; you do not need to be the strongest competitive programmer we have ever interviewed. Modern AI tooling has lowered the cost of writing and learning code, which means judgment, ownership, and the ability to learn a new domain fast matter more than raw algorithmic horsepower.
+
+Customer empathy and communication are the bedside-manner half, and we weight them heavily. Can you defuse a tense call? Can you tell a customer "no" or "not like that" and have them thank you for it? Can you write something clear enough that a stranger understands it next week?
+
+You do not need to come from healthcare. You do need an appetite for its complexity — the standards, the regulation, the clinical reality — and the patience to learn it properly. We hire strong engineers and teach the rest.
+
+If that sounds like you, we are hiring.
+
+## Come build with us
+
+The rest of tech is discovering that shipping software to real customers is the hard part, and that the engineers closest to those customers are the ones who win the enterprise. Healthcare has known this since 1979. At Medplum we have built our team, our values, and our growth strategy around it: bedside manner and engineering fluency, in the same person, pointed at the hardest problems in healthcare interoperability.
+
+{/* Closing CTA: link to careers page, docs, and a Plumcon 2026 mention as appropriate. */}
