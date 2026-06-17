@@ -115,8 +115,12 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
     'message',
     AsyncLocalStorage.bind(async (data: RawData) => {
       fhircastMessagesReceived++;
-      const message = JSON.parse((data as Buffer).toString('utf8'));
-      globalLogger.debug('message', message);
+      try {
+        const message = JSON.parse((data as Buffer).toString('utf8'));
+        globalLogger.debug('message', message);
+      } catch (err) {
+        globalLogger.error('[FHIRcast]: Failed to parse client message', { err });
+      }
     })
   );
 

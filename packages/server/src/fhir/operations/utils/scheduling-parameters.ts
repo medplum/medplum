@@ -11,6 +11,7 @@ import type {
   Resource,
   Schedule,
 } from '@medplum/fhirtypes';
+import { Temporal } from 'temporal-polyfill';
 import { getLogger } from '../../../logger';
 import {
   assertExtensionBoolean,
@@ -70,6 +71,7 @@ export type SchedulingParametersExtensionExtension =
   | { url: 'duration'; valueDuration: HardDuration }
   | { url: 'service'; valueReference: Reference<HealthcareService> & { reference: string } }
   | { url: 'timezone'; valueCode: string }
+  | { url: 'alignmentTimezone'; valueCode: string }
   | {
       url: 'availability';
       extension: (AvailabilityR4AvailableTime | AvailabilityR4NotAvailableTime)[];
@@ -96,6 +98,7 @@ type BaseSchedulingParameters = {
   alignmentOffset: number; // minutes
   service: Reference<HealthcareService> & { reference: string };
   timezone?: string;
+  alignmentTimezone: string;
 };
 
 type ServiceSchedulingParameters = BaseSchedulingParameters & {
@@ -124,7 +127,12 @@ const SERVICE_DEFAULTS = Object.freeze({
   bufferBefore: 0,
   bufferAfter: 0,
   alignmentOffset: 0,
+  alignmentTimezone: 'Etc/UTC',
 });
+
+// This is a `Temporal.Instant` singleton that we instantiate once for
+// performance.
+const epochInstant = Temporal.Instant.fromEpochMilliseconds(0);
 
 function isReferenceTo<T extends Resource>(reference: Reference<T> | undefined, resource: WithId<T>): boolean {
   if (!reference?.reference) {
@@ -145,6 +153,11 @@ function durationToMinutes(extension: WithPath<Extension>): number {
   if (value === undefined) {
     throw new OperationOutcomeError(badRequest('Got duration without value', getPath(extension)));
   }
+
+  if (value < 0) {
+    throw new OperationOutcomeError(badRequest('Got duration with negative value', getPath(extension)));
+  }
+
   switch (unit) {
     case 'wk':
       return value * 60 * 24 * 7;
@@ -156,6 +169,19 @@ function durationToMinutes(extension: WithPath<Extension>): number {
       return value;
     default:
       throw new OperationOutcomeError(badRequest(`Got unhandled duration unit "${unit}"`, getPath(extension)));
+  }
+}
+
+function assertValidTimezone(ext: WithPath<Extension>): void {
+  assertExtensionCode(ext);
+  // Check that we can build a Temporal.ZonedDateTime with the given timezone.
+  // Note that this accepts non-canonical timezone identifiers (example:
+  // "US/Pacific" is an alias for "America/Los_Angeles"), and is
+  // case-insensitive (we accept "america/los_angeles" as valid).
+  try {
+    epochInstant.toZonedDateTimeISO(ext.valueCode);
+  } catch {
+    throw new OperationOutcomeError(badRequest(`Invalid timezone '${ext.valueCode}'`, getPath(ext)));
   }
 }
 
@@ -187,7 +213,7 @@ function exactlyZero(arr: WithPath<object>[], attribute: string, resourceType: s
 // keys from SchedulingParameters that we know contain primitive types.
 function assertAllMatch(
   values: LayeredDict<SchedulingParameters>[],
-  attribute: 'duration' | 'alignmentInterval' | 'alignmentOffset'
+  attribute: 'duration' | 'alignmentInterval' | 'alignmentOffset' | 'alignmentTimezone'
 ): void {
   if (values.length <= 1) {
     return;
@@ -205,15 +231,17 @@ function assertAllMatch(
 
 export function extractCommonParameters(
   schedulingParameters: LayeredDict<SchedulingParameters>[]
-): Pick<SchedulingParameters, 'duration' | 'alignmentInterval' | 'alignmentOffset'> {
+): Pick<SchedulingParameters, 'duration' | 'alignmentInterval' | 'alignmentOffset' | 'alignmentTimezone'> {
   assertAllMatch(schedulingParameters, 'duration');
   assertAllMatch(schedulingParameters, 'alignmentInterval');
   assertAllMatch(schedulingParameters, 'alignmentOffset');
+  assertAllMatch(schedulingParameters, 'alignmentTimezone');
 
   return {
     duration: schedulingParameters[0].get('duration'),
     alignmentInterval: schedulingParameters[0].get('alignmentInterval'),
     alignmentOffset: schedulingParameters[0].get('alignmentOffset'),
+    alignmentTimezone: schedulingParameters[0].get('alignmentTimezone'),
   };
 }
 
@@ -315,12 +343,16 @@ function extractAvailability(
   return undefined;
 }
 
-// In the SchedulingParameters extension, `alignmentInterval: 0` means "align
-// to the start of the hour". In our in-memory representation, we want to
-// convert this to a value that can be used as a modulus.
-function toHourlyModulus(value: number): number {
+// Extracts alignmentInterval from an extension: converts the 0→60 sentinel
+// ("align to the hour") and rejects values > 1440 min (one day), since the
+// per-day grid anchoring in findAlignedSlotTimes makes longer intervals meaningless.
+function extractAlignmentInterval(ext: WithPath<Extension>): number {
+  const value = durationToMinutes(ext);
   if (value === 0) {
     return 60;
+  }
+  if (value > 1440) {
+    throw new OperationOutcomeError(badRequest('alignmentInterval cannot exceed 1440 minutes (1 day)', getPath(ext)));
   }
   return value;
 }
@@ -373,6 +405,7 @@ export function getHealthcareServiceSchedulingParameters(
   const bufferAfterExt = atMostOne(getExtensions(extension, 'bufferAfter'), 'bufferAfter');
   const alignmentOffsetExt = atMostOne(getExtensions(extension, 'alignmentOffset'), 'alignmentOffset');
   const alignmentIntervalExt = atMostOne(getExtensions(extension, 'alignmentInterval'), 'alignmentInterval');
+  const alignmentTimezoneExt = atMostOne(getExtensions(extension, 'alignmentTimezone'), 'alignmentTimezone');
   const timezoneExt = atMostOne(getExtensions(extension, 'timezone'), 'timezone');
 
   // `service` sub-extension not allowed in HealthcareService; implied by resource
@@ -382,7 +415,11 @@ export function getHealthcareServiceSchedulingParameters(
   exactlyZero(getExtensions(extension, 'availability'), 'availability', healthcareService.resourceType);
 
   if (timezoneExt) {
-    assertExtensionCode(timezoneExt);
+    assertValidTimezone(timezoneExt);
+  }
+
+  if (alignmentTimezoneExt) {
+    assertValidTimezone(alignmentTimezoneExt);
   }
 
   return result.patchLayer(
@@ -392,7 +429,8 @@ export function getHealthcareServiceSchedulingParameters(
         ...(bufferBeforeExt && { bufferBefore: durationToMinutes(bufferBeforeExt) }),
         ...(bufferAfterExt && { bufferAfter: durationToMinutes(bufferAfterExt) }),
         ...(alignmentOffsetExt && { alignmentOffset: durationToMinutes(alignmentOffsetExt) }),
-        ...(alignmentIntervalExt && { alignmentInterval: toHourlyModulus(durationToMinutes(alignmentIntervalExt)) }),
+        ...(alignmentIntervalExt && { alignmentInterval: extractAlignmentInterval(alignmentIntervalExt) }),
+        ...(alignmentTimezoneExt && { alignmentTimezone: alignmentTimezoneExt.valueCode }),
         ...(timezoneExt && { timezone: timezoneExt.valueCode }),
       },
       getPath(extension)
@@ -445,10 +483,15 @@ export function getScheduleSchedulingParameters(
   const bufferAfterExt = atMostOne(getExtensions(extension, 'bufferAfter'), 'bufferAfter');
   const alignmentOffsetExt = atMostOne(getExtensions(extension, 'alignmentOffset'), 'alignmentOffset');
   const alignmentIntervalExt = atMostOne(getExtensions(extension, 'alignmentInterval'), 'alignmentInterval');
+  const alignmentTimezoneExt = atMostOne(getExtensions(extension, 'alignmentTimezone'), 'alignmentTimezone');
   const timezoneExt = atMostOne(getExtensions(extension, 'timezone'), 'timezone');
 
   if (timezoneExt) {
-    assertExtensionCode(timezoneExt);
+    assertValidTimezone(timezoneExt);
+  }
+
+  if (alignmentTimezoneExt) {
+    assertValidTimezone(alignmentTimezoneExt);
   }
 
   // The "availability" sub-extension uses format that mirrors
@@ -463,7 +506,8 @@ export function getScheduleSchedulingParameters(
       ...(bufferBeforeExt && { bufferBefore: durationToMinutes(bufferBeforeExt) }),
       ...(bufferAfterExt && { bufferAfter: durationToMinutes(bufferAfterExt) }),
       ...(alignmentOffsetExt && { alignmentOffset: durationToMinutes(alignmentOffsetExt) }),
-      ...(alignmentIntervalExt && { alignmentInterval: toHourlyModulus(durationToMinutes(alignmentIntervalExt)) }),
+      ...(alignmentIntervalExt && { alignmentInterval: extractAlignmentInterval(alignmentIntervalExt) }),
+      ...(alignmentTimezoneExt && { alignmentTimezone: alignmentTimezoneExt.valueCode }),
       ...(timezoneExt && { timezone: timezoneExt.valueCode }),
     },
     getPath(extension)
