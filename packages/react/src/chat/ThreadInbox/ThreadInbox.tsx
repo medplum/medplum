@@ -130,9 +130,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
       const bundle = await client.search('Communication', searchParams.toString(), { cache: 'no-cache' });
       const parents =
-        bundle.entry
-          ?.map((entry) => entry.resource)
-          .filter((r): r is WithId<Communication> => r !== undefined) || [];
+        bundle.entry?.map((entry) => entry.resource).filter((r): r is WithId<Communication> => r !== undefined) || [];
 
       const pending = pendingTopicsRef.current;
       pendingTopicsRef.current = [];
@@ -288,11 +286,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   );
 
   const renderItem = (item: WithId<Communication>): JSX.Element => (
-    <ThreadListItem
-      topic={item}
-      lastCommunication={lastMessagesRef.current.get(item.id)}
-      getThreadUri={getThreadUri}
-    />
+    <ThreadListItem topic={item} lastCommunication={lastMessagesRef.current.get(item.id)} getThreadUri={getThreadUri} />
   );
 
   const renderDetail = (selected: WithId<Communication>, ctx: ResourceBoardDetailContext): JSX.Element => {

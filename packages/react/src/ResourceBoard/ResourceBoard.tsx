@@ -59,11 +59,7 @@ export interface ResourceBoardProps<T extends Resource = Resource> {
    * Selected-resource resolution. Default: find in items by id, else
    * `medplum.readResource(search.resourceType, id)`.
    */
-  readonly resolveSelected?: (
-    id: string,
-    items: WithId<T>[],
-    medplum: MedplumClient
-  ) => Promise<WithId<T> | undefined>;
+  readonly resolveSelected?: (id: string, items: WithId<T>[], medplum: MedplumClient) => Promise<WithId<T> | undefined>;
 
   // Sidebar header
   /** Sidebar header tabs. Selecting a tab navigates to its URI. */
