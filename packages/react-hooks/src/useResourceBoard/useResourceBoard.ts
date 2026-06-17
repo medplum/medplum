@@ -63,12 +63,9 @@ export function useResourceBoard<T extends Resource = Resource>(
 
   // State
   const [memoizedSearch, setMemoizedSearch] = useState(search);
-  const [prevLoadItems, setPrevLoadItems] = useState<typeof loadItems>(() => loadItems);
   const [items, setItems] = useState<WithId<T>[]>([]);
   const [total, setTotal] = useState<number | undefined>();
   const [loading, setLoading] = useState(true);
-  // The resolved selection is tagged with the id it was resolved for, so a stale
-  // value is never shown for a different selectedId.
   const [selectedState, setSelectedState] = useState<{ id: string; value: WithId<T> | undefined } | undefined>();
 
   // Refs
@@ -80,14 +77,10 @@ export function useResourceBoard<T extends Resource = Resource>(
   const resourceType = memoizedSearch.resourceType;
   const selected = selectedId !== undefined && selectedState?.id === selectedId ? selectedState.value : undefined;
 
-  // Adjust state during render (SearchControl pattern) so a new search or fetcher
-  // shows the skeleton without a synchronous setState inside an effect.
+  // Adjust state during render (SearchControl pattern) so a new search shows the
+  // skeleton without a synchronous setState inside an effect.
   if (!deepEquals(search, memoizedSearch)) {
     setMemoizedSearch(search);
-    setLoading(true);
-  }
-  if (loadItems !== prevLoadItems) {
-    setPrevLoadItems(() => loadItems);
     setLoading(true);
   }
 
@@ -122,6 +115,8 @@ export function useResourceBoard<T extends Resource = Resource>(
     optionsRef.current = options;
   });
 
+  // A change to loadItems re-runs executeLoad (it's a dependency below), so the new
+  // items load without showing the skeleton — the list updates in place.
   useEffect(() => {
     executeLoad().catch(console.error);
   }, [executeLoad]);

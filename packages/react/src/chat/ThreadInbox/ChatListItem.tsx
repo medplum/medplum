@@ -4,19 +4,21 @@ import { Group, Stack, Text } from '@mantine/core';
 import { formatDateTime, formatHumanName } from '@medplum/core';
 import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
+import cx from 'clsx';
 import type { JSX } from 'react';
 import { MedplumLink } from '../../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
-import classes from './ThreadListItem.module.css';
+import classes from './ChatListItem.module.css';
 
-export interface ThreadListItemProps {
+export interface ChatListItemProps {
   topic: Communication;
   lastCommunication: Communication | undefined;
+  isSelected: boolean;
   getThreadUri: (topic: Communication) => string;
 }
 
-export const ThreadListItem = (props: ThreadListItemProps): JSX.Element => {
-  const { topic, lastCommunication, getThreadUri } = props;
+export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
+  const { topic, lastCommunication, isSelected, getThreadUri } = props;
   const patientResource = useResource(topic.subject as Reference<Patient>);
   const patientName = formatHumanName(patientResource?.name?.[0]);
   const lastMsg = lastCommunication?.payload?.[0]?.contentString;
@@ -27,7 +29,14 @@ export const ThreadListItem = (props: ThreadListItemProps): JSX.Element => {
 
   return (
     <MedplumLink to={getThreadUri(topic)} underline="never">
-      <Group p="xs" align="center" wrap="nowrap" className={classes.row}>
+      <Group
+        p="xs"
+        align="center"
+        wrap="nowrap"
+        className={cx(classes.contentContainer, {
+          [classes.selected]: isSelected,
+        })}
+      >
         <ResourceAvatar value={topic.subject} radius="xl" size={36} />
         <Stack gap={0}>
           <Text size="sm" fw={700} truncate="end">

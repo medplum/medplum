@@ -21,19 +21,19 @@ const mockPatient: Patient = {
   name: [{ given: ['Jane'], family: 'Smith' }],
 };
 
-const mockOnFilterChange = vi.fn();
+const mockOnFilterChange = jest.fn();
 
 describe('ParticipantFilter', () => {
   beforeEach(async () => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
+    jest.clearAllMocks();
+    jest.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      vi.runOnlyPendingTimers();
+      jest.runOnlyPendingTimers();
     });
-    vi.useRealTimers();
+    jest.useRealTimers();
   });
 
   const setup = async (
@@ -47,7 +47,7 @@ describe('ParticipantFilter', () => {
     await medplum.updateResource(mockPractitioner as WithId<Practitioner>);
     await medplum.updateResource(mockPatient as WithId<Patient>);
 
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     render(
       <ParticipantFilter selectedParticipants={selectedParticipants} onFilterChange={mockOnFilterChange} />,
       ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
@@ -191,7 +191,7 @@ describe('ParticipantFilter', () => {
 
   test('searches for participants when typing in search input', async () => {
     const medplum = new MockClient();
-    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
+    const searchSpy = jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }],
@@ -219,7 +219,7 @@ describe('ParticipantFilter', () => {
 
   test('displays search results', async () => {
     const medplum = new MockClient();
-    vi.spyOn(medplum, 'search').mockResolvedValue({
+    jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }],
@@ -243,7 +243,7 @@ describe('ParticipantFilter', () => {
 
   test('filters out current user from search results', async () => {
     const medplum = new MockClient();
-    vi.spyOn(medplum, 'search').mockResolvedValue({
+    jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPractitioner as WithId<Practitioner> }],
@@ -268,7 +268,7 @@ describe('ParticipantFilter', () => {
 
   test('shows "No results found" when search returns empty', async () => {
     const medplum = new MockClient();
-    vi.spyOn(medplum, 'search').mockResolvedValue({
+    jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [],
@@ -292,7 +292,7 @@ describe('ParticipantFilter', () => {
 
   test('clears search input when clear button is clicked', async () => {
     const medplum = new MockClient();
-    vi.spyOn(medplum, 'search').mockResolvedValue({
+    jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }],
@@ -322,7 +322,7 @@ describe('ParticipantFilter', () => {
 
   test('selecting a search result calls onFilterChange', async () => {
     const medplum = new MockClient();
-    vi.spyOn(medplum, 'search').mockResolvedValue({
+    jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }],
@@ -400,7 +400,7 @@ describe('ParticipantFilter', () => {
 
   test('clears search when clear button is clicked', async () => {
     const medplum = new MockClient();
-    vi.spyOn(medplum, 'search').mockResolvedValue({
+    jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }],
@@ -477,9 +477,9 @@ describe('ParticipantFilter', () => {
   });
 
   test('handles search error gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const medplum = new MockClient();
-    vi.spyOn(medplum, 'search').mockRejectedValue(new Error('Search failed'));
+    jest.spyOn(medplum, 'search').mockRejectedValue(new Error('Search failed'));
     const user = await setup(medplum);
 
     const button = screen.getByRole('button');
@@ -501,7 +501,7 @@ describe('ParticipantFilter', () => {
 
   test('handles search results with undefined resources', async () => {
     const medplum = new MockClient();
-    vi.spyOn(medplum, 'search').mockResolvedValue({
+    jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }, { resource: undefined }, {}],
@@ -525,7 +525,7 @@ describe('ParticipantFilter', () => {
 
   test('handles empty search query', async () => {
     const medplum = new MockClient();
-    const searchSpy = vi.spyOn(medplum, 'search');
+    const searchSpy = jest.spyOn(medplum, 'search');
     const user = await setup(medplum);
 
     const button = screen.getByRole('button');
@@ -539,7 +539,7 @@ describe('ParticipantFilter', () => {
     await user.type(searchInput, '   ');
 
     await act(async () => {
-      vi.advanceTimersByTime(400);
+      jest.advanceTimersByTime(400);
     });
 
     expect(searchSpy).not.toHaveBeenCalled();
