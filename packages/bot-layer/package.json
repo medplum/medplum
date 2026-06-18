@@ -26,7 +26,7 @@
     "@medplum/core": "5.1.18",
     "@medplum/definitions": "5.1.18",
     "fast-xml-parser": "5.8.0",
-    "form-data": "4.0.5",
+    "form-data": "4.0.6",
     "jose": "5.10.0",
     "jszip": "3.10.1",
     "node-fetch": "2.7.0",
