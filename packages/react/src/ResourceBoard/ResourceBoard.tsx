@@ -118,7 +118,14 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
   const navigate = useMedplumNavigate();
   // The hook returns the effective (deep-equality stable) search; alias it locally to
   // avoid colliding with the `search` prop, which is the raw input.
-  const { items, total, loading, selected, search: memoizedSearch, refresh } = useResourceBoard<T>({
+  const {
+    items,
+    total,
+    loading,
+    selected,
+    search: memoizedSearch,
+    refresh,
+  } = useResourceBoard<T>({
     search,
     selectedId,
     loadItems,
