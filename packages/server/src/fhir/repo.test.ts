@@ -451,7 +451,7 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.author?.reference).toStrictEqual('system');
     }));
 
-  test('Create Patient as system on behalf of author', () =>
+  test('Create Patient as system ignores submitted meta.author', () =>
     withTestContext(async () => {
       const author = 'Practitioner/' + randomUUID();
       const patient = await systemRepo.createResource<Patient>({
@@ -464,7 +464,31 @@ describe('FHIR Repo', () => {
         },
       });
 
-      expect(patient.meta?.author?.reference).toStrictEqual(author);
+      expect(patient.meta?.author?.reference).toStrictEqual('system');
+    }));
+
+  test('Super Admin update ignores submitted meta.author', () =>
+    withTestContext(async () => {
+      const { client, repo } = await createTestProject({ withClient: true, withRepo: true, superAdmin: true });
+      const fakeAuthor = 'Practitioner/' + randomUUID();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
+
+      const updated = await repo.updateResource<Patient>({
+        ...patient,
+        name: [{ given: ['Alice'], family: 'Jones' }],
+        meta: {
+          ...patient.meta,
+          author: { reference: fakeAuthor },
+        },
+      });
+
+      expect(updated.meta?.author?.reference).toStrictEqual(getReferenceString(client));
     }));
 
   test('Create Patient as ClientApplication with no author', () =>
@@ -743,6 +767,68 @@ describe('FHIR Repo', () => {
       ]);
       expect(patched.identifier?.at(0)?.system).toStrictEqual('https://example.com');
       expect(patched.identifier?.at(0)?.value).toStrictEqual('123');
+    }));
+
+  test('Patch resource with FHIRPath Patch body', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(patient.resourceType, patient.id, {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'operation',
+            part: [
+              { name: 'type', valueCode: 'add' },
+              { name: 'path', valueString: `Patient.name.where(family = 'Test')` },
+              { name: 'name', valueString: 'given' },
+              { name: 'value', valueString: 'Jan' },
+            ],
+          },
+        ],
+      });
+      expect(patched.name?.[0]?.given).toStrictEqual(['Jan']);
+    }));
+
+  test('Patch resource with empty FHIRPath Patch body', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(patient.resourceType, patient.id, {
+        resourceType: 'Parameters',
+        // Invalid patch body: patch operation with unknown type
+        parameter: [
+          {
+            name: 'operation',
+            part: [
+              { name: 'type', valueCode: 'unsupported' },
+              { name: 'path', valueString: 'Patient' },
+            ],
+          },
+        ],
+      });
+      // Resource should be returned unaltered, since invalid operation was ignored
+      expect(patched.meta?.versionId).toStrictEqual(patient.meta?.versionId);
+    }));
+
+  test('Patch resource with invalid FHIRPath Patch body', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(patient.resourceType, patient.id, {
+        resourceType: 'Parameters',
+      });
+      // Resource should be returned unaltered
+      expect(patched.meta?.versionId).toStrictEqual(patient.meta?.versionId);
     }));
 
   test('Compartment permissions', () =>

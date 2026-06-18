@@ -316,11 +316,11 @@ class CcdaToFhirConverter {
     }
     return addresses?.map((addr) => ({
       use: addr['@_use'] ? ADDRESS_USE_MAPPER.mapCcdaToFhir(addr['@_use']) : undefined,
-      line: addr.streetAddressLine,
-      city: addr.city,
-      state: addr.state,
-      postalCode: addr.postalCode,
-      country: addr.country,
+      line: addr.streetAddressLine?.map(nodeToString).filter(Boolean) as string[] | undefined,
+      city: nodeToString(addr.city),
+      state: nodeToString(addr.state),
+      postalCode: nodeToString(addr.postalCode),
+      country: nodeToString(addr.country),
     }));
   }
 
