@@ -14,6 +14,7 @@ import { ProjectDetailsPage } from './admin/ProjectDetailsPage';
 import { ProjectPage } from './admin/ProjectPage';
 import { RateLimitsPage } from './admin/RateLimitsPage';
 import { SecretsPage } from './admin/SecretsPage';
+import { SettingsPage } from './admin/SettingsPage';
 import { SitesPage } from './admin/SitesPage';
 import { SuperAdminAsyncDashboardPage } from './admin/SuperAdminAsyncJobPage';
 import { SuperAdminPage } from './admin/SuperAdminPage';
@@ -103,6 +104,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="users" element={<UsersPage />} />
           <Route path="project" element={<ProjectDetailsPage />} />
           <Route path="secrets" element={<SecretsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="sites" element={<SitesPage />} />
           <Route path="rate-limits" element={<RateLimitsPage />} />
         </Route>

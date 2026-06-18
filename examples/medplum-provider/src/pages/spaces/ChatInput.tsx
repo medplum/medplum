@@ -7,20 +7,9 @@ import { IconMicrophone, IconPlayerStopFilled, IconSend } from '@tabler/icons-re
 import type { JSX } from 'react';
 import { useEffect, useRef } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
-
-const MODEL_GPT_5_MINI = 'gpt-5-mini';
-const MODEL_GPT_5_4 = 'gpt-5.4';
-const MODEL_GPT_5_5 = 'gpt-5.5';
-
-export const DEFAULT_MODEL = MODEL_GPT_5_5;
+import type { SpaceModelOption } from '../../utils/spaceModels';
 
 const SILENCE_AUTO_SEND_MS = 1000;
-
-const MODELS = [
-  { value: MODEL_GPT_5_MINI, label: 'GPT-5 Mini' },
-  { value: MODEL_GPT_5_4, label: 'GPT-5.4' },
-  { value: MODEL_GPT_5_5, label: 'GPT-5.5' },
-];
 
 interface ChatInputProps {
   input: string;
@@ -28,6 +17,7 @@ interface ChatInputProps {
   onKeyDown: (e: React.KeyboardEvent) => void;
   onSend: (overrideInput?: string) => void;
   loading: boolean;
+  models: SpaceModelOption[];
   selectedModel: string;
   onModelChange: (value: string) => void;
   backgroundColor?: string;
@@ -39,6 +29,7 @@ export function ChatInput({
   onKeyDown,
   onSend,
   loading,
+  models,
   selectedModel,
   onModelChange,
   backgroundColor = '#fff',
@@ -177,9 +168,9 @@ export function ChatInput({
         </Group>
         <Select
           size="xs"
-          data={MODELS}
+          data={models}
           value={selectedModel}
-          onChange={(value) => onModelChange(value ?? DEFAULT_MODEL)}
+          onChange={(value) => onModelChange(value ?? models[0]?.value)}
           w="170px"
           withCheckIcon={false}
           fw={500}

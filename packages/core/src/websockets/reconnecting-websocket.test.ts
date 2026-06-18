@@ -210,6 +210,37 @@ describe('ReconnectingWebSocket', () => {
     await openPromise;
   });
 
+  test('.reconnect() succeeds after maxRetries has been exhausted', async () => {
+    // Connect to a URL with no server -- the connection attempt fails and, with maxRetries: 0,
+    // no automatic retries are allowed.
+    reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/no-server', undefined, {
+      maxRetries: 0,
+      connectionTimeout: 100,
+      minReconnectionDelay: 10,
+      maxReconnectionDelay: 20,
+    });
+
+    await new Promise<WebSocketEventMap['error']>((resolve) => {
+      reconnectingWebSocket.addEventListener('error', resolve);
+    });
+
+    // Give the failed attempt time to hit the maxRetries branch
+    await sleep(100);
+
+    // Start a server and explicitly reconnect -- this resets the retry counter and must be able
+    // to take the connect lock again (the lock must not stay held by the maxRetries early return)
+    const lateServer = new WS('wss://example.com/no-server');
+    const openPromise = new Promise<WebSocketEventMap['open']>((resolve) => {
+      reconnectingWebSocket.addEventListener('open', resolve);
+    });
+    reconnectingWebSocket.reconnect();
+    const openEvent = await openPromise;
+    expect(openEvent.type).toStrictEqual('open');
+
+    reconnectingWebSocket.close();
+    lateServer.close();
+  });
+
   test('globalThis.WebSocket undefined', async () => {
     const originalConsoleError = console.error;
     console.error = vi.fn();

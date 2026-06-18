@@ -152,10 +152,10 @@ export function parseDateTimeToRange(dt: string, approximate?: boolean): Interva
     end.setUTCDate(end.getUTCDate() + 1);
   } else if (len <= 20) {
     // Second precision
-    end.setSeconds(end.getSeconds() + 1);
+    end.setUTCSeconds(end.getUTCSeconds() + 1);
   } else {
     // Millisecond precision
-    end.setMilliseconds(end.getMilliseconds() + 1);
+    end.setUTCMilliseconds(end.getUTCMilliseconds() + 1);
   }
 
   if (approximate) {

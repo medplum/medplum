@@ -153,12 +153,14 @@ export function buildSelectFromHistoryTableQuery(
   if (sourcePredicate) {
     inner.whereExpr(sourcePredicate);
   }
+
   return new SelectQuery('src', inner)
     .column('id')
     .column('version_id')
     .column('content')
     .column('last_updated')
-    .raw(`json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}') AS project_id`);
+    .raw(`json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}') AS project_id`)
+    .orderBy('last_updated');
 }
 
 export function buildProjectedSelectFromHistoryTable(

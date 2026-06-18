@@ -71,7 +71,8 @@ find packages -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medp
 
 # Set version in charts/Chart.yaml (Helm)
 sed -i'' -E -e "s/^appVersion: ['\"][^\'\"]+['\"]/appVersion: '$NEW_VERSION'/g" charts/Chart.yaml
-sed -i'' -E -e "s/^version: [0-9.]+/version: $NEW_VERSION/g" charts/Chart.yaml
+sed -i'' -E -e "s/^version: ['\"]?[^'\"]+['\"]?/version: '$NEW_VERSION'/g" charts/Chart.yaml
+sed -i'' -E -e "/repository: medplum\/medplum-server/{n;s/^([[:space:]]*)tag: .*/\1tag: '$NEW_VERSION'/;}" charts/values.yaml
 
 # Run `npm version $version --workspaces`
 npm version "$NEW_VERSION" --workspaces
