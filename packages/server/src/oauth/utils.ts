@@ -885,7 +885,7 @@ export async function getExternalUserInfo(
     if (err instanceof OperationOutcomeError) {
       throw err;
     }
-    log.warn('Failed to verify external authorization code', err);
+    log.warn('Failed to verify external authorization code', { err, userInfoUrl, contentType });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
