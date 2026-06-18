@@ -875,17 +875,25 @@ export async function getExternalUserInfo(
   }
 
   const contentType = response.headers.get('content-type');
+  let contentBody: string;
+  try {
+    contentBody = await response.text();
+  } catch (err: any) {
+    log.warn('Failed to read user info response body', { err, userInfoUrl });
+    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+  }
+
   try {
     if (contentType?.includes(ContentType.JSON)) {
-      return normalizeExternalUserInfo(await response.json(), idp);
+      return normalizeExternalUserInfo(JSON.parse(contentBody), idp);
     } else if (contentType?.includes(ContentType.JWT)) {
-      return parseJWTPayload(await response.text());
+      return parseJWTPayload(contentBody);
     }
   } catch (err: any) {
     if (err instanceof OperationOutcomeError) {
       throw err;
     }
-    log.warn('Failed to verify external authorization code', { err, userInfoUrl, contentType });
+    log.warn('Failed to verify external authorization code', { err, userInfoUrl, contentType, contentBody });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
