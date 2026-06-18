@@ -9,6 +9,7 @@ import { withPath } from '../../../util/withpath';
 import type { Repository } from '../../repo';
 import {
   applyExistingSlots,
+  isAlignedToGrid,
   normalizeIntervals,
   removeAvailability,
   resolveAvailability,
@@ -712,5 +713,72 @@ describe('applyExistingSlots', () => {
     const serviceType = [{ coding: [{ system: 'http://example.com', code: 'office-visit' }] }];
 
     expect(applyExistingSlots({ availability: [], slots, range, serviceType })).toEqual(freeIntervals);
+  });
+});
+
+describe('isAlignedToGrid', () => {
+  const opts = { interval: 60, offset: 0, timezone: 'Etc/UTC' };
+
+  test('returns true for a date exactly on the hourly grid', () => {
+    expect(isAlignedToGrid(new Date('2025-12-01T09:00:00Z'), opts)).toBe(true);
+  });
+
+  test('returns false for a date not on the grid', () => {
+    expect(isAlignedToGrid(new Date('2025-12-01T09:37:00Z'), opts)).toBe(false);
+  });
+
+  test('returns false for a date with non-zero seconds', () => {
+    expect(isAlignedToGrid(new Date('2025-12-01T09:00:30Z'), opts)).toBe(false);
+  });
+
+  test('returns false for a date with non-zero milliseconds', () => {
+    expect(isAlignedToGrid(new Date('2025-12-01T09:00:00.500Z'), opts)).toBe(false);
+  });
+
+  test('respects alignmentOffset', () => {
+    const withOffset = { interval: 20, offset: 5, timezone: 'Etc/UTC' };
+    expect(isAlignedToGrid(new Date('2025-12-01T09:05:00Z'), withOffset)).toBe(true);
+    expect(isAlignedToGrid(new Date('2025-12-01T09:25:00Z'), withOffset)).toBe(true);
+    expect(isAlignedToGrid(new Date('2025-12-01T09:00:00Z'), withOffset)).toBe(false);
+    expect(isAlignedToGrid(new Date('2025-12-01T09:10:00Z'), withOffset)).toBe(false);
+  });
+
+  test('anchors to local midnight for non-UTC timezones', () => {
+    // America/Chicago in December is CST (UTC-6); local midnight = 06:00 UTC.
+    // With 50-min alignment, the Chicago and UTC grids differ (360 % 50 = 10).
+    // 09:20 UTC = 03:20 CST = 200 min since local midnight; 200 % 50 = 0 — on the Chicago grid
+    expect(
+      isAlignedToGrid(new Date('2025-12-01T09:20:00Z'), {
+        interval: 50,
+        offset: 0,
+        timezone: 'America/Chicago',
+      })
+    ).toBe(true);
+    // 09:10 UTC = 03:10 CST = 190 min since local midnight; 190 % 50 = 40 — not on the Chicago grid
+    expect(
+      isAlignedToGrid(new Date('2025-12-01T09:10:00Z'), {
+        interval: 50,
+        offset: 0,
+        timezone: 'America/Chicago',
+      })
+    ).toBe(false);
+  });
+
+  test('re-anchors the grid at local midnight for slots spanning midnight', () => {
+    // America/Chicago in December is CST (UTC-6); local midnight = 06:00 UTC.
+    // With 50-min alignment, the last grid point on Dec 1 is 23:20 CST = 05:20 UTC Dec 2
+    // (1400 min since Dec 1 midnight; 1400 % 50 = 0).
+    const lastSlotDec1 = new Date('2025-12-02T05:20:00Z');
+    expect(isAlignedToGrid(lastSlotDec1, { interval: 50, offset: 0, timezone: 'America/Chicago' })).toBe(true);
+
+    // Naïve continuation past Dec 1's grid would land at 00:10 CST Dec 2 = 06:10 UTC Dec 2
+    // (10 min since Dec 2 midnight; 10 % 50 = 10) — not on the re-anchored Dec 2 grid.
+    const naiveContinuation = new Date('2025-12-02T06:10:00Z');
+    expect(isAlignedToGrid(naiveContinuation, { interval: 50, offset: 0, timezone: 'America/Chicago' })).toBe(false);
+
+    // The actual first slot on Dec 2 is 00:00 CST = 06:00 UTC Dec 2
+    // (0 min since Dec 2 midnight; 0 % 50 = 0).
+    const firstSlotDec2 = new Date('2025-12-02T06:00:00Z');
+    expect(isAlignedToGrid(firstSlotDec2, { interval: 50, offset: 0, timezone: 'America/Chicago' })).toBe(true);
   });
 });

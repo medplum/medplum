@@ -201,10 +201,12 @@ async function handler(params: {
     intersectingAvailability,
     (interval, _idx, maxCount) =>
       findAlignedSlotTimes(interval, {
-        offsetMinutes: commonParameters.alignmentOffset,
+        alignment: {
+          interval: commonParameters.alignmentInterval,
+          offset: commonParameters.alignmentOffset,
+          timezone: commonParameters.alignmentTimezone,
+        },
         durationMinutes: commonParameters.duration,
-        alignment: commonParameters.alignmentInterval,
-        timezone: commonParameters.alignmentTimezone,
         maxCount,
       }),
     pageSize
