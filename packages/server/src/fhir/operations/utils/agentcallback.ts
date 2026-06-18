@@ -14,12 +14,13 @@ const CALLBACK_CHANNEL_PREFIX = 'agent:cb';
 
 type PendingCallback = {
   resolve: (result: [OperationOutcome, AgentResponseMessage | AgentError]) => void;
+  reject: (err: Error) => void;
   timer: NodeJS.Timeout;
 };
 
 const pendingCallbacks = new Map<string, PendingCallback>();
 let sharedSubscriber: Redis | undefined;
-let subscribePromise: Promise<void> | undefined;
+let setupSubscriberPromise: Promise<void> | undefined;
 
 /**
  * Returns the Redis pub/sub channel that this server process listens on for agent
@@ -75,44 +76,52 @@ export function assertCallbackSubscriber(): void {
  * Ensures that a callback subscriber has been initialized and is listening for agent command callbacks.
  * @returns A Promise that resolves once the callback subscriber has initialized, or immediately if it was already initialized.
  */
-export async function ensureCallbackSubscriber(): Promise<void> {
-  if (sharedSubscriber) {
-    return;
-  }
-  if (subscribePromise) {
-    await subscribePromise;
-    return;
-  }
-  subscribePromise = (async () => {
-    const subscriber = getPubSubRedisSubscriber();
-    subscriber.on('message', (_channel: string, message: string) => {
-      let parsed: AgentResponseMessage | AgentError;
-      try {
-        parsed = JSON.parse(message) as AgentResponseMessage | AgentError;
-      } catch (err) {
-        globalLogger.warn('[AgentCallback]: Failed to parse callback message', { error: normalizeErrorString(err) });
-        return;
-      }
-      const callbackId = parsed.callback;
-      if (!callbackId) {
-        return;
-      }
-      const pending = pendingCallbacks.get(callbackId);
-      if (!pending) {
-        return;
-      }
-      pendingCallbacks.delete(callbackId);
-      clearTimeout(pending.timer);
-      pending.resolve([allOk, parsed]);
-    });
-    await subscriber.subscribe(getAgentCallbackChannel());
-    sharedSubscriber = subscriber;
-  })();
-  try {
-    await subscribePromise;
-  } finally {
-    subscribePromise = undefined;
-  }
+export function ensureCallbackSubscriber(): Promise<void> {
+  // On failure, reset so the next push retries -- otherwise a transient Redis error
+  // would permanently prevent agent callbacks from being delivered. Also disconnect
+  // the partially-created subscriber so a failed subscribe does not leak a connection.
+  setupSubscriberPromise ??= setupCallbackSubscriber().catch((err) => {
+    setupSubscriberPromise = undefined;
+    sharedSubscriber?.disconnect();
+    sharedSubscriber = undefined;
+    throw err;
+  });
+  return setupSubscriberPromise;
+}
+
+async function setupCallbackSubscriber(): Promise<void> {
+  const subscriber = getPubSubRedisSubscriber();
+  sharedSubscriber = subscriber;
+  subscriber.on('end', () => {
+    // Only reset module state if this subscriber is still the current generation --
+    // a stale end event from an already-replaced subscriber must not tear down its
+    // successor. Clearing the setup promise lets the next push recreate the connection.
+    if (sharedSubscriber === subscriber) {
+      sharedSubscriber = undefined;
+      setupSubscriberPromise = undefined;
+    }
+  });
+  subscriber.on('message', (_channel: string, message: string) => {
+    let parsed: AgentResponseMessage | AgentError;
+    try {
+      parsed = JSON.parse(message) as AgentResponseMessage | AgentError;
+    } catch (err) {
+      globalLogger.warn('[AgentCallback]: Failed to parse callback message', { error: normalizeErrorString(err) });
+      return;
+    }
+    const callbackId = parsed.callback;
+    if (!callbackId) {
+      return;
+    }
+    const pending = pendingCallbacks.get(callbackId);
+    if (!pending) {
+      return;
+    }
+    pendingCallbacks.delete(callbackId);
+    clearTimeout(pending.timer);
+    pending.resolve([allOk, parsed]);
+  });
+  await subscriber.subscribe(getAgentCallbackChannel());
 }
 
 /**
@@ -141,6 +150,7 @@ export async function registerAgentCallback<T extends AgentResponseMessage = Age
 
     pendingCallbacks.set(callbackId, {
       resolve: resolve as PendingCallback['resolve'],
+      reject,
       timer,
     });
   });
@@ -153,8 +163,10 @@ export async function registerAgentCallback<T extends AgentResponseMessage = Age
 export function closeAgentCallbackSubscriber(): void {
   for (const [, pending] of pendingCallbacks) {
     clearTimeout(pending.timer);
+    pending.reject(new OperationOutcomeError(badRequest('Callback subscriber closed')));
   }
   pendingCallbacks.clear();
+  setupSubscriberPromise = undefined;
   if (sharedSubscriber) {
     sharedSubscriber.disconnect();
     sharedSubscriber = undefined;
