@@ -3,10 +3,10 @@
 import { ContentType, createReference } from '@medplum/core';
 import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fhirtypes';
 import dcmjs from 'dcmjs';
-import express from 'express';
 import type { Request, Response } from 'express';
-import type { IncomingMessage } from 'node:http';
+import express from 'express';
 import { Readable } from 'node:stream';
+import type { Response as SuperAgentResponse } from 'superagent';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -176,12 +176,10 @@ describe('DICOM Routes', () => {
       .get(`/dicomweb/studies/123/series/456/metadata`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body).toContainEqual(
-      {
-        '00080016': { vr: 'UI', Value: ['1.2.3'] },
-        '00080018': { vr: 'UI', Value: ['789'] },
-      }
-    );
+    expect(res.body).toContainEqual({
+      '00080016': { vr: 'UI', Value: ['1.2.3'] },
+      '00080018': { vr: 'UI', Value: ['789'] },
+    });
   });
 
   test('Get series metadata with unknown study', async () => {
@@ -374,7 +372,7 @@ function createDicomBuffer(): Buffer {
   return Buffer.from(dicomDict.write());
 }
 
-function binaryParser(res: IncomingMessage, callback: (err: Error | null, body?: Buffer) => void): void {
+function binaryParser(res: SuperAgentResponse, callback: (err: Error | null, body: Buffer) => void): void {
   const chunks: Buffer[] = [];
   res.on('data', (chunk: Buffer) => chunks.push(chunk));
   res.on('end', () => callback(null, Buffer.concat(chunks)));
