@@ -3,8 +3,10 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Scheduling
 
-:::info[]
-Medplum Scheduling is currently in alpha.
+:::info[Alpha]
+
+Medplum Scheduling is currently in [alpha](/docs/compliance/alpha-beta).
+
 :::
 
 Welcome to the Medplum Scheduling documentation. We currently support a range of scheduling operations that are available via the FHIR API. The following sections walk through the FHIR resources that are used to model scheduling and how the operations interact with them.
@@ -75,9 +77,10 @@ Once a desired slot has been found, the appointment booking process can be handl
 
 | Operation | Description | Status |
 | --------- | ----------- | ------ |
-| [`$book`](/docs/scheduling/appointment-book) | Book an appointment | **Alpha** |
-| `$hold` | Temporarily hold a slot | **In Development** |
-| `$cancel` | Cancel an appointment | **In Development** |
+| [`$book`](/docs/scheduling/appointment-book) | Book an appointment in one step | **Alpha** |
+| [`$hold`](/docs/scheduling/appointment-hold) | Temporarily hold a slot | **Alpha** |
+| [`$confirm`](/docs/scheduling/appointment-confirm) | Confirm a held appointment | **Alpha** |
+| [`$cancel`](/docs/scheduling/appointment-cancel) | Cancel an appointment | **Alpha** |
 
 ---
 

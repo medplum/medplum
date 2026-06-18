@@ -1,18 +1,308 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { WithId } from '@medplum/core';
 import { createReference, generateId } from '@medplum/core';
 import type { HealthcareService, Practitioner, Project, Schedule } from '@medplum/fhirtypes';
 import { toCodeableReferenceLike } from '../../../util/servicetype';
 import { withPath } from '../../../util/withpath';
-import { chooseSchedulingParameters, parseSchedulingParametersExtensions } from './scheduling-parameters';
+import { getHealthcareServiceSchedulingParameters, getScheduleSchedulingParameters } from './scheduling-parameters';
 
-describe('parseSchedulingParametersExtensions', () => {
-  const project: Project = {
+describe('getHealthcareServiceSchedulingParameters', () => {
+  const project = {
     resourceType: 'Project',
     id: generateId(),
-  };
+  } satisfies Project;
+
+  const baseService = {
+    resourceType: 'HealthcareService',
+    id: 'hs-12345',
+    meta: { project: project.id },
+  } satisfies HealthcareService;
+
+  test('with no extension returns default values', () => {
+    const service = withPath(baseService, 'Path.HealthcareService');
+    expect(getHealthcareServiceSchedulingParameters(service).flatten()).toMatchObject({
+      availability: [
+        {
+          dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+          availableStartTime: '00:00:00',
+          availableEndTime: '00:00:00',
+        },
+      ],
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      alignmentTimezone: 'Etc/UTC',
+      service: { reference: 'HealthcareService/hs-12345' },
+    });
+  });
+
+  test('can set `availableTime` without an extension', () => {
+    const service = withPath(
+      {
+        ...baseService,
+        availableTime: [
+          {
+            daysOfWeek: ['sat', 'sun'],
+            availableStartTime: '10:00:00',
+            availableEndTime: '16:00:00',
+          },
+        ],
+      } satisfies HealthcareService,
+      'Path.HealthcareService'
+    );
+    expect(getHealthcareServiceSchedulingParameters(service).flatten()).toMatchObject({
+      availability: [
+        {
+          dayOfWeek: ['sat', 'sun'],
+          availableStartTime: '10:00:00',
+          availableEndTime: '16:00:00',
+        },
+      ],
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      alignmentTimezone: 'Etc/UTC',
+      service: { reference: 'HealthcareService/hs-12345' },
+    });
+  });
+
+  test('minimally specified extension sets default values', () => {
+    const service = withPath(
+      {
+        ...baseService,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [{ url: 'duration', valueDuration: { unit: 'h', value: 2 } }],
+          },
+        ],
+      },
+      'Path.HealthcareService'
+    );
+
+    expect(getHealthcareServiceSchedulingParameters(service).flatten()).toMatchObject({
+      availability: [
+        {
+          dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+          availableStartTime: '00:00:00',
+          availableEndTime: '00:00:00',
+        },
+      ],
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      alignmentTimezone: 'Etc/UTC',
+      duration: 120,
+      service: { reference: 'HealthcareService/hs-12345' },
+    });
+  });
+
+  test('maximally specified extension sets appropriate values', () => {
+    const service = withPath(
+      {
+        ...baseService,
+        availableTime: [
+          {
+            daysOfWeek: ['mon', 'tue'],
+            availableStartTime: '09:00:00',
+            availableEndTime: '17:00:00',
+          },
+          {
+            daysOfWeek: ['thu'],
+            allDay: true,
+          },
+        ],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
+              { url: 'bufferBefore', valueDuration: { unit: 'min', value: 10 } },
+              { url: 'bufferAfter', valueDuration: { unit: 'min', value: 20 } },
+              { url: 'alignmentInterval', valueDuration: { unit: 'min', value: 30 } },
+              { url: 'alignmentOffset', valueDuration: { unit: 'min', value: 15 } },
+              { url: 'alignmentTimezone', valueCode: 'America/Los_Angeles' },
+              { url: 'timezone', valueCode: 'America/Phoenix' },
+            ],
+          },
+        ],
+      } satisfies HealthcareService,
+      'Path.HealthcareService'
+    );
+
+    expect(getHealthcareServiceSchedulingParameters(service).flatten()).toMatchObject({
+      availability: [
+        {
+          dayOfWeek: ['mon', 'tue'],
+          availableStartTime: '09:00:00',
+          availableEndTime: '17:00:00',
+        },
+        {
+          dayOfWeek: ['thu'],
+          availableStartTime: '00:00:00',
+          availableEndTime: '00:00:00',
+        },
+      ],
+      bufferBefore: 10,
+      bufferAfter: 20,
+      alignmentInterval: 30,
+      alignmentOffset: 15,
+      alignmentTimezone: 'America/Los_Angeles',
+      duration: 120,
+      service: { reference: 'HealthcareService/hs-12345' },
+      timezone: 'America/Phoenix',
+    });
+  });
+
+  test('"availability" subextension is not allowed', () => {
+    const service = withPath(
+      {
+        ...baseService,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
+              { url: 'availability', extension: [] },
+            ],
+          },
+        ],
+      } satisfies HealthcareService,
+      'Path.HealthcareService'
+    );
+    expect(() => getHealthcareServiceSchedulingParameters(service)).toThrow(
+      "Scheduling parameter attribute 'availability' is not allowed on HealthcareService"
+    );
+  });
+
+  test('"service" subextension is not allowed', () => {
+    const service = withPath(
+      {
+        ...baseService,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
+              { url: 'service', valueReference: createReference(baseService) },
+            ],
+          },
+        ],
+      } satisfies HealthcareService,
+      'Path.HealthcareService'
+    );
+    expect(() => getHealthcareServiceSchedulingParameters(service)).toThrow(
+      "Scheduling parameter attribute 'service' is not allowed on HealthcareService"
+    );
+  });
+
+  test('with an ambiguous duration unit throws', () => {
+    const service = withPath(
+      {
+        ...baseService,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [{ url: 'duration', valueDuration: { unit: 'mo', value: 2 } }],
+          },
+        ],
+      } satisfies HealthcareService,
+      'Path.HealthcareService'
+    );
+    expect(() => getHealthcareServiceSchedulingParameters(service)).toThrow('Got unhandled duration unit "mo"');
+  });
+
+  test('ignores invalid availability entries', () => {
+    // check missing endTime: entry is dropped
+    const serviceWithMissingEnd = withPath(
+      {
+        ...baseService,
+        availableTime: [
+          { daysOfWeek: ['mon'], availableStartTime: '09:00:00' },
+          { daysOfWeek: ['tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
+        ],
+      } satisfies HealthcareService,
+      'Path.HealthcareService'
+    );
+    expect(getHealthcareServiceSchedulingParameters(serviceWithMissingEnd).flatten().availability).toMatchObject([
+      { dayOfWeek: ['tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
+    ]);
+
+    // check missing startTime: entry is dropped
+    const serviceWithMissingStart = withPath(
+      {
+        ...baseService,
+        availableTime: [
+          { daysOfWeek: ['mon'], availableEndTime: '17:00:00' },
+          { daysOfWeek: ['tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
+        ],
+      } satisfies HealthcareService,
+      'Path.HealthcareService'
+    );
+    expect(getHealthcareServiceSchedulingParameters(serviceWithMissingStart).flatten().availability).toMatchObject([
+      { dayOfWeek: ['tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
+    ]);
+
+    // check missing daysOfWeek: entry is included with empty dayOfWeek
+    const serviceWithMissingDays = withPath(
+      {
+        ...baseService,
+        availableTime: [{ availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
+      } satisfies HealthcareService,
+      'Path.HealthcareService'
+    );
+    expect(getHealthcareServiceSchedulingParameters(serviceWithMissingDays).flatten().availability).toMatchObject([
+      { dayOfWeek: [], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
+    ]);
+  });
+
+  test.each(['duration', 'bufferBefore', 'bufferAfter', 'alignmentInterval', 'alignmentOffset'])(
+    'Multiple subextensions of url "%s"',
+    (attribute) => {
+      const service = withPath(
+        {
+          ...baseService,
+          availableTime: [
+            {
+              daysOfWeek: ['mon', 'tue'],
+              availableStartTime: '09:00:00',
+              availableEndTime: '17:00:00',
+            },
+            {
+              daysOfWeek: ['thu'],
+              allDay: true,
+            },
+          ],
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+              extension: [
+                { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
+                { url: attribute, valueDuration: { unit: 'min', value: 10 } },
+                { url: attribute, valueDuration: { unit: 'min', value: 20 } },
+              ],
+            },
+          ],
+        } satisfies HealthcareService,
+        'Path.HealthcareService'
+      );
+
+      expect(() => getHealthcareServiceSchedulingParameters(service)).toThrow(
+        `Scheduling parameter attribute '${attribute}' has too many values`
+      );
+    }
+  );
+});
+
+describe('getScheduleSchedulingParameters', () => {
+  const project = {
+    resourceType: 'Project',
+    id: generateId(),
+  } satisfies Project;
 
   const practitioner: Practitioner = {
     resourceType: 'Practitioner',
@@ -20,216 +310,169 @@ describe('parseSchedulingParametersExtensions', () => {
     meta: { project: project.id },
   };
 
+  const baseService = {
+    resourceType: 'HealthcareService',
+    id: 'hs-12345',
+    meta: { project: project.id },
+  } satisfies HealthcareService;
+
+  const baseSchedule = {
+    resourceType: 'Schedule',
+    actor: [createReference(practitioner)],
+    serviceType: toCodeableReferenceLike(baseService),
+  } satisfies Schedule;
+
+  test('with no extension', () => {
+    const service = withPath(baseService, 'Path.HealthcareService');
+    const schedule = withPath(baseSchedule, 'Path.Schedule');
+    expect(() => getScheduleSchedulingParameters(schedule, service)).toThrow();
+  });
+
   test('minimally specified extension sets default values', () => {
-    const service: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      id: 'hs-12345',
-    };
+    const service = withPath(
+      {
+        ...baseService,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [{ url: 'duration', valueDuration: { unit: 'h', value: 2 } }],
+          },
+        ],
+      },
+      'Path.HealthcareService'
+    );
+    const schedule = withPath(baseSchedule, 'Path.Schedule');
 
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      meta: { project: project.id },
-      actor: [createReference(practitioner)],
-      serviceType: toCodeableReferenceLike(service),
-      extension: [
+    expect(getScheduleSchedulingParameters(schedule, service).flatten()).toMatchObject({
+      availability: [
         {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            // `duration` is required to have exactly one entry
-            { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
-            // `service` is required to have exactly one entry
-            { url: 'service', valueReference: createReference(service) },
-            // `availability` is required to have at least one entry
-            {
-              url: 'availability',
-              extension: [
-                {
-                  url: 'availableTime',
-                  extension: [
-                    { url: 'daysOfWeek', valueCode: 'mon' },
-                    { url: 'availableStartTime', valueTime: '09:00:00' },
-                    { url: 'availableEndTime', valueTime: '17:00:00' },
-                  ],
-                },
-              ],
-            },
-          ],
+          dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+          availableStartTime: '00:00:00',
+          availableEndTime: '00:00:00',
         },
       ],
-    };
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      alignmentTimezone: 'Etc/UTC',
+      duration: 120,
+      service: { reference: 'HealthcareService/hs-12345' },
+    });
+  });
 
-    expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([
+  test('maximally specified extension in service gets inherited', () => {
+    const service = withPath(
       {
-        availability: [
+        ...baseService,
+        availableTime: [
           {
-            dayOfWeek: ['mon'],
+            daysOfWeek: ['mon', 'tue'],
             availableStartTime: '09:00:00',
             availableEndTime: '17:00:00',
           },
         ],
-        bufferBefore: 0,
-        bufferAfter: 0,
-        alignmentInterval: 60,
-        alignmentOffset: 0,
-        duration: 120,
-        service: { reference: 'HealthcareService/hs-12345' },
-        timezone: undefined,
-      },
-    ]);
-  });
 
-  test('with all the options', () => {
-    const service: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      id: 'hs-12345',
-    };
-
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      meta: { project: project.id },
-      actor: [createReference(practitioner)],
-      serviceType: toCodeableReferenceLike(service),
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            { url: 'alignmentInterval', valueDuration: { unit: 'min', value: 30 } },
-            { url: 'alignmentOffset', valueDuration: { unit: 'min', value: 5 } },
-            { url: 'bufferAfter', valueDuration: { unit: 'min', value: 15 } },
-            { url: 'bufferBefore', valueDuration: { unit: 'min', value: 10 } },
-            { url: 'service', valueReference: createReference(service) },
-            { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
-            { url: 'timezone', valueCode: 'America/Phoenix' },
-            {
-              url: 'availability',
-              extension: [
-                {
-                  url: 'availableTime',
-                  extension: [
-                    { url: 'daysOfWeek', valueCode: 'mon' },
-                    { url: 'availableStartTime', valueTime: '09:00:00' },
-                    { url: 'availableEndTime', valueTime: '17:00:00' },
-                  ],
-                },
-              ],
-            },
-            {
-              url: 'availability',
-              extension: [
-                {
-                  url: 'availableTime',
-                  extension: [
-                    { url: 'daysOfWeek', valueCode: 'tue' },
-                    { url: 'daysOfWeek', valueCode: 'thu' },
-                    { url: 'availableStartTime', valueTime: '12:00:00' },
-                    { url: 'availableEndTime', valueTime: '13:30:00' },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    };
-
-    expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([
-      {
-        availability: [
-          {
-            dayOfWeek: ['mon'],
-            availableStartTime: '09:00:00',
-            availableEndTime: '17:00:00',
-          },
-          {
-            dayOfWeek: ['tue', 'thu'],
-            availableStartTime: '12:00:00',
-            availableEndTime: '13:30:00',
-          },
-        ],
-        bufferBefore: 10,
-        bufferAfter: 15,
-        alignmentInterval: 30,
-        alignmentOffset: 5,
-        duration: 120,
-        service: { reference: `HealthcareService/${service.id}` },
-        timezone: 'America/Phoenix',
-      },
-    ]);
-  });
-
-  describe('with availability extension', () => {
-    const service: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      id: 'hs-12345',
-    };
-
-    test('basic start/end time pair parses to correct availability', () => {
-      const schedule: Schedule = {
-        resourceType: 'Schedule',
-        meta: { project: project.id },
-        actor: [createReference(practitioner)],
-        serviceType: toCodeableReferenceLike(service),
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
             extension: [
-              { url: 'duration', valueDuration: { unit: 'h', value: 1 } },
+              { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
+              { url: 'bufferBefore', valueDuration: { unit: 'min', value: 10 } },
+              { url: 'bufferAfter', valueDuration: { unit: 'min', value: 20 } },
+              { url: 'alignmentInterval', valueDuration: { unit: 'min', value: 30 } },
+              { url: 'alignmentOffset', valueDuration: { unit: 'min', value: 15 } },
+              { url: 'alignmentTimezone', valueCode: 'America/Los_Angeles' },
+              { url: 'timezone', valueCode: 'America/Phoenix' },
+            ],
+          },
+        ],
+      } satisfies HealthcareService,
+      'Path.HealthcareService'
+    );
+    const schedule = withPath(baseSchedule, 'Path.Schedule');
+
+    expect(getScheduleSchedulingParameters(schedule, service).flatten()).toMatchObject({
+      availability: [
+        {
+          dayOfWeek: ['mon', 'tue'],
+          availableStartTime: '09:00:00',
+          availableEndTime: '17:00:00',
+        },
+      ],
+      bufferBefore: 10,
+      bufferAfter: 20,
+      alignmentInterval: 30,
+      alignmentOffset: 15,
+      alignmentTimezone: 'America/Los_Angeles',
+      duration: 120,
+      service: { reference: 'HealthcareService/hs-12345' },
+      timezone: 'America/Phoenix',
+    });
+  });
+
+  test('maximally specified extension in schedule overrides service settings', () => {
+    const service = withPath(
+      {
+        ...baseService,
+        availableTime: [
+          {
+            daysOfWeek: ['mon', 'tue'],
+            availableStartTime: '09:00:00',
+            availableEndTime: '17:00:00',
+          },
+        ],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
+              { url: 'bufferBefore', valueDuration: { unit: 'min', value: 10 } },
+              { url: 'bufferAfter', valueDuration: { unit: 'min', value: 20 } },
+              { url: 'alignmentInterval', valueDuration: { unit: 'min', value: 30 } },
+              { url: 'alignmentOffset', valueDuration: { unit: 'min', value: 15 } },
+              { url: 'alignmentTimezone', valueCode: 'America/Los_Angeles' },
+              { url: 'timezone', valueCode: 'America/Phoenix' },
+            ],
+          },
+        ],
+      } satisfies HealthcareService,
+      'Path.HealthcareService'
+    );
+    const schedule = withPath(
+      {
+        ...baseSchedule,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
               { url: 'service', valueReference: createReference(service) },
+              { url: 'duration', valueDuration: { unit: 'h', value: 3 } },
+              { url: 'bufferBefore', valueDuration: { unit: 'min', value: 12 } },
+              { url: 'bufferAfter', valueDuration: { unit: 'min', value: 24 } },
+              { url: 'alignmentInterval', valueDuration: { unit: 'min', value: 45 } },
+              { url: 'alignmentOffset', valueDuration: { unit: 'min', value: 5 } },
+              { url: 'alignmentTimezone', valueCode: 'America/Chicago' },
+              { url: 'timezone', valueCode: 'America/New_York' },
               {
                 url: 'availability',
                 extension: [
                   {
                     url: 'availableTime',
                     extension: [
-                      { url: 'daysOfWeek', valueCode: 'mon' },
                       { url: 'daysOfWeek', valueCode: 'wed' },
-                      { url: 'availableStartTime', valueTime: '09:00:00' },
-                      { url: 'availableEndTime', valueTime: '17:00:00' },
+                      { url: 'availableStartTime', valueTime: '08:00:00' },
+                      { url: 'availableEndTime', valueTime: '16:00:00' },
                     ],
                   },
                 ],
               },
-            ],
-          },
-        ],
-      };
-
-      expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([
-        {
-          availability: [{ dayOfWeek: ['mon', 'wed'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
-          duration: 60,
-          service: { reference: `HealthcareService/${service.id}` },
-        },
-      ]);
-    });
-
-    test('allDay: true produces full-day availability', () => {
-      const hs: WithId<HealthcareService> = {
-        resourceType: 'HealthcareService',
-        id: 'hs-12345',
-        type: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
-      };
-
-      const schedule: Schedule = {
-        resourceType: 'Schedule',
-        meta: { project: project.id },
-        actor: [createReference(practitioner)],
-        serviceType: toCodeableReferenceLike(hs),
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-            extension: [
-              { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
-              { url: 'service', valueReference: createReference(hs) },
               {
                 url: 'availability',
                 extension: [
                   {
                     url: 'availableTime',
                     extension: [
-                      { url: 'daysOfWeek', valueCode: 'mon' },
-                      { url: 'daysOfWeek', valueCode: 'tue' },
-                      { url: 'daysOfWeek', valueCode: 'wed' },
                       { url: 'daysOfWeek', valueCode: 'thu' },
                       { url: 'daysOfWeek', valueCode: 'fri' },
                       { url: 'allDay', valueBoolean: true },
@@ -240,675 +483,31 @@ describe('parseSchedulingParametersExtensions', () => {
             ],
           },
         ],
-      };
-
-      expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([
-        {
-          availability: [
-            {
-              dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
-              availableStartTime: '00:00:00',
-              availableEndTime: '00:00:00',
-            },
-          ],
-        },
-      ]);
-    });
-
-    test('notAvailableTime is accepted without error and does not affect parsed availability', () => {
-      const hs: WithId<HealthcareService> = {
-        resourceType: 'HealthcareService',
-        id: 'hs-12345',
-        type: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
-      };
-
-      const schedule: Schedule = {
-        resourceType: 'Schedule',
-        meta: { project: project.id },
-        actor: [createReference(practitioner)],
-        serviceType: toCodeableReferenceLike(hs),
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-            extension: [
-              { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
-              { url: 'service', valueReference: createReference(hs) },
-              {
-                url: 'availability',
-                extension: [
-                  {
-                    url: 'availableTime',
-                    extension: [
-                      { url: 'daysOfWeek', valueCode: 'mon' },
-                      { url: 'availableStartTime', valueTime: '09:00:00' },
-                      { url: 'availableEndTime', valueTime: '17:00:00' },
-                    ],
-                  },
-                  {
-                    url: 'notAvailableTime',
-                    extension: [
-                      { url: 'description', valueString: 'Holiday closure' },
-                      { url: 'during', valuePeriod: { start: '2025-12-25', end: '2025-12-26' } },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      };
-
-      expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).not.toThrow();
-      expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([
-        { availability: [{ dayOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }] },
-      ]);
-    });
-
-    test('availableTime missing both allDay and start/end is filtered out', () => {
-      const hs: WithId<HealthcareService> = {
-        resourceType: 'HealthcareService',
-        id: 'hs-12345',
-        type: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
-      };
-
-      const schedule: Schedule = {
-        resourceType: 'Schedule',
-        meta: { project: project.id },
-        actor: [createReference(practitioner)],
-        serviceType: toCodeableReferenceLike(hs),
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-            extension: [
-              { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
-              { url: 'service', valueReference: createReference(hs) },
-              {
-                url: 'availability',
-                extension: [
-                  {
-                    url: 'availableTime',
-                    extension: [{ url: 'daysOfWeek', valueCode: 'mon' }],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      };
-
-      // Filtered out, so availability is empty — but does not throw
-      expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).not.toThrow();
-      expect(parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toMatchObject([{ availability: [] }]);
-    });
-
-    test('"availability" is not allowed in HealthcareService extension', () => {
-      const hs: HealthcareService = {
-        resourceType: 'HealthcareService',
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-            extension: [
-              { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
-              {
-                url: 'availability',
-                extension: [
-                  {
-                    url: 'availableTime',
-                    extension: [
-                      { url: 'daysOfWeek', valueCode: 'mon' },
-                      { url: 'availableStartTime', valueTime: '09:00:00' },
-                      { url: 'availableEndTime', valueTime: '17:00:00' },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      };
-
-      expect(() => parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toThrow(
-        "Scheduling parameter attribute 'availability' is not allowed on HealthcareService"
-      );
-    });
-  });
-
-  test('missing required availability', () => {
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      meta: { project: project.id },
-      actor: [createReference(practitioner)],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [{ url: 'duration', valueDuration: { unit: 'h', value: 2 } }],
-        },
-      ],
-    };
-
-    expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toThrow(
-      "Required scheduling parameter attribute 'availability' is missing"
-    );
-  });
-
-  test('missing required duration', () => {
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      meta: { project: project.id },
-      actor: [createReference(practitioner)],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            {
-              url: 'availability',
-              extension: [
-                {
-                  url: 'availableTime',
-                  extension: [
-                    { url: 'daysOfWeek', valueCode: 'tue' },
-                    { url: 'daysOfWeek', valueCode: 'thu' },
-                    { url: 'availableStartTime', valueTime: '12:00:00' },
-                    { url: 'availableEndTime', valueTime: '13:30:00' },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    };
-
-    expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toThrow(
-      "Required scheduling parameter attribute 'duration' is missing"
-    );
-  });
-
-  test.each(['duration', 'bufferBefore', 'bufferAfter', 'alignmentInterval', 'alignmentOffset'])(
-    'Multiple extension parameters of type "%s"',
-    (attribute) => {
-      const schedule: Schedule = {
-        resourceType: 'Schedule',
-        meta: { project: project.id },
-        actor: [createReference(practitioner)],
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-            extension: [
-              { url: attribute, valueDuration: { unit: 'min', value: 10 } },
-              { url: attribute, valueDuration: { unit: 'min', value: 10 } },
-              { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
-              {
-                url: 'availability',
-                extension: [
-                  {
-                    url: 'availableTime',
-                    extension: [
-                      { url: 'daysOfWeek', valueCode: 'tue' },
-                      { url: 'daysOfWeek', valueCode: 'thu' },
-                      { url: 'availableStartTime', valueTime: '12:00:00' },
-                      { url: 'availableEndTime', valueTime: '13:30:00' },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      };
-
-      expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toThrow(
-        `Scheduling parameter attribute '${attribute}' has too many values`
-      );
-    }
-  );
-
-  test('with an ambiguous duration unit', () => {
-    const hs: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      id: 'hs-12345',
-      type: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
-    };
-
-    const unit = 'm'; // 'm' is "month" which is ambiguous (anywhere from 28 - 31 days)
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      meta: { project: project.id },
-      actor: [createReference(practitioner)],
-      serviceType: toCodeableReferenceLike(hs),
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            { url: 'duration', valueDuration: { unit, value: 1 } },
-            { url: 'service', valueReference: createReference(hs) },
-            {
-              url: 'availability',
-              extension: [
-                {
-                  url: 'availableTime',
-                  extension: [
-                    { url: 'daysOfWeek', valueCode: 'tue' },
-                    { url: 'daysOfWeek', valueCode: 'thu' },
-                    { url: 'availableStartTime', valueTime: '12:00:00' },
-                    { url: 'availableEndTime', valueTime: '13:30:00' },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    };
-
-    expect(() => parseSchedulingParametersExtensions(withPath(schedule, 'Schedule'))).toThrow(
-      `Got unhandled duration unit "m"`
-    );
-  });
-
-  describe('for a HealthcareService', () => {
-    const durationExt = { url: 'duration', valueDuration: { unit: 'min' as const, value: 30 } };
-
-    test('derives serviceType from HealthcareService.type and availability from availableTime', () => {
-      const hs: HealthcareService = {
-        resourceType: 'HealthcareService',
-        id: 'hs-12345',
-        type: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
-        availableTime: [{ daysOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-            extension: [durationExt],
-          },
-        ],
-      };
-
-      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
-        {
-          service: { reference: `HealthcareService/${hs.id}` },
-          availability: [{ dayOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
-          duration: 30,
-          bufferBefore: 0,
-          bufferAfter: 0,
-          alignmentInterval: 60,
-          alignmentOffset: 0,
-        },
-      ]);
-    });
-
-    test('allDay: true produces full-day availability', () => {
-      const hs: HealthcareService = {
-        resourceType: 'HealthcareService',
-        availableTime: [{ daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'], allDay: true }],
-        extension: [
-          { url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters', extension: [durationExt] },
-        ],
-      };
-
-      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
-        {
-          availability: [
-            {
-              dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
-              availableStartTime: '00:00:00',
-              availableEndTime: '00:00:00',
-            },
-          ],
-        },
-      ]);
-    });
-
-    test('allDay: true with no daysOfWeek defaults dayOfWeek to []', () => {
-      const hs: HealthcareService = {
-        resourceType: 'HealthcareService',
-        availableTime: [{ allDay: true }],
-        extension: [
-          { url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters', extension: [durationExt] },
-        ],
-      };
-
-      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
-        { availability: [{ dayOfWeek: [], availableStartTime: '00:00:00', availableEndTime: '00:00:00' }] },
-      ]);
-    });
-
-    test('availableTime with only startTime (no endTime) is filtered out', () => {
-      const hs: HealthcareService = {
-        resourceType: 'HealthcareService',
-        availableTime: [{ daysOfWeek: ['mon'], availableStartTime: '09:00:00' }],
-        extension: [
-          { url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters', extension: [durationExt] },
-        ],
-      };
-
-      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
-        { availability: [] },
-      ]);
-    });
-
-    test('availableTime with neither allDay nor start+end is filtered out', () => {
-      const hs: HealthcareService = {
-        resourceType: 'HealthcareService',
-        availableTime: [{ daysOfWeek: ['mon'] }],
-        extension: [
-          { url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters', extension: [durationExt] },
-        ],
-      };
-
-      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
-        { availability: [] },
-      ]);
-    });
-
-    test('availability is not required on HealthcareService', () => {
-      // No availableTime on resource, no availability in extension — should not throw
-      const hs: HealthcareService = {
-        resourceType: 'HealthcareService',
-        id: 'hs-123',
-        extension: [
-          { url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters', extension: [durationExt] },
-        ],
-      };
-
-      expect(() => parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).not.toThrow();
-      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
-        {
-          availability: [],
-          service: { reference: 'HealthcareService/hs-123' },
-          duration: 30,
-        },
-      ]);
-    });
-
-    test('multiple availableTime entries all contribute to availability', () => {
-      const hs: HealthcareService = {
-        resourceType: 'HealthcareService',
-        availableTime: [
-          { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '12:00:00' },
-          { daysOfWeek: ['wed'], availableStartTime: '13:00:00', availableEndTime: '17:00:00' },
-        ],
-        extension: [
-          { url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters', extension: [durationExt] },
-        ],
-      };
-
-      expect(parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toMatchObject([
-        {
-          availability: [
-            { dayOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '12:00:00' },
-            { dayOfWeek: ['wed'], availableStartTime: '13:00:00', availableEndTime: '17:00:00' },
-          ],
-        },
-      ]);
-    });
-
-    test('"availability" is not allowed in HealthcareService extension', () => {
-      const hs: HealthcareService = {
-        resourceType: 'HealthcareService',
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-            extension: [
-              durationExt,
-              {
-                url: 'availability',
-                extension: [
-                  {
-                    url: 'availableTime',
-                    extension: [
-                      { url: 'daysOfWeek', valueCode: 'mon' },
-                      { url: 'availableStartTime', valueTime: '09:00:00' },
-                      { url: 'availableEndTime', valueTime: '17:00:00' },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      };
-
-      expect(() => parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toThrow(
-        "Scheduling parameter attribute 'availability' is not allowed on HealthcareService"
-      );
-    });
-
-    test('"service" is not allowed in HealthcareService extension', () => {
-      const hs: HealthcareService = {
-        resourceType: 'HealthcareService',
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-            extension: [durationExt, { url: 'service', valueReference: { reference: 'HealthcareService/123' } }],
-          },
-        ],
-      };
-
-      expect(() => parseSchedulingParametersExtensions(withPath(hs, 'HealthcareService'))).toThrow(
-        "Scheduling parameter attribute 'service' is not allowed on HealthcareService"
-      );
-    });
-  });
-});
-
-describe('chooseSchedulingParameters', () => {
-  const consultType = { coding: [{ system: 'http://example.com', code: 'consult' }] };
-  const yogaType = { coding: [{ code: 'yoga' }] };
-
-  // Reusable availability extension for Schedule resources (required on Schedule, not on HealthcareService)
-  const mondayAvailability = {
-    url: 'availability',
-    extension: [
-      {
-        url: 'availableTime',
-        extension: [
-          { url: 'daysOfWeek', valueCode: 'mon' },
-          { url: 'availableStartTime', valueTime: '09:00:00' },
-          { url: 'availableEndTime', valueTime: '17:00:00' },
-        ],
       },
-    ],
-  };
-
-  test('returns undefined when neither Schedule nor HealthcareService have the SchedulingParameters extension', () => {
-    const service: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      type: [consultType],
-      id: 'hcs-100',
-      availableTime: [{ daysOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
-    };
-
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      serviceType: toCodeableReferenceLike(service),
-      actor: [{ reference: 'Practitioner/test' }],
-    };
-
-    expect(chooseSchedulingParameters(withPath(schedule, 'Schedule'), withPath(service, 'HealthcareService'))).toEqual(
-      undefined
+      'Path.Schedule'
     );
-  });
 
-  test('returns undefined when the Schedule has no SchedulingParameters matching HealthcareService.type', () => {
-    const service1: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      type: [consultType],
-      id: 'hcs-100',
-    };
-
-    const service2: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      type: [yogaType],
-      id: 'hcs-123',
-    };
-
-    // Linked to service1 in serviceType, but only has scheduling parameters set for service2.
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      serviceType: toCodeableReferenceLike(service1),
-      actor: [{ reference: 'Practitioner/test' }],
-      extension: [
+    expect(getScheduleSchedulingParameters(schedule, service).flatten()).toMatchObject({
+      availability: [
         {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
-            { url: 'service', valueReference: createReference(service2) },
-            mondayAvailability,
-          ],
+          dayOfWeek: ['wed'],
+          availableStartTime: '08:00:00',
+          availableEndTime: '16:00:00',
+        },
+        {
+          dayOfWeek: ['thu', 'fri'],
+          availableStartTime: '00:00:00',
+          availableEndTime: '00:00:00',
         },
       ],
-    };
-
-    expect(chooseSchedulingParameters(withPath(schedule, 'Schedule'), withPath(service1, 'HealthcareService'))).toEqual(
-      undefined
-    );
-  });
-
-  test('falls back to HealthcareService when Schedule has no SchedulingParameters extension', () => {
-    const service: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      type: [consultType],
-      id: 'hcs-100',
-      availableTime: [{ daysOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [{ url: 'duration', valueDuration: { unit: 'min', value: 30 } }],
-        },
-      ],
-    };
-
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      serviceType: toCodeableReferenceLike(service),
-      actor: [{ reference: 'Practitioner/test' }],
-    };
-
-    const result = chooseSchedulingParameters(withPath(schedule, 'Schedule'), withPath(service, 'HealthcareService'));
-    expect(result?.duration).toBe(30);
-  });
-
-  test('falls back to HealthcareService when Schedule has no matching parameters', () => {
-    // Schedule has two extensions — each points at a different service.
-    // We query with a third service that has its own parameters. Neither Schedule
-    // extension matches, so chooseSchedulingParameters should fall through to
-    // the HealthcareService's own parameters.
-    const service1: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'hcs-1' };
-    const service2: WithId<HealthcareService> = { resourceType: 'HealthcareService', id: 'hcs-2' };
-    const targetService: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      id: 'hcs-target',
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [{ url: 'duration', valueDuration: { unit: 'min', value: 45 } }],
-        },
-      ],
-    };
-
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      actor: [{ reference: 'Practitioner/test' }],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            { url: 'duration', valueDuration: { unit: 'min', value: 30 } },
-            { url: 'service', valueReference: createReference(service1) },
-            mondayAvailability,
-          ],
-        },
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            { url: 'duration', valueDuration: { unit: 'min', value: 60 } },
-            { url: 'service', valueReference: createReference(service2) },
-            mondayAvailability,
-          ],
-        },
-      ],
-    };
-
-    const result = chooseSchedulingParameters(
-      withPath(schedule, 'Schedule'),
-      withPath(targetService, 'HealthcareService')
-    );
-    expect(result?.duration).toBe(45);
-  });
-
-  test('Schedule-specific parameters take priority over HealthcareService', () => {
-    const service: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      type: [consultType],
-      id: 'hcs-100',
-      availableTime: [{ daysOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [{ url: 'duration', valueDuration: { unit: 'min', value: 30 } }],
-        },
-      ],
-    };
-
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      serviceType: toCodeableReferenceLike(service),
-      actor: [{ reference: 'Practitioner/test' }],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            { url: 'duration', valueDuration: { unit: 'min', value: 60 } },
-            mondayAvailability,
-            { url: 'service', valueReference: createReference(service) },
-          ],
-        },
-      ],
-    };
-
-    // HealthcareService says 30 min — Schedule's 60 min should win
-    const result = chooseSchedulingParameters(withPath(schedule, 'Schedule'), withPath(service, 'HealthcareService'));
-    expect(result?.duration).toBe(60);
-  });
-
-  test('only the matching Schedule entry is returned when multiple extensions exist', () => {
-    const service1: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      type: [consultType],
-      id: 'hcs-100',
-    };
-
-    const service2: WithId<HealthcareService> = {
-      resourceType: 'HealthcareService',
-      type: [yogaType],
-      id: 'hcs-123',
-    };
-
-    const schedule: Schedule = {
-      resourceType: 'Schedule',
-      serviceType: [...toCodeableReferenceLike(service1), ...toCodeableReferenceLike(service2)],
-      actor: [{ reference: 'Practitioner/test' }],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            { url: 'duration', valueDuration: { unit: 'min', value: 60 } },
-            { url: 'service', valueReference: createReference(service1) },
-            mondayAvailability,
-          ],
-        },
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            { url: 'duration', valueDuration: { unit: 'min', value: 45 } },
-            { url: 'service', valueReference: createReference(service2) },
-            mondayAvailability,
-          ],
-        },
-      ],
-    };
-
-    const result = chooseSchedulingParameters(withPath(schedule, 'Schedule'), withPath(service1, 'HealthcareService'));
-    expect(result?.duration).toBe(60);
+      bufferBefore: 12,
+      bufferAfter: 24,
+      alignmentInterval: 45,
+      alignmentOffset: 5,
+      alignmentTimezone: 'America/Chicago',
+      duration: 180,
+      service: { reference: 'HealthcareService/hs-12345' },
+      timezone: 'America/New_York',
+    });
   });
 });

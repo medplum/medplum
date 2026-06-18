@@ -23,6 +23,7 @@ import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 import { HeaderDropdown } from './HeaderDropdown';
+import headerDropdownClasses from './HeaderDropdown.module.css';
 import classes from './Navbar.module.css';
 import { Spotlight } from './Spotlight';
 
@@ -196,6 +197,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
             >
               <UnstyledButton
                 className={classes.toggleButton}
+                data-opened={opened || undefined}
                 aria-label={opened ? 'Close Sidebar' : 'Open Sidebar'}
                 onClick={props.navbarToggle}
                 aria-expanded={opened}
@@ -204,10 +206,11 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 <IconLayoutSidebar />
               </UnstyledButton>
             </Tooltip>
-            <Divider my="xs" mx={6} className={classes.divider} />
+            <Divider my="xs" className={classes.divider} />
             <Menu
               width={260}
-              shadow="xl"
+              shadow="md"
+              radius="md"
               position="top-start"
               transitionProps={{ transition: 'fade-up' }}
               opened={userMenuOpened}
@@ -228,7 +231,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                   </span>
                 </UnstyledButton>
               </Menu.Target>
-              <Menu.Dropdown>
+              <Menu.Dropdown className={headerDropdownClasses.dropdown}>
                 <HeaderDropdown version={props.version} showLayoutVersionToggle={props.showLayoutVersionToggle} />
               </Menu.Dropdown>
             </Menu>

@@ -23,6 +23,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type internal from 'node:stream';
+import type { QueryConfigValues, QueryResult, QueryResultRow } from 'pg';
+import { Client as PgClient } from 'pg';
 import request from 'supertest';
 import type { ServerInviteResponse } from './admin/invite';
 import { inviteUser } from './admin/invite';
@@ -32,6 +34,7 @@ import { getRepoForLogin } from './fhir/accesspolicy';
 import type { Repository } from './fhir/repo';
 import { getProjectSystemRepo, getShardSystemRepo } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
+import type { PgQueryable } from './fhir/sql';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
@@ -177,8 +180,15 @@ export async function initTestAuth(options?: TestProjectOptions): Promise<string
 
 export async function addTestUser(
   project: WithId<Project>,
-  accessPolicy?: AccessPolicy
+  options?: {
+    accessPolicy?: AccessPolicy;
+    resourceType?: 'Practitioner' | 'Patient';
+    scope?: string;
+  }
 ): Promise<ServerInviteResponse & { accessToken: string }> {
+  let accessPolicy = options?.accessPolicy;
+  const resourceType = options?.resourceType ?? 'Practitioner';
+
   if (accessPolicy) {
     const systemRepo = await getProjectSystemRepo(project);
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -193,7 +203,7 @@ export async function addTestUser(
     project,
     email,
     password,
-    resourceType: 'Practitioner',
+    resourceType,
     firstName: 'Bob',
     lastName: 'Jones',
     sendEmail: false,
@@ -208,8 +218,9 @@ export async function addTestUser(
     authMethod: 'password',
     email,
     password,
-    scope: 'openid',
+    scope: options?.scope ?? 'openid',
     nonce: 'nonce',
+    projectId: project.id,
   });
 
   const accessToken = await generateAccessToken({
@@ -274,17 +285,34 @@ export function waitFor(fn: () => Promise<void>): Promise<void> {
   });
 }
 
-export async function waitForAsyncJob(contentLocation: string, app: Express, accessToken: string): Promise<AsyncJob> {
-  for (let i = 0; i < 100; i++) {
+export type WaitForAsyncJobOptions = {
+  maxAttempts?: number;
+  pollIntervalMs?: number;
+  completionDelayMs?: number;
+};
+
+export async function waitForAsyncJob(
+  contentLocation: string,
+  app: Express,
+  accessToken: string,
+  options?: WaitForAsyncJobOptions
+): Promise<AsyncJob> {
+  const maxAttempts = options?.maxAttempts ?? 100;
+  const pollIntervalMs = options?.pollIntervalMs ?? 450;
+  const completionDelayMs = options?.completionDelayMs ?? 500;
+
+  for (let i = 0; i < maxAttempts; i++) {
     const res = await request(app)
       .get(new URL(contentLocation).pathname)
       .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     if (res.status !== 202) {
-      await sleep(500); // Buffer time to ensure that any remaining async processing has fully completed
+      if (completionDelayMs > 0) {
+        await sleep(completionDelayMs); // Buffer time to ensure that any remaining async processing has fully completed
+      }
       return res.body as AsyncJob;
     }
-    await sleep(450);
+    await sleep(pollIntervalMs);
   }
   throw new Error('Async Job did not complete');
 }
@@ -543,4 +571,59 @@ keyUsage = digitalSignature, keyEncipherment
     // Cleanup
     rmSync(tmpDir, { recursive: true, force: true });
   }
+}
+
+/**
+ * Installs a jest spy on `PgClient.prototype.query` that consults `interceptor`
+ * for each query and restores the spy after `fn` settles. The interceptor receives
+ * the SQL text (if any) and may:
+ *  - throw — the query rejects with the thrown error
+ *  - return a value — the query resolves with that value (the real DB is not hit)
+ *  - return undefined — the real query implementation runs
+ *
+ * Useful for injecting failures at the PG layer, which is necessary because the
+ * reindex worker runs its search via the transaction-scoped repo created inside
+ * `systemRepo.withTransaction(...)` — a distinct instance from `systemRepo`, so
+ * spying on `systemRepo.search` does not intercept it.
+ * @param interceptor - Called for each PG query with the SQL text; throws to reject, returns a value to resolve, or returns undefined to delegate to the real query.
+ * @param fn - The async block to run while the interceptor is installed.
+ * @returns The resolved value of `fn`.
+ */
+export async function withQueryInterceptor<T>(
+  interceptor: (sql: string | undefined) => unknown,
+  fn: () => Promise<T>
+): Promise<T> {
+  const realQuery = PgClient.prototype.query;
+  const spy = jest.spyOn(PgClient.prototype, 'query').mockImplementation(async function (
+    this: PgClient,
+    ...args: unknown[]
+  ): Promise<any> {
+    const query = args[0] as string | { text?: string } | undefined;
+    const sql = typeof query === 'string' ? query : query?.text;
+    const result = await interceptor(sql);
+    if (result !== undefined) {
+      return result;
+    }
+    return (realQuery as any).apply(this, args);
+  });
+  try {
+    return await fn();
+  } finally {
+    spy.mockRestore();
+  }
+}
+
+/**
+ * Convenience function to spy on the `query` method of the given `client: PgQueryable` returning
+ * the spy cast to the `query` overload signature commonly used in the codebase.
+ * @param client - The client to spy on.
+ * @returns The spy instance.
+ */
+export function spyOnQuery<R extends QueryResultRow = any, I = any[]>(
+  client: PgQueryable
+): jest.SpyInstance<Promise<QueryResult<R>>, [string, QueryConfigValues<I>]> {
+  return jest.spyOn(client, 'query') as unknown as jest.SpyInstance<
+    Promise<QueryResult<R>>,
+    [string, QueryConfigValues<I>]
+  >;
 }

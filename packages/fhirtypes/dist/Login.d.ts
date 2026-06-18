@@ -134,7 +134,13 @@ export interface Login {
    * The authentication method used to obtain the code (password or
    * google).
    */
-  authMethod: 'client' | 'exchange' | 'execute' | 'external' | 'google' | 'password';
+  authMethod: 'client' | 'exchange' | 'execute' | 'external' | 'google' | 'password' | 'pre-authorized';
+
+  /**
+   * The hash of the pre-authorized code used to obtain OAuth
+   * Pre-Authorized Code Grant.
+   */
+  preAuthorizedCodeHash?: string;
 
   /**
    * Time when the End-User authentication occurred.
@@ -189,6 +195,11 @@ export interface Login {
    * User.mfaEnrolled).
    */
   mfaVerified?: boolean;
+
+  /**
+   * The time at which a token will expire for this login.
+   */
+  expiresAt?: string;
 
   /**
    * Whether a token has been granted for this login.

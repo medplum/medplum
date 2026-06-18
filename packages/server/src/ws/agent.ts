@@ -42,6 +42,13 @@ function initAgentHeartbeat(): void {
   }
 }
 
+export function stopAgentHeartbeat(): void {
+  if (agentHeartbeatHandler) {
+    heartbeat.removeEventListener('heartbeat', agentHeartbeatHandler);
+    agentHeartbeatHandler = undefined;
+  }
+}
+
 /**
  * Handles a new WebSocket connection to the agent service.
  * The agent service executes a bot and returns the result.
@@ -94,6 +101,7 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
           case 'agent:reloadconfig:response':
           case 'agent:upgrade:response':
           case 'agent:logs:response':
+          case 'agent:stats:response':
             if (command.callback) {
               await publish(getCallbackChannelFromId(command.callback), JSON.stringify(command));
             }
@@ -118,11 +126,21 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
   socket.on(
     'close',
     AsyncLocalStorage.bind(async () => {
+      // Release connection resources before the async status update, so that a failed
+      // update (e.g. Redis already closing during shutdown) cannot leak the heartbeat
+      // listener or the Redis subscriber
       agentWebSockets.delete(socket);
-      await updateAgentStatus(AgentConnectionState.DISCONNECTED);
       heartbeat.removeEventListener('heartbeat', heartbeatHandler);
       redisSubscriber?.disconnect();
       redisSubscriber = undefined;
+      try {
+        await updateAgentStatus(AgentConnectionState.DISCONNECTED);
+      } catch (err) {
+        globalLogger.error('[Agent]: Failed to update agent status on disconnect', {
+          agentId,
+          error: normalizeErrorString(err),
+        });
+      }
       agentId = undefined;
     })
   );
@@ -155,13 +173,16 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
+    // Bind the message listener before awaiting the subscribe so that messages
+    // published immediately after subscription are not dropped.
     redisSubscriber = getPubSubRedisSubscriber();
-    await redisSubscriber.subscribe(getReferenceString(agent));
+    const subscribed = redisSubscriber.subscribe(getReferenceString(agent));
     redisSubscriber.on('message', (_channel: string, message: string) => {
       // When a message is received, send it to the agent
       socket.send(message, { binary: false });
       agentMessagesSent++;
     });
+    await subscribed;
 
     // Subscribe to heartbeat events
     heartbeat.addEventListener('heartbeat', heartbeatHandler);

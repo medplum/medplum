@@ -11,75 +11,59 @@ import {
   isReference,
   isResource,
   OperationOutcomeError,
-  Operator,
   resolveId,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  Appointment,
-  Bundle,
-  HealthcareService,
-  OperationDefinition,
-  Reference,
-  Schedule,
-  Slot,
-} from '@medplum/fhirtypes';
+import type { Appointment, Bundle, HealthcareService, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
-import { addMinutes } from '../../util/date';
+import { addMinutes, earliest, latest } from '../../util/date';
 import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../util/servicetype';
 import type { WithPath } from '../../util/withpath';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
+import { makeOperationDefinition } from './definitions';
 import { findAlignedSlotTimes, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
   applyExistingSlots,
   assertAllLoaded,
-  getTimeZone,
+  getSchedulingParametersGroup,
   resolveAvailability,
-  TimezoneExtensionURI,
+  slotsOverlappingInterval,
 } from './utils/scheduling';
-import { chooseSchedulingParameterGroup, extractCommonParameters } from './utils/scheduling-parameters';
+import { extractCommonParameters } from './utils/scheduling-parameters';
 
-const scheduleFindOperation = {
-  resourceType: 'OperationDefinition',
-  name: 'find',
-  status: 'active',
-  kind: 'operation',
-  code: 'find',
-  resource: ['Schedule'],
-  system: false,
-  type: false,
-  instance: true,
-  parameter: [
-    { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
-    { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
-  ],
-} as const satisfies OperationDefinition;
+const scheduleFindOperation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Schedule' },
+  {
+    name: 'find',
+    code: 'find',
+    parameter: [
+      { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
+      { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
+      { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
+      { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
+    ],
+  }
+);
 
-const appointmentFindOperation = {
-  resourceType: 'OperationDefinition',
-  name: 'find',
-  status: 'active',
-  kind: 'operation',
-  code: 'find',
-  resource: ['Appointment'],
-  system: false,
-  type: true,
-  instance: false,
-  parameter: [
-    { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
-    { use: 'in', name: 'schedule', type: 'string', min: 1, max: '*', searchType: 'reference' },
-    { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
-  ],
-} as const satisfies OperationDefinition;
+const appointmentFindOperation = makeOperationDefinition(
+  { scope: 'type', resource: 'Appointment' },
+  {
+    name: 'find',
+    code: 'find',
+    parameter: [
+      { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
+      { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
+      { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
+      { use: 'in', name: 'schedule', type: 'string', min: 1, max: '*', searchType: 'reference' },
+      { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
+    ],
+  }
+);
 
 type ScheduleFindParameters = {
   start: string;
@@ -114,13 +98,12 @@ async function handler(params: {
     throw new OperationOutcomeError(badRequest(`Invalid _count, maximum allowed is ${DEFAULT_MAX_SEARCH_COUNT}`));
   }
 
-  const range = { start: new Date(params.start), end: new Date(params.end) };
-
-  if (range.start >= range.end) {
+  const requestedRange = { start: new Date(params.start), end: new Date(params.end) };
+  if (requestedRange.start >= requestedRange.end) {
     throw new OperationOutcomeError(badRequest('Invalid search time range'));
   }
 
-  const diffMilliseconds = range.end.valueOf() - range.start.valueOf();
+  const diffMilliseconds = requestedRange.end.valueOf() - requestedRange.start.valueOf();
   const diffDays = diffMilliseconds / (24 * 60 * 60 * 1000);
   if (diffDays > 31) {
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
@@ -128,34 +111,7 @@ async function handler(params: {
 
   const [schedules, existingSlots, healthcareService] = await Promise.all([
     ctx.repo.readReferences(params.schedules).then((schedules) => copyPaths(params.schedules, schedules)),
-    ctx.repo.searchResources<Slot>({
-      resourceType: 'Slot',
-
-      count: DEFAULT_MAX_SEARCH_COUNT,
-
-      filters: [
-        {
-          code: 'schedule',
-          operator: Operator.EQUALS,
-          value: params.schedules.map((ref) => ref.reference).join(','),
-        },
-
-        {
-          code: '_filter',
-          operator: Operator.EQUALS,
-          // Slot starts sometime in range, OR
-          // Slot ends sometime in range, OR
-          // Slot time fully contains range
-          value: `((start ge "${params.start}" and start le "${params.end}") or (end ge "${params.start}" and end le "${params.end}") or (start lt "${params.start}" and end gt "${params.end}"))`,
-        },
-
-        {
-          code: 'status',
-          operator: Operator.EQUALS,
-          value: 'busy,busy-tentative,busy-unavailable,free',
-        },
-      ],
-    }),
+    slotsOverlappingInterval(ctx.repo, params.schedules, requestedRange),
     ctx.repo.readReference<HealthcareService>(params.healthcareService).catch((err) => {
       if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
         throw new OperationOutcomeError(badRequest('HealthcareService not found'));
@@ -166,11 +122,13 @@ async function handler(params: {
 
   assertAllLoaded(schedules, 'Loading schedule failed');
 
-  const parameterGroup = chooseSchedulingParameterGroup(
+  const parameterGroup = await getSchedulingParametersGroup(
+    ctx.repo,
     schedules,
     withPath(healthcareService, 'Parameters.service-type-reference')
   );
 
+  const effectiveRange = { start: requestedRange.start, end: requestedRange.end };
   schedules.forEach((schedule) => {
     if (!isCodeableReferenceLikeTo(schedule.serviceType, healthcareService)) {
       throw new OperationOutcomeError(
@@ -178,58 +136,48 @@ async function handler(params: {
       );
     }
 
-    if (schedule.actor.length !== 1) {
-      throw new OperationOutcomeError(
-        badRequest('$find only supported on schedules with exactly one actor', getPath(schedule))
-      );
+    // If a schedule has a planning horizon, constrain search to values inside that horizon
+    if (schedule.planningHorizon?.start) {
+      const horizonStart = new Date(schedule.planningHorizon.start);
+      if (effectiveRange.end < horizonStart) {
+        throw new OperationOutcomeError(
+          badRequest('Search range ends before schedule planning horizon starts', getPath(schedule))
+        );
+      }
+      effectiveRange.start = latest([effectiveRange.start, horizonStart]);
     }
 
-    if (!parameterGroup.get(schedule)) {
-      throw new OperationOutcomeError(
-        badRequest('No SchedulingParameters found on Schedule or HealthcareService', getPath(schedule))
-      );
+    if (schedule.planningHorizon?.end) {
+      const horizonEnd = new Date(schedule.planningHorizon.end);
+      if (effectiveRange.start > horizonEnd) {
+        throw new OperationOutcomeError(
+          badRequest('Search range starts after schedule planning horizon ends', getPath(schedule))
+        );
+      }
+      effectiveRange.end = earliest([effectiveRange.end, horizonEnd]);
     }
   });
 
   const commonParameters = extractCommonParameters([...parameterGroup.values()]);
-
-  // If we filled a full search page of slots, then there may be slots we
-  // didn't fetch that would impact availability. Fail loudly here.
-  if (existingSlots.length === DEFAULT_MAX_SEARCH_COUNT) {
-    throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
-  }
-
-  const actors = await ctx.repo
-    .readReferences(schedules.map((schedule) => schedule.actor[0]))
-    .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
-  assertAllLoaded(actors, 'Loading schedule.actor failed');
-
   const serviceType = toCodeableReferenceLike(healthcareService);
 
-  const allAvailability = schedules.map((schedule, idx) => {
+  const allAvailability = schedules.map((schedule) => {
     const schedulingParameters = parameterGroup.get(schedule);
     assert(schedulingParameters);
-    const actor = actors[idx];
-    const activeTimeZone = schedulingParameters.timezone ?? getTimeZone(actor);
-    if (!activeTimeZone) {
-      throw new OperationOutcomeError(
-        badRequest('No timezone specified', `${getPath(actor)}.extension(${TimezoneExtensionURI})`)
-      );
-    }
 
     const scheduleSlots = existingSlots.filter((slot) => resolveId(slot.schedule) === schedule.id);
-    let availability = resolveAvailability(schedulingParameters, range, activeTimeZone);
+    let availability = resolveAvailability(schedulingParameters, effectiveRange, schedulingParameters.get('timezone'));
     availability = applyExistingSlots({
       availability,
       slots: scheduleSlots,
-      range,
+      range: effectiveRange,
       serviceType: healthcareService.type,
     });
 
     // Trim off bufferBefore/bufferAfter from availability
     availability = availability.map((interval) => ({
-      start: addMinutes(interval.start, schedulingParameters.bufferBefore),
-      end: addMinutes(interval.end, -1 * schedulingParameters.bufferAfter),
+      start: addMinutes(interval.start, schedulingParameters.get('bufferBefore')),
+      end: addMinutes(interval.end, -1 * schedulingParameters.get('bufferAfter')),
     }));
 
     // Optimization: restrict to windows long enough for the requested duration
@@ -238,7 +186,7 @@ async function handler(params: {
     // `start` after our previous buffer-trimming step.
     availability = availability.filter((interval) => {
       const durationMs = interval.end.getTime() - interval.start.getTime();
-      return durationMs >= schedulingParameters.duration * 60 * 1000;
+      return durationMs >= schedulingParameters.get('duration') * 60 * 1000;
     });
 
     return availability;
@@ -256,6 +204,7 @@ async function handler(params: {
         offsetMinutes: commonParameters.alignmentOffset,
         durationMinutes: commonParameters.duration,
         alignment: commonParameters.alignmentInterval,
+        timezone: commonParameters.alignmentTimezone,
         maxCount,
       }),
     pageSize
@@ -280,10 +229,10 @@ async function handler(params: {
         },
       ];
 
-      if (parameters.bufferBefore) {
+      if (parameters.get('bufferBefore')) {
         resultSlots.push({
           resourceType: 'Slot',
-          start: addMinutes(interval.start, -1 * parameters.bufferBefore).toISOString(),
+          start: addMinutes(interval.start, -1 * parameters.get('bufferBefore')).toISOString(),
           end: start,
           schedule: createReference(schedule),
           status: 'busy-unavailable',
@@ -292,11 +241,11 @@ async function handler(params: {
         });
       }
 
-      if (parameters.bufferAfter) {
+      if (parameters.get('bufferAfter')) {
         resultSlots.push({
           resourceType: 'Slot',
           start: end,
-          end: addMinutes(interval.end, parameters.bufferAfter).toISOString(),
+          end: addMinutes(interval.end, parameters.get('bufferAfter')).toISOString(),
           schedule: createReference(schedule),
           status: 'busy-unavailable',
           serviceType,
@@ -306,17 +255,24 @@ async function handler(params: {
       return resultSlots;
     });
 
+    const participant = schedules.flatMap((schedule) =>
+      schedule.actor.map(
+        (actor) =>
+          ({
+            actor,
+            required: 'required',
+            status: 'needs-action',
+          }) as const
+      )
+    );
+
     const appointment = {
       resourceType: 'Appointment',
       start,
       end,
       status: 'proposed',
       serviceType,
-      participant: actors.map((actor) => ({
-        actor: createReference(actor),
-        required: 'required',
-        status: 'needs-action',
-      })),
+      participant,
       contained: slots,
     } satisfies Appointment;
 
@@ -330,6 +286,7 @@ async function handler(params: {
  * Endpoints:
  *   [fhir base]/Schedule/[id]/$find
  *
+ * @deprecated - use Appointment/$find instead.
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */
@@ -369,6 +326,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
  * Endpoints:
  *   [fhir base]/Appointment/$find
  *
+ * @experimental - Scheduling Alpha API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */

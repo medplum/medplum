@@ -46,7 +46,9 @@ export async function handleEchoConnection(socket: WebSocket): Promise<void> {
   const redisSubscriber = getPubSubRedisSubscriber();
   const channel = randomUUID();
 
-  await redisSubscriber.subscribe(channel);
+  // Attach socket listeners before awaiting the Redis subscription,
+  // otherwise messages sent by the client immediately after connecting are silently dropped
+  const subscribed = redisSubscriber.subscribe(channel);
 
   redisSubscriber.on('message', (channel: string, message: string) => {
     globalLogger.debug('[WS] redis message', { channel, message });
@@ -58,7 +60,14 @@ export async function handleEchoConnection(socket: WebSocket): Promise<void> {
     'message',
     AsyncLocalStorage.bind(async (data: RawData) => {
       echoMessagesReceived++;
-      await publish(channel, data as Buffer);
+      try {
+        // Note that re-awaiting an already-rejected `subscribed` would otherwise create a
+        // new unhandled rejection on every message
+        await subscribed;
+        await publish(channel, data as Buffer);
+      } catch (err) {
+        globalLogger.error('[WS] Failed to echo message', { error: err });
+      }
     })
   );
 
@@ -66,6 +75,15 @@ export async function handleEchoConnection(socket: WebSocket): Promise<void> {
     echoWebSockets.delete(socket);
     redisSubscriber.disconnect();
   });
+
+  // Listeners are already bound above, so no messages are missed while this resolves.
+  // Guard against rejection: a socket closing mid-subscribe triggers disconnect(), which
+  // rejects the in-flight subscribe with "Connection is closed."
+  try {
+    await subscribed;
+  } catch (err) {
+    globalLogger.error('[WS] Failed to subscribe to echo channel', { error: err });
+  }
 }
 
 export function stopEchoHeartbeat(): void {

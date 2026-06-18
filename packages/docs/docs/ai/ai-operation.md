@@ -22,6 +22,12 @@ Before using the `$ai` operation, you need:
 1. **Enable AI Feature**: The `ai` feature must be enabled on your Medplum project
 2. **Configure OpenAI API Key**: Add your OpenAI API key as a project secret named `OPENAI_API_KEY` in your project settings
 
+### Using a LiteLLM Proxy (or other OpenAI-compatible endpoint)
+
+By default, the `$ai` operation calls OpenAI directly at `https://api.openai.com/v1`. To route requests through a [LiteLLM](https://docs.litellm.ai/) proxy — or any other OpenAI-compatible API — add an optional project secret named `LLM_BASE_URL` set to the base URL of the proxy (for example `https://litellm.example.com/v1`). The operation appends `/chat/completions` to this value. When `LLM_BASE_URL` is not set, the operation calls OpenAI as before.
+
+The `OPENAI_API_KEY` secret is sent as the `Authorization: Bearer` token to whichever endpoint is configured, so set it to the LiteLLM proxy's key (master key or virtual key) when using a proxy. Because LiteLLM is OpenAI-API-compatible, the request and response formats — including function calling and streaming — are unchanged, and the `model` parameter accepts any model name your proxy is configured to serve.
+
 ## Endpoint
 
 ```
@@ -429,7 +435,7 @@ if (toolCallsParam?.valueString) {
 ## Limitations
 
 - **Streaming Mode**: Tool calls are not supported when streaming is enabled
-- **Model Support**: Only OpenAI models are currently supported
+- **Model Support**: OpenAI models, or any model exposed through an OpenAI-compatible endpoint such as a LiteLLM proxy (configured via the `LLM_BASE_URL` secret)
 - **Tool Execution**: The operation returns suggested tool calls but does not execute them automatically
 
 ## Common Use Cases
@@ -447,3 +453,4 @@ if (toolCallsParam?.valueString) {
 - [OpenAI Function Calling](https://platform.openai.com/docs/guides/function-calling)
 - [Medplum Project Features](/docs/access/projects)
 - [AI and Medplum](/docs/ai)
+- [Spaces in Medplum Provider](/docs/provider/spaces) — a worked example of `$ai` plus tool calling driving an in-app assistant

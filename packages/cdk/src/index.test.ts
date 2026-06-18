@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumSourceInfraConfig } from '@medplum/core';
 import { App } from 'aws-cdk-lib';
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import { unlink, writeFile } from 'fs/promises';
 import { resolve } from 'path';
 import { normalizeInfraConfig } from './config';
@@ -43,7 +44,7 @@ describe('Infra', () => {
   };
 
   beforeEach(() => {
-    console.log = jest.fn();
+    console.log = vi.fn();
   });
 
   test('Missing config', async () => {
@@ -592,5 +593,43 @@ describe('Infra', () => {
 
     await expect(main({ config: filename })).resolves.not.toThrow();
     await unlink(filename);
+  });
+
+  // Regression test for https://github.com/medplum/medplum/issues/9287:
+  // `loadBalancerLoggingPrefix` was being silently ignored because both
+  // `BackEnd.createLoadBalancer` call sites passed `loadBalancerLoggingBucket`
+  // (the bucket name) as the prefix argument.
+  test('ALB access log prefix uses loadBalancerLoggingPrefix', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumAlbAccessLogPrefixStack',
+      mtlsDomainName: 'mtls.medplum.com',
+      mtlsSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/19d85245-0a1d-4bf5-9789-23082b1a15fc',
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const app = new App();
+    const stack = new MedplumStack(app, config);
+    const template = Template.fromStack(stack.primaryStack);
+
+    // Both the main and mTLS ALBs should set `access_logs.s3.prefix` to the
+    // configured prefix (`'elb'`), not to the bucket name.
+    const loadBalancers = template.findResources('AWS::ElasticLoadBalancingV2::LoadBalancer');
+    expect(Object.keys(loadBalancers)).toHaveLength(2);
+    template.resourcePropertiesCountIs(
+      'AWS::ElasticLoadBalancingV2::LoadBalancer',
+      {
+        LoadBalancerAttributes: Match.arrayWith([{ Key: 'access_logs.s3.prefix', Value: 'elb' }]),
+      },
+      2
+    );
+    template.resourcePropertiesCountIs(
+      'AWS::ElasticLoadBalancingV2::LoadBalancer',
+      {
+        LoadBalancerAttributes: Match.arrayWith([
+          { Key: 'access_logs.s3.prefix', Value: baseConfig.loadBalancerLoggingBucket },
+        ]),
+      },
+      0
+    );
   });
 });

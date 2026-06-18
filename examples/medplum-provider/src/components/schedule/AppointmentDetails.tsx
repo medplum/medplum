@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Stack, Text } from '@mantine/core';
+import { Button, Divider, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference, formatHumanName, formatPeriod, isReference } from '@medplum/core';
-import type { Appointment, Coding, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { createReference, EMPTY, formatHumanName, formatPeriod, isReference, isResource } from '@medplum/core';
+import type { Appointment, Bundle, Coding, Patient, PlanDefinition, Practitioner, Slot } from '@medplum/fhirtypes';
 import { CodingInput, Form, MedplumLink, ResourceAvatar, ResourceInput, useMedplum } from '@medplum/react';
 import { useResource } from '@medplum/react-hooks';
-import { IconAlertSquareRounded } from '@tabler/icons-react';
+import { IconAlertSquareRounded, IconFileCheck, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -15,8 +16,8 @@ import { showErrorNotification } from '../../utils/notifications';
 import { PlanDefinitionSummary } from '../plandefinition/PlanDefinitionSummary';
 
 type UpdateAppointmentFormProps = {
-  appointment: Appointment;
-  onUpdate: (appointment: Appointment) => void;
+  appointment: WithId<Appointment>;
+  onUpdate: (appointment: WithId<Appointment>) => void;
 };
 
 function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
@@ -39,7 +40,7 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
       ],
     } satisfies Appointment;
 
-    let result: Appointment;
+    let result: WithId<Appointment>;
     try {
       result = await medplum.updateResource(updated);
     } catch (error) {
@@ -75,8 +76,9 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
 // As one example, this can be used after a patient has scheduled an appointment
 // via $find/$hold to set up an Encounter and apply a plan definition to it.
 export function AppointmentDetails(props: {
-  appointment: Appointment;
-  onUpdate: (appointment: Appointment) => void;
+  appointment: WithId<Appointment>;
+  onAppointmentUpdate: (appointment: WithId<Appointment>) => void;
+  onSlotUpdate: (slot: WithId<Slot>) => void;
 }): JSX.Element {
   const medplum = useMedplum();
   const [planDefinition, setPlanDefinition] = useState<PlanDefinition | undefined>();
@@ -90,6 +92,7 @@ export function AppointmentDetails(props: {
 
   const patient = useResource(patientRef);
   const navigate = useNavigate();
+  const { appointment, onAppointmentUpdate, onSlotUpdate } = props;
 
   const handleSubmit = useCallback(async () => {
     if (!patient) {
@@ -138,11 +141,61 @@ export function AppointmentDetails(props: {
     }
   }, [medplum, patient, encounterClass, planDefinition, props.appointment, navigate, practitionerRef]);
 
+  const cancellable =
+    appointment.status === 'booked' || appointment.status === 'pending' || appointment.status === 'proposed';
+  const cancelTooltip = cancellable ? null : `Can't cancel appointment with status "${appointment.status}"`;
+  const [cancelLoading, setCancelLoading] = useState(false);
+
+  const handleCancel = useCallback(async () => {
+    setCancelLoading(true);
+    try {
+      const updated = await medplum.post<WithId<Appointment>>(
+        medplum.fhirUrl('Appointment', appointment.id, '$cancel')
+      );
+      medplum.invalidateSearches('Appointment');
+      medplum.invalidateSearches('Slot');
+      onAppointmentUpdate(updated);
+    } catch (err) {
+      showErrorNotification(err);
+    } finally {
+      setCancelLoading(false);
+    }
+  }, [medplum, appointment, onAppointmentUpdate]);
+
+  const confirmable = appointment.status === 'pending';
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const handleConfirm = useCallback(async () => {
+    if (!confirmable) {
+      console.error(new Error(`handleConfirm called from non confirmable status '${appointment.status}'`));
+      return;
+    }
+    setConfirmLoading(true);
+    try {
+      const updated = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
+        medplum.fhirUrl('Appointment', appointment.id, '$confirm')
+      );
+      medplum.invalidateSearches('Appointment');
+      medplum.invalidateSearches('Slot');
+      const updatedResources = updated.entry?.map((entry) => entry.resource) ?? EMPTY;
+      const updatedAppointment = updatedResources.find((res) => isResource<Appointment>(res, 'Appointment'));
+      const updatedSlots = updatedResources.filter((res) => isResource<Slot>(res, 'Slot'));
+      if (updatedAppointment) {
+        onAppointmentUpdate(updatedAppointment);
+      }
+      for (const updatedSlot of updatedSlots) {
+        onSlotUpdate(updatedSlot);
+      }
+    } catch (err) {
+      showErrorNotification(err);
+    } finally {
+      setConfirmLoading(false);
+    }
+  }, [medplum, appointment, confirmable, onAppointmentUpdate, onSlotUpdate]);
+
   return (
     <Stack gap="md">
       <Text size="lg">{formatPeriod({ start: props.appointment.start, end: props.appointment.end })}</Text>
-
-      {!patientRef && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onUpdate} />}
+      {!patientRef && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onAppointmentUpdate} />}
 
       {!!patient && (
         <>
@@ -194,6 +247,29 @@ export function AppointmentDetails(props: {
           </div>
         </>
       )}
+      <Divider my="md" />
+      {confirmable && (
+        <Button
+          loading={confirmLoading}
+          onClick={handleConfirm}
+          variant="outline"
+          leftSection={<IconFileCheck size={16} />}
+        >
+          Confirm Appointment
+        </Button>
+      )}
+      <Tooltip label={cancelTooltip} disabled={!cancelTooltip}>
+        <Button
+          loading={cancelLoading}
+          onClick={handleCancel}
+          variant="outline"
+          color="red"
+          leftSection={<IconTrash size={16} />}
+          data-disabled={!cancellable}
+        >
+          Cancel Visit
+        </Button>
+      </Tooltip>
     </Stack>
   );
 }

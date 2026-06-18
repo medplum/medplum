@@ -1,6 +1,6 @@
 {
   "name": "create-medplum",
-  "version": "5.1.11",
+  "version": "5.1.18",
   "description": "Medplum NPM Initializer",
   "keywords": [
     "medplum",
@@ -41,10 +41,10 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "medplum": "tsx src/index.ts",
-    "test": "jest"
+    "test": "vitest run"
   },
   "devDependencies": {
-    "@types/node": "22.19.17"
+    "@types/node": "22.19.21"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"

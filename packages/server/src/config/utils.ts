@@ -39,6 +39,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
   config.autoDownloadEnabled ??= true;
   config.base64BinaryMaxBytes ??= 1 * 1024 * 1024; // 1 MB default cap for base64Binary
+  config.inlineAttachmentsMaxTotalBytes ??= 0;
   // History:
   // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
   // That meant that the rate limit was per server instance, rather than per server cluster
@@ -93,10 +94,12 @@ type DefaultConfigKeys =
   | 'botLambdaLayerName'
   | 'bcryptHashSalt'
   | 'bullmq'
+  | 'dataWarehouse'
   | 'shutdownTimeoutMilliseconds'
   | 'accurateCountThreshold'
   | 'maxSearchOffset'
   | 'base64BinaryMaxBytes'
+  | 'inlineAttachmentsMaxTotalBytes'
   | 'defaultBotRuntimeVersion'
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
@@ -104,7 +107,8 @@ type DefaultConfigKeys =
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
   | 'defaultFhirQuota'
-  | 'aiRealtimeTranscriptionUrl';
+  | 'aiRealtimeTranscriptionUrl'
+  | 'asyncDelayScaling';
 
 const integerKeys = new Set([
   'accurateCountThreshold',
@@ -118,11 +122,13 @@ const integerKeys = new Set([
   'maxBotLogLengthForLogs',
   'maxBotLogLengthForResource',
   'maxSearchOffset',
+  'inlineAttachmentsMaxTotalBytes',
   'mfaAuthenticatorWindow',
   'port',
   'shutdownTimeoutMilliseconds',
   'transactionAttempts',
   'transactionExpBackoffBaseDelayMs',
+  'idleInTransactionLogThresholdMs',
   'fhirSearchMinLimit',
 
   'database.maxConnections',
@@ -159,6 +165,7 @@ export function isFloatConfig(_key: string): boolean {
 }
 
 const booleanKeys = new Set([
+  'allowInsecureRestHookUrl',
   'botCustomFunctionsEnabled',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
@@ -176,6 +183,7 @@ const booleanKeys = new Set([
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',
   'redactAuditEvents',
+  'dataWarehouse.enabled',
 ]);
 
 export function isBooleanConfig(key: string): boolean {
@@ -185,6 +193,7 @@ export function isBooleanConfig(key: string): boolean {
 const objectKeys = new Set([
   'tls',
   'ssl',
+  'defaultProjectFeatures',
   'defaultProjectSystemSetting',
   'defaultOAuthClients',
   'externalAuthProviders',
@@ -194,10 +203,17 @@ const objectKeys = new Set([
   'workers',
   'workers.enabled',
   'workers.bullmq',
+  'dataWarehouse',
 ]);
 
 export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
+}
+
+const arrayKeys = new Set(['dataWarehouse.includeResourceTypes', 'dataWarehouse.excludeResourceTypes']);
+
+export function isArrayConfig(key: string): boolean {
+  return arrayKeys.has(key);
 }
 
 export function setValue(config: Record<string, unknown>, key: string, value: string): void {
@@ -219,6 +235,8 @@ export function setValue(config: Record<string, unknown>, key: string, value: st
     parsedValue = value === 'true';
   } else if (isObjectConfig(key)) {
     parsedValue = JSON.parse(value);
+  } else if (isArrayConfig(key)) {
+    parsedValue = value.split(',').map((v) => v.trim());
   }
 
   obj[keySegments[0]] = parsedValue;

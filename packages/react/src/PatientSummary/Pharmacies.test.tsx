@@ -42,14 +42,14 @@ async function setup(children: ReactNode): Promise<void> {
 
 describe('PatientSummary - Pharmacies', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', async () => {
@@ -166,7 +166,7 @@ describe('PatientSummary - Pharmacies', () => {
       name: 'Test Pharmacy',
     };
 
-    const onClickResource = jest.fn();
+    const onClickResource = vi.fn();
 
     await setup(<Pharmacies patient={HomerSimpson} pharmacies={[pharmacy]} onClickResource={onClickResource} />);
 

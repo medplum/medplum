@@ -5,8 +5,8 @@ import { exportJsonFile, isCheckboxCell, killEvent } from './dom';
 describe('DOM utils', () => {
   test('killEvent', () => {
     const e = {
-      preventDefault: jest.fn(),
-      stopPropagation: jest.fn(),
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn(),
     };
 
     killEvent(e as unknown as Event);
@@ -70,8 +70,8 @@ describe('DOM utils', () => {
     });
 
     test('download a JSON file', () => {
-      URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
-      URL.revokeObjectURL = jest.fn();
+      URL.createObjectURL = vi.fn(() => 'blob:http://localhost/blob');
+      URL.revokeObjectURL = vi.fn();
 
       exportJsonFile(jsonFile.entry);
 

@@ -2,17 +2,142 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Loader, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import type { WithId } from '@medplum/core';
-import { getReferenceString, isReference, isResource, normalizeErrorString } from '@medplum/core';
-import type { Period, Practitioner, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import { arrayify, getReferenceString, isDefined, isReference, isResource, normalizeErrorString } from '@medplum/core';
+import type { Period, Practitioner, Reference, Resource, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useEffect, useMemo, useState } from 'react';
-import { CalendarInput } from '../CalendarInput/CalendarInput';
-import { getStartMonth } from '../CalendarInput/CalendarInput.utils';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { CalendarDateInput } from '../CalendarDateInput/CalendarDateInput';
+import { getStartMonth } from '../CalendarDateInput/CalendarDateInput.utils';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 import classes from './Scheduler.module.css';
+
+export type SchedulingOption<T> = [T, Date];
+export type FetchOptionsFunction<T> = (period: Period) => Promise<SchedulingOption<T>[]>;
+
+export interface BaseSchedulerProps<T> {
+  /** A Reference or Resource to the actor being scheduled against (typically a Practitioner) */
+  readonly actor?: Reference | Resource;
+  /** A function that fetches SchedulingOption pairs. If this is not a stable function it can cause duplicate queries. */
+  readonly fetchOptions: FetchOptionsFunction<T>;
+  /** React nodes to render inside the scheduler container */
+  readonly children?: React.ReactNode;
+  /** A callback invoked when a specific option is selected */
+  readonly onSelectOption?: (el: T, date: Date) => void;
+}
+
+/**
+ * A generic widget to choose an option by date/time. Renders a monthly
+ * calendar UI and lets the viewer drill down into options on a given day.
+ *
+ * @param props - The React props
+ * @returns the JSX Element
+ */
+export function BaseScheduler<T>(props: BaseSchedulerProps<T>): JSX.Element | null {
+  const [month, setMonth] = useState(getStartMonth);
+  const [date, setDate] = useState<Date>();
+  const [options, setOptions] = useState<SchedulingOption<T>[]>();
+  const [selectedOption, setSelectedOption] = useState<SchedulingOption<T>>();
+
+  const { fetchOptions, onSelectOption } = props;
+
+  useEffect(() => {
+    let active = true;
+
+    async function doSearch(): Promise<void> {
+      const start = getStart(month);
+      const end = getEnd(month);
+      const options = await fetchOptions({ start, end });
+      if (active) {
+        setOptions(options);
+      }
+    }
+
+    doSearch().catch(console.error);
+
+    return () => {
+      active = false;
+    };
+  }, [fetchOptions, month]);
+
+  const handleSelectOption = useCallback(
+    (option: SchedulingOption<T>) => {
+      setSelectedOption(option);
+      onSelectOption?.(...option);
+    },
+    [onSelectOption]
+  );
+
+  // Restrict to options with unique start times inside the selected day
+  const filteredOptions = useMemo(() => {
+    if (!date || !options) {
+      return [];
+    }
+    const start = date.getTime();
+    const end = start + 24 * 60 * 60 * 1000;
+    const seen = new Set<number>();
+    return options.filter(([_, optionDate]) => {
+      const optionTime = optionDate.getTime();
+      if (seen.has(optionTime)) {
+        return false;
+      }
+      seen.add(optionTime);
+      return start <= optionTime && optionTime < end;
+    });
+  }, [date, options]);
+
+  if (!options) {
+    return (
+      <div className={classes.container} data-testid="scheduler">
+        <Loader />
+      </div>
+    );
+  }
+
+  return (
+    <div className={classes.container} data-testid="scheduler">
+      <div className={classes.info}>
+        {props.actor && <ResourceAvatar value={props.actor} size="xl" />}
+        {props.actor && (
+          <Text size="xl" fw={500}>
+            <ResourceName value={props.actor} />
+          </Text>
+        )}
+        <p>1 hour</p>
+        {date && <p>{date.toLocaleDateString()}</p>}
+        {selectedOption && <p>{formatTime(selectedOption[1])}</p>}
+      </div>
+      <div className={classes.selection}>
+        {!date && (
+          <div>
+            <h3>Select date</h3>
+            <CalendarDateInput
+              availableDates={options.map((opt) => opt[1])}
+              onChangeMonth={setMonth}
+              onClick={setDate}
+            />
+          </div>
+        )}
+        {date && !selectedOption && (
+          <div>
+            <h3>Select time</h3>
+            <Stack>
+              {filteredOptions.map((option) => (
+                <div key={option[1].toISOString()}>
+                  <Button variant="outline" style={{ width: 150 }} onClick={() => handleSelectOption(option)}>
+                    {formatTime(option[1])}
+                  </Button>
+                </div>
+              ))}
+            </Stack>
+          </div>
+        )}
+        {props.children}
+      </div>
+    </div>
+  );
+}
 
 /**
  * Custom function to search for available slots within a given time period
@@ -38,149 +163,62 @@ function onlyPractitioner(schedule: Schedule): Reference<Practitioner> | undefin
 
 export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const medplum = useMedplum();
-
-  const [month, setMonth] = useState(getStartMonth());
-  const [date, setDate] = useState<Date>();
+  const { fetchSlots, schedule } = props;
   const [actor, setActor] = useState<Reference<Practitioner> | undefined>();
-  const [slots, setSlots] = useState<Slot[]>();
-  const [selectedSlot, setSelectedSlot] = useState<Slot>();
 
-  const handleSelectSlot = (slot: Slot): void => {
-    setSelectedSlot(slot);
-    props.onSelectSlot?.(slot);
-  };
-
-  useEffect(() => {
-    if (!props.schedule) {
-      setSlots([]);
-    }
-
-    // Function to fetch slots
-    const fetchSlots: SlotSearchFunction =
-      props.fetchSlots ??
-      (async (period) => {
-        const scheduleArray: string[] = [];
-        if (!Array.isArray(props.schedule)) {
-          scheduleArray.push(
-            isReference<Schedule>(props.schedule, 'Schedule')
-              ? props.schedule.reference
-              : getReferenceString(props.schedule as WithId<Schedule>)
-          );
-        } else {
-          for (const schedule of props.schedule) {
-            if (isReference(schedule)) {
-              scheduleArray.push(schedule.reference);
-            } else {
-              const scheduleRef = getReferenceString(schedule as WithId<Schedule>);
-              scheduleArray.push(scheduleRef);
-            }
-          }
-        }
-        const slotSearchParams = new URLSearchParams([
-          ['_count', (30 * 24).toString()],
-          ['schedule', scheduleArray.join(',')],
-          ['start', 'gt' + period.start],
-          ['start', 'lt' + period.end],
-        ]);
-        return medplum.searchResources('Slot', slotSearchParams);
-      });
-
-    fetchSlots({ start: getStart(month), end: getEnd(month) })
-      .then(setSlots)
-      .catch(console.error);
-  }, [medplum, props.schedule, props.fetchSlots, month]);
-
-  // If a single Schedule or Reference<Schedule> is provided, set the actor from it
-  useEffect(() => {
-    if (props.schedule && !Array.isArray(props.schedule)) {
-      if (isResource(props.schedule)) {
-        setActor(onlyPractitioner(props.schedule));
-      } else {
-        medplum
-          .readReference<Schedule>(props.schedule)
-          .then((schedule) => setActor(onlyPractitioner(schedule)))
-          .catch((error: unknown) => {
-            showNotification({
-              color: 'red',
-              title: 'Error',
-              message: normalizeErrorString(error),
-            });
-          });
+  const fetchOptions = useCallback(
+    async (period: Period): Promise<SchedulingOption<Slot>[]> => {
+      // use custom slot fetching function when provided
+      if (fetchSlots) {
+        const slots = await fetchSlots(period);
+        return slots.map((slot) => [slot, new Date(slot.start)]);
       }
+
+      // default search: find slots on the schedules passed in
+      const scheduleRefs = arrayify(schedule ?? [])
+        .map(getReferenceString)
+        .filter(isDefined);
+
+      const slotSearchParams = new URLSearchParams([
+        ['_count', (30 * 24).toString()],
+        ['schedule', scheduleRefs.join(',')],
+        ['start', 'gt' + period.start],
+        ['start', 'lt' + period.end],
+      ]);
+      const slots = await medplum.searchResources('Slot', slotSearchParams);
+      return slots.map((slot) => [slot, new Date(slot.start)]);
+    },
+    [medplum, fetchSlots, schedule]
+  );
+
+  useEffect(() => {
+    const schedules = arrayify(props.schedule);
+    if (schedules?.length !== 1) {
+      return;
+    }
+    const schedule = schedules[0];
+    if (isResource(schedule)) {
+      setActor(onlyPractitioner(schedule));
+    } else {
+      medplum
+        .readReference(schedule)
+        .then((schedule) => {
+          setActor(onlyPractitioner(schedule));
+        })
+        .catch((error: unknown) => {
+          showNotification({
+            color: 'red',
+            title: 'Error',
+            message: normalizeErrorString(error),
+          });
+        });
     }
   }, [medplum, props.schedule]);
 
-  // Create a map of start times to slots to handle duplicate start times
-  const startTimeToSlotMap = useMemo(() => {
-    if (!date) {
-      return null;
-    }
-    const sortedSlots = (slots || [])
-      // Filter slots to only include those that are within the date range
-      .filter((slot) => {
-        return (
-          new Date(slot.start).getTime() > date.getTime() &&
-          new Date(slot.start).getTime() < date.getTime() + 24 * 3600 * 1000
-        );
-      })
-      // Sort slots by start time
-      .sort((a, b) => {
-        return new Date(a.start).getTime() - new Date(b.start).getTime();
-      });
-    const startTimeToSlotMap = new Map<string, Slot>();
-    for (const slot of sortedSlots) {
-      startTimeToSlotMap.set(formatTime(new Date(slot.start)), slot);
-    }
-    return startTimeToSlotMap;
-  }, [slots, date]);
-
-  if (!slots) {
-    return (
-      <div className={classes.container} data-testid="scheduler">
-        <Loader />
-      </div>
-    );
-  }
-
   return (
-    <div className={classes.container} data-testid="scheduler">
-      <div className={classes.info}>
-        {actor && <ResourceAvatar value={actor} size="xl" />}
-        {actor && (
-          <Text size="xl" fw={500}>
-            <ResourceName value={actor} />
-          </Text>
-        )}
-        <p>1 hour</p>
-        {date && <p>{date.toLocaleDateString()}</p>}
-        {selectedSlot && <p>{formatTime(new Date(selectedSlot.start))}</p>}
-      </div>
-      <div className={classes.selection}>
-        {!date && (
-          <div>
-            <h3>Select date</h3>
-            <CalendarInput slots={slots} onChangeMonth={setMonth} onClick={setDate} />
-          </div>
-        )}
-        {date && !selectedSlot && (
-          <div>
-            <h3>Select time</h3>
-            <Stack>
-              {Array.from(startTimeToSlotMap?.entries() ?? []).map(([startTime, slot]) => {
-                return (
-                  <div key={slot.id}>
-                    <Button variant="outline" style={{ width: 150 }} onClick={() => handleSelectSlot(slot)}>
-                      {startTime}
-                    </Button>
-                  </div>
-                );
-              })}
-            </Stack>
-          </div>
-        )}
-        {props.children}
-      </div>
-    </div>
+    <BaseScheduler fetchOptions={fetchOptions} onSelectOption={props.onSelectSlot} actor={actor}>
+      {props.children}
+    </BaseScheduler>
   );
 }
 

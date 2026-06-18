@@ -47,7 +47,7 @@ export class AsyncJobExecutor {
    * @param callback - The callback to execute.
    * @returns A promise that resolves when the job is completed or fails.
    */
-  async startAsync(callback: (job: AsyncJob) => Promise<any>): Promise<AsyncJob | undefined> {
+  async startAsync(callback: (job: AsyncJob) => Promise<any>): Promise<WithId<AsyncJob>> {
     const log = getLogger();
     if (!this.resource) {
       throw new Error('AsyncJob missing');
@@ -102,11 +102,11 @@ export class AsyncJobExecutor {
     return output ?? undefined;
   }
 
-  async completeJob(output?: Parameters): Promise<AsyncJob> {
+  async completeJob(output?: Parameters): Promise<WithId<AsyncJob>> {
     if (!this.resource) {
       throw new Error('Cannot completeJob since AsyncJob is not specified');
     }
-    let updatedJob: AsyncJob = {
+    let updatedJob: WithId<AsyncJob> = {
       ...this.resource,
       status: 'completed',
       transactionTime: new Date().toISOString(),
@@ -127,7 +127,7 @@ export class AsyncJobExecutor {
     }
   }
 
-  async failJob(err?: Error, output?: Parameters): Promise<AsyncJob> {
+  async failJob(err?: Error, output?: Parameters): Promise<WithId<AsyncJob>> {
     if (!this.resource) {
       throw new Error('Cannot failJob since AsyncJob is not specified');
     }
@@ -139,7 +139,7 @@ export class AsyncJobExecutor {
       throw err;
     }
 
-    const failedJob: AsyncJob = {
+    const failedJob: WithId<AsyncJob> = {
       ...this.resource,
       status: 'error',
       transactionTime: new Date().toISOString(),

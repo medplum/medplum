@@ -61406,6 +61406,7 @@
           "items": {
             "enum": [
               "ai",
+              "ai-realtime",
               "aws-comprehend",
               "aws-textract",
               "bots",
@@ -61416,7 +61417,9 @@
               "scheduling",
               "websocket-subscriptions",
               "transaction-bundles",
-              "validate-terminology"
+              "validate-terminology",
+              "range-search",
+              "log-streaming"
             ]
           },
           "type": "array"
@@ -61786,7 +61789,7 @@
           "$ref": "#/definitions/string"
         },
         "accessPolicy": {
-          "description": "The access policy for the user within the project memebership.",
+          "description": "The access policy for the user within the project membership.",
           "$ref": "#/definitions/Reference"
         },
         "access": {
@@ -61797,7 +61800,7 @@
           "type": "array"
         },
         "userConfiguration": {
-          "description": "The user configuration for the user within the project memebership such as menu links, saved searches, and features.",
+          "description": "The user configuration for the user within the project membership such as menu links, saved searches, and features.",
           "$ref": "#/definitions/Reference"
         },
         "admin": {
@@ -61929,6 +61932,20 @@
         },
         "allowedOrigin": {
           "description": "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "grantType": {
+          "description": "Optional OAuth grant type for the client application. This specifies the allowed grant types for the client application.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "responseType": {
+          "description": "Optional OAuth response type for the client application. This specifies the allowed response types for the client application.",
           "items": {
             "$ref": "#/definitions/string"
           },
@@ -62142,8 +62159,13 @@
             "execute",
             "external",
             "google",
-            "password"
+            "password",
+            "pre-authorized"
           ]
+        },
+        "preAuthorizedCodeHash": {
+          "description": "The hash of the pre-authorized code used to obtain OAuth Pre-Authorized Code Grant.",
+          "$ref": "#/definitions/code"
         },
         "authTime": {
           "description": "Time when the End-User authentication occurred.",
@@ -62179,6 +62201,10 @@
         "mfaVerified": {
           "description": "Whether the user has verified using multi-factor authentication (MFA). This will only be set is the user has MFA enabled (see User.mfaEnrolled).",
           "$ref": "#/definitions/boolean"
+        },
+        "expiresAt": {
+          "description": "The time at which a token will expire for this login.",
+          "$ref": "#/definitions/instant"
         },
         "granted": {
           "description": "Whether a token has been granted for this login.",
@@ -62844,6 +62870,23 @@
         "useSubject": {
           "description": "Optional flag to use the subject field instead of the email field.",
           "$ref": "#/definitions/boolean"
+        },
+        "identitySource": {
+          "description": "External credential field used to identify the user.",
+          "enum": [
+            "email",
+            "subject",
+            "fhir-user"
+          ]
+        },
+        "identityMappingMode": {
+          "description": "Medplum identity mapping target.",
+          "enum": [
+            "user-email",
+            "user-external-id",
+            "project-membership-external-id",
+            "project-membership-profile"
+          ]
         }
       },
       "additionalProperties": false,

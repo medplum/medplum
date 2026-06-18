@@ -26,6 +26,7 @@ import type {
   Communication,
   Composition,
   Condition,
+  DeviceRequest,
   DiagnosticReport,
   Encounter,
   EvidenceVariable,
@@ -38,6 +39,7 @@ import type {
   Patient,
   PlanDefinition,
   Practitioner,
+  PractitionerRole,
   Project,
   Provenance,
   Questionnaire,
@@ -70,7 +72,7 @@ jest.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
-describe('project-scoped Repository', () => {
+describe.each<Project['features']>([undefined, ['range-search']])('project-scoped Repository w/ %j', (features) => {
   let config: MedplumServerConfig;
   let repo: Repository;
   let systemRepo: SystemRepository;
@@ -78,7 +80,7 @@ describe('project-scoped Repository', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
     await initAppServices(config);
-    const { project } = await createTestProject();
+    const { project } = await createTestProject({ project: { features } });
     repo = new Repository({
       strictMode: true,
       projects: [project],
@@ -3502,6 +3504,75 @@ describe('project-scoped Repository', () => {
       expect(result2.entry?.[0]?.resource?.id).toStrictEqual(obs2.id);
     }));
 
+  test.each<[number, string]>([
+    [0, 'Z'],
+    [1, 'Z'],
+    [6, 'Z'],
+    [12, 'Z'],
+    [23, 'Z'],
+    [0, '-08:00'],
+    [23, '-08:00'],
+    [0, '+03:00'],
+    [23, '+03:00'],
+  ])('birthdate covers all hours: %d (%s)', (hour, tz) =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Evelyn'] }],
+        birthDate: '2000-01-01',
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result1 = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.EQUALS,
+            value: patient.managingOrganization?.reference as string,
+          },
+          {
+            code: 'birthdate',
+            operator: Operator.EQUALS,
+            value: `2000-01-01T${hour.toString().padStart(2, '0')}:00:00${tz}`,
+          },
+        ],
+      });
+      expect(result1.entry).toHaveLength(1);
+    })
+  );
+
+  test('birthdate with multiple values', () =>
+    withTestContext(async () => {
+      if (!features) {
+        return; // Skip test without feature flag
+      }
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Evelyn'] }],
+        birthDate: '2000-01-01',
+        managingOrganization: { reference: 'Organization/' + randomUUID() },
+      });
+
+      const result1 = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.EQUALS,
+            value: patient.managingOrganization?.reference as string,
+          },
+          {
+            code: 'birthdate',
+            operator: Operator.EQUALS,
+            value: `2000-01-01,2001-01-01`,
+          },
+        ],
+      });
+      expect(result1.entry).toHaveLength(1);
+    }));
+
   test('_filter search', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
@@ -3917,12 +3988,12 @@ describe('project-scoped Repository', () => {
       [Operator.LESS_THAN, start, false],
       [Operator.LESS_THAN_OR_EQUALS, start, true],
       [Operator.GREATER_THAN_OR_EQUALS, start, true],
-      [Operator.GREATER_THAN, start, false],
+      [Operator.GREATER_THAN, start, features?.includes('range-search')],
 
       [Operator.LESS_THAN, startPlusOneSecond, true],
       [Operator.LESS_THAN_OR_EQUALS, startPlusOneSecond, true],
-      [Operator.GREATER_THAN_OR_EQUALS, startPlusOneSecond, false],
-      [Operator.GREATER_THAN, startPlusOneSecond, false],
+      [Operator.GREATER_THAN_OR_EQUALS, startPlusOneSecond, features?.includes('range-search')],
+      [Operator.GREATER_THAN, startPlusOneSecond, features?.includes('range-search')],
 
       [Operator.GREATER_THAN, '2025-05-01', true],
       [Operator.GREATER_THAN, '2025-06-01', false],
@@ -4375,6 +4446,44 @@ describe('project-scoped Repository', () => {
       expect(bundle.entry?.length).toBe(2);
       expect(bundleContains(bundle, patient)).toBeTruthy();
       expect(bundleContains(bundle, obs)).toBeTruthy();
+    }));
+
+  test('Multiple resource types with _type uses offset pagination across combined results', async () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const expectedIds = [patient.id];
+
+      for (let i = 0; i < 4; i++) {
+        const obs = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'test' },
+          subject: createReference(patient),
+        });
+        expectedIds.push(obs.id);
+      }
+
+      let url = `Patient?_type=Patient,Observation&_compartment=${getReferenceString(patient)}&_sort=_id&_count=2`;
+      const seenIds: string[] = [];
+      const pageSizes: number[] = [];
+
+      while (url) {
+        const bundle = await repo.search(parseSearchRequest(url));
+        pageSizes.push(bundle.entry?.length ?? 0);
+        for (const entry of bundle.entry ?? []) {
+          seenIds.push(entry.resource?.id as string);
+        }
+
+        const nextLink = bundle.link?.find((l) => l.relation === 'next')?.url;
+        if (nextLink) {
+          expect(nextLink).toContain('_type=Patient,Observation');
+          expect(nextLink).toContain('_offset=');
+        }
+        url = nextLink ?? '';
+      }
+
+      expect(pageSizes).toStrictEqual([2, 2, 1]);
+      expect(seenIds.sort()).toStrictEqual(expectedIds.sort());
     }));
 
   test('Binary search not allowed', async () =>
@@ -5048,6 +5157,41 @@ describe('project-scoped Repository', () => {
         expect(seenResources.length).toBe(50);
       }));
 
+    test('Cursor pagination with multiple resource types from _type', () =>
+      withTestContext(async () => {
+        const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+        const expectedIds = [patient.id];
+
+        for (let i = 0; i < 49; i++) {
+          const obs = await systemRepo.createResource<Observation>({
+            resourceType: 'Observation',
+            status: 'final',
+            code: { text: 'cursor_type_test' },
+            subject: createReference(patient),
+          });
+          expectedIds.push(obs.id);
+        }
+
+        let url = `Patient?_type=Patient,Observation&_compartment=${getReferenceString(patient)}&_sort=_lastUpdated&_count=20`;
+        const seenIds: string[] = [];
+        while (url) {
+          const bundle = await systemRepo.search(parseSearchRequest(url));
+          for (const entry of bundle.entry ?? []) {
+            seenIds.push(entry.resource?.id as string);
+          }
+
+          const link = bundle.link?.find((l) => l.relation === 'next')?.url;
+          if (link) {
+            expect(link).toContain('_type=Patient,Observation');
+            expect(link).toContain('_cursor=');
+          }
+          url = link ?? '';
+        }
+
+        expect(seenIds.length).toBe(50);
+        expect(seenIds.sort()).toStrictEqual(expectedIds.sort());
+      }));
+
     test('V1 cursor is not parsed as V2', () =>
       withTestContext(async () => {
         const identifier = randomUUID();
@@ -5071,6 +5215,96 @@ describe('project-scoped Repository', () => {
           parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=${v2Cursor}`)
         );
         expect(bundleContains(bundle2, task)).toBeUndefined();
+      }));
+  });
+
+  describe('Reference search bare-id prefix derivation', () => {
+    // Verifies that single-target reference search parameters accept bare ids
+    // (per FHIR R4 §3.1.1.4.12 — the spec defines bare `[id]` as the standard
+    // form and reserves `[type]/[id]` for multi-target params). Prior to the
+    // fix, only the `subject`/`patient` columns were prefixed, so spec-compliant
+    // queries like `DeviceRequest?encounter=<uuid>` silently returned zero.
+    test('Single-target reference param: bare uuid matches (DeviceRequest.encounter)', () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const encounter = await repo.createResource<Encounter>({
+          resourceType: 'Encounter',
+          status: 'in-progress',
+          class: { code: 'AMB' },
+          subject: createReference(patient),
+        });
+        const deviceRequest = await repo.createResource<DeviceRequest>({
+          resourceType: 'DeviceRequest',
+          status: 'active',
+          intent: 'order',
+          subject: createReference(patient),
+          encounter: createReference(encounter),
+          codeCodeableConcept: { text: 'Test device' },
+        });
+
+        // Bare uuid form (the spec-compliant form for single-target refs).
+        const bareResult = await repo.search(parseSearchRequest(`DeviceRequest?encounter=${encounter.id}`));
+        expect(bareResult.entry).toHaveLength(1);
+        expect(bareResult.entry?.[0]?.resource?.id).toBe(deviceRequest.id);
+
+        // Control: typed-prefix form still works.
+        const typedResult = await repo.search(parseSearchRequest(`DeviceRequest?encounter=Encounter/${encounter.id}`));
+        expect(typedResult.entry).toHaveLength(1);
+        expect(typedResult.entry?.[0]?.resource?.id).toBe(deviceRequest.id);
+      }));
+
+    test('Single-target reference param: bare uuid matches (PractitionerRole.practitioner)', () =>
+      withTestContext(async () => {
+        const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+        const role = await repo.createResource<PractitionerRole>({
+          resourceType: 'PractitionerRole',
+          practitioner: createReference(practitioner),
+        });
+
+        const result = await repo.search(parseSearchRequest(`PractitionerRole?practitioner=${practitioner.id}`));
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toBe(role.id);
+      }));
+
+    test('Single-target reference param on array column: bare uuid matches (Encounter.location)', () =>
+      withTestContext(async () => {
+        const location = await repo.createResource<Location>({ resourceType: 'Location', name: randomUUID() });
+        const encounter = await repo.createResource<Encounter>({
+          resourceType: 'Encounter',
+          status: 'in-progress',
+          class: { code: 'AMB' },
+          location: [{ location: createReference(location) }],
+        });
+
+        const result = await repo.search(parseSearchRequest(`Encounter?location=${location.id}`));
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toBe(encounter.id);
+      }));
+
+    test('Back-compat: bare uuid on multi-target subject column still defaults to Patient', () =>
+      withTestContext(async () => {
+        // Observation.subject targets [Patient, Group, Device, Location] — multi-target.
+        // The legacy heuristic prepends `Patient/` for bare values; preserved.
+        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const observation = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'back-compat probe' },
+          subject: createReference(patient),
+        });
+
+        const result = await repo.search(parseSearchRequest(`Observation?subject=${patient.id}`));
+        expect(result.entry?.some((e) => e.resource?.id === observation.id)).toBe(true);
+      }));
+
+    test('Non-uuid bare value is not rewritten (avoids corrupting unrelated values)', () =>
+      withTestContext(async () => {
+        // Sanity: a value that is neither a uuid nor a typed reference should be
+        // left untouched on a single-target reference column. The search simply
+        // matches nothing — but importantly, it does not throw or get rewritten
+        // into an unintended `Type/not-a-uuid` filter.
+        const result = await repo.search(parseSearchRequest('DeviceRequest?encounter=not-a-uuid'));
+        expect(result.entry ?? []).toHaveLength(0);
       }));
   });
 
@@ -5134,20 +5368,29 @@ describe('project-scoped Repository', () => {
       ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
     }));
 
-  test('Date array columns', async () =>
-    withTestContext(async () => {
-      const result = await repo.search({
-        resourceType: 'MedicationRequest',
-        filters: [
-          {
-            code: 'date',
-            operator: Operator.EQUALS,
-            value: new Date().toISOString(),
-          },
-        ],
-      });
-      expect(result.entry).toHaveLength(0);
-    }));
+  test.each(['2028-06-01T23:45:56.890-11:00', '2028-06', 'lt2028-06-06'])(
+    'Date array columns match search value %s',
+    async (value) =>
+      withTestContext(async () => {
+        if (!features) {
+          return; // Skip test without feature flag
+        }
+        const identifier = randomUUID();
+        const resource = await repo.createResource<Goal>({
+          resourceType: 'Goal',
+          identifier: [{ value: identifier }],
+          lifecycleStatus: 'active',
+          description: { text: 'Test' },
+          subject: { reference: 'Patient/example' },
+          target: [{ dueDate: '2028-06-01' }],
+        });
+
+        const searchReq = parseSearchRequest(`Goal?identifier=${identifier}&target-date=${value}`);
+        const res = await repo.search(searchReq);
+        expect(res.entry).toHaveLength(1);
+        expect(res.entry?.[0].resource?.id).toStrictEqual(resource.id);
+      })
+  );
 
   describe('discourage sequential scans', () => {
     let querySpy: jest.SpyInstance;
@@ -5195,11 +5438,12 @@ describe('project-scoped Repository', () => {
   });
 });
 
-describe('systemRepo', () => {
+describe.each([true, false])('systemRepo', (rangeSearch) => {
   const systemRepo = getGlobalSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.rangeSearch = rangeSearch;
     await initAppServices(config);
   });
 

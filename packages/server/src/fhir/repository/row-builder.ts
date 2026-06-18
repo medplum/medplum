@@ -11,6 +11,7 @@ import {
   convertToSearchableUris,
   evalFhirPathTyped,
   flatMapFilter,
+  getReferenceString,
   resolveId,
   SearchParameterType,
   stringify,
@@ -26,8 +27,8 @@ import { recordHistogramValue } from '../../otel/otel';
 import type { HumanNameResource } from '../lookups/humanname';
 import { getHumanNameSortValue } from '../lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from '../lookups/util';
-import type { ColumnSearchParameterImplementation } from '../searchparameter';
-import { getSearchParameterImplementation } from '../searchparameter';
+import { buildRangeColumns } from '../range-column';
+import { getSearchParameterImplementation, SearchStrategies } from '../searchparameter';
 import { periodToRangeString, truncateTextColumn } from '../sql';
 import { buildTokenColumns } from '../token-column';
 
@@ -135,21 +136,34 @@ function buildColumn(resource: Resource, columns: Record<string, any>, searchPar
 
   const typedValues = evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
 
-  // Handle special case for "MeasureReport-period"
-  // This is a trial for using "tstzrange" columns for date/time ranges.
-  // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
-  if (searchParam.id === 'MeasureReport-period') {
-    columns['period_range'] = buildPeriodColumn(typedValues[0]?.value);
-  }
-
   if (impl.searchStrategy === 'token-column') {
     buildTokenColumns(searchParam, impl, columns, resource, {
       paddingConfig: getArrayPaddingConfig(searchParam, resource.resourceType),
     });
     return;
   }
+  if (impl.searchStrategy === SearchStrategies.RANGE_COLUMN) {
+    try {
+      buildRangeColumns(searchParam, impl, columns, resource);
+    } catch (err) {
+      getLogger().warn('Error building range column', {
+        error: err,
+        resource: getReferenceString(resource),
+        expr: impl.parsedExpression,
+      });
+    }
 
-  impl satisfies ColumnSearchParameterImplementation;
+    // Handle special case for "MeasureReport-period"
+    // This is a trial for using "tstzrange" columns for date/time ranges.
+    // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
+    if (searchParam.id === 'MeasureReport-period') {
+      columns['period_range'] = buildPeriodColumn(typedValues[0]?.value);
+    }
+    // TODO: return here once migration is complete
+  }
+
+  // TODO: Re-enable after migration
+  // impl satisfies ColumnSearchParameterImplementation;
   const columnValues = buildColumnValues(searchParam, impl, typedValues);
   if (impl.array) {
     columnValues.sort(compareColumnValues);

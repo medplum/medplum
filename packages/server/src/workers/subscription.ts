@@ -34,12 +34,13 @@ import type {
   ResourceType,
   Subscription,
 } from '@medplum/fhirtypes';
-import type { AdvancedOptions, Job, MinimalJob, QueueBaseOptions } from 'bullmq';
+import type { Job, MinimalJob, QueueBaseOptions } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
+import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
@@ -155,18 +156,9 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
 
   const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
-    settings: {
-      backoffStrategy: (attemptsMade: number, type?: string, _err?: Error, _job?: MinimalJob) => {
-        if (type !== 'cappedExponential') {
-          throw new Error('Invalid backoff strategy for subscription queue');
-        }
-        const jitterFactor = 0.9 + 0.2 * Math.random(); // 90–110% of the calculated delay is applied
-        return Math.min(BASE_DELAY * Math.pow(2, attemptsMade - 1) * jitterFactor, MAX_DELAY);
-      },
-    } as AdvancedOptions,
     defaultJobOptions: {
       attempts: MAX_JOB_ATTEMPTS, // can be overridden in catchJobError() below
-      backoff: { type: 'cappedExponential' }, // see above
+      backoff: { type: 'cappedExponential' }, // see below
     },
   });
 
@@ -184,6 +176,15 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
       {
         ...defaultOptions,
         ...workerBullmq,
+        settings: {
+          backoffStrategy: (attemptsMade: number, type?: string, _err?: Error, _job?: MinimalJob) => {
+            if (type !== 'cappedExponential') {
+              throw new Error('Invalid backoff strategy for subscription queue');
+            }
+            const jitterFactor = 0.9 + 0.2 * Math.random(); // 90–110% of the calculated delay is applied
+            return Math.min(BASE_DELAY * Math.pow(2, attemptsMade - 1) * jitterFactor, MAX_DELAY);
+          },
+        },
       }
     );
     addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
@@ -730,6 +731,7 @@ async function sendRestHook(
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }
   try {
+    validateRestHookUrl(url);
     log.info('Sending rest hook', {
       url,
       subscriptionId: subscription.id,
@@ -785,6 +787,25 @@ async function sendRestHook(
   if (error) {
     throw error;
   }
+}
+
+function validateRestHookUrl(url: string): void {
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    throw new Error('Invalid rest-hook URL: must be an absolute HTTPS URL');
+  }
+
+  if (parsedUrl.protocol === 'https:') {
+    return;
+  }
+
+  if (parsedUrl.protocol === 'http:' && getConfig().allowInsecureRestHookUrl) {
+    return;
+  }
+
+  throw new Error('Invalid rest-hook URL: HTTPS is required unless allowInsecureRestHookUrl is enabled');
 }
 
 /**
@@ -948,11 +969,11 @@ async function autoDisableSubscription(
       { op: 'add', path: '/error', value: errorMessage },
     ];
 
-    await systemRepo.withTransaction(async () => {
-      await systemRepo.patchResource('Subscription', subscription.id, patch);
+    await systemRepo.withTransaction(async (txRepo) => {
+      await txRepo.patchResource('Subscription', subscription.id, patch);
 
       await createSubscriptionAuditEvent(
-        systemRepo,
+        txRepo,
         subscription,
         new Date().toISOString(),
         AuditEventOutcome.SeriousFailure,

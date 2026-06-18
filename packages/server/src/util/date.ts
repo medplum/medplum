@@ -6,6 +6,8 @@
  * Largely following `date-fns` API design
  */
 
+type NonEmptyArray<T> = [T, ...T[]];
+
 export type Interval = {
   start: Date;
   end: Date;
@@ -38,4 +40,28 @@ export function clamp(date: Date, interval: Interval): Date {
     return interval.end;
   }
   return date;
+}
+
+export function earliest(dates: NonEmptyArray<Date>): Date;
+export function earliest(dates: Date[]): Date | undefined;
+export function earliest(dates: Date[]): Date | undefined {
+  let min: Date | undefined;
+  for (const date of dates) {
+    if (!min || date < min) {
+      min = date;
+    }
+  }
+  return min;
+}
+
+export function latest(dates: NonEmptyArray<Date>): Date;
+export function latest(dates: Date[]): Date | undefined;
+export function latest(dates: Date[]): Date | undefined {
+  let max: Date | undefined;
+  for (const date of dates) {
+    if (!max || date > max) {
+      max = date;
+    }
+  }
+  return max;
 }

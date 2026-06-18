@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import fs from 'node:fs';
 import { join } from 'node:path';
-import { addDataMigrationToManifest, DATA_DIR } from './migrate-main';
+import * as loggerModule from '../logger';
+import * as migrate from './migrate';
+import { addDataMigrationToManifest, DATA_DIR, runFromCli } from './migrate-main';
 
 const originalReadFileSync = fs.readFileSync;
 
@@ -109,5 +111,26 @@ describe('addDataMigrationToManifest', () => {
 
     expect(places.v1).toBeLessThan(places.v2);
     expect(places.v2).toBeLessThan(places.v9999);
+  });
+});
+
+describe('runFromCli', () => {
+  test('logs and exits via exitAfterStdoutDrain when main rejects', async () => {
+    const exitDrainSpy = jest.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
+    const errorSpy = jest.spyOn(loggerModule.globalLogger, 'error').mockImplementation(() => undefined);
+    const indexSpy = jest.spyOn(migrate, 'indexStructureDefinitionsAndSearchParameters').mockImplementation(() => {
+      throw new Error('boom');
+    });
+
+    await runFromCli();
+
+    expect(indexSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy).toHaveBeenCalled();
+    expect(errorSpy.mock.calls[0][0]).toBe('Migration failed');
+    expect(exitDrainSpy).toHaveBeenCalledTimes(1);
+
+    exitDrainSpy.mockRestore();
+    errorSpy.mockRestore();
+    indexSpy.mockRestore();
   });
 });

@@ -2,73 +2,84 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, forbidden, isOk, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, ParametersParameter } from '@medplum/fhirtypes';
+import type { ParametersParameter } from '@medplum/fhirtypes';
 import type { Response as ExpressResponse, Request } from 'express';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { sendFhirResponse } from '../response';
+import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  id: 'ai',
-  url: 'https://medplum.com/fhir/OperationDefinition/ai',
-  name: 'ai',
-  status: 'active',
-  kind: 'operation',
-  code: 'ai',
-  resource: ['Parameters'],
-  system: false,
-  type: false,
-  instance: false,
-  parameter: [
-    {
-      name: 'messages',
-      use: 'in',
-      min: 1,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing the conversation messages array',
-    },
-    {
-      name: 'model',
-      use: 'in',
-      min: 1,
-      max: '1',
-      type: 'string',
-      documentation: 'OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)',
-    },
-    {
-      name: 'tools',
-      use: 'in',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing the tools array (optional)',
-    },
-    {
-      name: 'content',
-      use: 'out',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'AI response content',
-    },
-    {
-      name: 'tool_calls',
-      use: 'out',
-      min: 0,
-      max: '1',
-      type: 'string',
-      documentation: 'JSON string containing tool calls array',
-    },
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    id: 'ai',
+    url: 'https://medplum.com/fhir/OperationDefinition/ai',
+    name: 'ai',
+    code: 'ai',
+    parameter: [
+      {
+        name: 'messages',
+        use: 'in',
+        min: 1,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing the conversation messages array',
+      },
+      {
+        name: 'model',
+        use: 'in',
+        min: 1,
+        max: '1',
+        type: 'string',
+        documentation:
+          'Model to use (e.g., gpt-4, gpt-3.5-turbo). Any OpenAI-compatible model name is accepted when LLM_BASE_URL points to a LiteLLM proxy.',
+      },
+      {
+        name: 'tools',
+        use: 'in',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing the tools array (optional)',
+      },
+      {
+        name: 'temperature',
+        use: 'in',
+        min: 0,
+        max: '1',
+        type: 'decimal',
+        documentation: 'Sampling temperature (optional)',
+      },
+      {
+        name: 'content',
+        use: 'out',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'AI response content',
+      },
+      {
+        name: 'tool_calls',
+        use: 'out',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'JSON string containing tool calls array',
+      },
+    ],
+  }
+);
 
 type AIOperationParameters = {
   messages: string;
   model: string;
   tools?: string;
+  temperature?: number;
+};
+
+type AICallOptions = {
+  temperature?: number;
 };
 
 export const aiOperationHandler = async (req: Request, res: ExpressResponse): Promise<void> => {
@@ -124,6 +135,12 @@ export async function aiOperation(
     return [badRequest('OpenAI API key not configured in project secrets')];
   }
 
+  let baseUrl = ctx.project.secret?.find((s) => s.name === 'LLM_BASE_URL')?.valueString ?? 'https://api.openai.com/v1';
+  // Strip any trailing slashes without a regex to avoid backtracking concerns
+  while (baseUrl.endsWith('/')) {
+    baseUrl = baseUrl.slice(0, -1);
+  }
+
   const params = parseInputParameters<AIOperationParameters>(operation, req);
   let messages: any[];
   try {
@@ -156,7 +173,9 @@ export async function aiOperation(
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    await streamAIToClient(messages, apiKey, params.model, tools, res);
+    await streamAIToClient(messages, apiKey, baseUrl, params.model, tools, res, {
+      temperature: params.temperature,
+    });
     res.end();
 
     // Return undefined for streaming - response already sent
@@ -164,13 +183,15 @@ export async function aiOperation(
   }
 
   try {
-    const result = (await callAI(messages, apiKey, params.model, tools)) as {
+    const result = (await callAI(messages, apiKey, baseUrl, params.model, tools, false, {
+      temperature: params.temperature,
+    })) as {
       content: string | null;
       tool_calls: any[];
     };
     return buildParametersResponse(result);
   } catch (error) {
-    return [badRequest('Failed to call OpenAI API: ' + (error as Error).message)];
+    return [badRequest('Failed to call AI API: ' + (error as Error).message)];
   }
 }
 
@@ -180,19 +201,23 @@ export async function aiOperation(
  * Note: Tool calls are not supported in streaming mode.
  * @param messages - The conversation messages
  * @param apiKey - OpenAI API key
+ * @param baseUrl - Base URL of the OpenAI-compatible API (no trailing slash)
  * @param model - Model to use
  * @param tools - Optional tools array (ignored in streaming mode)
  * @param res - Express response to write SSE data to
+ * @param options - Optional OpenAI parameters (temperature)
  */
 export async function streamAIToClient(
   messages: any[],
   apiKey: string,
+  baseUrl: string,
   model: string,
   tools: any[] | undefined,
-  res: ExpressResponse
+  res: ExpressResponse,
+  options?: AICallOptions
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const response = (await callAI(messages, apiKey, model, tools, true)) as Response;
+  const response = (await callAI(messages, apiKey, baseUrl, model, tools, true, options)) as Response;
   if (!response.body) {
     throw new Error('No response body available for streaming');
   }
@@ -291,22 +316,30 @@ function buildParametersResponse(result: { content: string | null; tool_calls: a
  * Calls OpenAI API with optional streaming support.
  * @param messages - The conversation messages
  * @param apiKey - OpenAI API key
+ * @param baseUrl - Base URL of the OpenAI-compatible API (no trailing slash)
  * @param model - Model to use
  * @param tools - Optional tools array
  * @param stream - Whether to enable streaming
+ * @param options - Optional OpenAI parameters (temperature)
  * @returns For non-streaming: parsed response with content and tool calls. For streaming: raw Response object.
  */
 export async function callAI(
   messages: any[],
   apiKey: string,
+  baseUrl: string,
   model: string,
   tools?: any[],
-  stream = false
+  stream = false,
+  options?: AICallOptions
 ): Promise<{ content: string | null; tool_calls: any[] } | Response> {
   const requestBody: any = {
     model: model,
     messages: messages,
   };
+
+  if (options?.temperature !== undefined) {
+    requestBody.temperature = options.temperature;
+  }
 
   if (stream) {
     requestBody.stream = true;
@@ -315,7 +348,7 @@ export async function callAI(
     requestBody.tool_choice = 'auto';
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,

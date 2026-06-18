@@ -10,10 +10,10 @@ import type {
   ValueSet,
   ValueSetComposeIncludeFilter,
 } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
 import { r4ProjectId } from '../../../constants';
 import type { Repository } from '../../repo';
-import { Column, Condition, Conjunction, Disjunction, SelectQuery, SqlFunction, Union } from '../../sql';
+import type { PgQueryable } from '../../sql';
+import { Column, Condition, Conjunction, Disjunction, Negation, SelectQuery, SqlFunction, Union } from '../../sql';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 export const childProperty = 'http://hl7.org/fhir/concept-properties#child';
@@ -122,15 +122,21 @@ export function addPropertyFilter(
 ): SelectQuery {
   const multiValue = condition.op.endsWith('in');
   const values = multiValue ? condition.value.split(',') : condition.value;
-  const propertyQuery = new SelectQuery('Coding_Property').whereExpr(
-    new Conjunction([
-      new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column('Coding_Property', 'coding')),
-      new Condition(new Column('Coding_Property', 'property'), '=', property.id),
-      new Condition('value', multiValue ? 'IN' : '=', values),
-    ])
-  );
+  const whereClauses = [
+    new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column('Coding_Property', 'coding')),
+    new Condition(new Column('Coding_Property', 'property'), '=', property.id),
+  ];
+  if (condition.op !== 'exists') {
+    whereClauses.push(new Condition('value', multiValue ? 'IN' : '=', values));
+  }
 
-  query.whereExpr(new SqlFunction('EXISTS', [propertyQuery]));
+  const propertyQuery = new SqlFunction('EXISTS', [
+    new SelectQuery('Coding_Property').whereExpr(new Conjunction(whereClauses)),
+  ]);
+
+  query.whereExpr(
+    condition.op === 'exists' && condition.value === 'false' ? new Negation(propertyQuery) : propertyQuery
+  );
   return query;
 }
 
@@ -183,7 +189,7 @@ export function getParentProperty(codeSystem: CodeSystem): CodeSystemProperty {
 }
 
 export async function resolveProperty(
-  db: Pool | PoolClient,
+  db: PgQueryable,
   codeSystem: WithId<CodeSystem>,
   property: CodeSystemProperty
 ): Promise<WithId<CodeSystemProperty> | undefined> {

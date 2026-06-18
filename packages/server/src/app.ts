@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
+  contentTooLarge,
   ContentType,
   parseLogLevel,
   unsupportedMediaType,
@@ -42,7 +43,7 @@ import { cleanupReservedDatabaseConnections, healthcheckHandler } from './health
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
-import { getLogger, globalLogger } from './logger';
+import { drainStdout, getLogger, globalLogger } from './logger';
 import { mcpRouter } from './mcp/routes';
 import { maybeAutoRunPendingPostDeployMigration } from './migrations/migration-utils';
 import { initKeys } from './oauth/keys';
@@ -149,8 +150,8 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('Content could not be parsed'));
     return;
   }
-  if (err.type === 'entity.too.large') {
-    sendOutcome(res, badRequest('File too large'));
+  if (err.type === 'entity.too.large' || err.type === 'parameters.too.many') {
+    sendOutcome(res, contentTooLarge('Request body too large'));
     return;
   }
   if (err.type === 'stream.not.readable') {
@@ -287,6 +288,8 @@ export async function shutdownApp(): Promise<void> {
   if (binaryStorage?.startsWith('file:' + join(tmpdir(), 'medplum-temp-storage'))) {
     rmSync(binaryStorage.replace('file:', ''), { recursive: true, force: true });
   }
+
+  await drainStdout();
 }
 
 const loggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
@@ -305,6 +308,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
       status: res.writableFinished ? res.statusCode : 408,
       ua: req.get('User-Agent'),
       mode: ctx instanceof AuthenticatedRequestContext ? ctx.repo.mode : undefined,
+      fhirQuota: ctx?.fhirRateLimiter?.unitsConsumed,
     });
   });
 

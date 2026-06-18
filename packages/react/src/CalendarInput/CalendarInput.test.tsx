@@ -1,28 +1,28 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Slot } from '@medplum/fhirtypes';
+import { getMonthString, getStartMonth } from '../CalendarDateInput/CalendarDateInput.utils';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { CalendarInput } from './CalendarInput';
-import { getMonthString, getStartMonth } from './CalendarInput.utils';
 
 describe('CalendarInput', () => {
   test('Renders', () => {
-    const onClick = jest.fn();
-    render(<CalendarInput slots={[]} onChangeMonth={jest.fn()} onClick={onClick} />);
+    const onClick = vi.fn();
+    render(<CalendarInput slots={[]} onChangeMonth={vi.fn()} onClick={onClick} />);
     expect(screen.getByText(getMonthString(new Date()))).toBeDefined();
     expect(screen.getByText('SUN')).toBeDefined();
     expect(screen.getByText('1')).toBeDefined();
   });
 
   test('Disabled days', () => {
-    const onClick = jest.fn();
-    render(<CalendarInput slots={[]} onChangeMonth={jest.fn()} onClick={onClick} />);
+    const onClick = vi.fn();
+    render(<CalendarInput slots={[]} onChangeMonth={vi.fn()} onClick={onClick} />);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '4' }).disabled).toBe(true);
   });
 
   test('Change months', async () => {
-    const onChangeMonth = jest.fn();
-    const onClick = jest.fn();
+    const onChangeMonth = vi.fn();
+    const onClick = vi.fn();
     render(<CalendarInput slots={[]} onChangeMonth={onChangeMonth} onClick={onClick} />);
 
     const nextMonth = getStartMonth();
@@ -58,8 +58,8 @@ describe('CalendarInput', () => {
       },
     ] as Slot[];
 
-    const onClick = jest.fn();
-    render(<CalendarInput slots={slots} onChangeMonth={jest.fn()} onClick={onClick} />);
+    const onClick = vi.fn();
+    render(<CalendarInput slots={slots} onChangeMonth={vi.fn()} onClick={onClick} />);
 
     // Move forward one month
     await act(async () => {

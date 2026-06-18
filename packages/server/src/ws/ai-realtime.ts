@@ -43,6 +43,13 @@ function initAiRealtimeHeartbeat(): void {
   }
 }
 
+export function stopAiRealtimeHeartbeat(): void {
+  if (aiRealtimeHeartbeatHandler) {
+    heartbeat.removeEventListener('heartbeat', aiRealtimeHeartbeatHandler);
+    aiRealtimeHeartbeatHandler = undefined;
+  }
+}
+
 export async function handleAiRealtimeConnection(socket: IncomingWebSocket, request: IncomingMessage): Promise<void> {
   aiRealtimeWebSockets.add(socket);
   initAiRealtimeHeartbeat();
@@ -147,11 +154,13 @@ export async function handleAiRealtimeConnection(socket: IncomingWebSocket, requ
       return;
     }
 
-    upstreamSocket = new ReconnectingWebSocket(getConfig().aiRealtimeTranscriptionUrl, [
-      'realtime',
-      `openai-insecure-api-key.${apiKey}`,
-      'openai-beta.realtime-v1',
-    ]);
+    upstreamSocket = new ReconnectingWebSocket(getConfig().aiRealtimeTranscriptionUrl, ['realtime'], {
+      WebSocket: class extends WebSocket {
+        constructor(url: string, protocols?: string | string[]) {
+          super(url, protocols, { headers: { Authorization: `Bearer ${apiKey}` } });
+        }
+      },
+    });
 
     bindUpstreamSocket(upstreamSocket);
   }

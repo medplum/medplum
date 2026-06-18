@@ -46,6 +46,10 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
 
       entry.fullUrl = 'urn:uuid:' + idToUuid[id];
       delete entry.resource?.id;
+    } else if (entry.fullUrl?.startsWith('resource:')) {
+      const resourceId = entry.fullUrl.slice('resource:'.length);
+      idToUuid[resourceId] = generateId();
+      entry.fullUrl = 'urn:uuid:' + idToUuid[resourceId];
     }
   }
   const input = bundle.entry;
@@ -72,6 +76,8 @@ function referenceReplacer(key: string, value: string, idToUuid: Record<string, 
       id = value.split('/')[1];
     } else if (value.startsWith('urn:uuid:')) {
       id = value.slice(9);
+    } else if (value.startsWith('resource:')) {
+      id = value.slice('resource:'.length);
     } else if (value.startsWith('#')) {
       id = value.slice(1);
     }
@@ -206,7 +212,7 @@ function findReferences(resource: any, callback: (reference: string) => void): v
 
       if (isReference(value)) {
         const reference = value.reference;
-        if (reference.startsWith('urn:uuid:')) {
+        if (reference.startsWith('urn:uuid:') || reference.startsWith('resource:')) {
           callback(reference);
         }
       } else {
@@ -231,8 +237,8 @@ function buildAdjacencyList(bundle: Bundle): AdjacencyList {
 
     if (fullUrl && entry.resource) {
       findReferences(entry.resource, (reference: string) => {
-        // Add an incoming reference to the adjacency list
-        if (adjacencyList[reference]) {
+        // Skip self-references — a resource referencing itself is not a dependency ordering problem
+        if (reference !== fullUrl && adjacencyList[reference]) {
           adjacencyList[reference].push(fullUrl);
         }
       });

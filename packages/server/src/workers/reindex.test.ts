@@ -25,8 +25,8 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
-import { globalLogger, systemLogger } from '../logger';
-import { createTestProject, withTestContext } from '../test.setup';
+import { globalLogger } from '../logger';
+import { createTestProject, withQueryInterceptor, withTestContext } from '../test.setup';
 import type { ReindexJobData } from './reindex';
 import {
   addReindexJob,
@@ -346,14 +346,21 @@ describe('Reindex Worker', () => {
         request: '/admin/super/reindex',
       });
 
-      const jobData = prepareReindexJobData(['ValueSet'], asyncJob.id, { maxIterationAttempts: 1 });
-
-      const reindexJob = new ReindexJob(systemRepo);
-      jest.spyOn(systemRepo, 'search').mockRejectedValueOnce(new Error('Failed to search systemRepo'));
-      const originalLevel = systemLogger.level;
-      systemLogger.level = LogLevel.NONE;
-      await expect(reindexJob.execute(undefined, jobData)).resolves.toBe('finished');
-      systemLogger.level = originalLevel;
+      await withQueryInterceptor(
+        (sql) => {
+          if (sql?.includes('"ValueSet"')) {
+            throw new Error('Failed to search systemRepo');
+          }
+        },
+        async () => {
+          const jobData = prepareReindexJobData(['ValueSet'], asyncJob.id, { maxIterationAttempts: 1 });
+          const reindexJob = new ReindexJob(systemRepo);
+          const originalLevel = globalLogger.level;
+          globalLogger.level = LogLevel.NONE;
+          await expect(reindexJob.execute(undefined, jobData)).resolves.toBe('finished');
+          globalLogger.level = originalLevel;
+        }
+      );
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('error');
@@ -391,16 +398,20 @@ describe('Reindex Worker', () => {
 
       const reindexJob = new ReindexJob(systemRepo);
       const processIterationSpy = jest.spyOn(reindexJob, 'processIteration');
-      jest
-        .spyOn(systemRepo, 'search')
-        .mockRejectedValueOnce(new Error('Transient error 1'))
-        .mockRejectedValueOnce(new Error('Transient error 2'));
 
+      const transientErrors = [new Error('Transient error 1'), new Error('Transient error 2')];
       const loggerWarnSpy = jest.spyOn(globalLogger, 'warn');
-      const originalLevel = systemLogger.level;
-      systemLogger.level = LogLevel.NONE;
-      await reindexJob.execute(undefined, jobData);
-      systemLogger.level = originalLevel;
+      const originalLevel = globalLogger.level;
+      globalLogger.level = LogLevel.NONE;
+      await withQueryInterceptor(
+        (sql) => {
+          if (sql?.includes('"PaymentNotice"') && transientErrors.length > 0) {
+            throw transientErrors.shift();
+          }
+        },
+        () => reindexJob.execute(undefined, jobData)
+      );
+      globalLogger.level = originalLevel;
 
       // Should have attempted 3 times, with first 2 failing and 3rd succeeding
       expect(processIterationSpy).toHaveBeenCalledTimes(3);
@@ -445,15 +456,18 @@ describe('Reindex Worker', () => {
 
       const reindexJob = new ReindexJob(systemRepo);
       const processIterationSpy = jest.spyOn(reindexJob, 'processIteration');
-      jest
-        .spyOn(systemRepo, 'search')
-        .mockRejectedValueOnce(new Error('Persistent error'))
-        .mockRejectedValueOnce(new Error('Persistent error'));
 
-      const originalLevel = systemLogger.level;
-      systemLogger.level = LogLevel.NONE;
-      await reindexJob.execute(undefined, jobData);
-      systemLogger.level = originalLevel;
+      const originalLevel = globalLogger.level;
+      globalLogger.level = LogLevel.NONE;
+      await withQueryInterceptor(
+        (sql) => {
+          if (sql?.includes('"ValueSet"')) {
+            throw new Error('Persistent error');
+          }
+        },
+        () => reindexJob.execute(undefined, jobData)
+      );
+      globalLogger.level = originalLevel;
 
       // Should have attempted exactly maxIterationAttempts times
       expect(processIterationSpy).toHaveBeenCalledTimes(2);
@@ -537,10 +551,10 @@ describe('Reindex Worker', () => {
         .spyOn(reindexJob, 'processIteration')
         .mockRejectedValue(new Error('Persistent thrown exception'));
 
-      const originalLevel = systemLogger.level;
-      systemLogger.level = LogLevel.NONE;
+      const originalLevel = globalLogger.level;
+      globalLogger.level = LogLevel.NONE;
       await expect(reindexJob.execute(undefined, jobData)).rejects.toThrow('Persistent thrown exception');
-      systemLogger.level = originalLevel;
+      globalLogger.level = originalLevel;
 
       // Should have attempted exactly maxIterationAttempts times
       expect(processIterationSpy).toHaveBeenCalledTimes(2);

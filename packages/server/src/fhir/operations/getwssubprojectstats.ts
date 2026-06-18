@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, ResourceType } from '@medplum/fhirtypes';
+import type { ResourceType } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import type { ActiveSubscriptionEntry } from '../../pubsub';
 import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
+import { makeOperationDefinition } from './definitions';
 import { parseActiveSubKey } from './getwssubstats';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -34,33 +35,29 @@ export interface WsSubProjectDetailStats {
   resourceTypes: WsSubResourceTypeDetailStats[];
 }
 
-const projectStatsOperation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'get-ws-sub-project-stats',
-  status: 'active',
-  kind: 'operation',
-  code: 'get-ws-sub-project-stats',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
-  parameter: [
-    {
-      use: 'in',
-      name: 'projectId',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'stats',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-  ],
-};
+const projectStatsOperation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'get-ws-sub-project-stats',
+    code: 'get-ws-sub-project-stats',
+    parameter: [
+      {
+        use: 'in',
+        name: 'projectId',
+        type: 'string',
+        min: 1,
+        max: '1',
+      },
+      {
+        use: 'out',
+        name: 'stats',
+        type: 'string',
+        min: 1,
+        max: '1',
+      },
+    ],
+  }
+);
 
 export async function getWsSubProjectStatsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();

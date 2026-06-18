@@ -145,11 +145,11 @@ describe('FHIR Router', () => {
     );
     expect(res1).toMatchObject(created);
     if (!patient) {
-      fail('Expected patient to be defined');
+      expect.fail('Expected patient to be defined');
     }
     const expectedVersion = patient.meta?.versionId;
     if (!expectedVersion) {
-      fail('Expected version to be defined');
+      expect.fail('Expected version to be defined');
     }
 
     const [res2, updatedPatient] = await router.handleRequest(
@@ -181,7 +181,7 @@ describe('FHIR Router', () => {
     );
     expect(res1).toMatchObject(created);
     if (!patient) {
-      fail('Expected patient to be defined');
+      expect.fail('Expected patient to be defined');
     }
 
     const [res2] = await router.handleRequest(
@@ -296,7 +296,7 @@ describe('FHIR Router', () => {
       makeSimpleRequest('PATCH', `/Patient/${patient?.id}`, { foo: 'bar' }),
       repo
     );
-    expect(res4).toMatchObject(badRequest('Patch body must be an array'));
+    expect(res4).toMatchObject(badRequest('Invalid patch body'));
     expect(patient4).toBeUndefined();
   });
 

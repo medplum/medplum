@@ -514,6 +514,149 @@ describe('AI Operation', () => {
     expect(bodyParam.tool_choice).toBeUndefined();
   });
 
+  test('Passes through temperature', async () => {
+    const mockFetchResponse = {
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue({
+        choices: [{ message: { content: 'ok', tool_calls: null } }],
+      }),
+    };
+
+    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'messages',
+            valueString: JSON.stringify([{ role: 'user', content: 'hi' }]),
+          },
+          { name: 'model', valueString: 'gpt-4' },
+          { name: 'temperature', valueDecimal: 0.3 },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+    const bodyParam = JSON.parse(fetchCall[1].body);
+    expect(bodyParam.temperature).toBe(0.3);
+  });
+
+  test('Defaults to OpenAI when no base URL secret is set', async () => {
+    const mockFetchResponse = {
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue({
+        choices: [{ message: { content: 'ok', tool_calls: null } }],
+      }),
+    };
+
+    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'messages', valueString: JSON.stringify([{ role: 'user', content: 'hi' }]) },
+          { name: 'model', valueString: 'gpt-4' },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe('https://api.openai.com/v1/chat/completions');
+  });
+
+  test('Uses custom base URL secret (LiteLLM proxy)', async () => {
+    const litellmAccessToken = await initTestAuth({
+      project: {
+        features: ['ai'],
+        secret: [
+          { name: 'OPENAI_API_KEY', valueString: 'sk-litellm-key' },
+          { name: 'LLM_BASE_URL', valueString: 'https://litellm.example.com/v1' },
+        ],
+      },
+    });
+
+    const mockFetchResponse = {
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue({
+        choices: [{ message: { content: 'ok', tool_calls: null } }],
+      }),
+    };
+
+    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + litellmAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'messages', valueString: JSON.stringify([{ role: 'user', content: 'hi' }]) },
+          { name: 'model', valueString: 'claude-3-5-sonnet' },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://litellm.example.com/v1/chat/completions',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer sk-litellm-key',
+          'Content-Type': 'application/json',
+        },
+      })
+    );
+  });
+
+  test('Normalizes trailing slash on base URL secret', async () => {
+    const litellmAccessToken = await initTestAuth({
+      project: {
+        features: ['ai'],
+        secret: [
+          { name: 'OPENAI_API_KEY', valueString: 'sk-litellm-key' },
+          { name: 'LLM_BASE_URL', valueString: 'https://litellm.example.com/v1/' },
+        ],
+      },
+    });
+
+    const mockFetchResponse = {
+      ok: true,
+      status: 200,
+      json: jest.fn().mockResolvedValue({
+        choices: [{ message: { content: 'ok', tool_calls: null } }],
+      }),
+    };
+
+    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+
+    const res = await request(app)
+      .post(`/fhir/R4/$ai`)
+      .set('Authorization', 'Bearer ' + litellmAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'messages', valueString: JSON.stringify([{ role: 'user', content: 'hi' }]) },
+          { name: 'model', valueString: 'gpt-4' },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe('https://litellm.example.com/v1/chat/completions');
+  });
+
   test('Unsupported content type', async () => {
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
