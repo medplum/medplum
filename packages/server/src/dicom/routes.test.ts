@@ -5,8 +5,8 @@ import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fh
 import dcmjs from 'dcmjs';
 import type { Request, Response } from 'express';
 import express from 'express';
-import type { IncomingMessage } from 'node:http';
 import { Readable } from 'node:stream';
+import type { Response as SuperAgentResponse } from 'superagent';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -372,7 +372,7 @@ function createDicomBuffer(): Buffer {
   return Buffer.from(dicomDict.write());
 }
 
-function binaryParser(res: IncomingMessage, callback: (err: Error | null, body?: Buffer) => void): void {
+function binaryParser(res: SuperAgentResponse, callback: (err: Error | null, body: Buffer) => void): void {
   const chunks: Buffer[] = [];
   res.on('data', (chunk: Buffer) => chunks.push(chunk));
   res.on('end', () => callback(null, Buffer.concat(chunks)));
