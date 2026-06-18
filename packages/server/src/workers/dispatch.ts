@@ -190,7 +190,7 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
       try {
         await addDicomJobs(resource, previousVersion as DicomInstance);
       } catch (err) {
-        getLogger().error('Error adding cron jobs', {
+        getLogger().error('Error adding DICOM jobs', {
           resourceType: resource.resourceType,
           resource: resource.id,
           err,

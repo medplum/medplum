@@ -7,6 +7,7 @@
 export const ContentType = {
   CSS: 'text/css',
   DICOM: 'application/dicom',
+  DICOM_JSON: 'application/dicom+json',
   FAVICON: 'image/vnd.microsoft.icon',
   FHIR_JSON: 'application/fhir+json',
   FORM_URL_ENCODED: 'application/x-www-form-urlencoded',

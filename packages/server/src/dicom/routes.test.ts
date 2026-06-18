@@ -108,6 +108,7 @@ describe('DICOM Routes', () => {
       .get(`/dicomweb/studies`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain(ContentType.DICOM_JSON);
   });
 
   test('Create study wrong content-type', async () => {
@@ -147,6 +148,7 @@ describe('DICOM Routes', () => {
       .get(`/dicomweb/studies/123/series`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain(ContentType.DICOM_JSON);
   });
 
   test('Get all series with unknown study', async () => {
@@ -176,6 +178,7 @@ describe('DICOM Routes', () => {
       .get(`/dicomweb/studies/123/series/456/metadata`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain(ContentType.DICOM_JSON);
     expect(res.body).toContainEqual({
       '00080016': { vr: 'UI', Value: ['1.2.3'] },
       '00080018': { vr: 'UI', Value: ['789'] },
@@ -255,6 +258,22 @@ describe('DICOM Routes', () => {
     expect(res.body).toMatchObject({ error: 'Instance not found' });
   });
 
+  test('Get frame with unknown study', async () => {
+    const res = await request(app)
+      .get(`/dicomweb/studies/unknown/series/456/instances/789/frames/1`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({ error: 'Study not found' });
+  });
+
+  test('Get frame with mismatched series', async () => {
+    const res = await request(app)
+      .get(`/dicomweb/studies/123/series/unknown/instances/789/frames/1`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({ error: 'Series not found' });
+  });
+
   test('Get frame past available frames', async () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/instances/789/frames/2`)
@@ -326,11 +345,19 @@ describe('DICOM Routes', () => {
       createMockResponse(400, { error: 'Invalid series UID' })
     );
     await handleRetrieveInstanceFrame(
-      { params: { frame: '1' } } as unknown as Request,
+      { params: { seriesUid: '456', instanceUid: '789', frame: '1' } } as unknown as Request,
+      createMockResponse(400, { error: 'Invalid study UID' })
+    );
+    await handleRetrieveInstanceFrame(
+      { params: { studyUid: '123', instanceUid: '789', frame: '1' } } as unknown as Request,
+      createMockResponse(400, { error: 'Invalid series UID' })
+    );
+    await handleRetrieveInstanceFrame(
+      { params: { studyUid: '123', seriesUid: '456', frame: '1' } } as unknown as Request,
       createMockResponse(400, { error: 'Invalid instance UID' })
     );
     await handleRetrieveInstanceFrame(
-      { params: { instanceUid: '789' } } as unknown as Request,
+      { params: { studyUid: '123', seriesUid: '456', instanceUid: '789' } } as unknown as Request,
       createMockResponse(400, { error: 'Invalid frame number' })
     );
   });

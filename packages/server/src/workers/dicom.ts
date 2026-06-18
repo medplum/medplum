@@ -53,7 +53,7 @@ export const initDicomWorker: WorkerInitializer = (config, options?: WorkerIniti
 
   let worker: Worker<DicomJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'download');
+    const workerBullmq = getWorkerBullmqConfig(config, 'dicom');
     worker = new Worker<DicomJobData>(
       queueName,
       (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDicomJob(job)),

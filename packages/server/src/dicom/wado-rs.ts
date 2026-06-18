@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isString, Operator } from '@medplum/core';
+import { ContentType, isString, Operator } from '@medplum/core';
 import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
@@ -51,7 +51,10 @@ export async function handleRetrieveSeriesMetadata(req: Request, res: Response):
     resourceType: 'DicomInstance',
     filters: [{ code: 'series', operator: Operator.EQUALS, value: `DicomSeries/${series.id}` }],
   });
-  res.status(200).json(instances.map((instance) => JSON.parse(instance.metadata)));
+  res
+    .status(200)
+    .type(ContentType.DICOM_JSON)
+    .json(instances.map((instance) => JSON.parse(instance.metadata)));
 }
 
 /**
@@ -65,7 +68,17 @@ export async function handleRetrieveSeriesMetadata(req: Request, res: Response):
  * @param res - The HTTP response object, used to send back the WADO-RS response with the requested frame data in multipart/related format.
  */
 export async function handleRetrieveInstanceFrame(req: Request, res: Response): Promise<void> {
-  const { instanceUid, frame } = req.params;
+  const { studyUid, seriesUid, instanceUid, frame } = req.params;
+  if (!isString(studyUid)) {
+    res.status(400).json({ error: 'Invalid study UID' });
+    return;
+  }
+
+  if (!isString(seriesUid)) {
+    res.status(400).json({ error: 'Invalid series UID' });
+    return;
+  }
+
   if (!isString(instanceUid)) {
     res.status(400).json({ error: 'Invalid instance UID' });
     return;
@@ -83,9 +96,35 @@ export async function handleRetrieveInstanceFrame(req: Request, res: Response): 
   }
 
   const { repo } = getAuthenticatedContext();
+  const study = await repo.searchOne<DicomStudy>({
+    resourceType: 'DicomStudy',
+    filters: [{ code: 'study-instance-uid', operator: Operator.EXACT, value: studyUid }],
+  });
+
+  if (!study) {
+    res.status(404).json({ error: 'Study not found' });
+    return;
+  }
+
+  const series = await repo.searchOne<DicomSeries>({
+    resourceType: 'DicomSeries',
+    filters: [
+      { code: 'study', operator: Operator.EQUALS, value: `DicomStudy/${study.id}` },
+      { code: 'series-instance-uid', operator: Operator.EXACT, value: seriesUid },
+    ],
+  });
+
+  if (!series) {
+    res.status(404).json({ error: 'Series not found' });
+    return;
+  }
+
   const instance = await repo.searchOne<DicomInstance>({
     resourceType: 'DicomInstance',
-    filters: [{ code: 'sop-instance-uid', operator: Operator.EXACT, value: instanceUid }],
+    filters: [
+      { code: 'series', operator: Operator.EQUALS, value: `DicomSeries/${series.id}` },
+      { code: 'sop-instance-uid', operator: Operator.EXACT, value: instanceUid },
+    ],
   });
 
   if (!instance) {
