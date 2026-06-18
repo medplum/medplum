@@ -40,6 +40,7 @@ export async function run(client: PoolClient): Promise<void> {
   "patientId" TEXT,
   "___compartmentIdentifierSort" TEXT
 )`);
+  await fns.query(client, results, `CREATE EXTENSION IF NOT EXISTS btree_gist`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomStudy_lastUpdated_idx" ON "DicomStudy" ("lastUpdated")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomStudy_projectId_lastUpdated_idx" ON "DicomStudy" ("projectId", "lastUpdated")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "DicomStudy_projectId_idx" ON "DicomStudy" ("projectId")`);
