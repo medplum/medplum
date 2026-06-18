@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { EventSourceInput } from '@fullcalendar/react';
+import type { EventInput, EventSourceInput } from '@fullcalendar/react';
 import FullCalendar from '@fullcalendar/react';
 import '@fullcalendar/react/skeleton.css';
 import themePlugin from '@fullcalendar/react/themes/classic';
@@ -21,6 +21,7 @@ import { EMPTY, getReferenceString, parseReference } from '@medplum/core';
 import type { Appointment, Reference, ResourceType, Schedule, Slot } from '@medplum/fhirtypes';
 import { ReferenceDisplay } from '@medplum/react';
 import { useSearchResources } from '@medplum/react-hooks';
+import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -28,31 +29,26 @@ import { useNotifyOnError } from '../../hooks/useNotifyOnError';
 import type { Range } from '../../types/scheduling';
 import classes from './SchedulingPage.module.css';
 
+type ExtendedEvent = { type: 'appointment'; appointment: Appointment } | { type: 'slot'; slot: Slot };
+
 type ColorTheme = {
   appointment: string;
   slot: string;
 };
 
 const COLOR_THEMES: ColorTheme[] = [
-  { appointment: 'indigo.7', slot: 'indigo.3' },
-  { appointment: 'teal.7', slot: 'teal.3' },
-  { appointment: 'orange.7', slot: 'orange.3' },
-  { appointment: 'pink.7', slot: 'pink.3' },
-  { appointment: 'violet.7', slot: 'violet.3' },
-  { appointment: 'blue.7', slot: 'blue.3' },
-  { appointment: 'cyan.7', slot: 'cyan.3' },
-  { appointment: 'lime.7', slot: 'lime.3' },
-  { appointment: 'yellow.7', slot: 'yellow.3' },
-  { appointment: 'red.7', slot: 'red.3' },
-  { appointment: 'grape.7', slot: 'grape.3' },
+  { appointment: 'indigo.7', slot: 'indigo.5' },
+  { appointment: 'teal.7', slot: 'teal.5' },
+  { appointment: 'orange.7', slot: 'orange.5' },
+  { appointment: 'pink.7', slot: 'pink.5' },
+  { appointment: 'violet.7', slot: 'violet.5' },
+  { appointment: 'blue.7', slot: 'blue.5' },
+  { appointment: 'cyan.7', slot: 'cyan.5' },
+  { appointment: 'lime.7', slot: 'lime.5' },
+  { appointment: 'red.7', slot: 'red.5' },
+  { appointment: 'yellow.7', slot: 'yellow.5' },
+  { appointment: 'grape.7', slot: 'grape.5' },
 ];
-
-type EventInput = {
-  title: string;
-  start?: string;
-  end?: string;
-  display?: 'background';
-};
 
 function colorThemeForId(id: string): ColorTheme {
   // #HAX: assume ID is a UUID4 or UUID7; in either case the last 60 bits are random,
@@ -72,6 +68,9 @@ function appointmentToEvent(appointment: Appointment): EventInput {
     title: `${name} ${status}`,
     start: appointment.start,
     end: appointment.end,
+    className: cx(classes.appointment, classes[appointment.status]),
+    interactive: true,
+    extendedProps: { type: 'appointment', appointment } satisfies ExtendedEvent,
   };
 }
 
@@ -80,6 +79,9 @@ function slotToEvent(slot: Slot): EventInput {
     title: slot.status === 'free' ? 'Available' : 'Blocked',
     start: slot.start,
     end: slot.end,
+    className: cx(classes.slot, classes[slot.status]),
+    interactive: true,
+    extendedProps: { type: 'slot', slot } satisfies ExtendedEvent,
   };
 }
 
@@ -344,6 +346,8 @@ export function SchedulingPage(): JSX.Element | null {
             }}
             allDaySlot={false}
             colorScheme={colorScheme}
+            eventInnerClass={classes.eventInner}
+            eventTitleClass={classes.eventTitle}
           />
         </Grid.Col>
       </Grid>
