@@ -16,7 +16,7 @@ import { ListWithDetailPane } from '../ListWithDetailPane/ListWithDetailPane';
 // The list/detail shell now lives in ListWithDetailPane; these aliases keep the
 // ResourceBoard public API stable for existing consumers.
 export type ResourceBoardTab = ListWithDetailPaneTab;
-export type ResourceBoardItemContext<T extends Resource = Resource> = ListWithDetailPaneItemContext<T>;
+export type ResourceBoardItemContext<T extends Resource = Resource> = ListWithDetailPaneItemContext<WithId<T>>;
 export type ResourceBoardDetailContext = ListWithDetailPaneDetailContext;
 
 export interface ResourceBoardProps<T extends Resource = Resource> {
@@ -116,7 +116,9 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
 
   // Hooks
   const navigate = useMedplumNavigate();
-  const { items, total, loading, selected, memoizedSearch, refresh } = useResourceBoard<T>({
+  // The hook returns the effective (deep-equality stable) search; alias it locally to
+  // avoid colliding with the `search` prop, which is the raw input.
+  const { items, total, loading, selected, search: memoizedSearch, refresh } = useResourceBoard<T>({
     search,
     selectedId,
     loadItems,
@@ -148,7 +150,7 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
   };
 
   return (
-    <ListWithDetailPane<T>
+    <ListWithDetailPane<WithId<T>>
       items={items}
       loading={loading}
       selectedKey={selectedKey}

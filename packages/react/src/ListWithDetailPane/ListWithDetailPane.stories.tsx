@@ -94,7 +94,7 @@ export const Basic = (): JSX.Element => {
 
   return (
     <Frame>
-      <ListWithDetailPane<Communication>
+      <ListWithDetailPane<WithId<Communication>>
         items={sampleItems}
         loading={false}
         selectedKey={selectedId}
@@ -121,7 +121,7 @@ export const Basic = (): JSX.Element => {
 export const Loading = (): JSX.Element => {
   return (
     <Frame>
-      <ListWithDetailPane<Communication>
+      <ListWithDetailPane<WithId<Communication>>
         items={[]}
         loading={true}
         selected={undefined}
@@ -138,7 +138,7 @@ export const Loading = (): JSX.Element => {
 export const Empty = (): JSX.Element => {
   return (
     <Frame>
-      <ListWithDetailPane<Communication>
+      <ListWithDetailPane<WithId<Communication>>
         items={[]}
         loading={false}
         selected={undefined}

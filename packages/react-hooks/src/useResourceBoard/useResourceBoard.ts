@@ -3,7 +3,7 @@
 import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
 import { deepEquals, formatSearchQuery } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export interface ResourceBoardLoadResult<T extends Resource = Resource> {
@@ -34,7 +34,12 @@ export interface UseResourceBoardResult<T extends Resource = Resource> {
   readonly total: number | undefined;
   readonly loading: boolean;
   readonly selected: WithId<T> | undefined;
-  readonly memoizedSearch: SearchRequest;
+  /**
+   * The search currently in effect. Tracks the input `search`, but only updates when it
+   * changes by deep equality — so this identity is stable across renders and safe to use
+   * in dependency arrays or to derive pagination from.
+   */
+  readonly search: SearchRequest;
   readonly refresh: () => Promise<void>;
 }
 
@@ -44,7 +49,7 @@ async function defaultLoadItems<T extends Resource>(
 ): Promise<ResourceBoardLoadResult<T>> {
   const bundle = await medplum.search(
     search.resourceType,
-    formatSearchQuery({ ...search, total: search.total ?? 'accurate', fields: undefined }),
+    formatSearchQuery({ ...search, total: search.total ?? 'accurate' }),
     { cache: 'no-cache' }
   );
   // medplum.search is typed by a runtime string resourceType, so narrow the WithId<Resource>
@@ -116,7 +121,15 @@ export function useResourceBoard<T extends Resource = Resource>(
   }, [memoizedSearch, loadItems, medplum]);
 
   // Effects
-  useLayoutEffect(() => {
+
+  // Latest-ref pattern: expose the freshest options/callbacks to async work (executeLoad)
+  // and the selection effect without listing their unstable identities as dependencies,
+  // which would retrigger fetches. Done in an effect (not during render) so the ref only
+  // updates on committed renders — concurrent-safe. A plain passive effect is enough and
+  // avoids blocking paint; keep it declared above the effects that read the ref so it runs
+  // first (passive effects fire in declaration order), since the selection effect reads
+  // optionsRef synchronously.
+  useEffect(() => {
     optionsRef.current = options;
   });
 
@@ -160,5 +173,5 @@ export function useResourceBoard<T extends Resource = Resource>(
     resolveSelection().catch(console.error);
   }, [selectedId, items, medplum, resourceType]);
 
-  return { items, total, loading, selected, memoizedSearch, refresh: executeLoad };
+  return { items, total, loading, selected, search: memoizedSearch, refresh: executeLoad };
 }

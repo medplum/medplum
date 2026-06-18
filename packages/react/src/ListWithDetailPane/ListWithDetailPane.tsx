@@ -14,25 +14,25 @@ export interface ListWithDetailPaneTab {
   readonly uri: string;
 }
 
-export interface ListWithDetailPaneItemContext<T extends Resource = Resource> {
+export interface ListWithDetailPaneItemContext<T extends { id: string } = WithId<Resource>> {
   readonly selected: boolean;
   readonly index: number;
-  readonly items: WithId<T>[];
+  readonly items: T[];
 }
 
 export interface ListWithDetailPaneDetailContext {
   readonly refresh: () => Promise<void>;
 }
 
-export interface ListWithDetailPaneProps<T extends Resource = Resource> {
+export interface ListWithDetailPaneProps<T extends { id: string } = WithId<Resource>> {
   // List sidebar
   /** The current page of items to render in the list. */
-  readonly items: WithId<T>[];
+  readonly items: T[];
   /** When true, the list area shows the skeleton instead of items. */
   readonly loading: boolean;
   /** Id of the highlighted row. */
   readonly selectedKey?: string;
-  readonly renderItem: (item: WithId<T>, ctx: ListWithDetailPaneItemContext<T>) => ReactNode;
+  readonly renderItem: (item: T, ctx: ListWithDetailPaneItemContext<T>) => ReactNode;
   /** Shown when the list is empty. Default: dimmed "No items found". */
   readonly emptyList?: ReactNode;
   /** Shown while loading. Default: built-in skeleton rows. */
@@ -51,9 +51,9 @@ export interface ListWithDetailPaneProps<T extends Resource = Resource> {
   readonly headerActions?: ReactNode;
 
   // Detail
-  /** The resolved selected resource, or undefined when nothing is selected. */
-  readonly selected: WithId<T> | undefined;
-  readonly renderDetail: (selected: WithId<T>, ctx: ListWithDetailPaneDetailContext) => ReactNode;
+  /** The resolved selected item, or undefined when nothing is selected. */
+  readonly selected: T | undefined;
+  readonly renderDetail: (selected: T, ctx: ListWithDetailPaneDetailContext) => ReactNode;
   /** Shown when nothing is selected. Default: dimmed prompt. */
   readonly emptyDetail?: ReactNode;
   /** Passed through to the detail render context. */
@@ -80,7 +80,9 @@ const HEADER_HEIGHT = 64;
  * @param props - The ListWithDetailPane React props.
  * @returns The ListWithDetailPane React node.
  */
-export function ListWithDetailPane<T extends Resource = Resource>(props: ListWithDetailPaneProps<T>): JSX.Element {
+export function ListWithDetailPane<T extends { id: string } = WithId<Resource>>(
+  props: ListWithDetailPaneProps<T>
+): JSX.Element {
   const {
     items,
     loading,
