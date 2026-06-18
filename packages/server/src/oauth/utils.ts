@@ -922,6 +922,7 @@ function buildExternalUserInfoRequest(
         method: 'POST',
         headers: {
           Accept: ContentType.JSON,
+          'Accept-Encoding': 'identity',
           'Content-Type': ContentType.JSON,
         },
         body: JSON.stringify({ idToken: externalAccessToken }),
@@ -935,6 +936,7 @@ function buildExternalUserInfoRequest(
       method: 'GET',
       headers: {
         Accept: ContentType.JSON,
+        'Accept-Encoding': 'identity',
         Authorization: `Bearer ${externalAccessToken}`,
       },
     },
