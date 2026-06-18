@@ -16,7 +16,7 @@ export function dcmjsStudyToMedplumStudy(naturalized: Record<string, unknown>): 
     studyTime: dicomTimeToFhirTime(naturalized.StudyTime),
     accessionNumber: naturalized.AccessionNumber as string,
     instanceAvailability: naturalized.InstanceAvailability as string,
-    modalitiesInStudy: naturalized.ModalitiesInStudy as string[],
+    modalitiesInStudy: toStringArray(naturalized.ModalitiesInStudy),
     referringPhysiciansName: naturalized.ReferringPhysiciansName as string,
     timezoneOffsetFromUtc: naturalized.TimezoneOffsetFromUTC as string,
     patientName: dicomPersonNameToString(naturalized.PatientName),
@@ -26,6 +26,16 @@ export function dcmjsStudyToMedplumStudy(naturalized: Record<string, unknown>): 
     numberOfStudyRelatedSeries: naturalized.NumberOfStudyRelatedSeries as number,
     numberOfStudyRelatedInstances: naturalized.NumberOfStudyRelatedInstances as number,
   };
+}
+
+function toStringArray(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) {
+    return value.filter(isString);
+  }
+  if (isString(value)) {
+    return [value];
+  }
+  return undefined;
 }
 
 export function medplumStudyToDcmjsStudy(study: DicomStudy): Record<string, unknown> {
