@@ -9,6 +9,7 @@ import {
   indexStructureDefinitionBundle,
   notFound,
   OperationOutcomeError,
+  Operator,
   parseSearchRequest,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
@@ -290,6 +291,78 @@ describe('MemoryRepository', () => {
       expectResultsContents(patients, patientObservations, { count, offset }, resultAsc);
       expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['0', '1', '2']);
       expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['0', '1']);
+    });
+  });
+
+  describe('_project search filter', () => {
+    test('Search with _project filter', async () => {
+      repo.clear();
+      const project1 = randomUUID();
+      const project2 = randomUUID();
+
+      // Create patients in different projects
+      const patient1 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project1 },
+      });
+      const patient2 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project2 },
+      });
+      const patient3 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        // no project
+      });
+
+      // Search for project1
+      const bundle1 = await repo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: project1 }],
+      });
+      expect(bundle1.entry).toHaveLength(1);
+      expect(bundle1.entry?.[0]?.resource?.id).toBe(patient1.id);
+
+      // Search for project2
+      const bundle2 = await repo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: project2 }],
+      });
+      expect(bundle2.entry).toHaveLength(1);
+      expect(bundle2.entry?.[0]?.resource?.id).toBe(patient2.id);
+
+      // Search for non-existent project
+      const bundle3 = await repo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: 'non-existent' }],
+      });
+      expect(bundle3.entry).toBeUndefined();
+    });
+
+    test('Search with _project combined with other filters', async () => {
+      repo.clear();
+      const projectId = randomUUID();
+      const family = randomUUID();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        meta: { project: projectId },
+      });
+      await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        meta: { project: randomUUID() },
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          { code: '_project', operator: Operator.EQUALS, value: projectId },
+          { code: 'name', operator: Operator.EQUALS, value: family },
+        ],
+      });
+      expect(bundle.entry).toHaveLength(1);
+      expect(bundle.entry?.[0]?.resource?.id).toBe(patient.id);
     });
   });
 });
