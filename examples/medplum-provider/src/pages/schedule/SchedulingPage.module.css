@@ -11,3 +11,22 @@
    * */
   min-width: 0px;
 }
+
+.eventTitle {
+  white-space: normal;
+}
+
+.appointment.pending {
+  border: 1px solid var(--fc-event-color);
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-black));
+
+  .eventInner {
+    color: var(--fc-event-color);
+  }
+}
+
+.slot {
+  .eventInner {
+    color: var(--mantine-color-gray-7);
+  }
+}
