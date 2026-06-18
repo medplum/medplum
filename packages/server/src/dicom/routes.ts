@@ -27,7 +27,10 @@ dicomRouter.get('/studies/:studyUid/series/:seriesUid/instances', notImplemented
 dicomRouter.get('/studies/:studyUid/series/:seriesUid/instances/:instance', notImplementedStub);
 dicomRouter.get('/studies/:studyUid/series/:seriesUid/instances/:instance/rendered', notImplementedStub);
 dicomRouter.get('/studies/:studyUid/series/:seriesUid/instances/:instance/metadata', notImplementedStub);
-dicomRouter.get('/studies/:study/series/:series/instances/:instanceUid/frames/:frame', handleRetrieveInstanceFrame);
+dicomRouter.get(
+  '/studies/:studyUid/series/:seriesUid/instances/:instanceUid/frames/:frame',
+  handleRetrieveInstanceFrame
+);
 dicomRouter.get('/:bulkdataUriReference', notImplementedStub);
 
 async function notImplementedStub(req: Request, res: Response): Promise<void> {

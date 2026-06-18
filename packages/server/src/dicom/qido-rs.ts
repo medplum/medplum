@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isString, Operator } from '@medplum/core';
+import { ContentType, isString, Operator } from '@medplum/core';
 import type { DicomSeries, DicomStudy } from '@medplum/fhirtypes';
 import dcmjs from 'dcmjs';
 import type { Request, Response } from 'express';
@@ -26,6 +26,7 @@ export async function handleSearchStudies(req: Request, res: Response): Promise<
   const studies = await repo.searchResources<DicomStudy>({ resourceType: 'DicomStudy' });
   res
     .status(200)
+    .type(ContentType.DICOM_JSON)
     .json(studies.map((study) => DicomMetaDictionary.denaturalizeDataset(medplumStudyToDcmjsStudy(study))));
 }
 
@@ -64,6 +65,7 @@ export async function handleSearchSeries(req: Request, res: Response): Promise<v
 
   res
     .status(200)
+    .type(ContentType.DICOM_JSON)
     .json(
       seriesList.map((series) => DicomMetaDictionary.denaturalizeDataset(medplumSeriesToDcmjsSeries(study, series)))
     );
