@@ -8,13 +8,13 @@
     {
       "description": "Docker base images: grouped weekly PR, version tags only",
       "matchManagers": ["dockerfile"],
-      "groupName": "docker base image updates",
+      "groupName": "dep-upgrades",
       "pinDigests": false
     },
     {
       "description": "GitHub Actions: update SHA pins using upstream tags",
       "matchManagers": ["github-actions"],
-      "groupName": "github actions updates",
+      "groupName": "dep-upgrades",
       "pinDigests": true
     }
   ]
