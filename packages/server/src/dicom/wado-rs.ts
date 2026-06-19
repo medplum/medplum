@@ -57,8 +57,8 @@ export async function handleRetrieveInstanceFrame(req: Request, res: Response): 
     return;
   }
 
-  const frameNumber = parseInt(frame, 10);
-  if (isNaN(frameNumber) || frameNumber < 1) {
+  const frameNumber = Number.parseInt(frame, 10);
+  if (Number.isNaN(frameNumber) || frameNumber < 1) {
     res.status(400).json({ error: 'Invalid frame number' });
     return;
   }
