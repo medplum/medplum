@@ -30,3 +30,7 @@
     color: var(--mantine-color-gray-7);
   }
 }
+
+.unschedulable {
+  opacity: 0.4;
+}
