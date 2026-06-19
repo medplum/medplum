@@ -118,7 +118,6 @@ export function Calendar(props: {
     <div data-testid="calendar" className={classes.wrapper}>
       <Group justify="space-between" pb="sm">
         <Group gap="md">
-          <Title order={4}>{controller.view?.title}</Title>
           <Button.Group>
             <Button variant="default" size="xs" aria-label="Previous" onClick={() => controller.prev()}>
               <IconChevronLeft size={12} />
@@ -130,6 +129,7 @@ export function Calendar(props: {
               <IconChevronRight size={12} />
             </Button>
           </Button.Group>
+          <Title order={4}>{controller.view?.title}</Title>
         </Group>
         <SegmentedControl
           size="xs"
