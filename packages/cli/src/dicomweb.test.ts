@@ -3,8 +3,8 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { PassThrough  } from 'node:stream';
-import type {Readable} from 'node:stream';
+import type { Readable } from 'node:stream';
+import { PassThrough } from 'node:stream';
 import type { Mock } from 'vitest';
 import { main } from '.';
 import { writeMultipartRelatedBody } from './dicomweb';
