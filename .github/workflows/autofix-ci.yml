@@ -42,4 +42,4 @@ jobs:
       - run: npm run prettier
       - run: npm run lint:fix
 
-      - uses: autofix-ci/action@2891949f3779a1cafafae1523058501de3d4e944
+      - uses: autofix-ci/action@c5b2d67aa2274e7b5a18224e8171550871fc7e4a # v1.3.4
