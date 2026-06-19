@@ -8,6 +8,7 @@ import { login, token, whoami } from './auth';
 import { buildAwsCommand } from './aws/index';
 import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { bulk } from './bulk';
+import { dicomweb } from './dicomweb';
 import { hl7 } from './hl7';
 import { profile } from './profiles';
 import { project } from './project';
@@ -88,6 +89,9 @@ export async function main(argv: string[]): Promise<void> {
 
   // HL7 commands
   addSubcommand(index, hl7);
+
+  // DICOMweb commands
+  addSubcommand(index, dicomweb);
 
   try {
     await index.parseAsync(argv);
