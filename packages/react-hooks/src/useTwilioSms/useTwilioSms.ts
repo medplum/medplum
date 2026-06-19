@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 const TWILIO_OPERATION_URL = 'https://medplum.com/fhir/OperationDefinition/send-sms-twilio';
+const TWILIO_TO_NUMBER_EXTENSION_URL = 'https://medplum.com/twilio-to-number';
 
 const SMSWRIT_MEDIUM: Communication['medium'] = [
   {
@@ -52,7 +53,7 @@ export interface UseTwilioSmsReturn {
  * Delivery status is tracked per-message via the caller's subscription (e.g. BaseChat's thread subscription).
  *
  * @param options - Hook options.
- * @param options.patient - Patient to send the SMS to.
+ * @param options.patient - The patient to send the SMS to.
  * @param options.sender - Optional reference to the sender (Practitioner, Organization, or PractitionerRole).
  * @param options.threadRef - Optional thread reference for associating the SMS with an existing thread.
  * @returns Send function, loading/error state, and availability flags.
@@ -77,6 +78,10 @@ export function useTwilioSms({ patient, sender, threadRef }: UseTwilioSmsOptions
       setSending(true);
       setError(undefined);
       try {
+        const toPhone =
+          patient.telecom?.find((t) => t.system === 'phone' && t.use === 'mobile' && t.value)?.value ??
+          patient.telecom?.find((t) => t.system === 'phone' && t.value)?.value;
+
         const communication: Communication = {
           resourceType: 'Communication',
           status: 'preparation',
@@ -85,6 +90,7 @@ export function useTwilioSms({ patient, sender, threadRef }: UseTwilioSmsOptions
           recipient: [createReference(patient)],
           ...(sender ? { sender } : {}),
           ...(threadRef ? { partOf: [threadRef] } : {}),
+          ...(toPhone ? { extension: [{ url: TWILIO_TO_NUMBER_EXTENSION_URL, valueString: toPhone }] } : {}),
           payload: [{ contentString: message }],
         };
 

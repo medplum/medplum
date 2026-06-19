@@ -144,6 +144,10 @@ describe('useTwilioSms', () => {
     expect(body.recipient?.[0]?.reference).toBe('Patient/patient-1');
     expect(body.subject?.reference).toBe('Patient/patient-1');
     expect(body.medium?.[0]?.coding?.[0]?.code).toBe('SMSWRIT');
+    expect(body.extension).toContainEqual({
+      url: 'https://medplum.com/twilio-to-number',
+      valueString: '+15005550006',
+    });
   });
 
   test('sendSms sets sending to true during call and false after', async () => {
@@ -250,6 +254,41 @@ describe('useTwilioSms', () => {
 
     const [, body] = postSpy.mock.calls[0] as [URL, Communication];
     expect(body.partOf).toBeUndefined();
+  });
+
+  test('sendSms prefers mobile phone for to-number extension', async () => {
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue(MOCK_SENT_COMMUNICATION);
+    const patientWithMultiplePhones: Patient = {
+      resourceType: 'Patient',
+      id: 'patient-multi',
+      telecom: [
+        { system: 'phone', value: '+15005550010', use: 'home' },
+        { system: 'phone', value: '+15005550020', use: 'mobile' },
+      ],
+    };
+    const { result } = renderHook(() => useTwilioSms({ patient: patientWithMultiplePhones }), { wrapper });
+
+    await act(async () => {
+      await result.current.sendSms('Hello!');
+    });
+
+    const [, body] = postSpy.mock.calls[0] as [URL, Communication];
+    expect(body.extension).toContainEqual({ url: 'https://medplum.com/twilio-to-number', valueString: '+15005550020' });
+  });
+
+  test('sendSms omits to-number extension when patient has no phone', async () => {
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue(MOCK_SENT_COMMUNICATION);
+    const { result } = renderHook(() => useTwilioSms({ patient: PATIENT_NO_PHONE }), { wrapper });
+
+    await act(async () => {
+      await result.current.sendSms('Hello!');
+    });
+
+    const [, body] = postSpy.mock.calls[0] as [URL, Communication];
+    const toExt = body.extension?.find((e) => e.url === 'https://medplum.com/twilio-to-number');
+    expect(toExt).toBeUndefined();
   });
 
   test('patientHasPhone is false when patient has only non-phone telecom', () => {
