@@ -17,7 +17,6 @@ import type {
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -33,7 +32,7 @@ import {
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { createProject } from './projectinit';
 
-jest.mock('node-fetch');
+const fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
 jest.mock('hibp');
 
 describe('Project clone', () => {
@@ -42,10 +41,10 @@ describe('Project clone', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    (fetch as unknown as jest.Mock).mockClear();
+    fetchMock.mockClear();
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    setupRecaptchaMock(true);
   });
 
   afterAll(async () => {

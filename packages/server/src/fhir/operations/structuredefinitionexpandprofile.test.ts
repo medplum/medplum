@@ -9,8 +9,6 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 
-jest.mock('node-fetch');
-
 const app = express();
 
 describe('StructureDefinition $expand-profile', () => {
