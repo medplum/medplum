@@ -76,7 +76,7 @@ export function minutesSinceMidnight(date: Date, timezone?: string): number {
  * @returns boolean
  */
 export function isAlignedToGrid(date: Date, alignment: AlignmentOptions): boolean {
-  if (alignment.interval === 0) {
+  if (alignment.interval < 1) {
     throw new Error(`Invalid alignment interval; must be positive, got ${alignment.interval}`);
   }
   if (date.getUTCSeconds() !== 0 || date.getUTCMilliseconds() !== 0) {
