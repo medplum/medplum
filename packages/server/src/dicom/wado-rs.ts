@@ -4,6 +4,7 @@ import { ContentType, isString, Operator } from '@medplum/core';
 import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
+import type { Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 
@@ -19,34 +20,11 @@ import { getBinaryStorage } from '../storage/loader';
  */
 export async function handleRetrieveSeriesMetadata(req: Request, res: Response): Promise<void> {
   const { studyUid, seriesUid } = req.params;
-  if (!isString(studyUid)) {
-    res.status(400).json({ error: 'Invalid study UID' });
+  const result = await resolveStudySeries(studyUid, seriesUid, res);
+  if (!result) {
     return;
   }
-  if (!isString(seriesUid)) {
-    res.status(400).json({ error: 'Invalid series UID' });
-    return;
-  }
-  const { repo } = getAuthenticatedContext();
-  const study = await repo.searchOne<DicomStudy>({
-    resourceType: 'DicomStudy',
-    filters: [{ code: 'study-instance-uid', operator: Operator.EXACT, value: studyUid }],
-  });
-  if (!study) {
-    res.status(404).json({ error: 'Study not found' });
-    return;
-  }
-  const series = await repo.searchOne<DicomSeries>({
-    resourceType: 'DicomSeries',
-    filters: [
-      { code: 'study', operator: Operator.EQUALS, value: `DicomStudy/${study.id}` },
-      { code: 'series-instance-uid', operator: Operator.EXACT, value: seriesUid },
-    ],
-  });
-  if (!series) {
-    res.status(404).json({ error: 'Series not found' });
-    return;
-  }
+  const { repo, series } = result;
   const instances = await repo.searchResources<DicomInstance>({
     resourceType: 'DicomInstance',
     filters: [{ code: 'series', operator: Operator.EQUALS, value: `DicomSeries/${series.id}` }],
@@ -69,16 +47,6 @@ export async function handleRetrieveSeriesMetadata(req: Request, res: Response):
  */
 export async function handleRetrieveInstanceFrame(req: Request, res: Response): Promise<void> {
   const { studyUid, seriesUid, instanceUid, frame } = req.params;
-  if (!isString(studyUid)) {
-    res.status(400).json({ error: 'Invalid study UID' });
-    return;
-  }
-
-  if (!isString(seriesUid)) {
-    res.status(400).json({ error: 'Invalid series UID' });
-    return;
-  }
-
   if (!isString(instanceUid)) {
     res.status(400).json({ error: 'Invalid instance UID' });
     return;
@@ -95,29 +63,11 @@ export async function handleRetrieveInstanceFrame(req: Request, res: Response): 
     return;
   }
 
-  const { repo } = getAuthenticatedContext();
-  const study = await repo.searchOne<DicomStudy>({
-    resourceType: 'DicomStudy',
-    filters: [{ code: 'study-instance-uid', operator: Operator.EXACT, value: studyUid }],
-  });
-
-  if (!study) {
-    res.status(404).json({ error: 'Study not found' });
+  const result = await resolveStudySeries(studyUid, seriesUid, res);
+  if (!result) {
     return;
   }
-
-  const series = await repo.searchOne<DicomSeries>({
-    resourceType: 'DicomSeries',
-    filters: [
-      { code: 'study', operator: Operator.EQUALS, value: `DicomStudy/${study.id}` },
-      { code: 'series-instance-uid', operator: Operator.EXACT, value: seriesUid },
-    ],
-  });
-
-  if (!series) {
-    res.status(404).json({ error: 'Series not found' });
-    return;
-  }
+  const { repo, series } = result;
 
   const instance = await repo.searchOne<DicomInstance>({
     resourceType: 'DicomInstance',
@@ -161,4 +111,51 @@ export async function handleRetrieveInstanceFrame(req: Request, res: Response): 
     getLogger().error('Error reading pixel data for instance', { instanceId: instance.id, err });
     res.status(500).json({ error: 'Error reading pixel data' });
   }
+}
+
+interface StudySeriesResult {
+  readonly repo: Repository;
+  readonly series: DicomSeries;
+}
+
+async function resolveStudySeries(
+  studyUid: unknown,
+  seriesUid: unknown,
+  res: Response
+): Promise<StudySeriesResult | undefined> {
+  if (!isString(studyUid)) {
+    res.status(400).json({ error: 'Invalid study UID' });
+    return undefined;
+  }
+
+  if (!isString(seriesUid)) {
+    res.status(400).json({ error: 'Invalid series UID' });
+    return undefined;
+  }
+
+  const { repo } = getAuthenticatedContext();
+  const study = await repo.searchOne<DicomStudy>({
+    resourceType: 'DicomStudy',
+    filters: [{ code: 'study-instance-uid', operator: Operator.EXACT, value: studyUid }],
+  });
+
+  if (!study) {
+    res.status(404).json({ error: 'Study not found' });
+    return undefined;
+  }
+
+  const series = await repo.searchOne<DicomSeries>({
+    resourceType: 'DicomSeries',
+    filters: [
+      { code: 'study', operator: Operator.EQUALS, value: `DicomStudy/${study.id}` },
+      { code: 'series-instance-uid', operator: Operator.EXACT, value: seriesUid },
+    ],
+  });
+
+  if (!series) {
+    res.status(404).json({ error: 'Series not found' });
+    return undefined;
+  }
+
+  return { repo, series };
 }
