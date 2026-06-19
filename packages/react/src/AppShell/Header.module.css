@@ -27,7 +27,10 @@
   line-height: 1px;
   margin-right: 3px;
 
-  @media (max-width: $mantine-breakpoint-xs) {
+  /* Use resolved value (36em) instead of $mantine-breakpoint-xs to avoid
+     leaking unresolved SCSS variables into distributed CSS.
+     See: https://github.com/medplum/medplum/issues/9257 */
+  @media (max-width: 36em) {
     display: none;
   }
 }
