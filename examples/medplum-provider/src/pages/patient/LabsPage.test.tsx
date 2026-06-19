@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import type { ServiceRequest } from '@medplum/fhirtypes';
+import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import type { ReactNode } from 'react';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { LabsPage } from './LabsPage';
 
@@ -19,18 +20,31 @@ describe('LabsPage', () => {
     vi.clearAllMocks();
   });
 
+  // The sidebar tabs are MedplumLinks, so they navigate through the MedplumProvider's
+  // `navigate` (wired to the router in production). Provide it here so tab clicks drive
+  // the MemoryRouter the way they do in the real app.
+  function Providers({ children }: { children: ReactNode }): ReactNode {
+    const navigate = useNavigate();
+    return (
+      <MedplumProvider medplum={medplum} navigate={(path) => navigate(path)}>
+        {children}
+      </MedplumProvider>
+    );
+  }
+
   const setup = (initialPath = `/Patient/${HomerSimpson.id}/ServiceRequest`): ReturnType<typeof render> => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
-        <MedplumProvider medplum={medplum}>
+        <Providers>
           <MantineProvider>
             <Notifications />
             <Routes>
               <Route path="/Patient/:patientId/ServiceRequest/:serviceRequestId" element={<LabsPage />} />
               <Route path="/Patient/:patientId/ServiceRequest" element={<LabsPage />} />
+              <Route path="/Patient/:patientId/DiagnosticReport/:diagnosticReportId" element={<LabsPage />} />
             </Routes>
           </MantineProvider>
-        </MedplumProvider>
+        </Providers>
       </MemoryRouter>
     );
   };
@@ -426,6 +440,100 @@ describe('LabsPage', () => {
     await waitFor(() => {
       // The basedOn order should be filtered out because its base order is completed
       expect(screen.queryByText('Based On Order')).not.toBeInTheDocument();
+    });
+  });
+
+  // LabsPage fetches orders and results in a single cross-type search, so the mock returns
+  // both in one combined array; the page filters them apart by resourceType.
+  const mockSearch = (serviceRequests: ServiceRequest[], diagnosticReports: DiagnosticReport[]): void => {
+    medplum.searchResources = vi.fn().mockResolvedValue([...serviceRequests, ...diagnosticReports]);
+  };
+
+  test('displays diagnostic reports in the completed tab', async () => {
+    const report: DiagnosticReport = {
+      resourceType: 'DiagnosticReport',
+      id: 'report-1',
+      status: 'final',
+      code: { text: 'Lipid Panel' },
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      issued: '2024-02-01T10:00:00Z',
+    };
+    await medplum.createResource(report);
+    mockSearch([], [report]);
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('Lipid Panel')).toBeInTheDocument();
+    });
+  });
+
+  test('dedupes a completed order behind its diagnostic report', async () => {
+    const completedOrder: ServiceRequest = {
+      resourceType: 'ServiceRequest',
+      id: 'sr-1',
+      status: 'completed',
+      intent: 'order',
+      code: { text: 'CBC Order' },
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      meta: { lastUpdated: '2024-01-01T10:00:00Z' },
+    };
+    const report: DiagnosticReport = {
+      resourceType: 'DiagnosticReport',
+      id: 'report-1',
+      status: 'final',
+      code: { text: 'CBC Result' },
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      basedOn: [{ reference: 'ServiceRequest/sr-1' }],
+      issued: '2024-01-02T10:00:00Z',
+    };
+    await medplum.createResource(completedOrder);
+    await medplum.createResource(report);
+    mockSearch([completedOrder], [report]);
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('CBC Result')).toBeInTheDocument();
+    });
+    // The order is hidden because its report is shown instead.
+    expect(screen.queryByText('CBC Order')).not.toBeInTheDocument();
+  });
+
+  test('shows lab result details when a report is selected', async () => {
+    const report: DiagnosticReport = {
+      resourceType: 'DiagnosticReport',
+      id: 'report-1',
+      status: 'final',
+      code: { text: 'Lipid Panel' },
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      issued: '2024-02-01T10:00:00Z',
+    };
+    await medplum.createResource(report);
+    mockSearch([], [report]);
+    setup(`/Patient/${HomerSimpson.id}/DiagnosticReport/report-1`);
+
+    await waitFor(() => {
+      // Appears in both the list row and the detail pane.
+      expect(screen.getAllByText('Lipid Panel').length).toBeGreaterThan(0);
+    });
+  });
+
+  test('paginates the completed list when there are more than one page', async () => {
+    const orders: ServiceRequest[] = Array.from({ length: 25 }, (_, i) => ({
+      resourceType: 'ServiceRequest',
+      id: `order-${i}`,
+      status: 'completed',
+      intent: 'order',
+      code: { text: `Lab Test ${i}` },
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      requisition: { value: `REQ-${i}` },
+      meta: { lastUpdated: `2024-01-01T${String(i % 24).padStart(2, '0')}:00:00Z` },
+    }));
+    mockSearch(orders, []);
+    setup();
+
+    await waitFor(() => {
+      // 25 completed orders -> 2 pages, so a "next page" control is rendered.
+      expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument();
     });
   });
 });

@@ -1,85 +1,105 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  ActionIcon,
-  Box,
-  Divider,
-  Flex,
-  Group,
-  Modal,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Tabs,
-  Text,
-  Tooltip,
-} from '@mantine/core';
+import { ActionIcon, Box, Divider, Flex, Modal, Skeleton, Stack, Text, Tooltip } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { ServiceRequest } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import type { DiagnosticReport, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
+import type { ListWithDetailPaneTab } from '@medplum/react';
+import { ListWithDetailPane, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { LabListItem } from '../../components/labs/LabListItem';
 import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
+import { LabResultDetails } from '../../components/labs/LabResultDetails';
+import { LabResultListItem } from '../../components/labs/LabResultListItem';
 import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
-import classes from './LabsPage.module.css';
 
 type LabTab = 'open' | 'completed';
 
+/** A lab list row is either an order (ServiceRequest) or a result (DiagnosticReport). */
+type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
+
+/** Client-side page size. We fetch the full set and dedupe, then paginate the result locally. */
+const PAGE_SIZE = 20;
+
+/** How many resources to pull per fetch round-trip while paging through the full set. */
+const FETCH_PAGE_SIZE = 200;
+/** Safety ceiling so an unexpectedly huge patient can't trigger an unbounded fetch loop. */
+const MAX_FETCH = 2000;
+
 export function LabsPage(): JSX.Element {
-  const { patientId, serviceRequestId } = useParams();
+  const { patientId, serviceRequestId, diagnosticReportId } = useParams();
   const navigate = useNavigate();
   const medplum = useMedplum();
 
-  const [activeTab, setActiveTab] = useState<LabTab>('completed');
-  const [openOrders, setOpenOrders] = useState<ServiceRequest[]>([]);
-  const [completedOrders, setCompletedOrders] = useState<ServiceRequest[]>([]);
+  // The tab lives in the URL (the sidebar tabs are links). The selection lives in the path:
+  // either a ServiceRequest/:id (order) or a DiagnosticReport/:id (result).
+  const [searchParams] = useSearchParams();
+  const activeTab: LabTab = searchParams.get('status') === 'open' ? 'open' : 'completed';
+  const selectedId = serviceRequestId ?? diagnosticReportId;
+
+  const [openOrders, setOpenOrders] = useState<WithId<ServiceRequest>[]>([]);
+  const [completedItems, setCompletedItems] = useState<LabItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
+  // Pagination is client-side over the deduped list. The page is scoped to a tab so switching
+  // tabs lands on page 1 without a reset effect (derive the effective page during render).
+  const [pageState, setPageState] = useState<{ tab: LabTab; page: number }>({ tab: activeTab, page: 1 });
+  const page = pageState.tab === activeTab ? pageState.page : 1;
+  const setPage = (next: number): void => setPageState({ tab: activeTab, page: next });
+  // Selection that isn't in the current list (e.g. deep-linked, or on another page).
+  const [fetchedItem, setFetchedItem] = useState<LabItem | undefined>();
 
   const patient = usePatient();
   const patientReference = useMemo(() => (patient ? getReferenceString(patient) : undefined), [patient]);
-  const [currentOrder, setCurrentOrder] = useState<ServiceRequest>();
 
-  const fetchOrders = useCallback(async (): Promise<void> => {
+  const fetchData = useCallback(async (): Promise<void> => {
     if (!patientReference) {
       showErrorNotification('Patient not found');
       return;
     }
-    try {
-      const searchParams = new URLSearchParams({
-        subject: patientReference,
-        _count: '100',
-        _sort: '-_lastUpdated',
-        _fields:
-          '_lastUpdated,code,status,orderDetail,category,subject,requester,performer,requisition,identifier,authoredOn,priority,reasonCode,note,supportingInfo,basedOn',
-      });
-
-      const results: ServiceRequest[] = await medplum.searchResources('ServiceRequest', searchParams, {
-        cache: 'no-cache',
-      });
-
-      setOpenOrders(filterOpenOrders(results));
-      setCompletedOrders(filterCompletedOrders(results));
-    } catch (error) {
-      showErrorNotification(error);
-    }
-  }, [medplum, patientReference]);
-
-  const fetchData = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
-      await fetchOrders();
+      // Fetch every order + result for the patient via one cross-type search (`subject` is a
+      // shared search param for both types), paging through all results. We can't use `_total`
+      // here — it's broken for `_type` (UNION) searches on the server — and the open/completed
+      // split plus the requisition/based-on dedup need the full set anyway, so pagination is
+      // done client-side over the deduped list.
+      const all: WithId<Resource>[] = [];
+      for (let offset = 0; offset < MAX_FETCH; offset += FETCH_PAGE_SIZE) {
+        const pageResults = await medplum.searchResources(
+          '' as ResourceType,
+          new URLSearchParams({
+            _type: 'ServiceRequest,DiagnosticReport',
+            subject: patientReference,
+            _count: String(FETCH_PAGE_SIZE),
+            _offset: String(offset),
+            _sort: '-_lastUpdated',
+          }),
+          { cache: 'no-cache' }
+        );
+        all.push(...pageResults);
+        if (pageResults.length < FETCH_PAGE_SIZE) {
+          break;
+        }
+      }
+
+      const requests = all.filter((r): r is WithId<ServiceRequest> => r.resourceType === 'ServiceRequest');
+      const reports = all.filter((r): r is WithId<DiagnosticReport> => r.resourceType === 'DiagnosticReport');
+
+      setOpenOrders(filterOpenOrders(requests));
+      setCompletedItems(buildCompletedItems(requests, reports));
+    } catch (error) {
+      showErrorNotification(error);
     } finally {
       setLoading(false);
     }
-  }, [fetchOrders]);
+  }, [medplum, patientReference]);
 
   useEffect(() => {
     if (patientId) {
@@ -87,137 +107,125 @@ export function LabsPage(): JSX.Element {
     }
   }, [patientId, fetchData]);
 
-  const handleOrderSelect = useCallback(
-    (order: ServiceRequest): string => {
-      return `/Patient/${patientId}/ServiceRequest/${order.id}`;
-    },
+  const allItems = useMemo(() => [...openOrders, ...completedItems], [openOrders, completedItems]);
+  const itemFromList = useMemo(
+    () => (selectedId ? allItems.find((item) => item.id === selectedId) : undefined),
+    [selectedId, allItems]
+  );
+  const currentItem = selectedId
+    ? (itemFromList ?? (fetchedItem?.id === selectedId ? fetchedItem : undefined))
+    : undefined;
+
+  // Resolve a selection that isn't in the loaded list by reading it directly.
+  useEffect(() => {
+    let cancelled = false;
+    if (!itemFromList) {
+      if (serviceRequestId) {
+        medplum
+          .readResource('ServiceRequest', serviceRequestId)
+          .then((resource) => !cancelled && setFetchedItem(resource))
+          .catch(showErrorNotification);
+      } else if (diagnosticReportId) {
+        medplum
+          .readResource('DiagnosticReport', diagnosticReportId)
+          .then((resource) => !cancelled && setFetchedItem(resource))
+          .catch(showErrorNotification);
+      }
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [serviceRequestId, diagnosticReportId, itemFromList, medplum]);
+
+  const getServiceRequestUrl = useCallback(
+    // Keep the active tab in the URL so selecting an order doesn't reset the list to the default tab.
+    (order: ServiceRequest): string => `/Patient/${patientId}/ServiceRequest/${order.id}?status=${activeTab}`,
+    [patientId, activeTab]
+  );
+
+  const getDiagnosticReportUrl = useCallback(
+    // Results only appear in the Completed tab, so always land there.
+    (report: DiagnosticReport): string => `/Patient/${patientId}/DiagnosticReport/${report.id}?status=completed`,
     [patientId]
   );
 
-  useEffect(() => {
-    const fetchOrder = async (): Promise<void> => {
-      if (serviceRequestId) {
-        const currentItems = activeTab === 'open' ? openOrders : completedOrders;
-        const order = currentItems.find((order: ServiceRequest) => order.id === serviceRequestId);
-        if (order) {
-          setCurrentOrder(order);
-        } else {
-          const order = await medplum.readResource('ServiceRequest', serviceRequestId);
-          if (order) {
-            setCurrentOrder(order);
-          }
-        }
-      } else {
-        setCurrentOrder(undefined);
-      }
-    };
-    fetchOrder().catch(showErrorNotification);
-  }, [activeTab, openOrders, completedOrders, serviceRequestId, medplum]);
-
+  // The sidebar tabs render as links; this drives the actual SPA navigation on click
+  // (the link href only powers right/cmd-click), mirroring ResourceBoard.
   const handleTabChange = (value: string): void => {
-    const newTab = value as LabTab;
-    setActiveTab(newTab);
+    navigate(`/Patient/${patientId}/ServiceRequest?status=${value}`)?.catch(console.error);
   };
 
   const handleNewOrderCreated = (): void => {
     setNewOrderModalOpened(false);
-
     fetchData()
       .then(() => {
-        setActiveTab('open');
-        navigate(`/Patient/${patientId}/ServiceRequest`)?.catch(console.error);
+        navigate(`/Patient/${patientId}/ServiceRequest?status=open`)?.catch(console.error);
       })
       .catch(showErrorNotification);
   };
 
-  const currentItems = activeTab === 'completed' ? completedOrders : openOrders;
+  const currentList = activeTab === 'completed' ? completedItems : openOrders;
+  const pageCount = Math.max(1, Math.ceil(currentList.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = currentList.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const basePath = `/Patient/${patientId}/ServiceRequest`;
+  const tabs: ListWithDetailPaneTab[] = [
+    { value: 'completed', label: 'Completed', uri: `${basePath}?status=completed` },
+    { value: 'open', label: 'Open', uri: `${basePath}?status=open` },
+  ];
+
+  const headerActions = (
+    <Tooltip label="Order Labs" position="bottom" openDelay={500}>
+      <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={() => setNewOrderModalOpened(true)}>
+        <IconPlus size={16} />
+      </ActionIcon>
+    </Tooltip>
+  );
 
   return (
     <Box w="100%" h="100%">
-      <Flex h="100%">
-        <Box w={350} h="100%">
-          <Flex direction="column" h="100%" className={classes.borderRight}>
-            <Paper>
-              <Flex h={64} align="center" justify="space-between" p="md">
-                <Group gap="xs">
-                  <Tabs
-                    value={activeTab}
-                    onChange={(value) => handleTabChange(value as string)}
-                    variant="unstyled"
-                    className="pill-tabs"
-                  >
-                    <Tabs.List>
-                      <Tabs.Tab value="completed">Completed</Tabs.Tab>
-                      <Tabs.Tab value="open">Open</Tabs.Tab>
-                    </Tabs.List>
-                  </Tabs>
-                </Group>
-
-                <Tooltip label="Order Labs" position="bottom" openDelay={500}>
-                  <ActionIcon
-                    radius="xl"
-                    variant="filled"
-                    color="blue"
-                    size={32}
-                    onClick={() => setNewOrderModalOpened(true)}
-                  >
-                    <IconPlus size={16} />
-                  </ActionIcon>
-                </Tooltip>
-              </Flex>
-            </Paper>
-
-            <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden' }}>
-              <ScrollArea h="100%" id="lab-list-scrollarea" p="0.5rem">
-                {loading && <LabListSkeleton />}
-                {!loading && currentItems.length === 0 && <EmptyLabsState activeTab={activeTab} />}
-                {!loading &&
-                  currentItems.length > 0 &&
-                  currentItems.map((item, index) => {
-                    return (
-                      <React.Fragment key={item.id}>
-                        <LabListItem
-                          item={item}
-                          selectedItem={currentOrder}
-                          activeTab={activeTab}
-                          onItemSelect={handleOrderSelect}
-                        />
-                        {index < currentItems.length - 1 && (
-                          <Box px="0.5rem">
-                            <Divider />
-                          </Box>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-              </ScrollArea>
-            </Paper>
-          </Flex>
-        </Box>
-
-        {currentItems.length > 0 ? (
-          <>
-            <Box
-              h="100%"
-              style={{
-                flex: 1,
-              }}
-              className={classes.borderRight}
-            >
-              {currentOrder ? (
-                <LabOrderDetails key={currentOrder.id} order={currentOrder} />
-              ) : (
-                <LabSelectEmpty activeTab={'open'} />
-              )}
-            </Box>
-          </>
-        ) : (
-          <Flex direction="column" h="100%" style={{ flex: 1 }}>
-            <LabSelectEmpty activeTab={activeTab} />
-          </Flex>
+      <ListWithDetailPane<LabItem>
+        items={pageItems}
+        loading={loading}
+        renderItem={(item) =>
+          item.resourceType === 'ServiceRequest' ? (
+            <LabListItem
+              item={item}
+              selectedItem={currentItem?.resourceType === 'ServiceRequest' ? currentItem : undefined}
+              activeTab={activeTab}
+              onItemSelect={getServiceRequestUrl}
+            />
+          ) : (
+            <LabResultListItem
+              item={item}
+              selectedItem={currentItem?.resourceType === 'DiagnosticReport' ? currentItem : undefined}
+              onItemSelect={getDiagnosticReportUrl}
+            />
+          )
+        }
+        emptyList={<EmptyLabsState activeTab={activeTab} />}
+        skeleton={<LabListSkeleton />}
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        headerActions={headerActions}
+        selected={currentItem}
+        renderDetail={(item) => (
+          <Box h="100%" style={{ flex: 1, overflow: 'hidden' }}>
+            {item.resourceType === 'ServiceRequest' ? (
+              <LabOrderDetails key={item.id} order={item} />
+            ) : (
+              <LabResultDetails key={item.id} result={item} />
+            )}
+          </Box>
         )}
-      </Flex>
+        emptyDetail={<LabSelectEmpty activeTab={activeTab} />}
+        refresh={fetchData}
+        page={safePage}
+        pageCount={pageCount}
+        onPageChange={setPage}
+      />
 
       {/* New Order Modal */}
       <Modal
@@ -233,7 +241,7 @@ export function LabsPage(): JSX.Element {
   );
 }
 
-function filterOpenOrders(orders: ServiceRequest[]): ServiceRequest[] {
+function filterOpenOrders(orders: WithId<ServiceRequest>[]): WithId<ServiceRequest>[] {
   const filteredOutStatuses = ['completed', 'draft', 'entered-in-error'];
   const completedServiceRequestIds = new Set<string>();
   orders.forEach((order) => {
@@ -273,16 +281,12 @@ function filterOpenOrders(orders: ServiceRequest[]): ServiceRequest[] {
     return true;
   });
 
-  return filtered.sort((a, b) => {
-    const aDate = a.meta?.lastUpdated || a.authoredOn;
-    const bDate = b.meta?.lastUpdated || b.authoredOn;
-    return new Date(bDate || 0).getTime() - new Date(aDate || 0).getTime();
-  });
+  return filtered.sort((a, b) => getItemTime(b) - getItemTime(a));
 }
 
-function filterCompletedOrders(orders: ServiceRequest[]): ServiceRequest[] {
+function filterCompletedOrders(orders: WithId<ServiceRequest>[]): WithId<ServiceRequest>[] {
   const completedRequisitionNumbers = new Set<string>();
-  const filtered = orders.filter((order) => {
+  return orders.filter((order) => {
     if (order.status !== 'completed') {
       return false;
     }
@@ -298,12 +302,33 @@ function filterCompletedOrders(orders: ServiceRequest[]): ServiceRequest[] {
 
     return true;
   });
+}
 
-  return filtered.sort((a, b) => {
-    const aDate = a.meta?.lastUpdated || a.authoredOn;
-    const bDate = b.meta?.lastUpdated || b.authoredOn;
-    return new Date(bDate || 0).getTime() - new Date(aDate || 0).getTime();
-  });
+// Build the Completed tab list from completed orders plus lab results, sorted by date.
+// A result hides the order it is based-on, so a completed order and its report don't both appear.
+function buildCompletedItems(orders: WithId<ServiceRequest>[], reports: WithId<DiagnosticReport>[]): LabItem[] {
+  const reportedServiceRequestIds = new Set<string>();
+  for (const report of reports) {
+    for (const basedOn of report.basedOn ?? []) {
+      if (basedOn.reference?.startsWith('ServiceRequest/')) {
+        reportedServiceRequestIds.add(basedOn.reference.split('/')[1]);
+      }
+    }
+  }
+
+  const completedOrders = filterCompletedOrders(orders).filter(
+    (order) => !(order.id && reportedServiceRequestIds.has(order.id))
+  );
+
+  return [...completedOrders, ...reports].sort((a, b) => getItemTime(b) - getItemTime(a));
+}
+
+function getItemTime(item: ServiceRequest | DiagnosticReport): number {
+  const date =
+    item.resourceType === 'DiagnosticReport'
+      ? item.issued || item.effectiveDateTime || item.meta?.lastUpdated
+      : item.meta?.lastUpdated || item.authoredOn;
+  return date ? new Date(date).getTime() : 0;
 }
 
 function EmptyLabsState({ activeTab }: { activeTab: LabTab }): JSX.Element {
