@@ -66,7 +66,7 @@ jobs:
           fi
       - name: Comment on PR
         if: steps.madge.outputs.madge_check_errs != ''
-        uses: thollander/actions-comment-pull-request@fabd468d3a1a0b97feee5f6b9e499eab0dd903f6 # v2.5.0
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
         with:
           comment_tag: madge-check
           message: |
@@ -81,7 +81,7 @@ jobs:
             <sup>[#${{github.sha}}](https://github.com/medplum/medplum/commits/${{github.sha}})</sup>
       - name: Uncomment on PR
         if: steps.madge.outputs.madge_check_errs == ''
-        uses: thollander/actions-comment-pull-request@fabd468d3a1a0b97feee5f6b9e499eab0dd903f6 # v2.5.0
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
         with:
           comment_tag: madge-check
           mode: upsert

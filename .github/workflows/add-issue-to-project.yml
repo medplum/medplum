@@ -16,11 +16,11 @@ jobs:
     name: Add issue to project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/add-to-project@1b844f0c5ac6446a402e0cb3693f9be5eca188c5 # v0.6.1
+      - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/medplum/projects/1
           github-token: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
-      - uses: actions/add-to-project@1b844f0c5ac6446a402e0cb3693f9be5eca188c5 # v0.6.1
+      - uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
           project-url: https://github.com/orgs/medplum/projects/3
           github-token: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
