@@ -173,6 +173,74 @@ documentation for more information.
 | `features`                   | A list of optional features that are enabled for the project. Values related to access control include: <ul><li>`bots`: This [`Project`](/docs/api/fhir/medplum/project) is allowed to create and run [Bots](/docs/bots/bot-basics).</li><li>`email`: Bots in this project can [send emails](/docs/sdk/core.medplumclient.sendemail). </li><li>`cron`: This [`Project`](/docs/api/fhir/medplum/project) can run Bots on [CRON timers](/docs/bots/bot-cron-job)</li><li>`google-auth-required`: [Google authentication](/docs/auth/google-auth) is the only method allowed for this [`Project`](/docs/api/fhir/medplum/project)</li></ul> |         |
 | `defaultPatientAccessPolicy` | The default [`AccessPolicy`](/docs/access/access-policies) applied to all [Patient Users](/docs/user-management/project-vs-server-scoped-users#project-scoped-users) invited to this [`Project`](/docs/api/fhir/medplum/project). This is required to enable [open patient registration](/docs/user-management/open-patient-registration).                                                                                                                                                                                                                                                                                                                                                             |         |
 
+## Default Profiles {/* #default-profiles */}
+
+The `defaultProfile` setting automatically applies [FHIR profiles](http://hl7.org/fhir/R4/profiling.html#resources) to resources that do not specify a profile in `meta.profile`. This is useful for enforcing consistent validation across a project without requiring every resource creation call to include profile references.
+
+### How It Works
+
+When a resource is created or updated **without** a `meta.profile` field, the server checks the project's `defaultProfile` configuration. If a matching entry exists for the resource type, the server automatically adds the configured profile(s) to the resource's `meta.profile` array before validation.
+
+If the resource **already** has a `meta.profile` field, default profiles are **not** applied — the resource's explicit profile is preserved.
+
+### Configuration
+
+Set `defaultProfile` on a `Project` resource as an array of objects, each specifying a `resourceType` and the `profile` URLs to apply:
+
+```json
+{
+  "resourceType": "Project",
+  "name": "My Clinical App",
+  "defaultProfile": [
+    {
+      "resourceType": "Observation",
+      "profile": [
+        "http://hl7.org/fhir/StructureDefinition/vitalsigns"
+      ]
+    },
+    {
+      "resourceType": "Patient",
+      "profile": [
+        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+      ]
+    }
+  ]
+}
+```
+
+### Example: Enforcing Vital Signs Validation
+
+With the configuration above, any `Observation` created without an explicit profile will automatically receive the [Vital Signs profile](https://hl7.org/fhir/R4/observation-vitalsigns.html). This means the server will validate that the observation includes required elements like `subject`, `category`, and the correct value types:
+
+```typescript
+// This observation will automatically get the vital-signs profile applied
+const observation = await medplum.createResource({
+  resourceType: 'Observation',
+  status: 'final',
+  code: { text: 'Heart rate' },
+  effectiveDateTime: '2024-01-01T00:00:00Z',
+  valueInteger: 72,
+  // No meta.profile specified — defaultProfile kicks in
+});
+
+// observation.meta.profile will be:
+// ["http://hl7.org/fhir/StructureDefinition/vitalsigns"]
+```
+
+If the observation is missing required fields (e.g., `subject`), the server will reject it with a validation error — even though no profile was explicitly specified.
+
+### When to Use `defaultProfile`
+
+- **Clinical data quality**: Enforce that all resources of a given type conform to a specific profile (e.g., US Core, Vital Signs)
+- **Multi-tenant applications**: Different projects can enforce different profiles for the same resource type
+- **Gradual adoption**: Apply profiles automatically without requiring changes to existing client code
+
+### Notes
+
+- Default profiles are applied **before** resource validation, so profile-based constraints are enforced automatically
+- Multiple profiles can be specified per resource type — all will be applied
+- This setting is configured by project administrators and is specific to each project
+
 ## Project Secrets
 
 Each [`Project`](/docs/api/fhir/medplum/project) can store a set of key/value pairs to store configuration values, such as API keys, needed by Bots.
