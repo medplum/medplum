@@ -6,7 +6,7 @@ import type { DcmjsDicomDict } from 'dcmjs';
 import dcmjs from 'dcmjs';
 import DicomwebMultipartParser from 'dicomweb-multipart-parser';
 import type { Request, Response } from 'express';
-import { PassThrough } from 'stream';
+import { PassThrough } from 'node:stream';
 import { getAuthenticatedContext } from '../context';
 import { uploadBinaryData } from '../fhir/binary';
 import { getLogger } from '../logger';

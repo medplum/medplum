@@ -56,12 +56,6 @@ export function medplumStudyToDcmjsStudy(study: DicomStudy): Record<string, unkn
     PatientSex: study.patientSex,
     NumberOfStudyRelatedSeries: 1,
     NumberOfStudyRelatedInstances: 1,
-    // NumberOfStudyRelatedSeries: study.numberOfStudyRelatedSeries
-    //   ? parseInt(study.numberOfStudyRelatedSeries, 10)
-    //   : undefined,
-    // NumberOfStudyRelatedInstances: study.numberOfStudyRelatedInstances
-    //   ? parseInt(study.numberOfStudyRelatedInstances, 10)
-    //   : undefined,
   };
 }
 
@@ -87,13 +81,10 @@ export function medplumSeriesToDcmjsSeries(study: DicomStudy, series: DicomSerie
   return {
     ...medplumStudyToDcmjsStudy(study),
     SeriesInstanceUID: series.seriesInstanceUid,
-    SeriesNumber: series.seriesNumber ? parseInt(series.seriesNumber, 10) : undefined,
+    SeriesNumber: series.seriesNumber ? Number.parseInt(series.seriesNumber, 10) : undefined,
     Modality: series.modality,
     SeriesDescription: series.seriesDescription,
     TimezoneOffsetFromUTC: series.timezoneOffsetFromUtc,
-    // NumberOfSeriesRelatedInstances: series.numberOfSeriesRelatedInstances
-    //   ? parseInt(series.numberOfSeriesRelatedInstances, 10)
-    //   : undefined,
     NumberOfSeriesRelatedInstances: 1,
     PerformedProcedureStepStartDate: series.performedProcedureStepStartDate,
     PerformedProcedureStepStartTime: series.performedProcedureStepStartTime,
@@ -210,7 +201,7 @@ export function dicomDateToFhirDate(dicomDate: unknown): string | undefined {
 
 export function fhirDateToDicomDate(fhirDate: string | undefined): string | undefined {
   // FHIR date format is YYYY-MM-DD, while DICOM date format is YYYYMMDD
-  return fhirDate?.replace(/-/g, '');
+  return fhirDate?.replaceAll('-', '');
 }
 
 export function dicomTimeToFhirTime(dicomTime: unknown): string | undefined {
@@ -223,7 +214,7 @@ export function dicomTimeToFhirTime(dicomTime: unknown): string | undefined {
 
 export function fhirTimeToDicomTime(fhirTime: string | undefined): string | undefined {
   // FHIR time format is HH:MM:SS, while DICOM time format is HHMMSS
-  return fhirTime?.replace(/:/g, '');
+  return fhirTime?.replaceAll(':', '');
 }
 
 export async function writeMultipartRelatedBody(out: PassThrough, files: Buffer[], boundary: string): Promise<void> {
