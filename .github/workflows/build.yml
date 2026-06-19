@@ -188,7 +188,9 @@ jobs:
         run: './scripts/deploy-provider-app.sh'
         env:
           PROVIDER_APP_BUCKET: preview.medplum.dev/previews/provider-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+          GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
+          RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
       - name: Comment preview URLs
         if: steps.changes.outputs.deploy_any == 'true'
         uses: actions/github-script@v7
