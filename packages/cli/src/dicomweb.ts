@@ -25,7 +25,7 @@ async function pipeFileToStream(filePath: string, out: PassThrough): Promise<voi
   }
 }
 
-async function writeMultipartRelatedBody(out: PassThrough, filePaths: string[], boundary: string): Promise<void> {
+export async function writeMultipartRelatedBody(out: PassThrough, filePaths: string[], boundary: string): Promise<void> {
   try {
     for (const filePath of filePaths) {
       await writeBuffer(out, Buffer.from(`--${boundary}\r\n`));
