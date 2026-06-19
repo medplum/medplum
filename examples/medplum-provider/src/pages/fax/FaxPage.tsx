@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
@@ -17,16 +18,25 @@ export function FaxPage(): JSX.Element {
   const [searchParams] = useSearchParams();
 
   const category = searchParams.get('category');
+  const offset = searchParams.get('_offset');
   const activeTab: FaxTab = category === 'outbound' ? 'sent' : 'inbox';
-  const query = `${FAX_QUERY_BASE}&category=${category ?? 'inbound'}`;
+  const query = `${FAX_QUERY_BASE}&category=${category ?? 'inbound'}${offset ? `&_offset=${offset}` : ''}`;
 
   const getFaxUri = (fax: Communication): string => {
     const base = fax.id ? `/Fax/Communication/${fax.id}` : '/Fax/Communication';
-    return `${base}?${FAX_QUERY_BASE}&category=${category ?? 'inbound'}`;
+    return `${base}?${query}`;
   };
 
   const onNew = (fax: Communication): void => {
     navigate(getFaxUri(fax))?.catch(console.error);
+  };
+
+  // Pagination: write the new offset to the URL (drops the selected fax so the new
+  // page auto-selects its first item via the board's onSelectFirst).
+  const onChange = (search: SearchRequest): void => {
+    const newOffset = search.offset ?? 0;
+    const next = `${FAX_QUERY_BASE}&category=${category ?? 'inbound'}${newOffset > 0 ? `&_offset=${newOffset}` : ''}`;
+    navigate(`/Fax/Communication?${next}`)?.catch(console.error);
   };
 
   return (
@@ -39,6 +49,7 @@ export function FaxPage(): JSX.Element {
         query={query}
         getFaxUri={getFaxUri}
         onNew={onNew}
+        onChange={onChange}
       />
     </div>
   );
