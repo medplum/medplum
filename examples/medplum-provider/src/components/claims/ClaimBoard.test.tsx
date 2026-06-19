@@ -72,10 +72,7 @@ const defaultProps = {
   onChange: vi.fn(),
 };
 
-async function setup(
-  medplum: MockClient,
-  overrides: Partial<typeof defaultProps> = {}
-): Promise<RenderResult> {
+async function setup(medplum: MockClient, overrides: Partial<typeof defaultProps> = {}): Promise<RenderResult> {
   let result!: RenderResult;
   await act(async () => {
     result = render(
@@ -167,9 +164,7 @@ describe('ClaimBoard', () => {
       medplum.search = vi.fn().mockResolvedValue(makeClaimBundle([baseClaim]));
       await setup(medplum, { claimId: CLAIM_ID });
       await waitFor(() => expect(screen.getByText('Claim Response')).toBeInTheDocument());
-      await waitFor(() =>
-        expect(screen.getByText(/No claim response has been received/)).toBeInTheDocument()
-      );
+      await waitFor(() => expect(screen.getByText(/No claim response has been received/)).toBeInTheDocument());
     });
 
     test('shows the claim response outcome and disposition when a response exists', async () => {
