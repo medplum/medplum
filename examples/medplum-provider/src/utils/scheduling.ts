@@ -5,6 +5,8 @@ import type { HealthcareService, Identifier, Resource, Schedule } from '@medplum
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 const MedplumSchedulingTransientIdentifierURI = 'https://medplum.com/fhir/scheduling-transient-id';
+export const SchedulingEncounterCodingURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingEncounterCoding';
+export const SchedulingPlanDefinitionURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingPlanDefinition';
 
 export const SchedulingTransientIdentifier = {
   set(resource: Resource & { identifier?: Identifier[] }) {
