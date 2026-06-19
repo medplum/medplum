@@ -8,25 +8,43 @@ import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
 import {
+  Alert,
+  Box,
+  Button,
   Checkbox,
+  Drawer,
   getThemeColor,
   Grid,
   LoadingOverlay,
   Stack,
+  Text,
   Title,
   useMantineColorScheme,
   useMantineTheme,
 } from '@mantine/core';
-import { EMPTY, getReferenceString, parseReference } from '@medplum/core';
-import type { Appointment, Reference, ResourceType, Schedule, Slot } from '@medplum/fhirtypes';
-import { ReferenceDisplay } from '@medplum/react';
+import { useDisclosure } from '@mantine/hooks';
+import type { WithId } from '@medplum/core';
+import { EMPTY, formatDateTime, getReferenceString, isDefined, parseReference } from '@medplum/core';
+import type {
+  Appointment,
+  Bundle,
+  HealthcareService,
+  Reference,
+  ResourceType,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
+import { ReferenceDisplay, ResourceInput, useMedplum } from '@medplum/react';
 import { useSearchResources } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
+import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 import { useNotifyOnError } from '../../hooks/useNotifyOnError';
 import type { Range } from '../../types/scheduling';
+import { showErrorNotification } from '../../utils/notifications';
+import { isSchedulableFor } from '../../utils/scheduling';
 import classes from './SchedulingPage.module.css';
 
 type ExtendedEvent = { type: 'appointment'; appointment: Appointment } | { type: 'slot'; slot: Slot };
@@ -135,20 +153,23 @@ type ActorChooserProps = {
   schedules: Schedule[];
   selected: string[];
   onChange: (selected: string[]) => void;
+  healthcareService?: WithId<HealthcareService>;
 };
 
 export function ActorChooser(props: ActorChooserProps): JSX.Element {
-  const actorsByType: Partial<Record<ResourceType, Reference[]>> = useMemo(() => {
-    const result: Partial<Record<ResourceType, Reference[]>> = {};
+  const actorsByType: Partial<Record<ResourceType, { reference: Reference; schedulable: boolean }[]>> = useMemo(() => {
+    const result: Partial<Record<ResourceType, { reference: Reference; schedulable: boolean }[]>> = {};
     props.schedules.forEach((schedule) => {
-      schedule.actor.forEach((actor) => {
-        const actorType = parseReference(actor)[0];
+      const schedulable = !props.healthcareService || isSchedulableFor(schedule, props.healthcareService);
+
+      schedule.actor.forEach((reference) => {
+        const actorType = parseReference(reference)[0];
         result[actorType] ||= [];
-        result[actorType].push(actor);
+        result[actorType].push({ reference, schedulable });
       });
     });
     return result;
-  }, [props.schedules]);
+  }, [props.schedules, props.healthcareService]);
 
   return (
     <Stack gap="lg">
@@ -156,7 +177,7 @@ export function ActorChooser(props: ActorChooserProps): JSX.Element {
         <Stack gap="sm" key={resourceType}>
           <Title order={4}>{resourceType}</Title>
           {values.map((value) => {
-            const ref = getReferenceString(value);
+            const ref = getReferenceString(value.reference);
             if (!ref) {
               return null;
             }
@@ -166,8 +187,11 @@ export function ActorChooser(props: ActorChooserProps): JSX.Element {
               <Checkbox
                 key={ref}
                 checked={props.selected.includes(ref)}
-                classNames={{ labelWrapper: classes.wideLabel }}
-                label={<ReferenceDisplay value={value} link={false} />}
+                classNames={{
+                  root: value.schedulable ? classes.schedulable : classes.unschedulable,
+                  labelWrapper: classes.wideLabel,
+                }}
+                label={<ReferenceDisplay value={value.reference} link={false} />}
                 color={color.appointment}
                 onChange={(event) => {
                   if (event.target.checked) {
@@ -193,6 +217,8 @@ export function SchedulingPage(): JSX.Element | null {
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
   const [range, setRange] = useState<Range | undefined>(undefined);
+  const [healthcareService, setHealthcareService] = useState<WithId<HealthcareService>>();
+  const [bookingDrawerOpened, bookingDrawerHandlers] = useDisclosure(false);
 
   // Q: should this use `{ _include: 'Schedule:actor' }`?
   const [allSchedules, allSchedulesLoading, allSchedulesOutcome] = useSearchResources<'Schedule'>('Schedule', {
@@ -307,6 +333,80 @@ export function SchedulingPage(): JSX.Element | null {
     });
   }, [appointmentsMap, slotsMap, allSchedules, actors, theme]);
 
+  const allSchedulable =
+    healthcareService && selectedSchedules?.every((schedule) => isSchedulableFor(schedule, healthcareService));
+
+  const medplum = useMedplum();
+  const [availableAppointments, setAvailableAppointments] = useState<Appointment[] | undefined>();
+  useEffect(() => {
+    let running = true;
+
+    if (!range || !allSchedulable || !healthcareService || !selectedSchedules?.length) {
+      setAvailableAppointments(undefined);
+      return () => {};
+    }
+
+    const url = medplum.fhirUrl('Appointment', '$find');
+    url.searchParams.append('start', range.start.toISOString());
+    url.searchParams.append('end', range.end.toISOString());
+    url.searchParams.append('service-type-reference', getReferenceString(healthcareService));
+
+    selectedSchedules.forEach((schedule) => {
+      url.searchParams.append('schedule', getReferenceString(schedule));
+    });
+
+    medplum
+      .get<Bundle<Appointment>>(url)
+      .then((bundle) => {
+        if (running) {
+          setAvailableAppointments(bundle?.entry?.map((x) => x.resource).filter(isDefined) ?? []);
+        }
+      })
+      .catch((err) => {
+        if (running) {
+          showErrorNotification(err);
+        }
+      });
+
+    return () => {
+      running = false;
+    };
+  }, [medplum, range, selectedSchedules, healthcareService, allSchedulable]);
+
+  const [chosenAppointment, setChosenAppointment] = useState<Appointment>();
+
+  const handleBookSuccess = useCallback(
+    (results: { appointment: WithId<Appointment>; slots: Slot[] }) => {
+      bookingDrawerHandlers.close();
+      const { appointment } = results;
+
+      setAppointmentsMap((prev) => {
+        const next = new Map(prev);
+        appointment.participant?.forEach((p) => {
+          const actorRef = p.actor ? getReferenceString(p.actor) : undefined;
+          if (actorRef && actors.includes(actorRef)) {
+            const existing = next.get(actorRef) ?? [];
+            next.set(actorRef, [...existing, appointment]);
+          }
+        });
+        return next;
+      });
+
+      setSlotsMap((prev) => {
+        const next = new Map(prev);
+        results.slots.forEach((slot) => {
+          const scheduleRef = getReferenceString(slot.schedule);
+          if (scheduleRef) {
+            const existing = next.get(scheduleRef) ?? [];
+            next.set(scheduleRef, [...existing, slot]);
+          }
+        });
+        return next;
+      });
+    },
+    [bookingDrawerHandlers, actors]
+  );
+
   return (
     <>
       {range &&
@@ -323,34 +423,99 @@ export function SchedulingPage(): JSX.Element | null {
             onResult={handleAppointmentResult}
           />
         ))}
-      <Grid gutter="md" p="md">
-        <Grid.Col span={3}>
-          <ActorChooser
-            schedules={allSchedules ?? []}
-            selected={actors}
-            onChange={(actor: string[]) => setSearchParams({ actor })}
+      <Stack gap="md" p="md">
+        <Box w={320}>
+          <ResourceInput<WithId<HealthcareService>>
+            name="healthcareService"
+            resourceType="HealthcareService"
+            onChange={setHealthcareService}
+            placeholder="Service type"
           />
-        </Grid.Col>
-        <Grid.Col span="auto" pos="relative">
-          <LoadingOverlay visible={loading} />
-          <FullCalendar
-            plugins={[themePlugin, timeGridPlugin]}
-            initialView="timeGridWeek"
-            datesSet={setRange}
-            eventSources={eventSources}
-            slotDuration="00:15:00"
-            height="95vh"
-            headerToolbar={{
-              left: 'title',
-              right: 'prev,today,next',
+        </Box>
+        <Grid gutter="md">
+          <Grid.Col span={3}>
+            <ActorChooser
+              schedules={allSchedules ?? []}
+              selected={actors}
+              onChange={(actor: string[]) => setSearchParams({ actor })}
+              healthcareService={healthcareService}
+            />
+          </Grid.Col>
+          <Grid.Col
+            span="auto"
+            pos="relative"
+            style={{
+              // Set `minWidth: 0` to prevent fullcalendar from going into a
+              // render loop when the available appointments pane jumps in/out;
+              // @see https://github.com/fullcalendar/fullcalendar/issues/8076
+              minWidth: '0',
             }}
-            allDaySlot={false}
-            colorScheme={colorScheme}
-            eventInnerClass={classes.eventInner}
-            eventTitleClass={classes.eventTitle}
+          >
+            <LoadingOverlay visible={loading} />
+            <FullCalendar
+              plugins={[themePlugin, timeGridPlugin]}
+              initialView="timeGridWeek"
+              datesSet={setRange}
+              eventSources={eventSources}
+              slotDuration="00:15:00"
+              height="95vh"
+              headerToolbar={{
+                left: 'title',
+                right: 'prev,today,next',
+              }}
+              allDaySlot={false}
+              colorScheme={colorScheme}
+              eventInnerClass={classes.eventInner}
+              eventTitleClass={classes.eventTitle}
+            />
+          </Grid.Col>
+          {healthcareService && (
+            <Grid.Col span={3}>
+              <Title order={2} mb="md">
+                {healthcareService.name}
+              </Title>
+              {!allSchedulable && <Alert>Selected schedules are not enabled for this service type</Alert>}
+              {allSchedulable && availableAppointments?.length === 0 && (
+                <Text size="sm" c="dimmed">
+                  No available appointments found in this calendar range.
+                </Text>
+              )}
+              {allSchedulable && (
+                <Stack gap="sm">
+                  {availableAppointments?.map((appointment) => (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setChosenAppointment(appointment);
+                        bookingDrawerHandlers.open();
+                      }}
+                      key={appointment.start}
+                    >
+                      {formatDateTime(appointment.start)}
+                    </Button>
+                  ))}
+                </Stack>
+              )}
+            </Grid.Col>
+          )}
+        </Grid>
+      </Stack>
+
+      {/* Modals */}
+      <Drawer
+        title="Create Appointment"
+        opened={bookingDrawerOpened}
+        onClose={bookingDrawerHandlers.close}
+        position="right"
+      >
+        {chosenAppointment && healthcareService && (
+          <BookAppointmentForm
+            appointment={chosenAppointment}
+            onSuccess={handleBookSuccess}
+            healthcareService={healthcareService}
           />
-        </Grid.Col>
-      </Grid>
+        )}
+      </Drawer>
     </>
   );
 }
