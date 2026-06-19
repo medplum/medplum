@@ -1,15 +1,15 @@
 {
-  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests", ":gitSignOff"],
   "enabledManagers": ["dockerfile", "github-actions"],
   "dependencyDashboard": false,
   "automerge": false,
   "minimumReleaseAge": "3 days",
   "packageRules": [
     {
-      "description": "Docker base images: grouped weekly PR, pinned digests",
+      "description": "Docker base images: grouped weekly PR, version tags only",
       "matchManagers": ["dockerfile"],
       "groupName": "docker base image updates",
-      "pinDigests": true
+      "pinDigests": false
     },
     {
       "description": "GitHub Actions: update SHA pins using upstream tags",
