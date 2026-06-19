@@ -37,10 +37,53 @@ import type { SchedulingParameters } from './scheduling-parameters';
 import { getHealthcareServiceSchedulingParameters, getScheduleSchedulingParameters } from './scheduling-parameters';
 import { uniqueOn } from './terminology';
 
+export type AlignmentOptions = {
+  interval: number;
+  offset: number;
+  timezone: string;
+};
+
 // Tricky: support zero-based and one-based indexing by including Sunday on both ends.
 // (Date#getDay() uses zero-based indexing and Temporal#dayOfWeek uses one-based indexing)
 type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 const dayNames: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+// JS `%` operator is "remainder", not "modulo", and can return negative numbers.
+// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Remainder
+export function mod(n: number, d: number): number {
+  return ((n % d) + d) % d;
+}
+
+// Returns the number of minutes since local (or UTC) midnight for a given date.
+export function minutesSinceMidnight(date: Date, timezone?: string): number {
+  if (timezone && timezone !== 'UTC' && timezone !== 'Etc/UTC') {
+    const zdt = Temporal.Instant.fromEpochMilliseconds(date.valueOf()).toZonedDateTimeISO(timezone);
+    return zdt.hour * 60 + zdt.minute;
+  }
+  return date.getUTCHours() * 60 + date.getUTCMinutes();
+}
+
+/**
+ * Returns true when `date` falls exactly on the alignment grid.
+ * The grid for a given day is anchored to local midnight in `timezone`:
+ * offset, offset+interval, offset+2*interval, ...
+ *
+ * @param date - a Date to test the alignment of
+ * @param alignment - parameters defining the alignment grid
+ * @param alignment.interval - minutes between grid entries
+ * @param alignment.offset - shift the grid by this amount
+ * @param alignment.timezone - anchors the grid to midnight in this timezone
+ * @returns boolean
+ */
+export function isAlignedToGrid(date: Date, alignment: AlignmentOptions): boolean {
+  if (alignment.interval < 1) {
+    throw new Error(`Invalid alignment interval; must be positive, got ${alignment.interval}`);
+  }
+  if (date.getUTCSeconds() !== 0 || date.getUTCMilliseconds() !== 0) {
+    return false;
+  }
+  return mod(minutesSinceMidnight(date, alignment.timezone) - alignment.offset, alignment.interval) === 0;
+}
 
 export function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
   let t = Temporal.Instant.fromEpochMilliseconds(interval.start.valueOf())
@@ -422,9 +465,6 @@ export async function slotsOverlappingInterval(
 }
 
 // Ensures that the input slots match our scheduling parameter constraints
-//
-// Intentionally skipped for now: testing parameters.alignmentInterval and
-// parameters.alignmentOffset. See https://github.com/medplum/medplum/pull/8331.
 function validateSlots(slots: WithPath<Slot>[], parameters: SchedulingParameters): void {
   // Expect exactly one 'busy' slot with duration matching parameters.duration
   const busySlots = slots.filter((slot) => slot.status === 'busy');
@@ -441,6 +481,18 @@ function validateSlots(slots: WithPath<Slot>[], parameters: SchedulingParameters
   if (busyDurationMinutes !== parameters.duration) {
     throw new OperationOutcomeError(
       badRequest('Slot duration does not match scheduling parameters duration', getPath(busySlot))
+    );
+  }
+
+  if (
+    !isAlignedToGrid(new Date(busySlot.start), {
+      interval: parameters.alignmentInterval,
+      offset: parameters.alignmentOffset,
+      timezone: parameters.alignmentTimezone,
+    })
+  ) {
+    throw new OperationOutcomeError(
+      badRequest('Slot start time is not aligned to the scheduling grid', getPath(busySlot))
     );
   }
 
