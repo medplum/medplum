@@ -1,5 +1,6 @@
 {
   "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "enabledManagers": ["dockerfile", "github-actions"],
   "dependencyDashboard": false,
   "automerge": false,
   "minimumReleaseAge": "3 days",
