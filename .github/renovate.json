@@ -1,5 +1,5 @@
 {
-  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests", ":gitSignOff"],
   "enabledManagers": ["dockerfile", "github-actions"],
   "dependencyDashboard": false,
   "automerge": false,
