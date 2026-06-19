@@ -24,7 +24,11 @@ export function ClaimDetailPanel({ claim }: ClaimDetailPanelProps): JSX.Element 
     let active = true;
 
     medplum
-      .searchResources('ClaimResponse', { request: `Claim/${claim.id}`, _sort: '-_lastUpdated', _count: '1' }, { cache: 'no-cache' })
+      .searchResources(
+        'ClaimResponse',
+        { request: `Claim/${claim.id}`, _sort: '-_lastUpdated', _count: '1' },
+        { cache: 'no-cache' }
+      )
       .then((results) => {
         if (active) {
           setResponse(results[0]);
@@ -80,9 +84,7 @@ export function ClaimDetailPanel({ claim }: ClaimDetailPanelProps): JSX.Element 
                   <Text fw={600} size="sm" tt="uppercase" c="dimmed">
                     Claim Response
                   </Text>
-                  {response && (
-                    <MedplumLink to={`/ClaimResponse/${response.id}`}>View resource</MedplumLink>
-                  )}
+                  {response && <MedplumLink to={`/ClaimResponse/${response.id}`}>View resource</MedplumLink>}
                 </Group>
 
                 {responseLoading && (
