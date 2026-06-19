@@ -262,6 +262,7 @@ async function verifyExternalCode(
 ): Promise<Record<string, unknown>> {
   const headers: HeadersInit = {
     Accept: ContentType.JSON,
+    'Accept-Encoding': 'identity',
     'Content-Type': ContentType.FORM_URL_ENCODED,
   };
 
