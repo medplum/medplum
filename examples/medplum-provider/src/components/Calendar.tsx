@@ -177,6 +177,14 @@ export function Calendar(props: {
         displayEventEnd={false}
         eventTimeFormat={{ timeStyle: 'short' }}
         listItemEventBeforeClass={classes.listItemEventBefore}
+        views={{
+          timeGridWeek: {
+            allDaySlot: false,
+          },
+          timeGridDay: {
+            allDaySlot: false,
+          },
+        }}
       />
     </div>
   );
