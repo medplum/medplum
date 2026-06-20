@@ -37,6 +37,21 @@ jobs:
           RENOVATE_ONBOARDING: 'false'
           RENOVATE_REQUIRE_CONFIG: 'required'
           RENOVATE_AUTODISCOVER: 'false'
+          RENOVATE_HOST_RULES: >-
+            [
+              {
+                "hostType": "docker",
+                "matchHost": "docker.io",
+                "username": "${{ secrets.DOCKERHUB_USERNAME }}",
+                "password": "${{ secrets.DOCKERHUB_PASSWORD }}"
+              },
+              {
+                "hostType": "docker",
+                "matchHost": "dhi.io",
+                "username": "${{ secrets.DOCKERHUB_USERNAME }}",
+                "password": "${{ secrets.DOCKERHUB_PASSWORD }}"
+              }
+            ]
           LOG_LEVEL: ${{ github.event.inputs.log_level || 'info' }}
         with:
           token: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
