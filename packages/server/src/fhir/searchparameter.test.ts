@@ -235,6 +235,15 @@ describe('SearchParameterImplementation', () => {
     expectTokenColumnImplementation(impl);
   });
 
+  test('Provenance-activity', () => {
+    const searchParam = indexedSearchParams.find((e) => e.id === 'Provenance-activity') as SearchParameter;
+    const impl = getSearchParameterImplementation('Provenance', searchParam);
+    expectTokenColumnImplementation(impl);
+    expect(impl.tokenColumnName).toStrictEqual('__activity');
+    expect(impl.textSearchColumnName).toStrictEqual('__activityText');
+    expect(impl.sortColumnName).toStrictEqual('__activitySort');
+  });
+
   test.each([['Patient-identifier'], ['Patient-language']])(
     'token column for SearchParameter %s on Patient',
     (searchParamId) => {

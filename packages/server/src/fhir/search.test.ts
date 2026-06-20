@@ -3253,6 +3253,50 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(bundleContains(bundle, c2)).not.toBeTruthy();
     }));
 
+  test('Provenance.activity search', () =>
+    withTestContext(async () => {
+      const code = randomUUID();
+      const otherCode = randomUUID();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+      });
+
+      const practitioner = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+      });
+
+      const provenance = await repo.createResource<Provenance>({
+        resourceType: 'Provenance',
+        target: [createReference(patient)],
+        recorded: new Date().toISOString(),
+        activity: { coding: [{ system: SNOMED, code }] },
+        agent: [{ who: createReference(practitioner) }],
+      });
+
+      await repo.createResource<Provenance>({
+        resourceType: 'Provenance',
+        target: [createReference(patient)],
+        recorded: new Date().toISOString(),
+        activity: { coding: [{ system: SNOMED, code: otherCode }] },
+        agent: [{ who: createReference(practitioner) }],
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'Provenance',
+        filters: [
+          {
+            code: 'activity',
+            operator: Operator.EQUALS,
+            value: `${SNOMED}|${code}`,
+          },
+        ],
+      });
+
+      expect(bundle.entry?.length).toStrictEqual(1);
+      expect(bundle.entry?.[0]?.resource?.id).toStrictEqual(provenance.id);
+    }));
+
   test('Condition.code :not next URL', () =>
     withTestContext(async () => {
       const p = await repo.createResource({

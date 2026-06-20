@@ -869,6 +869,22 @@
       }
     },
     {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/Provenance-activity",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "Provenance-activity",
+        "url" : "http://hl7.org/fhir/SearchParameter/Provenance-activity",
+        "version" : "5.0.0",
+        "name" : "activity",
+        "status" : "draft",
+        "description" : "Activity that occurred",
+        "code" : "activity",
+        "base" : ["Provenance"],
+        "type" : "token",
+        "expression" : "Provenance.activity"
+      }
+    },
+    {
       "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-classifier",
       "resource" : {
         "resourceType" : "SearchParameter",

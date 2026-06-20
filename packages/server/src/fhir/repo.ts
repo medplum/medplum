@@ -302,8 +302,9 @@ export class Repository extends FhirRepository implements Disposable {
    *                Project.features (https://github.com/medplum/medplum/pull/9049)
    *                Login.preAuthorizedCodeHash (https://github.com/medplum/medplum/pull/9231)
    *                Project.link (https://github.com/medplum/medplum/pull/9159)
+   * 16. 06/20/26 - Added search parameter `Provenance-activity` (https://github.com/medplum/medplum/pull/9564)
    */
-  static readonly VERSION: number = 15;
+  static readonly VERSION: number = 16;
 
   /**
    * Constructs a new Repository instance.
