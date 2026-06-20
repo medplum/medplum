@@ -46,7 +46,22 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Import GPG key
-        run: echo "${{ secrets.MEDPLUM_GPG_KEY }}" | gpg --batch --no-tty --import
+        id: import_gpg_key
+        run: |
+          printf '%s' "$GPG_KEY" | gpg --batch --no-tty --import
+          gpg --batch --yes --export > ~/.gnupg/pubring.gpg
+          printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --export-secret-keys "$GPG_KEY_ID" > ~/.gnupg/secring.gpg
+
+          HELM_SIGNING_KEY=$(gpg --batch --with-colons --list-secret-keys "$GPG_KEY_ID" | awk -F: '$1 == "uid" { print $10; exit }')
+          if [ -z "$HELM_SIGNING_KEY" ]; then
+            echo "Unable to find Helm signing key UID for MEDPLUM_GPG_KEY_ID"
+            exit 1
+          fi
+          echo "HELM_SIGNING_KEY=$HELM_SIGNING_KEY" >> "$GITHUB_OUTPUT"
+        env:
+          GPG_KEY: ${{ secrets.MEDPLUM_GPG_KEY }}
+          GPG_KEY_ID: ${{ secrets.MEDPLUM_GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_GPG_PASSPHRASE }}
 
       - name: Get Chart Version and File Name
         id: get_chart_info
@@ -54,11 +69,17 @@ jobs:
           CHART_NAME="medplum"
           CHART_VERSION=$(node -p "require('./package.json').version")
           CHART_FILE="${CHART_NAME}-${CHART_VERSION}.tgz"
-          echo "CHART_VERSION=$CHART_VERSION" >> "$GITHUB_OUTPUT"
           echo "CHART_FILE=$CHART_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Package the Helm charts
-        run: helm package ./charts
+        run: |
+          helm package ./charts \
+            --sign \
+            --key "${{ steps.import_gpg_key.outputs.HELM_SIGNING_KEY }}" \
+            --keyring ~/.gnupg/secring.gpg \
+            --passphrase-file <(printf '%s' "$GPG_PASSPHRASE")
+        env:
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_GPG_PASSPHRASE }}
 
       - name: Push the chart to S3
         run: |
@@ -70,5 +91,9 @@ jobs:
             --url https://charts.medplum.com \
             --merge ./index-existing.yaml
 
-          aws s3 cp "${{ steps.get_chart_info.outputs.CHART_FILE }}" s3://charts.medplum.com/
-          aws s3 cp index.yaml s3://charts.medplum.com/index.yaml
+          aws s3 cp "${{ steps.get_chart_info.outputs.CHART_FILE }}" s3://charts.medplum.com/ \
+            --content-type application/gzip
+          aws s3 cp "${{ steps.get_chart_info.outputs.CHART_FILE }}.prov" s3://charts.medplum.com/ \
+            --content-type application/octet-stream
+          aws s3 cp index.yaml s3://charts.medplum.com/index.yaml \
+            --content-type application/yaml
