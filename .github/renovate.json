@@ -1,20 +1,28 @@
 {
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", "helpers:pinGitHubActionDigests", ":gitSignOff"],
   "enabledManagers": ["dockerfile", "github-actions"],
   "dependencyDashboard": false,
   "automerge": false,
+  "internalChecksAsSuccess": false,
+  "internalChecksFilter": "none",
   "minimumReleaseAge": "3 days",
+  "separateMajorMinor": false,
   "packageRules": [
     {
-      "description": "Docker base images: grouped weekly PR, version tags only",
-      "matchManagers": ["dockerfile"],
+      "description": "Everything in one weekly PR",
+      "matchPackageNames": ["*"],
       "groupName": "dep-upgrades",
+      "groupSlug": "all"
+    },
+    {
+      "description": "Dockerfile",
+      "matchManagers": ["dockerfile"],
       "pinDigests": false
     },
     {
-      "description": "GitHub Actions: update SHA pins using upstream tags",
+      "description": "GitHub Actions",
       "matchManagers": ["github-actions"],
-      "groupName": "dep-upgrades",
       "pinDigests": true
     }
   ]
