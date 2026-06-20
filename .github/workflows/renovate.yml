@@ -43,13 +43,13 @@ jobs:
                 "hostType": "docker",
                 "matchHost": "docker.io",
                 "username": "${{ secrets.DOCKERHUB_USERNAME }}",
-                "password": "${{ secrets.DOCKERHUB_PASSWORD }}"
+                "password": "${{ secrets.DOCKERHUB_TOKEN }}"
               },
               {
                 "hostType": "docker",
                 "matchHost": "dhi.io",
                 "username": "${{ secrets.DOCKERHUB_USERNAME }}",
-                "password": "${{ secrets.DOCKERHUB_PASSWORD }}"
+                "password": "${{ secrets.DOCKERHUB_TOKEN }}"
               }
             ]
           LOG_LEVEL: ${{ github.event.inputs.log_level || 'info' }}
