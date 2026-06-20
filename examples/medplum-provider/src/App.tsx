@@ -37,6 +37,7 @@ import { ScriptSurePage } from './pages/integrations/ScriptSurePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { CoveragePage } from './pages/patient/CoveragePage';
+import { DocumentsPage } from './pages/patient/DocumentsPage';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
@@ -214,6 +215,8 @@ export function App(): JSX.Element | null {
                 <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
                 <Route path="MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
+                <Route path="DocumentReference" element={<DocumentsPage />} />
+                <Route path="DocumentReference/:documentId" element={<DocumentsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path="Coverage" element={<CoveragePage />} />
                 <Route path="Coverage/:coverageId" element={<CoveragePage />} />
