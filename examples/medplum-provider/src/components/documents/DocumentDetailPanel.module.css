@@ -1,0 +1,18 @@
+/*
+ * One-shot fade for the "Added by …" author clause. Applied only the first time a document's
+ * original author resolves this visit; on cached revisits the clause renders without this class
+ * (instantly). A CSS animation is used instead of Mantine's <Transition> because the latter does
+ * not render its child when it mounts with `mounted` already true (the case when history is cached).
+ */
+.authorClauseFade {
+  animation: authorClauseFadeIn 150ms ease;
+}
+
+@keyframes authorClauseFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
