@@ -62,7 +62,13 @@ import { bundleContains, createTestProject, withTestContext } from '../test.setu
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, Repository } from './repo';
 import type { ChainedSearchLink } from './search';
-import { clampEstimateCount, Direction, getCount, parseChainedParameter } from './search';
+import {
+  clampEstimateCount,
+  Direction,
+  getCount,
+  parseChainedParameter,
+  SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+} from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
@@ -2418,7 +2424,61 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
       expect(bundle.total).toStrictEqual(1);
       expect(bundleContains(bundle, order)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
-      expect(bundleContains(bundle, patient)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(bundleContains(bundle, patient)).toMatchObject<BundleEntry>({
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(order) },
+            },
+          ],
+        },
+      });
+    }));
+
+  test('Include references records all matching source resources', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const order1 = await repo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        subject: createReference(patient),
+      });
+      const order2 = await repo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        subject: createReference(patient),
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'ServiceRequest',
+        include: [
+          {
+            resourceType: 'ServiceRequest',
+            searchParam: 'subject',
+          },
+        ],
+        filters: [{ code: 'subject', operator: Operator.EQUALS, value: getReferenceString(patient) }],
+      });
+
+      const patientEntry = bundleContains(bundle, patient);
+      expect(patientEntry).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(patientEntry?.search?.extension).toEqual(
+        expect.arrayContaining([
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: getReferenceString(order1) },
+          },
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: getReferenceString(order2) },
+          },
+        ])
+      );
+      expect(patientEntry?.search?.extension).toHaveLength(2);
     }));
 
   test('Include canonical success', () =>
@@ -2447,7 +2507,17 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
       expect(bundle.total).toStrictEqual(1);
       expect(bundleContains(bundle, response)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
-      expect(bundleContains(bundle, questionnaire)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(bundleContains(bundle, questionnaire)).toMatchObject<BundleEntry>({
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(response) },
+            },
+          ],
+        },
+      });
     }));
 
   test('Include PlanDefinition mixed types', () =>
@@ -2557,10 +2627,26 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         search: { mode: 'match' },
       });
       expect(bundleContains(searchResult2, provenance1)).toMatchObject<BundleEntry>({
-        search: { mode: 'include' },
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(practitioner1) },
+            },
+          ],
+        },
       });
       expect(bundleContains(searchResult2, provenance2)).toMatchObject<BundleEntry>({
-        search: { mode: 'include' },
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(practitioner2) },
+            },
+          ],
+        },
       });
     }));
 
@@ -2590,7 +2676,17 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
       expect(bundle.total).toStrictEqual(1);
       expect(bundleContains(bundle, questionnaire)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
-      expect(bundleContains(bundle, response)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(bundleContains(bundle, response)).toMatchObject<BundleEntry>({
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(questionnaire) },
+            },
+          ],
+        },
+      });
     }));
 
   test('Reverse include on denied type', () =>
@@ -3062,7 +3158,15 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           }),
           expect.objectContaining<BundleEntry>({
             fullUrl: expect.stringContaining(getReferenceString(gp1)),
-            search: { mode: 'include' },
+            search: {
+              mode: 'include',
+              extension: [
+                {
+                  url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+                  valueReference: { reference: getReferenceString(patient1) },
+                },
+              ],
+            },
           }),
         ],
       });
@@ -3082,11 +3186,27 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           }),
           expect.objectContaining<BundleEntry>({
             fullUrl: expect.stringContaining(getReferenceString(gp1)),
-            search: { mode: 'include' },
+            search: {
+              mode: 'include',
+              extension: [
+                {
+                  url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+                  valueReference: { reference: getReferenceString(patient1) },
+                },
+              ],
+            },
           }),
           expect.objectContaining<BundleEntry>({
             fullUrl: expect.stringContaining(getReferenceString(gp2)),
-            search: { mode: 'include' },
+            search: {
+              mode: 'include',
+              extension: [
+                {
+                  url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+                  valueReference: { reference: getReferenceString(patient2) },
+                },
+              ],
+            },
           }),
         ],
       });
