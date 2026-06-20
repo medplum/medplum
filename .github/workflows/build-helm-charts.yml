@@ -49,7 +49,6 @@ jobs:
         id: import_gpg_key
         run: |
           printf '%s' "$GPG_KEY" | gpg --batch --no-tty --import
-          gpg --batch --yes --export > ~/.gnupg/pubring.gpg
           printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --export-secret-keys "$GPG_KEY_ID" > ~/.gnupg/secring.gpg
 
           HELM_SIGNING_KEY=$(gpg --batch --with-colons --list-secret-keys "$GPG_KEY_ID" | awk -F: '$1 == "uid" { print $10; exit }')
@@ -87,9 +86,14 @@ jobs:
 
           aws s3 cp s3://charts.medplum.com/index.yaml ./index-existing.yaml || true
 
+          MERGE_ARGS=()
+          if [ -f ./index-existing.yaml ]; then
+            MERGE_ARGS=(--merge ./index-existing.yaml)
+          fi
+
           helm repo index . \
             --url https://charts.medplum.com \
-            --merge ./index-existing.yaml
+            "${MERGE_ARGS[@]}"
 
           aws s3 cp "${{ steps.get_chart_info.outputs.CHART_FILE }}" s3://charts.medplum.com/ \
             --content-type application/gzip
