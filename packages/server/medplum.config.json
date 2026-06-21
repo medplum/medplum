@@ -15,6 +15,7 @@
   "defaultBotRuntimeVersion": "vmcontext",
   "allowedOrigins": "*",
   "introspectionEnabled": true,
+  "rateLimitsEnabled": false,
   "database": {
     "host": "localhost",
     "port": 5432,
