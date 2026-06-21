@@ -18,8 +18,6 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ github.token }}
       NODE_VERSION: '22'
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
@@ -76,6 +74,8 @@ jobs:
       - name: Slack start message
         uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {"text": "Starting publish: ${{ github.ref_name }}"}
 
