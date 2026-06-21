@@ -6,8 +6,8 @@ import type { Claim } from '@medplum/fhirtypes';
 import { MedplumLink, StatusBadge, useResource } from '@medplum/react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { getClaimTitle } from './claims.utils';
 import classes from './ClaimListItem.module.css';
+import { getClaimTitle } from './claims.utils';
 
 interface ClaimListItemProps {
   readonly claim: Claim;
