@@ -417,6 +417,7 @@ export async function exchangeExternalAuthToken(
 
   const systemRepo = getGlobalSystemRepo();
   let client: ClientApplication | undefined;
+  // Server external auth providers are selected before ClientApplication lookup.
   let idp = resolveExternalAuthProvider(clientId);
   const useServerExternalAuth = !!idp;
   if (!idp) {
@@ -493,7 +494,9 @@ export async function exchangeExternalAuthToken(
 }
 
 function resolveExternalAuthProvider(clientId: string, client?: ClientApplication): IdentityProvider | undefined {
-  const externalAuthConfig = getConfig().externalAuthProviders?.find((provider) => provider.clientId === clientId);
+  const externalAuthConfig = getConfig().externalAuthProviders?.find(
+    (provider) => (provider.clientId ?? provider.identityProvider?.clientId) === clientId
+  );
   if (externalAuthConfig) {
     if (externalAuthConfig.identityProvider) {
       return externalAuthConfig.identityProvider;

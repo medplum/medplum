@@ -34,7 +34,7 @@ import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type { SystemRepository } from '../fhir/repo';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getProjectSystemRepo, Repository } from '../fhir/repo';
 import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
 import { validateClientCert } from './cert';
 import { generateSecret, verifyJwt } from './keys';
@@ -2053,7 +2053,78 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeTruthy();
+    expect(res.body.expires_in).toBe(3600);
+    const claims = (await verifyJwt(res.body.access_token)).payload;
+    expect(claims.aud).toBe(config.issuer);
+    expect(claims.client_id).toBeUndefined();
     expect(fetch).toHaveBeenCalledWith('https://server-config.example.com/oauth2/userinfo', expect.anything());
+  });
+
+  test('Token exchange defaults server external auth selector to identity provider client ID', async () => {
+    config.externalAuthProviders = [
+      {
+        issuer: externalAuthIssuer,
+        identityProvider: {
+          ...externalIdentityProvider,
+          userInfoUrl: 'https://server-config.example.com/oauth2/userinfo',
+        },
+      },
+    ];
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => ({ email }),
+      headers: { get: () => ContentType.JSON },
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalIdentityProvider.clientId,
+      subject_token: 'opaque-token',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+    expect(fetch).toHaveBeenCalledWith('https://server-config.example.com/oauth2/userinfo', expect.anything());
+  });
+
+  test('Token exchange supports server external auth provider with user info URL only', async () => {
+    config.externalAuthProviders = [
+      {
+        issuer: externalAuthIssuer,
+        clientId: externalAuthConfigClientId,
+        userInfoUrl: 'https://server-config.example.com/oauth2/userinfo',
+      },
+    ];
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => ({ email }),
+      headers: { get: () => ContentType.JSON },
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthConfigClientId,
+      subject_token: 'opaque-token',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+    expect(fetch).toHaveBeenCalledWith('https://server-config.example.com/oauth2/userinfo', expect.anything());
+  });
+
+  test('Token exchange rejects unknown client ID', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: randomUUID(),
+      subject_token: 'opaque-token',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid client');
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   test('Token exchange rejects client without identity provider or server config match', async () => {
@@ -2140,6 +2211,52 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeTruthy();
     expect(res.body.project.reference).toBe(`Project/${otherProject.id}`);
+  });
+
+  test('Token exchange rejects unknown membership ID for server external auth provider', async () => {
+    config.externalAuthProviders = [
+      { issuer: externalAuthIssuer, clientId: externalAuthConfigClientId, identityProvider: externalIdentityProvider },
+    ];
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthConfigClientId,
+      subject_token: 'opaque-token',
+      membership_id: randomUUID(),
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid membership');
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  test('Token exchange rejects membership without project for server external auth provider', async () => {
+    config.externalAuthProviders = [
+      { issuer: externalAuthIssuer, clientId: externalAuthConfigClientId, identityProvider: externalIdentityProvider },
+    ];
+    const membershipId = randomUUID();
+    const readResourceSpy = jest.spyOn(Repository.prototype, 'readResource').mockResolvedValueOnce({
+      resourceType: 'ProjectMembership',
+      id: membershipId,
+    } as WithId<ProjectMembership>);
+
+    let res: request.Response;
+    try {
+      res = await request(app).post('/oauth2/token').type('form').send({
+        grant_type: OAuthGrantType.TokenExchange,
+        subject_token_type: OAuthTokenType.AccessToken,
+        client_id: externalAuthConfigClientId,
+        subject_token: 'opaque-token',
+        membership_id: membershipId,
+      });
+    } finally {
+      readResourceSpy.mockRestore();
+    }
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid membership');
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   test('Token exchange GCIP success', async () => {
