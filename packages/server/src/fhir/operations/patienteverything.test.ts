@@ -360,7 +360,9 @@ describe('Patient Everything Operation', () => {
     let url = `/fhir/R4/Patient/${patient.id}/$everything?_count=20&_type=Observation`;
     const seenIds = new Set<string>();
     while (url) {
-      const res = await request(app).get(url).set('Authorization', 'Bearer ' + accessToken);
+      const res = await request(app)
+        .get(url)
+        .set('Authorization', 'Bearer ' + accessToken);
       expect(res.status).toBe(200);
 
       const bundle = res.body as Bundle;
