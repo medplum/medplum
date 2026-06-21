@@ -2030,7 +2030,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @returns True if the resource should be cached only and not written to the database.
    */
   private isCacheOnly(resource: Resource): boolean {
-    if (resource.resourceType === 'Login' && (resource.authMethod === 'client' || resource.authMethod === 'execute')) {
+    if (resource.resourceType === 'Login' && resource.authMethod === 'execute') {
       return true;
     }
     if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
