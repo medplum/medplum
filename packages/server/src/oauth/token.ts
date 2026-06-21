@@ -400,18 +400,7 @@ export async function exchangeExternalAuthToken(
   subjectTokenType: OAuthTokenType,
   membershipId?: string
 ): Promise<void> {
-  if (!clientId) {
-    sendTokenError(res, 'invalid_request', 'Invalid client');
-    return;
-  }
-
-  if (!subjectToken) {
-    sendTokenError(res, 'invalid_request', 'Invalid subject_token');
-    return;
-  }
-
-  if (subjectTokenType !== OAuthTokenType.AccessToken) {
-    sendTokenError(res, 'invalid_request', 'Invalid subject_token_type');
+  if (!validateExternalAuthTokenExchangeRequest(res, clientId, subjectToken, subjectTokenType)) {
     return;
   }
 
@@ -420,10 +409,10 @@ export async function exchangeExternalAuthToken(
   // Server external auth providers are selected before ClientApplication lookup.
   let idp = resolveExternalAuthProvider(clientId);
   const useServerExternalAuth = !!idp;
+
   if (!idp) {
-    try {
-      client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-    } catch {
+    client = await tryReadTokenExchangeClient(systemRepo, clientId);
+    if (!client) {
       sendTokenError(res, 'invalid_request', 'Invalid client');
       return;
     }
@@ -436,46 +425,19 @@ export async function exchangeExternalAuthToken(
     return;
   }
 
-  let projectId: string | undefined;
-  if (useServerExternalAuth) {
-    if (!membershipId) {
-      projectId = undefined;
-    } else {
-      let membership: ProjectMembership;
-      try {
-        membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-      } catch {
-        sendTokenError(res, 'invalid_request', 'Invalid membership');
-        return;
-      }
-
-      projectId = resolveId(membership.project);
-      if (!projectId) {
-        sendTokenError(res, 'invalid_request', 'Invalid membership');
-        return;
-      }
-    }
-  } else {
-    projectId = await getProjectIdByClientId(clientId, undefined);
-  }
-
-  let userInfo;
-  try {
-    userInfo = await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
-  } catch (err: any) {
-    const outcome = normalizeOperationOutcome(err);
-    sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(outcome));
+  const projectId = useServerExternalAuth
+    ? await resolveServerExternalAuthProjectId(res, systemRepo, membershipId)
+    : await getProjectIdByClientId(clientId, undefined);
+  if (projectId === null) {
     return;
   }
 
-  let email: string | undefined = undefined;
-  let externalId: string | undefined = undefined;
-  if (idp.useSubject) {
-    externalId = userInfo.sub as string;
-  } else {
-    email = userInfo.email as string;
+  const userInfo = await tryGetExternalUserInfo(res, idp, subjectToken);
+  if (!userInfo) {
+    return;
   }
 
+  const { email, externalId } = getExternalAuthLoginIdentity(idp, userInfo);
   const login = await tryLogin({
     authMethod: 'exchange',
     email,
@@ -493,6 +455,92 @@ export async function exchangeExternalAuthToken(
   await sendTokenResponse(res, login, client);
 }
 
+function validateExternalAuthTokenExchangeRequest(
+  res: Response,
+  clientId: string,
+  subjectToken: string,
+  subjectTokenType: OAuthTokenType
+): boolean {
+  if (!clientId) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return false;
+  }
+
+  if (!subjectToken) {
+    sendTokenError(res, 'invalid_request', 'Invalid subject_token');
+    return false;
+  }
+
+  if (subjectTokenType !== OAuthTokenType.AccessToken) {
+    sendTokenError(res, 'invalid_request', 'Invalid subject_token_type');
+    return false;
+  }
+
+  return true;
+}
+
+async function tryReadTokenExchangeClient(
+  systemRepo: ReturnType<typeof getGlobalSystemRepo>,
+  clientId: string
+): Promise<ClientApplication | undefined> {
+  try {
+    return await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+  } catch {
+    return undefined;
+  }
+}
+
+async function resolveServerExternalAuthProjectId(
+  res: Response,
+  systemRepo: ReturnType<typeof getGlobalSystemRepo>,
+  membershipId?: string
+): Promise<string | undefined | null> {
+  if (membershipId) {
+    let membership: ProjectMembership;
+    try {
+      membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+    } catch {
+      sendTokenError(res, 'invalid_request', 'Invalid membership');
+      return null;
+    }
+
+    const projectId = resolveId(membership.project);
+    if (!projectId) {
+      sendTokenError(res, 'invalid_request', 'Invalid membership');
+      return null;
+    }
+
+    return projectId;
+  }
+
+  return undefined;
+}
+
+async function tryGetExternalUserInfo(
+  res: Response,
+  idp: IdentityProvider,
+  subjectToken: string
+): Promise<Record<string, unknown> | undefined> {
+  try {
+    return await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
+  } catch (err: any) {
+    const outcome = normalizeOperationOutcome(err);
+    sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(outcome));
+    return undefined;
+  }
+}
+
+function getExternalAuthLoginIdentity(
+  idp: IdentityProvider,
+  userInfo: Record<string, unknown>
+): { email?: string; externalId?: string } {
+  if (idp.useSubject) {
+    return { externalId: userInfo.sub as string };
+  }
+
+  return { email: userInfo.email as string };
+}
+
 function resolveExternalAuthProvider(clientId: string, client?: ClientApplication): IdentityProvider | undefined {
   const externalAuthConfig = getConfig().externalAuthProviders?.find(
     (provider) => (provider.clientId ?? provider.identityProvider?.clientId) === clientId
@@ -502,8 +550,9 @@ function resolveExternalAuthProvider(clientId: string, client?: ClientApplicatio
       return externalAuthConfig.identityProvider;
     }
 
-    if (externalAuthConfig.userInfoUrl) {
-      return { userInfoUrl: externalAuthConfig.userInfoUrl } as IdentityProvider;
+    const userInfoUrl = externalAuthConfig.userInfoUrl;
+    if (userInfoUrl) {
+      return { userInfoUrl } as IdentityProvider;
     }
   }
 
