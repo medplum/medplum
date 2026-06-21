@@ -1,8 +1,8 @@
 name: Build Helm Charts
 
 concurrency:
-  group: ci-build-helm-${{ github.sha }}
-  cancel-in-progress: true
+  group: ci-build-helm
+  cancel-in-progress: false
 
 on:
   push:
@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 45
     permissions:
       id-token: write
+      contents: read
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -37,9 +39,6 @@ jobs:
         with:
           version: 'v4.2.1'
 
-      - name: Setup Helm S3
-        run: helm plugin install https://github.com/hypnoglow/helm-s3.git --version 0.17.1
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
         with:
@@ -47,10 +46,21 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Import GPG key
-        run: echo "${{ secrets.MEDPLUM_GPG_KEY }}" | gpg --batch --no-tty --import
+        id: import_gpg_key
+        run: |
+          printf '%s' "$GPG_KEY" | gpg --batch --no-tty --import
+          printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --export-secret-keys "$GPG_KEY_ID" > ~/.gnupg/secring.gpg
 
-      - name: Add Medplum S3 Helm repository
-        run: helm repo add medplum-s3 s3://charts.medplum.com --force-update
+          HELM_SIGNING_KEY=$(gpg --batch --with-colons --list-secret-keys "$GPG_KEY_ID" | awk -F: '$1 == "uid" { print $10; exit }')
+          if [ -z "$HELM_SIGNING_KEY" ]; then
+            echo "Unable to find Helm signing key UID for MEDPLUM_GPG_KEY_ID"
+            exit 1
+          fi
+          echo "HELM_SIGNING_KEY=$HELM_SIGNING_KEY" >> "$GITHUB_OUTPUT"
+        env:
+          GPG_KEY: ${{ secrets.MEDPLUM_GPG_KEY }}
+          GPG_KEY_ID: ${{ secrets.MEDPLUM_GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_GPG_PASSPHRASE }}
 
       - name: Get Chart Version and File Name
         id: get_chart_info
@@ -58,10 +68,36 @@ jobs:
           CHART_NAME="medplum"
           CHART_VERSION=$(node -p "require('./package.json').version")
           CHART_FILE="${CHART_NAME}-${CHART_VERSION}.tgz"
-          echo "CHART_FILE=$CHART_FILE" >> $GITHUB_OUTPUT
+          echo "CHART_FILE=$CHART_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Package the Helm charts
-        run: helm package ./charts
+        run: |
+          helm package ./charts \
+            --sign \
+            --key "${{ steps.import_gpg_key.outputs.HELM_SIGNING_KEY }}" \
+            --keyring ~/.gnupg/secring.gpg \
+            --passphrase-file <(printf '%s' "$GPG_PASSPHRASE")
+        env:
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_GPG_PASSPHRASE }}
 
       - name: Push the chart to S3
-        run: helm s3 push ${{ steps.get_chart_info.outputs.CHART_FILE }} medplum-s3 --relative
+        run: |
+          aws --version
+
+          aws s3 cp s3://charts.medplum.com/index.yaml ./index-existing.yaml || true
+
+          MERGE_ARGS=()
+          if [ -f ./index-existing.yaml ]; then
+            MERGE_ARGS=(--merge ./index-existing.yaml)
+          fi
+
+          helm repo index . \
+            --url https://charts.medplum.com \
+            "${MERGE_ARGS[@]}"
+
+          aws s3 cp "${{ steps.get_chart_info.outputs.CHART_FILE }}" s3://charts.medplum.com/ \
+            --content-type application/gzip
+          aws s3 cp "${{ steps.get_chart_info.outputs.CHART_FILE }}.prov" s3://charts.medplum.com/ \
+            --content-type application/octet-stream
+          aws s3 cp index.yaml s3://charts.medplum.com/index.yaml \
+            --content-type application/yaml
