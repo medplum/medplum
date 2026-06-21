@@ -678,13 +678,13 @@
       {
         "name": "empty",
         "result": {
-          "passed": true
+          "passed": false
         }
       },
       {
         "name": "missing resource",
         "result": {
-          "passed": true
+          "passed": false
         }
       },
       {
@@ -724,7 +724,7 @@
       {
         "name": "resource not specified",
         "result": {
-          "passed": true
+          "passed": false
         }
       }
     ]

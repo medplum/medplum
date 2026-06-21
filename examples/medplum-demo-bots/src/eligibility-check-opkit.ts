@@ -21,34 +21,14 @@ import fetch from 'node-fetch';
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   // Because this bot is triggered by a subscription, the resource that comes in is a Coverage object
 
-  const OPKIT_KEY = event.secrets['OPKIT_API_KEY']?.valueString as string;
+  const OPKIT_KEY = event.secrets['OPKIT_API_KEY'].valueString as string;
 
   const coverage = event.input as Coverage;
   const patient = await medplum.readReference(coverage.subscriber as Reference<Patient>);
-  const organization: Organization = await medplum.readReference(coverage.payor?.[0] as Reference<Organization>);
+  const organization: Organization = await medplum.readReference(coverage.payor[0] as Reference<Organization>);
   const provider: Practitioner = await medplum.readReference(
     patient.generalPractitioner?.[0] as Reference<Practitioner>
   );
-
-  if (!coverage) {
-    console.log('No coverage found');
-    return true;
-  }
-
-  if (!patient) {
-    console.log('No patient found');
-    return true;
-  }
-
-  if (!organization) {
-    console.log('No payor found');
-    return true;
-  }
-
-  if (!provider) {
-    console.log('No provider found');
-    return true;
-  }
 
   let coverageEligibilityReq: CoverageEligibilityRequest = await medplum.createResource<CoverageEligibilityRequest>({
     resourceType: 'CoverageEligibilityRequest',

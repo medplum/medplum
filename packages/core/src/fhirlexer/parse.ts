@@ -57,7 +57,7 @@ export interface InfixParselet {
 }
 
 export class ParserBuilder {
-  private readonly prefixParselets: Record<string, PrefixParselet> = {};
+  private readonly prefixParselets: Record<string, PrefixParselet | undefined> = {};
   private readonly infixParselets: Record<string, InfixParselet> = {};
 
   public registerInfix(tokenType: string, parselet: InfixParselet): this {
@@ -100,12 +100,12 @@ export class ParserBuilder {
 
 export class Parser {
   private tokens: Token[];
-  private readonly prefixParselets: Record<string, PrefixParselet>;
+  private readonly prefixParselets: Record<string, PrefixParselet | undefined>;
   private readonly infixParselets: Record<string, InfixParselet>;
 
   constructor(
     tokens: Token[],
-    prefixParselets: Record<string, PrefixParselet>,
+    prefixParselets: Record<string, PrefixParselet | undefined>,
     infixParselets: Record<string, InfixParselet>
   ) {
     this.tokens = tokens;

@@ -175,16 +175,16 @@ describe('Epic Query Patient Bot', () => {
     });
 
     expect(patient).toBeDefined();
-    expect(patient?.resourceType).toStrictEqual('Patient');
+    expect(patient.resourceType).toStrictEqual('Patient');
     expect(getIdentifier(patient, 'http://open.epic.com/FHIR/StructureDefinition/patient-fhir-id')).toStrictEqual(
       'epic-patient-123'
     );
 
     // managingOrganization
-    expect(patient?.managingOrganization).toBeDefined();
+    expect(patient.managingOrganization).toBeDefined();
     const managingOrganization = await medplum.readResource(
       'Organization',
-      resolveId(patient?.managingOrganization) as string
+      resolveId(patient.managingOrganization) as string
     );
     expect(managingOrganization).toBeDefined();
     expect(getIdentifier(managingOrganization, 'http://hl7.org/fhir/sid/us-npi')).toStrictEqual(
@@ -192,10 +192,10 @@ describe('Epic Query Patient Bot', () => {
     );
 
     // generalPractitioner
-    expect(patient?.generalPractitioner).toHaveLength(1);
+    expect(patient.generalPractitioner).toHaveLength(1);
     const generalPractitioner = await medplum.readResource(
       'Practitioner',
-      resolveId(patient?.generalPractitioner?.[0]) as string
+      resolveId(patient.generalPractitioner?.[0]) as string
     );
     expect(generalPractitioner).toBeDefined();
     expect(getIdentifier(generalPractitioner, 'http://hl7.org/fhir/sid/us-npi')).toStrictEqual(
@@ -296,7 +296,7 @@ describe('Epic Query Patient Bot', () => {
     });
 
     expect(patient).toBeDefined();
-    expect(patient?.resourceType).toStrictEqual('Patient');
+    expect(patient.resourceType).toStrictEqual('Patient');
 
     // Verify the new Epic identifier was added to the Medplum patient
     expect(patient.identifier).toHaveLength(2);

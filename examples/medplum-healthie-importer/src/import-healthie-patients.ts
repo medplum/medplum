@@ -41,10 +41,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
   const { HEALTHIE_API_URL, HEALTHIE_CLIENT_SECRET } = event.secrets;
   const { count, offset, patientIds } = event.input;
 
-  if (!HEALTHIE_API_URL?.valueString) {
+  if (!HEALTHIE_API_URL.valueString) {
     throw new Error('HEALTHIE_API_URL must be set');
   }
-  if (!HEALTHIE_CLIENT_SECRET?.valueString) {
+  if (!HEALTHIE_CLIENT_SECRET.valueString) {
     throw new Error('HEALTHIE_CLIENT_SECRET must be set');
   }
 
@@ -103,11 +103,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
         entry: [],
       };
 
-      const healthiePatient = (await fetchHealthiePatients(healthie, [healthiePatientId]))[0];
-      if (!healthiePatient) {
+      const healthiePatients = await fetchHealthiePatients(healthie, [healthiePatientId]);
+      if (healthiePatients.length === 0) {
         console.log(`Healthie patient ${healthiePatientId} not found`);
         continue;
       }
+      const healthiePatient = healthiePatients[0];
 
       // Add the patient resource to the bundle
       const fhirPatient = convertHealthiePatientToFhir(healthiePatient);

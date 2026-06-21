@@ -655,7 +655,7 @@ export class MemoryRepository extends FhirRepository {
 }
 
 const sortComparator = <T extends Resource>(a: T, b: T, sortRule: SortRule): number => {
-  const searchParam = globalSchema.types[a.resourceType]?.searchParams?.[sortRule.code];
+  const searchParam = globalSchema.types[a.resourceType].searchParams?.[sortRule.code];
   const expression = searchParam?.expression;
   if (!expression) {
     return 0;

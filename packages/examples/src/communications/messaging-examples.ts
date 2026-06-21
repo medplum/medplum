@@ -112,7 +112,7 @@ const readStateBlock = header.extension?.find((ext) => {
     return false;
   }
   const participantExt = ext.extension.find((e: { url?: string }) => e.url === 'participant');
-  return (participantExt as { valueReference?: { reference?: string } })?.valueReference?.reference === currentUserRef;
+  return (participantExt as { valueReference?: { reference?: string } }).valueReference?.reference === currentUserRef;
 });
 if (readStateBlock?.extension) {
   const lastReadExt = readStateBlock.extension.find((e: { url?: string }) => e.url === 'lastRead');

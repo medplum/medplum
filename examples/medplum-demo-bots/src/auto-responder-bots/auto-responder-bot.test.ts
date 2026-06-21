@@ -68,14 +68,14 @@ describe('Auto Responder Bot', () => {
     })) as Communication;
 
     expect(communicationAutoResponse).toBeDefined();
-    expect(communicationAutoResponse?.resourceType).toBe('Communication');
-    expect(communicationAutoResponse?.status).toBe('in-progress');
-    expect(communicationAutoResponse?.sender).toEqual(createReference(patient));
-    expect(communicationAutoResponse?.recipient).toEqual([createReference(practitioner)]);
-    expect(communicationAutoResponse?.payload).toEqual([{ contentString: 'This is an auto generated response' }]);
-    expect(communicationAutoResponse?.partOf).toEqual([createReference(thread)]);
-    expect(communicationAutoResponse?.sent).toEqual(mockDate.toISOString());
-    expect(communicationAutoResponse?.note).toEqual([{ text: 'Auto-generated response' }]);
+    expect(communicationAutoResponse.resourceType).toBe('Communication');
+    expect(communicationAutoResponse.status).toBe('in-progress');
+    expect(communicationAutoResponse.sender).toEqual(createReference(patient));
+    expect(communicationAutoResponse.recipient).toEqual([createReference(practitioner)]);
+    expect(communicationAutoResponse.payload).toEqual([{ contentString: 'This is an auto generated response' }]);
+    expect(communicationAutoResponse.partOf).toEqual([createReference(thread)]);
+    expect(communicationAutoResponse.sent).toEqual(mockDate.toISOString());
+    expect(communicationAutoResponse.note).toEqual([{ text: 'Auto-generated response' }]);
   });
 
   test('Skip non-Practitioner sender', async () => {

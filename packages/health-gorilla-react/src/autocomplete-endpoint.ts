@@ -5,6 +5,10 @@ import { ContentType, isCoding, isResource } from '@medplum/core';
 import type { Identifier, Questionnaire } from '@medplum/fhirtypes';
 import type { HGAutocompleteBotResponse, LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 
+type UnknownHGAutocompleteBotResponse = Partial<HGAutocompleteBotResponse> & {
+  result?: unknown;
+};
+
 export type LabSearchParams = { type: 'lab'; query: string };
 export type TestSearchParams = { type: 'test'; query: string; labId: string };
 export type AOESearchParams = { type: 'aoe'; testCode: TestCoding };
@@ -25,7 +29,11 @@ export function getAutocompleteSearchFunction(
   autocompleteBot: string | Identifier
 ): HGSearchFunction {
   return async (params) => {
-    const botResponse: HGAutocompleteBotResponse = await medplum.executeBot(autocompleteBot, params, ContentType.JSON);
+    const botResponse = (await medplum.executeBot(
+      autocompleteBot,
+      params,
+      ContentType.JSON
+    )) as UnknownHGAutocompleteBotResponse;
     if (botResponse.type === 'error') {
       throw new Error('Error executing autocomplete bot', { cause: botResponse });
     }
@@ -46,14 +54,13 @@ export function getAutocompleteSearchFunction(
         break;
       }
       case 'aoe': {
-        const { result } = botResponse;
-        if (result === undefined || result.resourceType === 'Questionnaire') {
+        if (result === undefined || isResource(result, 'Questionnaire')) {
           return { type: 'aoe', result } as AOESearchResult;
         }
         break;
       }
       default: {
-        botResponse satisfies never;
+        break;
       }
     }
     throw new Error(`Invalid bot response for ${JSON.stringify(params)}`);

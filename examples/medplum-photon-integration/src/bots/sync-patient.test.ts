@@ -59,7 +59,7 @@ describe('Sync patient', async () => {
     const inputs = await createAllergyInputs('auth-token', allergyIntolerances);
 
     expect(inputs).toBeDefined();
-    expect(inputs?.length).toBe(2);
+    expect(inputs.length).toBe(2);
   });
 
   test.skip('Create medication history input with identifiers', async () => {
@@ -75,7 +75,7 @@ describe('Sync patient', async () => {
     const inputs = await createMedHistoryInputs('auth-token', medicationHistory);
 
     expect(inputs).toBeDefined();
-    expect(inputs?.length).toBe(2);
+    expect(inputs.length).toBe(2);
   });
 
   test.skip('Create valid mutation body', async () => {

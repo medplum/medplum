@@ -170,11 +170,11 @@ export function PatientPage(): JSX.Element {
   const getBpChartData = (): ChartData<'line', number[]> => {
     const dates = bpReadings.map((obs) => formatDate(obs.effectiveDateTime as string));
     const systolicData = bpReadings.map((obs) => {
-      const systolic = obs.component?.find((c) => c.code?.coding?.[0]?.code === '8480-6');
+      const systolic = obs.component?.find((c) => c.code.coding?.[0]?.code === '8480-6');
       return Math.round(systolic?.valueQuantity?.value ?? 0);
     });
     const diastolicData = bpReadings.map((obs) => {
-      const diastolic = obs.component?.find((c) => c.code?.coding?.[0]?.code === '8462-4');
+      const diastolic = obs.component?.find((c) => c.code.coding?.[0]?.code === '8462-4');
       return Math.round(diastolic?.valueQuantity?.value ?? 0);
     });
 
@@ -225,9 +225,9 @@ export function PatientPage(): JSX.Element {
     );
   }
 
-  const lastBp = bpReadings[bpReadings.length - 1];
-  const lastBpSystolic = lastBp?.component?.find((c) => c.code?.coding?.[0]?.code === '8480-6')?.valueQuantity?.value;
-  const lastBpDiastolic = lastBp?.component?.find((c) => c.code?.coding?.[0]?.code === '8462-4')?.valueQuantity?.value;
+  const lastBp = bpReadings.at(-1);
+  const lastBpSystolic = lastBp?.component?.find((c) => c.code.coding?.[0]?.code === '8480-6')?.valueQuantity?.value;
+  const lastBpDiastolic = lastBp?.component?.find((c) => c.code.coding?.[0]?.code === '8462-4')?.valueQuantity?.value;
 
   const weightValue = latestWeight?.valueQuantity?.value;
   const weightUnit = latestWeight?.valueQuantity?.unit ?? 'kg';
@@ -337,9 +337,9 @@ export function PatientPage(): JSX.Element {
                   </Table.Thead>
                   <Table.Tbody>
                     {[...bpReadings].reverse().map((obs, i) => {
-                      const sys = obs.component?.find((c) => c.code?.coding?.[0]?.code === '8480-6')?.valueQuantity
+                      const sys = obs.component?.find((c) => c.code.coding?.[0]?.code === '8480-6')?.valueQuantity
                         ?.value;
-                      const dia = obs.component?.find((c) => c.code?.coding?.[0]?.code === '8462-4')?.valueQuantity
+                      const dia = obs.component?.find((c) => c.code.coding?.[0]?.code === '8462-4')?.valueQuantity
                         ?.value;
                       const classification =
                         sys !== undefined && dia !== undefined ? classifyBp(Math.round(sys), Math.round(dia)) : null;

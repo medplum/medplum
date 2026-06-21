@@ -539,7 +539,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
 
         let labOrderServiceRequest: LabOrderServiceRequest | undefined;
 
-        for (const entry of transactionResponse?.entry ?? []) {
+        for (const entry of transactionResponse.entry ?? []) {
           if (!entry.response?.status.startsWith('2')) {
             throw new Error('Error creating lab order: Non-2XX status code in response entry', {
               cause: transactionResponse,

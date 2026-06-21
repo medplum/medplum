@@ -134,15 +134,6 @@ export class MockClient extends MedplumClient {
     let client: MockFetchClient;
 
     if (clientOptions?.mockFetchOverride) {
-      if (
-        !(
-          clientOptions.mockFetchOverride?.router &&
-          clientOptions.mockFetchOverride?.repo &&
-          clientOptions.mockFetchOverride?.client
-        )
-      ) {
-        throw new Error('mockFetchOverride must specify all fields: client, repo, router');
-      }
       router = clientOptions.mockFetchOverride.router;
       repo = clientOptions.mockFetchOverride.repo;
       client = clientOptions.mockFetchOverride.client;

@@ -5,11 +5,11 @@ import { ProxyAgent, fetch } from 'undici';
 
 export async function handler(_medplum: MedplumClient, event: BotEvent): Promise<any> {
   const secrets = event.secrets;
-  const proxyHost = secrets.PROXY_HOST?.valueString;
-  const proxyPort = secrets.PROXY_PORT?.valueInteger;
-  const proxyCaCert = secrets.PROXY_CA_CERT?.valueString;
-  const clientCert = secrets.CLIENT_CERT?.valueString;
-  const clientKey = secrets.CLIENT_KEY?.valueString;
+  const proxyHost = secrets.PROXY_HOST.valueString;
+  const proxyPort = secrets.PROXY_PORT.valueInteger;
+  const proxyCaCert = secrets.PROXY_CA_CERT.valueString;
+  const clientCert = secrets.CLIENT_CERT.valueString;
+  const clientKey = secrets.CLIENT_KEY.valueString;
 
   const proxyAgent = new ProxyAgent({
     uri: `http://${proxyHost}:${proxyPort}`,

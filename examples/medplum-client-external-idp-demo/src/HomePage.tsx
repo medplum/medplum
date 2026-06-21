@@ -18,7 +18,7 @@ export function HomePage(): JSX.Element {
   // https://www.medplum.com/docs/tutorials/register
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
-  const name = profile?.name?.[0] ?? {};
+  const name = profile.name?.[0] ?? {};
   const [output, setOutput] = useState('');
 
   return (

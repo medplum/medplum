@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { addProfileToResource, append, createReference, EMPTY, getQuestionnaireAnswers } from '@medplum/core';
+import { addProfileToResource, append, createReference, getQuestionnaireAnswers } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Organization, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import type { Organization, Patient, QuestionnaireResponse, QuestionnaireResponseItemAnswer, Reference } from '@medplum/fhirtypes';
 import {
   addAllergy,
   addCondition,
@@ -46,7 +46,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     throw new Error('Unable to resolve questionnaire canonical reference');
   }
 
-  const answers = getQuestionnaireAnswers(response);
+  const answers: Record<string, QuestionnaireResponseItemAnswer | undefined> = getQuestionnaireAnswers(response);
 
   let patient: Patient = {
     resourceType: 'Patient',
@@ -101,7 +101,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   }
 
   const emergencyContacts = getGroupRepeatedAnswers(questionnaire, response, 'emergency-contact');
-  for (const contact of emergencyContacts ?? EMPTY) {
+  for (const contact of emergencyContacts) {
     patient.contact = append(patient.contact, {
       relationship: [
         {

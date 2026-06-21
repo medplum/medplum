@@ -43,7 +43,7 @@ async function prompt(
   validationFunc: (str: string) => boolean | string,
   validationMessage: string
 ): Promise<string> {
-  while (true) {
+  for (;;) {
     const defaultPrompt = defaultValue ? ` (${defaultValue})` : '';
     const answer = (await terminal.question(`${question}${defaultPrompt}: `)) || defaultValue;
     if (validationFunc(answer)) {

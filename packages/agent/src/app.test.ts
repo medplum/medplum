@@ -269,9 +269,7 @@ describe('App', () => {
     mockServer2.on('connection', mockConnectionHandler);
 
     // Wait for the WebSocket to reconnect
-    while (!state.mySocket) {
-      await sleep(100);
-    }
+    await vi.waitFor(() => expect(state.mySocket).toBeDefined());
 
     await app.stop();
     await app.stop();
@@ -937,13 +935,13 @@ describe('App', () => {
       } satisfies AgentReloadConfigRequest)
     );
 
-    let shouldThrow = false;
-    let timeout = setTimeout(() => {
-      shouldThrow = true;
+    const shouldThrow = { value: false };
+    const timeout = setTimeout(() => {
+      shouldThrow.value = true;
     }, 3000);
 
     while (!state.gotAgentReloadResponse) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout');
       }
       await sleep(100);
@@ -982,18 +980,8 @@ describe('App', () => {
     );
 
     // Make sure old staging channel is closed
-    shouldThrow = false;
-    timeout = setTimeout(() => {
-      shouldThrow = true;
-    }, 2000);
-
     // Check that our removed channel was closed
-    while (stagingChannel.server.server) {
-      if (shouldThrow) {
-        throw new Error('Timeout');
-      }
-    }
-    clearTimeout(timeout);
+    await vi.waitFor(() => expect(stagingChannel.server.server).not.toBeDefined(), { timeout: 2000 });
     expect(stagingChannel.server.server).not.toBeDefined();
 
     // Verify protocol changes replace the channel instance instead of no-op reloading it.
@@ -1060,18 +1048,9 @@ describe('App', () => {
       } satisfies AgentReloadConfigRequest)
     );
 
-    shouldThrow = false;
-    timeout = setTimeout(() => {
-      shouldThrow = true;
-    }, 3000);
-
-    while (!state.gotAgentReloadResponse && !state.gotAgentError) {
-      if (shouldThrow) {
-        throw new Error('Timeout');
-      }
-      await sleep(100);
-    }
-    clearTimeout(timeout);
+    await vi.waitFor(() => expect(state.gotAgentReloadResponse || state.gotAgentError).toStrictEqual(true), {
+      timeout: 3000,
+    });
 
     expect(state.gotAgentReloadResponse).toStrictEqual(true);
     expect(state.gotAgentError).toStrictEqual(false);
@@ -1080,18 +1059,7 @@ describe('App', () => {
     expect(hl7TestChannelAfter).toBeInstanceOf(AgentByteStreamChannel);
     expect(hl7TestChannelAfter).not.toBe(hl7TestChannelBefore);
 
-    shouldThrow = false;
-    timeout = setTimeout(() => {
-      shouldThrow = true;
-    }, 2000);
-
-    while (hl7TestChannelBefore.server.server) {
-      if (shouldThrow) {
-        throw new Error('Timeout');
-      }
-      await sleep(100);
-    }
-    clearTimeout(timeout);
+    await vi.waitFor(() => expect(hl7TestChannelBefore.server.server).not.toBeDefined(), { timeout: 2000 });
 
     expect(hl7TestChannelBefore.server.server).not.toBeDefined();
 
@@ -1175,18 +1143,7 @@ describe('App', () => {
     );
 
     state.gotAgentReloadResponse = false;
-    shouldThrow = false;
-    timeout = setTimeout(() => {
-      shouldThrow = true;
-    }, 3000);
-
-    while (!state.gotAgentError) {
-      if (shouldThrow) {
-        throw new Error('Timeout');
-      }
-      await sleep(100);
-    }
-    clearTimeout(timeout);
+    await vi.waitFor(() => expect(state.gotAgentError).toStrictEqual(true), { timeout: 3000 });
 
     // We should get back `agent:error` message
     expect(state.gotAgentReloadResponse).toStrictEqual(false);
@@ -1226,18 +1183,7 @@ describe('App', () => {
     state.gotAgentReloadResponse = false;
     state.gotAgentError = false;
     state.agentError = undefined;
-    shouldThrow = false;
-    timeout = setTimeout(() => {
-      shouldThrow = true;
-    }, 3000);
-
-    while (!state.gotAgentReloadResponse) {
-      if (shouldThrow) {
-        throw new Error('Timeout');
-      }
-      await sleep(100);
-    }
-    clearTimeout(timeout);
+    await vi.waitFor(() => expect(state.gotAgentReloadResponse).toStrictEqual(true), { timeout: 3000 });
 
     // We should get back `agent:error` message
     expect(state.gotAgentReloadResponse).toStrictEqual(true);
@@ -1271,18 +1217,7 @@ describe('App', () => {
     state.gotAgentReloadResponse = false;
     state.gotAgentError = false;
     state.agentError = undefined;
-    shouldThrow = false;
-    timeout = setTimeout(() => {
-      shouldThrow = true;
-    }, 3000);
-
-    while (!state.gotAgentError) {
-      if (shouldThrow) {
-        throw new Error('Timeout');
-      }
-      await sleep(100);
-    }
-    clearTimeout(timeout);
+    await vi.waitFor(() => expect(state.gotAgentError).toStrictEqual(true), { timeout: 3000 });
 
     // We should get back `agent:error` message
     expect(state.gotAgentReloadResponse).toStrictEqual(false);
@@ -1392,9 +1327,9 @@ describe('App', () => {
     expect(app.channels.has('hl7-prod')).toStrictEqual(true);
     expect(app.channels.size).toStrictEqual(1);
 
-    let shouldTimeout = false;
+    const shouldTimeout = { value: false };
     const timeout = setTimeout(() => {
-      shouldTimeout = true;
+      shouldTimeout.value = true;
     }, 5000);
 
     let logged = false;
@@ -1404,7 +1339,7 @@ describe('App', () => {
         logged = true;
         clearTimeout(timeout);
       } catch (err) {
-        if (shouldTimeout) {
+        if (shouldTimeout.value) {
           throw err;
         }
         await sleep(500);
@@ -1524,13 +1459,13 @@ describe('App', () => {
     await hl7Client.close();
 
     // Wait for socket
-    let shouldThrow = false;
-    let timeout = setTimeout(() => {
-      shouldThrow = true;
+    const shouldThrow = { value: false };
+    const timeout = setTimeout(() => {
+      shouldThrow.value = true;
     }, 2500);
 
     while (!state.mySocket) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout');
       }
       await sleep(100);
@@ -1571,16 +1506,7 @@ describe('App', () => {
       )
     );
 
-    timeout = setTimeout(() => {
-      shouldThrow = true;
-    }, 2500);
-    while (!state.gotAgentError) {
-      if (shouldThrow) {
-        throw new Error('Timeout');
-      }
-      await sleep(100);
-    }
-    clearTimeout(timeout);
+    await vi.waitFor(() => expect(state.gotAgentError).toStrictEqual(true), { timeout: 2500 });
 
     expect(state.gotAgentError).toStrictEqual(true);
 
@@ -1625,18 +1551,7 @@ describe('App', () => {
       } satisfies AgentReloadConfigRequest)
     );
 
-    shouldThrow = false;
-    timeout = setTimeout(() => {
-      shouldThrow = true;
-    }, 2500);
-
-    while (!state.gotAgentReloadResponse) {
-      if (shouldThrow) {
-        throw new Error('Timeout');
-      }
-      await sleep(100);
-    }
-    clearTimeout(timeout);
+    await vi.waitFor(() => expect(state.gotAgentReloadResponse).toStrictEqual(true), { timeout: 2500 });
 
     // There should be 1 channel
     expect(app.channels.size).toStrictEqual(1);
@@ -1850,13 +1765,13 @@ describe('App', () => {
     });
 
     // Wait for socket
-    let shouldThrow = false;
-    let timeout = setTimeout(() => {
-      shouldThrow = true;
+    const shouldThrow = { value: false };
+    const timeout = setTimeout(() => {
+      shouldThrow.value = true;
     }, 2500);
 
     while (!state.mySocket) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout');
       }
       await sleep(100);
@@ -1874,18 +1789,7 @@ describe('App', () => {
       } satisfies AgentReloadConfigRequest)
     );
 
-    shouldThrow = false;
-    timeout = setTimeout(() => {
-      shouldThrow = true;
-    }, 2500);
-
-    while (!state.gotAgentReloadResponse) {
-      if (shouldThrow) {
-        throw new Error('Timeout');
-      }
-      await sleep(100);
-    }
-    clearTimeout(timeout);
+    await vi.waitFor(() => expect(state.gotAgentReloadResponse).toStrictEqual(true), { timeout: 2500 });
 
     // There should be 2 channels
     expect(app.channels.size).toStrictEqual(2);
@@ -2091,12 +1995,12 @@ describe('App', () => {
       )
     );
 
-    let shouldThrow = false;
+    const shouldThrow = { value: false };
     const timeout = setTimeout(() => {
-      shouldThrow = true;
+      shouldThrow.value = true;
     }, 2500);
     while (!state.agentError) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout');
       }
       await sleep(100);
@@ -2183,13 +2087,13 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       while (!state.agentError) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout');
         }
         await sleep(100);
@@ -2208,7 +2112,7 @@ describe('App', () => {
       const originalConsoleLog = console.log;
       console.log = vi.fn();
 
-      let child!: MockChildProcess;
+      let child: MockChildProcess | undefined;
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2285,14 +2189,14 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       // eslint-disable-next-line no-unmodified-loop-condition
       while (!child) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for child to spawn');
         }
         await sleep(100);
@@ -2301,7 +2205,7 @@ describe('App', () => {
       await sleep(100);
       child.emit('message', { type: 'STARTED' });
       while (!state.disconnectCalled) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for disconnect');
         }
         await sleep(100);
@@ -2342,7 +2246,7 @@ describe('App', () => {
       const originalConsoleLog = console.log;
       console.log = vi.fn();
 
-      let child!: MockChildProcess;
+      let child: MockChildProcess | undefined;
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2421,14 +2325,14 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       // eslint-disable-next-line no-unmodified-loop-condition
       while (!child) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for child to spawn');
         }
         await sleep(100);
@@ -2436,7 +2340,7 @@ describe('App', () => {
 
       child.emit('message', { type: 'STARTED' });
       while (!state.disconnectCalled) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for disconnect');
         }
         await sleep(100);
@@ -2543,13 +2447,13 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       while (!state.agentError) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for error');
         }
         await sleep(100);
@@ -2638,13 +2542,13 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       while (!state.gotAgentUpgradeResponse) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for error');
         }
         await sleep(100);
@@ -2854,7 +2758,7 @@ describe('App', () => {
         agentError: undefined as AgentError | undefined,
       };
 
-      let child!: MockChildProcess;
+      let child: MockChildProcess | undefined;
 
       const platformSpy = vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
@@ -2928,14 +2832,14 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       // eslint-disable-next-line no-unmodified-loop-condition
       while (!child) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for child to spawn');
         }
         await sleep(100);
@@ -2943,7 +2847,7 @@ describe('App', () => {
 
       child.emit('message', { type: 'STARTED' });
       while (!state.disconnectCalled) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for disconnect');
         }
         await sleep(100);
@@ -3056,20 +2960,20 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       while (!state.agentError) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for error');
         }
         await sleep(100);
       }
       clearTimeout(timeout);
 
-      expect(state.agentError?.body).toStrictEqual(
+      expect(state.agentError.body).toStrictEqual(
         `WARNING: ${targetVersion} predates the zero-downtime upgrade feature. Downgrading to this version will 1) incur downtime during the downgrade process, as the current agent must stop itself before installing the older agent, and 2) incur downtime on any subsequent upgrade to a later version. We recommend against downgrading to this version, but if you must, reissue the command with force set to true to downgrade.`
       );
 
@@ -3086,7 +2990,7 @@ describe('App', () => {
       const originalConsoleLog = console.log;
       console.log = vi.fn();
 
-      let child!: MockChildProcess;
+      let child: MockChildProcess | undefined;
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -3168,14 +3072,14 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       // eslint-disable-next-line no-unmodified-loop-condition
       while (!child) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for child to spawn');
         }
         await sleep(100);
@@ -3183,7 +3087,7 @@ describe('App', () => {
 
       child.emit('message', { type: 'STARTED' });
       while (!state.disconnectCalled) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for disconnect');
         }
         await sleep(100);
@@ -3295,13 +3199,13 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       while (!state.agentError) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for error');
         }
         await sleep(100);
@@ -3388,13 +3292,13 @@ describe('App', () => {
         await sleep(100);
       }
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       while (!state.agentError) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for error');
         }
         await sleep(100);
@@ -3482,13 +3386,13 @@ describe('App', () => {
         await sleep(100);
       }
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       while (!state.gotAgentUpgradeResponse) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for error');
         }
         await sleep(100);
@@ -3579,13 +3483,13 @@ describe('App', () => {
         await sleep(100);
       }
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       let timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       while (!state.infoLogged) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for logger.info to be called');
         }
         await sleep(100);
@@ -3599,11 +3503,11 @@ describe('App', () => {
       clearTimeout(timeout);
 
       timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       while (!state.gotAgentUpgradeResponse) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for error');
         }
         await sleep(100);
@@ -3719,12 +3623,12 @@ describe('App', () => {
       // Now let the agent win the PID and become primary. Wait until the PID is actually acquired
       // (which sets isPrimary) before sending again, since dropped requests are not queued/replayed.
       allowPrimary = true;
-      let shouldThrow = false;
-      let timeout = setTimeout(() => {
-        shouldThrow = true;
+      const shouldThrow = { value: false };
+      const timeout = setTimeout(() => {
+        shouldThrow.value = true;
       }, 2500);
       while (!createPidFileSpy.mock.results.some((result) => result.type === 'return')) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for agent to become primary');
         }
         await sleep(50);
@@ -3734,17 +3638,10 @@ describe('App', () => {
       // The same request should now be forwarded to the remote and acknowledged.
       state.mySocket.send(Buffer.from(JSON.stringify(transmitRequest)));
 
-      shouldThrow = false;
-      timeout = setTimeout(() => {
-        shouldThrow = true;
-      }, 2500);
-      while (hl7Messages.length === 0 || state.transmitResponses.length === 0) {
-        if (shouldThrow) {
-          throw new Error('Timeout while waiting for transmit to be forwarded after becoming primary');
-        }
-        await sleep(100);
-      }
-      clearTimeout(timeout);
+      await vi.waitFor(() => {
+        expect(hl7Messages.length).toBeGreaterThan(0);
+        expect(state.transmitResponses.length).toBeGreaterThan(0);
+      });
 
       expect(hl7Messages).toHaveLength(1);
       expect(state.transmitResponses).toHaveLength(1);
@@ -3844,14 +3741,14 @@ describe('App', () => {
       );
 
       // Wait for the debug log indicating the response was ignored
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
       while (
         !debugSpy.mock.calls.some((call) => String(call[0]).includes('Ignoring transmit response while not primary'))
       ) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout while waiting for transmit response to be ignored');
         }
         await sleep(100);
@@ -3944,13 +3841,13 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       while (!state.agentError) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout');
         }
         await sleep(100);
@@ -4129,7 +4026,7 @@ describe('App', () => {
       disconnectCalled: false,
     };
 
-    let child!: MockChildProcess;
+    let child: MockChildProcess | undefined;
 
     const unlinkSyncSpy = vi.mocked(unlinkSync);
     const originalConsoleLog = console.log;
@@ -4204,13 +4101,13 @@ describe('App', () => {
       } satisfies AgentUpgradeRequest)
     );
 
-    let shouldThrow = false;
+    const shouldThrow = { value: false };
     const timeout = setTimeout(() => {
-      shouldThrow = true;
+      shouldThrow.value = true;
     }, 2500);
 
     while (!state.agentError) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout while waiting for agent error');
       }
       await sleep(100);
@@ -4240,7 +4137,7 @@ describe('App', () => {
       disconnectCalled: false,
     };
 
-    let child!: MockChildProcess;
+    let child: MockChildProcess | undefined;
 
     const unlinkSyncSpy = vi.mocked(unlinkSync).mockImplementation(vi.fn());
     const originalConsoleLog = console.log;
@@ -4320,14 +4217,14 @@ describe('App', () => {
       } satisfies AgentUpgradeRequest)
     );
 
-    let shouldThrow = false;
+    const shouldThrow = { value: false };
     const timeout = setTimeout(() => {
-      shouldThrow = true;
+      shouldThrow.value = true;
     }, 2500);
 
     // eslint-disable-next-line no-unmodified-loop-condition
     while (!child) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout while waiting for child to spawn');
       }
       await sleep(100);
@@ -4336,7 +4233,7 @@ describe('App', () => {
     await sleep(100);
     child.emit('message', { type: 'STARTED' });
     while (!state.disconnectCalled) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout while waiting for disconnect');
       }
       await sleep(100);
@@ -4383,7 +4280,7 @@ describe('App', () => {
       disconnectCalled: false,
     };
 
-    let child!: MockChildProcess;
+    let child: MockChildProcess | undefined;
 
     const manifestPath = resolve(__dirname, 'upgrade.json');
     const { existsSync: realExistsSync } = await vi.importActual<typeof NodeFs>('node:fs');
@@ -4477,14 +4374,14 @@ describe('App', () => {
       } satisfies AgentUpgradeRequest)
     );
 
-    let shouldThrow = false;
+    const shouldThrow = { value: false };
     const timeout = setTimeout(() => {
-      shouldThrow = true;
+      shouldThrow.value = true;
     }, 2500);
 
     // eslint-disable-next-line no-unmodified-loop-condition
     while (!child) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout while waiting for child to spawn');
       }
       await sleep(100);
@@ -4493,7 +4390,7 @@ describe('App', () => {
     await sleep(100);
     child.emit('message', { type: 'STARTED' });
     while (!state.disconnectCalled) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout while waiting for disconnect');
       }
       await sleep(100);
@@ -4947,7 +4844,7 @@ describe('App', () => {
       expect(pool).toBeDefined();
       const client = pool?.getClients()[0];
       expect(client?.stats).toBeDefined();
-      expect(client?.stats?.getSampleCount()).toBe(1);
+      expect(client?.stats.getSampleCount()).toBe(1);
 
       // Wait at least 1000 ms since we are logging stats every 1 sec
       await sleep(1000);
@@ -5345,7 +5242,7 @@ describe('App', () => {
 
       // Stats should have recorded both messages (tracking is on from the start)
       const client = pool?.getClients()[0];
-      expect(client?.stats?.getSampleCount()).toBe(2);
+      expect(client?.stats.getSampleCount()).toBe(2);
 
       await app.stop();
       await hl7Server.stop({ forceDrainTimeoutMs: 100 });
@@ -5435,7 +5332,7 @@ describe('App', () => {
       // With FIRST (default), should return the CA immediately
       expect(state.transmitResponses.length).toBe(1);
       const response = Hl7Message.parse(state.transmitResponses[0].body);
-      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      const ackCode = response.getSegment('MSA')?.getField(1).toString();
       expect(ackCode).toBe('CA');
 
       await app.stop();
@@ -5525,7 +5422,7 @@ describe('App', () => {
       // With APPLICATION, should skip CA and return the AA
       expect(state.transmitResponses.length).toBe(1);
       const response = Hl7Message.parse(state.transmitResponses[0].body);
-      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      const ackCode = response.getSegment('MSA')?.getField(1).toString();
       expect(ackCode).toBe('AA');
 
       await app.stop();
@@ -5614,7 +5511,7 @@ describe('App', () => {
       // With defaultReturnAck=application, should skip CA and return the AA
       expect(state.transmitResponses.length).toBe(1);
       const response = Hl7Message.parse(state.transmitResponses[0].body);
-      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      const ackCode = response.getSegment('MSA')?.getField(1).toString();
       expect(ackCode).toBe('AA');
 
       await app.stop();
@@ -5703,7 +5600,7 @@ describe('App', () => {
       // Per-message returnAck=first should take priority, so should return CA
       expect(state.transmitResponses.length).toBe(1);
       const response = Hl7Message.parse(state.transmitResponses[0].body);
-      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      const ackCode = response.getSegment('MSA')?.getField(1).toString();
       expect(ackCode).toBe('CA');
 
       await app.stop();
@@ -5791,7 +5688,7 @@ describe('App', () => {
       // Invalid defaultReturnAck should fall back to FIRST, so should return CA
       expect(state.transmitResponses.length).toBe(1);
       const response = Hl7Message.parse(state.transmitResponses[0].body);
-      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      const ackCode = response.getSegment('MSA')?.getField(1).toString();
       expect(ackCode).toBe('CA');
 
       // Should have logged a warning about the invalid value with fallback message
@@ -5980,7 +5877,7 @@ describe('App', () => {
       // Should recognize APPLICATION (case-insensitive) and return AA
       expect(state.transmitResponses.length).toBe(1);
       const response = Hl7Message.parse(state.transmitResponses[0].body);
-      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      const ackCode = response.getSegment('MSA')?.getField(1).toString();
       expect(ackCode).toBe('AA');
 
       await app.stop();
@@ -6068,7 +5965,7 @@ describe('App', () => {
       // Should recognize FIRST (case-insensitive) and return CA (the first ACK)
       expect(state.transmitResponses.length).toBe(1);
       const response = Hl7Message.parse(state.transmitResponses[0].body);
-      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      const ackCode = response.getSegment('MSA')?.getField(1).toString();
       expect(ackCode).toBe('CA');
 
       await app.stop();
@@ -6183,7 +6080,7 @@ describe('App', () => {
         body: expect.stringContaining('WebSocket error on incoming message'),
       });
       // No callback could be parsed from malformed JSON
-      expect(state.agentError?.callback).toBeUndefined();
+      expect(state.agentError.callback).toBeUndefined();
 
       await app.stop();
       await new Promise<void>((resolve) => {

@@ -131,7 +131,7 @@ async function buildStackDetails(
 ): Promise<void> {
   const describeStacksCommand = new DescribeStacksCommand({ StackName: stackName });
   const stackDetails = await client.send(describeStacksCommand);
-  const stack = stackDetails?.Stacks?.[0];
+  const stack = stackDetails.Stacks?.[0];
   const medplumTag = stack?.Tags?.find((tag) => tag.Key === tagKey);
   if (!medplumTag) {
     return;
@@ -196,9 +196,9 @@ function assignStackDetails(resource: StackResource, result: Partial<MedplumStac
  */
 export function printStackDetails(details: MedplumStackDetails): void {
   console.log(`Medplum Tag:           ${details.tag}`);
-  console.log(`Stack Name:            ${details.stack?.StackName}`);
-  console.log(`Stack ID:              ${details.stack?.StackId}`);
-  console.log(`Status:                ${details.stack?.StackStatus}`);
+  console.log(`Stack Name:            ${details.stack.StackName}`);
+  console.log(`Stack ID:              ${details.stack.StackId}`);
+  console.log(`Status:                ${details.stack.StackStatus}`);
   console.log(`ECS Cluster:           ${details.ecsCluster?.PhysicalResourceId}`);
   console.log(`ECS Service:           ${getEcsServiceName(details.ecsService)}`);
   console.log(`App Bucket:            ${details.appBucket?.PhysicalResourceId}`);
@@ -215,7 +215,7 @@ export function printStackDetails(details: MedplumStackDetails): void {
  * @returns The ECS service name.
  */
 export function getEcsServiceName(resource: StackResource | undefined): string | undefined {
-  return resource?.PhysicalResourceId?.split('/')?.pop() || '';
+  return resource?.PhysicalResourceId?.split('/').pop() || '';
 }
 
 /**

@@ -185,8 +185,8 @@ class BatchProcessor {
       }
 
       const route = this.getRouteForEntry(entry);
-      const interaction = route?.data?.interaction as RestInteraction;
-      if (!interaction || !bucketedEntries[interaction]) {
+      const interaction = route?.data?.interaction;
+      if (!interaction || !(interaction in bucketedEntries)) {
         throw new OperationOutcomeError(
           badRequest(`Invalid REST interaction in batch: ${entry.request?.method} ${entry.request?.url}`)
         );
@@ -310,7 +310,7 @@ class BatchProcessor {
     path: string
   ): Promise<BundleEntryIdentity | undefined> {
     const placeholder = entry.fullUrl ?? '';
-    if (entry.request?.url?.includes('?')) {
+    if (entry.request?.url.includes('?')) {
       const method = entry.request.method;
 
       // Resolve conditional update via search
@@ -319,8 +319,8 @@ class BatchProcessor {
       searchReq.offset = 0;
       searchReq.sortRules = undefined;
 
-      const [resolved, duplicate] = await this.repo.searchResources(searchReq);
-      if (!resolved) {
+      const searchResults = await this.repo.searchResources(searchReq);
+      if (searchResults.length === 0) {
         switch (method) {
           case 'DELETE':
             // DELETE is idempotent; it succeeds if the resource already doesn't exist
@@ -342,7 +342,8 @@ class BatchProcessor {
             );
         }
       }
-      if (duplicate) {
+      const [resolved] = searchResults;
+      if (searchResults.length > 1) {
         throw new OperationOutcomeError(
           badRequest(`Conditional ${entry.request.method} matched multiple resources`, path + '.request.url')
         );

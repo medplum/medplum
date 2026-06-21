@@ -77,9 +77,9 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
       { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
       { '@_root': OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE, '@_extension': '2022-06-01' },
     ]);
-    expect(procedure?.statusCode?.['@_code']).toBe('active');
-    expect(procedure?.code?.['@_code']).toBe('387713003');
-    expect(procedure?.code?.['@_displayName']).toBe('Surgical procedure');
+    expect(procedure?.statusCode['@_code']).toBe('active');
+    expect(procedure?.code['@_code']).toBe('387713003');
+    expect(procedure?.code['@_displayName']).toBe('Surgical procedure');
     expect(procedure?.effectiveTime?.[0]?.['@_value']).toBe('20240101100000+0000');
     expect(procedure?.id).toBeDefined();
   });
@@ -114,7 +114,7 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
     expect(observation?.['@_classCode']).toBe('OBS');
     expect(observation?.['@_moodCode']).toBe('RQO');
     expect(observation?.templateId).toEqual([{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }]);
-    expect(observation?.statusCode?.['@_code']).toBe('active');
+    expect(observation?.statusCode['@_code']).toBe('active');
     expect(observation?.code?.['@_code']).toBe('33747-0');
     expect(observation?.code?.['@_displayName']).toBe('General appearance');
     expect(observation?.effectiveTime?.[0]?.['@_value']).toBe('20240101100000+0000');
@@ -142,7 +142,7 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
     expect(result.observation).toBeDefined();
     const observation = result.observation?.[0];
     expect(observation?.code).toBeUndefined();
-    expect(observation?.statusCode?.['@_code']).toBe('completed');
+    expect(observation?.statusCode['@_code']).toBe('completed');
     expect(observation?.text?.reference?.['@_value']).toBe('#service-request-text');
   });
 
@@ -159,7 +159,7 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
 
     expect(result).toBeDefined();
     const observation = result.observation?.[0];
-    expect(observation?.statusCode?.['@_code']).toBe('cancelled');
+    expect(observation?.statusCode['@_code']).toBe('cancelled');
   });
 
   test('should handle service request without id or identifiers', () => {

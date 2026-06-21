@@ -32,8 +32,8 @@ export function createInsuranceEntry(converter: FhirToCcdaConverter, account: Ac
       continue;
     }
 
-    const coveragePlan = coverage.class?.find((c) => c.type?.coding?.[0]?.code === 'plan');
-    const payor = converter.findResourceByReference(coverage.payor?.[0]) as Organization | undefined;
+    const coveragePlan = coverage.class?.find((c) => c.type.coding?.[0]?.code === 'plan');
+    const payor = converter.findResourceByReference(coverage.payor[0]) as Organization | undefined;
     const policyHolder = converter.findResourceByReference(coverage.policyHolder) as RelatedPerson | undefined;
 
     entryRelationship.push({

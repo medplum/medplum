@@ -19,12 +19,6 @@ export function SearchPage(): JSX.Element {
 
   useEffect(() => {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
-    // Default to the Coverage search page
-    if (!parsedSearch.resourceType) {
-      navigate('/Coverage')?.catch(console.error);
-      return;
-    }
-
     const populatedSearch = getPopulatedSearch(parsedSearch);
 
     // Set the search if we are on the correct page, otherwise navigate to the correct page

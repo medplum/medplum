@@ -15,13 +15,17 @@ export interface BundleDisplayProps {
 export function BundleDisplay(props: BundleDisplayProps): JSX.Element | undefined {
   const medplum = useMedplum();
   const { bundle } = props;
-  const communication = bundle?.entry?.find((e) => e.resource?.resourceType === 'Communication')
-    ?.resource as Communication;
+  const communication = bundle.entry?.find((e) => e.resource?.resourceType === 'Communication')?.resource as
+    | Communication
+    | undefined;
 
   const markAsCompleted = useCallback(
     (e: SyntheticEvent) => {
       e.stopPropagation();
       e.preventDefault();
+      if (!communication) {
+        return;
+      }
       medplum
         .updateResource<Communication>({
           ...communication,
@@ -43,7 +47,7 @@ export function BundleDisplay(props: BundleDisplayProps): JSX.Element | undefine
   const [recipientType, recipientId] = parseReference(communication.recipient?.[0]);
 
   return (
-    <Accordion.Item value={`${bundle?.timestamp ?? 'Unknown time'}: Chat Notification`}>
+    <Accordion.Item value={`${bundle.timestamp ?? 'Unknown time'}: Chat Notification`}>
       <Accordion.Control>
         <Group>
           {bundle.timestamp}{' '}

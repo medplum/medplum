@@ -164,11 +164,7 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
 
   if (!isBillTo(args.billingInformation?.billTo)) {
     errors.billingInformation ??= {};
-    if (!args.billingInformation?.billTo) {
-      errors.billingInformation.billTo = { message: 'Bill to is required' };
-    } else {
-      errors.billingInformation.billTo = { message: `Bill to must be one of: ${BillToOptions.join(', ')}` };
-    }
+    errors.billingInformation.billTo = { message: `Bill to must be one of: ${BillToOptions.join(', ')}` };
   } else if (args.billingInformation.billTo === 'insurance') {
     const coverageCount = args.billingInformation.patientCoverage?.length ?? 0;
     if (coverageCount < 1 || coverageCount > 3) {
@@ -358,9 +354,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
 
   // Remove resource.id to avoid breaking the transaction processing of the urn:uuid:<uuid> temp IDs.
   for (const entry of bundleEntry) {
-    if (entry.resource) {
-      delete entry.resource.id;
-    }
+    delete entry.resource.id;
   }
 
   bundle.entry = bundleEntry;

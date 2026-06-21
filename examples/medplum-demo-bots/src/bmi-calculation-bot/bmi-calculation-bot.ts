@@ -132,7 +132,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   // Convert weight to kilograms
   // Common units: kg (kilograms), g (grams), lb (pounds), oz (ounces)
   let weightKg = weightValue;
-  if (weightUnit?.toLowerCase().includes('kg') && !weightUnit?.toLowerCase().includes('kg')) {
+  if (weightUnit?.toLowerCase().includes('kg') && !weightUnit.toLowerCase().includes('kg')) {
     weightKg = weightValue / 1000; // grams to kg
   } else if (weightUnit?.toLowerCase() === 'g' || weightUnit?.toLowerCase() === 'grams') {
     weightKg = weightValue / 1000; // grams to kg

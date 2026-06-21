@@ -115,9 +115,7 @@ export async function createDiagnoticReport(
     throw new Error('No patient found in bundle');
   }
 
-  if (!(await medplum.readResource('Patient', patient.id))) {
-    throw new Error('Patient not found in Medplum');
-  }
+  await medplum.readResource('Patient', patient.id);
 
   const observationEntries = bundle.entry?.filter((entry) => entry.resource?.resourceType === 'Observation') as
     | BundleEntry<Observation>[]
@@ -192,7 +190,7 @@ async function fetchPDFResult(
   orderID: string
 ): Promise<Binary> {
   const apiKey = secrets['VITAL_API_KEY'].valueString;
-  const baseURL = secrets['VITAL_BASE_URL']?.valueString || 'https://api.dev.tryvital.io';
+  const baseURL = secrets['VITAL_BASE_URL'].valueString || 'https://api.dev.tryvital.io';
 
   if (!apiKey || !baseURL) {
     throw new Error('VITAL_API_KEY and VITAL_BASE_URL are required');

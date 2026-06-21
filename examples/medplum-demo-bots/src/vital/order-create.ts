@@ -34,7 +34,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Resource>)
   switch (resource.resourceType) {
     case 'ServiceRequest': {
       // Make sure to not duplicate the order
-      if (resource?.identifier?.find((i) => i.system === 'vital-order-id')) {
+      if (resource.identifier?.find((i) => i.system === 'vital-order-id')) {
         return true;
       }
 
@@ -88,16 +88,8 @@ type CreateOrderBundle = Bundle<
  * @returns A Promise that resolves to the constructed Bundle.
  */
 export async function buildVitalOrder(medplum: MedplumClient, sr: ServiceRequest): Promise<CreateOrderBundle> {
-  if (!sr.subject || !sr.requester) {
-    throw new Error('ServiceRequest is missing subject or requester');
-  }
-
   const patient = await medplum.readReference(sr.subject as Reference<Patient>);
   const practitioner = await medplum.readReference(sr.requester as Reference<Practitioner>);
-
-  if (patient.resourceType !== 'Patient' || practitioner.resourceType !== 'Practitioner') {
-    throw new Error('ServiceRequest subject or requester is not a Patient or Practitioner');
-  }
 
   const coverage = await getCoverage(medplum, sr);
   const questionnaries = await getQuestionnaires(medplum, sr.supportingInfo || []);
@@ -151,7 +143,7 @@ export async function createVitalOrder(
   body: CreateOrderBundle
 ): Promise<string> {
   const apiKey = secrets['VITAL_API_KEY'].valueString;
-  const baseURL = secrets['VITAL_BASE_URL']?.valueString || 'https://api.dev.tryvital.io';
+  const baseURL = secrets['VITAL_BASE_URL'].valueString || 'https://api.dev.tryvital.io';
 
   if (!apiKey || !baseURL) {
     throw new Error('VITAL_API_KEY and VITAL_BASE_URL are required');
@@ -209,7 +201,7 @@ type CreateUserConflictResponse = {
  */
 export async function createVitalUser(secrets: Record<string, ProjectSetting>, patient: Patient): Promise<string> {
   const apiKey = secrets['VITAL_API_KEY'].valueString;
-  const baseURL = secrets['VITAL_BASE_URL']?.valueString || 'https://api.dev.tryvital.io';
+  const baseURL = secrets['VITAL_BASE_URL'].valueString || 'https://api.dev.tryvital.io';
 
   if (!apiKey || !baseURL) {
     throw new Error('VITAL_API_KEY and VITAL_BASE_URL are required');

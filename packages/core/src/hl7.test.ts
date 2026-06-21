@@ -22,9 +22,9 @@ describe('HL7', () => {
     expect(msg.header.name).toBe('MSH');
 
     const msh = msg.header;
-    expect(msh.getField(0)?.toString()).toBe('MSH');
-    expect(msh.getField(1)?.toString()).toBe('|');
-    expect(msh.getField(2)?.toString()).toBe('^~\\&');
+    expect(msh.getField(0).toString()).toBe('MSH');
+    expect(msh.getField(1).toString()).toBe('|');
+    expect(msh.getField(2).toString()).toBe('^~\\&');
 
     const ack = msg.buildAck();
     expect(ack).toBeDefined();
@@ -34,9 +34,9 @@ describe('HL7', () => {
 
     const header = ack.header;
     expect(header.name).toBe('MSH');
-    expect(header.getField(0)?.toString()).toBe('MSH');
-    expect(header.getField(1)?.toString()).toBe('|');
-    expect(header.getField(2)?.toString()).toBe('^~\\&');
+    expect(header.getField(0).toString()).toBe('MSH');
+    expect(header.getField(1).toString()).toBe('|');
+    expect(header.getField(2).toString()).toBe('^~\\&');
     expect(header.toString().substring(0, 9)).toBe('MSH|^~\\&|');
   });
 
@@ -60,7 +60,7 @@ describe('HL7', () => {
       'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-';
     const msg1 = Hl7Message.parse(text1);
     expect(msg1).toBeDefined();
-    expect(msg1.buildAck().getSegment('MSH')?.getField(9)?.toString()).toBe('ACK');
+    expect(msg1.buildAck().getSegment('MSH')?.getField(9).toString()).toBe('ACK');
 
     // 2 message type components
     const text2 =
@@ -70,7 +70,7 @@ describe('HL7', () => {
       'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-';
     const msg2 = Hl7Message.parse(text2);
     expect(msg2).toBeDefined();
-    expect(msg2.buildAck().getSegment('MSH')?.getField(9)?.toString()).toBe('ACK^A01');
+    expect(msg2.buildAck().getSegment('MSH')?.getField(9).toString()).toBe('ACK^A01');
 
     // 2 message type components
     const text3 =
@@ -80,7 +80,7 @@ describe('HL7', () => {
       'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-';
     const msg3 = Hl7Message.parse(text3);
     expect(msg3).toBeDefined();
-    expect(msg3.buildAck().getSegment('MSH')?.getField(9)?.toString()).toBe('ACK^A01^ACK');
+    expect(msg3.buildAck().getSegment('MSH')?.getField(9).toString()).toBe('ACK^A01^ACK');
   });
 
   test.each(['CA', 'CR', 'CE', 'AE', 'AR'] as const)('Build ACK -- %s, no ERR segment', (ackCode) => {
@@ -93,8 +93,8 @@ describe('HL7', () => {
     const msg1 = Hl7Message.parse(text1);
     expect(msg1).toBeDefined();
     const ackMsg = msg1.buildAck({ ackCode });
-    expect(ackMsg.getSegment('MSH')?.getField(9)?.toString()).toBe('ACK');
-    expect(ackMsg.getSegment('MSA')?.getField(1)?.toString()).toBe(ackCode);
+    expect(ackMsg.getSegment('MSH')?.getField(9).toString()).toBe('ACK');
+    expect(ackMsg.getSegment('MSA')?.getField(1).toString()).toBe(ackCode);
     expect(ackMsg.getSegment('ERR')).toBeUndefined();
   });
 
@@ -111,10 +111,10 @@ describe('HL7', () => {
       ackCode: 'AE',
       errSegment: new Hl7Segment(['ERR', '^^^207&Application Error&HL70357']),
     });
-    expect(ackMsg.getSegment('MSH')?.getField(9)?.toString()).toBe('ACK');
-    expect(ackMsg.getSegment('MSA')?.getField(1)?.toString()).toBe('AE');
-    expect(ackMsg.getSegment('MSA')?.getField(3)?.toString()).toBe('Application Error');
-    expect(ackMsg.getSegment('ERR')?.getField(1)?.toString()).toBe('^^^207&Application Error&HL70357');
+    expect(ackMsg.getSegment('MSH')?.getField(9).toString()).toBe('ACK');
+    expect(ackMsg.getSegment('MSA')?.getField(1).toString()).toBe('AE');
+    expect(ackMsg.getSegment('MSA')?.getField(3).toString()).toBe('Application Error');
+    expect(ackMsg.getSegment('ERR')?.getField(1).toString()).toBe('^^^207&Application Error&HL70357');
   });
 
   test('ADT', () => {

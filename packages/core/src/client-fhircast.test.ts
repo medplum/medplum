@@ -45,7 +45,7 @@ describe('FHIRcast', () => {
       );
       expect(subRequest).toStrictEqual(expect.objectContaining<PendingSubscriptionRequest>(expectedSubRequest));
       expect(subRequest.endpoint).toBeDefined();
-      expect(subRequest.endpoint?.startsWith('ws')).toBeTruthy();
+      expect(subRequest.endpoint.startsWith('ws')).toBeTruthy();
     });
 
     test('Invalid subscription request', async () => {

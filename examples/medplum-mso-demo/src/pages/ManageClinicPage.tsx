@@ -75,26 +75,24 @@ export function ManageClinicPage(): JSX.Element {
 
   return (
     <Document>
-      {organization && (
-        <>
-          <Title>{organization.name}</Title>
+      <>
+        <Title>{organization.name}</Title>
 
-          <Tabs value={activeTab} onChange={setActiveTab}>
-            <Tabs.List mb="md">
-              <Tabs.Tab value="practitioners">Clinicians</Tabs.Tab>
-              <Tabs.Tab value="patients">Patients</Tabs.Tab>
-            </Tabs.List>
+        <Tabs value={activeTab} onChange={setActiveTab}>
+          <Tabs.List mb="md">
+            <Tabs.Tab value="practitioners">Clinicians</Tabs.Tab>
+            <Tabs.Tab value="patients">Patients</Tabs.Tab>
+          </Tabs.List>
 
-            <Tabs.Panel value="practitioners">
-              <ClinicianList organization={organization} />
-            </Tabs.Panel>
+          <Tabs.Panel value="practitioners">
+            <ClinicianList organization={organization} />
+          </Tabs.Panel>
 
-            <Tabs.Panel value="patients">
-              <PatientList organization={organization} />
-            </Tabs.Panel>
-          </Tabs>
-        </>
-      )}
+          <Tabs.Panel value="patients">
+            <PatientList organization={organization} />
+          </Tabs.Panel>
+        </Tabs>
+      </>
     </Document>
   );
 }

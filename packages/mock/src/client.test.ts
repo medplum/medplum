@@ -597,7 +597,7 @@ describe('MockClient', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0].details?.text).toStrictEqual('Test failed: Bart != Homer');
+      expect(outcome.issue[0].details?.text).toStrictEqual('Test failed: Bart != Homer');
     }
   });
 

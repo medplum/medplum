@@ -16,13 +16,13 @@ import fetch from 'node-fetch';
  * @returns The Patient resource in Medplum
  */
 export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<Patient> {
-  const clientId = event.secrets['EPIC_CLIENT_ID']?.valueString;
+  const clientId = event.secrets['EPIC_CLIENT_ID'].valueString;
   if (!clientId) {
     throw new Error('Missing EPIC_CLIENT_ID');
   }
 
   // Handles unknown issue with newlines in private key
-  const privateKeyString = event.secrets['EPIC_PRIVATE_KEY']?.valueString?.replaceAll('\\n', '\n');
+  const privateKeyString = event.secrets['EPIC_PRIVATE_KEY'].valueString?.replaceAll('\\n', '\n');
   if (!privateKeyString) {
     throw new Error('Missing EPIC_PRIVATE_KEY');
   }
@@ -163,7 +163,7 @@ async function syncEpicPatient(
   if (epicPatient.generalPractitioner) {
     await Promise.all(
       epicPatient.generalPractitioner.map(async (gp) => {
-        if (!gp?.reference) {
+        if (!gp.reference) {
           return;
         }
 

@@ -118,7 +118,7 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
     message: 'Uploaded Business Statuses',
   });
 
-  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
+  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response.outcome))) {
     await setTimeout(
       () =>
         showNotification({
@@ -161,10 +161,6 @@ async function uploadExampleTaskData(medplum: MedplumClient): Promise<void> {
 }
 
 async function uploadExampleQualifications(medplum: MedplumClient, profile: Practitioner): Promise<void> {
-  if (!profile) {
-    return;
-  }
-
   const states: Coding[] = [
     { code: 'NY', display: 'State of New York', system: 'https://www.usps.com/' },
     { code: 'CA', display: 'State of California', system: 'https://www.usps.com/' },
@@ -216,7 +212,7 @@ async function uploadExampleQualifications(medplum: MedplumClient, profile: Prac
 
 async function uploadExampleRoleData(medplum: MedplumClient, profile: WithId<Practitioner>): Promise<void> {
   // Update the suffix of the current user to highlight the change
-  if (!profile?.name?.[0]?.suffix) {
+  if (!profile.name?.[0]?.suffix) {
     await medplum.patchResource(profile.resourceType, profile.id, [
       {
         op: 'add',
@@ -285,7 +281,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
 
   // Deploy the new bots
   for (const entry of botEntries) {
-    const botName = (entry?.resource as Bot)?.name as string;
+    const botName = (entry.resource as Bot).name as string;
     const distUrl = (entry.resource as Bot).executableCode?.url;
     const distBinaryEntry = exampleBotData.entry?.find((e: any) => e.fullUrl === distUrl) as
       | BundleEntry<Binary>

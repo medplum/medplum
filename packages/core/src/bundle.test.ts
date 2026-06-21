@@ -108,7 +108,7 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
+      expect(reorderedBundle.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
         'Patient',
         'DiagnosticReport',
       ]);
@@ -130,13 +130,13 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
+      expect(reorderedBundle.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
         'ServiceRequest',
         'Specimen',
         'ServiceRequest',
         'Specimen',
       ]);
-      expect(reorderedBundle?.entry?.map((e) => e.request?.method)).toStrictEqual(['POST', 'POST', 'PUT', 'PUT']);
+      expect(reorderedBundle.entry?.map((e) => e.request?.method)).toStrictEqual(['POST', 'POST', 'PUT', 'PUT']);
     });
 
     test('Reorders Lab bundle', () => {
@@ -204,7 +204,7 @@ describe('Bundle tests', () => {
       expect(transaction.entry?.map((e) => e.resource?.resourceType)).toMatchObject(['Patient', 'Specimen']);
 
       const specimen = transaction.entry?.find((e) => e.resource?.resourceType === 'Specimen')?.resource as Specimen;
-      expect(isUUID(specimen?.subject?.reference?.split(':')[2] ?? '')).toBeTruthy();
+      expect(isUUID(specimen.subject?.reference?.split(':')[2] ?? '')).toBeTruthy();
     });
 
     test('Ignore unrecognized references', () => {
@@ -262,7 +262,7 @@ describe('Bundle tests', () => {
       // meta.project will be removed
       // so meta will be empty
       // and therefore should be removed
-      expect(result?.entry?.[0]?.resource?.meta).toBeUndefined();
+      expect(result.entry?.[0]?.resource?.meta).toBeUndefined();
     });
 
     test('Preserve resource.meta', () => {
@@ -336,7 +336,7 @@ describe('Bundle tests', () => {
       };
 
       const result = convertToTransactionBundle(inputBundle);
-      expect(result?.entry?.[0]?.resource).toStrictEqual(expected);
+      expect(result.entry?.[0]?.resource).toStrictEqual(expected);
     });
 
     test('rewrites attachment.url Binary references', () => {
@@ -635,23 +635,23 @@ describe('Bundle tests', () => {
       const reorderedBundle = reorderBundle(inputBundle);
 
       // Entries with fullUrl should be reordered (Patient before DiagnosticReport)
-      expect(reorderedBundle?.entry?.length).toBe(5);
-      expect(reorderedBundle?.entry?.[0]?.resource?.resourceType).toBe('Patient');
-      expect(reorderedBundle?.entry?.[0]?.fullUrl).toBe('urn:uuid:70653c8f-95e1-4b4e-84e8-8d64c15e4a13');
-      expect(reorderedBundle?.entry?.[1]?.resource?.resourceType).toBe('DiagnosticReport');
-      expect(reorderedBundle?.entry?.[1]?.fullUrl).toBe('urn:uuid:3d8b6e96-6de4-48c1-b7ff-e2c26c924620');
-      expect(reorderedBundle?.entry?.[2]?.resource?.resourceType).toBe('Observation');
-      expect(reorderedBundle?.entry?.[2]?.fullUrl).toBe('urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890');
+      expect(reorderedBundle.entry?.length).toBe(5);
+      expect(reorderedBundle.entry?.[0]?.resource?.resourceType).toBe('Patient');
+      expect(reorderedBundle.entry?.[0]?.fullUrl).toBe('urn:uuid:70653c8f-95e1-4b4e-84e8-8d64c15e4a13');
+      expect(reorderedBundle.entry?.[1]?.resource?.resourceType).toBe('DiagnosticReport');
+      expect(reorderedBundle.entry?.[1]?.fullUrl).toBe('urn:uuid:3d8b6e96-6de4-48c1-b7ff-e2c26c924620');
+      expect(reorderedBundle.entry?.[2]?.resource?.resourceType).toBe('Observation');
+      expect(reorderedBundle.entry?.[2]?.fullUrl).toBe('urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890');
 
       // Entries without fullUrl should be preserved and appended at the end
-      expect(reorderedBundle?.entry?.[3]?.fullUrl).toBeUndefined();
-      expect(reorderedBundle?.entry?.[3]?.request?.method).toBe('PATCH');
-      expect(reorderedBundle?.entry?.[3]?.request?.url).toBe('Patient/70653c8f-95e1-4b4e-84e8-8d64c15e4a13');
-      expect(reorderedBundle?.entry?.[3]?.resource?.resourceType).toBe('Binary');
-      expect(reorderedBundle?.entry?.[4]?.fullUrl).toBeUndefined();
-      expect(reorderedBundle?.entry?.[4]?.request?.method).toBe('PATCH');
-      expect(reorderedBundle?.entry?.[4]?.request?.url).toBe('Observation/123');
-      expect(reorderedBundle?.entry?.[4]?.resource?.resourceType).toBe('Binary');
+      expect(reorderedBundle.entry?.[3]?.fullUrl).toBeUndefined();
+      expect(reorderedBundle.entry?.[3]?.request?.method).toBe('PATCH');
+      expect(reorderedBundle.entry?.[3]?.request?.url).toBe('Patient/70653c8f-95e1-4b4e-84e8-8d64c15e4a13');
+      expect(reorderedBundle.entry?.[3]?.resource?.resourceType).toBe('Binary');
+      expect(reorderedBundle.entry?.[4]?.fullUrl).toBeUndefined();
+      expect(reorderedBundle.entry?.[4]?.request?.method).toBe('PATCH');
+      expect(reorderedBundle.entry?.[4]?.request?.url).toBe('Observation/123');
+      expect(reorderedBundle.entry?.[4]?.resource?.resourceType).toBe('Binary');
     });
   });
 

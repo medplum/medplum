@@ -132,7 +132,7 @@ export function parseReference<T extends Resource>(reference: Reference<T> | und
   if (reference?.reference === undefined) {
     throw new OperationOutcomeError(validationError('Reference missing reference property.'));
   }
-  const [type, id] = reference.reference.split('/') as [T['resourceType'] | '', string];
+  const [type, id] = reference.reference.split('/') as [T['resourceType'] | '', string | undefined];
   if (type === '' || id === '' || id === undefined) {
     throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
   }
@@ -404,7 +404,7 @@ function buildAllQuestionnaireAnswerItems(
 ): void {
   for (const item of items ?? EMPTY) {
     if (item.linkId && item.answer && item.answer.length > 0) {
-      if (result[item.linkId]) {
+      if ((result as Record<string, QuestionnaireResponseItemAnswer[] | undefined>)[item.linkId]) {
         result[item.linkId] = [...result[item.linkId], ...item.answer];
       } else {
         result[item.linkId] = item.answer;
@@ -540,7 +540,8 @@ export function getExtension(resource: any, ...urls: string[]): Extension | unde
  */
 export function stringify(value: any, pretty?: boolean): string {
   const processedValue = removeEmptyFromUnknown(value);
-  return JSON.stringify(processedValue, null, pretty ? 2 : undefined) ?? '';
+  const result = JSON.stringify(processedValue, null, pretty ? 2 : undefined) as string | undefined;
+  return result ?? '';
 }
 
 /**
@@ -927,7 +928,7 @@ export function findCodeBySystem(categories: CodeableConcept[] | undefined, syst
  * @returns True if the Coding matches the token
  */
 export function codingMatchesToken(coding: Coding, token: string): boolean {
-  const [system, code] = splitN(token, '|', 2);
+  const [system, code] = splitN(token, '|', 2) as [string, string | undefined];
 
   if (code === undefined) {
     // There was no '|' delimiter in the token, so we treat the whole token as a code and
@@ -1484,7 +1485,7 @@ export function isValidHostname(input: string): boolean {
  * @returns The resource
  */
 export function addProfileToResource<T extends Resource = Resource>(resource: T, profileUrl: string): T {
-  if (!resource?.meta?.profile?.includes(profileUrl)) {
+  if (!resource.meta?.profile?.includes(profileUrl)) {
     resource.meta = resource.meta ?? {};
     resource.meta.profile = resource.meta.profile ?? [];
     resource.meta.profile.push(profileUrl);
@@ -1503,10 +1504,13 @@ export function mapByIdentifier<T extends Resource = Resource>(
   identifierSystem: string
 ): Map<string, T> {
   const resourceMap = new Map<string, T>(
-    resourceBundle.entry
-      ?.filter((e) => !!e.resource)
-      .map((e) => [getIdentifier(e.resource as Resource, identifierSystem) as string, e.resource as T])
-      .filter(([i]) => i !== undefined) as [string, T][]
+    resourceBundle.entry?.flatMap((e): [string, T][] => {
+      if (!e.resource) {
+        return [];
+      }
+      const identifier = getIdentifier(e.resource, identifierSystem);
+      return identifier === undefined ? [] : [[identifier, e.resource]];
+    })
   );
   return resourceMap;
 }
@@ -1518,7 +1522,7 @@ export function mapByIdentifier<T extends Resource = Resource>(
  * @returns The resource
  */
 export function removeProfileFromResource<T extends Resource = Resource>(resource: T, profileUrl: string): T {
-  if (resource?.meta?.profile?.includes(profileUrl)) {
+  if (resource.meta?.profile?.includes(profileUrl)) {
     const index = resource.meta.profile.indexOf(profileUrl);
     resource.meta.profile.splice(index, 1);
   }

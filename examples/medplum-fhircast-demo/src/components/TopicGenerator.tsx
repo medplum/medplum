@@ -42,7 +42,7 @@ export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element 
       <Button onClick={toggleSyncing} mb={20}>
         {!syncing ? 'Sync subscribers' : 'Stop syncing subscribers'}
       </Button>
-      {topic ? <TextInput label="Topic" value={topic ?? 'No topic'} readOnly w={350} /> : null}
+      {topic ? <TextInput label="Topic" value={topic} readOnly w={350} /> : null}
     </Stack>
   );
 }

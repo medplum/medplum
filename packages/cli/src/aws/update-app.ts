@@ -44,7 +44,7 @@ export async function updateAppCommand(tag: string, options: UpdateAppOptions): 
   if (options.tarPath) {
     tmpDir = options.tarPath;
   } else {
-    const version = options?.toVersion ?? 'latest';
+    const version = options.toVersion ?? 'latest';
     tmpDir = await downloadNpmPackage('@medplum/app', version);
   }
 

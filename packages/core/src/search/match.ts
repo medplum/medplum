@@ -46,7 +46,7 @@ const searchExprCache = new LRUCache<FhirPathAtom>(1000);
  * @returns True if the resource satisfies the search filter.
  */
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
-  const searchParam = globalSchema.types[searchRequest.resourceType]?.searchParams?.[filter.code];
+  const searchParam = globalSchema.types[searchRequest.resourceType].searchParams?.[filter.code];
   if (!searchParam) {
     return false;
   }
@@ -104,7 +104,7 @@ function matchesReferenceFilter(searchParam: SearchParameter, typedValues: Typed
       // If the filter value does not include a resource type, then it can match any reference that ends with '/' + filterValue
       // This is only allowed if the search parameter has a single target type,
       // or if the search parameter is _compartment (which is a special case for backwards compatibility reasons)
-      match = references.some((reference) => reference?.endsWith('/' + filterValue));
+      match = references.some((reference) => reference.endsWith('/' + filterValue));
     }
     if (match) {
       return !negated;
@@ -190,9 +190,6 @@ function matchesDateFilter(typedValues: TypedValue[], filter: Filter): boolean {
 }
 
 function matchesDateValue(resourceValue: Period, operator: Operator, filterValue: string): boolean {
-  if (!resourceValue) {
-    return false;
-  }
   const filterPeriod = toPeriod(filterValue);
   if (!filterPeriod) {
     return false;

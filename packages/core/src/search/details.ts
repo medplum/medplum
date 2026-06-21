@@ -7,7 +7,7 @@ import { AsAtom, DotAtom, FhirPathAtom, FunctionAtom, IndexerAtom, IsAtom, Union
 import { parseFhirPath } from '../fhirpath/parse';
 import { getElementDefinition, globalSchema, PropertyType } from '../types';
 import type { InternalSchemaElement } from '../typeschema/types';
-import { EMPTY, lazy } from '../utils';
+import { lazy } from '../utils';
 import { getInnerDerivedIdentifierExpression, getParsedDerivedIdentifierExpression } from './derived';
 
 export const SearchParameterType = {
@@ -53,13 +53,13 @@ interface SearchParameterDetailsBuilder {
  */
 export function getSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   return (
-    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code] ??
+    globalSchema.types[resourceType].searchParamsDetails?.[searchParam.code] ??
     buildSearchParameterDetails(resourceType, searchParam)
   );
 }
 
 function setSearchParameterDetails(resourceType: string, code: string, details: SearchParameterDetails): void {
-  let typeSchema = globalSchema.types[resourceType];
+  let typeSchema = (globalSchema.types as Record<string, (typeof globalSchema.types)[string] | undefined>)[resourceType];
   if (!typeSchema) {
     typeSchema = {};
     globalSchema.types[resourceType] = typeSchema;
@@ -134,8 +134,8 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
   }
 
   const elementDefinitions = builder.elementDefinitions
-    .map((ed) => ({ ...ed, type: ed.type?.filter((t) => builder.propertyTypes.has(t.code)) }))
-    .filter((ed) => ed.type && ed.type.length > 0);
+    .map((ed) => ({ ...ed, type: ed.type.filter((t) => builder.propertyTypes.has(t.code)) }))
+    .filter((ed) => ed.type.length > 0);
 
   const result: SearchParameterDetails = {
     type: getSearchParameterType(searchParam, builder.propertyTypes),
@@ -204,7 +204,7 @@ function crawlSearchParameterDetails(
     // This is the final atom in the expression
     // So we can collect the ElementDefinition and property types
     details.elementDefinitions.push(elementDefinition);
-    for (const elementDefinitionType of elementDefinition.type ?? EMPTY) {
+    for (const elementDefinitionType of elementDefinition.type) {
       details.propertyTypes.add(elementDefinitionType.code);
     }
     return;
@@ -213,7 +213,7 @@ function crawlSearchParameterDetails(
   // This is in the middle of the expression, so we need to keep crawling.
   // "code" is only missing when using "contentReference"
   // "contentReference" is handled whe parsing StructureDefinition into InternalTypeSchema
-  for (const elementDefinitionType of elementDefinition.type ?? EMPTY) {
+  for (const elementDefinitionType of elementDefinition.type) {
     let propertyType = elementDefinitionType.code;
     if (isBackboneElement(propertyType)) {
       propertyType = elementDefinition.type[0].code;

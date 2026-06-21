@@ -83,7 +83,7 @@ export function mapGender(gender: Patient['gender']): CcdaCode | undefined {
   }
   return {
     '@_code': GENDER_MAPPER.mapFhirToCcda(gender),
-    '@_displayName': gender ? capitalize(gender) : 'Unknown',
+    '@_displayName': capitalize(gender),
     '@_codeSystem': OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
     '@_codeSystemName': 'AdministrativeGender',
   };
@@ -112,7 +112,7 @@ export function mapTelecom(contactPoints: ContactPoint[] | undefined): CcdaTelec
   if (!contactPoints || contactPoints.length === 0) {
     return [{ '@_nullFlavor': 'UNK' }];
   }
-  return contactPoints?.map((cp) => ({
+  return contactPoints.map((cp) => ({
     '@_use': cp.use ? TELECOM_USE_MAPPER.mapFhirToCcda(cp.use as 'home' | 'work' | 'mobile') : undefined,
     '@_value': `${mapTelecomSystemToPrefix(cp.system)}${cp.value}`,
   }));
@@ -251,7 +251,7 @@ export function mapLanguageCommunication(
 
   return [
     {
-      languageCode: { '@_code': communication[0].language?.coding?.[0]?.code },
+      languageCode: { '@_code': communication[0].language.coding?.[0]?.code },
     },
   ];
 }

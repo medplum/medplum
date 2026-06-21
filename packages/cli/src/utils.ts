@@ -84,7 +84,7 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
     code,
     filename: basename(codePath),
   });
-  console.log('Deploy result: ' + deployResult.issue?.[0]?.details?.text);
+  console.log('Deploy result: ' + deployResult.issue[0]?.details?.text);
 }
 
 export async function createBot(

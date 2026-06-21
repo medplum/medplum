@@ -319,7 +319,7 @@ class StructureMapParser {
     const transformAtom = this.parser.consumeAndParse(OperatorPrecedence.As);
     if (transformAtom instanceof FunctionAtom) {
       result.transform = transformAtom.name as 'append' | 'truncate';
-      result.parameter = transformAtom.args?.map(atomToParameter);
+      result.parameter = transformAtom.args.map(atomToParameter);
     } else if (transformAtom instanceof LiteralAtom || transformAtom instanceof SymbolAtom) {
       result.transform = 'copy';
       result.parameter = [atomToParameter(transformAtom)];
@@ -397,7 +397,7 @@ class StructureMapParser {
     this.parser.consume(':');
     const targetCode = this.parser.consume().value;
 
-    let group = conceptMap?.group?.find((g) => g.source === sourceSystem && g.target === targetSystem);
+    let group = conceptMap.group?.find((g) => g.source === sourceSystem && g.target === targetSystem);
 
     if (!group) {
       group = { source: sourceSystem, target: targetSystem, element: [] };
@@ -405,10 +405,6 @@ class StructureMapParser {
         conceptMap.group = [];
       }
       conceptMap.group.push(group);
-    }
-
-    if (!group.element) {
-      group.element = [];
     }
 
     group.element.push({

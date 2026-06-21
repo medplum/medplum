@@ -57,8 +57,7 @@ export function buildGraphQLOutputType(resourceType: string): GraphQLOutputType 
       name: 'ResourceList',
       types: () =>
         getResourceTypes()
-          .map(getGraphQLOutputType)
-          .filter((t) => !!t) as GraphQLObjectType[],
+          .map(getGraphQLOutputType) as GraphQLObjectType[],
       resolveType: resolveTypeByReference,
     });
   }

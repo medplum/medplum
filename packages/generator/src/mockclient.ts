@@ -94,13 +94,11 @@ const USCoreStructureDefinitionFiles = [
   'StructureDefinition-us-core-medicationrequest.json',
 ];
 
-const BUILD_USCORE = false;
-
 export function main(): void {
   writeStructureDefinitions();
   writeSearchParameters();
 
-  if (BUILD_USCORE) {
+  if (process.env.BUILD_USCORE === 'true') {
     // To build USCore, download and expand a USCore Implementation Guide package file,
     // such as https://hl7.org/fhir/us/core/STU5.0.1/package.tgz which is linked to
     // from https://hl7.org/fhir/us/core/STU5.0.1/downloads.html

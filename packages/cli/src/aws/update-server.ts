@@ -19,12 +19,13 @@ export interface UpdateServerOptions extends MedplumClientOptions {
  */
 export async function updateServerCommand(tag: string, options: UpdateServerOptions): Promise<void> {
   const client = await createMedplumClient(options);
-  const config = readConfig(tag, options) as MedplumInfraConfig;
-  if (!config) {
+  const rawConfig = readConfig(tag, options);
+  if (!rawConfig) {
     console.log(`Configuration file ${getConfigFileName(tag)} not found`);
     printConfigNotFound(tag, options);
     throw new Error(`Config not found: ${tag}`);
   }
+  const config = rawConfig as MedplumInfraConfig;
 
   const separatorIndex = config.serverImage.lastIndexOf(':');
   const serverImagePrefix = config.serverImage.slice(0, separatorIndex);

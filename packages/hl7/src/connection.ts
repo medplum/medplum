@@ -133,7 +133,11 @@ export class Hl7Connection extends Hl7Base {
         this.send(response);
         this.dispatchEvent(new Hl7EnhancedAckSentEvent(this, response));
       }
-      const origMsgCtrlId = event.message.getSegment('MSA')?.getField(2)?.toString();
+      const msa = event.message.getSegment('MSA');
+      if (!msa) {
+        return;
+      }
+      const origMsgCtrlId = msa.getField(2).toString();
       // If there is no message control ID, just return
       if (!origMsgCtrlId) {
         return;
@@ -160,7 +164,7 @@ export class Hl7Connection extends Hl7Base {
         return;
       }
       // Check the ACK type we should return on
-      const ackCode = event.message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
+      const ackCode = msa.getField(1).toString().toUpperCase();
       if (!ackCode) {
         return;
       }
@@ -215,9 +219,7 @@ export class Hl7Connection extends Hl7Base {
         }
       }
       const messageEvent = this.responseQueue.shift() as Hl7MessageEvent;
-      if (messageEvent) {
-        this.dispatchEvent(messageEvent);
-      }
+      this.dispatchEvent(messageEvent);
       this.lastMessageDispatchedTime = Date.now();
     }
     this.responseQueueProcessing = false;
@@ -288,7 +290,8 @@ export class Hl7Connection extends Hl7Base {
 
   async sendAndWait(msg: Hl7Message, options?: SendAndWaitOptions): Promise<Hl7Message> {
     return new Promise<Hl7Message>((resolve, reject) => {
-      const msgCtrlId = msg.getSegment('MSH')?.getField(10)?.toString();
+      const msh = msg.getSegment('MSH');
+      const msgCtrlId = msh?.getField(10).toString();
       if (!msgCtrlId) {
         reject(new OperationOutcomeError(validationError('Required field missing: MSH.10')));
         return;

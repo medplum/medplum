@@ -262,7 +262,7 @@ export const tsConfig = {
     '@typescript-eslint/consistent-indexed-object-style': 'off',
     '@typescript-eslint/consistent-type-definitions': 'off',
     '@typescript-eslint/prefer-nullish-coalescing': 'off',
-    '@typescript-eslint/no-unnecessary-condition': 'off',
+    '@typescript-eslint/no-unnecessary-condition': 'error',
     '@typescript-eslint/no-dynamic-delete': 'off',
     '@typescript-eslint/no-empty-object-type': 'off',
 

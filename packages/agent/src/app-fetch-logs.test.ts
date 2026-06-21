@@ -125,13 +125,13 @@ describe('Fetch Logs', () => {
     );
 
     // Wait for the error response
-    let shouldThrow = false;
+    const shouldThrow = { value: false };
     const timeout = setTimeout(() => {
-      shouldThrow = true;
+      shouldThrow.value = true;
     }, 2500);
 
     while (!state.gotAgentError) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout waiting for error response');
       }
       await sleep(100);
@@ -219,13 +219,13 @@ describe('Fetch Logs', () => {
     );
 
     // Wait for the logs response
-    let shouldThrow = false;
+    const shouldThrow = { value: false };
     const timeout = setTimeout(() => {
-      shouldThrow = true;
+      shouldThrow.value = true;
     }, 2500);
 
     while (!state.gotLogsResponse) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout waiting for logs response');
       }
       await sleep(100);
@@ -317,13 +317,13 @@ describe('Fetch Logs', () => {
     );
 
     // Wait for the logs response
-    let shouldThrow = false;
+    const shouldThrow = { value: false };
     const timeout = setTimeout(() => {
-      shouldThrow = true;
+      shouldThrow.value = true;
     }, 2500);
 
     while (!state.gotLogsResponse) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout waiting for logs response');
       }
       await sleep(100);
@@ -417,13 +417,13 @@ describe('Fetch Logs', () => {
       );
 
       // Wait for the logs response
-      let shouldThrow = false;
+      const shouldThrow = { value: false };
       const timeout = setTimeout(() => {
-        shouldThrow = true;
+        shouldThrow.value = true;
       }, 2500);
 
       while (!state.gotAgentError) {
-        if (shouldThrow) {
+        if (shouldThrow.value) {
           throw new Error('Timeout waiting for logs response');
         }
         await sleep(100);
@@ -432,7 +432,7 @@ describe('Fetch Logs', () => {
 
       expect(state.gotAgentError).toBe(true);
       expect(state.agentError).toBeDefined();
-      expect(state.agentError?.body).toStrictEqual(
+      expect(state.agentError.body).toStrictEqual(
         `Invalid limit: ${limit} - must be a valid positive integer less than or equal to ${MAX_LOG_LIMIT}`
       );
 
@@ -520,21 +520,19 @@ describe('Fetch Logs', () => {
     );
 
     // Wait for the error response
-    let shouldThrow = false;
+    const shouldThrow = { value: false };
     const timeout = setTimeout(() => {
-      shouldThrow = true;
+      shouldThrow.value = true;
     }, 2500);
 
     while (!state.gotAgentError) {
-      if (state.logsResponse) {
-        throw new Error('Unexpected logs response');
-      }
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout waiting for error response');
       }
       await sleep(100);
     }
     clearTimeout(timeout);
+    expect(state.logsResponse).toBeUndefined();
 
     expect(state.gotAgentError).toBe(true);
     expect(state.errorMessage).toBeDefined();

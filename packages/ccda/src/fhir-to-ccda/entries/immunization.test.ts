@@ -109,11 +109,11 @@ describe('immunization entry functions', () => {
 
       expect(result).toBeDefined();
       const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization).toBeDefined();
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.name?.[0]).toBe(
+      expect(substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturerOrganization).toBeDefined();
+      expect(substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturerOrganization?.[0]?.name?.[0]).toBe(
         'Pfizer Inc.'
       );
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.lotNumberText?.[0]).toBe(
+      expect(substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturedMaterial?.[0]?.lotNumberText?.[0]).toBe(
         'LOT123'
       );
     });
@@ -146,8 +146,8 @@ describe('immunization entry functions', () => {
 
       expect(result).toBeDefined();
       const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization).toBeDefined();
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.id).toBeDefined();
+      expect(substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturerOrganization).toBeDefined();
+      expect(substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturerOrganization?.[0]?.id).toBeDefined();
     });
 
     test('should handle immunization without manufacturer', () => {
@@ -172,7 +172,7 @@ describe('immunization entry functions', () => {
 
       expect(result).toBeDefined();
       const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization).toBeUndefined();
+      expect(substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturerOrganization).toBeUndefined();
     });
 
     test('should handle immunization without lot number', () => {
@@ -198,7 +198,7 @@ describe('immunization entry functions', () => {
       expect(result).toBeDefined();
       const substanceAdmin = result.substanceAdministration?.[0];
       expect(
-        substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.lotNumberText
+        substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturedMaterial?.[0]?.lotNumberText
       ).toBeUndefined();
     });
 
@@ -511,10 +511,10 @@ describe('immunization entry functions', () => {
       const result = mapImmunizationPerformerToCcdaPerformer(converter, performer);
 
       expect(result).toBeDefined();
-      expect(result?.assignedEntity?.assignedPerson).toBeDefined();
-      expect(result?.assignedEntity?.representedOrganization).toBeUndefined();
-      expect(result?.assignedEntity?.addr).toBeDefined();
-      expect(result?.assignedEntity?.telecom).toBeDefined();
+      expect(result?.assignedEntity.assignedPerson).toBeDefined();
+      expect(result?.assignedEntity.representedOrganization).toBeUndefined();
+      expect(result?.assignedEntity.addr).toBeDefined();
+      expect(result?.assignedEntity.telecom).toBeDefined();
     });
 
     test('should map organization performer', () => {
@@ -543,9 +543,9 @@ describe('immunization entry functions', () => {
       const result = mapImmunizationPerformerToCcdaPerformer(converter, performer);
 
       expect(result).toBeDefined();
-      expect(result?.assignedEntity?.assignedPerson).toBeUndefined();
-      expect(result?.assignedEntity?.representedOrganization).toBeDefined();
-      expect(result?.assignedEntity?.representedOrganization?.name?.[0]).toBe('Test Clinic');
+      expect(result?.assignedEntity.assignedPerson).toBeUndefined();
+      expect(result?.assignedEntity.representedOrganization).toBeDefined();
+      expect(result?.assignedEntity.representedOrganization?.name?.[0]).toBe('Test Clinic');
     });
 
     test('should map practitioner role performer', () => {
@@ -598,10 +598,10 @@ describe('immunization entry functions', () => {
       const result = mapImmunizationPerformerToCcdaPerformer(converter, performer);
 
       expect(result).toBeDefined();
-      expect(result?.assignedEntity?.assignedPerson).toBeDefined();
-      expect(result?.assignedEntity?.representedOrganization).toBeDefined();
-      expect(result?.assignedEntity?.addr).toBeDefined();
-      expect(result?.assignedEntity?.telecom).toBeDefined();
+      expect(result?.assignedEntity.assignedPerson).toBeDefined();
+      expect(result?.assignedEntity.representedOrganization).toBeDefined();
+      expect(result?.assignedEntity.addr).toBeDefined();
+      expect(result?.assignedEntity.telecom).toBeDefined();
     });
 
     test('should handle organization without name', () => {
@@ -620,7 +620,7 @@ describe('immunization entry functions', () => {
       const result = mapImmunizationPerformerToCcdaPerformer(converter, performer);
 
       expect(result).toBeDefined();
-      expect(result?.assignedEntity?.representedOrganization?.name).toBeUndefined();
+      expect(result?.assignedEntity.representedOrganization?.name).toBeUndefined();
     });
 
     test('should handle unknown resource type performer', () => {
@@ -640,8 +640,8 @@ describe('immunization entry functions', () => {
       const result = mapImmunizationPerformerToCcdaPerformer(converter, performer);
 
       expect(result).toBeDefined();
-      expect(result?.assignedEntity?.assignedPerson).toBeUndefined();
-      expect(result?.assignedEntity?.representedOrganization).toBeUndefined();
+      expect(result?.assignedEntity.assignedPerson).toBeUndefined();
+      expect(result?.assignedEntity.representedOrganization).toBeUndefined();
     });
   });
 });

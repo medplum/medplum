@@ -40,7 +40,7 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
         delete resource.meta;
       }
     }
-    const id = resource?.id;
+    const id = resource.id;
     if (id) {
       idToUuid[id] = generateId();
 
@@ -141,7 +141,7 @@ export function reorderBundle(bundle: Bundle): Bundle {
   return { ...bundle, entry: reorderedEntries };
 }
 
-type AdjacencyList = Record<string, string[]>;
+type AdjacencyList = Record<string, string[] | undefined>;
 
 const VertexState = {
   NotVisited: 'NotVisited',
@@ -238,8 +238,9 @@ function buildAdjacencyList(bundle: Bundle): AdjacencyList {
     if (fullUrl && entry.resource) {
       findReferences(entry.resource, (reference: string) => {
         // Skip self-references — a resource referencing itself is not a dependency ordering problem
-        if (reference !== fullUrl && adjacencyList[reference]) {
-          adjacencyList[reference].push(fullUrl);
+        const adjacent = adjacencyList[reference];
+        if (reference !== fullUrl && adjacent) {
+          adjacent.push(fullUrl);
         }
       });
     }
@@ -277,7 +278,7 @@ export function convertContainedResourcesToBundle(resource: Resource & { contain
   // Make sure that all resources have an ID
   // This is required for convertToTransactionBundle
   for (const entry of simpleBundle.entry) {
-    if (entry.resource && !entry.resource.id) {
+    if (!entry.resource.id) {
       entry.resource.id = generateId();
     }
   }
@@ -293,6 +294,6 @@ export function findResourceInBundle<K extends ResourceType>(
   resourceType: K,
   id: string
 ): ExtractResource<K> {
-  return bundle.entry?.find(({ resource }) => resource?.resourceType === resourceType && resource?.id === id)
+  return bundle.entry?.find(({ resource }) => resource?.resourceType === resourceType && resource.id === id)
     ?.resource as ExtractResource<K>;
 }

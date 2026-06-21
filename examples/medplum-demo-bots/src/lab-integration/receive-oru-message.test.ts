@@ -10,7 +10,7 @@ import {
 } from '@medplum/core';
 import type { MedplumClient } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type { Bundle, Reference, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
+import type { Bundle, Observation, Reference, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';
 import type { ReadStream } from 'ssh2';
@@ -139,14 +139,16 @@ describe('Read from Partner Lab', () => {
       `based-on=${getReferenceString(serviceRequest)}`
     );
     expect(checkReports).toHaveLength(1);
-    expect(checkReports?.[0]?.result).toHaveLength(8);
-    expect(checkReports?.[0]?.presentedForm).toHaveLength(1);
+    expect(checkReports[0].result).toHaveLength(8);
+    expect(checkReports[0].presentedForm).toHaveLength(1);
 
-    const checkObservationPromise = checkReports?.[0]?.result?.map((r) => r && medplum.readReference(r));
-    const checkObservations = checkObservationPromise && (await Promise.all(checkObservationPromise));
+    const checkObservationPromise = (checkReports[0].result ?? []).map((r) =>
+      medplum.readReference<Observation>(r)
+    );
+    const checkObservations = await Promise.all(checkObservationPromise);
     expect(checkObservations).toBeDefined();
     expect(checkObservations).toHaveLength(8);
-    expect(checkObservations?.map((o) => o.code?.coding?.at(0)?.code)).toMatchObject([
+    expect(checkObservations.map((o) => o.code.coding?.at(0)?.code)).toMatchObject([
       'BUN',
       'CHOL',
       'CREAT',
@@ -157,7 +159,7 @@ describe('Read from Partner Lab', () => {
       'HBA1C',
     ]);
 
-    expect(checkObservations?.[0]).toMatchObject({
+    expect(checkObservations[0]).toMatchObject({
       resourceType: 'Observation',
       basedOn: [createReference(serviceRequest)],
       subject: createReference(ctx.patient),
@@ -209,7 +211,7 @@ describe('Read from Partner Lab', () => {
     });
 
     // Make sure TSH is flagged as low
-    expect(checkObservations?.[5]?.interpretation?.[0]).toMatchObject({
+    expect(checkObservations[5]?.interpretation?.[0]).toMatchObject({
       text: 'Low',
       coding: [
         { display: 'Low', code: 'L', system: 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation' },
@@ -217,18 +219,18 @@ describe('Read from Partner Lab', () => {
     });
 
     /* Test Comparators */
-    expect(checkObservations?.[5]?.valueQuantity).toMatchObject({
+    expect(checkObservations[5]?.valueQuantity).toMatchObject({
       value: 1,
       comparator: '<',
     });
 
-    expect(checkObservations?.[7]?.valueQuantity).toMatchObject({
+    expect(checkObservations[7]?.valueQuantity).toMatchObject({
       value: 6.1,
       comparator: '>=',
     });
 
-    expect(checkObservations?.[7]?.note).toHaveLength(2);
-    expect(checkObservations?.[7]?.note).toMatchObject([
+    expect(checkObservations[7]?.note).toHaveLength(2);
+    expect(checkObservations[7]?.note).toMatchObject([
       {
         text: 'ACCORDING TO ADA GUIDELINE HEMOGLOBIN A1c CAN BE USED FOR THE PURPOSE OF SCREENING THE PRESENCE OF DIABETES.   <5.7% ----- CONSISTENT WITH THE ABSENCE OF DIABETES 5.7 - 6.4% ------ CONSISTENT WITH INCREASE RISK OF DIABETES (PREDIABETES) > OR =  6.5% CONSISTENT WITH DIABETES HEMOGLOBIN A1c CRITERIA FOR DIAGNOSIS OF DIABETES HAVE NOT BEEN ESTABLISHED FOR CHILDREN.  *',
       },
@@ -257,15 +259,17 @@ describe('Read from Partner Lab', () => {
       `based-on=${getReferenceString(serviceRequest)}`
     );
     expect(checkReports).toHaveLength(1);
-    expect(checkReports?.[0]?.result).toHaveLength(8);
-    expect(checkReports?.[0]?.status).toBe('cancelled');
-    expect(checkReports?.[0]?.presentedForm).toHaveLength(1);
+    expect(checkReports[0].result).toHaveLength(8);
+    expect(checkReports[0].status).toBe('cancelled');
+    expect(checkReports[0].presentedForm).toHaveLength(1);
 
-    const checkObservationPromise = checkReports?.[0]?.result?.map((r) => r && medplum.readReference(r));
-    const checkObservations = checkObservationPromise && (await Promise.all(checkObservationPromise));
+    const checkObservationPromise = (checkReports[0].result ?? []).map((r) =>
+      medplum.readReference<Observation>(r)
+    );
+    const checkObservations = await Promise.all(checkObservationPromise);
 
     expect(checkObservations).toHaveLength(8);
-    expect(checkObservations?.map((o) => o.code?.coding?.at(0)?.code)).toMatchObject([
+    expect(checkObservations.map((o) => o.code.coding?.at(0)?.code)).toMatchObject([
       'BUN',
       'CHOL',
       'CREAT',
@@ -276,8 +280,8 @@ describe('Read from Partner Lab', () => {
       'HBA1C',
     ]);
 
-    expect(checkObservations?.map((o) => o.status)).toMatchObject(Array(8).fill('cancelled'));
-    expect(checkObservations?.map((o) => o.dataAbsentReason)).toMatchObject(
+    expect(checkObservations.map((o) => o.status)).toMatchObject(Array(8).fill('cancelled'));
+    expect(checkObservations.map((o) => o.dataAbsentReason)).toMatchObject(
       Array(8).fill({
         text: 'Expired',
         coding: [
@@ -325,10 +329,12 @@ describe('Read from Partner Lab', () => {
     );
     expect(checkReports).toHaveLength(1);
 
-    const checkObservationPromise = checkReports?.[0]?.result?.map((r) => r && medplum.readReference(r));
-    const checkObservations = checkObservationPromise && (await Promise.all(checkObservationPromise));
+    const checkObservationPromise = (checkReports[0].result ?? []).map((r) =>
+      medplum.readReference<Observation>(r)
+    );
+    const checkObservations = await Promise.all(checkObservationPromise);
     expect(checkObservations).toHaveLength(6);
-    expect(checkObservations?.map((o) => o.code?.coding?.at(0)?.code)).toMatchObject([
+    expect(checkObservations.map((o) => o.code.coding?.at(0)?.code)).toMatchObject([
       'BUN',
       'CHOL',
       'CREAT',
@@ -337,10 +343,10 @@ describe('Read from Partner Lab', () => {
       'LDL-CALCULATED',
     ]);
 
-    expect(checkObservations?.[5].valueQuantity?.value).not.toBeDefined();
-    expect(checkObservations?.[5].valueQuantity?.unit).not.toBeDefined();
-    expect(checkObservations?.[5].referenceRange).toBeDefined();
-    expect(checkObservations?.[5].dataAbsentReason?.text).toBeDefined();
+    expect(checkObservations[5].valueQuantity?.value).not.toBeDefined();
+    expect(checkObservations[5].valueQuantity?.unit).not.toBeDefined();
+    expect(checkObservations[5].referenceRange).toBeDefined();
+    expect(checkObservations[5].dataAbsentReason?.text).toBeDefined();
   });
 
   // Test that the bot gracefully handles errors when reading files from SFTP

@@ -121,7 +121,7 @@ export function mapFhirToCcdaDateTime(dateTime: string | undefined): string | un
 
   const outDate = date.replaceAll('-', ''); // Remove dashes
 
-  const outTime = (time ?? '')
+  const outTime = time
     .replaceAll(/\.\d+/g, '') // Remove decimal point seconds
     .replaceAll(':', '') // Remove colons
     .replaceAll('Z', '+0000'); // Replace Z with +0000

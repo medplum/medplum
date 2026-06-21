@@ -26,6 +26,8 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
     return <Loading />;
   }
 
+  const owner = task.owner as typeof task.owner | undefined;
+
   return (
     <Stack>
       <Title>Task Actions</Title>
@@ -35,7 +37,7 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
         <UpdateBusinessStatus task={task} onChange={props.onChange} />
         <AssignTask task={task} onChange={props.onChange} />
         <AssignRole task={task} onChange={props.onChange} />
-        {!task.owner ? <ClaimTask task={task} onChange={props.onChange} /> : null}
+        {!owner ? <ClaimTask task={task} onChange={props.onChange} /> : null}
         <PauseResumeTask task={task} onChange={props.onChange} />
         <CompleteTask task={task} onChange={props.onChange} />
         <DeleteTask task={task} onChange={props.onChange} />

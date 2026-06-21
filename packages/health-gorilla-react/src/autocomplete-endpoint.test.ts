@@ -158,14 +158,13 @@ export function getMockAutocompleteBot({
         return { outcome: allOk, type: 'test', result };
       }
       case 'aoe': {
-        const type = invalidType ? ('xxx' as unknown as 'aoe') : 'aoe';
         let result: Questionnaire | undefined;
         if (invalidResultType) {
           result = { resourceType: 'Patient', name: [{ text: 'Test Patient' }] } as unknown as Questionnaire;
         } else {
           result = input.testCode.code ? ALL_AOES[input.testCode.code] : undefined;
         }
-        return { outcome: allOk, type, result };
+        return { outcome: allOk, type: 'aoe', result };
       }
       default: {
         input satisfies never;

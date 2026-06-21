@@ -125,7 +125,7 @@ export async function graphqlHandler(
   }
 
   const introspection = isIntrospectionQuery(query);
-  if (introspection && !router.options?.introspectionEnabled) {
+  if (introspection && !router.options.introspectionEnabled) {
     return [forbidden];
   }
 
@@ -499,7 +499,7 @@ async function resolveByPatch(
   const resourceType = fieldName.substring(0, fieldName.length - 'Patch'.length) as ResourceType;
   const resourceId = args.id;
   const patch = args.patch;
-  if (!resourceType || !resourceId || !Array.isArray(patch)) {
+  if (!resourceId || !Array.isArray(patch)) {
     throw new OperationOutcomeError(badRequest('Invalid patch arguments'));
   }
   // Patch operation expects an array of operations
@@ -524,7 +524,7 @@ type DepthRecord = { depth: number; node?: FieldNode };
 class MaxDepthVisitor {
   private readonly context: ValidationContext;
   private readonly maxDepth: number;
-  private readonly fragmentDepths: Record<string, DepthRecord>;
+  private readonly fragmentDepths: Partial<Record<string, DepthRecord>>;
   private readonly router: FhirRouter;
 
   constructor(context: ValidationContext, router: FhirRouter, maxDepth: number) {
@@ -548,7 +548,7 @@ class MaxDepthVisitor {
       this.router.log('warn', 'Query max depth too high', {
         depth: result.depth,
         limit: this.maxDepth,
-        query: node.loc?.source?.body,
+        query: node.loc?.source.body,
       });
     }
   }
@@ -575,7 +575,7 @@ class MaxDepthVisitor {
         const fragment = this.context.getFragment(fragmentName);
         const cachedDepth = this.fragmentDepths[fragmentName];
 
-        if (cachedDepth) {
+        if (cachedDepth !== undefined) {
           current = cachedDepth;
         } else if (fragment) {
           current = this.getDepth(...fragment.selectionSet.selections);
@@ -615,7 +615,7 @@ class QueryCostVisitor {
   private readonly maxCost: number;
   private readonly debug: boolean;
   private readonly router: FhirRouter;
-  private readonly fragmentCosts: Record<string, number>;
+  private readonly fragmentCosts: Partial<Record<string, number>>;
 
   constructor(context: ValidationContext, router: FhirRouter, options?: QueryCostRuleOptions) {
     this.context = context;
@@ -642,7 +642,7 @@ class QueryCostVisitor {
         this.router.log('warn', 'GraphQL query too complex', {
           cost,
           limit: this.maxCost,
-          query: node.loc?.source?.body,
+          query: node.loc?.source.body,
         });
       }
     }

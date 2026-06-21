@@ -8,9 +8,9 @@ export async function handler(
   medplum: MedplumClient,
   event: BotEvent<QuestionnaireResponse>
 ): Promise<DocumentReference | null> {
-  console.log('Processing sick note questionnaire response:', event.input?.id);
-  console.log('Questionnaire response subject:', event.input?.subject);
-  console.log('Questionnaire response author:', event.input?.author);
+  console.log('Processing sick note questionnaire response:', event.input.id);
+  console.log('Questionnaire response subject:', event.input.subject);
+  console.log('Questionnaire response author:', event.input.author);
 
   // Get all of the answers from the questionnaire response
   const answers = getQuestionnaireAnswers(event.input);
@@ -23,15 +23,15 @@ export async function handler(
   console.log('Signature data available:', !!signatureData);
 
   // Check if sick note is needed
-  const sickNoteNeeded = answers['sick-note-needed']?.valueBoolean;
+  const sickNoteNeeded = answers['sick-note-needed'].valueBoolean;
   if (!sickNoteNeeded) {
     console.log('No sick note needed, skipping PDF generation');
     return null;
   }
 
   // Get the required information
-  const daysOfSickNote = answers['days-of-sick-note']?.valueInteger;
-  const otherInformation = answers['other-information']?.valueString;
+  const daysOfSickNote = answers['days-of-sick-note'].valueInteger;
+  const otherInformation = answers['other-information'].valueString;
 
   if (!daysOfSickNote) {
     console.log('Missing number of days for sick note');
@@ -50,7 +50,7 @@ export async function handler(
   if (patientId) {
     try {
       patient = await medplum.readResource('Patient', patientId);
-      if (patient?.name?.[0]) {
+      if (patient.name?.[0]) {
         const givenNames = patient.name[0].given?.join(' ') || '';
         const familyName = patient.name[0].family || '';
         patientName = `${givenNames} ${familyName}`.trim() || 'Patient';

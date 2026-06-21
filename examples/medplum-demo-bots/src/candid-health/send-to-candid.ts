@@ -32,13 +32,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>
   // Encounter.participant lists all the providers who were part of this encounter.
   // Here we filter to the primary performer. See the
   // [participant-type valueset](https://hl7.org/fhir/valueset-encounter-participant-type.html) for more options
-  if (!encounter?.participant || encounter.participant.length === 0) {
+  if (!encounter.participant || encounter.participant.length === 0) {
     throw new Error('Missing provider');
   }
 
   const providerRef = encounter.participant.find(
     (participant) =>
-      participant?.type?.[0] &&
+      participant.type?.[0] &&
       getCodeBySystem(participant.type[0], 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType') === 'PPRF'
   )?.individual as Reference<Practitioner>;
   const provider: Practitioner = await medplum.readReference(providerRef);
@@ -95,7 +95,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>
     place_of_service_code: '10',
     service_lines: [
       {
-        procedure_code: encounter.type?.[0] && getCodeBySystem(encounter.type?.[0], CPT),
+        procedure_code: encounter.type?.[0] && getCodeBySystem(encounter.type[0], CPT),
         quantity: '1',
         units: 'MJ',
         charge_amount_cents: 10000,
@@ -321,12 +321,12 @@ function convertAddress(address: Address | undefined): object | undefined {
     return undefined;
   }
   return {
-    address1: address?.line?.[0],
-    address2: address?.line?.[1] || '',
-    city: address?.city,
-    state: address?.state,
-    zip_code: address?.postalCode?.split('-')?.[0],
-    zip_plus_four_code: address?.postalCode?.split('-')?.[1],
+    address1: address.line?.[0],
+    address2: address.line?.[1] || '',
+    city: address.city,
+    state: address.state,
+    zip_code: address.postalCode?.split('-')[0],
+    zip_plus_four_code: address.postalCode?.split('-')[1],
   };
 }
 
@@ -349,7 +349,6 @@ function extractDate(date: string | undefined): string | undefined {
 // The Coverage.class field contains a suite of underwriter specific classifiers, including: group, plan, rxbin, etc.
 function findCoverageClass(coverage: Coverage, type: string): CoverageClass | undefined {
   return coverage.class?.find(
-    (klass) =>
-      klass.type && getCodeBySystem(klass.type, 'http://terminology.hl7.org/CodeSystem/coverage-class') === type
+    (klass) => getCodeBySystem(klass.type, 'http://terminology.hl7.org/CodeSystem/coverage-class') === type
   );
 }

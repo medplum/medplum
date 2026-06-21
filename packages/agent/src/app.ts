@@ -499,9 +499,9 @@ export class App {
    */
   private async beginReloadConfig(): Promise<{ listenersStarted: Promise<void> }> {
     const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
-    const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
-    const maxClientsPerRemote = agent?.setting?.find((setting) => setting.name === 'maxClientsPerRemote')?.valueInteger;
-    const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
+    const keepAlive = agent.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
+    const maxClientsPerRemote = agent.setting?.find((setting) => setting.name === 'maxClientsPerRemote')?.valueInteger;
+    const logStatsFreqSecs = agent.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
 
     // If the keepAlive setting changed, we need to reset the pools we have
     if (this.keepAlive !== keepAlive) {
@@ -962,7 +962,7 @@ export class App {
         throw new Error(errMsg);
       }
 
-      const pingCountAsStr = message.body.startsWith('PING') ? (message.body.split(' ')?.[1] ?? '') : '';
+      const pingCountAsStr = message.body.startsWith('PING') ? (message.body.split(' ')[1] ?? '') : '';
       let pingCount: number | undefined = undefined;
 
       if (pingCountAsStr !== '') {
@@ -994,7 +994,7 @@ export class App {
         body: result,
       } satisfies AgentTransmitResponse);
     } catch (err) {
-      this.log.error(`Error during ping attempt to ${message.remote ?? 'NO_HOST_GIVEN'}: ${normalizeErrorString(err)}`);
+      this.log.error(`Error during ping attempt to ${message.remote}: ${normalizeErrorString(err)}`);
       this.addToWebSocketQueue({
         type: 'agent:transmit:response',
         channel: message.channel,
@@ -1057,7 +1057,7 @@ export class App {
       // If we are forcing an upgrade, we can still upgrade to a version that we're already on
       // This is mostly if you somehow installed a version that was not released but installed manually
       // This will get you on the official release version for the given semver
-      if (!message?.force) {
+      if (!message.force) {
         this.log.info(`Attempted to upgrade to version ${targetVersion}, but agent is already on that version`);
         await this.sendToWebSocket({
           type: 'agent:upgrade:response',
@@ -1139,12 +1139,9 @@ export class App {
         );
         child.on('message', (msg: { type: 'STARTED' } | { type: 'ERROR'; err: string }) => {
           clearTimeout(childTimeout);
-          if (!['STARTED', 'ERROR'].includes(msg.type)) {
-            reject(new Error(`Received unexpected message type ${msg.type}, expected 'STARTED' or 'ERROR'`));
-          }
           if (msg.type === 'STARTED') {
             resolve();
-          } else if (msg.type === 'ERROR') {
+          } else {
             reject(new Error(msg.err));
           }
         });

@@ -23,10 +23,10 @@ export function Medications(): JSX.Element {
       <InfoSection title="Medications">
         <Stack gap={0}>
           {medications.map((med) => (
-            <InfoButton key={med.id} onClick={() => navigate(`./${med.id}`)?.catch(console.error)}>
+            <InfoButton key={med.id} onClick={() => Promise.resolve(navigate(`./${med.id}`)).catch(console.error)}>
               <div>
                 <Text c={theme.primaryColor} fw={500} mb={4}>
-                  {med?.medicationCodeableConcept?.text}
+                  {med.medicationCodeableConcept?.text}
                 </Text>
                 <Text c="gray.6">{med.requester?.display}</Text>
               </div>

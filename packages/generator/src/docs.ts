@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import type { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, ElementDefinition, Resource, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import fs, { writeFileSync } from 'fs';
 import type { DOMWindow } from 'jsdom';
 import { JSDOM } from 'jsdom';
@@ -82,16 +82,16 @@ export async function main(): Promise<void> {
  * @returns A map from resourceType -> an array of associated SearchParameters
  */
 function indexSearchParameters(searchParams: SearchParameter[]): Record<string, SearchParameter[]> {
-  const results = {} as Record<string, SearchParameter[]>;
+  const results: Partial<Record<string, SearchParameter[]>> = {};
   for (const searchParam of searchParams) {
-    for (const resType of searchParam.base || []) {
+    for (const resType of searchParam.base) {
       if (!results[resType]) {
         results[resType] = [];
       }
       results[resType].push(searchParam);
     }
   }
-  return results;
+  return results as Record<string, SearchParameter[]>;
 }
 
 function buildDocsDefinitions(
@@ -120,7 +120,7 @@ function buildDocsDefinition(
   } as ResourceDocsProps;
   const elements = resourceDefinition.snapshot?.element || [];
   for (const element of elements) {
-    const parts = element.path?.split('.') || [];
+    const parts = element.path.split('.');
     const name = parts.at(-1) as string;
     const { path, min, max, short, definition, comment } = element;
     result.properties.push({
@@ -138,7 +138,7 @@ function buildDocsDefinition(
   }
 
   if (searchParameters) {
-    result.searchParameters = (searchParameters || []).map((param) => ({
+    result.searchParameters = searchParameters.map((param) => ({
       name: param.name,
       type: param.type,
       description: getSearchParamDescription(param, result.name),
@@ -276,17 +276,20 @@ function writeDocs(
 function filterDefinitions(bundle: Bundle): StructureDefinition[] {
   const definitions: StructureDefinition[] =
     bundle.entry
-      ?.map((e) => e.resource as StructureDefinition)
-      .filter((definition) => definition.resourceType === 'StructureDefinition') || [];
+      ?.map((e) => e.resource)
+      .filter((definition): definition is StructureDefinition => isStructureDefinition(definition)) || [];
 
   return definitions.filter(
     (definition) =>
-      definition.kind &&
       ['resource', 'complex-type'].includes(definition.kind) &&
       definition.name &&
       !['Resource', 'BackboneElement', 'DomainResource', 'MetadataResource', 'Element'].includes(definition.name) &&
       !isLowerCase(definition.name[0])
   );
+}
+
+function isStructureDefinition(resource: Resource | undefined): resource is StructureDefinition {
+  return resource?.resourceType === 'StructureDefinition';
 }
 
 function getSearchParamDescription(searchParam: SearchParameter, resourceType: string): string {
@@ -335,8 +338,8 @@ function getPropertyTypes(property: ElementDefinition | undefined): Pick<Propert
 }
 
 function getInheritance(property: ElementDefinition): { inherited: boolean; base?: string } {
-  const inheritanceBase = property.base?.path?.split('.')[0];
-  const inherited = !!inheritanceBase && property.path?.split('.')[0] !== inheritanceBase;
+  const inheritanceBase = property.base ? property.base.path.split('.')[0] : undefined;
+  const inherited = !!inheritanceBase && property.path.split('.')[0] !== inheritanceBase;
   if (!inherited) {
     return { inherited };
   }
@@ -455,7 +458,7 @@ function extractResourceDescriptions(
     printProgress(Math.round((i / definitions.length) * 100));
     const definition = definitions[i];
     const resourceType = definition.name;
-    const fileName = path.resolve(htmlDirectory, `${resourceType?.toLowerCase()}.html`);
+    const fileName = path.resolve(htmlDirectory, `${resourceType.toLowerCase()}.html`);
     if (resourceType && fs.existsSync(fileName)) {
       const fileContent = fs.readFileSync(fileName, 'utf-8');
       const dom = new JSDOM(fileContent);
@@ -468,7 +471,7 @@ function extractResourceDescriptions(
       for (const div of divs) {
         const h2 = div.querySelector('h2');
         if (h2) {
-          const h2Text = h2.textContent?.toLowerCase().replaceAll(/\s/g, '') || '';
+          const h2Text = h2.textContent.toLowerCase().replaceAll(/\s/g, '');
 
           const paragraphHTML = sanitizeNodeContent(div, dom.window);
 
@@ -485,7 +488,7 @@ function extractResourceDescriptions(
       // find referencedBy
       const pElements = document.querySelectorAll('p');
       for (const p of pElements) {
-        if (p.textContent?.trim().startsWith('This resource is referenced by')) {
+        if (p.textContent.trim().startsWith('This resource is referenced by')) {
           const aElements = p.querySelectorAll('a');
           resourceContents['referencedBy'] = Array.from(aElements).map((a) => {
             rewriteHtmlSpecHref(a);
@@ -515,7 +518,7 @@ function rewriteHtmlSpecHref(anchorElement: HTMLAnchorElement): void {
     const http = match[1];
     const resourceType = match[2];
     // If the URL is absolute, don't do anything
-    if (http || match[0]?.startsWith('/')) {
+    if (http || match[0].startsWith('/')) {
       return;
     }
 
@@ -584,7 +587,7 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
   }
 
   // Remove p elements containing the text "Trial-Use Note".
-  if (clonedDiv.nodeName.toLowerCase() === 'p' && clonedDiv.textContent?.includes('Trial-Use Note')) {
+  if (clonedDiv.nodeName.toLowerCase() === 'p' && clonedDiv.textContent.includes('Trial-Use Note')) {
     clonedDiv.parentNode?.removeChild(node);
   }
 

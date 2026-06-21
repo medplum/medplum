@@ -22,32 +22,26 @@ declare global {
 Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
   configurable: true,
   get() {
-    return globalThis.self?.IS_REACT_ACT_ENVIRONMENT;
+    return globalThis.self.IS_REACT_ACT_ENVIRONMENT;
   },
   set(value) {
-    if (globalThis.self) {
-      Object.defineProperty(globalThis.self, 'IS_REACT_ACT_ENVIRONMENT', {
-        configurable: true,
-        writable: true,
-        value,
-      });
-    }
+    Object.defineProperty(globalThis.self, 'IS_REACT_ACT_ENVIRONMENT', {
+      configurable: true,
+      writable: true,
+      value,
+    });
   },
 });
-if (globalThis.self) {
-  globalThis.self.IS_REACT_ACT_ENVIRONMENT = true;
-}
+globalThis.self.IS_REACT_ACT_ENVIRONMENT = true;
 
 Object.defineProperty(globalThis.window, 'TextDecoder', { value: TextDecoder });
 Object.defineProperty(globalThis.window, 'TextEncoder', { value: TextEncoder });
 
-window.ResizeObserver =
-  window.ResizeObserver ||
-  vi.fn().mockImplementation(() => ({
-    disconnect: vi.fn(),
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-  }));
+window.ResizeObserver = vi.fn().mockImplementation(() => ({
+  disconnect: vi.fn(),
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+}));
 
 indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
 indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);

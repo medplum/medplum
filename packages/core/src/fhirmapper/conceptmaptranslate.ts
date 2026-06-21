@@ -84,7 +84,7 @@ function translateCodes(sourceCodes: Record<string, string[]>, groups: ConceptMa
   for (const [system, codes] of Object.entries(sourceCodes)) {
     for (const group of groups.filter((g) => (g.source ?? '') === system)) {
       let mappings: ConceptMapTranslateMatch[] | undefined = group.element
-        ?.filter((m) => codes.includes(m.code as string))
+        .filter((m) => codes.includes(m.code as string))
         .flatMap(
           (m) =>
             m.target?.map((target) => ({
@@ -97,7 +97,7 @@ function translateCodes(sourceCodes: Record<string, string[]>, groups: ConceptMa
             })) ?? []
         );
 
-      if (!mappings?.length) {
+      if (!mappings.length) {
         mappings = handleUnmappedCodes(codes, group);
       }
       if (mappings) {

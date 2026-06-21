@@ -22,7 +22,7 @@ import type { Demographics, PatientCreate, PatientDTO } from '@metriport/api-sdk
  * @returns A promise that resolves to void
  */
 export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<void> {
-  const metriportApiKey = event.secrets['METRIPORT_API_KEY']?.valueString;
+  const metriportApiKey = event.secrets['METRIPORT_API_KEY'].valueString;
   if (!metriportApiKey) {
     throw new Error('Missing METRIPORT_API_KEY');
   }

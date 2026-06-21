@@ -21,11 +21,12 @@ export async function updateConfigCommand(tag: string, options: UpdateConfigOpti
   try {
     initTerminal();
 
-    const infraConfig = readConfig(tag, options) as MedplumInfraConfig;
-    if (!infraConfig) {
+    const config = readConfig(tag, options);
+    if (!config) {
       printConfigNotFound(tag, options);
       throw new Error(`Config not found: ${tag}`);
     }
+    const infraConfig = config as MedplumInfraConfig;
 
     const serverConfig = readServerConfig(tag) ?? {};
 

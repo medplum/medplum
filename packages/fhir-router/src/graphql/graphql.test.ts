@@ -172,7 +172,7 @@ describe('GraphQL', () => {
     });
     const fhirRouter = new FhirRouter();
     const result = await graphqlHandler(request, repo, fhirRouter);
-    expect(result?.length).toBe(3);
+    expect(result.length).toBe(3);
     expect(result[0]).toMatchObject(allOk);
 
     const data = (result[1] as any).data;
@@ -347,7 +347,7 @@ describe('GraphQL', () => {
 
     const fhirRouter = new FhirRouter();
     const result = await graphqlHandler(request, repo, fhirRouter);
-    expect(result?.length).toBe(3);
+    expect(result.length).toBe(3);
     expect(result[0]).toMatchObject(allOk);
 
     const data = (result[1] as any).data;
@@ -458,7 +458,7 @@ describe('GraphQL', () => {
     });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
-    expect(res[0].issue?.[0]?.details?.text).toStrictEqual(
+    expect(res[0].issue[0]?.details?.text).toStrictEqual(
       'Field "ObservationList" argument "_reference" of type "Patient_Observation_reference!" is required, but it was not provided.'
     );
   });
@@ -581,7 +581,7 @@ describe('GraphQL', () => {
     });
 
     const res2 = await graphqlHandler(request2, repo, fhirRouter);
-    expect(res2[0].issue?.[0]?.details?.text).toStrictEqual('Field "system" exceeds max depth (depth=14, max=12)');
+    expect(res2[0].issue[0]?.details?.text).toStrictEqual('Field "system" exceeds max depth (depth=14, max=12)');
 
     // Customer request for patients and children via RelatedPerson links
     const request3 = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
@@ -651,7 +651,7 @@ describe('GraphQL', () => {
     });
 
     const res4 = await graphqlHandler(request4, repo, fhirRouter);
-    expect(res4[0].issue?.[0]?.details?.text).toStrictEqual('Field "system" exceeds max depth (depth=14, max=12)');
+    expect(res4[0].issue[0]?.details?.text).toStrictEqual('Field "system" exceeds max depth (depth=14, max=12)');
   });
 
   test.skip('Max depth override', async () => {
@@ -716,7 +716,7 @@ describe('GraphQL', () => {
     request2.config = config;
 
     const res2 = await graphqlHandler(request2, repo, fhirRouter);
-    expect(res2[0].issue?.[0]?.details?.text).toStrictEqual('Field "url" exceeds max depth (depth=8, max=6)');
+    expect(res2[0].issue[0]?.details?.text).toStrictEqual('Field "url" exceeds max depth (depth=8, max=6)');
   });
 
   test('StructureDefinition query', async () => {
@@ -1141,7 +1141,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const retrievePatient = await repo.readResource<Patient>('Patient', patient.id ?? '');
+    const retrievePatient = await repo.readResource<Patient>('Patient', patient.id);
     expect(retrievePatient.gender).toStrictEqual('male');
     expect(retrievePatient.name?.[1].family).toStrictEqual('Smith');
   });
@@ -1167,7 +1167,7 @@ describe('GraphQL', () => {
     });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
-    expect(res[0]?.issue?.[0]?.details?.text).toStrictEqual(
+    expect(res[0].issue[0]?.details?.text).toStrictEqual(
       'Field "PatientUpdate" argument "res" of type "PatientCreate!" is required, but it was not provided.'
     );
   });
@@ -1406,7 +1406,7 @@ describe('GraphQL', () => {
     expect(data.PatientPatch.name[0].family).toBe('Smith');
 
     // Confirm in repo
-    const updated = await repo.readResource<Patient>('Patient', testPatient.id ?? '');
+    const updated = await repo.readResource<Patient>('Patient', testPatient.id);
     expect(updated.gender).toBe('male');
     expect(updated.name?.[0].family).toBe('Smith');
   });
@@ -1429,7 +1429,7 @@ describe('GraphQL', () => {
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     // GraphQL validation happens before our resolver, so we get a validation error in the OperationOutcome
-    expect(res[0]?.issue?.[0]?.details?.text).toMatch(
+    expect(res[0].issue[0]?.details?.text).toMatch(
       /Field "PatientPatch" argument "patch" of type "\[PatchOperationInput!\]!" is required/
     );
   });
@@ -1453,7 +1453,7 @@ describe('GraphQL', () => {
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     // GraphQL type validation catches this before our resolver
-    expect(res[0]?.issue?.[0]?.details?.text).toMatch(
+    expect(res[0].issue[0]?.details?.text).toMatch(
       /Expected value of type "\[PatchOperationInput!\]!", found "not-an-array"/
     );
   });

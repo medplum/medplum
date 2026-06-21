@@ -25,8 +25,8 @@ import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
 import { getMedicationElement, handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<void> {
-  const photonClientId = event.secrets['PHOTON_CLIENT_ID']?.valueString;
-  const photonClientSecret = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
+  const photonClientId = event.secrets['PHOTON_CLIENT_ID'].valueString;
+  const photonClientSecret = event.secrets['PHOTON_CLIENT_SECRET'].valueString;
   const photonAuthToken = await handlePhotonAuth(photonClientId, photonClientSecret);
 
   const query = `
@@ -232,10 +232,7 @@ export async function getExistingPatient(
 
   if (photonPatient.externalId) {
     try {
-      patient = await medplum.readResource('Patient', photonPatient.externalId);
-      if (patient) {
-        return patient;
-      }
+      return await medplum.readResource('Patient', photonPatient.externalId);
     } catch (err) {
       console.error(`Error for Patient ID ${photonPatient.id}:`, normalizeErrorString(err));
     }
@@ -321,7 +318,7 @@ export async function createPrescriptions(
   let prescriptions: MedicationRequest[] | undefined;
   for (const photonPrescription of photonPrescriptions ?? EMPTY) {
     console.log(photonPrescription);
-    if ((await checkForExistingPrescription(medplum, photonPrescription)) || !photonPrescription) {
+    if (await checkForExistingPrescription(medplum, photonPrescription)) {
       continue;
     }
 
@@ -374,22 +371,11 @@ async function checkForExistingPrescription(
   medplum: MedplumClient,
   photonPrescription: PhotonPrescription
 ): Promise<boolean> {
-  if (!photonPrescription?.externalId || !photonPrescription?.id) {
+  if (!photonPrescription.externalId) {
     return false;
   }
-  let prescription: MedicationRequest | undefined;
-  if (photonPrescription.externalId) {
-    prescription = await medplum.readResource('MedicationRequest', photonPrescription.externalId);
-    if (prescription) {
-      return true;
-    }
-  }
-
-  prescription = await medplum.searchOne('MedicationRequest', {
-    identifier: NEUTRON_HEALTH + `|${photonPrescription.id}`,
-  });
-
-  return !!prescription;
+  await medplum.readResource('MedicationRequest', photonPrescription.externalId);
+  return true;
 }
 
 export async function getPrescriber(

@@ -66,7 +66,7 @@ describe('createGoalEntry', () => {
     expect(observation?.templateId).toEqual([{ '@_root': OID_GOAL_OBSERVATION }]);
     expect(observation?.code?.['@_code']).toBe('273249006');
     expect(observation?.code?.['@_displayName']).toBe('Assessment scales');
-    expect(observation?.statusCode?.['@_code']).toBe('active');
+    expect(observation?.statusCode['@_code']).toBe('active');
     expect(observation?.effectiveTime?.[0]?.['@_value']).toBe('20240101');
     // Value structure is dynamic based on goal description
     expect(observation?.value).toBeDefined();
@@ -141,7 +141,7 @@ describe('createGoalEntry', () => {
     expect(result).toBeDefined();
     const observation = result?.observation?.[0];
     expect(observation?.templateId).toEqual([{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }]);
-    expect(observation?.statusCode?.['@_code']).toBe('completed');
+    expect(observation?.statusCode['@_code']).toBe('completed');
     expect(observation?.effectiveTime?.[0]?.['@_value']).toBe('20240101100000+0000');
     expect(observation?.value).toBeDefined();
   });
@@ -183,7 +183,7 @@ describe('createGoalEntry', () => {
       { '@_root': OID_GOAL_OBSERVATION },
       { '@_root': OID_GOAL_OBSERVATION, '@_extension': '2022-06-01' },
     ]);
-    expect(observation?.statusCode?.['@_code']).toBe('cancelled');
+    expect(observation?.statusCode['@_code']).toBe('cancelled');
   });
 
   test('should create goal entry with targets', () => {

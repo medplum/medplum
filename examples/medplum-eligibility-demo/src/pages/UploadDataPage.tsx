@@ -123,8 +123,8 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
 
   // Deploy the new bots
   for (const entry of botEntries) {
-    const botName = (entry?.resource as Bot)?.name as string;
-    const distUrl = (entry?.resource as Bot).executableCode?.url;
+    const botName = (entry.resource as Bot).name as string;
+    const distUrl = (entry.resource as Bot).executableCode?.url;
     const distBinaryEntry = exampleBotData.entry?.find((e: any) => e.fullUrl === distUrl) as
       | BundleEntry<Binary>
       | undefined;

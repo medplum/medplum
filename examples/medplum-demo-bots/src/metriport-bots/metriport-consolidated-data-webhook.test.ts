@@ -173,7 +173,7 @@ describe('Metriport Consolidated Data Webhook', () => {
     );
     expect(allergies).toHaveLength(1);
     expect(allergies[0].reaction?.[0].substance?.text).toStrictEqual('Dust');
-    expect(allergies[0].patient?.reference).toStrictEqual(medplumPatientReference);
+    expect(allergies[0].patient.reference).toStrictEqual(medplumPatientReference);
 
     const medications = await medplum.searchResources('Medication', 'identifier=7e6747bd-fc1a-418a-a178-8518db7f95f5');
     expect(medications).toHaveLength(1);
@@ -185,7 +185,7 @@ describe('Metriport Consolidated Data Webhook', () => {
     );
     expect(medicationRequests).toHaveLength(1);
     expect(medicationRequests[0].medicationReference?.reference).toStrictEqual(getReferenceString(medications[0]));
-    expect(medicationRequests[0].subject?.reference).toStrictEqual(medplumPatientReference);
+    expect(medicationRequests[0].subject.reference).toStrictEqual(medplumPatientReference);
   });
 });
 
@@ -210,14 +210,14 @@ describe('convertToTransactionBundle', () => {
     for (const entry of transactionBundle.entry ?? EMPTY) {
       expect(entry.request).toBeDefined();
 
-      if (entry.resource?.resourceType === 'Binary' && entry.request?.url?.startsWith('Patient/')) {
-        expect(entry.request?.method).toBe('PATCH');
-        expect(entry.request?.url).toBe(`Patient/${medplumPatientId}`);
+      if (entry.resource?.resourceType === 'Binary' && entry.request?.url.startsWith('Patient/')) {
+        expect(entry.request.method).toBe('PATCH');
+        expect(entry.request.url).toBe(`Patient/${medplumPatientId}`);
         expect(entry.resource.contentType).toBe(ContentType.JSON_PATCH);
         expect(entry.resource.data).toBeDefined();
       } else if (entry.resource) {
         expect(entry.request?.method).toBe('PUT');
-        expect(entry.resource?.id).toBeUndefined();
+        expect(entry.resource.id).toBeUndefined();
         expect(entry.request?.url).toMatch(new RegExp(String.raw`^${entry.resource.resourceType}\?identifier=.+$`));
       }
     }
@@ -229,11 +229,11 @@ describe('convertToTransactionBundle', () => {
     const encounter = transactionBundle.entry?.find((entry) => entry.resource?.resourceType === 'Encounter')
       ?.resource as Encounter;
 
-    expect(encounter?.subject?.reference).toStrictEqual('urn:uuid:0195d965-bfbc-7825-8a8a-b48baf403559');
-    expect(encounter?.participant?.[0]?.individual?.reference).toStrictEqual(
+    expect(encounter.subject?.reference).toStrictEqual('urn:uuid:0195d965-bfbc-7825-8a8a-b48baf403559');
+    expect(encounter.participant?.[0]?.individual?.reference).toStrictEqual(
       'urn:uuid:73fbeae4-f7e6-425b-b9c7-2ff7c258e24d'
     );
-    expect(encounter?.location?.[0]?.location?.reference).toStrictEqual(
+    expect(encounter.location?.[0]?.location?.reference).toStrictEqual(
       'urn:uuid:40a528af-5c42-4c05-ae03-f2527137f994'
     );
   });

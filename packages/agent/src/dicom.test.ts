@@ -78,8 +78,8 @@ describe('DICOM', () => {
 
     const echoCommandDataset = echoResponse.getCommandDataset();
     expect(echoCommandDataset).toBeDefined();
-    expect(echoCommandDataset?.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
-    expect(echoCommandDataset?.getElement('Status')).toStrictEqual(0);
+    expect(echoCommandDataset.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
+    expect(echoCommandDataset.getElement('Status')).toStrictEqual(0);
 
     //
     // C-STORE
@@ -97,8 +97,8 @@ describe('DICOM', () => {
 
     const storeCommandDataset = storeResponse.getCommandDataset();
     expect(storeCommandDataset).toBeDefined();
-    expect(storeCommandDataset?.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
-    expect(storeCommandDataset?.getElement('Status')).toStrictEqual(0);
+    expect(storeCommandDataset.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
+    expect(storeCommandDataset.getElement('Status')).toStrictEqual(0);
 
     client.clearRequests();
     await app.stop();

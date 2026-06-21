@@ -136,7 +136,7 @@ describe('Condition Entry Functions', () => {
       const act = result.act?.[0];
       expect(act?.['@_classCode']).toBe('ACT');
       expect(act?.['@_moodCode']).toBe('EVN');
-      expect(act?.code?.['@_code']).toBe('CONC');
+      expect(act?.code['@_code']).toBe('CONC');
       expect(act?.statusCode?.['@_code']).toBe('active'); // Default status
     });
 
@@ -247,8 +247,8 @@ describe('Condition Entry Functions', () => {
       const act = result.act?.[0];
       expect(act?.['@_classCode']).toBe('ACT');
       expect(act?.['@_moodCode']).toBe('EVN');
-      expect(act?.code?.['@_code']).toBe(LOINC_HEALTH_CONCERNS_SECTION);
-      expect(act?.code?.['@_displayName']).toBe('Health Concern');
+      expect(act?.code['@_code']).toBe(LOINC_HEALTH_CONCERNS_SECTION);
+      expect(act?.code['@_displayName']).toBe('Health Concern');
       expect(act?.entryRelationship).toEqual([]);
     });
 

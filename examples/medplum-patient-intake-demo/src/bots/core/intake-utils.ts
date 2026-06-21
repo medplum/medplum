@@ -29,6 +29,8 @@ import type {
   Reference,
 } from '@medplum/fhirtypes';
 
+type AnswerMap = Record<string, QuestionnaireResponseItemAnswer | undefined>;
+
 export const PROFILE_URLS: Record<string, string> = {
   AllergyIntolerance: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-allergyintolerance`,
   CareTeam: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-careteam`,
@@ -284,7 +286,7 @@ export async function upsertObservation(
   value: QuestionnaireResponseItemAnswer | undefined,
   profileUrl?: string
 ): Promise<void> {
-  if (!value || !code) {
+  if (!value) {
     return;
   }
 
@@ -305,7 +307,7 @@ export async function upsertObservation(
     observation.valueCodeableConcept = {
       coding: [value],
     };
-  } else if (answerType === 'valueDateTime') {
+  } else {
     observation.valueDateTime = value.valueDateTime;
   }
 
@@ -386,7 +388,7 @@ export function addLanguage(patient: Patient, valueCoding: Coding | undefined, p
 
   // Checks if the patient already has the language in their list of communications
   let language = patientCommunications.find(
-    (communication) => communication.language.coding?.[0].code === valueCoding?.code
+    (communication) => communication.language.coding?.[0].code === valueCoding.code
   );
 
   // Add the language in case it's not set yet
@@ -416,7 +418,7 @@ export function addLanguage(patient: Patient, valueCoding: Coding | undefined, p
 export async function addAllergy(
   medplum: MedplumClient,
   patient: Patient,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
+  answers: AnswerMap
 ): Promise<void> {
   const code = answers['allergy-substance']?.valueCoding;
 
@@ -476,7 +478,7 @@ export async function addAllergy(
 export async function addMedication(
   medplum: MedplumClient,
   patient: Patient,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
+  answers: AnswerMap
 ): Promise<void> {
   const code = answers['medication-code']?.valueCoding;
 
@@ -517,7 +519,7 @@ export async function addMedication(
 export async function addCondition(
   medplum: MedplumClient,
   patient: Patient,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
+  answers: AnswerMap
 ): Promise<void> {
   const code = answers['medical-history-problem']?.valueCoding;
 
@@ -538,7 +540,7 @@ export async function addCondition(
     },
     {
       subject: getReferenceString(patient),
-      code: `${code?.system}|${code?.code}`,
+      code: `${code.system}|${code.code}`,
     }
   );
 }
@@ -554,7 +556,7 @@ export async function addCondition(
 export async function addFamilyMemberHistory(
   medplum: MedplumClient,
   patient: Patient,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
+  answers: AnswerMap
 ): Promise<void> {
   const condition = answers['family-member-history-problem']?.valueCoding;
   const relationship = answers['family-member-history-relationship']?.valueCoding;
@@ -592,7 +594,7 @@ export async function addFamilyMemberHistory(
 export async function addImmunization(
   medplum: MedplumClient,
   patient: Patient,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
+  answers: AnswerMap
 ): Promise<void> {
   const code = answers['immunization-vaccine']?.valueCoding;
   const occurrenceDateTime = answers['immunization-date']?.valueDateTime;
@@ -667,14 +669,17 @@ export async function addPharmacy(
 export async function addCoverage(
   medplum: MedplumClient,
   patient: Patient,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
+  answers: AnswerMap
 ): Promise<void> {
-  const payor = answers['insurance-provider'].valueReference as Reference<Organization>;
-  const subscriberId = answers['subscriber-id'].valueString;
-  const relationshipToSubscriber = answers['relationship-to-subscriber'].valueCoding as Coding;
+  const payor = answers['insurance-provider']?.valueReference as Reference<Organization> | undefined;
+  const subscriberId = answers['subscriber-id']?.valueString;
+  const relationshipToSubscriber = answers['relationship-to-subscriber']?.valueCoding;
+  if (!payor || !subscriberId || !relationshipToSubscriber) {
+    return;
+  }
 
   // Create RelatedPerson resource depending on the relationship to the subscriber
-  const relatedPersonAnswers = answers['related-person'] as Record<string, QuestionnaireResponseItemAnswer>;
+  const relatedPersonAnswers = answers['related-person'] as AnswerMap | undefined;
   if (
     relationshipToSubscriber.code &&
     !['other', 'self', 'injured'].includes(relationshipToSubscriber.code) &&
@@ -789,18 +794,18 @@ export function getGroupRepeatedAnswers(
   questionnaire: Questionnaire,
   response: QuestionnaireResponse,
   groupLinkId: string
-): Record<string, QuestionnaireResponseItemAnswer>[] {
+): AnswerMap[] {
   // Find the questionnaire item based on groupLinkId
   const questionnaireItem = findQuestionnaireItem(questionnaire.item, groupLinkId) as QuestionnaireItem;
 
-  if (questionnaireItem.type !== 'group' || !questionnaireItem?.item) {
+  if (questionnaireItem.type !== 'group' || !questionnaireItem.item) {
     return [];
   }
 
   // Get all response items corresponding to the groupLinkId
   const responseGroups = response.item?.filter((item) => item.linkId === groupLinkId);
 
-  if (!responseGroups || responseGroups?.length === 0) {
+  if (!responseGroups || responseGroups.length === 0) {
     return [];
   }
 
@@ -824,7 +829,7 @@ export function getGroupRepeatedAnswers(
           const subGroupAnswers: Record<string, any> = {};
           item.forEach((subItem) => {
             if (subItem.answer) {
-              subGroupAnswers[subItem.linkId] = subItem.answer?.[0] ?? {};
+              subGroupAnswers[subItem.linkId] = subItem.answer.at(0) ?? {};
             }
           });
           answers[linkId] = subGroupAnswers;
@@ -849,31 +854,34 @@ export function convertDateToDateTime(date: string | undefined): string | undefi
 }
 
 export function getHumanName(
-  answers: Record<string, QuestionnaireResponseItemAnswer>,
+  answers: AnswerMap,
   prefix: string = ''
 ): HumanName | undefined {
   const patientName: HumanName = {};
 
   const givenName: string[] = [];
-  if (answers[`${prefix}first-name`]?.valueString) {
-    givenName.push(answers[`${prefix}first-name`].valueString as string);
+  const firstName = answers[`${prefix}first-name`]?.valueString;
+  if (firstName) {
+    givenName.push(firstName);
   }
-  if (answers[`${prefix}middle-name`]?.valueString) {
-    givenName.push(answers[`${prefix}middle-name`].valueString as string);
+  const middleName = answers[`${prefix}middle-name`]?.valueString;
+  if (middleName) {
+    givenName.push(middleName);
   }
 
   if (givenName.length > 0) {
     patientName.given = givenName;
   }
 
-  if (answers[`${prefix}last-name`]?.valueString) {
-    patientName.family = answers[`${prefix}last-name`].valueString;
+  const lastName = answers[`${prefix}last-name`]?.valueString;
+  if (lastName) {
+    patientName.family = lastName;
   }
 
   return Object.keys(patientName).length > 0 ? patientName : undefined;
 }
 
-export function getPatientAddress(answers: Record<string, QuestionnaireResponseItemAnswer>): Address | undefined {
+export function getPatientAddress(answers: AnswerMap): Address | undefined {
   const patientAddress: Address = {};
 
   if (answers['street']?.valueString) {
@@ -903,7 +911,7 @@ export function getPatientAddress(answers: Record<string, QuestionnaireResponseI
  * @returns Array of ContactPoint resources for phone/email, or undefined if none found
  */
 export function getPatientTelecom(
-  answers: Record<string, QuestionnaireResponseItemAnswer>
+  answers: AnswerMap
 ): ContactPoint[] | undefined {
   const patientTelecom: ContactPoint[] = [];
 
@@ -938,7 +946,7 @@ export function getPatientTelecom(
  */
 export function setPatientTelecomRank(
   patientTelecom: ContactPoint[] | undefined,
-  answers: Record<string, QuestionnaireResponseItemAnswer>
+  answers: AnswerMap
 ): void {
   if (!patientTelecom?.length) {
     return;

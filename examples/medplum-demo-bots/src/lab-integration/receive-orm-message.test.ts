@@ -100,7 +100,7 @@ describe('Send to Partner Lab', () => {
     expect(igmOrder?.note).not.toBeDefined();
 
     const checkPatient = await medplum.readReference(glucoseOrder?.subject as Reference<Patient>);
-    expect(formatHumanName(checkPatient?.name?.[0] ?? {})).toBe('Test Patient');
+    expect(formatHumanName(checkPatient.name?.[0] ?? {})).toBe('Test Patient');
     expect(checkPatient.birthDate).toBe('1990-10-17');
     expect(checkPatient.gender).toBe('male');
     expect(getIdentifier(checkPatient, FACILITY_PATIENT_ID)).toBe('200');
@@ -112,7 +112,7 @@ describe('Send to Partner Lab', () => {
     // Check provider(s)
     const checkRequestingProvider = await medplum.readReference(glucoseOrder?.requester as Reference<Practitioner>);
     expect(checkRequestingProvider).toBeDefined();
-    expect(formatHumanName(checkRequestingProvider?.name?.[0] ?? {})).toBe('Alice Smith MD');
+    expect(formatHumanName(checkRequestingProvider.name?.[0] ?? {})).toBe('Alice Smith MD');
   });
 });
 

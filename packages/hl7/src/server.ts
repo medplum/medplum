@@ -69,7 +69,7 @@ export class Hl7Server {
       };
 
       const errorListener = (e: Error & { code?: string }): void => {
-        if (e?.code === 'EADDRINUSE') {
+        if (e.code === 'EADDRINUSE') {
           server.close(() => sleep(50).then(() => listenOnPort(port)));
         } else {
           reject(e);

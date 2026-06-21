@@ -670,7 +670,7 @@ describe('useSubscription()', () => {
     });
 
     await expect(screen.findByTestId('notification-count')).resolves.toBeInTheDocument();
-    expect(screen.getByTestId<HTMLDivElement>('notification-count')?.innerHTML).toEqual('1');
+    expect(screen.getByTestId<HTMLDivElement>('notification-count').innerHTML).toEqual('1');
 
     act(() => {
       medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
@@ -679,7 +679,7 @@ describe('useSubscription()', () => {
       });
     });
 
-    expect(screen.getByTestId<HTMLDivElement>('notification-count')?.innerHTML).toEqual('2');
+    expect(screen.getByTestId<HTMLDivElement>('notification-count').innerHTML).toEqual('2');
   });
 
   test('Changing callback should not recreate Subscription', async () => {

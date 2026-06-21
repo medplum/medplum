@@ -193,7 +193,7 @@ class ResourceValidator implements CrawlerVisitor {
     propertyValues: (TypedValueWithPath | TypedValueWithPath[])[],
     schema: InternalTypeSchema
   ): void {
-    const element = schema.elements[key];
+    const element = (schema.elements as Record<string, InternalSchemaElement | undefined>)[key];
     if (!element) {
       throw new Error(`Missing element validation schema for ${key}`);
     }
@@ -462,12 +462,12 @@ class ResourceValidator implements CrawlerVisitor {
       return;
     }
 
-    let tokens = this.collect.tokens[url];
+    let tokens = (this.collect.tokens as Record<string, TypedValueWithPath[] | undefined>)[url];
     if (!tokens) {
       const existingKeys = Object.keys(this.collect.tokens);
       for (const key of existingKeys) {
         if (key.startsWith(url + '|')) {
-          tokens = this.collect.tokens[key];
+          tokens = (this.collect.tokens as Record<string, TypedValueWithPath[] | undefined>)[key];
         }
       }
     }
@@ -583,7 +583,7 @@ class ResourceValidator implements CrawlerVisitor {
       return;
     }
 
-    const regex = validationRegexes[type];
+    const regex = (validationRegexes as Record<string, RegExp | undefined>)[type];
     if (regex && !regex.exec(str)) {
       this.issues.push(createStructureIssue(path, 'Invalid ' + type + ' format'));
     }
@@ -633,7 +633,7 @@ function isChoiceOfType(
   for (const part of parts) {
     testProperty += part;
     const elementName = testProperty + '[x]';
-    if (propertyDefinitions[elementName]) {
+    if ((propertyDefinitions as Record<string, InternalSchemaElement | undefined>)[elementName]) {
       const typedPropertyValue = getTypedPropertyValue(typedValue, testProperty);
       return typedPropertyValue ? prefix + elementName : undefined;
     }
@@ -696,14 +696,14 @@ export function matchDiscriminant(
   if (discriminator.path === '$this') {
     sliceElement = slice;
   } else {
-    sliceElement = (elements ?? slice.elements)[discriminator.path];
+    sliceElement = ((elements ?? slice.elements) as Record<string, InternalSchemaElement | undefined>)[discriminator.path];
   }
 
   const sliceType = slice.type;
   switch (discriminator.type) {
     case 'value':
     case 'pattern':
-      if (!value || !sliceElement) {
+      if (!(value as unknown) || !sliceElement) {
         return false;
       }
       if (sliceElement.pattern) {
@@ -721,7 +721,7 @@ export function matchDiscriminant(
       }
       break;
     case 'type':
-      if (!value || !sliceType?.length) {
+      if (!value || !sliceType.length) {
         return false;
       }
       return sliceType.some((t) => t.code === value.type);
@@ -734,7 +734,7 @@ export function matchDiscriminant(
 function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undefined): string | undefined {
   for (const slice of slicingRules?.slices ?? EMPTY) {
     if (
-      slicingRules?.discriminator?.every((discriminator) =>
+      slicingRules?.discriminator.every((discriminator) =>
         arrayify(getNestedProperty(value, discriminator.path))?.some((v) => matchDiscriminant(v, discriminator, slice))
       )
     ) {

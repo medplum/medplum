@@ -11,7 +11,7 @@ import type {
 import { OperationOutcomeError, badRequest, validationError } from '@medplum/core';
 
 const VALID_PRIMITIVE_TYPES = ['string', 'boolean', 'number'];
-const ssmClients = {} as Record<string, SSMClient>;
+const ssmClients: Partial<Record<string, SSMClient>> = {};
 
 export class InfraConfigNormalizer {
   private readonly config: MedplumSourceInfraConfig;
@@ -57,18 +57,8 @@ export class InfraConfigNormalizer {
 
   async fetchExternalSecret(externalSecret: ExternalSecret): Promise<ExternalSecretPrimitive> {
     assertValidExternalSecret(externalSecret);
-    const { system, key, type } = externalSecret;
-    let rawValue: ExternalSecretPrimitive;
-    switch (system) {
-      case 'aws_ssm_parameter_store': {
-        rawValue = await this.fetchParameterStoreSecret(key);
-        break;
-      }
-      default:
-        throw new OperationOutcomeError(
-          validationError(`Unknown system '${system}' for ExternalSecret. Unable to fetch the secret for key '${key}'.`)
-        );
-    }
+    const { key, type } = externalSecret;
+    const rawValue = await this.fetchParameterStoreSecret(key);
     return normalizeFetchedValue(key, rawValue, type);
   }
 
@@ -150,7 +140,7 @@ export function normalizeFetchedValue(
   if (typeOfVal === expectedType) {
     return rawValue;
   } else if (typeOfVal === 'string' && expectedType === 'boolean') {
-    const normalized = (rawValue as string).toLowerCase() as 'true' | 'false';
+    const normalized = (rawValue as string).toLowerCase();
     if (normalized !== 'true' && normalized !== 'false') {
       throw new OperationOutcomeError(
         validationError(`Invalid value found for key '${key}'; expected boolean value but got '${rawValue}'`)

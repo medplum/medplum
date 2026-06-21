@@ -121,13 +121,13 @@ describe('medication entry functions', () => {
 
       expect(result).toBeDefined();
       const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.code?.[0]).toBeDefined();
+      expect(substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturedMaterial?.[0]?.code?.[0]).toBeDefined();
       expect(
-        substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.code?.[0]?.originalText
+        substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturedMaterial?.[0]?.code?.[0]?.originalText
           ?.reference?.['@_value']
       ).toBe('#medication-text');
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization).toBeDefined();
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.name?.[0]).toBe(
+      expect(substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturerOrganization).toBeDefined();
+      expect(substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturerOrganization?.[0]?.name?.[0]).toBe(
         'Bayer'
       );
     });
@@ -166,7 +166,7 @@ describe('medication entry functions', () => {
 
       expect(result).toBeDefined();
       const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.id).toBeDefined();
+      expect(substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturerOrganization?.[0]?.id).toBeDefined();
     });
 
     test('should handle medication without manufacturer', () => {
@@ -192,7 +192,7 @@ describe('medication entry functions', () => {
 
       expect(result).toBeDefined();
       const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization).toBeUndefined();
+      expect(substanceAdmin?.consumable?.manufacturedProduct[0]?.manufacturerOrganization).toBeUndefined();
     });
 
     test('should handle medication with dispense validity period', () => {

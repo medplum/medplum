@@ -107,7 +107,7 @@ export class SchemaCrawler {
   private sliceAllowList: SliceDefinition[] | undefined;
 
   constructor(schema: InternalTypeSchema, visitor: SchemaVisitor, elements?: InternalTypeSchema['elements']) {
-    if (schema.type === undefined) {
+    if (!('type' in schema)) {
       throw new Error('schema must include a type');
     }
     this.rootSchema = schema;
@@ -198,7 +198,7 @@ export class SchemaCrawler {
       this.crawlElementNode(child, path);
     }
 
-    if (isPopulated(node.element?.slicing?.slices)) {
+    if (isPopulated(node.element.slicing?.slices)) {
       this.crawlSlicingImpl(node.element.slicing, nodePath);
     }
 

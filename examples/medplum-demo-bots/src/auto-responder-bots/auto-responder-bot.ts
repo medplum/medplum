@@ -26,7 +26,7 @@ export async function handler(
   if (!communication.partOf?.find((partOf) => partOf.reference?.startsWith('Communication/'))) {
     return undefined;
   }
-  if (communication.note?.find((note) => note.text?.includes('Auto-generated response'))) {
+  if (communication.note?.find((note) => note.text.includes('Auto-generated response'))) {
     return undefined;
   }
 

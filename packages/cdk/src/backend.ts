@@ -197,7 +197,7 @@ export class BackEnd extends Construct {
         storageEncrypted: true,
         // Instances with attached NVMe SSD (db.*d* instance classes) should utilize I/O optimized storage
         // to unlock additional performance improvements (e.g. tiered caching between memory and SSD)
-        storageType: writerInstanceType?.match(/^\w+d\w*\./i)
+        storageType: writerInstanceType.match(/^\w+d\w*\./i)
           ? DBClusterStorageType.AURORA_IOPT1
           : DBClusterStorageType.AURORA,
         vpc: this.vpc,
@@ -687,7 +687,7 @@ export class BackEnd extends Construct {
         tier: ssm.ParameterTier.STANDARD,
         parameterName: `/medplum/${name}/databaseProxyEndpoint`,
         description: 'Database proxy endpoint',
-        stringValue: this.rdsProxy?.endpoint,
+        stringValue: this.rdsProxy.endpoint,
       });
     }
 

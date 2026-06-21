@@ -97,8 +97,8 @@ export class AgentHl7Channel extends BaseChannel {
     const connection = this.connections.get(msg.remote);
     if (connection) {
       const hl7Message = Hl7Message.parse(msg.body);
-      const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
-      const ackCode = hl7Message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
+      const msgControlId = hl7Message.getSegment('MSA')?.getField(2).toString();
+      const ackCode = hl7Message.getSegment('MSA')?.getField(1).toString().toUpperCase();
 
       if (
         ackCode &&
@@ -110,9 +110,7 @@ export class AgentHl7Channel extends BaseChannel {
         })
       ) {
         this.channelLog.debug(
-          `[Skipping ACK -- Mode: ${this.appLevelAckMode} -- ID: ${msgControlId ?? 'not provided'} -- ACK: ${
-            ackCode ?? 'unknown'
-          }]`
+          `[Skipping ACK -- Mode: ${this.appLevelAckMode} -- ID: ${msgControlId ?? 'not provided'} -- ACK: ${ackCode}]`
         );
 
         if (msgControlId) {
@@ -231,7 +229,7 @@ export class AgentHl7ChannelConnection {
 
   private async handleMessage(event: Hl7MessageEvent): Promise<void> {
     try {
-      const msgControlId = event.message.getSegment('MSH')?.getField(10)?.toString();
+      const msgControlId = event.message.getSegment('MSH')?.getField(10).toString();
       this.channel.channelLog.info(
         `[Received -- ID: ${msgControlId ?? 'not provided'}]: ${event.message.toString().replaceAll('\r', '\n')}`
       );
@@ -270,8 +268,8 @@ export class AgentHl7ChannelConnection {
 
   private handleEnhancedAckSent(event: Hl7EnhancedAckSentEvent): void {
     const hl7Message = event.message;
-    const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
-    const ackCode = hl7Message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
+    const msgControlId = hl7Message.getSegment('MSA')?.getField(2).toString();
+    const ackCode = hl7Message.getSegment('MSA')?.getField(1).toString().toUpperCase();
 
     this.channel.channelLog.info(
       `[Sent ${ackCode === 'CA' ? 'Commit ACK (CA)' : 'Immediate ACK (AA)'} -- ID: ${msgControlId ?? 'not provided'}]: ${hl7Message.toString().replaceAll('\r', '\n')}`

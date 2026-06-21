@@ -69,7 +69,8 @@ export function formatReferenceString(value: Reference | undefined): string {
   if (!value) {
     return '';
   }
-  return value.display ?? value.reference ?? stringify(value);
+  const reference = value as Reference & { display?: string; reference?: string };
+  return reference.display ?? reference.reference ?? stringify(value);
 }
 
 /**

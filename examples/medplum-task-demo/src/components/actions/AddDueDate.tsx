@@ -34,7 +34,7 @@ export function AddDueDate(props: AddDueDateProps): JSX.Element {
     const restriction: TaskRestriction = {
       ...task.restriction,
       period: {
-        ...task?.restriction?.period,
+        ...task.restriction?.period,
         end: date,
       },
     };

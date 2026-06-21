@@ -24,11 +24,6 @@ export function SearchPage(): JSX.Element {
   useEffect(() => {
     // Parse the search definition from the url and get the correct fields for the resource type
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
-    if (!parsedSearch.resourceType) {
-      navigate('/Task')?.catch(console.error);
-      return;
-    }
-
     const populatedSearch = getPopulatedSearch(parsedSearch);
 
     if (
@@ -110,7 +105,7 @@ export function SearchPage(): JSX.Element {
 }
 
 function handleInitialTab(search: SearchRequest): string {
-  if (!search?.filters) {
+  if (!search.filters) {
     return 'active';
   }
 

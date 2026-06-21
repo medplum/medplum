@@ -296,7 +296,12 @@ export function serializeFhircastSubscriptionRequest(
     );
   }
 
-  const { channelType, mode, topic, events } = subscriptionRequest;
+  const { channelType, mode, topic, events } = subscriptionRequest as {
+    channelType: string;
+    mode: string;
+    topic: string;
+    events: string[];
+  };
 
   const formattedSubRequest = {
     'hub.channel.type': channelType,
@@ -323,7 +328,12 @@ export function validateFhircastSubscriptionRequest(
   if (typeof subscriptionRequest !== 'object') {
     return false;
   }
-  const { channelType, mode, topic, events } = subscriptionRequest;
+  const { channelType, mode, topic, events } = subscriptionRequest as {
+    channelType?: string;
+    mode?: string;
+    topic?: unknown;
+    events?: unknown;
+  };
   if (!(channelType && mode && topic && events)) {
     return false;
   }
@@ -340,7 +350,7 @@ export function validateFhircastSubscriptionRequest(
     return false;
   }
   for (const event of events) {
-    if (!FHIRCAST_EVENT_NAMES[event]) {
+    if (typeof event !== 'string' || !(event in FHIRCAST_EVENT_NAMES)) {
       return false;
     }
   }
@@ -379,11 +389,6 @@ function validateSingleResourceContext(
       validationError(`context[${i}] is invalid. Resource must contain a valid string ID.`)
     );
   }
-  if (!resource.resourceType) {
-    throw new OperationOutcomeError(
-      validationError(`context[${i}] is invalid. Resource must contain a resource type. No resource type found.`)
-    );
-  }
   const expectedResourceType = keySchema.resourceType;
   // Make sure that resource is a valid type for this event if expected is not wildcard
   if (expectedResourceType !== '*') {
@@ -394,7 +399,7 @@ function validateSingleResourceContext(
         )
       );
     }
-    if (expectedResourceType && resource.resourceType !== expectedResourceType) {
+    if (resource.resourceType !== expectedResourceType) {
       throw new OperationOutcomeError(
         validationError(
           `context[${i}] is invalid. context[${i}] for the '${event}' event should contain resource of type ${expectedResourceType}.`
@@ -445,13 +450,16 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
   contexts: FhircastEventContext<EventName>[]
 ): void {
   const keysSeen = new Map<FhircastEventContext['key'], number>();
+  if (!(event in FHIRCAST_EVENT_NAMES)) {
+    throw new OperationOutcomeError(validationError(`Invalid FHIRcast event: ${event}`));
+  }
   const eventSchema = FHIRCAST_EVENT_RESOURCES[event] as Record<
     FhircastEventContext['key'],
     FhircastEventContextDetails
   >;
   for (let i = 0; i < contexts.length; i++) {
     const key = contexts[i].key as FhircastEventContext['key'];
-    if (!eventSchema[key]) {
+    if (!(key in eventSchema)) {
       throw new OperationOutcomeError(
         validationError(`Key '${key}' not found for event '${event}'. Make sure to add only valid keys.`)
       );
@@ -502,15 +510,11 @@ export function createFhircastMessagePayload<
   if (!(topic && typeof topic === 'string')) {
     throw new OperationOutcomeError(validationError('Must provide a topic.'));
   }
-  if (!FHIRCAST_EVENT_NAMES[event]) {
-    throw new OperationOutcomeError(
-      validationError(
-        `Must provide a valid FHIRcast event name. Supported events: ${Object.keys(FHIRCAST_EVENT_NAMES).join(', ')}`
-      )
-    );
-  }
   if (typeof context !== 'object') {
     throw new OperationOutcomeError(validationError('context must be a context object or array of context objects.'));
+  }
+  if (!(event in FHIRCAST_EVENT_NAMES)) {
+    throw new OperationOutcomeError(validationError(`Invalid FHIRcast event: ${event}`));
   }
   if ((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes(event) && !versionId) {
     throw new OperationOutcomeError(validationError(`The '${event}' event must contain a 'context.versionId'.`));
@@ -588,7 +592,7 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
 
         websocket.send(
           JSON.stringify({
-            id: message?.id,
+            id: message.id,
             timestamp: new Date().toISOString(),
           })
         );

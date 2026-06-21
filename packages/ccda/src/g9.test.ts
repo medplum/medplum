@@ -272,10 +272,10 @@ describe('170.315(g)(9)', () => {
 
       const output = convertFhirToCcda(input);
       const observation =
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
           ?.observation?.[0]?.entryRelationship?.[0]?.observation?.[0];
       expect(observation).toBeDefined();
-      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('123');
+      expect((observation?.value as CcdaCode)['@_code']).toEqual('123');
     });
 
     // Include timing information and concern status Reference: Section III.A in test data samples [2]
@@ -311,27 +311,27 @@ describe('170.315(g)(9)', () => {
       // Check that category="medication" converts to the correct code
       expect(
         (
-          output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+          output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
             ?.observation?.[0]?.value as CcdaCode
-        )?.['@_code']
+        )['@_code']
       ).toEqual('419511003');
 
       // Check act timing (when recorded)
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.low?.[
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.low?.[
           '@_value'
         ]
       ).toEqual('20240101');
 
       // Check observation timing (when started)
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
           ?.observation?.[0]?.effectiveTime?.[0]?.low?.['@_value']
       ).toEqual('20231225');
 
       // Check status
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.statusCode?.['@_code']
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.statusCode?.['@_code']
       ).toEqual('active');
     });
 
@@ -367,14 +367,14 @@ describe('170.315(g)(9)', () => {
       // Check that empty category converts to the default code
       expect(
         (
-          output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+          output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
             ?.observation?.[0]?.value as CcdaCode
-        )?.['@_code']
+        )['@_code']
       ).toEqual('419199007');
 
       // Look for the special NKA code
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
           ?.observation?.[0]?.participant?.[0]?.participantRole?.playingEntity?.code?.['@_nullFlavor']
       ).toEqual('NA');
     });
@@ -436,23 +436,23 @@ describe('170.315(g)(9)', () => {
 
       // Check timing
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
           ?.effectiveTime?.[0]?.low?.['@_value']
       ).toEqual('20240101');
 
       // Check dose quantity
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
           ?.doseQuantity?.['@_value']
       ).toEqual('40');
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
           ?.doseQuantity?.['@_unit']
       ).toEqual('[IU]');
 
       // Check route
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
           ?.routeCode?.['@_code']
       ).toEqual('34206005');
     });
@@ -488,20 +488,20 @@ describe('170.315(g)(9)', () => {
 
       // Check act timing (when recorded)
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.low?.[
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.low?.[
           '@_value'
         ]
       ).toEqual('20240101');
 
       // Check observation timing (when started)
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
           ?.observation?.[0]?.effectiveTime?.[0]?.low?.['@_value']
       ).toEqual('20231225');
 
       // Check status
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.statusCode?.['@_code']
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.statusCode?.['@_code']
       ).toEqual('active');
     });
   });
@@ -513,7 +513,7 @@ describe('170.315(g)(9)', () => {
       });
       const output = convertFhirToCcda(input);
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.substanceAdministration
       ).toBeDefined();
     });
 
@@ -525,11 +525,11 @@ describe('170.315(g)(9)', () => {
       });
       const output = convertFhirToCcda(input);
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
           ?.statusCode?.['@_code']
       ).toEqual('completed');
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
           ?.effectiveTime?.[0]?.['@_value']
       ).toEqual('20100815');
     });
@@ -542,11 +542,11 @@ describe('170.315(g)(9)', () => {
       });
       const output = convertFhirToCcda(input);
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
           ?.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.lotNumberText?.[0]
       ).toEqual('1');
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
+        output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
           ?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.name?.[0]
       ).toEqual('Manufacturer');
     });
@@ -558,7 +558,7 @@ describe('170.315(g)(9)', () => {
         resourceType: 'Observation',
       });
       const output = convertFhirToCcda(input);
-      expect(output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation).toBeDefined();
+      expect(output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.observation).toBeDefined();
     });
 
     test('should include values and units', () => {
@@ -567,11 +567,11 @@ describe('170.315(g)(9)', () => {
         valueQuantity: { value: 100, unit: 'mg' },
       });
       const output = convertFhirToCcda(input);
-      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      const observation = output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
       expect(observation).toBeDefined();
       const value = observation?.value as CcdaQuantity;
-      expect(value?.['@_value']).toEqual('100');
-      expect(value?.['@_unit']).toEqual('mg');
+      expect(value['@_value']).toEqual('100');
+      expect(value['@_unit']).toEqual('mg');
     });
 
     test('should handle observation components', () => {
@@ -593,7 +593,7 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const organizer = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[1]?.organizer?.[0];
+      const organizer = output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[1]?.organizer?.[0];
       expect(organizer).toBeDefined();
       const components = organizer?.component;
       expect(components).toBeDefined();
@@ -611,10 +611,10 @@ describe('170.315(g)(9)', () => {
         valueCodeableConcept: { coding: [{ system: SNOMED, code: '449868002' }] },
       });
       const output = convertFhirToCcda(input);
-      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      const observation = output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
       expect(observation).toBeDefined();
-      expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_SMOKING_STATUS_OBSERVATION);
-      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('449868002');
+      expect(observation?.templateId[0]['@_root']).toEqual(OID_SMOKING_STATUS_OBSERVATION);
+      expect((observation?.value as CcdaCode)['@_code']).toEqual('449868002');
     });
 
     test('should handle history of tobacco use', () => {
@@ -625,10 +625,10 @@ describe('170.315(g)(9)', () => {
         valueCodeableConcept: { coding: [{ system: SNOMED, code: '449868002' }] },
       });
       const output = convertFhirToCcda(input);
-      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      const observation = output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
       expect(observation).toBeDefined();
-      expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_TOBACCO_USE_OBSERVATION);
-      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('449868002');
+      expect(observation?.templateId[0]['@_root']).toEqual(OID_TOBACCO_USE_OBSERVATION);
+      expect((observation?.value as CcdaCode)['@_code']).toEqual('449868002');
     });
 
     test('should handle administrative gender', () => {
@@ -639,10 +639,10 @@ describe('170.315(g)(9)', () => {
         valueCodeableConcept: { coding: [{ system: SNOMED, code: '248152002' }] },
       });
       const output = convertFhirToCcda(input);
-      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      const observation = output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
       expect(observation).toBeDefined();
-      expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_SEX_OBSERVATION);
-      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('248152002');
+      expect(observation?.templateId[0]['@_root']).toEqual(OID_SEX_OBSERVATION);
+      expect((observation?.value as CcdaCode)['@_code']).toEqual('248152002');
     });
 
     test('should handle birth sex', () => {
@@ -653,11 +653,11 @@ describe('170.315(g)(9)', () => {
         valueCodeableConcept: { coding: [{ system: ADMINISTRATIVE_GENDER_CODE_SYSTEM, code: 'F' }] },
       });
       const output = convertFhirToCcda(input);
-      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      const observation = output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
       expect(observation).toBeDefined();
-      expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_BIRTH_SEX);
-      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('F');
-      expect((observation?.value as CcdaCode)?.['@_codeSystem']).toEqual(OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM);
+      expect(observation?.templateId[0]['@_root']).toEqual(OID_BIRTH_SEX);
+      expect((observation?.value as CcdaCode)['@_code']).toEqual('F');
+      expect((observation?.value as CcdaCode)['@_codeSystem']).toEqual(OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM);
     });
   });
 
@@ -669,7 +669,7 @@ describe('170.315(g)(9)', () => {
         location: { reference: 'Location/123' },
       });
       const output = convertFhirToCcda(input);
-      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      const procedure = output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
       expect(procedure).toBeDefined();
     });
 
@@ -688,7 +688,7 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      const procedure = output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
       expect(procedure).toBeDefined();
       const participant = procedure?.participant?.[0];
       expect(participant).toBeDefined();
@@ -712,7 +712,7 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      const procedure = output.component?.structuredBody.component[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
       expect(procedure).toBeDefined();
       const participant = procedure?.participant?.[0];
       expect(participant).toBeDefined();
@@ -744,7 +744,7 @@ describe('170.315(g)(9)', () => {
         authoredOn: '2025-02-27T01:32:00.000Z',
       });
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody.component[0]?.section?.[0];
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_PLAN_OF_TREATMENT_SECTION);
       const observation = section?.entry?.[0]?.observation?.[0];
@@ -791,7 +791,7 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody.component[0]?.section?.[0];
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_RESULTS_SECTION);
       const organizer = section?.entry?.[1]?.organizer?.[0];
@@ -810,7 +810,7 @@ describe('170.315(g)(9)', () => {
         device: { reference: 'Device/123' },
       });
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody.component[0]?.section?.[0];
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_DEVICES_SECTION);
       expect(section?.entry).toHaveLength(0);
@@ -848,12 +848,12 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody.component[0]?.section?.[0];
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_DEVICES_SECTION);
       const procedure = section?.entry?.[0]?.procedure?.[0];
       expect(procedure).toBeDefined();
-      expect(procedure?.code?.['@_code']).toEqual('360030002');
+      expect(procedure?.code['@_code']).toEqual('360030002');
       expect(procedure?.participant?.length).toEqual(1);
       expect(procedure?.participant?.[0]?.['@_typeCode']).toEqual('DEV');
       const device = procedure?.participant?.[0]?.participantRole;
@@ -888,7 +888,7 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody.component[0]?.section?.[0];
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_ASSESSMENTS_SECTION);
       expect(section?.text).toEqual('Lorem ipsum');
@@ -910,7 +910,7 @@ describe('170.315(g)(9)', () => {
         },
       });
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody.component[0]?.section?.[0];
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_GOALS_SECTION);
 
@@ -946,7 +946,7 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody.component[0]?.section?.[0];
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_HEALTH_CONCERNS_SECTION);
       const act = section?.entry?.[0]?.act?.[0];
@@ -980,7 +980,7 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      const section = output.component?.structuredBody.component[0]?.section?.[0];
       expect(section).toBeDefined();
       expect(section?.code?.['@_code']).toEqual(LOINC_NOTES_SECTION);
       const act = section?.entry?.[0]?.act?.[0];
@@ -1023,7 +1023,7 @@ describe('170.315(g)(9)', () => {
       }
     );
     const output = convertFhirToCcda(input);
-    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    const section = output.component?.structuredBody.component[0]?.section?.[0];
     expect(section).toBeDefined();
     expect(section?.code?.['@_code']).toEqual(LOINC_NOTES_SECTION);
 
@@ -1051,7 +1051,7 @@ describe('170.315(g)(9)', () => {
       summary: 'Lorem ipsum',
     });
     const output = convertFhirToCcda(input);
-    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    const section = output.component?.structuredBody.component[0]?.section?.[0];
     expect(section).toBeDefined();
     expect(section?.code?.['@_code']).toEqual(LOINC_NOTES_SECTION);
 
@@ -1091,7 +1091,7 @@ describe('Encounters', () => {
       }
     );
     const output = convertFhirToCcda(input);
-    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    const section = output.component?.structuredBody.component[0]?.section?.[0];
     expect(section).toBeDefined();
     expect(section?.code?.['@_code']).toEqual(LOINC_ENCOUNTERS_SECTION);
 
@@ -1132,7 +1132,7 @@ describe('Reason for Referral', () => {
     expect(output).toBeDefined();
     expect(output.code?.['@_code']).toEqual(LOINC_REFERRAL_NOTE);
 
-    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    const section = output.component?.structuredBody.component[0]?.section?.[0];
     expect(section).toBeDefined();
     expect(section?.text).toEqual('Lorem ipsum');
     expect(section?.code?.['@_code']).toEqual(LOINC_REASON_FOR_REFERRAL_SECTION);

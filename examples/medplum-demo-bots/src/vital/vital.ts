@@ -77,7 +77,7 @@ export async function handler(
 
 async function getLabs(secrets: Record<string, ProjectSetting>): Promise<Lab[]> {
   const apiKey = secrets['VITAL_API_KEY'].valueString;
-  const baseURL = secrets['VITAL_BASE_URL']?.valueString || 'https://api.dev.tryvital.io';
+  const baseURL = secrets['VITAL_BASE_URL'].valueString || 'https://api.dev.tryvital.io';
 
   if (!apiKey || !baseURL) {
     throw new Error('VITAL_API_KEY and VITAL_BASE_URL are required');
@@ -126,7 +126,7 @@ async function getAoEQuestionnaire(secrets: Record<string, ProjectSetting>, mark
         text: question.value,
         type: (question.type === 'numeric' ? 'decimal' : question.type) as QuestionnaireItem['type'],
         required: question.required,
-        answerOption: question.answers?.map<QuestionnaireItemAnswerOption>((answer) => ({
+        answerOption: question.answers.map<QuestionnaireItemAnswerOption>((answer) => ({
           valueString: answer.code,
           // valueString: question.type !== 'numeric' ? answer.value : undefined,
           // valueInteger: question.type === 'numeric' ? Number.parseFloat(answer.value) : undefined,
@@ -148,7 +148,7 @@ async function getLabTests(secrets: Record<string, ProjectSetting>, labID?: numb
 
 async function fetchLabTests(secrets: Record<string, ProjectSetting>): Promise<LabTest[]> {
   const apiKey = secrets['VITAL_API_KEY'].valueString;
-  const baseURL = secrets['VITAL_BASE_URL']?.valueString || 'https://api.dev.tryvital.io';
+  const baseURL = secrets['VITAL_BASE_URL'].valueString || 'https://api.dev.tryvital.io';
 
   if (!apiKey || !baseURL) {
     throw new Error('VITAL_API_KEY and VITAL_BASE_URL are required');

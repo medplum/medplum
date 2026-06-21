@@ -32,7 +32,7 @@ export function CoverageInput({ patient, error }: CoverageInputProps): JSX.Eleme
 
   useEffect(() => {
     const selectedCoverages = coverages
-      ?.filter((item) => item.selected)
+      .filter((item) => item.selected)
       .map((item) => item.coverage)
       .slice(0, 3);
     updateBillingInformation({ patientCoverage: validatePatientCoverages(selectedCoverages) });
@@ -40,10 +40,10 @@ export function CoverageInput({ patient, error }: CoverageInputProps): JSX.Eleme
 
   return (
     <Input.Wrapper c={disabled ? 'dimmed' : undefined} label="Patient coverages (max 3)" error={error?.message}>
-      {coverages?.length ? (
+      {coverages.length ? (
         <List type="ordered" listStyleType="none" spacing={4}>
           {coverages.map(({ coverage }, i) => {
-            const display = coverage.payor?.find((p) => p.display)?.display || 'Unknown';
+            const display = coverage.payor.find((p) => p.display)?.display || 'Unknown';
             const listItem = (
               <ListItem key={coverage.id} c={disabled || i >= MAX_COVERAGES ? 'dimmed' : undefined}>
                 <Group align="center" gap={4}>

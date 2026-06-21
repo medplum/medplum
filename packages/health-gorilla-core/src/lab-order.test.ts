@@ -171,7 +171,7 @@ describe('createLabOrderBundle', () => {
     });
 
     expectToBeDefined(orderServiceRequest);
-    expect(orderServiceRequest?.extension).toStrictEqual([
+    expect(orderServiceRequest.extension).toStrictEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'patient' },
     ]);
   });

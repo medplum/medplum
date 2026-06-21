@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BaseSchema, InternalTypeSchema } from '@medplum/core';
-import { compressElement, EMPTY, getAllDataTypes, indexStructureDefinitionBundle, isLowerCase } from '@medplum/core';
+import { compressElement, getAllDataTypes, indexStructureDefinitionBundle, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
@@ -38,7 +38,7 @@ function addOutputType(outputTypes: BaseSchema, typeName: string, typeSchema: In
   }
   outputTypes[typeName] = output;
 
-  for (const innerType of typeSchema.innerTypes ?? EMPTY) {
+  for (const innerType of typeSchema.innerTypes) {
     addOutputType(outputTypes, innerType.name, innerType);
   }
 }

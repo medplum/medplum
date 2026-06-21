@@ -18,8 +18,8 @@ import { handlePhotonAuth, photonGraphqlFetch } from './utils';
 export async function handler(medplum: MedplumClient, event: BotEvent<List>): Promise<MedicationKnowledge[]> {
   const formulary = event.input;
   // Get the Photon client ID and secret to ensure the user is authorized to read and write to the Photon API
-  const photonClientId = event.secrets['PHOTON_CLIENT_ID']?.valueString;
-  const photonClientSecret = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
+  const photonClientId = event.secrets['PHOTON_CLIENT_ID'].valueString;
+  const photonClientSecret = event.secrets['PHOTON_CLIENT_SECRET'].valueString;
   const photonAuthToken = await handlePhotonAuth(photonClientId, photonClientSecret);
 
   // Filter out already synced medications to avoid duplication
@@ -100,7 +100,7 @@ export async function addPhotonIdToMedicationKnowledge(
 ): Promise<void> {
   const medicationKnowledgeId = medicationKnowledge.id as string;
   const code = medicationKnowledge.code ?? { coding: [] };
-  code?.coding?.push({ system: NEUTRON_HEALTH_TREATMENTS, code: photonMedicationId });
+  code.coding?.push({ system: NEUTRON_HEALTH_TREATMENTS, code: photonMedicationId });
 
   const ops: PatchOperation[] = [
     { op: 'test', path: '/meta/versionId', value: medicationKnowledge.meta?.versionId },

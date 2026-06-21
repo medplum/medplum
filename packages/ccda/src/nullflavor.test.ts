@@ -27,7 +27,7 @@ describe('nullFlavor handling', () => {
       ?.resource as Immunization;
     expect(immunization).toBeDefined();
 
-    const codings = immunization.vaccineCode?.coding;
+    const codings = immunization.vaccineCode.coding;
     expect(codings).toBeDefined();
     expect(codings?.length).toBe(1);
     expect(codings?.[0]).toEqual({

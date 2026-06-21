@@ -55,7 +55,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
     const orderMessage = createOrmMessage(serviceRequest, patient, specimen);
     if (orderMessage) {
-      console.log('[ORM Message] Writing Message', `${orderId}.orm`, orderMessage?.toString());
+      console.log('[ORM Message] Writing Message', `${orderId}.orm`, orderMessage.toString());
       await writeHL7ToSftp(client, orderMessage, `./in/${orderId}.orm`);
     }
   } catch (error: any) {
@@ -79,9 +79,9 @@ export function createOrmMessage(
   }
 
   let collectedDateString = '';
-  if (specimen?.collection?.collectedDateTime) {
+  if (specimen.collection?.collectedDateTime) {
     collectedDateString = formatDate(new Date(specimen.collection.collectedDateTime));
-  } else if (serviceRequest?.meta?.lastUpdated) {
+  } else if (serviceRequest.meta?.lastUpdated) {
     collectedDateString = formatDate(new Date(serviceRequest.meta.lastUpdated));
   }
 
@@ -217,11 +217,11 @@ function formatDate(date: Date | undefined, includeTime = true): string {
 }
 
 function formatName(name: HumanName | undefined): string {
-  if (!name?.family || !name?.given?.[0]) {
+  if (!name?.family || !name.given?.[0]) {
     throw new Error('Could not find name for patient');
   }
-  const components = [name.family, name.given?.[0]];
-  const middleInitial = name.given?.[1]?.charAt(0);
+  const components = [name.family, name.given[0]];
+  const middleInitial = name.given[1]?.charAt(0);
   if (middleInitial) {
     components.push(middleInitial);
   }

@@ -15,7 +15,7 @@ export function Vaccine(): JSX.Element {
   return (
     <Box p="xl">
       <Title order={2} mb="md">
-        {vaccine.vaccineCode?.text}
+        {vaccine.vaccineCode.text}
       </Title>
       <InfoSection title="Vaccine">
         <ResourceTable value={vaccine} ignoreMissingValues />

@@ -14,10 +14,7 @@ import { indexStructureDefinitionBundle, tryGetProfile } from './typeschema/type
 import { isPopulated } from './utils';
 
 function isStructureDefinition(sd: any): sd is StructureDefinition {
-  if (!isPopulated<StructureDefinition>(sd)) {
-    return false;
-  }
-  return sd.resourceType === 'StructureDefinition';
+  return isPopulated<StructureDefinition>(sd);
 }
 
 function getSlicedElement(
@@ -36,7 +33,7 @@ function getSlicedElement(
 }
 function getSlice(schema: InternalTypeSchema, slicedElementKey: string, sliceName: string): SliceDefinition {
   const slicedElement = getSlicedElement(schema, slicedElementKey);
-  const slice = slicedElement.slicing?.slices.find((s) => s.name === sliceName);
+  const slice = slicedElement.slicing.slices.find((s) => s.name === sliceName);
   if (!isPopulated(slice)) {
     fail(`Expected ${sliceName} slice to be defined`);
   }
@@ -73,10 +70,11 @@ describe('apply default values', () => {
 
     beforeAll(() => {
       loadProfiles(profileUrls);
-      schema = tryGetProfile(profileUrl) as InternalTypeSchema;
-      if (!schema) {
+      const loadedSchema = tryGetProfile(profileUrl);
+      if (!loadedSchema) {
         fail(`Failed to load schema for ${profileUrl}`);
       }
+      schema = loadedSchema;
     });
 
     test('new Blood Pressure observation', async () => {
@@ -160,10 +158,11 @@ describe('apply default values', () => {
 
     beforeAll(() => {
       loadProfiles(profileUrls);
-      schema = tryGetProfile(profileUrl) as InternalTypeSchema;
-      if (!schema) {
+      const loadedSchema = tryGetProfile(profileUrl);
+      if (!loadedSchema) {
         fail(`Failed to load schema for ${profileUrl}`);
       }
+      schema = loadedSchema;
     });
 
     test('new Patient has no fixed/pattern values', async () => {
@@ -189,7 +188,7 @@ describe('apply default values', () => {
           fail(`expected ${extUrl} extensions to exist`);
         }
 
-        const textExt = ext.extension?.find((e) => e.url === 'text');
+        const textExt = ext.extension.find((e) => e.url === 'text');
         expect(textExt).toBeUndefined();
         ext.extension.push({ url: 'text' });
       });
@@ -199,7 +198,7 @@ describe('apply default values', () => {
 
     describe('fixed/pattern values within non-required extension slice entry', () => {
       test('new race extension entry', () => {
-        const sliceSchema = tryGetProfile(raceExtensionUrl) as InternalTypeSchema;
+        const sliceSchema = tryGetProfile(raceExtensionUrl);
         if (!sliceSchema) {
           fail(`Failed to load schema for ${raceExtensionUrl}`);
         }
@@ -341,10 +340,11 @@ describe('apply default values', () => {
 
     beforeAll(() => {
       loadProfiles([profileUrl]);
-      schema = tryGetProfile(profileUrl) as InternalTypeSchema;
-      if (!schema) {
+      const loadedSchema = tryGetProfile(profileUrl);
+      if (!loadedSchema) {
         fail(`Failed to load schema for ${profileUrl}`);
       }
+      schema = loadedSchema;
     });
 
     test('apply defaults to dosageInstruction handled correctly', () => {

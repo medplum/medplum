@@ -148,7 +148,7 @@ async function createResource(
   const resource = req.body as Resource;
   const assignedId = Boolean(options?.batch);
 
-  if (req.query?._account && typeof req.query._account === 'string') {
+  if (req.query._account && typeof req.query._account === 'string') {
     // Some FHIR clients do not allow custom meta fields, so we use a query parameter instead
     // See: https://github.com/medplum/medplum/issues/5145
     resource.meta = resource.meta || {};
@@ -173,12 +173,12 @@ export async function createResourceImpl<T extends Resource>(
   options?: CreateResourceOptions
 ): Promise<FhirResponse> {
   // Indicates a custom system-level operation to be handled by implementation, not a resource
-  if (resourceType?.startsWith('$')) {
+  if (resourceType.startsWith('$')) {
     return [notFound];
   }
   if (resource.resourceType !== resourceType) {
     return [
-      badRequest(`Incorrect resource type: expected ${resourceType}, but found ${resource.resourceType || '<EMPTY>'}`),
+      badRequest(`Incorrect resource type: expected ${resourceType}, but found ${resource.resourceType}`),
     ];
   }
 
@@ -270,9 +270,6 @@ async function conditionalDelete(req: FhirRequest, repo: FhirRepository): Promis
 async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
   const patch = req.body as Operation[] | Parameters;
-  if (!patch) {
-    return [badRequest('Empty patch body')];
-  }
   if (!Array.isArray(patch) && !isResource(patch, 'Parameters')) {
     return [badRequest('Invalid patch body')];
   }
@@ -284,9 +281,6 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
 async function conditionalPatch(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType } = req.params;
   const patch = req.body as Operation[];
-  if (!patch) {
-    return [badRequest('Empty patch body')];
-  }
   if (!Array.isArray(patch)) {
     return [badRequest('Patch body must be an array')];
   }

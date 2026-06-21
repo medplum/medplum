@@ -49,8 +49,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PhotonEven
   }
 
   // Handle authorization to access the Photon API
-  const PHOTON_CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
-  const PHOTON_CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
+  const PHOTON_CLIENT_ID = event.secrets['PHOTON_CLIENT_ID'].valueString;
+  const PHOTON_CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET'].valueString;
   const PHOTON_AUTH_TOKEN = await handlePhotonAuth(PHOTON_CLIENT_ID, PHOTON_CLIENT_SECRET);
 
   const { name, rxcui } = await getMedicationDetailsFromPrescription(body.data.id, PHOTON_AUTH_TOKEN);

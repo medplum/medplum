@@ -30,7 +30,7 @@ const bundle = await medplum.post<Bundle<Appointment | Slot>>(medplum.fhirUrl('A
 });
 
 // Use the newly created Appointment resource
-const appointment = bundle.entry?.map((e) => e.resource)?.find((e) => isResource<Appointment>(e, 'Appointment'));
+const appointment = bundle.entry?.map((e) => e.resource).find((e) => isResource<Appointment>(e, 'Appointment'));
 // end-block bookOne
 
 console.log(appointment);

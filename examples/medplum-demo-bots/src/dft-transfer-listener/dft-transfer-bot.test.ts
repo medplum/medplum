@@ -47,14 +47,14 @@ IN1|1|MEDICARE|INS123|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
     const coverage = await medplum.searchOne('Coverage', 'subscriber=Patient/' + patient?.id);
     expect(coverage).toBeDefined();
     expect(coverage?.subscriberId).toBe('123456789A');
-    expect(coverage?.payor?.[0].display).toBe('MEDICARE');
-    expect(coverage?.payor?.[0].reference).toBe('Organization/' + organization?.id);
-    expect(coverage?.beneficiary?.reference).toBe('Patient/' + patient?.id);
+    expect(coverage?.payor[0].display).toBe('MEDICARE');
+    expect(coverage?.payor[0].reference).toBe('Organization/' + organization?.id);
+    expect(coverage?.beneficiary.reference).toBe('Patient/' + patient?.id);
 
     // Verify Claim creation
     const claim = await medplum.searchOne('Claim', 'patient=Patient/' + patient?.id);
     expect(claim).toBeDefined();
-    expect(claim?.insurance?.[0].coverage?.reference).toBe('Coverage/' + coverage?.id);
+    expect(claim?.insurance[0].coverage.reference).toBe('Coverage/' + coverage?.id);
     expect(claim?.item?.[0].productOrService.coding?.[0].code).toBe('99213');
     expect(claim?.diagnosis?.[0].diagnosisCodeableConcept?.coding?.[0].code).toBe('E11.9');
   });

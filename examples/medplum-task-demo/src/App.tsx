@@ -155,7 +155,7 @@ async function getTasksByRoleLinks(medplum: MedplumClient, profileReference: str
   return roles
     .map((role) => {
       // For each role, generate a link to all open Tasks
-      const roleCode = role?.code?.[0];
+      const roleCode = role.code?.[0];
 
       if (!roleCode?.coding?.[0]?.code) {
         return undefined;
@@ -168,7 +168,7 @@ async function getTasksByRoleLinks(medplum: MedplumClient, profileReference: str
         filters: [
           { code: 'owner:missing', operator: Operator.EQUALS, value: 'true' },
           { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
-          { code: 'performer', operator: Operator.EQUALS, value: roleCode?.coding?.[0]?.code },
+          { code: 'performer', operator: Operator.EQUALS, value: roleCode.coding[0]?.code },
         ],
       };
 

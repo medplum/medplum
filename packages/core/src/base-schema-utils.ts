@@ -23,7 +23,7 @@ export function compressElement(element: InternalSchemaElement): Partial<Interna
     outputPropertySchema.max = Number.MAX_SAFE_INTEGER;
   }
 
-  outputPropertySchema.type = element.type?.map((t) => ({
+  outputPropertySchema.type = element.type.map((t) => ({
     ...t,
     extension: undefined,
     code: normalizedTypes[t.code] ?? t.code,

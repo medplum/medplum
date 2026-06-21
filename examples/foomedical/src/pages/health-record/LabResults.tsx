@@ -23,12 +23,12 @@ export function LabResults(): JSX.Element {
       <InfoSection title="Lab Results">
         <Stack gap={0}>
           {reports.map((report) => (
-            <InfoButton key={report.id} onClick={() => navigate(`./${report.id}`)?.catch(console.error)}>
+            <InfoButton key={report.id} onClick={() => Promise.resolve(navigate(`./${report.id}`)).catch(console.error)}>
               <div>
                 <Text fw={500} mb={4}>
                   {formatDate(report.meta?.lastUpdated as string)}
                 </Text>
-                <Text>{report.code?.text}</Text>
+                <Text>{report.code.text}</Text>
               </div>
               <IconChevronRight color={theme.colors.gray[5]} />
             </InfoButton>

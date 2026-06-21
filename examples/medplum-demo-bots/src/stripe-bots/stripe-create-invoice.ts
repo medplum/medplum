@@ -25,7 +25,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
 
   // Attempt to find the invoice if it already exists
 
-  let invoice = (await medplum.searchOne('Invoice', 'identifier=' + id)) as Invoice;
+  let invoice = (await medplum.searchOne('Invoice', 'identifier=' + id)) as Invoice | undefined;
 
   if (!invoice) {
     console.log('No invoice found, creating new invoice');
@@ -59,7 +59,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
   }
 
   const accountId = stripeInvoice.customer as string;
-  let account = (await medplum.searchOne('Account', 'identifier=' + accountId)) as Account;
+  let account = (await medplum.searchOne('Account', 'identifier=' + accountId)) as Account | undefined;
 
   //If there is an account in the system with that identifier, link the invoice to the account
   if (account) {

@@ -73,7 +73,7 @@ export function HomePage(): JSX.Element {
       console.error(err);
       setLabOrder(undefined);
       setTransactionResponse(undefined);
-      if (err instanceof LabOrderValidationError && err.errors) {
+      if (err instanceof LabOrderValidationError) {
         setCreateError({ validation: err.errors });
       } else {
         setCreateError({ generic: err });

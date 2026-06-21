@@ -157,7 +157,7 @@ export function createCcdaObservation(
 }
 
 export function mapOrganizerTemplateId(observation: Observation): CcdaTemplateId[] {
-  if (observation.code?.coding?.[0]?.code === 'd5') {
+  if (observation.code.coding?.[0]?.code === 'd5') {
     // ICF functional status organizer
     return [
       { '@_root': OID_FUNCTIONAL_STATUS_RESULT_ORGANIZER, '@_extension': '2014-06-09' },
@@ -173,7 +173,7 @@ export function mapOrganizerTemplateId(observation: Observation): CcdaTemplateId
 }
 
 export function mapObservationTemplateId(observation: Observation, component?: ObservationComponent): CcdaTemplateId[] {
-  const code = observation.code?.coding?.[0]?.code;
+  const code = observation.code.coding?.[0]?.code;
   const category = observation.category?.[0]?.coding?.[0]?.code;
 
   if (code === LOINC_TOBACCO_SMOKING_STATUS) {
@@ -222,7 +222,7 @@ export function mapObservationTemplateId(observation: Observation, component?: O
   }
 
   if (code === 'd5') {
-    const componentCode = component?.code?.coding?.[0]?.code;
+    const componentCode = component?.code.coding?.[0]?.code;
     if (componentCode === LOINC_FUNCTIONAL_STATUS_ASSESSMENT_NOTE) {
       return [{ '@_root': OID_SELF_CARE_ACTIVITIES_ADL_AND_IADL }];
     }

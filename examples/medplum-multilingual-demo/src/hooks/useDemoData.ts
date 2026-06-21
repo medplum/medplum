@@ -48,7 +48,8 @@ export function useDemoData(): DemoData {
   const [error, setError] = useState<Error | undefined>();
 
   useEffect(() => {
-    let cancelled = false;
+    const cancelled = { value: false };
+    const isCancelled = (): boolean => cancelled.value;
 
     async function seed(): Promise<void> {
       setLoading(true);
@@ -79,7 +80,7 @@ export function useDemoData(): DemoData {
 
         await medplum.executeBatch(initBundle);
 
-        if (cancelled) {
+        if (isCancelled()) {
           return;
         }
 
@@ -91,7 +92,7 @@ export function useDemoData(): DemoData {
           medplum.searchOne('Questionnaire', { url: QUESTIONNAIRE_CANONICAL_URL }),
         ]);
 
-        if (cancelled) {
+        if (isCancelled()) {
           return;
         }
 
@@ -125,7 +126,7 @@ export function useDemoData(): DemoData {
 
         await medplum.executeBatch({ resourceType: 'Bundle', type: 'transaction', entry: conditionEntries });
 
-        if (cancelled) {
+        if (isCancelled()) {
           return;
         }
 
@@ -134,15 +135,15 @@ export function useDemoData(): DemoData {
           _tag: TAG_PARAM,
         });
 
-        if (!cancelled) {
+        if (!isCancelled()) {
           setConditions(seededConditions);
         }
       } catch (err) {
-        if (!cancelled) {
+        if (!isCancelled()) {
           setError(err instanceof Error ? err : new Error(String(err)));
         }
       } finally {
-        if (!cancelled) {
+        if (!isCancelled()) {
           setLoading(false);
         }
       }
@@ -151,7 +152,7 @@ export function useDemoData(): DemoData {
     seed().catch(console.error);
 
     return () => {
-      cancelled = true;
+      cancelled.value = true;
     };
   }, [medplum]);
 

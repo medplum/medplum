@@ -84,7 +84,7 @@ export async function fetchMedications(healthie: HealthieClient, patientId: stri
     medications: HealthieMedicationType[];
   }>(query, { patientId });
 
-  return result.medications ?? [];
+  return result.medications;
 }
 
 /**

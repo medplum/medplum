@@ -183,7 +183,7 @@ export class FhirToCcdaConverter {
       // which SHALL be selected from ValueSet Language 2.16.840.1.113883.1.11.11526 DYNAMIC (CONF:5372, R2.1=CONF:1198-5372, DSTU:806)
       languageCode: { '@_code': this.composition.language ?? 'en-US' },
       recordTarget: this.createRecordTarget(),
-      author: this.mapAuthor(this.composition.author?.[0], this.composition.date, true),
+      author: this.mapAuthor(this.composition.author[0], this.composition.date, true),
       custodian: this.mapCustodian(this.composition.custodian),
       informationRecipient: this.mapRecipient(referral),
       participant: this.createParticipants(),
@@ -223,7 +223,7 @@ export class FhirToCcdaConverter {
     if (!resourceType || !id) {
       return undefined;
     }
-    return this.bundle.entry?.find((e) => e.resource?.resourceType === resourceType && e.resource?.id === id)
+    return this.bundle.entry?.find((e) => e.resource?.resourceType === resourceType && e.resource.id === id)
       ?.resource as T;
   }
 
@@ -244,10 +244,6 @@ export class FhirToCcdaConverter {
    * @returns The record target.
    */
   private createRecordTarget(): CcdaRecordTarget[] {
-    if (!this.patient) {
-      throw new Error('Patient not found');
-    }
-
     return [
       {
         patientRole: {

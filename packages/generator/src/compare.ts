@@ -221,7 +221,7 @@ function getMedplumOutput(resource: Resource, expr: string): string {
       '%`vs-administrative-gender`': toTypedValue('http://hl7.org/fhir/ValueSet/administrative-gender'),
     });
     return JSON.stringify(
-      result?.map((r) => r?.value),
+      result.map((r) => r.value),
       undefined,
       2
     );

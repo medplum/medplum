@@ -79,7 +79,9 @@ export function CoveragePage(): JSX.Element {
     <div>
       <CoverageHeader patient={patient} payor={coverage.payor[0]} />
       <Grid>
-        <Grid.Col span={4}>{patient ? <PatientSummary patient={patient} /> : <p>No linked patient</p>}</Grid.Col>
+        <Grid.Col span={4}>
+          <PatientSummary patient={patient} />
+        </Grid.Col>
         <Grid.Col span={5}>
           <Paper p="sm">
             <CoverageDetails

@@ -54,10 +54,6 @@ export function evalSqlOnFhir(view: ViewDefinition, resources: Resource[]): Outp
  * @returns The output rows.
  */
 function processResource(v: ViewDefinition, r: Resource): OutputRow[] {
-  if (!v.resource) {
-    throw new Error('Resource type is required');
-  }
-
   if (v.resource !== r.resourceType) {
     return [];
   }

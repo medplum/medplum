@@ -145,7 +145,7 @@ export async function processOruMessage(
 
   // Update the collection date of each specimen associated with the order
   // See: https://v2plus.hl7.org/2021Jan/segment-definition/OBR.html
-  const collectionDate = parseHl7DateTime(message.getSegment('OBR')?.getField(14)?.toString(), {
+  const collectionDate = parseHl7DateTime(message.getSegment('OBR')?.getField(14).toString(), {
     tzOffset: PARTNER_TIMEZONE,
   });
 
@@ -348,7 +348,7 @@ function processObxSegments(
         console.warn(`Warning: Received the following note with no observation: '${noteText}'`);
         continue;
       }
-      if (!prevObservation?.note) {
+      if (!prevObservation.note) {
         prevObservation.note = [];
       }
       prevObservation.note.push({ text: noteText });
@@ -385,7 +385,7 @@ function processObservation(
   const code = LOINC_CODES[reportedCode];
 
   if (!code) {
-    console.error(`Unrecognized code '${segment.getField(3)?.toString()}'. Skipping....`);
+    console.error(`Unrecognized code '${segment.getField(3).toString()}'. Skipping....`);
     return undefined;
   }
 
@@ -492,10 +492,8 @@ async function uploadEmbeddedPdfs(
   );
 
   if (media.length > 0) {
-    if (!report.presentedForm) {
-      report.presentedForm = [];
-    }
-    report.presentedForm.push(...media.filter((m) => m.content).map((m) => m.content));
+    report.presentedForm ??= [];
+    report.presentedForm.push(...media.map((m) => m.content));
   }
 
   return media;
@@ -533,7 +531,7 @@ function parseReferenceRange(rangeString: string, unit: string): Range {
           value: Number.parseFloat(rangeString.substring(comparator.length)),
           unit,
           system,
-          comparator: rangeString.substring(0, comparator?.length) as Quantity['comparator'],
+          comparator: rangeString.substring(0, comparator.length) as Quantity['comparator'],
         },
       };
     }
@@ -620,7 +618,7 @@ const OBSERVATION_STATUS: Record<string, Observation['status']> = {
   X: 'cancelled',
 };
 
-const LOINC_CODES: Record<string, CodeableConcept> = {
+const LOINC_CODES: Partial<Record<string, CodeableConcept>> = {
   BUN: {
     coding: [
       {

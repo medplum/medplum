@@ -21,7 +21,7 @@ async function fetchSystemPrompts(medplum: MedplumClient): Promise<SystemPrompts
     throw new Error('ai-fhir-request-tools system prompt is not available');
   }
 
-  const profileContextTemplate = communication?.payload?.[1]?.contentString;
+  const profileContextTemplate = communication.payload?.[1]?.contentString;
   if (!profileContextTemplate) {
     throw new Error('ai-fhir-request-tools profile context template is not available');
   }

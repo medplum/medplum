@@ -127,8 +127,12 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`)
       const event = enhancedAckListener.mock.calls[0][0] as Hl7EnhancedAckSentEvent;
       expect(event).toBeInstanceOf(Hl7EnhancedAckSentEvent);
       expect(event.connection).toBe(connection);
-      expect(event.message.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
-      expect(event.message.getSegment('MSA')?.getField(2)?.toString()).toBe('MSG00002');
+      const msa = event.message.getSegment('MSA');
+      if (!msa) {
+        throw new Error('Expected MSA segment');
+      }
+      expect(msa.getField(1).toString()).toBe('CA');
+      expect(msa.getField(2).toString()).toBe('MSG00002');
 
       await connection.close();
     });
@@ -146,8 +150,12 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`)
       const event = enhancedAckListener.mock.calls[0][0] as Hl7EnhancedAckSentEvent;
       expect(event).toBeInstanceOf(Hl7EnhancedAckSentEvent);
       expect(event.connection).toBe(connection);
-      expect(event.message.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
-      expect(event.message.getSegment('MSA')?.getField(2)?.toString()).toBe('MSG00002');
+      const msa = event.message.getSegment('MSA');
+      if (!msa) {
+        throw new Error('Expected MSA segment');
+      }
+      expect(msa.getField(1).toString()).toBe('AA');
+      expect(msa.getField(2).toString()).toBe('MSG00002');
 
       await connection.close();
     });

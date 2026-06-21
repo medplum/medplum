@@ -29,7 +29,7 @@ export async function fetchMostRecentMedicationDate(
     medications: { id: string; created_at: string; updated_at?: string }[];
   }>(query, { patientId });
 
-  const medications = result.medications ?? [];
+  const medications = result.medications;
   if (medications.length === 0) {
     return undefined;
   }
@@ -114,7 +114,7 @@ export async function fetchMostRecentFormAnswerGroupDate(
     formAnswerGroups: { id: string; created_at: string; updated_at?: string }[];
   }>(query, { userId: patientId });
 
-  const formGroups = result.formAnswerGroups ?? [];
+  const formGroups = result.formAnswerGroups;
   if (formGroups.length === 0) {
     return undefined;
   }

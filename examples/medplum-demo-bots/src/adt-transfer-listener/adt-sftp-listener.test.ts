@@ -72,7 +72,7 @@ describe('ADT SFTP Listener', () => {
     const patients = await medplum.searchResources('Patient', 'identifier=4093140347');
     expect(patients).toHaveLength(1);
 
-    const patient = patients?.[0] as Patient;
+    const patient = patients[0] as Patient;
     expect(patient).toMatchObject({
       resourceType: 'Patient',
       identifier: [
@@ -122,7 +122,7 @@ describe('ADT SFTP Listener', () => {
     const practitioners = await medplum.searchResources('Practitioner', 'identifier=C007');
     expect(practitioners).toHaveLength(1);
 
-    const practitioner = practitioners?.[0] as Practitioner;
+    const practitioner = practitioners[0] as Practitioner;
     expect(practitioner).toMatchObject({
       resourceType: 'Practitioner',
       identifier: [
@@ -154,7 +154,7 @@ describe('ADT SFTP Listener', () => {
     const encounters = await medplum.searchResources('Encounter', `subject=${getReferenceString(patient)}`);
     expect(encounters).toHaveLength(1);
 
-    const encounter = encounters?.[0] as Encounter;
+    const encounter = encounters[0] as Encounter;
     expect(encounter).toMatchObject({
       resourceType: 'Encounter',
       status: 'arrived',
@@ -197,7 +197,7 @@ describe('ADT SFTP Listener', () => {
     const allergies = await medplum.searchResources('AllergyIntolerance', `patient=${getReferenceString(patient)}`);
     expect(allergies).toHaveLength(3);
 
-    const allergy1 = allergies?.find((a) => a.code?.coding?.[0]?.code === '414285001') as AllergyIntolerance;
+    const allergy1 = allergies.find((a) => a.code?.coding?.[0]?.code === '414285001') as AllergyIntolerance;
     expect(allergy1).toMatchObject({
       resourceType: 'AllergyIntolerance',
       patient: {
@@ -245,7 +245,7 @@ describe('ADT SFTP Listener', () => {
       onsetDateTime: '2019-08-18',
     });
 
-    const allergy2 = allergies?.find((a) => a.code?.coding?.[0]?.code === '418471000') as AllergyIntolerance;
+    const allergy2 = allergies.find((a) => a.code?.coding?.[0]?.code === '418471000') as AllergyIntolerance;
     expect(allergy2).toMatchObject({
       category: ['food'],
       type: 'allergy',
@@ -262,7 +262,7 @@ describe('ADT SFTP Listener', () => {
       onsetDateTime: '2019-11-29',
     });
 
-    const allergy3 = allergies?.find((a) => a.code?.coding?.[0]?.code === '419199007') as AllergyIntolerance;
+    const allergy3 = allergies.find((a) => a.code?.coding?.[0]?.code === '419199007') as AllergyIntolerance;
     expect(allergy3).toMatchObject({
       type: 'allergy',
       criticality: 'low',
@@ -282,7 +282,7 @@ describe('ADT SFTP Listener', () => {
     const messageHeaders = await medplum.searchResources('MessageHeader');
     expect(messageHeaders).toHaveLength(1);
 
-    const messageHeader = messageHeaders?.[0] as MessageHeader;
+    const messageHeader = messageHeaders[0] as MessageHeader;
     expect(messageHeader).toMatchObject({
       resourceType: 'MessageHeader',
       eventCoding: {
@@ -307,7 +307,7 @@ describe('ADT SFTP Listener', () => {
     const patients = await medplum.searchResources('Patient', 'identifier=3220604768');
     expect(patients).toHaveLength(1);
 
-    const patient = patients?.[0] as Patient;
+    const patient = patients[0] as Patient;
     expect(patient).toMatchObject({
       resourceType: 'Patient',
       name: [
@@ -326,7 +326,7 @@ describe('ADT SFTP Listener', () => {
     const practitioners = await medplum.searchResources('Practitioner', 'identifier=C004');
     expect(practitioners).toHaveLength(1);
 
-    const practitioner = practitioners?.[0] as Practitioner;
+    const practitioner = practitioners[0] as Practitioner;
     expect(practitioner).toMatchObject({
       resourceType: 'Practitioner',
       identifier: [
@@ -358,7 +358,7 @@ describe('ADT SFTP Listener', () => {
     const encounters = await medplum.searchResources('Encounter', `subject=${getReferenceString(patient)}`);
     expect(encounters).toHaveLength(1);
 
-    const encounter = encounters?.[0] as Encounter;
+    const encounter = encounters[0] as Encounter;
     expect(encounter).toMatchObject({
       resourceType: 'Encounter',
       status: 'arrived',
@@ -396,7 +396,7 @@ describe('ADT SFTP Listener', () => {
     const patients = await medplum.searchResources('Patient', 'identifier=2451929988');
     expect(patients).toHaveLength(1);
 
-    const patient = patients?.[0] as Patient;
+    const patient = patients[0] as Patient;
     expect(patient).toMatchObject({
       resourceType: 'Patient',
       name: [
@@ -415,7 +415,7 @@ describe('ADT SFTP Listener', () => {
     const practitioners = await medplum.searchResources('Practitioner', 'identifier=C006');
     expect(practitioners).toHaveLength(1);
 
-    const practitioner = practitioners?.[0] as Practitioner;
+    const practitioner = practitioners[0] as Practitioner;
     expect(practitioner).toMatchObject({
       resourceType: 'Practitioner',
       identifier: [
@@ -454,7 +454,7 @@ describe('ADT SFTP Listener', () => {
     const patients = await medplum.searchResources('Patient', 'identifier=3740313415');
     expect(patients).toHaveLength(1);
 
-    const patient = patients?.[0] as Patient;
+    const patient = patients[0] as Patient;
     expect(patient).toMatchObject({
       resourceType: 'Patient',
       name: [
@@ -474,7 +474,7 @@ describe('ADT SFTP Listener', () => {
     const practitioners = await medplum.searchResources('Practitioner', 'identifier=C003');
     expect(practitioners).toHaveLength(1);
 
-    const practitioner = practitioners?.[0] as Practitioner;
+    const practitioner = practitioners[0] as Practitioner;
     expect(practitioner).toMatchObject({
       resourceType: 'Practitioner',
       identifier: [
@@ -506,7 +506,7 @@ describe('ADT SFTP Listener', () => {
     const encounters = await medplum.searchResources('Encounter', `subject=${getReferenceString(patient)}`);
     expect(encounters).toHaveLength(1);
 
-    const encounter = encounters?.[0] as Encounter;
+    const encounter = encounters[0] as Encounter;
     expect(encounter).toMatchObject({
       resourceType: 'Encounter',
       status: 'arrived',
@@ -533,7 +533,7 @@ describe('ADT SFTP Listener', () => {
     const messageHeaders = await medplum.searchResources('MessageHeader');
     expect(messageHeaders).toHaveLength(1);
 
-    const messageHeader = messageHeaders?.[0] as MessageHeader;
+    const messageHeader = messageHeaders[0] as MessageHeader;
     expect(messageHeader).toMatchObject({
       resourceType: 'MessageHeader',
       eventCoding: {
@@ -554,7 +554,7 @@ describe('ADT SFTP Listener', () => {
     const patients = await medplum.searchResources('Patient', 'identifier=1234567890');
     expect(patients).toHaveLength(1);
 
-    const patient = patients?.[0] as Patient;
+    const patient = patients[0] as Patient;
     expect(patient).toMatchObject({
       resourceType: 'Patient',
       name: [
@@ -570,7 +570,7 @@ describe('ADT SFTP Listener', () => {
     const practitioners = await medplum.searchResources('Practitioner', 'identifier=DOC123');
     expect(practitioners).toHaveLength(1);
 
-    const practitioner = practitioners?.[0] as Practitioner;
+    const practitioner = practitioners[0] as Practitioner;
     expect(practitioner).toMatchObject({
       resourceType: 'Practitioner',
       identifier: [
@@ -603,7 +603,7 @@ describe('ADT SFTP Listener', () => {
     const encounters = await medplum.searchResources('Encounter', `subject=${getReferenceString(patient)}`);
     expect(encounters).toHaveLength(1);
 
-    const encounter = encounters?.[0] as Encounter;
+    const encounter = encounters[0] as Encounter;
     expect(encounter).toMatchObject({
       resourceType: 'Encounter',
       status: 'arrived',

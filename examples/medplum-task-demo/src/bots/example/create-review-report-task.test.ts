@@ -40,7 +40,12 @@ describe('Create Review Report Task', async () => {
     });
 
     const checkTask = await medplum.searchResources('Task', `focus=${getReferenceString(diagnosticReport)}`);
-    expect(checkTask?.[0]?.code?.text).toBe('Review Diagnostic Report');
+    const task = checkTask[0];
+    expect(task).toBeDefined();
+    if (!task.code) {
+      throw new Error('Task code not found');
+    }
+    expect(task.code.text).toBe('Review Diagnostic Report');
   });
 
   test('Report is not preliminary', async () => {

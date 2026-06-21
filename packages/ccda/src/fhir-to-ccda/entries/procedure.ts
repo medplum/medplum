@@ -81,11 +81,10 @@ export function createHistoryOfProceduresEntry(
       ],
     };
   }
-  if (resource.resourceType === 'Observation') {
-    // Create an <observation> entry
-    return {
-      observation: [
-        {
+  // Create an <observation> entry
+  return {
+    observation: [
+      {
           '@_classCode': 'OBS',
           '@_moodCode': 'EVN',
           templateId: mapObservationTemplateId(resource),
@@ -95,10 +94,9 @@ export function createHistoryOfProceduresEntry(
           statusCode: { '@_code': 'completed' },
           effectiveTime: mapEffectiveTime(resource.effectiveDateTime, resource.effectivePeriod),
           text: createTextFromExtensions(resource.extension),
-        },
-      ],
-    };
-  }
+      },
+    ],
+  };
   throw new Error(`Unknown history of procedures resource type: ${(resource as any).resourceType}`);
 }
 

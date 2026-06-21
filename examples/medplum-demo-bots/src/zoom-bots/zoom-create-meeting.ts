@@ -332,10 +332,10 @@ async function updateAppointmentWithZoomDetails(
  */
 export async function handler(medplum: MedplumClient, event: BotEvent<Appointment>): Promise<Appointment> {
   // Get Zoom credentials from bot secrets
-  const accountId = event.secrets['ZOOM_ACCOUNT_ID']?.valueString;
-  const clientId = event.secrets['ZOOM_CLIENT_ID']?.valueString;
-  const clientSecret = event.secrets['ZOOM_CLIENT_SECRET']?.valueString;
-  const userEmail = event.secrets['ZOOM_USER_EMAIL']?.valueString;
+  const accountId = event.secrets['ZOOM_ACCOUNT_ID'].valueString;
+  const clientId = event.secrets['ZOOM_CLIENT_ID'].valueString;
+  const clientSecret = event.secrets['ZOOM_CLIENT_SECRET'].valueString;
+  const userEmail = event.secrets['ZOOM_USER_EMAIL'].valueString;
 
   if (!accountId || !clientId || !clientSecret || !userEmail) {
     throw new Error('Missing Zoom credentials in bot secrets');

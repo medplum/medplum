@@ -113,7 +113,7 @@ export function buildElementsContext({
   if (parentContext && !parentContext.isDefaultContext) {
     getExtendedProps = parentContext.getExtendedProps;
   } else {
-    const memoizedExtendedProps: Record<string, ExtendedElementProperties> = Object.create(null);
+    const memoizedExtendedProps: Record<string, ExtendedElementProperties | undefined> = Object.create(null);
     getExtendedProps = (path: string): ExtendedElementProperties | undefined => {
       const key = splitN(path, '.', 2)[1] as string | undefined;
       if (!key) {
@@ -161,12 +161,10 @@ function mergeElementsForContext(
   }
 
   let usedNewElements = false;
-  if (elements) {
-    for (const [key, element] of Object.entries(elements)) {
-      if (!(key in result)) {
-        result[key] = element;
-        usedNewElements = true;
-      }
+  for (const [key, element] of Object.entries(elements)) {
+    if (!(key in result)) {
+      result[key] = element;
+      usedNewElements = true;
     }
   }
 

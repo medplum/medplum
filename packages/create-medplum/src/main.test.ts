@@ -68,12 +68,9 @@ describe('Medplum initializer', () => {
 
 export function mockReadline(...answers: string[]): readline.Interface {
   const result = { write: vi.fn(), question: vi.fn(), close: vi.fn() };
-  const debug = true;
   for (const answer of answers) {
     result.question.mockImplementationOnce(async (q: string) => {
-      if (debug) {
-        console.log(q, answer);
-      }
+      console.log(q, answer);
       return answer;
     });
   }

@@ -238,7 +238,7 @@ export const FUNCTIONAL_STATUS_TEMPLATE_IDS: CcdaTemplateId[] = [
 // 10. Device (Unique Device Identifiers)
 // 11. Plan of Care (including Assessment and Plan of Treatment, Goals, and Health Concerns)
 
-export const LOINC_TO_TEMPLATE_IDS: Record<string, CcdaTemplateId[]> = Object.fromEntries([
+export const LOINC_TO_TEMPLATE_IDS: Partial<Record<string, CcdaTemplateId[]>> = Object.fromEntries([
   [LOINC_ALLERGIES_SECTION, ALLERGIES_SECTION_TEMPLATE_IDS],
   [LOINC_MEDICATIONS_SECTION, MEDICATIONS_SECTION_TEMPLATE_IDS],
   [LOINC_PROBLEMS_SECTION, PROBLEMS_SECTION_TEMPLATE_IDS],

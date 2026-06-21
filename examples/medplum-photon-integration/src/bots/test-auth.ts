@@ -4,8 +4,8 @@ import { allOk, normalizeErrorString } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 
 export async function handler(_medplum: MedplumClient, event: BotEvent): Promise<any> {
-  const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString as string;
-  const CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString as string;
+  const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID'].valueString as string;
+  const CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET'].valueString as string;
 
   const body = {
     client_id: CLIENT_ID,

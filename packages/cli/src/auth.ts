@@ -42,7 +42,7 @@ token.action(async (options) => {
 });
 
 async function startLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
-  const authType = profile?.authType ?? 'authorization-code';
+  const authType = profile.authType ?? 'authorization-code';
   switch (authType) {
     case 'authorization-code':
       await medplumAuthorizationCodeLogin(medplum);

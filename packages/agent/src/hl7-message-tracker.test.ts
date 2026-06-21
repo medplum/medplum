@@ -218,7 +218,7 @@ describe('Hl7MessageTracker', () => {
       });
 
       // Manually register the message in the tracker with a promise we control
-      const msgCtrlId = message.getSegment('MSH')?.getField(10)?.toString() as string;
+      const msgCtrlId = message.getSegment('MSH')?.getField(10).toString() as string;
       const resultPromise = new Promise<Hl7Message>((resolve, reject) => {
         tracker.setPendingMessage(msgCtrlId, {
           message,
@@ -252,7 +252,7 @@ describe('Hl7MessageTracker', () => {
       // Wait for the ACK to arrive and resolve the original promise
       const result = await resultPromise;
       expect(result).toBeDefined();
-      expect(result.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
+      expect(result.getSegment('MSA')?.getField(1).toString()).toBe('AA');
       expect(tracker.getPendingMessageCount()).toBe(0);
 
       await client2.close();
@@ -340,7 +340,7 @@ describe('Hl7MessageTracker', () => {
       // The ACK arrives on client2's tracked connection and resolves the original push promise
       const response = await pushPromise;
       expect(response).toBeDefined();
-      expect(response.getSegment('MSA')?.getField(1)?.toString()).toBe('AA');
+      expect(response.getSegment('MSA')?.getField(1).toString()).toBe('AA');
       expect(tracker.getPendingMessageCount()).toBe(0);
 
       pool.releaseClient(client2);

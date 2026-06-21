@@ -114,13 +114,13 @@ describe('Stats Request', () => {
       )
     );
 
-    let shouldThrow = false;
+    const shouldThrow = { value: false };
     const timeout = setTimeout(() => {
-      shouldThrow = true;
+      shouldThrow.value = true;
     }, 2500);
 
     while (!state.gotStatsResponse) {
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout waiting for stats response');
       }
       await sleep(100);
@@ -213,21 +213,19 @@ describe('Stats Request', () => {
       )
     );
 
-    let shouldThrow = false;
+    const shouldThrow = { value: false };
     const timeout = setTimeout(() => {
-      shouldThrow = true;
+      shouldThrow.value = true;
     }, 2500);
 
     while (!state.gotAgentError) {
-      if (state.statsResponse) {
-        throw new Error('Unexpected stats response');
-      }
-      if (shouldThrow) {
+      if (shouldThrow.value) {
         throw new Error('Timeout waiting for error response');
       }
       await sleep(100);
     }
     clearTimeout(timeout);
+    expect(state.statsResponse).toBeUndefined();
 
     expect(state.gotAgentError).toBe(true);
     expect(state.agentError.body).toStrictEqual('Something bad happened');

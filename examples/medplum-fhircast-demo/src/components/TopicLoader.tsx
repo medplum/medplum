@@ -13,9 +13,6 @@ export default function TopicLoader(props: TopicLoaderProps): JSX.Element {
   const { onSetTopic } = props;
 
   useEffect(() => {
-    if (!onSetTopic) {
-      return;
-    }
     onSetTopic(topic);
   }, [onSetTopic, topic]);
 

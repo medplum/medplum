@@ -17,8 +17,8 @@ export function FormularyDisplay(props: FormularyDisplayProps): JSX.Element {
     return <Loading />;
   }
 
-  const entries: MedicationKnowledge[] | undefined = props.formulary?.entry
-    ?.filter((entry) => entry.item.reference?.split('/')?.[0] === 'MedicationKnowledge')
+  const entries: MedicationKnowledge[] | undefined = props.formulary.entry
+    ?.filter((entry) => entry.item.reference?.split('/')[0] === 'MedicationKnowledge')
     .map((entry) => {
       return medplum.readReference(entry.item).read() as MedicationKnowledge;
     });
@@ -38,7 +38,7 @@ export function FormularyDisplay(props: FormularyDisplayProps): JSX.Element {
       </Table.Thead>
       {entries ? (
         <Table.Tbody>
-          {entries?.map((entry, i) => (
+          {entries.map((entry, i) => (
             <Table.Tr key={i} onClick={(e) => handleRowClick(e, entry)}>
               <Table.Td>{entry.code?.coding?.[0].display}</Table.Td>
               <Table.Td>{entry.status}</Table.Td>

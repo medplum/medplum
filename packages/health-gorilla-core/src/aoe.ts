@@ -16,7 +16,6 @@ import type {
  */
 export function normalizeAoeQuestionnaire(aoe: Questionnaire): Questionnaire {
   for (const item of aoe.item ?? EMPTY) {
-    item.linkId = item.linkId ?? item.id;
     item.initial = item.answerOption ? undefined : item.initial;
   }
   return aoe;

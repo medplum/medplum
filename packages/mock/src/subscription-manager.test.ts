@@ -92,7 +92,7 @@ describe('MockSubscriptionManager', () => {
       });
       manager.closeWebSocket();
     });
-    expect(receivedEvent?.type).toStrictEqual('close');
+    expect(receivedEvent.type).toStrictEqual('close');
   });
 
   test('openWebSocket()', async () => {
@@ -102,7 +102,7 @@ describe('MockSubscriptionManager', () => {
       });
       manager.openWebSocket();
     });
-    expect(receivedEvent?.type).toStrictEqual('open');
+    expect(receivedEvent.type).toStrictEqual('open');
   });
 
   test('getEmitter()', async () => {

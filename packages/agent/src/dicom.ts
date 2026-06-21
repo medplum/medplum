@@ -194,7 +194,7 @@ export class AgentDicomChannel extends BaseChannel {
     await new Promise((resolve) => {
       this.server.on('networkError', async (err) => {
         this.log.error('Network error: ', { err });
-        if ((err as Error & { code?: string })?.code === 'EADDRINUSE') {
+        if ((err as Error & { code?: string }).code === 'EADDRINUSE') {
           await sleep(50);
           this.server.close();
           this.server.listen(port);

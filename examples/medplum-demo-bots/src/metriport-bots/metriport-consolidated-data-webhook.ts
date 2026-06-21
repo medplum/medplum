@@ -20,12 +20,12 @@ import type { Bundle, DocumentReference, Identifier } from '@medplum/fhirtypes';
  * @returns A promise that resolves depending on the webhook message type
  */
 export async function handler(medplum: MedplumClient, event: BotEvent<Record<string, any>>): Promise<any> {
-  const metriportApiKey = event.secrets['METRIPORT_API_KEY']?.valueString;
+  const metriportApiKey = event.secrets['METRIPORT_API_KEY'].valueString;
   if (!metriportApiKey) {
     throw new Error('Missing METRIPORT_API_KEY');
   }
 
-  const metriportWebhookKey = event.secrets['METRIPORT_WEBHOOK_KEY']?.valueString;
+  const metriportWebhookKey = event.secrets['METRIPORT_WEBHOOK_KEY'].valueString;
   if (!metriportWebhookKey) {
     throw new Error('Missing METRIPORT_WEBHOOK_KEY');
   }
@@ -53,7 +53,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
 
         if (input.patients[0]?.bundle?.entry) {
           const docRef = input.patients[0].bundle.entry[0]?.resource as DocumentReference;
-          if (!docRef?.content?.[0]?.attachment?.url) {
+          if (!docRef.content[0]?.attachment?.url) {
             throw new Error('Missing document URL');
           }
 
@@ -79,13 +79,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
                 const outcome = entry.response?.outcome;
                 return (
                   outcome?.resourceType === 'OperationOutcome' &&
-                  outcome.issue?.some((issue) => issue.severity === 'error')
+                  outcome.issue.some((issue) => issue.severity === 'error')
                 );
               })
               .map((entry) => ({
                 resource: entry.resource?.resourceType,
-                error: entry.response?.outcome?.issue?.[0]?.details?.text,
-                expression: entry.response?.outcome?.issue?.[0]?.expression,
+                error: entry.response?.outcome?.issue[0]?.details?.text,
+                expression: entry.response?.outcome?.issue[0]?.expression,
               }));
 
             if (errors && errors.length > 0) {

@@ -108,7 +108,7 @@ import {
  */
 export type ClientLogLevel = 'none' | 'basic' | 'verbose';
 
-export const MEDPLUM_VERSION: string = import.meta.env?.MEDPLUM_VERSION ?? '';
+export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
@@ -2247,7 +2247,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The result of the create operation.
    */
   createResource<T extends Resource>(resource: T, options?: MedplumRequestOptions): Promise<WithId<T>> {
-    if (!resource.resourceType) {
+    if (!(resource as Partial<Resource>).resourceType) {
       throw new Error('Missing resourceType');
     }
     this.invalidateSearches(resource.resourceType);
@@ -2534,10 +2534,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       xhr.onabort = () => sendResult(new DOMException('Request aborted', 'AbortError'));
       xhr.onerror = () => sendResult(new Error('Request error'));
 
-      if (onProgress) {
-        xhr.upload.onprogress = (e) => onProgress(e);
-        xhr.upload.onload = (e) => onProgress(e);
-      }
+      xhr.upload.onprogress = (e) => onProgress(e);
+      xhr.upload.onload = (e) => onProgress(e);
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
@@ -2697,7 +2695,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The result of the update operation.
    */
   async updateResource<T extends Resource>(resource: T, options?: MedplumRequestOptions): Promise<WithId<T>> {
-    if (!resource.resourceType) {
+    if (!(resource as Partial<Resource>).resourceType) {
       throw new Error('Missing resourceType');
     }
     if (!resource.id) {
@@ -3067,7 +3065,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Authentication
    */
   async setActiveLogin(login: LoginState): Promise<void> {
-    if (!this.sessionDetails?.profile || getReferenceString(this.sessionDetails.profile) !== login.profile?.reference) {
+    if (!this.sessionDetails?.profile || getReferenceString(this.sessionDetails.profile) !== login.profile.reference) {
       this.clearActiveLogin();
     }
     this.setAccessToken(login.accessToken, login.refreshToken);
@@ -3123,7 +3121,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   private addLogin(newLogin: LoginState): void {
-    const logins = this.getLogins().filter((login) => login.profile?.reference !== newLogin.profile?.reference);
+    const logins = this.getLogins().filter((login) => login.profile.reference !== newLogin.profile.reference);
     logins.push(newLogin);
     this.storage.setObject('logins', logins);
   }
@@ -3137,7 +3135,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       this.get('auth/me', { cache: 'no-cache' })
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
-          const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
+          const profileChanged = this.sessionDetails?.profile.id !== result.profile.id;
           this.sessionDetails = result;
           this.syncStoredLoginProject();
           if (profileChanged) {
@@ -3165,7 +3163,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   private syncStoredLoginProject(): void {
     const activeLogin = this.getActiveLogin();
-    const projectName = this.sessionDetails?.project?.name;
+    const projectName = (this.sessionDetails as { project?: { name?: string } } | undefined)?.project?.name;
     if (!activeLogin || !projectName || activeLogin.project.display === projectName) {
       return;
     }
@@ -3675,7 +3673,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     // Previously default for maxRetries was 3, but we will interpret maxRetries literally and not count first attempt
     // Default of 2 matches old behavior with the new semantics
-    const maxRetries = options?.maxRetries ?? this.maxRetries;
+    const maxRetries = options.maxRetries ?? this.maxRetries;
 
     // We use <= since we want to retry maxRetries times and first retry is when attemptNum === 1
     for (let attemptNum = 0; attemptNum <= maxRetries; attemptNum++) {
@@ -3732,17 +3730,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   private logResponse(response: Response): void {
     console.log(`< ${response.status} ${response.statusText}`);
-    if (this.logLevel === 'verbose' && response.headers) {
+    if (this.logLevel === 'verbose') {
       response.headers.forEach((value, key) => console.log(`< ${key}: ${value}`));
     }
   }
 
   private setCurrentRateLimit(res: Response): void {
     // Handle cases where response might not have headers property (e.g., in tests)
-    if (!res?.headers || typeof res.headers.get !== 'function') {
+    const headers = (res as { headers?: { get?: (name: string) => string | null } }).headers;
+    if (typeof headers?.get !== 'function') {
       return;
     }
-    const rateLimitHeader = res.headers.get('ratelimit');
+    const rateLimitHeader = headers.get('ratelimit');
     if (rateLimitHeader) {
       this.currentRateLimits = rateLimitHeader;
     }
@@ -4583,7 +4582,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
     // Make sure sessionDetails.profile.id matches the ID in the profile reference we are checking against
     // Otherwise return false if no profile reference in login
-    return login.profile?.reference?.endsWith(this.sessionDetails.profile.id) ?? false;
+    return login.profile.reference?.endsWith(this.sessionDetails.profile.id) ?? false;
   }
 
   /**
@@ -4711,7 +4710,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
  * @returns The default fetch function for the current environment.
  */
 function getDefaultFetch(): FetchLike {
-  if (!globalThis.fetch) {
+  if (typeof globalThis.fetch !== 'function') {
     throw new Error('Fetch not available in this environment');
   }
   return globalThis.fetch.bind(globalThis);
@@ -4764,7 +4763,7 @@ async function tryGetContentLocation(
 
   // However, "Content-Location" may not be available due to CORS limitations.
   // In this case, we use the OperationOutcome.diagnostics field.
-  if (isOperationOutcome(body) && body.issue?.[0]?.diagnostics) {
+  if (isOperationOutcome(body) && body.issue[0]?.diagnostics) {
     return body.issue[0].diagnostics;
   }
 

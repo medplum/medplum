@@ -63,10 +63,10 @@ function Vaccine({ vaccine }: { vaccine: Immunization }): JSX.Element {
   const theme = useMantineTheme();
   const navigate = useNavigate();
   return (
-    <InfoButton onClick={() => navigate(`./${vaccine.id}`)?.catch(console.error)}>
+    <InfoButton onClick={() => Promise.resolve(navigate(`./${vaccine.id}`)).catch(console.error)}>
       <div>
         <Text c={theme.primaryColor} fw={500} mb={8}>
-          {vaccine.vaccineCode?.text}
+          {vaccine.vaccineCode.text}
         </Text>
         <Text c="gray.6">
           <IconMapPin size={16} style={{ marginRight: 4 }} />

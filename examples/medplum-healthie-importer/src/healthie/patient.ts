@@ -157,7 +157,7 @@ export async function fetchHealthiePatientIdsPage(
     query,
     variables
   );
-  let users = result.users ?? [];
+  let users = result.users;
 
   // Client-side filtering by updated_at if sinceLastUpdated is provided
   if (sinceLastUpdated) {
@@ -221,7 +221,7 @@ export async function fetchHealthiePatients(
   }
 
   const result = await healthie.query<{ users: HealthiePatient[] }>(query, { ids: patientIds });
-  return result.users ?? [];
+  return result.users;
 }
 
 export function convertHealthiePatientToFhir(healthiePatient: HealthiePatient): Patient {
@@ -254,7 +254,7 @@ export function convertHealthiePatientToFhir(healthiePatient: HealthiePatient): 
 
     // Map address information if available
     address:
-      healthiePatient.locations && healthiePatient.locations.length > 0
+      healthiePatient.locations.length > 0
         ? [
             {
               line: [healthiePatient.locations[0].line1],

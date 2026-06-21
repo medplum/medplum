@@ -5,7 +5,7 @@ import { mockFetchResponse } from './client-test-utils';
 
 describe('KeyValue', () => {
   test('Happy path', async () => {
-    const state = {
+    const state: { value: string | undefined } = {
       value: undefined,
     };
 

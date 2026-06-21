@@ -8,9 +8,9 @@ import type { MessageHeader, Patient, Encounter, AllergyIntolerance, Practitione
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<any> {
   // Read SFTP connection data from project secrets
-  const host = event.secrets['SFTP_HOST']?.valueString;
-  const user = event.secrets['SFTP_USER']?.valueString;
-  const key = event.secrets['SFTP_PRIVATE_KEY']?.valueString;
+  const host = event.secrets['SFTP_HOST'].valueString;
+  const user = event.secrets['SFTP_USER'].valueString;
+  const key = event.secrets['SFTP_PRIVATE_KEY'].valueString;
 
   if (!host || !user || !key) {
     throw new Error('Missing required secrets: SFTP_HOST, SFTP_USER, SFTP_PRIVATE_KEY');
@@ -178,22 +178,18 @@ export async function processAdtMessage(medplum: MedplumClient, message: Hl7Mess
 
 function createMessageHeader(message: Hl7Message): MessageHeader | null {
   const msh = message.header;
-  if (!msh) {
-    console.error('Missing MSH segment in message');
-    return null;
-  }
 
   try {
     const messageHeader: MessageHeader = {
       resourceType: 'MessageHeader',
       eventCoding: {
         system: 'http://terminology.hl7.org/CodeSystem/v2-0003',
-        code: msh.getField(9)?.getComponent(2) || 'A01',
-        display: getMessageTypeDisplay(msh.getField(9)?.getComponent(2) || 'A01'),
+        code: msh.getField(9).getComponent(2) || 'A01',
+        display: getMessageTypeDisplay(msh.getField(9).getComponent(2) || 'A01'),
       },
       source: {
-        name: msh.getField(3)?.getComponent(1) || 'Unknown',
-        endpoint: msh.getField(4)?.getComponent(1) || 'Unknown',
+        name: msh.getField(3).getComponent(1) || 'Unknown',
+        endpoint: msh.getField(4).getComponent(1) || 'Unknown',
       },
       focus: [],
     };
@@ -225,71 +221,65 @@ function createPatient(message: Hl7Message): Patient | null {
 
     // Patient identifiers from PID-3
     const mrn = pid.getField(3);
-    if (mrn) {
-      patient.identifier?.push({
-        system: 'http://hospital.smarthealthit.org',
-        value: mrn.getComponent(1) || '',
-        type: {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-              code: 'MR',
-              display: 'Medical record number',
-            },
-          ],
-        },
-      });
-    }
+    patient.identifier?.push({
+      system: 'http://hospital.smarthealthit.org',
+      value: mrn.getComponent(1) || '',
+      type: {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+            code: 'MR',
+            display: 'Medical record number',
+          },
+        ],
+      },
+    });
 
     // Patient name from PID-5
     const nameField = pid.getField(5);
-    if (nameField) {
-      const familyName = nameField.getComponent(1) || '';
-      const givenName1 = nameField.getComponent(2) || '';
-      const givenName2 = nameField.getComponent(3) || '';
-      const suffix = nameField.getComponent(4) || '';
-      const prefix = nameField.getComponent(5) || '';
+    const familyName = nameField.getComponent(1) || '';
+    const givenName1 = nameField.getComponent(2) || '';
+    const givenName2 = nameField.getComponent(3) || '';
+    const suffix = nameField.getComponent(4) || '';
+    const prefix = nameField.getComponent(5) || '';
 
-      const givenNames = [givenName1, givenName2].filter((name) => name.trim() !== '');
-      const prefixes = [prefix].filter((prefix) => prefix.trim() !== '');
-      const suffixes = [suffix].filter((suffix) => suffix.trim() !== '');
+    const givenNames = [givenName1, givenName2].filter((name) => name.trim() !== '');
+    const prefixes = [prefix].filter((prefix) => prefix.trim() !== '');
+    const suffixes = [suffix].filter((suffix) => suffix.trim() !== '');
 
-      patient.name?.push({
-        family: familyName,
-        given: givenNames.length > 0 ? givenNames : undefined,
-        prefix: prefixes.length > 0 ? prefixes : undefined,
-        suffix: suffixes.length > 0 ? suffixes : undefined,
-        use: 'official',
-      });
-    }
+    patient.name?.push({
+      family: familyName,
+      given: givenNames.length > 0 ? givenNames : undefined,
+      prefix: prefixes.length > 0 ? prefixes : undefined,
+      suffix: suffixes.length > 0 ? suffixes : undefined,
+      use: 'official',
+    });
 
     // Birth date from PID-7
-    const birthDate = parseHL7Date(pid.getField(7)?.getComponent(1));
+    const birthDate = parseHL7Date(pid.getField(7).getComponent(1));
     if (birthDate) {
       patient.birthDate = birthDate;
     }
 
     // Gender from PID-8
-    const gender = pid.getField(8)?.getComponent(1);
+    const gender = pid.getField(8).getComponent(1);
     if (gender) {
       patient.gender = mapGender(gender);
     }
 
     // Address from PID-11
     const addressField = pid.getField(11);
-    if (addressField) {
-      patient.address?.push({
-        line: [addressField.getComponent(1) || '', addressField.getComponent(2) || ''].filter(Boolean),
-        city: addressField.getComponent(3) || '',
-        state: addressField.getComponent(4) || '',
-        postalCode: addressField.getComponent(5) || '',
-        country: addressField.getComponent(6) || '',
-        use: 'home',
-      });
-    }
+    patient.address?.push({
+      line: [addressField.getComponent(1) || '', addressField.getComponent(2) || ''].filter(Boolean),
+      city: addressField.getComponent(3) || '',
+      state: addressField.getComponent(4) || '',
+      postalCode: addressField.getComponent(5) || '',
+      country: addressField.getComponent(6) || '',
+      use: 'home',
+    });
 
     // Phone from PID-13
-    const phone = pid.getField(13)?.getComponent(1);
+    const phone = pid.getField(13).getComponent(1);
     if (phone) {
       patient.telecom?.push({
         system: 'phone',
@@ -321,51 +311,49 @@ function createPractitioner(message: Hl7Message): Practitioner | null {
     };
 
     const attendingDoctor = pv1.getField(7);
-    if (attendingDoctor) {
-      const practitionerId = attendingDoctor.getComponent(1);
-      if (practitionerId) {
-        practitioner.identifier?.push({
-          system: 'http://hospital.smarthealthit.org/practitioner',
-          value: practitionerId,
-          type: {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                code: 'MD',
-                display: 'Medical License number',
-              },
-            ],
-          },
-        });
-      }
+    const practitionerId = attendingDoctor.getComponent(1);
+    if (practitionerId) {
+      practitioner.identifier?.push({
+        system: 'http://hospital.smarthealthit.org/practitioner',
+        value: practitionerId,
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+              code: 'MD',
+              display: 'Medical License number',
+            },
+          ],
+        },
+      });
+    }
 
-      // Extract name components
-      const familyName = attendingDoctor.getComponent(2) || '';
-      const givenName1 = attendingDoctor.getComponent(3) || '';
-      const givenName2 = attendingDoctor.getComponent(4) || '';
-      const suffix = attendingDoctor.getComponent(5) || '';
-      const prefix = attendingDoctor.getComponent(6) || '';
+    // Extract name components
+    const familyName = attendingDoctor.getComponent(2) || '';
+    const givenName1 = attendingDoctor.getComponent(3) || '';
+    const givenName2 = attendingDoctor.getComponent(4) || '';
+    const suffix = attendingDoctor.getComponent(5) || '';
+    const prefix = attendingDoctor.getComponent(6) || '';
 
-      const givenNames = [givenName1, givenName2].filter((name) => name.trim() !== '');
-      const prefixes = [prefix].filter((prefix) => prefix.trim() !== '');
-      const suffixes = [suffix].filter((suffix) => suffix.trim() !== '');
+    const givenNames = [givenName1, givenName2].filter((name) => name.trim() !== '');
+    const prefixes = [prefix].filter((prefix) => prefix.trim() !== '');
+    const suffixes = [suffix].filter((suffix) => suffix.trim() !== '');
 
-      if (familyName || givenNames.length > 0) {
-        practitioner.name?.push({
-          family: familyName,
-          given: givenNames.length > 0 ? givenNames : undefined,
-          prefix: prefixes.length > 0 ? prefixes : undefined,
-          suffix: suffixes.length > 0 ? suffixes : undefined,
-          use: 'official',
-        });
-      }
+    if (familyName || givenNames.length > 0) {
+      practitioner.name?.push({
+        family: familyName,
+        given: givenNames.length > 0 ? givenNames : undefined,
+        prefix: prefixes.length > 0 ? prefixes : undefined,
+        suffix: suffixes.length > 0 ? suffixes : undefined,
+        use: 'official',
+      });
+    }
 
-      // Extract title from component 7 (Dr)
-      const title = attendingDoctor.getComponent(7);
-      if (title && practitioner.name && practitioner.name.length > 0) {
-        practitioner.name[0].prefix = practitioner.name[0].prefix || [];
-        practitioner.name[0].prefix.push(title);
-      }
+    // Extract title from component 7 (Dr)
+    const title = attendingDoctor.getComponent(7);
+    if (title && practitioner.name && practitioner.name.length > 0) {
+      practitioner.name[0].prefix = practitioner.name[0].prefix || [];
+      practitioner.name[0].prefix.push(title);
     }
 
     // If no practitioner data was found, return null
@@ -402,7 +390,7 @@ function createEncounter(
       resourceType: 'Encounter',
       status: (() => {
         // Get the status from PV1 field 41 -  This may vary by source system so we need to handle it dynamically
-        const statusValue = pv1.getField(41)?.getComponent(1)?.toLowerCase();
+        const statusValue = pv1.getField(41).getComponent(1).toLowerCase();
         // Allowed Encounter.status values in FHIR
         const allowedStatuses = [
           'planned',
@@ -423,7 +411,7 @@ function createEncounter(
       })(),
       class: {
         system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
-        code: mapPatientClass(pv1.getField(2)?.getComponent(1)) || 'IMP',
+        code: mapPatientClass(pv1.getField(2).getComponent(1)) || 'IMP',
         display: 'inpatient encounter',
       },
       subject: createReference(patient),
@@ -439,7 +427,7 @@ function createEncounter(
     }
 
     // Visit number from PV1-19
-    const visitNumber = pv1.getField(19)?.getComponent(1);
+    const visitNumber = pv1.getField(19).getComponent(1);
     if (visitNumber) {
       encounter.identifier = [
         {
@@ -451,19 +439,17 @@ function createEncounter(
 
     // Location from PV1-3
     const location = pv1.getField(3);
-    if (location) {
-      encounter.location = [
-        {
-          location: {
-            display:
-              `${location.getComponent(1) || ''} ${location.getComponent(2) || ''} ${location.getComponent(3) || ''}`.trim(),
-          },
+    encounter.location = [
+      {
+        location: {
+          display:
+            `${location.getComponent(1) || ''} ${location.getComponent(2) || ''} ${location.getComponent(3) || ''}`.trim(),
         },
-      ];
-    }
+      },
+    ];
 
     // Admission date from PV1-44
-    const admissionDate = parseHL7DateTime(pv1.getField(44)?.getComponent(1));
+    const admissionDate = parseHL7DateTime(pv1.getField(44).getComponent(1));
     if (admissionDate) {
       encounter.period = {
         start: admissionDate,
@@ -517,7 +503,7 @@ function createAllergyIntolerances(message: Hl7Message, patient: Patient | undef
       };
 
       // Allergy type from AL1-3.1 only
-      const allergyTypeFromAl13 = al1.getField(3)?.getComponent(1);
+      const allergyTypeFromAl13 = al1.getField(3).getComponent(1);
 
       if (allergyTypeFromAl13) {
         // Map from AL1.3.1 code
@@ -530,26 +516,24 @@ function createAllergyIntolerances(message: Hl7Message, patient: Patient | undef
 
       // Allergen from AL1-3
       const allergenField = al1.getField(3);
-      if (allergenField) {
-        allergy.code = {
-          coding: [
-            {
-              system: 'http://snomed.info/sct',
-              code: allergenField.getComponent(1) || '',
-              display: allergenField.getComponent(2) || '',
-            },
-          ],
-        };
-      }
+      allergy.code = {
+        coding: [
+          {
+            system: 'http://snomed.info/sct',
+            code: allergenField.getComponent(1) || '',
+            display: allergenField.getComponent(2) || '',
+          },
+        ],
+      };
 
       // Severity from AL1-4
-      const severity = al1.getField(4)?.getComponent(1);
+      const severity = al1.getField(4).getComponent(1);
       if (severity) {
         allergy.criticality = mapAllergySeverity(severity);
       }
 
       // Reaction from AL1-5
-      const reaction = al1.getField(5)?.getComponent(1);
+      const reaction = al1.getField(5).getComponent(1);
       if (reaction) {
         allergy.reaction = [
           {
@@ -563,7 +547,7 @@ function createAllergyIntolerances(message: Hl7Message, patient: Patient | undef
       }
 
       // Date from AL1-6
-      const onsetDate = parseHL7Date(al1.getField(6)?.getComponent(1));
+      const onsetDate = parseHL7Date(al1.getField(6).getComponent(1));
       if (onsetDate) {
         allergy.onsetDateTime = onsetDate;
       }
@@ -617,7 +601,7 @@ function parseHL7DateTime(dateStr: string | undefined): string | undefined {
 }
 
 function mapGender(hl7Gender: string): 'male' | 'female' | 'other' | 'unknown' {
-  switch (hl7Gender?.toUpperCase()) {
+  switch (hl7Gender.toUpperCase()) {
     case 'M':
       return 'male';
     case 'F':
@@ -674,7 +658,7 @@ function mapAllergyTypeFromCode(allergenCode: string): 'allergy' | 'intolerance'
 }
 
 function mapAllergySeverity(severity: string): 'low' | 'high' | 'unable-to-assess' {
-  switch (severity?.toUpperCase()) {
+  switch (severity.toUpperCase()) {
     case 'MI':
       return 'low';
     case 'MO':

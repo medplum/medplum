@@ -63,7 +63,8 @@ describe('FHIRPath parser fuzz tests', () => {
   test.prop([fhirResourceArb], options)('FHIRPath substring function works correctly', (resource) => {
     const expr = 'Patient.name.given.first().substring(0, 1)';
     const result = evalFhirPath(expr, [resource]);
-    const expected = resource.name?.find((n) => n.given && n.given.length > 0)?.given?.[0]?.substring(0, 1);
+    const name = (resource.name as { given?: string[] }[]).find((n) => n.given && n.given.length > 0);
+    const expected = name?.given?.[0].substring(0, 1);
     if (expected) {
       expect(result).toStrictEqual([expected]);
     } else {

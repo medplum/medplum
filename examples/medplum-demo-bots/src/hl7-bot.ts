@@ -7,8 +7,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   const input = event.input as Hl7Message;
 
   // Log Message Type
-  const messageType = input.getSegment('MSH')?.getField(9)?.getComponent(1) as string;
-  const messageSubtype = input.getSegment('MSH')?.getField(9)?.getComponent(2) as string;
+  const messageType = input.getSegment('MSH')?.getField(9).getComponent(1) as string;
+  const messageSubtype = input.getSegment('MSH')?.getField(9).getComponent(2) as string;
 
   // If this is anything but ADT^A28, ADT^A08, ADT^A30 then exit
   if (messageType !== 'ADT') {

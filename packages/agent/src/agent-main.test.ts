@@ -131,9 +131,7 @@ describe('Main', () => {
 
     const appPromise = agentMain(['node', 'index.js', 'http://example.com', 'clientId', 'clientSecret', 'agentId']);
 
-    while (fetchSpy.mock.calls.length !== 3) {
-      await sleep(100);
-    }
+    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(3));
 
     // fetchWithRetry tries to fetch 3 times per attempt before throwing
     expect(fetchSpy).toHaveBeenCalledWith('http://example.com/oauth2/token', {
@@ -179,9 +177,7 @@ describe('Main', () => {
       } as Response;
     });
 
-    while (!fetchSpy.mock.calls.length) {
-      await sleep(100);
-    }
+    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(consoleErrorSpy).not.toHaveBeenCalled();

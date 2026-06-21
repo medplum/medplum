@@ -82,7 +82,7 @@ export async function fetchHealthieFormAnswerGroups(
   let loopCount = 0;
   const pageSize = 100;
 
-  while (true) {
+  for (;;) {
     const result: { formAnswerGroups: HealthieFormAnswerGroupWithCursor[] } = await healthieClient.query<{
       formAnswerGroups: HealthieFormAnswerGroupWithCursor[];
     }>(GET_FORM_ANSWER_GROUPS_QUERY, {
@@ -91,7 +91,7 @@ export async function fetchHealthieFormAnswerGroups(
       pageSize,
     });
 
-    const formGroups: HealthieFormAnswerGroupWithCursor[] = result.formAnswerGroups ?? [];
+    const formGroups: HealthieFormAnswerGroupWithCursor[] = result.formAnswerGroups;
     allFormGroups.push(...formGroups);
 
     // Check if we've reached the end
@@ -238,19 +238,18 @@ function convertHealthieAnswerGroupToFhirItem(answers: HealthieFormAnswer[]): Qu
     return matrixItem;
   }
 
+  const itemAnswers: QuestionnaireResponseItemAnswer[] = [];
   const item: QuestionnaireResponseItem = {
     linkId: custom_module.id,
     text: custom_module.label,
-    answer: [],
+    answer: itemAnswers,
   };
 
   // Convert each answer in the group
   for (const answer of answers) {
     const fhirAnswers = convertHealthieAnswerValueToFhir(answer);
-    if (fhirAnswers && item.answer) {
-      // fhirAnswers is now an array to handle newline-separated values
-      item.answer.push(...fhirAnswers);
-    }
+    // fhirAnswers is now an array to handle newline-separated values
+    itemAnswers.push(...fhirAnswers);
   }
 
   return item.answer && item.answer.length > 0 ? item : undefined;
@@ -413,9 +412,7 @@ function parseMatrixAnswer(matrixAnswer: string, linkId: string, label: string):
 
             // Convert cell value based on type
             if (cellType === 'checkbox') {
-              if (cellItem.answer) {
-                cellItem.answer.push({ valueBoolean: cellValue as boolean });
-              }
+              cellItem.answer.push({ valueBoolean: cellValue as boolean });
             } else {
               cellItem.answer.push({ valueString: cellValue as string });
             }

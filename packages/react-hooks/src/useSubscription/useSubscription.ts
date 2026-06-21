@@ -125,7 +125,7 @@ export function useSubscription(
   }, [medplum, effectiveCriteria, memoizedSubProps]);
 
   const emitterCallback = useCallback((event: SubscriptionEventMap['message']) => {
-    callbackRef.current?.(event.payload);
+    callbackRef.current(event.payload);
   }, []);
 
   const onWebSocketOpen = useCallback(() => {

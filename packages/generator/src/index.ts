@@ -4,7 +4,6 @@ import type { InternalSchemaElement, InternalTypeSchema } from '@medplum/core';
 import {
   buildTypeName,
   capitalize,
-  EMPTY,
   escapeHtml,
   FileBuilder,
   getAllDataTypes,
@@ -143,9 +142,9 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema): void {
   writeChoiceOfTypeDefinitions(b, fhirType);
 
   const subTypes = fhirType.innerTypes;
-  subTypes?.sort((t1, t2) => t1.name.localeCompare(t2.name));
+  subTypes.sort((t1, t2) => t1.name.localeCompare(t2.name));
 
-  for (const subType of subTypes ?? EMPTY) {
+  for (const subType of subTypes) {
     writeInterface(b, subType);
   }
 }
@@ -191,7 +190,7 @@ function buildImports(fhirType: InternalTypeSchema, includedTypes: Set<string>, 
   }
 
   const subTypes = fhirType.innerTypes;
-  for (const subType of subTypes ?? EMPTY) {
+  for (const subType of subTypes) {
     buildImports(subType, includedTypes, referencedTypes);
   }
 
@@ -251,7 +250,7 @@ function getTypeScriptProperties(
   } else {
     result.push({
       name,
-      typeName: getTypeScriptTypeForProperty(property, property.type?.[0], path),
+      typeName: getTypeScriptTypeForProperty(property, property.type[0], path),
       required,
     });
   }
@@ -308,7 +307,7 @@ function getTypeScriptTypeForProperty(
           binding !== 'http://hl7.org/fhir/ValueSet/defined-types'
         ) {
           const values = getValueSetValues(binding);
-          if (values && values.length > 0) {
+          if (values.length > 0) {
             baseType = "'" + values.join("' | '") + "'";
           }
         }

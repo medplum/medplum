@@ -52,7 +52,7 @@ export function ask(text: string, defaultValue: string | number = ''): Promise<s
 export async function choose(text: string, options: (string | number)[], defaultValue = ''): Promise<string> {
   const str = text + ' [' + options.map((o) => (o === defaultValue ? '(' + o + ')' : o)).join('|') + ']';
 
-  while (true) {
+  for (;;) {
     const answer = (await ask(str)) || defaultValue;
     if (options.includes(answer)) {
       return answer;

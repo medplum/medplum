@@ -59,7 +59,11 @@ describe('HL7 Server', () => {
 
     const server = new Hl7Server((connection) => {
       connection.addEventListener('message', ({ message }) => {
-        receivedPatientName = message.getSegment('PID')?.getField(5)?.toString();
+        const pid = message.getSegment('PID');
+        if (!pid) {
+          throw new Error('Expected PID segment');
+        }
+        receivedPatientName = pid.getField(5).toString();
         connection.send(message.buildAck());
       });
     });

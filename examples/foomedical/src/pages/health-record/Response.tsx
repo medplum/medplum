@@ -57,9 +57,6 @@ interface AnswerDisplayProps {
 }
 
 function AnswerDisplay({ answer }: AnswerDisplayProps): JSX.Element {
-  if (!answer) {
-    throw new Error('No answer');
-  }
   const [[key, value]] = Object.entries(answer);
 
   switch (key) {

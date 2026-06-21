@@ -74,7 +74,7 @@ function parsePatient(message: Hl7Message): Patient {
     resourceType: 'Patient',
     identifier: [],
     name: [parseHl7Name(pid.getField(5))], // PID-5: Patient Name
-    birthDate: parseHl7DateTime(pid.getField(7).toString())?.split('T')?.[0], // PID-7: Date of Birth
+    birthDate: parseHl7DateTime(pid.getField(7).toString())?.split('T')[0], // PID-7: Date of Birth
     gender: parseHl7Gender(pid.getField(8).toString()), // PID-8: Administrative Sex
     telecom: [
       { system: 'phone', use: 'home', value: pid.getComponent(13, 1) } as ContactPoint, // PID-13: Home Phone
@@ -83,11 +83,7 @@ function parsePatient(message: Hl7Message): Patient {
   };
 
   const patientId = pid.getField(2); // PID-2: Patient ID
-  if (!patientId) {
-    console.warn('Missing Patient Id');
-  } else {
-    setIdentifier(patient, FACILITY_PATIENT_ID, patientId.toString());
-  }
+  setIdentifier(patient, FACILITY_PATIENT_ID, patientId.toString());
 
   const ssn = pid.getComponent(19, 1); // PID-19: Social Security Number
   if (ssn.length > 0) {
@@ -348,7 +344,7 @@ function parseHl7Name(field: Hl7Field, indexOffset = 0): HumanName {
 }
 
 function parseHl7Gender(gender: string): Patient['gender'] {
-  switch (gender?.toLowerCase().at(0)) {
+  switch (gender.toLowerCase().at(0)) {
     case 'm':
       return 'male';
     case 'f':

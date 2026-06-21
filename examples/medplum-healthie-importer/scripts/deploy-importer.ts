@@ -90,7 +90,7 @@ async function createOrUpdateBot(medplum: MedplumClient, botConfig: BotConfig): 
 
   // Extract source code and executable code files
   const { sourceCode: sourceCodeFile, executableCode: executableCodeFile, ...otherFields } = botConfig;
-  if (!sourceCodeFile?.url || !executableCodeFile?.url) {
+  if (!sourceCodeFile.url || !executableCodeFile.url) {
     throw new Error('Source code and executable code URL is required');
   }
 

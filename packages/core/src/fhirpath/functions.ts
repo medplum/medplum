@@ -472,7 +472,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @param other - The atom representing the collection of elements to intersect.
    * @returns A collection containing the elements that are in both collections.
    */
-  intersect: (context: AtomContext, input: TypedValue[], other: Atom): TypedValue[] => {
+  intersect: (context: AtomContext, input: TypedValue[], other?: Atom): TypedValue[] => {
     if (!other) {
       return input;
     }
@@ -498,7 +498,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @param other - The atom representing the collection of elements to exclude.
    * @returns A collection containing the elements that are in the input collection but not the other collection.
    */
-  exclude: (context: AtomContext, input: TypedValue[], other: Atom): TypedValue[] => {
+  exclude: (context: AtomContext, input: TypedValue[], other?: Atom): TypedValue[] => {
     if (!other) {
       return input;
     }
@@ -531,7 +531,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @param other - The atom representing the collection of elements to merge.
    * @returns A collection containing the elements that represent the union of both collections.
    */
-  union: (context: AtomContext, input: TypedValue[], other: Atom): TypedValue[] => {
+  union: (context: AtomContext, input: TypedValue[], other?: Atom): TypedValue[] => {
     if (!other) {
       return input;
     }
@@ -552,7 +552,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @param other - The atom representing the collection of elements to merge.
    * @returns A collection containing the elements that represent the combination of both collections including duplicates.
    */
-  combine: (context: AtomContext, input: TypedValue[], other: Atom): TypedValue[] => {
+  combine: (context: AtomContext, input: TypedValue[], other?: Atom): TypedValue[] => {
     if (!other) {
       return input;
     }
@@ -1368,7 +1368,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @param separatorAtom - Optional separator atom.
    * @returns The joined string.
    */
-  join: (context: AtomContext, input: TypedValue[], separatorAtom: Atom): TypedValue[] => {
+  join: (context: AtomContext, input: TypedValue[], separatorAtom?: Atom): TypedValue[] => {
     const separator = separatorAtom?.eval(context, getRootInput(context))[0]?.value ?? '';
     if (typeof separator !== 'string') {
       throw new TypeError('Separator must be a string.');
@@ -1842,7 +1842,7 @@ export const functions: Record<string, FhirPathFunction> = {
    */
   getResourceKey: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     const resource = input[0].value as Resource;
-    if (!resource?.id) {
+    if (!resource.id) {
       return [];
     }
     return [{ type: PropertyType.id, value: resource.id }];
@@ -1869,7 +1869,7 @@ export const functions: Record<string, FhirPathFunction> = {
    */
   getReferenceKey: (context: AtomContext, input: TypedValue[], typeAtom: Atom): TypedValue[] => {
     const reference = input[0].value as Reference;
-    if (!reference?.reference) {
+    if (!reference.reference) {
       return [];
     }
 
@@ -1886,7 +1886,7 @@ export const functions: Record<string, FhirPathFunction> = {
 
   extension: (context: AtomContext, input: TypedValue[], urlAtom: Atom): TypedValue[] => {
     const url = urlAtom.eval(context, input)[0].value as string;
-    const resource = input?.[0]?.value;
+    const resource = input[0]?.value;
     if (resource) {
       const extension = getExtension(resource, url);
       if (extension) {
@@ -1950,11 +1950,6 @@ function applyMathFunc(
 function validateInput(input: TypedValue[], count: number): TypedValue[] {
   if (input.length !== count) {
     throw new Error(`Expected ${count} arguments`);
-  }
-  for (const element of input) {
-    if (element === null || element === undefined) {
-      throw new Error('Expected non-null argument');
-    }
   }
   return input;
 }

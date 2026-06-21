@@ -219,7 +219,7 @@ export class Hl7Message {
    * @returns The parsed HL7 segment, or undefined if the index is out of range.
    */
   private parseSegment(index: number): Hl7Segment | undefined {
-    const raw = this._segments[index];
+    const raw = (this._segments as (Hl7Segment | string | undefined)[])[index];
     if (raw === undefined) {
       return undefined;
     }
@@ -257,12 +257,16 @@ export class Hl7Message {
   buildAck(options?: Hl7AckOptions): Hl7Message {
     const now = new Date();
     const msh = this.getSegment('MSH');
-    const sendingApp = msh?.getField(3)?.toString() ?? '';
-    const sendingFacility = msh?.getField(4)?.toString() ?? '';
-    const receivingApp = msh?.getField(5)?.toString() ?? '';
-    const receivingFacility = msh?.getField(6)?.toString() ?? '';
-    const controlId = msh?.getField(10)?.toString() ?? '';
-    const versionId = msh?.getField(12)?.toString() ?? '2.5.1';
+    const getMshFieldString = (index: number): string => {
+      const field = msh?.getField(index);
+      return field ? field.toString() : '';
+    };
+    const sendingApp = getMshFieldString(3);
+    const sendingFacility = getMshFieldString(4);
+    const receivingApp = getMshFieldString(5);
+    const receivingFacility = getMshFieldString(6);
+    const controlId = getMshFieldString(10);
+    const versionId = getMshFieldString(12) || '2.5.1';
     const ackCode = options?.ackCode ?? 'AA';
 
     return new Hl7Message([
@@ -530,7 +534,7 @@ export class Hl7Segment {
    * @returns The parsed HL7 field, or undefined if the index is out of range.
    */
   private parseField(index: number): Hl7Field | undefined {
-    const raw = this._fields[index];
+    const raw = (this._fields as (Hl7Field | string | undefined)[])[index];
     if (raw === undefined) {
       return undefined;
     }
@@ -564,7 +568,7 @@ export class Hl7Segment {
    * @returns The string value of the specified component.
    */
   getComponent(fieldIndex: number, component: number, subcomponent?: number, repetition = 0): string {
-    return this.getField(fieldIndex)?.getComponent(component, subcomponent, repetition) ?? '';
+    return this.getField(fieldIndex).getComponent(component, subcomponent, repetition);
   }
 
   /**
@@ -646,7 +650,7 @@ export class Hl7Segment {
    * @returns true if the component was set, false otherwise
    */
   setComponent(fieldIndex: number, component: number, value: string, subcomponent?: number, repetition = 0): boolean {
-    const field = this.getField(fieldIndex);
+    const field = this.getField(fieldIndex) as Hl7Field | undefined;
     if (!field) {
       return false;
     }

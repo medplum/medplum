@@ -32,7 +32,7 @@ export function AddNote(props: AddCommentProps): JSX.Element {
     const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
 
     // Get the task notes if they exist and add the new note to the list. See https://www.medplum.com/docs/careplans/tasks#task-comments
-    const taskNotes = task?.note || [];
+    const taskNotes = task.note || [];
     taskNotes.push(comment);
 
     const op: PatchOperation['op'] = task.note ? 'replace' : 'add';

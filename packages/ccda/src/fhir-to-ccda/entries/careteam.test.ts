@@ -89,7 +89,7 @@ describe('createCareTeamEntry', () => {
 
     const organizer = result.organizer?.[0];
     expect(organizer?.id).toBeDefined();
-    expect(organizer?.id?.length).toBeGreaterThanOrEqual(1); // At least the base ID
+    expect(organizer?.id.length).toBeGreaterThanOrEqual(1); // At least the base ID
   });
 
   test('should handle care team without participants', () => {
@@ -148,7 +148,7 @@ describe('createCareTeamEntry', () => {
 
     const organizer = result.organizer?.[0];
     expect(organizer?.component).toBeDefined();
-    expect(organizer?.component?.length).toBe(2);
+    expect(organizer?.component.length).toBe(2);
 
     const components = organizer?.component;
     expect(components).toBeDefined();
@@ -188,7 +188,7 @@ describe('createCareTeamEntry', () => {
 
     const organizer = result.organizer?.[0];
     expect(organizer?.component).toBeDefined();
-    expect(organizer?.component?.length).toBe(2);
+    expect(organizer?.component.length).toBe(2);
 
     const components = organizer?.component;
     expect(components).toBeDefined();
@@ -222,6 +222,6 @@ describe('createCareTeamEntry', () => {
 
     const organizer = result.organizer?.[0];
     expect(organizer?.id).toBeDefined();
-    expect(organizer?.id?.length).toBeGreaterThanOrEqual(0); // May be empty if no ID provided
+    expect(organizer?.id.length).toBeGreaterThanOrEqual(0); // May be empty if no ID provided
   });
 });

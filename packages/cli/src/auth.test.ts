@@ -63,9 +63,7 @@ describe('CLI auth', () => {
   test('Login success', async () => {
     (cp.exec as unknown as Mock).mockImplementation(
       (_: unknown, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
-        if (callback) {
-          callback(null, '', '');
-        }
+      callback(null, '', '');
         return true;
       }
     );

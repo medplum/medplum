@@ -7,6 +7,7 @@ import type { TypedValue } from '../types';
 import { isResource, PropertyType } from '../types';
 import type { TypedValueWithPath } from '../typeschema/crawler';
 import { getTypedPropertyValueWithPath } from '../typeschema/crawler';
+import type { FhirPathFunction } from './functions';
 import { functions } from './functions';
 import {
   booleanToTypedValue,
@@ -90,11 +91,13 @@ export class SymbolAtom implements Atom {
     if (this.name.startsWith('%')) {
       throw new Error(`Undefined variable ${this.name}`);
     }
-    return input.flatMap((e) => this.evalValue(e)).filter((e) => e?.value !== undefined) as TypedValue[];
+    return input
+      .flatMap((e) => this.evalValue(e))
+      .filter((e): e is TypedValue => e?.value !== undefined);
   }
 
   private getVariable(context: AtomContext): TypedValue | undefined {
-    const value = context.variables[this.name];
+    const value = (context.variables as Record<string, TypedValue | undefined>)[this.name];
     if (value !== undefined) {
       return value;
     }
@@ -433,7 +436,7 @@ export class FunctionAtom implements Atom {
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
-    const impl = functions[this.name];
+    const impl = (functions as Record<string, FhirPathFunction | undefined>)[this.name];
     if (!impl) {
       throw new Error('Unrecognized function: ' + this.name);
     }

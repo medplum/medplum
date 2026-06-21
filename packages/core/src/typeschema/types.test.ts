@@ -413,7 +413,7 @@ describe('FHIR resource and data type representations', () => {
     });
     const patient2 = getDataType('http://hl7.org/cda/stds/core/StructureDefinition/Patient');
     expect(patient2).toBeDefined();
-    expect(patient2?.name).toStrictEqual('Patient');
+    expect(patient2.name).toStrictEqual('Patient');
 
     // The original Patient profile should still be accessible
     const patient3 = getDataType('Patient');

@@ -680,10 +680,10 @@ describe('HL7', () => {
   });
 
   test('Push', async () => {
-    let mySocket: Client | undefined = undefined;
+    const mySocket = { value: undefined as Client | undefined };
 
     mockServer.on('connection', (socket) => {
-      mySocket = socket;
+      mySocket.value = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
         if (command.type === 'agent:connect:request') {
@@ -721,16 +721,16 @@ describe('HL7', () => {
     await app.start();
 
     // Wait for the WebSocket to connect
-    // eslint-disable-next-line no-unmodified-loop-condition
-    while (!mySocket) {
+
+    while (!mySocket.value) {
       await sleep(20);
     }
 
     // At this point, we expect the websocket to be connected
-    expect(mySocket).toBeDefined();
+    expect(mySocket.value).toBeDefined();
 
     // Send a push message
-    const wsClient = mySocket as unknown as Client;
+    const wsClient = mySocket.value;
     wsClient.send(
       Buffer.from(
         JSON.stringify({
@@ -761,10 +761,10 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    let mySocket: Client | undefined = undefined;
+    const mySocket = { value: undefined as Client | undefined };
 
     mockServer.on('connection', (socket) => {
-      mySocket = socket;
+      mySocket.value = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
         if (command.type === 'agent:connect:request') {
@@ -806,16 +806,16 @@ describe('HL7', () => {
     await app.start();
 
     // Wait for the WebSocket to connect
-    // eslint-disable-next-line no-unmodified-loop-condition
-    while (!mySocket) {
+
+    while (!mySocket.value) {
       await sleep(20);
     }
 
     // At this point, we expect the websocket to be connected
-    expect(mySocket).toBeDefined();
+    expect(mySocket.value).toBeDefined();
 
     // Send a push message
-    const wsClient = mySocket as unknown as Client;
+    const wsClient = mySocket.value;
     wsClient.send(
       Buffer.from(
         JSON.stringify({
@@ -886,9 +886,7 @@ describe('HL7', () => {
       )
     );
 
-    while (!state.reloadConfigResponse) {
-      await sleep(20);
-    }
+    await vi.waitFor(() => expect(state.reloadConfigResponse).toBeDefined());
 
     // Size is zero again since we cleared out the pools
     expect(app.hl7Clients.size).toStrictEqual(0);
@@ -968,9 +966,7 @@ describe('HL7', () => {
     );
 
     state.reloadConfigResponse = null;
-    while (!state.reloadConfigResponse) {
-      await sleep(20);
-    }
+    await vi.waitFor(() => expect(state.reloadConfigResponse).toBeDefined());
 
     // After reloading with keepAlive changed from true to false, all pools should be cleared
     expect(app.hl7Clients.size).toStrictEqual(0);
@@ -1047,10 +1043,10 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    let mySocket: Client | undefined = undefined;
+    const mySocket = { value: undefined as Client | undefined };
 
     mockServer.on('connection', (socket) => {
-      mySocket = socket;
+      mySocket.value = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
         if (command.type === 'agent:connect:request') {
@@ -1098,16 +1094,16 @@ describe('HL7', () => {
     await app.start();
 
     // Wait for the WebSocket to connect
-    // eslint-disable-next-line no-unmodified-loop-condition
-    while (!mySocket) {
+
+    while (!mySocket.value) {
       await sleep(20);
     }
 
     // At this point, we expect the websocket to be connected
-    expect(mySocket).toBeDefined();
+    expect(mySocket.value).toBeDefined();
 
     // Send a push message
-    const wsClient = mySocket as unknown as Client;
+    const wsClient = mySocket.value;
     wsClient.send(
       Buffer.from(
         JSON.stringify({
@@ -1155,10 +1151,10 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    let mySocket: Client | undefined = undefined;
+    const mySocket = { value: undefined as Client | undefined };
 
     mockServer.on('connection', (socket) => {
-      mySocket = socket;
+      mySocket.value = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
         if (command.type === 'agent:connect:request') {
@@ -1214,16 +1210,16 @@ describe('HL7', () => {
     await app.start();
 
     // Wait for the WebSocket to connect
-    // eslint-disable-next-line no-unmodified-loop-condition
-    while (!mySocket) {
+
+    while (!mySocket.value) {
       await sleep(20);
     }
 
     // At this point, we expect the websocket to be connected
-    expect(mySocket).toBeDefined();
+    expect(mySocket.value).toBeDefined();
 
     // Send a push message
-    const wsClient = mySocket as unknown as Client;
+    const wsClient = mySocket.value;
     wsClient.send(
       Buffer.from(
         JSON.stringify({
@@ -1305,10 +1301,10 @@ describe('HL7', () => {
   });
 
   test('Default maxClientsPerRemote of 5 in non-keepAlive mode', async () => {
-    let mySocket: Client | undefined = undefined;
+    const mySocket = { value: undefined as Client | undefined };
 
     mockServer.on('connection', (socket) => {
-      mySocket = socket;
+      mySocket.value = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
         if (command.type === 'agent:connect:request') {
@@ -1345,12 +1341,11 @@ describe('HL7', () => {
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
-    // eslint-disable-next-line no-unmodified-loop-condition
-    while (!mySocket) {
+    while (!mySocket.value) {
       await sleep(20);
     }
 
-    const wsClient = mySocket as unknown as Client;
+    const wsClient = mySocket.value;
 
     // Send 10 concurrent messages - should all get clients
     const promises: Promise<void>[] = [];
@@ -1435,10 +1430,10 @@ describe('HL7', () => {
   });
 
   test('Default maxClientsPerRemote of 1 in keepAlive mode', async () => {
-    let mySocket: Client | undefined = undefined;
+    const mySocket = { value: undefined as Client | undefined };
 
     mockServer.on('connection', (socket) => {
-      mySocket = socket;
+      mySocket.value = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
         if (command.type === 'agent:connect:request') {
@@ -1475,12 +1470,11 @@ describe('HL7', () => {
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
-    // eslint-disable-next-line no-unmodified-loop-condition
-    while (!mySocket) {
+    while (!mySocket.value) {
       await sleep(20);
     }
 
-    const wsClient = mySocket as unknown as Client;
+    const wsClient = mySocket.value;
 
     // Send 3 concurrent messages - only 1 should get a client immediately
     for (let i = 0; i < 3; i++) {
@@ -1544,10 +1538,10 @@ describe('HL7', () => {
   });
 
   test('Setting maxClientsPerRemote in non-keepAlive mode', async () => {
-    let mySocket: Client | undefined = undefined;
+    const mySocket = { value: undefined as Client | undefined };
 
     mockServer.on('connection', (socket) => {
-      mySocket = socket;
+      mySocket.value = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
         if (command.type === 'agent:connect:request') {
@@ -1587,12 +1581,11 @@ describe('HL7', () => {
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
-    // eslint-disable-next-line no-unmodified-loop-condition
-    while (!mySocket) {
+    while (!mySocket.value) {
       await sleep(20);
     }
 
-    const wsClient = mySocket as unknown as Client;
+    const wsClient = mySocket.value;
 
     // Send 5 concurrent messages - only 3 should get clients immediately
     for (let i = 0; i < 5; i++) {
@@ -1654,10 +1647,10 @@ describe('HL7', () => {
   });
 
   test('Setting maxClientsPerRemote in keepAlive mode', async () => {
-    let mySocket: Client | undefined = undefined;
+    const mySocket = { value: undefined as Client | undefined };
 
     mockServer.on('connection', (socket) => {
-      mySocket = socket;
+      mySocket.value = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
         if (command.type === 'agent:connect:request') {
@@ -1697,12 +1690,11 @@ describe('HL7', () => {
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
-    // eslint-disable-next-line no-unmodified-loop-condition
-    while (!mySocket) {
+    while (!mySocket.value) {
       await sleep(20);
     }
 
-    const wsClient = mySocket as unknown as Client;
+    const wsClient = mySocket.value;
 
     // Send 8 concurrent messages - only 5 should get clients immediately
     for (let i = 0; i < 9; i++) {
@@ -1768,10 +1760,10 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    let mySocket: Client | undefined = undefined;
+    const mySocket = { value: undefined as Client | undefined };
 
     mockServer.on('connection', (socket) => {
-      mySocket = socket;
+      mySocket.value = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
         if (command.type === 'agent:connect:request') {
@@ -1813,12 +1805,11 @@ describe('HL7', () => {
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
-    // eslint-disable-next-line no-unmodified-loop-condition
-    while (!mySocket) {
+    while (!mySocket.value) {
       await sleep(20);
     }
 
-    const wsClient = mySocket as unknown as Client;
+    const wsClient = mySocket.value;
 
     // Send a message to create the pool
     wsClient.send(
@@ -1862,9 +1853,7 @@ describe('HL7', () => {
       )
     );
 
-    while (!state.reloadConfigResponse) {
-      await sleep(20);
-    }
+    await vi.waitFor(() => expect(state.reloadConfigResponse).toBeDefined());
 
     // Pool should still exist since keepAlive didn't change
     const poolAfterReload = app.hl7Clients.get(`mllp://localhost:${port}`);
@@ -1891,9 +1880,7 @@ describe('HL7', () => {
       )
     );
 
-    while (!state.reloadConfigResponse) {
-      await sleep(20);
-    }
+    await vi.waitFor(() => expect(state.reloadConfigResponse).toBeDefined());
 
     // Verify maxClients was updated to 3
     expect(poolAfterReload?.getMaxClients()).toStrictEqual(3);
@@ -1996,7 +1983,7 @@ describe('HL7', () => {
       expect(state.transmitRequests.length).toBe(5);
       for (let i = 0; i < 5; i++) {
         const hl7Message = Hl7Message.parse(state.transmitRequests[i].body);
-        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13)?.toString();
+        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13).toString();
         expect(sequenceNo).toBe(i.toString());
       }
 
@@ -2109,7 +2096,7 @@ describe('HL7', () => {
       expect(state.transmitRequests.length).toBe(3);
       for (let i = 0; i < 3; i++) {
         const hl7Message = Hl7Message.parse(state.transmitRequests[i].body);
-        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13)?.toString();
+        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13).toString();
         expect(sequenceNo).toBe(i.toString());
       }
 
@@ -2148,7 +2135,7 @@ describe('HL7', () => {
       expect(state.transmitRequests.length).toBe(5);
       for (let i = 0; i < 5; i++) {
         const hl7Message = Hl7Message.parse(state.transmitRequests[i].body);
-        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13)?.toString();
+        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13).toString();
         expect(sequenceNo).toBe(i.toString());
       }
 
@@ -2261,7 +2248,7 @@ describe('HL7', () => {
       expect(state.transmitRequests.length).toBe(3);
       for (let i = 0; i < 3; i++) {
         const hl7Message = Hl7Message.parse(state.transmitRequests[i].body);
-        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13)?.toString();
+        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13).toString();
         expect(sequenceNo).toBe(i.toString());
       }
 
@@ -2315,7 +2302,7 @@ describe('HL7', () => {
       expect(state.transmitRequests.length).toBe(2);
       for (let i = 0; i < 2; i++) {
         const hl7Message = Hl7Message.parse(state.transmitRequests[i].body);
-        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13)?.toString();
+        const sequenceNo = hl7Message.getSegment('MSH')?.getField(13).toString();
         expect(sequenceNo).toBe(i.toString());
       }
 
@@ -2405,8 +2392,8 @@ describe('HL7', () => {
       expect(channel.stats).toBeDefined();
 
       // Initially, should have no pending messages and no samples
-      expect(channel.stats?.getPendingCount()).toBe(0);
-      expect(channel.stats?.getSampleCount()).toBe(0);
+      expect(channel.stats.getPendingCount()).toBe(0);
+      expect(channel.stats.getSampleCount()).toBe(0);
 
       const client = new Hl7Client({
         host: 'localhost',
@@ -2431,8 +2418,8 @@ describe('HL7', () => {
 
       // At this point: message received, pending bot response
       // pending = 1, samples = 0
-      expect(channel.stats?.getPendingCount()).toBe(1);
-      expect(channel.stats?.getSampleCount()).toBe(0);
+      expect(channel.stats.getPendingCount()).toBe(1);
+      expect(channel.stats.getSampleCount()).toBe(0);
 
       // Now send the ACK from the bot
       const firstRequest = state.transmitRequests[0];
@@ -2456,8 +2443,8 @@ describe('HL7', () => {
       await sleep(50); // Give time for stats to update
 
       // After ACK received: pending = 0, samples = 1
-      expect(channel.stats?.getPendingCount()).toBe(0);
-      expect(channel.stats?.getSampleCount()).toBe(1);
+      expect(channel.stats.getPendingCount()).toBe(0);
+      expect(channel.stats.getSampleCount()).toBe(1);
 
       // Send second message without waiting for ACK
       const sendPromise2 = client.sendAndWait(
@@ -2473,8 +2460,8 @@ describe('HL7', () => {
       }
 
       // After second message sent: pending = 1, samples = 1
-      expect(channel.stats?.getPendingCount()).toBe(1);
-      expect(channel.stats?.getSampleCount()).toBe(1);
+      expect(channel.stats.getPendingCount()).toBe(1);
+      expect(channel.stats.getSampleCount()).toBe(1);
 
       // Send ACK for second message
       const secondRequest = state.transmitRequests[1];
@@ -2498,14 +2485,14 @@ describe('HL7', () => {
       await sleep(50); // Give time for stats to update
 
       // After both ACKs received: pending = 0, samples = 2
-      expect(channel.stats?.getPendingCount()).toBe(0);
-      expect(channel.stats?.getSampleCount()).toBe(2);
+      expect(channel.stats.getPendingCount()).toBe(0);
+      expect(channel.stats.getSampleCount()).toBe(2);
 
       // Verify the correct control IDs were tracked
       const firstMessage = Hl7Message.parse(state.transmitRequests[0].body);
       const secondMessage = Hl7Message.parse(state.transmitRequests[1].body);
-      expect(firstMessage.getSegment('MSH')?.getField(10)?.toString()).toBe('MSG00001');
-      expect(secondMessage.getSegment('MSH')?.getField(10)?.toString()).toBe('MSG00002');
+      expect(firstMessage.getSegment('MSH')?.getField(10).toString()).toBe('MSG00001');
+      expect(secondMessage.getSegment('MSH')?.getField(10).toString()).toBe('MSG00002');
 
       await client.close();
       await app.stop();

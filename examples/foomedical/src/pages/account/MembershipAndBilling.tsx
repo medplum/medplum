@@ -21,7 +21,7 @@ function CoverageTable({ coverages }: { coverages: Coverage[] }): JSX.Element {
       <Table.Tbody>
         {coverages.map((c) => (
           <Table.Tr key={c.id}>
-            <Table.Td>{c.payor?.[0].display}</Table.Td>
+            <Table.Td>{c.payor[0]?.display}</Table.Td>
             <Table.Td>{c.subscriberId || '-'}</Table.Td>
             <Table.Td>{formatCoding(c.relationship?.coding?.[0]) || '-'}</Table.Td>
           </Table.Tr>

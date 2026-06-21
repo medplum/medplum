@@ -114,9 +114,9 @@ describe('EnhancedHl7Client', () => {
       expect(client.stats.getSampleCount()).toBe(1);
 
       const stats = client.stats.getRttStats();
-      expect(stats?.count).toBe(1);
-      expect(stats?.min).toBeGreaterThanOrEqual(0);
-      expect(stats?.max).toBeGreaterThanOrEqual(0);
+      expect(stats.count).toBe(1);
+      expect(stats.min).toBeGreaterThanOrEqual(0);
+      expect(stats.max).toBeGreaterThanOrEqual(0);
 
       await client.close();
       await server.stop();
@@ -154,7 +154,7 @@ describe('EnhancedHl7Client', () => {
       expect(client.stats.getRttSamples().length).toBe(3);
 
       const stats = client.stats.getRttStats();
-      expect(stats?.count).toBe(3);
+      expect(stats.count).toBe(3);
 
       await client.close();
       await server.stop();
@@ -248,7 +248,7 @@ describe('EnhancedHl7Client', () => {
       const response = await client.sendAndWait(message, { returnAck: ReturnAckCategory.APPLICATION });
 
       // Should have received AA, not CA
-      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      const ackCode = response.getSegment('MSA')?.getField(1).toString();
       expect(ackCode).toBe('AA');
 
       await client.close();
@@ -289,7 +289,7 @@ describe('EnhancedHl7Client', () => {
       const response = await client.sendAndWait(message, { returnAck: ReturnAckCategory.FIRST });
 
       // Should have received CA (the first ACK)
-      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      const ackCode = response.getSegment('MSA')?.getField(1).toString();
       expect(ackCode).toBe('CA');
 
       await client.close();

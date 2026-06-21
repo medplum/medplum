@@ -153,8 +153,8 @@ export interface TypeInfo {
  */
 export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): void {
   for (const entry of bundle.entry ?? EMPTY) {
-    const resource = entry.resource as SearchParameter;
-    if (resource.resourceType === 'SearchParameter') {
+    const resource = entry.resource;
+    if (resource?.resourceType === 'SearchParameter') {
       indexSearchParameter(resource);
     }
   }
@@ -170,7 +170,7 @@ export function indexDefaultSearchParameters(bundle: StructureDefinition[] | Bun
 }
 
 function getOrInitTypeSchema(resourceType: string): TypeInfo {
-  let typeSchema = globalSchema.types[resourceType];
+  let typeSchema = (globalSchema.types as Record<string, TypeInfo | undefined>)[resourceType];
   if (!typeSchema) {
     typeSchema = {
       searchParamsDetails: {},
@@ -242,7 +242,7 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameter(searchParam: SearchParameter): void {
-  for (const resourceType of searchParam.base ?? EMPTY) {
+  for (const resourceType of searchParam.base) {
     const typeSchema = getOrInitTypeSchema(resourceType);
 
     if (!typeSchema.searchParams) {
@@ -261,7 +261,7 @@ export function indexSearchParameter(searchParam: SearchParameter): void {
 export function getElementDefinitionTypeName(elementDefinition: ElementDefinition): string {
   const code = elementDefinition.type?.[0]?.code as string;
   return code === 'BackboneElement' || code === 'Element'
-    ? buildTypeName((elementDefinition.base?.path ?? elementDefinition.path)?.split('.'))
+    ? buildTypeName((elementDefinition.base?.path ?? elementDefinition.path).split('.'))
     : code;
 }
 
@@ -298,7 +298,7 @@ export function getResourceTypes(): ResourceType[] {
  * @returns The search parameters for the resource type indexed by search code.
  */
 export function getSearchParameters(resourceType: string): Record<string, SearchParameter> | undefined {
-  return globalSchema.types[resourceType]?.searchParams;
+  return globalSchema.types[resourceType].searchParams;
 }
 
 /**
@@ -308,7 +308,7 @@ export function getSearchParameters(resourceType: string): Record<string, Search
  * @returns The search parameter if found, otherwise undefined.
  */
 export function getSearchParameter(resourceType: string, code: string): SearchParameter | undefined {
-  return globalSchema.types[resourceType]?.searchParams?.[code];
+  return globalSchema.types[resourceType].searchParams?.[code];
 }
 
 /**
@@ -409,7 +409,8 @@ export function getElementDefinitionFromElements(
   propertyName: string
 ): InternalSchemaElement | undefined {
   // Always try to match the exact property name first
-  const simpleMatch = elements[propertyName] ?? elements[propertyName + '[x]'];
+  const schemaElements = elements as Record<string, InternalSchemaElement | undefined>;
+  const simpleMatch = schemaElements[propertyName] ?? schemaElements[propertyName + '[x]'];
   if (simpleMatch) {
     return simpleMatch;
   }
@@ -421,7 +422,7 @@ export function getElementDefinitionFromElements(
     const c = propertyName[i];
     if (c >= 'A' && c <= 'Z') {
       const testProperty = propertyName.slice(0, i) + '[x]';
-      const element = elements[testProperty];
+      const element = schemaElements[testProperty];
       if (element) {
         return element;
       }

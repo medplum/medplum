@@ -37,10 +37,17 @@ describe('Agent Net Utils', () => {
 
   describe('Ping -- Within One App Instance', () => {
     let mockServer: Server;
-    let wsClient: Client;
+    let wsClient: Client | undefined;
     let app: App;
     let onMessage: (command: AgentMessage) => void;
     let timer: ReturnType<typeof setTimeout> | undefined;
+
+    function sendWs(data: Buffer): void {
+      if (!wsClient) {
+        throw new Error('WebSocket not connected');
+      }
+      wsClient.send(data);
+    }
 
     beforeEach(async () => {
       vi.mocked(exec).mockImplementation(mockPingExecSuccess);
@@ -92,7 +99,6 @@ describe('Agent Net Utils', () => {
         mockServer.stop(resolve);
       });
       clearTimeout(timer);
-      // @ts-expect-error We know by the time it's used again this will be redefined
       wsClient = undefined;
     });
 
@@ -109,7 +115,7 @@ describe('Agent Net Utils', () => {
       expect(wsClient).toBeDefined();
 
       const callback = generateId();
-      wsClient.send(
+      sendWs(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
@@ -146,7 +152,7 @@ describe('Agent Net Utils', () => {
       expect(wsClient).toBeDefined();
 
       const callback = generateId();
-      wsClient.send(
+      sendWs(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
@@ -184,7 +190,7 @@ describe('Agent Net Utils', () => {
       expect(wsClient).toBeDefined();
 
       const callback = generateId();
-      wsClient.send(
+      sendWs(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
@@ -223,7 +229,7 @@ describe('Agent Net Utils', () => {
       expect(wsClient).toBeDefined();
 
       const callback = generateId();
-      wsClient.send(
+      sendWs(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
@@ -264,7 +270,7 @@ describe('Agent Net Utils', () => {
       expect(wsClient).toBeDefined();
 
       const callback = generateId();
-      wsClient.send(
+      sendWs(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
@@ -292,10 +298,17 @@ describe('Agent Net Utils', () => {
 
   describe('Ping -- Edge Cases', () => {
     let mockServer: Server;
-    let wsClient: Client;
+    let wsClient: Client | undefined;
     let app: App;
     let onMessage: (command: AgentMessage) => void;
     let timer: ReturnType<typeof setTimeout>;
+
+    function sendWs(data: Buffer): void {
+      if (!wsClient) {
+        throw new Error('WebSocket not connected');
+      }
+      wsClient.send(data);
+    }
 
     beforeEach(async () => {
       medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
@@ -349,7 +362,6 @@ describe('Agent Net Utils', () => {
         mockServer.stop(resolve);
       });
       clearTimeout(timer);
-      // @ts-expect-error We know that in each beforeEach this is redefined
       wsClient = undefined;
     });
 
@@ -367,7 +379,7 @@ describe('Agent Net Utils', () => {
       expect(wsClient).toBeDefined();
 
       let callback = generateId();
-      wsClient.send(
+      sendWs(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
@@ -414,7 +426,7 @@ describe('Agent Net Utils', () => {
       });
 
       callback = generateId();
-      wsClient.send(
+      sendWs(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',
@@ -457,7 +469,7 @@ describe('Agent Net Utils', () => {
       expect(wsClient).toBeDefined();
 
       const callback = generateId();
-      wsClient.send(
+      sendWs(
         Buffer.from(
           JSON.stringify({
             type: 'agent:transmit:request',

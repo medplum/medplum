@@ -106,7 +106,7 @@ interface TaskDetailsProps {
 
 function TaskDetails({ task, tabs, currentTab, handleTabChange }: TaskDetailsProps): JSX.Element {
   return (
-    <Paper p="md" key={task ? task.id : 'loading'}>
+    <Paper p="md" key={task.id}>
       <Title>{task.code ? formatCodeableConcept(task.code) : getDisplayString(task)}</Title>
       <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
         <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>

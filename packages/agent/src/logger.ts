@@ -93,9 +93,10 @@ export function cleanupLoggerConfig(config: Partial<AgentLoggerConfig>, configPa
     // Cleanup invalid logger config prop
     config.filesToKeep = undefined;
   }
+  const logLevel = config.logLevel as unknown;
   if (
-    typeof config.logLevel !== 'undefined' &&
-    !(typeof config.logLevel === 'number' && LogLevelNames[config.logLevel] !== undefined)
+    logLevel !== undefined &&
+    !(typeof logLevel === 'number' && (LogLevelNames as Record<number, string | undefined>)[logLevel] !== undefined)
   ) {
     warnings.push(`${configPathRoot}.logLevel must be a valid log level between LogLevel.NONE and LogLevel.DEBUG`);
     // Cleanup invalid logger config prop
@@ -133,7 +134,9 @@ export function mergeLoggerConfigWithDefaults(
       keyof AgentLoggerConfig,
       number | string,
     ][]) {
-      (config[configType] as Partial<AgentLoggerConfig>)[key] ??= value as any; // We expect that this value matches the type for the given key
+      if ((config[configType] as Partial<AgentLoggerConfig>)[key] === undefined) {
+        (config[configType] as Partial<AgentLoggerConfig>)[key] = value as any; // We expect that this value matches the type for the given key
+      }
     }
   }
 }
@@ -151,9 +154,9 @@ export function parseLoggerConfigFromArgs(args: AgentArgs): [AgentMultiLoggerCon
       continue;
     }
     // 'logger', [prefix], [name]
-    const [_, configType, settingName] = splitN(propName, '.', 3) as ['logger', 'main' | 'channel', LoggerConfigKey];
+    const [_, configType, settingName] = splitN(propName, '.', 3) as ['logger', string, string];
 
-    if (!LOGGER_CONFIG_KEYS.includes(settingName)) {
+    if (!LOGGER_CONFIG_KEYS.includes(settingName as LoggerConfigKey)) {
       warnings.push(`${propName} is not a valid setting name`);
     }
 
@@ -177,9 +180,9 @@ export function parseLoggerConfigFromArgs(args: AgentArgs): [AgentMultiLoggerCon
     }
 
     if (configType === 'main') {
-      config.main[settingName] = configValue as any;
+      config.main[settingName as LoggerConfigKey] = configValue as any;
     } else if (configType === 'channel') {
-      config.channel[settingName] = configValue as any;
+      config.channel[settingName as LoggerConfigKey] = configValue as any;
     } else {
       warnings.push(`${configType} is not a valid config type, must be main or channel`);
     }
@@ -344,7 +347,7 @@ export class WinstonWrapperLogger implements ILogger {
     return new Promise((resolve, reject) => {
       this.winston.query(
         { order: 'desc', limit, fields: ['level', 'msg', 'timestamp'] },
-        (err, results: { dailyRotateFile: LogMessage[] }) => {
+        (err: Error | undefined, results: { dailyRotateFile: LogMessage[] }) => {
           if (err) {
             reject(err);
             return;

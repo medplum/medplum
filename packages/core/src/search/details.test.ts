@@ -329,7 +329,7 @@ describe('SearchParameterDetails', () => {
         continue;
       }
       for (const searchParam of searchParams) {
-        if (searchParam.base?.includes(resourceType as ResourceType)) {
+        if (searchParam.base.includes(resourceType as ResourceType)) {
           const details = getSearchParameterDetails(resourceType, searchParam);
           expect(details).toBeDefined();
         }

@@ -7,7 +7,7 @@ import { XMLParser } from 'fast-xml-parser';
 
 // Helper function to safely access nested properties
 function getElementAtPath(obj: Record<string, any>, path: string): any {
-  return path.split('.').reduce((acc, part) => acc?.[part], obj);
+  return path.split('.').reduce((acc, part) => acc[part], obj);
 }
 
 function convertCcdaToFhir(xmlContent: string): {
@@ -123,7 +123,7 @@ function convertCcdaToFhir(xmlContent: string): {
 export async function handler(medplum: MedplumClient, event: BotEvent<Media>): Promise<any> {
   const { input } = event;
   // If the Media resource is not a C-CDA or doesn't have a content url, do not attempt to convert it
-  if (input.content?.contentType !== 'application/cda+xml' || !input.content.url) {
+  if (input.content.contentType !== 'application/cda+xml' || !input.content.url) {
     return;
   }
 

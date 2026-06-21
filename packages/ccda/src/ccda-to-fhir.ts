@@ -292,7 +292,7 @@ class CcdaToFhirConverter {
     }
 
     if (name.prefix) {
-      result.prefix = name.prefix.map(nodeToString)?.filter(Boolean) as string[];
+      result.prefix = name.prefix.map(nodeToString).filter(Boolean) as string[];
     }
 
     if (name.family) {
@@ -300,11 +300,11 @@ class CcdaToFhirConverter {
     }
 
     if (name.given) {
-      result.given = name.given.map(nodeToString)?.filter(Boolean) as string[];
+      result.given = name.given.map(nodeToString).filter(Boolean) as string[];
     }
 
     if (name.suffix) {
-      result.suffix = name.suffix.map(nodeToString)?.filter(Boolean) as string[];
+      result.suffix = name.suffix.map(nodeToString).filter(Boolean) as string[];
     }
 
     return result;
@@ -314,7 +314,7 @@ class CcdaToFhirConverter {
     if (!addresses || addresses.length === 0) {
       return undefined;
     }
-    return addresses?.map((addr) => ({
+    return addresses.map((addr) => ({
       use: addr['@_use'] ? ADDRESS_USE_MAPPER.mapCcdaToFhir(addr['@_use']) : undefined,
       line: addr.streetAddressLine?.map(nodeToString).filter(Boolean) as string[] | undefined,
       city: nodeToString(addr.city),
@@ -328,7 +328,7 @@ class CcdaToFhirConverter {
     if (!telecoms || telecoms.length === 0) {
       return undefined;
     }
-    return telecoms?.map((tel) => ({
+    return telecoms.map((tel) => ({
       use: tel['@_use'] ? TELECOM_USE_MAPPER.mapCcdaToFhir(tel['@_use']) : undefined,
       system: this.getTelecomSystem(tel['@_value']),
       value: this.getTelecomValue(tel['@_value']),
@@ -336,7 +336,7 @@ class CcdaToFhirConverter {
   }
 
   private createComposition(): Composition {
-    const components = this.ccda.component?.structuredBody?.component || [];
+    const components = this.ccda.component?.structuredBody.component || [];
     const sections: CompositionSection[] = [];
 
     for (const component of components) {
@@ -366,7 +366,7 @@ class CcdaToFhirConverter {
       confidentiality: this.ccda.confidentialityCode?.['@_code'] as Composition['confidentiality'],
       author: this.ccda.author?.[0]
         ? [
-            this.mapAuthorToReference(this.ccda.author?.[0]) as Reference<
+            this.mapAuthorToReference(this.ccda.author[0]) as Reference<
               Practitioner | Organization | Patient | PractitionerRole
             >,
           ]
@@ -480,7 +480,7 @@ class CcdaToFhirConverter {
     };
 
     // Set category based on the observation.value code
-    if ((observation.value as CcdaCode)?.['@_code'] === '414285001') {
+    if ((observation.value as CcdaCode)['@_code'] === '414285001') {
       allergy.category = ['food'];
     }
 
@@ -570,7 +570,7 @@ class CcdaToFhirConverter {
       status: 'completed',
       intent: 'plan',
       title: 'CARE PLAN',
-      category: act.code ? [this.mapCode(act.code) as CodeableConcept] : undefined,
+      category: [this.mapCode(act.code) as CodeableConcept],
       subject: createReference(this.patient as Patient),
       description: nodeToString(act.text),
     };
@@ -617,10 +617,10 @@ class CcdaToFhirConverter {
 
   private processMedicationSubstanceAdministration(substanceAdmin: CcdaSubstanceAdministration): Resource | undefined {
     const cdaId = this.mapId(substanceAdmin.id);
-    const medicationCode = substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.code?.[0];
+    const medicationCode = substanceAdmin.consumable?.manufacturedProduct[0]?.manufacturedMaterial?.[0]?.code?.[0];
     const routeCode = substanceAdmin.routeCode;
     const doseQuantity = substanceAdmin.doseQuantity;
-    const manufacturerOrg = substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0];
+    const manufacturerOrg = substanceAdmin.consumable?.manufacturedProduct[0]?.manufacturerOrganization?.[0];
     const instructions = substanceAdmin.entryRelationship?.find(
       (rel) => rel.substanceAdministration?.[0]?.templateId?.[0]?.['@_root'] === OID_MEDICATION_FREE_TEXT_SIG
     )?.substanceAdministration?.[0];
@@ -636,14 +636,12 @@ class CcdaToFhirConverter {
         id: 'med-' + cdaId,
         code: this.mapCode(medicationCode),
         extension: this.mapTextReference(medicationCode?.originalText),
-        manufacturer: manufacturerOrg
-          ? {
-              identifier: {
-                value: manufacturerOrg.id?.[0]?.['@_root'],
-              },
-              display: manufacturerOrg.name?.[0],
-            }
-          : undefined,
+        manufacturer: {
+          identifier: {
+            value: manufacturerOrg.id?.[0]?.['@_root'],
+          },
+          display: manufacturerOrg.name?.[0],
+        },
       };
     } else {
       // Otherwise, create a CodeableConcept for the medication
@@ -671,8 +669,8 @@ class CcdaToFhirConverter {
       dispenseRequest: substanceAdmin.effectiveTime?.[0]
         ? {
             validityPeriod: {
-              start: mapCcdaToFhirDateTime(substanceAdmin.effectiveTime?.[0]?.low?.['@_value']),
-              end: mapCcdaToFhirDateTime(substanceAdmin.effectiveTime?.[0]?.high?.['@_value']),
+              start: mapCcdaToFhirDateTime(substanceAdmin.effectiveTime[0]?.low?.['@_value']),
+              end: mapCcdaToFhirDateTime(substanceAdmin.effectiveTime[0]?.high?.['@_value']),
             },
           }
         : undefined,
@@ -684,8 +682,8 @@ class CcdaToFhirConverter {
           timing: {
             repeat: substanceAdmin.effectiveTime?.[1]?.period
               ? {
-                  period: Number(substanceAdmin.effectiveTime?.[1]?.period['@_value']),
-                  periodUnit: substanceAdmin.effectiveTime?.[1]?.period['@_unit'],
+                  period: Number(substanceAdmin.effectiveTime[1]?.period['@_value']),
+                  periodUnit: substanceAdmin.effectiveTime[1]?.period['@_unit'],
                 }
               : undefined,
           },
@@ -720,11 +718,11 @@ class CcdaToFhirConverter {
       identifier: this.mapIdentifiers(substanceAdmin.id),
       status: IMMUNIZATION_STATUS_MAPPER.mapCcdaToFhirWithDefault(substanceAdmin.statusCode?.['@_code'], 'completed'),
       vaccineCode: this.mapCode(
-        consumable.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.code?.[0]
+        consumable.manufacturedProduct[0]?.manufacturedMaterial?.[0]?.code?.[0]
       ) as CodeableConcept,
       patient: createReference(this.patient as Patient),
       occurrenceDateTime: mapCcdaToFhirDateTime(substanceAdmin.effectiveTime?.[0]?.['@_value']),
-      lotNumber: consumable.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.lotNumberText?.[0],
+      lotNumber: consumable.manufacturedProduct[0]?.manufacturedMaterial?.[0]?.lotNumberText?.[0],
     };
 
     if (substanceAdmin.performer) {
@@ -733,9 +731,9 @@ class CcdaToFhirConverter {
 
     result.extension = this.mapTextReference(substanceAdmin.text);
 
-    if (substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]) {
+    if (substanceAdmin.consumable?.manufacturedProduct[0]?.manufacturerOrganization?.[0]) {
       result.manufacturer = {
-        display: substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.name?.[0],
+        display: substanceAdmin.consumable.manufacturedProduct[0]?.manufacturerOrganization?.[0]?.name?.[0],
       };
     }
 
@@ -777,7 +775,7 @@ class CcdaToFhirConverter {
       return;
     }
 
-    const severityCode = (severityObs.value as CcdaCode)?.['@_code'];
+    const severityCode = (severityObs.value as CcdaCode)['@_code'];
     if (severityCode) {
       reaction.severity = ALLERGY_SEVERITY_MAPPER.mapCcdaToFhir(severityCode);
     }
@@ -798,8 +796,8 @@ class CcdaToFhirConverter {
   private mapEffectiveTimeToPeriod(effectiveTime: CcdaEffectiveTime | undefined): Period | undefined {
     if (!effectiveTime?.['@_value'] && (effectiveTime?.low || effectiveTime?.high)) {
       return {
-        start: mapCcdaToFhirDateTime(effectiveTime?.low?.['@_value']),
-        end: mapCcdaToFhirDateTime(effectiveTime?.high?.['@_value']),
+        start: mapCcdaToFhirDateTime(effectiveTime.low?.['@_value']),
+        end: mapCcdaToFhirDateTime(effectiveTime.high?.['@_value']),
       };
     }
     return undefined;
@@ -856,12 +854,7 @@ class CcdaToFhirConverter {
       });
     }
 
-    let translations: CcdaCode[] = [];
-    if (Array.isArray(code.translation)) {
-      translations = code.translation;
-    } else if (code.translation) {
-      translations = [code.translation];
-    }
+    const translations = Array.isArray(code.translation) ? code.translation : [];
     for (const translation of translations) {
       const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
       const translationCode = translation['@_code'];
@@ -962,18 +955,18 @@ class CcdaToFhirConverter {
 
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
-      id: this.mapId(assignedEntity?.id),
-      identifier: this.mapIdentifiers(assignedEntity?.id),
+      id: this.mapId(assignedEntity.id),
+      identifier: this.mapIdentifiers(assignedEntity.id),
       name: this.mapCcdaNameArrayFhirHumanNameArray(assignedPerson?.name),
-      address: this.mapAddresses(assignedEntity?.addr),
-      telecom: this.mapTelecom(assignedEntity?.telecom),
+      address: this.mapAddresses(assignedEntity.addr),
+      telecom: this.mapTelecom(assignedEntity.telecom),
     };
 
     this.resources.push(practitioner);
 
     const organization: Organization = {
       resourceType: 'Organization',
-      id: this.mapId(assignedEntity?.id),
+      id: this.mapId(assignedEntity.id),
       identifier: this.mapIdentifiers(representedOrganization?.id),
       name: representedOrganization?.name?.[0],
       address: this.mapAddresses(representedOrganization?.addr),
@@ -982,7 +975,7 @@ class CcdaToFhirConverter {
 
     const practitionerRole: PractitionerRole = {
       resourceType: 'PractitionerRole',
-      id: this.mapId(assignedEntity?.id),
+      id: this.mapId(assignedEntity.id),
       practitioner: createReference(practitioner),
       organization: createReference(organization),
     };
@@ -1016,9 +1009,6 @@ class CcdaToFhirConverter {
     }
 
     const serviceEvent = documentationOf.serviceEvent;
-    if (!serviceEvent) {
-      return undefined;
-    }
 
     return [
       {
@@ -1063,7 +1053,7 @@ class CcdaToFhirConverter {
   private processCareTeamOrganizer(organizer: CcdaOrganizer): CareTeam {
     const participants: CareTeamParticipant[] = [];
 
-    for (const component of organizer.component ?? EMPTY) {
+    for (const component of organizer.component) {
       const participant = this.processCareTeamMember(component);
       if (participant) {
         participants.push(participant);
@@ -1110,11 +1100,11 @@ class CcdaToFhirConverter {
     };
 
     if (organizer.effectiveTime?.[0]?.['@_value']) {
-      result.effectiveDateTime = mapCcdaToFhirDateTime(organizer.effectiveTime?.[0]?.['@_value']);
+      result.effectiveDateTime = mapCcdaToFhirDateTime(organizer.effectiveTime[0]['@_value']);
     }
 
     const members: Reference<Observation>[] = [];
-    for (const component of organizer.component ?? EMPTY) {
+    for (const component of organizer.component) {
       members.push(...this.processVitalsComponent(component));
     }
 
@@ -1268,7 +1258,7 @@ class CcdaToFhirConverter {
     }
 
     if (observation.effectiveTime?.[0]?.['@_value']) {
-      result.effectiveDateTime = mapCcdaToFhirDateTime(observation.effectiveTime?.[0]?.['@_value']);
+      result.effectiveDateTime = mapCcdaToFhirDateTime(observation.effectiveTime[0]['@_value']);
     }
 
     result.extension = this.mapTextReference(observation.text);
@@ -1329,9 +1319,6 @@ class CcdaToFhirConverter {
     }
 
     const observationRange = referenceRange.observationRange;
-    if (!observationRange) {
-      return undefined;
-    }
 
     const result: ObservationReferenceRange = {};
 
@@ -1467,7 +1454,7 @@ class CcdaToFhirConverter {
       id: this.mapId(procedure.id),
       identifier: this.mapIdentifiers(procedure.id),
       status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(
-        procedure.statusCode?.['@_code'],
+        procedure.statusCode['@_code'],
         'completed'
       ) as Procedure['status'],
       code: this.mapCode(procedure.code),
@@ -1485,14 +1472,14 @@ class CcdaToFhirConverter {
       return undefined;
     }
 
-    if (!text?.reference?.['@_value']) {
+    if (!text.reference?.['@_value']) {
       return undefined;
     }
 
     return [
       {
         url: CCDA_NARRATIVE_REFERENCE_URL,
-        valueString: text.reference?.['@_value'],
+        valueString: text.reference['@_value'],
       },
     ];
   }

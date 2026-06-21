@@ -114,7 +114,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.check).toStrictEqual("(type = 'reference')");
+    expect(result.group[0]?.rule?.[0]?.source?.[0]?.check).toStrictEqual("(type = 'reference')");
   });
 
   test('Rule source list mode', () => {
@@ -126,7 +126,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.listMode).toStrictEqual('first');
+    expect(result.group[0]?.rule?.[0]?.source?.[0]?.listMode).toStrictEqual('first');
   });
 
   test('Rule source default', () => {
@@ -138,7 +138,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.defaultValueString).toBe('x');
+    expect(result.group[0]?.rule?.[0]?.source?.[0]?.defaultValueString).toBe('x');
   });
 
   test('Rule source log', () => {
@@ -150,7 +150,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.logMessage).toBe('x');
+    expect(result.group[0]?.rule?.[0]?.source?.[0]?.logMessage).toBe('x');
   });
 
   test('Rule target first', () => {
@@ -162,7 +162,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.listMode?.[0]).toBe('first');
+    expect(result.group[0]?.rule?.[0]?.target?.[0]?.listMode?.[0]).toBe('first');
   });
 
   test('Rule target share', () => {
@@ -177,7 +177,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.listMode?.[0]).toBe('share');
+    expect(result.group[0]?.rule?.[0]?.target?.[0]?.listMode?.[0]).toBe('share');
   });
 
   test('Multiple rule sources', () => {
@@ -189,7 +189,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.source).toHaveLength(2);
+    expect(result.group[0]?.rule?.[0]?.source).toHaveLength(2);
   });
 
   test('Multiple rule targets', () => {
@@ -201,7 +201,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.target).toHaveLength(2);
+    expect(result.group[0]?.rule?.[0]?.target).toHaveLength(2);
   });
 
   test('ValueSet R4 to R3', () => {
@@ -1664,8 +1664,8 @@ describe('FHIR Mapping Language parser', () => {
       src -> tgt.value = src.value + '_test';
     }`;
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.transform).toBe('evaluate');
-    expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.parameter?.[0]?.valueString).toBe("(src.value + '_test')");
+    expect(result.group[0]?.rule?.[0]?.target?.[0]?.transform).toBe('evaluate');
+    expect(result.group[0]?.rule?.[0]?.target?.[0]?.parameter?.[0]?.valueString).toBe("(src.value + '_test')");
   });
 
   test('CCDA ConceptMaps', () => {

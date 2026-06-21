@@ -32,10 +32,8 @@ export function createGoalEntry(section: CompositionSection, resource: Goal): Cc
       '@_codeSystemName': 'LOINC',
       '@_displayName': "Resident's overall goal established during assessment process",
     };
-  } else if (resource.description) {
-    code = mapCodeableConceptToCcdaCode(resource.description);
   } else {
-    return undefined;
+    code = mapCodeableConceptToCcdaCode(resource.description);
   }
 
   let templateId: CcdaTemplateId[];

@@ -83,14 +83,14 @@ export interface EnumMapperDetails {
 export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
   readonly details: EnumMapperDetails;
   readonly entries: EnumEntry<TFhirValue, TCcdaValue>[];
-  readonly ccdaToFhirMap: Record<TCcdaValue, EnumEntry<TFhirValue, TCcdaValue>>;
-  readonly fhirToCcdaMap: Record<TFhirValue, EnumEntry<TFhirValue, TCcdaValue>>;
+  readonly ccdaToFhirMap: Partial<Record<TCcdaValue, EnumEntry<TFhirValue, TCcdaValue>>>;
+  readonly fhirToCcdaMap: Partial<Record<TFhirValue, EnumEntry<TFhirValue, TCcdaValue>>>;
 
   constructor(details: EnumMapperDetails, entries: EnumEntry<TFhirValue, TCcdaValue>[]) {
     this.details = details;
     this.entries = entries;
-    this.ccdaToFhirMap = {} as Record<TCcdaValue, EnumEntry<TFhirValue, TCcdaValue>>;
-    this.fhirToCcdaMap = {} as Record<TFhirValue, EnumEntry<TFhirValue, TCcdaValue>>;
+    this.ccdaToFhirMap = {};
+    this.fhirToCcdaMap = {};
 
     for (const entry of entries) {
       if (!this.ccdaToFhirMap[entry.ccdaValue]) {
@@ -480,7 +480,7 @@ export function mapCodeableConceptToCcdaCode(codeableConcept: CodeableConcept | 
  * @returns The C-CDA code.
  */
 export function mapCodingToCcdaCode(coding: Coding): CcdaCode {
-  const systemEntry = coding?.system ? SYSTEM_MAPPER.getEntryByFhir(coding.system) : undefined;
+  const systemEntry = coding.system ? SYSTEM_MAPPER.getEntryByFhir(coding.system) : undefined;
   const system = systemEntry?.ccdaValue;
   const systemName = systemEntry?.displayName;
 

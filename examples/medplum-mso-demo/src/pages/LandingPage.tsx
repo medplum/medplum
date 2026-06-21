@@ -21,10 +21,10 @@ export function LandingPage(): JSX.Element {
     <Document>
       <Stack align="center">
         <Title order={2}>
-          Welcome {profile?.name?.[0]?.given?.[0]} {profile?.name?.[0]?.family}!
+          Welcome {profile.name?.[0]?.given?.[0]} {profile.name?.[0]?.family}!
         </Title>
 
-        {!loading && profile && (
+        {!loading && (
           <Badge color={isAdmin ? 'purple' : 'blue'} size="lg">
             {isAdmin ? 'Admin User' : 'Clinician User'}
           </Badge>

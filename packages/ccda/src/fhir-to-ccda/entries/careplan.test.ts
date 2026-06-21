@@ -77,8 +77,8 @@ describe('createPlanOfTreatmentCarePlanEntry', () => {
     expect(act?.templateId).toEqual([{ '@_root': OID_INSTRUCTIONS }]);
     expect(act?.statusCode?.['@_code']).toBe('completed');
     expect(act?.text?.['#text']).toBe('Follow-up care plan for patient recovery');
-    expect(act?.code?.['@_code']).toBe('182836005');
-    expect(act?.code?.['@_displayName']).toBe('Review of care plan');
+    expect(act?.code['@_code']).toBe('182836005');
+    expect(act?.code['@_displayName']).toBe('Review of care plan');
     expect(act?.id).toBeDefined();
   });
 

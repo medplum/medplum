@@ -83,8 +83,8 @@ describe('Outcomes', () => {
 
   test('Conflict', () => {
     expect(isOk(conflict('bad'))).toBe(false);
-    expect(conflict('bad').issue?.[0]?.details).toMatchObject<CodeableConcept>({ text: 'bad', coding: undefined });
-    expect(conflict('bad', 'errcode').issue?.[0]?.details).toMatchObject<CodeableConcept>({
+    expect(conflict('bad').issue[0]?.details).toMatchObject<CodeableConcept>({ text: 'bad', coding: undefined });
+    expect(conflict('bad', 'errcode').issue[0]?.details).toMatchObject<CodeableConcept>({
       coding: [{ code: 'errcode' }],
       text: 'bad',
     });
@@ -92,8 +92,8 @@ describe('Outcomes', () => {
 
   test('Bad Request', () => {
     expect(isOk(badRequest('bad'))).toBe(false);
-    expect(badRequest('bad', 'bad').issue?.[0]?.expression?.[0]).toBe('bad');
-    expect(badRequest('bad', ['bad[0]', 'bad[1]']).issue?.[0]?.expression).toEqual(['bad[0]', 'bad[1]']);
+    expect(badRequest('bad', 'bad').issue[0]?.expression?.[0]).toBe('bad');
+    expect(badRequest('bad', ['bad[0]', 'bad[1]']).issue[0]?.expression).toEqual(['bad[0]', 'bad[1]']);
   });
 
   test.each([

@@ -3,7 +3,6 @@
 import type { MedplumClientOptions } from '@medplum/core';
 import { MedplumClient } from '@medplum/core';
 import { FileSystemStorage } from '../storage';
-import type { Profile } from '../utils';
 
 export async function createMedplumClient(
   options: MedplumClientOptions & { profile?: string },
@@ -12,10 +11,11 @@ export async function createMedplumClient(
   const profileName = options.profile ?? 'default';
 
   const storage = new FileSystemStorage(profileName);
-  const profile = storage.getObject('options') as Profile;
+  const profile = storage.getObject('options');
   if (profileName !== 'default' && !profile) {
     throw new Error(`Profile "${profileName}" does not exist`);
   }
+  const profileOptions = profile as { authType?: string } | undefined;
 
   const { baseUrl, fhirUrlPath, accessToken, tokenUrl, authorizeUrl, clientId, clientSecret } = getClientValues(
     options,
@@ -49,7 +49,7 @@ export async function createMedplumClient(
     } else if (clientId && clientSecret) {
       // If the client ID and secret are provided, use them.
       medplumClient.setBasicAuth(clientId, clientSecret);
-      if (profile?.authType !== 'basic') {
+      if (profileOptions?.authType !== 'basic') {
         // Unless the user explicitly specified basic auth, start the client login.
         await medplumClient.startClientLogin(clientId, clientSecret);
       }
@@ -62,14 +62,14 @@ export async function createMedplumClient(
 function getClientValues(options: MedplumClientOptions, storage: FileSystemStorage): MedplumClientOptions {
   const storageOptions = storage.getObject('options') as MedplumClientOptions;
   const baseUrl =
-    options.baseUrl ?? storageOptions?.baseUrl ?? process.env['MEDPLUM_BASE_URL'] ?? 'https://api.medplum.com/';
-  const fhirUrlPath = options.fhirUrlPath ?? storageOptions?.fhirUrlPath ?? process.env['MEDPLUM_FHIR_URL_PATH'];
-  const accessToken = options.accessToken ?? storageOptions?.accessToken ?? process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'];
-  const tokenUrl = options.tokenUrl ?? storageOptions?.tokenUrl ?? process.env['MEDPLUM_TOKEN_URL'];
-  const authorizeUrl = options.authorizeUrl ?? storageOptions?.authorizeUrl ?? process.env['MEDPLUM_AUTHORIZE_URL'];
+    options.baseUrl ?? storageOptions.baseUrl ?? process.env['MEDPLUM_BASE_URL'] ?? 'https://api.medplum.com/';
+  const fhirUrlPath = options.fhirUrlPath ?? storageOptions.fhirUrlPath ?? process.env['MEDPLUM_FHIR_URL_PATH'];
+  const accessToken = options.accessToken ?? storageOptions.accessToken ?? process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'];
+  const tokenUrl = options.tokenUrl ?? storageOptions.tokenUrl ?? process.env['MEDPLUM_TOKEN_URL'];
+  const authorizeUrl = options.authorizeUrl ?? storageOptions.authorizeUrl ?? process.env['MEDPLUM_AUTHORIZE_URL'];
 
-  const clientId = options.clientId ?? storageOptions?.clientId ?? process.env['MEDPLUM_CLIENT_ID'];
-  const clientSecret = options.clientSecret ?? storageOptions?.clientSecret ?? process.env['MEDPLUM_CLIENT_SECRET'];
+  const clientId = options.clientId ?? storageOptions.clientId ?? process.env['MEDPLUM_CLIENT_ID'];
+  const clientSecret = options.clientSecret ?? storageOptions.clientSecret ?? process.env['MEDPLUM_CLIENT_SECRET'];
 
   return { baseUrl, fhirUrlPath, accessToken, tokenUrl, authorizeUrl, clientId, clientSecret };
 }

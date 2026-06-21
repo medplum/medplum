@@ -29,56 +29,50 @@ export function TestMetadataCardInput({ test, metadata, error }: TestMetadataCar
     <Card key={test.code} withBorder shadow="none">
       <Stack gap="xs">
         <Text fw={500}>{test.display}</Text>
-        {!metadata ? (
-          <div>Missing metadata</div>
-        ) : (
+        <Radio.Group
+          value={metadata.priority}
+          error={error?.priority?.message}
+          onChange={(newValue) => {
+            if (!newValue) {
+              console.warn('New value for priority unexpectedly falsey', newValue);
+              return;
+            }
+            const newPriority = newValue as TestMetadata['priority'];
+            updateTestMetadata(test, { priority: newPriority });
+          }}
+          label="Priority"
+          withAsterisk
+        >
+          <Stack gap={4}>
+            <Radio value="routine" label="Routine" />
+            <Radio value="urgent" label="Urgent" />
+            <Radio value="asap" label="ASAP" />
+            <Radio value="stat" label="Stat" />
+          </Stack>
+        </Radio.Group>
+
+        <TextInput
+          label="Notes"
+          value={metadata.notes ?? ''}
+          onChange={(event) => {
+            updateTestMetadata(test, { notes: event.currentTarget.value });
+          }}
+          placeholder="Test notes"
+        />
+
+        {metadata.aoeStatus === 'loading' && <Text>Loading AoE...</Text>}
+        {metadata.aoeStatus === 'error' && <Text>Error fetching AoE</Text>}
+        {metadata.aoeStatus === 'loaded' && metadata.aoeQuestionnaire && (
           <>
-            <Radio.Group
-              value={metadata.priority}
-              error={error?.priority?.message}
-              onChange={(newValue) => {
-                if (!newValue) {
-                  console.warn('New value for priority unexpectedly falsey', newValue);
-                  return;
-                }
-                const newPriority = newValue as TestMetadata['priority'];
-                updateTestMetadata(test, { priority: newPriority });
+            {error?.aoeResponses?.message && <Text c="red">{error.aoeResponses.message}</Text>}
+            <QuestionnaireForm
+              questionnaire={metadata.aoeQuestionnaire}
+              disablePagination
+              excludeButtons
+              onChange={(qr) => {
+                updateTestMetadata(test, { aoeResponses: qr });
               }}
-              label="Priority"
-              withAsterisk
-            >
-              <Stack gap={4}>
-                <Radio value="routine" label="Routine" />
-                <Radio value="urgent" label="Urgent" />
-                <Radio value="asap" label="ASAP" />
-                <Radio value="stat" label="Stat" />
-              </Stack>
-            </Radio.Group>
-
-            <TextInput
-              label="Notes"
-              value={metadata.notes ?? ''}
-              onChange={(event) => {
-                updateTestMetadata(test, { notes: event.currentTarget.value });
-              }}
-              placeholder="Test notes"
             />
-
-            {metadata.aoeStatus === 'loading' && <Text>Loading AoE...</Text>}
-            {metadata.aoeStatus === 'error' && <Text>Error fetching AoE</Text>}
-            {metadata.aoeStatus === 'loaded' && metadata.aoeQuestionnaire && (
-              <>
-                {error?.aoeResponses?.message && <Text c="red">{error.aoeResponses.message}</Text>}
-                <QuestionnaireForm
-                  questionnaire={metadata.aoeQuestionnaire}
-                  disablePagination
-                  excludeButtons
-                  onChange={(qr) => {
-                    updateTestMetadata(test, { aoeResponses: qr });
-                  }}
-                />
-              </>
-            )}
           </>
         )}
       </Stack>

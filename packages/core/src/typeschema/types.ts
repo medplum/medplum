@@ -116,10 +116,10 @@ const TYPE_SPECIAL_CASES: { [url: string]: string } = {
 };
 
 function getDataTypesMap(profileUrl: string): DataTypesMap {
-  let dataTypes: DataTypesMap;
-  dataTypes = PROFILE_DATA_TYPES[profileUrl];
+  let dataTypes = (PROFILE_DATA_TYPES as Record<string, DataTypesMap | undefined>)[profileUrl];
   if (!dataTypes) {
-    dataTypes = PROFILE_DATA_TYPES[profileUrl] = Object.create(null);
+    dataTypes = Object.create(null) as DataTypesMap;
+    PROFILE_DATA_TYPES[profileUrl] = dataTypes;
   }
   return dataTypes;
 }
@@ -138,14 +138,11 @@ export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | B
 }
 
 export function loadDataType(sd: StructureDefinition): void {
-  if (!sd?.name) {
+  if (!sd.name) {
     throw new Error(`Failed loading StructureDefinition from bundle`);
   }
-  if (sd.resourceType !== 'StructureDefinition') {
-    return;
-  }
   const schema = parseStructureDefinition(sd);
-  const specialCase = TYPE_SPECIAL_CASES[sd.url];
+  const specialCase = (TYPE_SPECIAL_CASES as Record<string, string | undefined>)[sd.url];
   let dataTypes: DataTypesMap;
   let typeName: string;
 
@@ -158,8 +155,8 @@ export function loadDataType(sd: StructureDefinition): void {
     // By default, only index by "type" for "official" FHIR types
     sd.url === `http://hl7.org/fhir/StructureDefinition/${sd.type}` ||
     sd.url === `https://medplum.com/fhir/StructureDefinition/${sd.type}` ||
-    sd.type?.startsWith('http://') ||
-    sd.type?.startsWith('https://')
+    sd.type.startsWith('http://') ||
+    sd.type.startsWith('https://')
   ) {
     dataTypes = DATA_TYPES;
     typeName = sd.type;
@@ -188,7 +185,7 @@ export function isDataTypeLoaded(type: string): boolean {
 
 export function tryGetDataType(type: string, profileUrl?: string): InternalTypeSchema | undefined {
   if (profileUrl) {
-    const profileType = getDataTypesMap(profileUrl)[type];
+    const profileType = (getDataTypesMap(profileUrl) as Record<string, InternalTypeSchema | undefined>)[type];
     if (profileType) {
       return profileType;
     }
@@ -218,8 +215,8 @@ export function getDataType(type: string, profileUrl?: string): InternalTypeSche
  * @returns True if the resource type is a valid FHIR resource type.
  */
 export function isResourceType(resourceType: string): resourceType is ResourceType {
-  const typeSchema = DATA_TYPES[resourceType];
-  return typeSchema && isResourceTypeSchema(typeSchema);
+  const typeSchema = (DATA_TYPES as Record<string, InternalTypeSchema | undefined>)[resourceType];
+  return !!typeSchema && isResourceTypeSchema(typeSchema);
 }
 
 export function isProfileLoaded(profileUrl: string): boolean {
@@ -300,7 +297,7 @@ class StructureDefinitionParser {
         // Record field in schema
         let parentContext: BackboneContext | undefined = this.backboneContext;
         while (parentContext) {
-          if (element.path?.startsWith(parentContext.path + '.')) {
+          if (element.path.startsWith(parentContext.path + '.')) {
             parentContext.type.elements[elementPath(element, parentContext.path)] = field;
             break;
           }
@@ -341,7 +338,7 @@ class StructureDefinitionParser {
     if (this.isInnerType(element)) {
       this.enterInnerType(element);
     }
-    if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element?.path)) {
+    if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element.path)) {
       // Path must be compatible with the sliced field path (i.e. have it as a prefix) to be a part of the
       // same slice group; otherwise, that group is finished and this is the start of a new field
       this.slicingContext = undefined;
@@ -352,7 +349,7 @@ class StructureDefinitionParser {
   }
 
   private enterInnerType(element: ElementDefinition): void {
-    while (this.backboneContext && !pathsCompatible(this.backboneContext?.path, element.path)) {
+    while (this.backboneContext && !pathsCompatible(this.backboneContext.path, element.path)) {
       // Starting new inner type, unwind type stack to this property's parent
       this.innerTypes.push(this.backboneContext.type);
       this.backboneContext = this.backboneContext.parent;
@@ -395,7 +392,7 @@ class StructureDefinitionParser {
       ordered: element.slicing?.ordered ?? false,
       rule: element.slicing?.rules,
     };
-    this.slicingContext = { field: field.slicing, path: element.path ?? '' };
+    this.slicingContext = { field: field.slicing, path: element.path };
   }
 
   private checkFieldExit(element: ElementDefinition | undefined = undefined): void {
@@ -415,20 +412,17 @@ class StructureDefinitionParser {
 
   private next(): ElementDefinition | undefined {
     const element = this.peek();
-    if (element) {
-      this.index++;
-      return element;
-    }
-    return undefined;
+    this.index++;
+    return element;
   }
 
   private peek(): ElementDefinition | undefined {
-    const element = this.elements[this.index];
+    const element = (this.elements as (ElementDefinition | undefined)[])[this.index];
     if (element) {
-      this.elementIndex[element.path ?? ''] = element;
+      this.elementIndex[element.path] = element;
       if (element.contentReference) {
         const contentRefPath = element.contentReference.slice(element.contentReference.indexOf('#') + 1);
-        const ref = this.elementIndex[contentRefPath];
+        const ref = (this.elementIndex as Record<string, ElementDefinition | undefined>)[contentRefPath];
         if (!ref) {
           return undefined;
         }
@@ -455,7 +449,7 @@ class StructureDefinitionParser {
   private isInnerType(current: ElementDefinition): boolean {
     const next = this.peek();
     return !!(
-      pathsCompatible(current?.path, next?.path) &&
+      pathsCompatible(current.path, next?.path) &&
       current.type?.some((t) => ['BackboneElement', 'Element'].includes(t.code))
     );
   }
@@ -488,7 +482,7 @@ class StructureDefinitionParser {
       }
 
       if (!code) {
-        code = type.code ?? '';
+        code = type.code;
       }
 
       return {
@@ -510,10 +504,10 @@ class StructureDefinitionParser {
       max: max,
       isArray: baseMax > 1,
       constraints: (ed.constraint ?? []).map((c) => ({
-        key: c.key ?? '',
-        severity: c.severity ?? 'error',
+        key: c.key,
+        severity: c.severity,
         expression: c.expression ?? '',
-        description: c.human ?? '',
+        description: c.human,
       })),
       type: this.parseElementDefinitionType(ed),
       fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed[x]')),
@@ -538,7 +532,9 @@ export function subsetResource<T extends Resource>(resource: T | undefined, prop
   const extraProperties = [];
   for (const property of properties) {
     extraProperties.push('_' + property);
-    const choiceTypeField = DATA_TYPES[resource.resourceType].elements[property + '[x]'];
+    const choiceTypeField = (DATA_TYPES[resource.resourceType].elements as Record<string, InternalSchemaElement | undefined>)[
+      property + '[x]'
+    ];
     if (choiceTypeField) {
       extraProperties.push(...choiceTypeField.type.map((t) => property + capitalize(t.code)));
     }

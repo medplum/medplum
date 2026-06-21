@@ -52,7 +52,7 @@ function createMockFetchWithStatus(baseUrl = 'https://api.medplum.com/'): FetchL
         return [
           201,
           {
-            ...(options?.body ? JSON.parse(options?.body) : {}),
+            ...(options?.body ? JSON.parse(options.body) : {}),
             id: MOCK_SUBSCRIPTION_ID,
           },
         ];
@@ -147,8 +147,8 @@ describe('MedplumClient -- Subscriptions', () => {
     sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
     const connectEvent = await connectEventPromise;
-    expect(connectEvent?.type).toStrictEqual('connect');
-    expect(connectEvent?.payload?.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
+    expect(connectEvent.type).toStrictEqual('connect');
+    expect(connectEvent.payload.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
   });
 
   test('unsubscribeFromCriteria() -- SubscriptionManager exists', async () => {
@@ -169,8 +169,8 @@ describe('MedplumClient -- Subscriptions', () => {
 
     const connectEvent = await connectEventPromise;
 
-    expect(connectEvent?.type).toStrictEqual('connect');
-    expect(connectEvent?.payload?.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
+    expect(connectEvent.type).toStrictEqual('connect');
+    expect(connectEvent.payload.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
 
     // Set up disconnect listener before unsubscribing
     const disconnectPromise = new Promise<SubscriptionEventMap['disconnect']>((resolve) => {
@@ -183,8 +183,8 @@ describe('MedplumClient -- Subscriptions', () => {
 
     // Disconnect is deferred — fires when the GC timer finalizes the unreferenced entry
     const disconnectEvent = await disconnectPromise;
-    expect(disconnectEvent?.type).toStrictEqual('disconnect');
-    expect(disconnectEvent?.payload?.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
+    expect(disconnectEvent.type).toStrictEqual('disconnect');
+    expect(disconnectEvent.payload.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
 
     // Second unsubscribe should warn since the entry was already removed
     expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
@@ -229,7 +229,7 @@ describe('MedplumClient -- More Subscription Tests', () => {
 
     const connectEvent = await connectEventPromise;
 
-    expect(connectEvent?.type).toStrictEqual('connect');
-    expect(connectEvent?.payload?.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
+    expect(connectEvent.type).toStrictEqual('connect');
+    expect(connectEvent.payload.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
   });
 });

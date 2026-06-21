@@ -42,7 +42,7 @@ export class EnhancedHl7Client extends Hl7Client {
   }
 
   send(msg: Hl7Message): Promise<void> {
-    const msgControlId = msg.getSegment('MSH')?.getField(10)?.toString();
+    const msgControlId = msg.getSegment('MSH')?.getField(10).toString();
     if (msgControlId) {
       this.stats.recordMessageSent(msgControlId);
     }
@@ -50,7 +50,7 @@ export class EnhancedHl7Client extends Hl7Client {
   }
 
   async sendAndWait(msg: Hl7Message, options?: SendAndWaitOptions): Promise<Hl7Message> {
-    const msgControlId = msg.getSegment('MSH')?.getField(10)?.toString();
+    const msgControlId = msg.getSegment('MSH')?.getField(10).toString();
     if (msgControlId) {
       this.stats.recordMessageSent(msgControlId);
     }

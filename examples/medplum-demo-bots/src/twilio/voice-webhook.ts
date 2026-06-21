@@ -31,7 +31,7 @@ async function isValidTwilioRequest(medplum: MedplumClient, event: BotEvent<any>
 
   // Use secrets to store a Twilio auth token that will be used to validate the request
   // For more information, see https://help.twilio.com/articles/223136027-Auth-Tokens-and-How-to-Change-Them
-  const twilioAuthToken = event.secrets['TWILIO_AUTH_TOKEN']?.valueString as string;
+  const twilioAuthToken = event.secrets['TWILIO_AUTH_TOKEN'].valueString as string;
 
   // Convert the request body to a plain object
   const params = Object.fromEntries(Object.entries(event.input));
@@ -49,7 +49,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<any>): Pro
   }
 
   // This is the phone number (purchased from Twilio) that you will be using to make and receive calls
-  const systemNumber = event.secrets['TWILIO_NUMBER']?.valueString;
+  const systemNumber = event.secrets['TWILIO_NUMBER'].valueString;
   const params = Object.fromEntries(Object.entries(event.input));
 
   const twiml = new VoiceResponse();

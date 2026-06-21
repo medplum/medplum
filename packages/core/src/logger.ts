@@ -76,7 +76,7 @@ export class Logger implements ILogger {
     this.level = level;
     this.options = options;
 
-    if (options?.prefix) {
+    if (options.prefix) {
       this.prefix = options.prefix;
     }
 
@@ -146,12 +146,12 @@ export class Logger implements ILogger {
 }
 
 export function parseLogLevel(level: string): LogLevel {
-  const value = LogLevel[level.toUpperCase() as keyof typeof LogLevel];
-  if (value === undefined) {
+  const key = level.toUpperCase();
+  if (!(key in LogLevel)) {
     throw new Error(`Invalid log level: ${level}`);
   }
 
-  return value;
+  return LogLevel[key as keyof typeof LogLevel];
 }
 
 /**

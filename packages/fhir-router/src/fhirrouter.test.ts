@@ -155,7 +155,7 @@ describe('FHIR Router', () => {
     const [res2, updatedPatient] = await router.handleRequest(
       {
         method: 'PUT',
-        url: `/Patient/${patient?.id}`,
+        url: `/Patient/${patient.id}`,
         pathname: '',
         body: {
           ...patient,
@@ -168,7 +168,7 @@ describe('FHIR Router', () => {
       repo
     );
     expect(res2).toMatchObject(allOk);
-    expect((updatedPatient as Patient)?.active).toStrictEqual(true);
+    expect((updatedPatient as Patient).active).toStrictEqual(true);
   });
 
   test('Update incorrect precondition', async () => {
@@ -187,7 +187,7 @@ describe('FHIR Router', () => {
     const [res2] = await router.handleRequest(
       {
         method: 'PUT',
-        url: `/Patient/${patient?.id}`,
+        url: `/Patient/${patient.id}`,
         pathname: '',
         body: {
           ...patient,

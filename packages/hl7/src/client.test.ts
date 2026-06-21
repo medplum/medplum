@@ -10,6 +10,14 @@ import type { Hl7ErrorEvent } from './events';
 import { Hl7Server } from './server';
 import { getFreePort, MockServer, MockSocket } from './test-utils';
 
+function getExpectedSegment(message: Hl7Message, segmentName: string): NonNullable<ReturnType<Hl7Message['getSegment']>> {
+  const segment = message.getSegment(segmentName);
+  if (!segment) {
+    throw new Error(`Expected ${segmentName} segment`);
+  }
+  return segment;
+}
+
 describe('Hl7Client', () => {
   describe('sendAndWait', () => {
     let port: number;
@@ -19,7 +27,7 @@ describe('Hl7Client', () => {
 
     let hl7Server: Hl7Server;
     let hl7Client: Hl7Client;
-    let nextResponseCb: ((message: Hl7Message) => Hl7Message) | undefined = undefined;
+    let nextResponseCb: ((message: Hl7Message) => Hl7Message | undefined) | undefined = undefined;
 
     beforeAll(async () => {
       hl7Server = new Hl7Server((connection) => {
@@ -88,7 +96,7 @@ describe('Hl7Client', () => {
       } catch (err) {
         if (
           isOperationOutcome((err as OperationOutcomeError).outcome) &&
-          (err as OperationOutcomeError).outcome.issue?.[0].details?.text === 'Client timeout'
+          (err as OperationOutcomeError).outcome.issue[0].details?.text === 'Client timeout'
         ) {
           timedOut = true;
         } else {
@@ -115,8 +123,8 @@ describe('Hl7Client', () => {
         if (
           event.error instanceof OperationOutcomeError &&
           isOperationOutcome(event.error.outcome) &&
-          event.error.outcome.issue?.[0].severity === 'warning' &&
-          event.error.outcome.issue?.[0].details?.text === 'Response received for unknown message control ID'
+          event.error.outcome.issue[0].severity === 'warning' &&
+          event.error.outcome.issue[0].details?.text === 'Response received for unknown message control ID'
         ) {
           warningEvent = event;
         }
@@ -146,7 +154,7 @@ describe('Hl7Client', () => {
       // Set up a custom response callback that doesn't respond (to trigger timeout)
       nextResponseCb = (_message: Hl7Message) => {
         // Don't send any response, which will cause the client to timeout
-        return null as any;
+        return undefined;
       };
 
       let timeoutError: any = null;
@@ -165,16 +173,16 @@ describe('Hl7Client', () => {
       expect(timeoutError).toBeDefined();
       expect(timeoutError).toBeInstanceOf(OperationOutcomeError);
       expect(isOperationOutcome(timeoutError.outcome)).toBe(true);
-      expect(timeoutError.outcome.issue?.[0].code).toBe('timeout');
-      expect(timeoutError.outcome.issue?.[0].details?.text).toBe('Client timeout');
-      expect(timeoutError.outcome.issue?.[0].diagnostics).toContain('Request timed out after waiting 100 milliseconds');
+      expect(timeoutError.outcome.issue[0].code).toBe('timeout');
+      expect(timeoutError.outcome.issue[0].details?.text).toBe('Client timeout');
+      expect(timeoutError.outcome.issue[0].diagnostics).toContain('Request timed out after waiting 100 milliseconds');
     });
 
     test('Rejects outstanding promises and emits error when close is called', async () => {
       // Set up a custom response callback that doesn't respond immediately
       nextResponseCb = (_message: Hl7Message) => {
         // Don't send any response, keeping the promise pending
-        return null as any;
+        return undefined;
       };
 
       // Start a sendAndWait that will remain pending
@@ -195,7 +203,7 @@ describe('Hl7Client', () => {
         if (
           event.error instanceof OperationOutcomeError &&
           isOperationOutcome(event.error.outcome) &&
-          event.error.outcome.issue?.[0].details?.text === 'Messages were still pending when connection closed'
+          event.error.outcome.issue[0].details?.text === 'Messages were still pending when connection closed'
         ) {
           closeErrorEvent = event;
         }
@@ -220,8 +228,8 @@ describe('Hl7Client', () => {
       expect(promiseRejected).toBe(true);
       expect(rejectionError).toBeInstanceOf(OperationOutcomeError);
       expect(isOperationOutcome(rejectionError?.outcome)).toBe(true);
-      expect(rejectionError?.outcome.issue?.[0].code).toBe('incomplete');
-      expect(rejectionError?.outcome.issue?.[0].details?.text).toBe('Message was still pending when connection closed');
+      expect(rejectionError?.outcome.issue[0].code).toBe('incomplete');
+      expect(rejectionError?.outcome.issue[0].details?.text).toBe('Message was still pending when connection closed');
 
       // Close itself should not emit any errors
       await closePromise;
@@ -230,11 +238,10 @@ describe('Hl7Client', () => {
       // Verify the error event was emitted
       expect(closeErrorEvent).toBeDefined();
       expect(
-        ((closeErrorEvent as unknown as Hl7ErrorEvent)?.error as OperationOutcomeError)?.outcome?.issue?.[0].details
-          ?.text
+        ((closeErrorEvent as unknown as Hl7ErrorEvent).error as OperationOutcomeError).outcome.issue[0].details?.text
       ).toBe('Messages were still pending when connection closed');
       expect(
-        ((closeErrorEvent as unknown as Hl7ErrorEvent)?.error as OperationOutcomeError)?.outcome?.issue?.[0].diagnostics
+        ((closeErrorEvent as unknown as Hl7ErrorEvent).error as OperationOutcomeError).outcome.issue[0].diagnostics
       ).toContain('Hl7Connection closed while 1 messages were pending');
     });
 
@@ -252,7 +259,7 @@ describe('Hl7Client', () => {
         threw = true;
         expect(err).toBeInstanceOf(OperationOutcomeError);
         expect(isOperationOutcome((err as OperationOutcomeError).outcome)).toBe(true);
-        expect((err as OperationOutcomeError).outcome.issue?.[0].details?.text).toBe('Required field missing: MSH.10');
+        expect((err as OperationOutcomeError).outcome.issue[0].details?.text).toBe('Required field missing: MSH.10');
       }
 
       expect(threw).toStrictEqual(true);
@@ -275,7 +282,7 @@ describe('Hl7Client', () => {
 
         expect(response).toBeDefined();
         // Should return on the first ACK
-        expect(response.getSegment('MSA')?.getField(1)?.toString()).toStrictEqual(ackCode);
+        expect(getExpectedSegment(response, 'MSA').getField(1).toString()).toStrictEqual(ackCode);
       }
     );
 
@@ -296,7 +303,7 @@ describe('Hl7Client', () => {
         );
 
         expect(response).toBeDefined();
-        expect(response.getSegment('MSA')?.getField(1)?.toString()).toStrictEqual(ackCode);
+        expect(getExpectedSegment(response, 'MSA').getField(1).toString()).toStrictEqual(ackCode);
       }
     );
 
@@ -318,7 +325,7 @@ describe('Hl7Client', () => {
       } catch (err) {
         if (
           isOperationOutcome((err as OperationOutcomeError).outcome) &&
-          (err as OperationOutcomeError).outcome.issue?.[0].details?.text === 'Client timeout'
+          (err as OperationOutcomeError).outcome.issue[0].details?.text === 'Client timeout'
         ) {
           timedOut = true;
         } else {

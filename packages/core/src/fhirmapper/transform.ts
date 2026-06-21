@@ -133,7 +133,7 @@ function registerGlobals(ctx: TransformContext, structureMap: StructureMap): voi
     }
   }
 
-  for (const group of structureMap.group ?? EMPTY) {
+  for (const group of structureMap.group) {
     setVariable(ctx, group.name, { type: 'StructureMapGroup', value: group });
   }
 }
@@ -196,7 +196,7 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: Typed
 
   const newContext: TransformContext = { root: ctx.root, parent: ctx, variables };
 
-  for (const rule of group.rule ?? EMPTY) {
+  for (const rule of group.rule) {
     evalRule(newContext, rule);
   }
 
@@ -219,9 +219,7 @@ function evalRule(ctx: TransformContext, rule: StructureMapGroupRule): void {
   // Typically, if there is more than one source statement, only one of the elements would repeat.
   // If any of the source data elements have no value, then the rule never applies;
   // only existing permutations are executed: for multiple source statements, all of them need to match.
-  if (rule.source) {
-    evalRuleSourceAt(ctx, rule, 0);
-  }
+  evalRuleSourceAt(ctx, rule, 0);
 }
 
 /**
@@ -378,7 +376,7 @@ function evalSource(ctx: TransformContext, source: StructureMapGroupRuleSource):
   }
 
   let sourceValue = evalFhirPathTyped(sourceElement, [sourceContext]);
-  if (!sourceValue || sourceValue.length === 0) {
+  if (sourceValue.length === 0) {
     return [];
   }
 
@@ -569,7 +567,7 @@ function isArrayProperty(targetContext: TypedValue, element: string): boolean | 
  * @internal
  */
 function tryGetPropertySchema(targetContext: TypedValue, element: string): InternalSchemaElement | undefined {
-  return tryGetDataType(targetContext.type)?.elements?.[element];
+  return tryGetDataType(targetContext.type)?.elements[element];
 }
 
 /**
@@ -585,8 +583,8 @@ function tryGetPropertySchema(targetContext: TypedValue, element: string): Inter
  * @internal
  */
 function evalAppend(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
-  const arg1 = resolveParameter(ctx, target.parameter?.[0])?.[0]?.value;
-  const arg2 = resolveParameter(ctx, target.parameter?.[1])?.[0]?.value;
+  const arg1 = resolveParameter(ctx, target.parameter?.[0])[0]?.value;
+  const arg2 = resolveParameter(ctx, target.parameter?.[1])[0]?.value;
   return [{ type: 'string', value: (arg1 ?? '').toString() + (arg2 ?? '').toString() }];
 }
 
@@ -603,10 +601,10 @@ function evalAppend(ctx: TransformContext, target: StructureMapGroupRuleTarget):
  * @internal
  */
 function evalCast(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
-  const arg1 = resolveParameter(ctx, target.parameter?.[0])?.[0];
-  const arg2 = resolveParameter(ctx, target.parameter?.[1])?.[0]?.value;
+  const arg1 = resolveParameter(ctx, target.parameter?.[0])[0];
+  const arg2 = resolveParameter(ctx, target.parameter?.[1])[0]?.value;
   if (arg2 === 'string') {
-    return [{ type: 'string', value: arg1?.value?.toString() }];
+    return [{ type: 'string', value: arg1.value?.toString() }];
   }
   return [arg1];
 }
@@ -631,12 +629,12 @@ function evalCc(ctx: TransformContext, target: StructureMapGroupRuleTarget): Typ
   const params = target.parameter as StructureMapGroupRuleTargetParameter[];
   if (params.length === 2) {
     // system and code
-    const system = resolveParameter(ctx, params[0])?.[0]?.value;
-    const code = resolveParameter(ctx, params[1])?.[0]?.value;
+    const system = resolveParameter(ctx, params[0])[0]?.value;
+    const code = resolveParameter(ctx, params[1])[0]?.value;
     return [{ type: 'CodeableConcept', value: { coding: [{ system, code }] } }];
   } else {
     // text
-    const text = resolveParameter(ctx, params[0])?.[0]?.value;
+    const text = resolveParameter(ctx, params[0])[0]?.value;
     return [{ type: 'CodeableConcept', value: { text } }];
   }
 }
@@ -675,7 +673,7 @@ function evalCopy(ctx: TransformContext, target: StructureMapGroupRuleTarget): T
 function evalCreate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   const result: Record<string, unknown> = {};
   if (target.parameter && target.parameter.length > 0) {
-    result.resourceType = resolveParameter(ctx, target.parameter?.[0])?.[0]?.value;
+    result.resourceType = resolveParameter(ctx, target.parameter[0])[0]?.value;
   }
   return [toTypedValue(result)];
 }
@@ -742,8 +740,8 @@ function evalTranslate(ctx: TransformContext, target: StructureMapGroupRuleTarge
  * @internal
  */
 function evalTruncate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
-  const targetValue = resolveParameter(ctx, target.parameter?.[0])?.[0];
-  const targetLength = resolveParameter(ctx, target.parameter?.[1])?.[0]?.value as number;
+  const targetValue = resolveParameter(ctx, target.parameter?.[0])[0];
+  const targetLength = resolveParameter(ctx, target.parameter?.[1])[0]?.value as number;
   if (targetValue.type === 'string') {
     return [{ type: 'string', value: targetValue.value.substring(0, targetLength) }];
   }

@@ -111,7 +111,7 @@ export function createAllergyEntry(converter: FhirToCcdaConverter, allergy: Alle
                                 ...mapCodeableConceptToCcdaCode(allergy.code),
                                 originalText: allergy.code?.extension
                                   ? {
-                                      reference: getNarrativeReference(allergy.code?.extension),
+                                      reference: getNarrativeReference(allergy.code.extension),
                                     }
                                   : undefined,
                               },
@@ -146,8 +146,8 @@ export function createAllergyEntry(converter: FhirToCcdaConverter, allergy: Alle
                               '@_code': 'completed',
                             },
                             effectiveTime: mapEffectiveDate(allergy.onsetDateTime, allergy.onsetPeriod),
-                            value: mapCodeableConceptToCcdaValue(reaction.manifestation?.[0]),
-                            text: createTextFromExtensions(reaction.manifestation?.[0]?.extension),
+                            value: mapCodeableConceptToCcdaValue(reaction.manifestation[0]),
+                            text: createTextFromExtensions(reaction.manifestation[0]?.extension),
                             entryRelationship: [
                               {
                                 '@_typeCode': 'SUBJ',

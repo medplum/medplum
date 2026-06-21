@@ -52,9 +52,6 @@ interface AnswerDisplayProps {
 }
 
 function AnswerDisplay({ answer }: AnswerDisplayProps): JSX.Element {
-  if (!answer) {
-    throw new Error('No answer');
-  }
   const [[key, value]] = Object.entries(answer);
 
   switch (key) {
@@ -88,7 +85,7 @@ export function IntakeResponsePage(): JSX.Element {
     'notice-of-privacy-practices-help',
     'acknowledgement-for-advance-directives-help',
   ];
-  const items = questionnaireResponse?.item || [];
+  const items = questionnaireResponse.item || [];
 
   return (
     <Document>

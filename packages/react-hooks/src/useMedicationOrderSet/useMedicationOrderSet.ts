@@ -83,7 +83,7 @@ export function useMedicationOrderSet(options: UseMedicationOrderSetOptions): Us
       return undefined;
     }
     const hasPd = Boolean(o.planDefinitionId);
-    const hasVendorId = o.vendorOrderSetId !== undefined && o.vendorOrderSetId !== null && o.vendorOrderSetId !== '';
+    const hasVendorId = o.vendorOrderSetId !== undefined && o.vendorOrderSetId !== '';
     if (!hasPd && !hasVendorId) {
       return undefined;
     }

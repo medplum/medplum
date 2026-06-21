@@ -212,13 +212,13 @@ describe('Intake form', async () => {
       expect(allergies[0].meta?.profile).toStrictEqual([PROFILE_URLS.AllergyIntolerance]);
       expect(allergies[0].code?.coding?.[0].code).toStrictEqual('111088007');
       expect(allergies[0].clinicalStatus?.coding?.[0].code).toStrictEqual('active');
-      expect(allergies[0].reaction?.[0].manifestation?.[0].text).toStrictEqual('Skin rash');
+      expect(allergies[0].reaction?.[0].manifestation[0].text).toStrictEqual('Skin rash');
       expect(allergies[0].onsetDateTime).toStrictEqual('2000-07-01T00:00:00Z');
 
-      expect(allergies[1]?.meta?.profile).toStrictEqual([PROFILE_URLS.AllergyIntolerance]);
+      expect(allergies[1].meta?.profile).toStrictEqual([PROFILE_URLS.AllergyIntolerance]);
       expect(allergies[1].code?.coding?.[0].code).toStrictEqual('763875007');
       expect(allergies[1].clinicalStatus?.coding?.[0].code).toStrictEqual('active');
-      expect(allergies[1].reaction?.[0].manifestation?.[0].text).toStrictEqual('Skin rash');
+      expect(allergies[1].reaction?.[0].manifestation[0].text).toStrictEqual('Skin rash');
       expect(allergies[1].onsetDateTime).toStrictEqual('2020-01-01T00:00:00Z');
     });
   });
@@ -242,7 +242,7 @@ describe('Intake form', async () => {
       expect(medications[0].status).toStrictEqual('active');
       expect(medications[0].note?.[0].text).toStrictEqual('I take it to manage my chronic back pain.');
 
-      expect(medications[1]?.meta?.profile).toStrictEqual([PROFILE_URLS.MedicationRequest]);
+      expect(medications[1].meta?.profile).toStrictEqual([PROFILE_URLS.MedicationRequest]);
       expect(medications[1].medicationCodeableConcept?.coding?.[0].code).toStrictEqual('1161610');
       expect(medications[1].status).toStrictEqual('active');
       expect(medications[1].note?.[0].text).toStrictEqual('I take it to manage my diabetes.');
@@ -289,20 +289,20 @@ describe('Intake form', async () => {
 
       expect(familyMemberHistories.length).toStrictEqual(2);
 
-      expect(familyMemberHistories[0].condition?.[0].code?.coding?.[0].code).toStrictEqual('254843006');
-      expect(familyMemberHistories[0].condition?.[0].code?.coding?.[0].display).toStrictEqual(
+      expect(familyMemberHistories[0].condition?.[0].code.coding?.[0].code).toStrictEqual('254843006');
+      expect(familyMemberHistories[0].condition?.[0].code.coding?.[0].display).toStrictEqual(
         'Familial cancer of breast (disorder)'
       );
-      expect(familyMemberHistories[0].relationship?.coding?.[0].code).toStrictEqual('MTH');
-      expect(familyMemberHistories[0].relationship?.coding?.[0].display).toStrictEqual('mother');
+      expect(familyMemberHistories[0].relationship.coding?.[0].code).toStrictEqual('MTH');
+      expect(familyMemberHistories[0].relationship.coding?.[0].display).toStrictEqual('mother');
       expect(familyMemberHistories[0].deceasedBoolean).toStrictEqual(false);
 
-      expect(familyMemberHistories[1].condition?.[0].code?.coding?.[0].code).toStrictEqual('53741008');
-      expect(familyMemberHistories[1].condition?.[0].code?.coding?.[0].display).toStrictEqual(
+      expect(familyMemberHistories[1].condition?.[0].code.coding?.[0].code).toStrictEqual('53741008');
+      expect(familyMemberHistories[1].condition?.[0].code.coding?.[0].display).toStrictEqual(
         'Coronary arteriosclerosis (disorder)'
       );
-      expect(familyMemberHistories[1].relationship?.coding?.[0].code).toStrictEqual('FTH');
-      expect(familyMemberHistories[1].relationship?.coding?.[0].display).toStrictEqual('father');
+      expect(familyMemberHistories[1].relationship.coding?.[0].code).toStrictEqual('FTH');
+      expect(familyMemberHistories[1].relationship.coding?.[0].display).toStrictEqual('father');
       expect(familyMemberHistories[1].deceasedBoolean).toStrictEqual(true);
     });
   });
@@ -322,14 +322,14 @@ describe('Intake form', async () => {
       expect(immunizations.length).toStrictEqual(2);
 
       expect(immunizations[0].meta?.profile).toStrictEqual([PROFILE_URLS.Immunization]);
-      expect(immunizations[0].vaccineCode?.coding?.[0].system).toStrictEqual('http://hl7.org/fhir/sid/cvx');
-      expect(immunizations[0].vaccineCode?.coding?.[0].code).toStrictEqual('197');
+      expect(immunizations[0].vaccineCode.coding?.[0].system).toStrictEqual('http://hl7.org/fhir/sid/cvx');
+      expect(immunizations[0].vaccineCode.coding?.[0].code).toStrictEqual('197');
       expect(immunizations[0].status).toStrictEqual('completed');
       expect(immunizations[0].occurrenceDateTime).toStrictEqual('2024-02-01T14:00:00-07:00');
 
       expect(immunizations[1].meta?.profile).toStrictEqual([PROFILE_URLS.Immunization]);
-      expect(immunizations[1].vaccineCode?.coding?.[0].system).toStrictEqual('http://hl7.org/fhir/sid/cvx');
-      expect(immunizations[1].vaccineCode?.coding?.[0].code).toStrictEqual('115');
+      expect(immunizations[1].vaccineCode.coding?.[0].system).toStrictEqual('http://hl7.org/fhir/sid/cvx');
+      expect(immunizations[1].vaccineCode.coding?.[0].code).toStrictEqual('115');
       expect(immunizations[1].status).toStrictEqual('completed');
       expect(immunizations[1].occurrenceDateTime).toStrictEqual('2015-08-01T15:00:00-07:00');
     });
@@ -482,13 +482,13 @@ describe('Intake form', async () => {
       expect(coverages[0].beneficiary).toStrictEqual(createReference(patient));
       expect(coverages[0].subscriberId).toStrictEqual('first-provider-id');
       expect(coverages[0].relationship?.coding?.[0]?.code).toStrictEqual('self');
-      expect(coverages[0].payor?.[0].reference).toStrictEqual(getReferenceString(payor1));
+      expect(coverages[0].payor[0]?.reference).toStrictEqual(getReferenceString(payor1));
 
       expect(coverages[1].meta?.profile).toStrictEqual([PROFILE_URLS.Coverage]);
       expect(coverages[1].beneficiary).toStrictEqual(createReference(patient));
       expect(coverages[1].subscriberId).toStrictEqual('second-provider-id');
       expect(coverages[1].relationship?.coding?.[0]?.code).toStrictEqual('child');
-      expect(coverages[1].payor?.[0].reference).toStrictEqual(getReferenceString(payor2));
+      expect(coverages[1].payor[0]?.reference).toStrictEqual(getReferenceString(payor2));
     });
 
     test('upsert coverage resources to ensure there is only one coverage resource per payor', async () => {

@@ -325,7 +325,7 @@ describe('PID File Manager', () => {
       registerAgentCleanup();
       createPidFile(APP_NAME);
 
-      processEvents.exit?.();
+      processEvents.exit();
 
       expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
       expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -335,7 +335,7 @@ describe('PID File Manager', () => {
       registerAgentCleanup();
       createPidFile(APP_NAME);
 
-      processEvents.SIGTERM?.();
+      processEvents.SIGTERM();
 
       expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
       expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -346,7 +346,7 @@ describe('PID File Manager', () => {
       registerAgentCleanup();
       createPidFile(APP_NAME);
 
-      processEvents.SIGINT?.();
+      processEvents.SIGINT();
 
       expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
       expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -357,7 +357,7 @@ describe('PID File Manager', () => {
       registerAgentCleanup();
       createPidFile(APP_NAME);
 
-      processEvents.SIGHUP?.();
+      processEvents.SIGHUP();
 
       expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
       expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -368,7 +368,7 @@ describe('PID File Manager', () => {
       registerAgentCleanup();
       createPidFile(APP_NAME);
 
-      processEvents.uncaughtException?.(new Error('Test error'));
+      processEvents.uncaughtException(new Error('Test error'));
 
       expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
       expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -381,7 +381,7 @@ describe('PID File Manager', () => {
       mockedFs.unlinkSync(pidFilePath);
       mockedFs.unlinkSync.mockClear();
 
-      processEvents.SIGTERM?.();
+      processEvents.SIGTERM();
 
       expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
       expect(mockedFs.unlinkSync).not.toHaveBeenCalled();
@@ -396,7 +396,7 @@ describe('PID File Manager', () => {
 
       registerAgentCleanup();
       createPidFile(APP_NAME);
-      processEvents.SIGTERM?.();
+      processEvents.SIGTERM();
 
       expect(pidLoggerErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining(`Error removing PID file: ${TEST_PID_PATH}`),

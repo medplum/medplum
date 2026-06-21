@@ -286,9 +286,6 @@ export function typedValueToResponseItem(
   item: QuestionnaireItem,
   value: TypedValue
 ): QuestionnaireResponseItemAnswer | undefined {
-  if (!item.type) {
-    return undefined;
-  }
   if (item.type === QuestionnaireItemType.choice || item.type === QuestionnaireItemType.openChoice) {
     // Choice and open-choice items can have multiple answer options
     return { [`value${capitalize(value.type)}`]: value.value };
@@ -301,7 +298,7 @@ export function typedValueToResponseItem(
     return undefined;
   }
   const allowedPropertyTypes = questionnaireItemTypesAllowedPropertyTypes[item.type];
-  if (allowedPropertyTypes?.includes(value.type)) {
+  if (allowedPropertyTypes.includes(value.type)) {
     // Use the questionnaire item type to determine the response item type
     return { [`value${capitalize(item.type)}`]: value.value };
   }
@@ -341,9 +338,7 @@ export function getNewMultiSelectValues(
     );
     if (option) {
       const optionValue = getItemAnswerOptionValue(option);
-      if (optionValue) {
-        result.push({ [propertyName]: optionValue.value });
-      }
+      result.push({ [propertyName]: optionValue.value });
     }
   }
 
@@ -379,7 +374,7 @@ function evaluateMatch(actualAnswer: TypedValue | undefined, expectedAnswer: Typ
   } else {
     // `=` and `!=` should be treated as the FHIRPath `~` and `!~`
     // All other operators should be unmodified
-    const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
+    const fhirPathOperator = operator === '=' || operator === '!=' ? operator.replace('=', '~') : operator;
     const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
       '%actualAnswer': actualAnswer,
       '%expectedAnswer': expectedAnswer,
@@ -426,7 +421,7 @@ export function getQuestionnaireItemReferenceTargetTypes(item: QuestionnaireItem
     return [extension.valueCode] as ResourceType[];
   }
   if (extension.valueCodeableConcept) {
-    return extension.valueCodeableConcept?.coding?.map((c) => c.code) as ResourceType[];
+    return extension.valueCodeableConcept.coding?.map((c) => c.code) as ResourceType[];
   }
   return undefined;
 }

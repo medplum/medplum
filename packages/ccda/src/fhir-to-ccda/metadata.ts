@@ -11,7 +11,7 @@ export function mapDocumentationOf(events: CompositionEvent[] | undefined): Ccda
   }
 
   const event = events[0];
-  if (!event || (!event.code && !event.period)) {
+  if (!event.code && !event.period) {
     return undefined;
   }
 

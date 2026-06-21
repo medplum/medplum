@@ -21,12 +21,12 @@ export function clearReleaseCache(): void {
  * @param candidate - An object assumed to be a `ReleaseManifest`.
  */
 export function assertReleaseManifest(candidate: unknown): asserts candidate is ReleaseManifest {
-  const manifest = candidate as ReleaseManifest;
-  if (!manifest.tag_name?.startsWith('v')) {
+  const manifest = candidate as { tag_name?: unknown; assets?: unknown };
+  if (typeof manifest.tag_name !== 'string' || !manifest.tag_name.startsWith('v')) {
     throw new Error("Manifest missing valid tag_name starting with a 'v' (eg. v5.1.15)");
   }
   const assets = manifest.assets;
-  if (!assets?.length) {
+  if (!Array.isArray(assets) || !assets.length) {
     throw new Error('Manifest missing assets list');
   }
   for (const asset of assets) {

@@ -345,7 +345,7 @@ export function redirectOk(url: URL): OperationOutcome {
 }
 
 export function getOutcomeRedirectUrl(outcome: OperationOutcome | undefined): string | undefined {
-  return outcome?.issue?.[0]?.details?.coding?.find((c) => c.system === 'urn:ietf:rfc:3986')?.code;
+  return outcome?.issue[0]?.details?.coding?.find((c) => c.system === 'urn:ietf:rfc:3986')?.code;
 }
 
 export function businessRule(key: string, message: string): OperationOutcome {
@@ -463,7 +463,7 @@ export function getStatus(outcome: OperationOutcome): number {
     case SERVER_TIMEOUT_ID:
       return 504;
     default:
-      return outcome.issue?.[0]?.code === 'exception' ? 500 : 400;
+      return outcome.issue[0]?.code === 'exception' ? 500 : 400;
   }
 }
 
@@ -533,7 +533,7 @@ export function normalizeErrorString(error: unknown): string {
  * @returns The string representation of the operation outcome.
  */
 export function operationOutcomeToString(outcome: OperationOutcome): string {
-  const strs = outcome.issue?.map(operationOutcomeIssueToString) ?? [];
+  const strs = ((outcome as Partial<OperationOutcome>).issue ?? []).map(operationOutcomeIssueToString);
   return strs.length > 0 ? strs.join('; ') : 'Unknown error';
 }
 

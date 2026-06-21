@@ -120,9 +120,7 @@ class Crawler {
 
   private crawlProperty(parent: TypedValueWithPath, key: string, schema: InternalTypeSchema, path: string): void {
     const propertyValues = getNestedProperty(parent, key, { withPath: true });
-    if (this.visitor.visitProperty) {
-      this.visitor.visitProperty(parent, key, path, propertyValues, schema);
-    }
+    this.visitor.visitProperty(parent, key, path, propertyValues, schema);
 
     for (const propertyValue of propertyValues) {
       for (const value of arrayify(propertyValue)) {
@@ -134,7 +132,7 @@ class Crawler {
   private crawlPropertyValue(value: TypedValueWithPath, path: string, schema: InternalTypeSchema): void {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
-      const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
+      const type = schema.innerTypes.find((t) => t.name === value.type) ?? getDataType(value.type);
       this.crawlObject(value, type, path);
     }
   }
@@ -197,10 +195,8 @@ class AsyncCrawler {
     path: string
   ): Promise<void> {
     const propertyValues = getNestedProperty(parent, key, { withPath: true });
-    if (this.visitor.visitPropertyAsync) {
-      for (const propertyValue of propertyValues) {
-        await this.visitor.visitPropertyAsync(parent, key, path, propertyValue, schema);
-      }
+    for (const propertyValue of propertyValues) {
+      await this.visitor.visitPropertyAsync(parent, key, path, propertyValue, schema);
     }
 
     for (const propertyValue of propertyValues) {
@@ -213,7 +209,7 @@ class AsyncCrawler {
   private async crawlPropertyValue(value: TypedValueWithPath, path: string, schema: InternalTypeSchema): Promise<void> {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
-      const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
+      const type = schema.innerTypes.find((t) => t.name === value.type) ?? getDataType(value.type);
       await this.crawlObject(value, type, path);
     }
   }

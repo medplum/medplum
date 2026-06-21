@@ -82,9 +82,7 @@ export function ResourceCreatePage(): JSX.Element {
       .createResource(newResource)
       .then((result) => navigate(prependPatientPath(patient, '/' + result.resourceType + '/' + result.id)))
       .catch((err) => {
-        if (setOutcome) {
-          setOutcome(normalizeOperationOutcome(err));
-        }
+        setOutcome(normalizeOperationOutcome(err));
         showNotification({
           color: 'red',
           message: normalizeErrorString(err),

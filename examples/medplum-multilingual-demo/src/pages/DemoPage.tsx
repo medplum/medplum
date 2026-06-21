@@ -45,7 +45,7 @@ function QuestionnaireTab({ patient, questionnaire, loading }: TabProps): JSX.El
   const medplum = useMedplum();
   const { t, language } = useLanguage();
 
-  const [answers, setAnswers] = useState<Record<string, string | boolean | number>>({});
+  const [answers, setAnswers] = useState<Record<string, string | boolean | number | undefined>>({});
   const [submitting, setSubmitting] = useState(false);
   const [lastResponseId, setLastResponseId] = useState<string | undefined>();
 
@@ -71,12 +71,12 @@ function QuestionnaireTab({ patient, questionnaire, loading }: TabProps): JSX.El
           answer = [{ valueBoolean: Boolean(val) }];
         } else if (item.type === 'integer') {
           answer = [{ valueInteger: Number(val) || 0 }];
-        } else if (val !== undefined && val !== '') {
+        } else if (val !== undefined) {
           answer = [{ valueString: String(val) }];
         }
 
         // Store the text as it was displayed to the user (translated), not the English primary.
-        const displayedText = t(item.text, (item as any)._text) ?? item.text;
+        const displayedText = t(item.text, (item as any)._text);
         return { linkId: item.linkId, text: displayedText, answer };
       });
 
@@ -86,7 +86,7 @@ function QuestionnaireTab({ patient, questionnaire, loading }: TabProps): JSX.El
         language,
         status: 'completed',
         questionnaire: `Questionnaire/${questionnaire.id}`,
-        subject: { reference: `Patient/${patient?.id}` },
+        subject: { reference: `Patient/${patient.id}` },
         authored: new Date().toISOString(),
         item: items,
       });
@@ -123,7 +123,8 @@ function QuestionnaireTab({ patient, questionnaire, loading }: TabProps): JSX.El
       </div>
 
       {(questionnaire.item ?? []).map((item) => {
-        const label = t(item.text, (item as any)._text) ?? item.text ?? item.linkId;
+        const label = t(item.text, (item as any)._text);
+        const answerValue = answers[item.linkId];
 
         let input: JSX.Element;
         if (item.type === 'boolean') {
@@ -140,7 +141,7 @@ function QuestionnaireTab({ patient, questionnaire, loading }: TabProps): JSX.El
               label={label}
               min={0}
               max={10}
-              value={(answers[item.linkId] as number) ?? ''}
+              value={typeof answerValue === 'number' ? answerValue : ''}
               onChange={(val) => setAnswers((prev) => ({ ...prev, [item.linkId]: val }))}
             />
           );
@@ -150,7 +151,7 @@ function QuestionnaireTab({ patient, questionnaire, loading }: TabProps): JSX.El
               label={label}
               autosize
               minRows={2}
-              value={(answers[item.linkId] as string) ?? ''}
+              value={typeof answerValue === 'string' ? answerValue : ''}
               onChange={(e) => setAnswers((prev) => ({ ...prev, [item.linkId]: e.target.value }))}
             />
           );
@@ -158,7 +159,7 @@ function QuestionnaireTab({ patient, questionnaire, loading }: TabProps): JSX.El
           input = (
             <TextInput
               label={label}
-              value={(answers[item.linkId] as string) ?? ''}
+              value={typeof answerValue === 'string' ? answerValue : ''}
               onChange={(e) => setAnswers((prev) => ({ ...prev, [item.linkId]: e.target.value }))}
             />
           );
@@ -264,12 +265,12 @@ function PatientTab({ patient, loading }: TabProps): JSX.Element {
   }
 
   const preferred = patient.communication?.find((c) => c.preferred);
-  const preferredCode = preferred?.language?.coding?.[0]?.code;
-  const preferredDisplay = preferred?.language?.coding?.[0]?.display;
+  const preferredCode = preferred?.language.coding?.[0]?.code;
+  const preferredDisplay = preferred?.language.coding?.[0]?.display;
 
   const allLanguages = patient.communication
     ?.map((c) => {
-      const lang = c.language?.coding?.[0];
+      const lang = c.language.coding?.[0];
       return `${lang?.display} (${lang?.code})${c.preferred ? ' ✓' : ''}`;
     })
     .join(', ');

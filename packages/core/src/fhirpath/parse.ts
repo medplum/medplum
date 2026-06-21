@@ -117,7 +117,7 @@ function parseQuantity(str: string): Quantity {
   const parts = str.split(' ');
   const value = Number.parseFloat(parts[0]);
   let unit = parts[1];
-  if (unit?.startsWith("'") && unit.endsWith("'")) {
+  if (unit.startsWith("'") && unit.endsWith("'")) {
     unit = unit.substring(1, unit.length - 1);
   } else {
     unit = '{' + unit + '}';

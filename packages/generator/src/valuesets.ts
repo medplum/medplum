@@ -75,9 +75,7 @@ function buildValueSetComposeValues(compose: ValueSetCompose | undefined, result
       }
     } else if (include.system) {
       const includedValues = getValueSetValues(include.system);
-      if (includedValues) {
-        result.push(...includedValues);
-      }
+      result.push(...includedValues);
     }
   }
 }

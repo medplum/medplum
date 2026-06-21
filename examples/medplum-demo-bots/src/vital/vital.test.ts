@@ -393,7 +393,7 @@ function buildQuestionnaire(markers: Partial<Marker>[]): Questionnaire {
         text: question.value,
         type: (question.type === 'numeric' ? 'decimal' : question.type) as QuestionnaireItem['type'],
         required: question.required,
-        answerOption: question.answers?.map<QuestionnaireItemAnswerOption>((answer) => ({
+        answerOption: question.answers.map<QuestionnaireItemAnswerOption>((answer) => ({
           valueString: question.type !== 'numeric' ? answer.value : undefined,
           valueInteger: question.type === 'numeric' ? Number.parseFloat(answer.value) : undefined,
         })),

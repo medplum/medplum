@@ -16,8 +16,8 @@ export async function handler(
     return undefined;
   }
 
-  const PHOTON_CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
-  const PHOTON_CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
+  const PHOTON_CLIENT_ID = event.secrets['PHOTON_CLIENT_ID'].valueString;
+  const PHOTON_CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET'].valueString;
   const PHOTON_AUTH_TOKEN = await handlePhotonAuth(PHOTON_CLIENT_ID, PHOTON_CLIENT_SECRET);
 
   const data = body.data;
@@ -125,8 +125,8 @@ async function createMedicationDispense(
     coding: [
       {
         system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
-        code: fill.treatment?.codes.rxcui,
-        display: fill.treatment?.name,
+        code: fill.treatment.codes.rxcui,
+        display: fill.treatment.name,
       },
     ],
   };

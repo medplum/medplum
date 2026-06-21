@@ -13,7 +13,6 @@ import type {
   Bundle,
   Patient,
   QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
   Reference,
   RiskAssessment,
 } from '@medplum/fhirtypes';
@@ -39,14 +38,14 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Extract answers from the QuestionnaireResponse.
   const responses = getQuestionnaireAnswers(event.input);
   // Get the reference to the RiskAssessment from the answers.
-  const riskAssessmentReference = event.input.subject as QuestionnaireResponseItemAnswer;
+  const riskAssessmentReference = event.input.subject;
   // If there's no valid RiskAssessment reference in the response, throw an error.
   if (!riskAssessmentReference) {
     throw new Error('Invalid input. Expected RiskAssessment reference');
   }
   const riskAssessment = (await medplum.readReference(riskAssessmentReference)) as RiskAssessment;
-  const targetReference = riskAssessment.basis?.[0] as Reference<Patient>;
-  const srcReference = riskAssessment.subject as Reference<Patient>;
+  const targetReference = riskAssessment.basis?.[0] as Reference<Patient> | undefined;
+  const srcReference = riskAssessment.subject as Reference<Patient> | undefined;
   if (!targetReference || !srcReference) {
     throw new Error(
       `Undefined references target: ${JSON.stringify(targetReference, null, 2)} src: ${JSON.stringify(
@@ -61,7 +60,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Reasons for disabling merge include:
   // - The patient records are not duplicates.
   // - The patient records are duplicates, but the user does not want to merge them.
-  const mergeDisabled = responses['disableMerge']?.valueBoolean;
+  const mergeDisabled = responses['disableMerge'].valueBoolean;
   if (mergeDisabled) {
     await addToDoNotMatchList(medplum, srcReference, targetReference);
     await addToDoNotMatchList(medplum, targetReference, srcReference);
@@ -76,8 +75,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   // Copy some data from the source patient to the target, depending on the user input
   let fieldUpdates = {} as Partial<Patient>;
-  const appendName = responses['appendName']?.valueBoolean;
-  const appendAddress = responses['appendAddress']?.valueBoolean;
+  const appendName = responses['appendName'].valueBoolean;
+  const appendAddress = responses['appendAddress'].valueBoolean;
 
   if (appendName) {
     fieldUpdates = { ...fieldUpdates, name: [...(targetPatient.name ?? []), ...(sourcePatient.name ?? [])] };
@@ -95,7 +94,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   // We might delete the source patient record if we don't want to continue to have a duplicate of an existing patient
   // despite the fact that it is an inactive record.
-  const deleteSource = responses['deleteSource']?.valueBoolean;
+  const deleteSource = responses['deleteSource'].valueBoolean;
   if (deleteSource === true) {
     await medplum.deleteResource('Patient', mergedPatients.src.id);
   } else {
@@ -151,7 +150,7 @@ export function unlinkPatientRecords(src: WithId<Patient>, target: WithId<Patien
   srcCopy.link = srcCopy.link?.filter((link) => resolveId(link.other) !== target.id);
 
   // If the source record is no longer replaced, make it active again
-  if (!srcCopy.link?.filter((link) => link.type === 'replaced-by')?.length) {
+  if (!srcCopy.link?.filter((link) => link.type === 'replaced-by').length) {
     srcCopy.active = true;
   }
 
@@ -181,7 +180,7 @@ export function mergePatientRecords(
 
   // Check for conflicts between the source and target records' identifiers
   for (const srcIdentifier of srcIdentifiers) {
-    const targetIdentifier = mergedIdentifiers?.find((identifier) => identifier.system === srcIdentifier.system);
+    const targetIdentifier = mergedIdentifiers.find((identifier) => identifier.system === srcIdentifier.system);
     // If the targetRecord has an identifier with the same system, check if source and target agree on the identifier value
     if (targetIdentifier) {
       if (targetIdentifier.value !== srcIdentifier.value) {
@@ -264,7 +263,7 @@ export async function rewriteClinicalDataReferences(
   let bundle: Bundle = await medplum.readPatientEverything(sourcePatient.id);
 
   // Process all pages of results
-  while (bundle) {
+  for (;;) {
     // Process all entries in the current bundle
     for (const entry of bundle.entry ?? EMPTY) {
       const resource = entry.resource;

@@ -142,17 +142,17 @@ async function setPolicy(bucketName: string, policy: Policy): Promise<void> {
 }
 
 function policyHasAllowStatement(policy: Policy, bucketName: string, oaiId: string): boolean {
-  return !!policy?.Statement?.some((s: PolicyStatement) => {
+  return !!policy.Statement?.some((s: PolicyStatement) => {
     return (
-      s?.Effect === 'Allow' &&
-      s?.Principal?.AWS === `arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${oaiId}` &&
-      Array.isArray(s?.Action) &&
-      s?.Action?.includes('s3:GetObject*') &&
-      s?.Action?.includes('s3:GetBucket*') &&
-      s?.Action?.includes('s3:List*') &&
-      Array.isArray(s?.Resource) &&
-      s?.Resource?.includes(`arn:aws:s3:::${bucketName}`) &&
-      s?.Resource?.includes(`arn:aws:s3:::${bucketName}/*`)
+      s.Effect === 'Allow' &&
+      s.Principal?.AWS === `arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${oaiId}` &&
+      Array.isArray(s.Action) &&
+      s.Action.includes('s3:GetObject*') &&
+      s.Action.includes('s3:GetBucket*') &&
+      s.Action.includes('s3:List*') &&
+      Array.isArray(s.Resource) &&
+      s.Resource.includes(`arn:aws:s3:::${bucketName}`) &&
+      s.Resource.includes(`arn:aws:s3:::${bucketName}/*`)
     );
   });
 }
@@ -180,11 +180,11 @@ function addGuardDutyReadPolicyStatement(policy: Policy, bucketName: string, oai
   if (
     policy.Statement?.some(
       (s) =>
-        s?.Effect === 'Deny' &&
-        s?.Principal?.AWS === `arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${oaiId}` &&
+        s.Effect === 'Deny' &&
+        s.Principal?.AWS === `arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${oaiId}` &&
         statementHasAction(s, 's3:GetObject') &&
         statementHasAction(s, 's3:GetObjectVersion') &&
-        s?.Condition?.StringNotEquals?.['s3:ExistingObjectTag/GuardDutyMalwareScanStatus'] === 'NO_THREATS_FOUND'
+        s.Condition?.StringNotEquals['s3:ExistingObjectTag/GuardDutyMalwareScanStatus'] === 'NO_THREATS_FOUND'
     )
   ) {
     return;

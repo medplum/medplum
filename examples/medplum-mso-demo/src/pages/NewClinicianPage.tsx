@@ -72,7 +72,7 @@ export function NewClinicianPage(): JSX.Element {
       const policySearch = await medplum.search('AccessPolicy', {
         name: 'Managed Service Organization Access Policy',
       });
-      const policy = policySearch.entry?.[0]?.resource as AccessPolicy;
+      const policy = policySearch.entry?.[0]?.resource as AccessPolicy | undefined;
 
       if (!policy) {
         throw new Error('Access policy not found');
@@ -116,7 +116,7 @@ export function NewClinicianPage(): JSX.Element {
         color: 'green',
       });
 
-      navigate(`/${result.profile?.reference}`)?.catch(console.error);
+      navigate(`/${result.profile.reference}`)?.catch(console.error);
     } catch (error) {
       console.error('Error creating clinician:', normalizeErrorString(error));
       showNotification({

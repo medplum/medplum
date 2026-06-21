@@ -7,7 +7,7 @@ import type { Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtyp
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {
   // Get all of the answers from the questionnaire response
 
-  for (const item of event.input?.item?.[0]?.item ?? EMPTY) {
+  for (const item of event.input.item?.[0]?.item ?? EMPTY) {
     if (item.answer?.[0]?.valueBoolean) {
       const medication = await medplum.createResource({
         resourceType: 'MedicationStatement',

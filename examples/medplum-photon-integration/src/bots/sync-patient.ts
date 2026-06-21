@@ -21,8 +21,8 @@ import {
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<PhotonPatient> {
   const patient = event.input;
-  const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
-  const CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
+  const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID'].valueString;
+  const CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET'].valueString;
 
   const PHOTON_AUTH_TOKEN = await handlePhotonAuth(CLIENT_ID, CLIENT_SECRET);
 
@@ -83,8 +83,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   const variables: CreatePatientVariables = {
     externalId: patient.id as string,
     name: {
-      first: patient.name?.[0].given?.[0] ?? '',
-      last: patient.name?.[0].family ?? '',
+      first: patient.name[0]?.given?.[0] ?? '',
+      last: patient.name[0]?.family ?? '',
     },
     dateOfBirth: formatAWSDate(patient.birthDate),
     sex: getSexType(patient.gender),
@@ -113,13 +113,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
     variables.address = address;
   }
 
-  if (allergyInputs) {
-    variables.allergies = allergyInputs;
-  }
-
-  if (medHistoryInput) {
-    variables.medicationHistory = medHistoryInput;
-  }
+  variables.allergies = allergyInputs;
+  variables.medicationHistory = medHistoryInput;
 
   const body = JSON.stringify({ query, variables });
   const result = await photonGraphqlFetch(body, PHOTON_AUTH_TOKEN);

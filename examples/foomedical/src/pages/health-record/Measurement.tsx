@@ -25,21 +25,19 @@ export function Measurement(): JSX.Element | null {
     .read();
 
   useEffect(() => {
-    if (observations) {
-      const labels: string[] = [];
-      const datasets: ChartDataset<'line', number[]>[] = chartDatasets.map((item) => ({ ...item, data: [] }));
-      for (const obs of observations) {
-        labels.push(formatDate(obs.effectiveDateTime));
-        if (chartDatasets.length === 1) {
-          datasets[0].data.push(obs.valueQuantity?.value as number);
-        } else {
-          for (let i = 0; i < chartDatasets.length; i++) {
-            datasets[i].data.push((obs.component as ObservationComponent[])[i].valueQuantity?.value as number);
-          }
+    const labels: string[] = [];
+    const datasets: ChartDataset<'line', number[]>[] = chartDatasets.map((item) => ({ ...item, data: [] }));
+    for (const obs of observations) {
+      labels.push(formatDate(obs.effectiveDateTime));
+      if (chartDatasets.length === 1) {
+        datasets[0].data.push(obs.valueQuantity?.value as number);
+      } else {
+        for (let i = 0; i < chartDatasets.length; i++) {
+          datasets[i].data.push((obs.component as ObservationComponent[])[i].valueQuantity?.value as number);
         }
       }
-      setChartData({ labels, datasets });
     }
+    setChartData({ labels, datasets });
   }, [chartDatasets, observations]);
 
   function addObservation(formData: Record<string, string>): void {
@@ -108,7 +106,7 @@ export function Measurement(): JSX.Element | null {
           {description}
         </Alert>
       </Box>
-      {observations?.length && (
+      {observations.length > 0 && (
         <Table>
           <Table.Thead>
             <Table.Tr>

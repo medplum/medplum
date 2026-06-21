@@ -172,7 +172,7 @@ function cloneEvent(e: Event): Event {
   }
   if (e instanceof Events.ErrorEvent) {
     const errorEvent = e as ErrorEvent;
-    return new Events.ErrorEvent(errorEvent.error ?? new Error(errorEvent.message), undefined);
+      return new Events.ErrorEvent(errorEvent.error, undefined);
   }
   return new (e as any).constructor(e.type, e);
 }

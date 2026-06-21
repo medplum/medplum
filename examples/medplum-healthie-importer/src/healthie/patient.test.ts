@@ -158,7 +158,7 @@ describe.skipIf(!process.env.HEALTHIE_API_URL || !process.env.HEALTHIE_CLIENT_SE
           expect(typeof patient.active).toBe('boolean');
           expect(typeof patient.name).toBe('string');
 
-          if (patient.locations && patient.locations.length > 0) {
+          if (patient.locations.length > 0) {
             const location = patient.locations[0];
             expect(location).toHaveProperty('zip');
             expect(location).toHaveProperty('line1');

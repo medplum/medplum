@@ -292,10 +292,10 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
 }
 
 function getPages(questionnaire: Questionnaire): QuestionnaireFormPage[] | undefined {
-  if (!questionnaire?.item) {
+  if (!questionnaire.item) {
     return undefined;
   }
-  const extension = getExtension(questionnaire?.item?.[0], QUESTIONNAIRE_ITEM_CONTROL_URL);
+  const extension = getExtension(questionnaire.item[0], QUESTIONNAIRE_ITEM_CONTROL_URL);
   if (extension?.valueCodeableConcept?.coding?.[0]?.code !== 'page') {
     return undefined;
   }
@@ -314,7 +314,7 @@ function getItemsForPage(
   pages: QuestionnaireFormPage[] | undefined,
   activePage = 0
 ): QuestionnaireItem[] {
-  if (pages && questionnaire?.item?.[activePage]) {
+  if (pages && questionnaire.item?.[activePage]) {
     return [questionnaire.item[activePage]];
   }
   return questionnaire.item ?? [];
@@ -325,7 +325,7 @@ function getResponseItemsForPage(
   pages: QuestionnaireFormPage[] | undefined,
   activePage = 0
 ): QuestionnaireResponseItem[] {
-  if (pages && questionnaireResponse?.item?.[activePage]) {
+  if (pages && questionnaireResponse.item?.[activePage]) {
     return [questionnaireResponse.item[activePage]];
   }
   return questionnaireResponse.item ?? [];

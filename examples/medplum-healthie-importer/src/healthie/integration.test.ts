@@ -143,7 +143,7 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
       console.log(`  First form: id=${form.id}, name=${form.name}, finished=${form.finished}`);
 
       // Verify form_answers structure if present
-      if (form.form_answers && form.form_answers.length > 0) {
+      if (form.form_answers.length > 0) {
         const answer = form.form_answers[0];
         expect(answer.id).toBeDefined();
         console.log(`  First form has ${form.form_answers.length} answers`);

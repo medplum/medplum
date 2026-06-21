@@ -96,7 +96,7 @@ export function createMedicationEntry(converter: FhirToCcdaConverter, med: Medic
         author: converter.mapAuthor(med.requester, med.authoredOn),
         entryRelationship: med.dosageInstruction
           ?.filter((instr) => !!instr.extension)
-          ?.map((instr) => ({
+          .map((instr) => ({
             '@_typeCode': 'COMP',
             substanceAdministration: [
               {

@@ -20,7 +20,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   const input = event.input;
 
   // Verify message type is DFT
-  const messageType = input.getSegment('MSH')?.getField(9)?.getComponent(1) ?? '';
+  const messageType = input.getSegment('MSH')?.getField(9).getComponent(1) ?? '';
   if (messageType !== 'DFT') {
     throw new Error('Not a DFT message');
   }
@@ -55,14 +55,14 @@ export async function handlePatientFromPid(
   }
 
   // Get patient information
-  const mrnNumber = pidSegment?.getField(3)?.getComponent(1) ?? ''; // PID.3 Patient Identifier List
-  const givenName = pidSegment?.getField(5)?.getComponent(2) ?? ''; // PID.5 Patient Name (XPN.2 Given Name)
-  const familyName = pidSegment?.getField(5)?.getComponent(1) ?? ''; // PID.5 Patient Name (XPN.1 Family Name)
-  const addressLine = pidSegment?.getField(11)?.getComponent(1) ?? ''; // PID.11 Patient Address (XAD.1 Street Address)
-  const city = pidSegment?.getField(11)?.getComponent(3) ?? ''; // PID.11 Patient Address (XAD.3 City)
-  const state = pidSegment?.getField(11)?.getComponent(4) ?? ''; // PID.11 Patient Address (XAD.4 State or Province)
-  const postalCode = pidSegment?.getField(11)?.getComponent(5) ?? ''; // PID.11 Patient Address (XAD.5 Zip or Postal Code)
-  const country = pidSegment?.getField(11)?.getComponent(6) ?? ''; // PID.11 Patient Address (XAD.6 Country)
+  const mrnNumber = pidSegment.getField(3).getComponent(1); // PID.3 Patient Identifier List
+  const givenName = pidSegment.getField(5).getComponent(2); // PID.5 Patient Name (XPN.2 Given Name)
+  const familyName = pidSegment.getField(5).getComponent(1); // PID.5 Patient Name (XPN.1 Family Name)
+  const addressLine = pidSegment.getField(11).getComponent(1); // PID.11 Patient Address (XAD.1 Street Address)
+  const city = pidSegment.getField(11).getComponent(3); // PID.11 Patient Address (XAD.3 City)
+  const state = pidSegment.getField(11).getComponent(4); // PID.11 Patient Address (XAD.4 State or Province)
+  const postalCode = pidSegment.getField(11).getComponent(5); // PID.11 Patient Address (XAD.5 Zip or Postal Code)
+  const country = pidSegment.getField(11).getComponent(6); // PID.11 Patient Address (XAD.6 Country)
 
   // Find or create patient
   let patient = await medplum.searchOne('Patient', 'identifier=' + mrnNumber);
@@ -111,9 +111,9 @@ export async function handleCoverageFromIn1(
     return undefined;
   }
 
-  const insurerId = in1Segment.getField(3)?.getComponent(1) ?? ''; // IN1.3 Insurance Company ID
-  const insurerName = in1Segment.getField(4)?.getComponent(1) ?? ''; // IN1.4 Insurance Company Name
-  const subscriberId = in1Segment.getField(36)?.getComponent(1) ?? ''; // IN1.36 Policy Number
+  const insurerId = in1Segment.getField(3).getComponent(1); // IN1.3 Insurance Company ID
+  const insurerName = in1Segment.getField(4).getComponent(1); // IN1.4 Insurance Company Name
+  const subscriberId = in1Segment.getField(36).getComponent(1); // IN1.36 Policy Number
 
   // Check if insurer organization exists
   let insurerOrg = await medplum.searchOne('Organization', 'identifier=' + insurerId);
@@ -160,9 +160,9 @@ export async function handleCoverageFromIn1(
  * @returns An object containing the diagnosis code, description, and system
  */
 function extractDiagnosisFromPr1(pr1: Hl7Segment): { code: string; display: string; system: string } | undefined {
-  const diagnosisCode = pr1.getField(15)?.getComponent(1) ?? ''; // PR1.15.1 Diagnosis Code
-  const diagnosisDesc = pr1.getField(15)?.getComponent(2) ?? ''; // PR1.15.2 Diagnosis Description
-  const diagnosisSystem = pr1.getField(15)?.getComponent(3) ?? ''; // PR1.15.3 Diagnosis Coding System
+  const diagnosisCode = pr1.getField(15).getComponent(1); // PR1.15.1 Diagnosis Code
+  const diagnosisDesc = pr1.getField(15).getComponent(2); // PR1.15.2 Diagnosis Description
+  const diagnosisSystem = pr1.getField(15).getComponent(3); // PR1.15.3 Diagnosis Coding System
 
   if (!diagnosisCode) {
     return undefined;
@@ -191,8 +191,8 @@ export async function handleClaimFromPr1s(
 ): Promise<Claim | undefined> {
   // Get all procedures
   const procedures = pr1Segments.map((pr1) => ({
-    code: pr1.getField(3)?.getComponent(1) ?? '', // PR1.3.1 Procedure Code
-    display: pr1.getField(3)?.getComponent(2) ?? '', // PR1.3.2 Procedure Description
+    code: pr1.getField(3).getComponent(1), // PR1.3.1 Procedure Code
+    display: pr1.getField(3).getComponent(2), // PR1.3.2 Procedure Description
     diagnosis: extractDiagnosisFromPr1(pr1), // Extract diagnosis from PR1.15
   }));
 

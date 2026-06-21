@@ -9,13 +9,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   const answers = getQuestionnaireAnswers(event.input as QuestionnaireResponse);
 
   // Some quick data validation
-  const firstName = answers['firstName']?.valueString;
+  const firstName = answers['firstName'].valueString;
   if (!firstName) {
     console.log('Missing first name');
     return false;
   }
 
-  const lastName = answers['lastName']?.valueString;
+  const lastName = answers['lastName'].valueString;
   if (!lastName) {
     console.log('Missing last name');
     return false;
@@ -44,7 +44,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   });
 
   // Create a comment (FHIR Communication)
-  if (answers['comment']?.valueString) {
+  if (answers['comment'].valueString) {
     await medplum.createResource<Communication>({
       resourceType: 'Communication',
       status: 'completed',
@@ -52,7 +52,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       subject: createReference(patient),
       payload: [
         {
-          contentString: answers['comment']?.valueString,
+          contentString: answers['comment'].valueString,
         },
       ],
     });

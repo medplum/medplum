@@ -149,7 +149,7 @@ export function convertHealthiePolicyToFhir(policy: HealthiePolicy, patientRefer
   }
 
   const costItems: Coverage['costToBeneficiary'] = [];
-  if (policy.copay_value !== undefined && policy.copay_value !== null) {
+  if (policy.copay_value !== undefined) {
     costItems.push({
       type: {
         coding: [{ system: 'http://terminology.hl7.org/CodeSystem/coverage-copay-type', code: 'copay' }],
@@ -157,7 +157,7 @@ export function convertHealthiePolicyToFhir(policy: HealthiePolicy, patientRefer
       valueMoney: { value: policy.copay_value, currency: 'USD' },
     });
   }
-  if (policy.coinsurance_value !== undefined && policy.coinsurance_value !== null) {
+  if (policy.coinsurance_value !== undefined) {
     costItems.push({
       type: {
         coding: [{ system: 'http://terminology.hl7.org/CodeSystem/coverage-copay-type', code: 'coinsurance' }],

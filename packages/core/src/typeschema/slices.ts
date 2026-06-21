@@ -11,7 +11,7 @@ export type SliceDefinitionWithTypes = SliceDefinition & {
 };
 
 export function isSliceDefinitionWithTypes(slice: SliceDefinition): slice is SliceDefinitionWithTypes {
-  return slice.type !== undefined && slice.type.length > 0;
+  return slice.type.length > 0;
 }
 
 function isDiscriminatorComponentMatch(
@@ -22,13 +22,8 @@ function isDiscriminatorComponentMatch(
 ): boolean {
   const nestedProp = getNestedProperty(typedValue, discriminator.path, { profileUrl });
 
-  if (nestedProp) {
-    const elements = slice.typeSchema?.elements ?? slice.elements;
-    return nestedProp.some((v: any) => matchDiscriminant(v, discriminator, slice, elements)) ?? false;
-  }
-
-  console.assert(false, 'getNestedProperty[%s] in isDiscriminatorComponentMatch missed', discriminator.path);
-  return false;
+  const elements = slice.typeSchema?.elements ?? slice.elements;
+  return nestedProp.some((v: any) => matchDiscriminant(v, discriminator, slice, elements));
 }
 
 export function getValueSliceName(
@@ -44,7 +39,7 @@ export function getValueSliceName(
   for (const slice of slices) {
     const typedValue: TypedValue = {
       value,
-      type: slice.typeSchema?.type ?? slice.type?.[0].code,
+      type: slice.typeSchema?.type ?? slice.type[0].code,
     };
     if (
       discriminators.every((d) =>

@@ -41,7 +41,7 @@ function buildSearchKey(search: FhirSearchDescriptor): string {
   const query = search.query;
 
   let queryStr = '';
-  if (query !== undefined && query !== null) {
+  if (query !== undefined) {
     if (typeof query === 'string') {
       queryStr = query;
     } else if (query instanceof URLSearchParams) {

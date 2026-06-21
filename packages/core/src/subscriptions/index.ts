@@ -138,7 +138,7 @@ export class SubscriptionManager {
       throw new OperationOutcomeError(validationError('Not a valid URL'));
     }
     const ws = options?.ReconnectingWebSocket
-      ? new options.ReconnectingWebSocket(url, undefined, { debug: options?.debug, debugLogger: options?.debugLogger })
+      ? new options.ReconnectingWebSocket(url, undefined, { debug: options.debug, debugLogger: options.debugLogger })
       : new ReconnectingWebSocket(url, undefined, { debug: options?.debug, debugLogger: options?.debugLogger });
 
     this.medplum = medplum;
@@ -165,7 +165,7 @@ export class SubscriptionManager {
         }
         const bundle = parsedData;
         // Get criteria for event
-        const status = bundle?.entry?.[0]?.resource as SubscriptionStatus;
+        const status = bundle.entry?.[0]?.resource as SubscriptionStatus;
 
         // Handle heartbeat
         if (status.type === 'heartbeat') {
@@ -223,7 +223,7 @@ export class SubscriptionManager {
               details: {
                 text: 'WebSocket connection closed due to an error',
               },
-              diagnostics: event.error ? normalizeErrorString(event.error) : event.message,
+              diagnostics: normalizeErrorString(event.error),
             },
           ],
         }),
@@ -795,10 +795,10 @@ export async function resourceMatchesSubscriptionCriteria({
  * @returns True if the subscription channel type is ok to execute.
  */
 function matchesChannelType(subscription: Subscription, logger?: Logger): boolean {
-  const channelType = subscription.channel?.type;
+  const channelType = subscription.channel.type;
 
   if (channelType === 'rest-hook') {
-    const url = subscription.channel?.endpoint;
+    const url = subscription.channel.endpoint;
     if (!url) {
       logger?.debug(`Ignore rest-hook missing URL`);
       return false;
@@ -837,5 +837,5 @@ export async function isFhirCriteriaMet(
     evalInput,
     subscriptionExprCache
   );
-  return evalValue?.[0]?.value === true;
+  return evalValue[0]?.value === true;
 }

@@ -219,8 +219,8 @@ describe('createEncounterEntry', () => {
       { '@_root': OID_ENCOUNTER_ACTIVITIES, '@_extension': '2015-08-01' },
       { '@_root': OID_ENCOUNTER_ACTIVITIES },
     ]);
-    expect(diagnosisAct?.code?.['@_code']).toBe('29308-4');
-    expect(diagnosisAct?.code?.['@_displayName']).toBe('Diagnosis');
+    expect(diagnosisAct?.code['@_code']).toBe('29308-4');
+    expect(diagnosisAct?.code['@_displayName']).toBe('Diagnosis');
 
     expect(diagnosisAct?.entryRelationship).toBeDefined();
     expect(diagnosisAct?.entryRelationship?.length).toBe(1);
@@ -238,7 +238,7 @@ describe('createEncounterEntry', () => {
     ]);
     expect(observation?.code?.['@_code']).toBe('282291009');
     expect(observation?.code?.['@_displayName']).toBe('Diagnosis interpretation');
-    expect(observation?.statusCode?.['@_code']).toBe('completed');
+    expect(observation?.statusCode['@_code']).toBe('completed');
     // Value structure is dynamic based on mapCodeableConceptToCcdaValue implementation
     expect(observation?.value).toBeDefined();
     expect(observation?.id).toBeDefined();

@@ -47,7 +47,7 @@ describe('Link Patient', async () => {
 
     await handler(medplum, {
       bot: { reference: 'Bot/123' },
-      input: patients?.[0],
+      input: patients[0],
       contentType: ContentType.FHIR_JSON,
       secrets: {},
     });
@@ -85,7 +85,7 @@ describe('Link Patient', async () => {
 
     const riskAssessment = await medplum.searchResources('RiskAssessment');
     expect(riskAssessment.length).toBe(1);
-    expect(riskAssessment?.[0]?.subject?.reference).toBe(getReferenceString(alexSmith));
-    expect(riskAssessment?.[0]?.basis?.[0]).not.toBe(getReferenceString(alexisSmith));
+    expect(riskAssessment[0].subject.reference).toBe(getReferenceString(alexSmith));
+    expect(riskAssessment[0].basis?.[0]).not.toBe(getReferenceString(alexisSmith));
   });
 });

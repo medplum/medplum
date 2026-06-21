@@ -150,7 +150,7 @@ export function useWhisper({
       // socket swapped out, while the worklet was loading.
       const audioStream = audioStreamRef.current;
       const websocket = websocketRef.current;
-      if (!capturingRef.current || !audioStream || !websocket) {
+      if (!capturingRef.current) {
         await audioContext.close().catch(() => undefined);
         return;
       }

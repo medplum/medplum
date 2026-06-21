@@ -42,7 +42,7 @@ export async function handler(
   })?.individual;
 
   const provider = providerRef ? ((await medplum.readReference(providerRef)) as Practitioner) : undefined;
-  const serviceDate = formatDate(encounter.period?.end) ?? 'unknown';
+  const serviceDate = formatDate(encounter.period?.end);
 
   const codes: Coding[] = [];
   codes.push(encounter.class);
@@ -136,7 +136,7 @@ function getPatientInfo(patient: Patient): Content[] {
   const email = getEmailAddress(patient) ?? '';
   const phoneNumber = getPhoneNumber(patient) ?? '';
   const address = patient.address ? formatAddress(patient.address[0]) : '';
-  const genderDisplay = patient.gender ? patient.gender?.charAt(0).toUpperCase() + patient.gender?.slice(1) : '';
+  const genderDisplay = patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : '';
 
   return [
     { text: 'Patient Information', style: 'header' },

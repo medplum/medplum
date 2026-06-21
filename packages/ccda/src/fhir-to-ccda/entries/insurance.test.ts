@@ -128,8 +128,8 @@ describe('createInsuranceEntry', () => {
 
     // Check policy activity
     const policyAct = entryRel?.act?.[0];
-    expect(policyAct?.code?.['@_code']).toBe('71');
-    expect(policyAct?.code?.['@_displayName']).toBe('Health Maintenance Organization');
+    expect(policyAct?.code['@_code']).toBe('71');
+    expect(policyAct?.code['@_displayName']).toBe('Health Maintenance Organization');
 
     // Check performer (payor)
     expect(policyAct?.performer).toBeDefined();
@@ -196,7 +196,7 @@ describe('createInsuranceEntry', () => {
     expect(result?.act?.[0]?.entryRelationship?.length).toBe(1);
 
     const policyAct = result?.act?.[0]?.entryRelationship?.[0]?.act?.[0];
-    expect(policyAct?.code?.['@_code']).toBe('72');
+    expect(policyAct?.code['@_code']).toBe('72');
     expect(policyAct?.performer?.[0]?.assignedEntity?.representedOrganization?.name).toBeUndefined();
   });
 

@@ -156,7 +156,7 @@ async function fetchRelatedResources(
 
   // Get the Interpreter (Practitioner)
   let interpreter: Practitioner | undefined;
-  if (diagnosticReport?.resultsInterpreter?.[0]) {
+  if (diagnosticReport.resultsInterpreter?.[0]) {
     try {
       interpreter = await medplum.readReference(diagnosticReport.resultsInterpreter[0] as Reference<Practitioner>);
     } catch (err) {
@@ -585,7 +585,7 @@ function formatHl7CodeableConcept(concept: any): string {
  * @returns The formatted HL7 provider field
  */
 function formatHl7Provider(practitioner: Practitioner): string {
-  if (!practitioner?.identifier?.length) {
+  if (!practitioner.identifier?.length) {
     return '';
   }
 

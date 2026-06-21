@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Paper } from '@mantine/core';
 import { formatSearchQuery, parseSearchRequest } from '@medplum/core';
-import type { Filter, SearchRequest, SortRule } from '@medplum/core';
-import type { UserConfiguration } from '@medplum/fhirtypes';
+import type { SearchRequest, SortRule } from '@medplum/core';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
@@ -19,14 +18,8 @@ export function SearchPage(): JSX.Element {
   useEffect(() => {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
 
-    if (!parsedSearch.resourceType) {
-      // If there is no search, go to the Patient search page by default
-      navigate('/Patient')?.catch(console.error);
-      return;
-    }
-
     // Populate the search with default values as necessary
-    const populatedSearch = addSearchValues(parsedSearch, medplum.getUserConfiguration());
+    const populatedSearch = addSearchValues(parsedSearch);
 
     if (
       // If the current url matches the search, set the search, otherwise navigate to the correct url
@@ -61,10 +54,10 @@ export function SearchPage(): JSX.Element {
   );
 }
 
-function addSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
-  const resourceType = search.resourceType || getDefaultResourceType(config);
+function addSearchValues(search: SearchRequest): SearchRequest {
+  const resourceType = search.resourceType;
   const fields = search.fields ?? getDefaultFields(search.resourceType);
-  const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
+  const filters = search.filters;
   const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
 
   return {
@@ -74,18 +67,6 @@ function addSearchValues(search: SearchRequest, config: UserConfiguration | unde
     filters,
     sortRules,
   };
-}
-
-function getDefaultResourceType(config: UserConfiguration | undefined): string {
-  return (
-    localStorage.getItem('defaultResourceType') ??
-    config?.option?.find((o) => o.id === 'defaultResourceType')?.valueString ??
-    'Task'
-  );
-}
-
-function getDefaultFilters(resourceType: string): Filter[] | undefined {
-  return getLastSearch(resourceType)?.filters;
 }
 
 function getDefaultSortRules(resourceType: string): SortRule[] {

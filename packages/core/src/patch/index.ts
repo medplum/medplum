@@ -94,10 +94,7 @@ export function createPatch(input: any, output: any, diff?: VoidableDiff): Opera
  */
 function createTest(input: any, path: string): TestOperation | undefined {
   const endpoint = Pointer.fromJSON(path).evaluate(input);
-  if (endpoint !== undefined) {
-    return { op: 'test', path, value: endpoint.value };
-  }
-  return undefined;
+  return { op: 'test', path, value: endpoint.value };
 }
 
 /**

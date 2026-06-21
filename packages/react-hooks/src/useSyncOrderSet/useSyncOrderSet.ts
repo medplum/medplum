@@ -24,7 +24,7 @@ export function useSyncOrderSet(): (planDefinitionId: string) => Promise<void> {
         await medplum.post(medplum.fhirUrl('PlanDefinition', '$sync-orderset'), { planDefinitionId });
       } catch (err: unknown) {
         // If the operation isn't deployed, silently skip — project has no e-prescribing vendor configured.
-        if (err instanceof OperationOutcomeError && err.outcome.issue?.some((i) => i.code === 'not-found')) {
+        if (err instanceof OperationOutcomeError && err.outcome.issue.some((i) => i.code === 'not-found')) {
           return;
         }
         throw err;

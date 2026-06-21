@@ -301,7 +301,7 @@ const SUMMARY_STAT_KEYS = [
 ] as const satisfies readonly (keyof AgentStats)[];
 
 function formatStatValue(value: AgentStatValue | undefined): string {
-  if (value === null || value === undefined) {
+  if (value === undefined) {
     return '';
   }
   if (typeof value === 'object') {
@@ -317,7 +317,6 @@ function buildChannelStatsRows(
     return [];
   }
   return Object.entries(entries)
-    .filter(([, value]) => value?.rtt)
     .map(([name, value]) => ({
       name,
       count: value.rtt.count,
@@ -440,7 +439,7 @@ export async function callAgentBulkOperation<
   const failedRows = [] as FailedRow[];
   for (const response of failedResponses) {
     const outcome = response.result;
-    const issue = outcome.issue?.[0];
+    const issue = outcome.issue[0];
     const row = {
       id: response.agent.id,
       name: response.agent.name,
@@ -490,7 +489,7 @@ export async function resolveAgentReference(
   } else {
     assertValidAgentCriteria(options.criteria);
     const result = await medplum.search('Agent', `${options.criteria.split('?')[1]}&_count=2`);
-    if (!result?.entry?.length) {
+    if (!result.entry?.length) {
       throw new Error('Could not find an agent matching the provided criteria');
     }
     if (result.entry.length !== 1) {
@@ -516,7 +515,7 @@ export function parseAgentBulkOpBundle(bundle: Bundle<Parameters>): AgentBulkOpR
 }
 
 export function parseAgentBulkOpParameters(params: Parameters): AgentBulkOpResponse {
-  const agent = params.parameter?.find((p) => p.name === 'agent')?.resource as WithId<Agent>;
+  const agent = params.parameter?.find((p) => p.name === 'agent')?.resource;
   if (!agent) {
     throw new Error("Agent bulk operation response missing 'agent'");
   }
@@ -530,7 +529,7 @@ export function parseAgentBulkOpParameters(params: Parameters): AgentBulkOpRespo
   if (!(result.resourceType === 'Parameters' || result.resourceType === 'OperationOutcome')) {
     throw new Error(`Agent bulk operation returned 'result' with type '${result.resourceType}'`);
   }
-  return { agent, result };
+  return { agent: agent as WithId<Agent>, result };
 }
 
 export function parseParameterValues<const R extends string[], const O extends string[] = []>(

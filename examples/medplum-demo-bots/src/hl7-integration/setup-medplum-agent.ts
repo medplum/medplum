@@ -9,7 +9,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const answers = getAllQuestionnaireAnswers(response);
 
   // Create an organization representing the remote site
-  const organizationName = answers['organization-name']?.[0]?.valueString;
+  const organizationName = answers['organization-name'][0]?.valueString;
   if (!organizationName) {
     throw new Error('Missing organization name');
   }
@@ -25,12 +25,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   /* Inbound Communications */
   const endpoints = await Promise.all(
     answers['endpoint-name'].map((endpointName, index) => {
-      const endpointAddress = answers['endpoint-ip']?.at(index)?.valueString;
-      const endpointPort = answers['endpoint-port']?.at(index)?.valueInteger;
+      const endpointAddress = answers['endpoint-ip'].at(index)?.valueString;
+      const endpointPort = answers['endpoint-port'].at(index)?.valueInteger;
       const identifier = toIdentifier(endpointName.valueString ?? '');
       const endpoint: Endpoint = {
         resourceType: 'Endpoint',
-        name: endpointName?.valueString,
+        name: endpointName.valueString,
         identifier: [
           {
             system: 'http://example.com',
@@ -108,8 +108,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Set up Device resources for remote devices (e.g. remote EMR, LIS, or RIS systems)
   await Promise.all(
     answers['device-name'].map((deviceName, index) => {
-      const ip = answers['device-address']?.at(index)?.valueString;
-      const port = answers['device-port']?.at(index)?.valueInteger;
+      const ip = answers['device-address'].at(index)?.valueString;
+      const port = answers['device-port'].at(index)?.valueInteger;
       const deviceId = `${toIdentifier(organizationName)}-${toIdentifier(deviceName.valueString ?? '')}`;
       return medplum.upsertResource(
         {

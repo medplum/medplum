@@ -15,7 +15,7 @@ export interface Event {
 export type EventListener = (e: Event) => void;
 
 export class EventTarget {
-  private readonly listeners: Record<string, EventListener[]>;
+  private readonly listeners: Record<string, EventListener[] | undefined>;
 
   constructor() {
     this.listeners = {};

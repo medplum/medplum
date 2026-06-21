@@ -120,12 +120,12 @@ function buildProperties(typeSchema: InternalTypeSchema): {
   }
 
   for (const [path, elementDefinition] of Object.entries(typeSchema.elements)) {
-    for (const elementDefinitionType of elementDefinition?.type ?? []) {
+    for (const elementDefinitionType of elementDefinition.type) {
       const propertyName = path.replace('[x]', capitalize(elementDefinitionType.code));
       properties[propertyName] = buildPropertySchema(elementDefinition, elementDefinitionType, path);
     }
 
-    if (!path.includes('[x]') && elementDefinition?.min) {
+    if (!path.includes('[x]') && elementDefinition.min) {
       if (!required) {
         required = [];
       }
@@ -189,7 +189,7 @@ function getEnumValues(elementDefinition: InternalSchemaElement): string[] | und
   if (valueSet) {
     if (!excludedValueSets.includes(valueSet)) {
       const values = getValueSetValues(valueSet);
-      if (values && values.length > 0) {
+      if (values.length > 0) {
         return values;
       }
     }

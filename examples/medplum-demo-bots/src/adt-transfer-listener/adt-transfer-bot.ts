@@ -20,8 +20,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   const systemString = 'www.myhospitalsystem.org/IDs';
 
   // Log Message Type
-  const messageType = input.getSegment('MSH')?.getField(9)?.getComponent(1) as string;
-  const messageSubtype = input.getSegment('MSH')?.getField(9)?.getComponent(2) as string;
+  const messageType = input.getSegment('MSH')?.getField(9).getComponent(1) as string;
+  const messageSubtype = input.getSegment('MSH')?.getField(9).getComponent(2) as string;
 
   // If this is anything but ADT
   if (messageType !== 'ADT') {
@@ -97,7 +97,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
 
   //Create Encounter for Admissions
   if (messageSubtype === 'A01') {
-    const locationString = input.getSegment('PV1')?.getField(3)?.getComponent(1) as string;
+    const locationString = input.getSegment('PV1')?.getField(3).getComponent(1) as string;
     const location = await medplum.searchOne('Location', 'identifier=' + locationString);
     await medplum.createResource<Encounter>({
       resourceType: 'Encounter',

@@ -30,7 +30,7 @@ const STANDARD_UNITS = [
   'milliseconds',
 ];
 
-const ESCAPE_MAP: Record<string, string> = {
+const ESCAPE_MAP: Record<string, string | undefined> = {
   "'": "'",
   '"': '"',
   '`': '`',

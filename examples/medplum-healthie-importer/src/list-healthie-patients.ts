@@ -159,7 +159,7 @@ async function fetchAllPatientsWithCursor(
 
   const query = buildQuery();
 
-  while (true) {
+  for (;;) {
     const result: { users: HealthiePatientWithDemographics[] } = await healthie.query<{
       users: HealthiePatientWithDemographics[];
     }>(query, {
@@ -167,7 +167,7 @@ async function fetchAllPatientsWithCursor(
       pageSize,
     });
 
-    const users: HealthiePatientWithDemographics[] = result.users ?? [];
+    const users: HealthiePatientWithDemographics[] = result.users;
 
     // Apply filters
     let filteredUsers: HealthiePatientWithDemographics[] = users;
@@ -265,10 +265,10 @@ export async function handler(
   const { HEALTHIE_API_URL, HEALTHIE_CLIENT_SECRET } = event.secrets;
   const { filters, pagination, maxResults, includeDemographics, includeClinicalUpdateDates } = event.input;
 
-  if (!HEALTHIE_API_URL?.valueString) {
+  if (!HEALTHIE_API_URL.valueString) {
     throw new Error('HEALTHIE_API_URL must be set');
   }
-  if (!HEALTHIE_CLIENT_SECRET?.valueString) {
+  if (!HEALTHIE_CLIENT_SECRET.valueString) {
     throw new Error('HEALTHIE_CLIENT_SECRET must be set');
   }
 

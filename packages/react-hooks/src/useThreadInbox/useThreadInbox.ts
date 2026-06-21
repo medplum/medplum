@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { useCallback, useEffect, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
@@ -49,8 +50,8 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     const bundle = await medplum.search('Communication', searchParams.toString(), { cache: 'no-cache' });
     const parents =
       bundle.entry
-        ?.map((entry) => entry.resource as Communication)
-        .filter((r): r is Communication => r !== undefined) || [];
+        ?.map((entry) => entry.resource)
+        .filter((r): r is WithId<Communication> => r !== undefined) || [];
 
     if (bundle.total !== undefined) {
       setTotal(bundle.total);
@@ -62,7 +63,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     }
 
     const queryParts = parents.map((parent) => {
-      const safeId = parent.id?.replaceAll('-', '') || '';
+      const safeId = parent.id.replaceAll('-', '');
       const alias = `thread_${safeId}`;
       const ref = getReferenceString(parent);
 
@@ -102,7 +103,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
 
     const threadsWithReplies = parents
       .map((parent) => {
-        const safeId = parent.id?.replaceAll('-', '') || '';
+        const safeId = parent.id.replaceAll('-', '');
         const alias = `thread_${safeId}`;
         const childList = response.data[alias] as Communication[] | undefined;
         const lastMessage = childList && childList.length > 0 ? childList[0] : undefined;

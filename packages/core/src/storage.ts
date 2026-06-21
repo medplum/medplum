@@ -24,7 +24,7 @@ export class ClientStorage implements IClientStorage {
   private readonly prefix: string = '';
 
   constructor(storage?: Storage, prefix = '') {
-    this.storage = storage ?? globalThis.localStorage ?? new MemoryStorage();
+    this.storage = storage ?? (globalThis as { localStorage?: Storage }).localStorage ?? new MemoryStorage();
     this.prefix = prefix;
   }
 

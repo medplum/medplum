@@ -267,7 +267,7 @@ describe('observation entry functions', () => {
       expect(result.statusCode?.['@_code']).toBe('completed');
       expect(result.effectiveTime?.[0]?.['@_value']).toBe('20240101100000+0000');
       expect(result.component).toBeDefined();
-      expect(result.component?.length).toBe(1);
+      expect(result.component.length).toBe(1);
     });
 
     test('should create organizer with hasMember observations', () => {
@@ -347,7 +347,7 @@ describe('observation entry functions', () => {
 
       expect(result).toBeDefined();
       expect(result.component).toBeDefined();
-      expect(result.component?.length).toBe(2); // One direct obs + one with component
+      expect(result.component.length).toBe(2); // One direct obs + one with component
     });
 
     test('should skip invalid hasMember references', () => {
@@ -375,7 +375,7 @@ describe('observation entry functions', () => {
 
       expect(result).toBeDefined();
       expect(result.component).toBeDefined();
-      expect(result.component?.length).toBe(0);
+      expect(result.component.length).toBe(0);
     });
   });
 
@@ -411,7 +411,7 @@ describe('observation entry functions', () => {
       expect(result.templateId).toBeDefined();
       expect(result.id).toBeDefined();
       expect(result.code).toBeDefined();
-      expect(result.statusCode?.['@_code']).toBe('completed');
+      expect(result.statusCode['@_code']).toBe('completed');
       expect(result.effectiveTime).toBeDefined();
       expect(result.value).toBeDefined();
     });
@@ -1111,7 +1111,7 @@ describe('observation entry functions', () => {
       const result = mapReferenceRange(referenceRange);
 
       expect(result).toBeDefined();
-      expect(result?.observationRange?.text?.reference?.['@_value']).toBe('#ref-range-1');
+      expect(result?.observationRange.text?.reference?.['@_value']).toBe('#ref-range-1');
     });
 
     test('should handle reference range without narrative extension', () => {
@@ -1129,7 +1129,7 @@ describe('observation entry functions', () => {
       const result = mapReferenceRange(referenceRange);
 
       expect(result).toBeDefined();
-      expect(result?.observationRange?.value).toEqual({
+      expect(result?.observationRange.value).toEqual({
         '@_xsi:type': 'IVL_PQ',
         low: { '@_value': '60', '@_unit': 'bpm' },
         high: { '@_value': '100', '@_unit': 'bpm' },
@@ -1144,7 +1144,7 @@ describe('observation entry functions', () => {
       const result = mapReferenceRange(referenceRange);
 
       expect(result).toBeDefined();
-      expect(result?.observationRange?.value).toEqual({
+      expect(result?.observationRange.value).toEqual({
         '@_xsi:type': 'IVL_PQ',
         low: { '@_value': '60', '@_unit': 'bpm' },
         high: undefined,
@@ -1159,7 +1159,7 @@ describe('observation entry functions', () => {
       const result = mapReferenceRange(referenceRange);
 
       expect(result).toBeDefined();
-      expect(result?.observationRange?.value).toEqual({
+      expect(result?.observationRange.value).toEqual({
         '@_xsi:type': 'IVL_PQ',
         low: undefined,
         high: { '@_value': '100', '@_unit': 'bpm' },

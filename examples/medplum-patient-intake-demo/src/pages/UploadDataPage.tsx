@@ -86,7 +86,7 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
   const batch = valuesetsData as Bundle;
   const result = await medplum.executeBatch(batch);
 
-  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
+  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response.outcome))) {
     await setTimeout(
       () =>
         showNotification({
@@ -105,7 +105,7 @@ async function uploadQuestionnaires(medplum: MedplumClient): Promise<void> {
   const batch = patientIntakeQuestionnaireData as Bundle;
   const result = await medplum.executeBatch(batch);
 
-  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
+  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response.outcome))) {
     await setTimeout(
       () =>
         showNotification({
@@ -124,7 +124,7 @@ async function uploadExampleData(medplum: MedplumClient): Promise<void> {
   const batch = exampleData as Bundle;
   const result = await medplum.executeBatch(batch);
 
-  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
+  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response.outcome))) {
     await setTimeout(
       () =>
         showNotification({
@@ -158,7 +158,7 @@ async function uploadExampleBots(
 
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
-    exampleBotData.entry?.filter((e: any) => (e.resource as Resource)?.resourceType === 'Bot') || [];
+    exampleBotData.entry?.filter((e: any) => (e.resource as Resource).resourceType === 'Bot') || [];
   const botNames = botEntries.map((e) => (e.resource as Bot).name ?? '');
   const botIds: Record<string, string> = {};
 
@@ -189,7 +189,7 @@ async function uploadExampleBots(
 
   // Deploy the new bots
   for (const entry of botEntries) {
-    const botName = (entry?.resource as Bot)?.name as string;
+    const botName = (entry.resource as Bot).name as string;
     const distUrl = (entry.resource as Bot).executableCode?.url;
     const distBinaryEntry = exampleBotData.entry?.find((e: any) => e.fullUrl === distUrl) as
       | BundleEntry<Binary>

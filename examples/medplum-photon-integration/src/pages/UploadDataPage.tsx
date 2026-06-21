@@ -93,7 +93,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
 
   // Deploy the new bots
   for (const entry of botEntries) {
-    const botName = (entry?.resource as Bot)?.name as string;
+    const botName = (entry.resource as Bot).name as string;
     const distUrl = (entry.resource as Bot).executableCode?.url;
     const distBinaryEntry = exampleBotData.entry?.find((e: any) => e.fullUrl === distUrl) as
       | BundleEntry<Binary>
@@ -120,7 +120,7 @@ async function uploadExampleFormulary(medplum: MedplumClient): Promise<void> {
     message: 'Uploaded Formulary',
   });
 
-  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
+  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response.outcome))) {
     await setTimeout(
       () =>
         notifications.show({

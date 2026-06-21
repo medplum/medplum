@@ -15,7 +15,7 @@ import {
 } from '../utils';
 
 export function createImmunizationEntry(converter: FhirToCcdaConverter, immunization: Immunization): CcdaEntry {
-  const manufacturer = immunization?.manufacturer;
+  const manufacturer = immunization.manufacturer;
   const result = {
     substanceAdministration: [
       {
@@ -100,7 +100,7 @@ export function mapImmunizationPerformerToCcdaPerformer(
     organization = converter.findResourceByReference(resource.organization);
   } else if (resource.resourceType === 'Practitioner') {
     practitioner = resource;
-  } else if (resource.resourceType === 'Organization') {
+  } else {
     organization = resource;
   }
 

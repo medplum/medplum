@@ -302,7 +302,7 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       break;
 
     default: {
-      const param = globalSchema.types[searchRequest.resourceType]?.searchParams?.[code];
+      const param = globalSchema.types[searchRequest.resourceType].searchParams?.[code];
       if (param) {
         searchRequest.filters = append(searchRequest.filters, parseParameter(param, Operator.EQUALS, modifier, value));
       } else {
@@ -336,10 +336,11 @@ export function parseParameter(
   modifier: string,
   value: string
 ): Filter {
-  if (presenceOperators.includes((modifier as Operator) || operator)) {
+  const effectiveOperator = (modifier || operator) as Operator;
+  if (presenceOperators.includes(effectiveOperator)) {
     return {
       code: searchParam.code,
-      operator: (modifier as Operator) || operator,
+      operator: effectiveOperator,
       value,
     };
   }
@@ -349,7 +350,7 @@ export function parseParameter(
     case 'number':
     case 'date':
     case 'quantity': {
-      const { operator, value: searchValue } = parsePrefix(value, (modifier as Operator) || Operator.EQUALS);
+      const { operator, value: searchValue } = parsePrefix(value, (modifier || Operator.EQUALS) as Operator);
       if (!isValidSearchValue(searchParam, searchValue)) {
         throw new OperationOutcomeError(
           badRequest(`Invalid format for ${searchParam.type} search parameter: ${searchValue}`)
@@ -393,7 +394,7 @@ function parseUnknownParameter(code: string, modifier: string, value: string): F
 
 function parsePrefix(input: string, defaultOperator: Operator): { operator: Operator; value: string } {
   const prefix = input.substring(0, 2);
-  const prefixOperator = PREFIX_OPERATORS[prefix];
+  const prefixOperator = (PREFIX_OPERATORS as Record<string, Operator | undefined>)[prefix];
   if (prefixOperator) {
     return { operator: prefixOperator, value: input.substring(2) };
   }

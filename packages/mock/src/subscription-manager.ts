@@ -141,7 +141,7 @@ export class MockSubscriptionManager extends SubscriptionManager {
     event: SubscriptionEventMap[K],
     subscriptionProps?: Partial<Subscription>
   ): void {
-    this.maybeGetMockCriteriaEntry(criteria, subscriptionProps)?.emitter?.dispatchEvent(event);
+    this.maybeGetMockCriteriaEntry(criteria, subscriptionProps)?.emitter.dispatchEvent(event);
     this.masterEmitter.dispatchEvent(event);
   }
 

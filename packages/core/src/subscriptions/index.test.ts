@@ -112,8 +112,8 @@ describe('ReconnectingWebSocket', () => {
       });
       wsServer.send({ med: 'plum' });
     });
-    expect(receivedEvent?.type).toStrictEqual('message');
-    expect(receivedEvent?.data).toBeDefined();
+    expect(receivedEvent.type).toStrictEqual('message');
+    expect(receivedEvent.data).toBeDefined();
     expect(JSON.parse(receivedEvent.data)).toStrictEqual({ med: 'plum' });
   });
 
@@ -125,7 +125,7 @@ describe('ReconnectingWebSocket', () => {
       });
       wsServer.error();
     });
-    expect(receivedEvent?.type).toStrictEqual('error');
+    expect(receivedEvent.type).toStrictEqual('error');
   });
 
   test('Should emit `close` when server closes connection', async () => {
@@ -136,7 +136,7 @@ describe('ReconnectingWebSocket', () => {
       });
       wsServer.close();
     });
-    expect(receivedEvent?.type).toStrictEqual('close');
+    expect(receivedEvent.type).toStrictEqual('close');
   });
 });
 
@@ -362,10 +362,10 @@ describe('SubscriptionManager', () => {
         Promise.all(promises).then(resolve).catch(reject);
       });
 
-      expect(masterEvent1?.type).toStrictEqual('error');
-      expect(masterEvent1?.payload).toBeInstanceOf(OperationOutcomeError);
-      expect(criteriaEvent1?.type).toStrictEqual('error');
-      expect(criteriaEvent1?.payload).toBeInstanceOf(OperationOutcomeError);
+      expect(masterEvent1.type).toStrictEqual('error');
+      expect(masterEvent1.payload).toBeInstanceOf(OperationOutcomeError);
+      expect(criteriaEvent1.type).toStrictEqual('error');
+      expect(criteriaEvent1.payload).toBeInstanceOf(OperationOutcomeError);
 
       medplum.router.addRoute('GET', `fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
         return {
@@ -408,10 +408,10 @@ describe('SubscriptionManager', () => {
         Promise.all(promises).then(resolve).catch(reject);
       });
 
-      expect(masterEvent2?.type).toStrictEqual('error');
-      expect(masterEvent2?.payload).toBeInstanceOf(OperationOutcomeError);
-      expect(criteriaEvent2?.type).toStrictEqual('error');
-      expect(criteriaEvent2?.payload).toBeInstanceOf(OperationOutcomeError);
+      expect(masterEvent2.type).toStrictEqual('error');
+      expect(masterEvent2.payload).toBeInstanceOf(OperationOutcomeError);
+      expect(criteriaEvent2.type).toStrictEqual('error');
+      expect(criteriaEvent2.payload).toBeInstanceOf(OperationOutcomeError);
 
       expect(console.error).toHaveBeenCalledTimes(2);
       console.error = originalError;
@@ -585,9 +585,7 @@ describe('SubscriptionManager', () => {
       emitter.removeEventListener('disconnect', handler);
       success = true;
 
-      if (receivedDisconnect) {
-        throw new Error('Received `disconnect` when not expected');
-      }
+      expect(receivedDisconnect).toBe(false);
     });
 
     test('should clean up for a criteria if we are the last subscriber', async () => {
@@ -605,9 +603,7 @@ describe('SubscriptionManager', () => {
       await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: 'token-123' } });
 
       emitter.removeEventListener('disconnect', handler);
-      if (!success) {
-        throw new Error('Expected to receive `disconnect` message');
-      }
+      expect(success).toBe(true);
     });
   });
 
@@ -727,8 +723,8 @@ describe('SubscriptionManager', () => {
       });
 
       await wsServer.closed;
-      expect(masterEvent?.type).toStrictEqual('close');
-      expect(criteriaEvent?.type).toStrictEqual('close');
+      expect(masterEvent.type).toStrictEqual('close');
+      expect(criteriaEvent.type).toStrictEqual('close');
     });
 
     test('should not emit close twice', async () => {
@@ -740,7 +736,7 @@ describe('SubscriptionManager', () => {
         });
         expect(() => defaultManager.closeWebSocket()).not.toThrow();
       });
-      expect(event?.type).toStrictEqual('close');
+      expect(event.type).toStrictEqual('close');
 
       await wsServer.closed;
 
@@ -960,13 +956,13 @@ describe('SubscriptionManager', () => {
         Promise.all(promises).then(resolve).catch(reject);
       });
 
-      expect(receivedEvent1?.type).toStrictEqual('error');
-      expect(receivedEvent1?.payload).toBeInstanceOf(TypeError);
-      expect(receivedEvent1?.payload?.message).toMatch(/^Cannot read properties of undefined*/);
+      expect(receivedEvent1.type).toStrictEqual('error');
+      expect(receivedEvent1.payload).toBeInstanceOf(TypeError);
+      expect(receivedEvent1.payload.message).toMatch(/^Cannot read properties of undefined*/);
 
-      expect(receivedEvent2?.type).toStrictEqual('error');
-      expect(receivedEvent2?.payload).toBeInstanceOf(TypeError);
-      expect(receivedEvent2?.payload?.message).toMatch(/^Cannot read properties of undefined*/);
+      expect(receivedEvent2.type).toStrictEqual('error');
+      expect(receivedEvent2.payload).toBeInstanceOf(TypeError);
+      expect(receivedEvent2.payload.message).toMatch(/^Cannot read properties of undefined*/);
 
       expect(console.error).toHaveBeenCalledTimes(1);
       console.error = originalError;
@@ -987,7 +983,7 @@ describe('SubscriptionManager', () => {
       await wsServer.connected;
 
       const receivedEvent1 = await receivedEvent1Promise;
-      expect(receivedEvent1?.type).toStrictEqual('open');
+      expect(receivedEvent1.type).toStrictEqual('open');
 
       const receivedEvent2Promise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
         defaultManager.getMasterEmitter().addEventListener('connect', (event) => {
@@ -1023,7 +1019,7 @@ describe('SubscriptionManager', () => {
       wsServer.close();
 
       const receivedEvent4 = await receivedEvent4Promise;
-      expect(receivedEvent4?.type).toStrictEqual('close');
+      expect(receivedEvent4.type).toStrictEqual('close');
 
       await wsServer.closed;
       WS.clean();
@@ -1041,7 +1037,7 @@ describe('SubscriptionManager', () => {
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
 
       const receivedEvent5 = await receivedEvent5Promise;
-      expect(receivedEvent5?.type).toStrictEqual('open');
+      expect(receivedEvent5.type).toStrictEqual('open');
 
       await wsServer.connected;
 
@@ -1063,8 +1059,8 @@ describe('SubscriptionManager', () => {
       // Now check connect was emitted
       const receivedEvent6 = await receivedEvent6Promise;
       expect(receivedEvent6.type).toStrictEqual('connect');
-      expect(typeof receivedEvent6?.payload?.subscriptionId).toStrictEqual('string');
-      expect(receivedEvent6?.payload?.subscriptionId?.length).toBeGreaterThan(0);
+      expect(typeof receivedEvent6.payload.subscriptionId).toStrictEqual('string');
+      expect(receivedEvent6.payload.subscriptionId.length).toBeGreaterThan(0);
 
       // Make sure we get notifications for subscription events
       const receivedEvent7Promise = new Promise<SubscriptionEventMap['message']>((resolve) => {
@@ -1091,7 +1087,7 @@ describe('SubscriptionManager', () => {
       await wsServer.connected;
 
       const receivedEvent1 = await receivedEvent1Promise;
-      expect(receivedEvent1?.type).toStrictEqual('open');
+      expect(receivedEvent1.type).toStrictEqual('open');
 
       // Wait for ping to be received
       await expect(wsServer).toReceiveMessage({ type: 'ping' });
@@ -1110,7 +1106,7 @@ describe('SubscriptionManager', () => {
       wsServer.on('connection', (socket) => {
         socket.on('message', (msg) => {
           const data = JSON.parse(msg as string) as { type?: string };
-          if (data?.type === 'ping') {
+          if (data.type === 'ping') {
             socket.send(JSON.stringify({ type: 'pong' }));
           }
         });
@@ -1128,7 +1124,7 @@ describe('SubscriptionManager', () => {
       await wsServer.connected;
 
       const receivedEvent1 = await receivedEvent1Promise;
-      expect(receivedEvent1?.type).toStrictEqual('open');
+      expect(receivedEvent1.type).toStrictEqual('open');
 
       // Wait for ping to be received
       await expect(wsServer).toReceiveMessage({ type: 'ping' });
@@ -1158,7 +1154,7 @@ describe('SubscriptionManager', () => {
       await wsServer.connected;
 
       const receivedEvent1 = await receivedEvent1Promise;
-      expect(receivedEvent1?.type).toStrictEqual('open');
+      expect(receivedEvent1.type).toStrictEqual('open');
 
       // Step 1: Add criteria and verify subscription works
       const receivedEvent2Promise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
@@ -1206,7 +1202,7 @@ describe('SubscriptionManager', () => {
       defaultManager.closeWebSocket();
 
       const receivedClose = await receivedClosePromise;
-      expect(receivedClose?.type).toStrictEqual('close');
+      expect(receivedClose.type).toStrictEqual('close');
 
       await wsServer.closed;
       WS.clean();
@@ -1232,7 +1228,7 @@ describe('SubscriptionManager', () => {
       // The fix should call reconnectWebSocket() when adding criteria to a closed WebSocket
 
       const receivedEvent4 = await receivedEvent4Promise;
-      expect(receivedEvent4?.type).toStrictEqual('open');
+      expect(receivedEvent4.type).toStrictEqual('open');
 
       await wsServer.connected;
 
@@ -1273,7 +1269,7 @@ describe('SubscriptionManager', () => {
       await wsServer.connected;
 
       const receivedEvent1 = await receivedEvent1Promise;
-      expect(receivedEvent1?.type).toStrictEqual('open');
+      expect(receivedEvent1.type).toStrictEqual('open');
 
       const receivedEvent2Promise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
         defaultManager.getMasterEmitter().addEventListener('connect', (event) => {
