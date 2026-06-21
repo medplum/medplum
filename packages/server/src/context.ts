@@ -263,7 +263,7 @@ function requestIds(req: Request): { requestId: string; traceId: string } {
 }
 
 function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimiter | undefined {
-  if (getConfig().rateLimitsEnabled === false) {
+  if (!getConfig().rateLimitsEnabled) {
     return undefined;
   }
 
@@ -274,7 +274,7 @@ function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimi
 }
 
 function getResourceCap(authState: AuthState, logger?: Logger): ResourceCap | undefined {
-  if (getConfig().rateLimitsEnabled === false) {
+  if (!getConfig().rateLimitsEnabled) {
     return undefined;
   }
 
