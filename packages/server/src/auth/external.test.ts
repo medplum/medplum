@@ -390,6 +390,33 @@ describe('External', () => {
     expect(res.body.issue[0].details.text).toBe('Failed to verify code - check your identity provider configuration');
   });
 
+  test('Token request includes Accept-Encoding: identity', async () => {
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: externalAuthClient.id }),
+    });
+
+    // Mock the external identity provider
+    (fetch as unknown as Mock).mockImplementation(() => ({
+      ok: true,
+      status: 200,
+      json: () => buildTokens('test@' + domain),
+    }));
+
+    // Simulate the external identity provider callback
+    await request(app).get(url);
+
+    // Verify fetch was called with Accept-Encoding: identity to prevent gzip responses
+    expect(fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'Accept-Encoding': 'identity',
+        }),
+      })
+    );
+  });
+
   test('Subject auth success', async () => {
     const subjectAuthClient = await withTestContext(async () => {
       // Create a new client application with external subject auth

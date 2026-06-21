@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
 import { addMinutes, clamp } from '../../../util/date';
-import { eachDayOfInterval, normalizeIntervals, pairWithOverlaps } from './scheduling';
+import type { AlignmentOptions } from './scheduling';
+import { eachDayOfInterval, minutesSinceMidnight, mod, normalizeIntervals, pairWithOverlaps } from './scheduling';
 
 // Given a date that could have a seconds / milliseconds component, return
 // the input date if it does not have any, and the start of the next minute
@@ -17,55 +17,32 @@ function advanceToMinuteMark(date: Date): Date {
   return start;
 }
 
-// JS `%` operator is "remainder", not "modulo", and can return negative numbers.
-// Introducing our own mod function lets us guarantee that the result is in the
-// range [0, d).
-// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Remainder
-function mod(n: number, d: number): number {
-  return ((n % d) + d) % d;
-}
-
-// Returns the number of minutes since local (or UTC) midnight for a given date.
-function minutesSinceMidnight(date: Date, timezone?: string): number {
-  if (timezone && timezone !== 'UTC' && timezone !== 'Etc/UTC') {
-    const zdt = Temporal.Instant.fromEpochMilliseconds(date.valueOf()).toZonedDateTimeISO(timezone);
-    return zdt.hour * 60 + zdt.minute;
-  }
-  return date.getUTCHours() * 60 + date.getUTCMinutes();
-}
-
 /**
  * Given an interval and slot duration and alignment information, return
  * intervals for each matching slot timing within that interval
  *
  * @param interval - The interval to find slots within
- * @param options - The alignment parameters
- * @param options.alignment - Minutes between slot starts; the grid is anchored to midnight (offset by offsetMinutes). Must be >= 1.
- * @param options.offsetMinutes - A number of minutes to offset the alignment by
+ * @param options - The alignment and slot parameters
+ * @param options.alignment - Parameters defining the alignment grid
  * @param options.durationMinutes - How long each slot should last
  * @param options.maxCount - Maximum number of intervals to find
- * @param options.timezone - IANA timezone name (e.g. "America/Los_Angeles"). The alignment
- *   grid is anchored to local midnight in this timezone, keeping slot times stable across
- *   DST transitions.
  * @returns An array of aligned slot intervals
  */
 export function findAlignedSlotTimes(
   interval: Interval,
   options: {
-    alignment: number;
-    offsetMinutes: number;
+    alignment: AlignmentOptions;
     durationMinutes: number;
-    timezone: string;
     maxCount?: number;
   }
 ): Interval[] {
-  if (options.alignment < 1) {
-    throw new Error(`Invalid alignment; must be positive, got ${options.alignment}`);
+  if (options.alignment.interval < 1) {
+    throw new Error(`Invalid alignment interval; must be positive, got ${options.alignment.interval}`);
   }
 
   const results: Interval[] = [];
 
-  for (const dayStart of eachDayOfInterval(interval, options.timezone)) {
+  for (const dayStart of eachDayOfInterval(interval, options.alignment.timezone)) {
     const nextDay = dayStart.add({ days: 1 });
     const dayInterval: Interval = {
       start: new Date(Math.max(interval.start.valueOf(), dayStart.epochMilliseconds)),
@@ -75,9 +52,9 @@ export function findAlignedSlotTimes(
     const firstMinuteStart = advanceToMinuteMark(dayInterval.start);
 
     // Find how much to shift to the first aligned slot of this calendar day.
-    const msm = minutesSinceMidnight(firstMinuteStart, options.timezone);
-    const remainder = mod(msm - options.offsetMinutes, options.alignment);
-    const toAlign = remainder === 0 ? 0 : options.alignment - remainder;
+    const msm = minutesSinceMidnight(firstMinuteStart, options.alignment.timezone);
+    const remainder = mod(msm - options.alignment.offset, options.alignment.interval);
+    const toAlign = remainder === 0 ? 0 : options.alignment.interval - remainder;
 
     let start = addMinutes(firstMinuteStart, toAlign);
     let end = addMinutes(start, options.durationMinutes);
@@ -92,7 +69,7 @@ export function findAlignedSlotTimes(
       if (options.maxCount && results.length >= options.maxCount) {
         return results;
       }
-      start = addMinutes(start, options.alignment);
+      start = addMinutes(start, options.alignment.interval);
       end = addMinutes(start, options.durationMinutes);
     }
   }

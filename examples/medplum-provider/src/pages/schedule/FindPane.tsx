@@ -3,11 +3,12 @@
 import { Button, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { EMPTY, formatDateTime, getReferenceString, isDefined } from '@medplum/core';
-import type { Appointment, Bundle, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, Encounter, HealthcareService, Patient, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
@@ -20,7 +21,7 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 type FindPaneProps = {
   schedule: WithId<Schedule>;
   range: Range;
-  onSuccess: (results: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }) => void;
+  onSuccess: (results: { appointment: WithId<Appointment>; slots: WithId<Slot>[] }) => void;
   className?: string;
 };
 
@@ -45,6 +46,7 @@ function HealthcareServiceDisplay(props: { value: HealthcareService }): JSX.Elem
 // See https://www.medplum.com/docs/scheduling/defining-availability for details.
 export function FindPane(props: FindPaneProps): JSX.Element | null {
   const medplum = useMedplum();
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<readonly Appointment[] | undefined>(undefined);
   const [chosenAppointment, setChosenAppointment] = useState<Appointment | undefined>(undefined);
   const [selectedHealthcareService, setSelectedHealthcareService] = useState<WithId<HealthcareService> | undefined>();
@@ -146,13 +148,24 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   }, []);
 
   const handleBookSuccess = useCallback(
-    (results: { appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }) => {
+    async (results: {
+      appointment: WithId<Appointment>;
+      slots: WithId<Slot>[];
+      patient: WithId<Patient>;
+      encounter?: WithId<Encounter>;
+    }) => {
+      const { patient, encounter } = results;
+      if (encounter) {
+        await navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`);
+        return;
+      }
+
       setSelectedHealthcareService(undefined);
       setAppointments([]);
       setChosenAppointment(undefined);
       onSuccess(results);
     },
-    [onSuccess]
+    [onSuccess, navigate]
   );
 
   if (!scheduleableServices?.length) {
@@ -170,7 +183,11 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
             </Button>
           </Group>
         </Title>
-        <BookAppointmentForm appointment={chosenAppointment} onSuccess={handleBookSuccess} />
+        <BookAppointmentForm
+          appointment={chosenAppointment}
+          healthcareService={selectedHealthcareService}
+          onSuccess={handleBookSuccess}
+        />
       </Stack>
     );
   }

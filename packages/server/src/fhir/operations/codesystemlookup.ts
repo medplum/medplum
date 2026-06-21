@@ -123,16 +123,20 @@ export async function lookupCoding(
   return output;
 }
 
+const TRUE_VALUES = ['true', 't', '1'];
+const FALSE_VALUES = ['false', 'f', '0'];
 function toTypedValue(value: string, type: CodeSystemProperty['type']): TypedValue {
   switch (type) {
-    case 'boolean':
-      if (value === 'true') {
+    case 'boolean': {
+      const str = value.toLowerCase();
+      if (TRUE_VALUES.includes(str)) {
         return { type, value: true };
-      } else if (value === 'false') {
+      } else if (FALSE_VALUES.includes(str)) {
         return { type, value: false };
       } else {
         throw new OperationOutcomeError(serverError(new Error('Invalid value for boolean property: ' + value)));
       }
+    }
     case 'integer':
       return { type, value: Number.parseInt(value, 10) };
     case 'decimal':

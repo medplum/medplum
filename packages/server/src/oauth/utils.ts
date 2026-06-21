@@ -885,7 +885,7 @@ export async function getExternalUserInfo(
     if (err instanceof OperationOutcomeError) {
       throw err;
     }
-    log.warn('Failed to verify external authorization code', err);
+    log.warn('Failed to verify external authorization code', { err, userInfoUrl, contentType });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
@@ -914,6 +914,7 @@ function buildExternalUserInfoRequest(
         method: 'POST',
         headers: {
           Accept: ContentType.JSON,
+          'Accept-Encoding': 'identity',
           'Content-Type': ContentType.JSON,
         },
         body: JSON.stringify({ idToken: externalAccessToken }),
@@ -927,6 +928,7 @@ function buildExternalUserInfoRequest(
       method: 'GET',
       headers: {
         Accept: ContentType.JSON,
+        'Accept-Encoding': 'identity',
         Authorization: `Bearer ${externalAccessToken}`,
       },
     },

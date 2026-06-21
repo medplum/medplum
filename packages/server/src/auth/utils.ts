@@ -184,7 +184,7 @@ export async function verifyRecaptcha(secretKey: string, recaptchaToken: string)
     '&response=' +
     encodeURIComponent(recaptchaToken);
 
-  const response = await fetch(url, { method: 'POST' });
+  const response = await fetch(url, { method: 'POST', headers: { 'Accept-Encoding': 'identity' } });
   const json = (await response.json()) as { success: boolean };
   return json.success;
 }
