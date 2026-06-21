@@ -45,6 +45,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   // That meant that the rate limit was per server instance, rather than per server cluster
   // The value was primarily tuned for one particular cluster with 6 server instances
   // Therefore, to maintain parity, the new default "auth rate limit" is 1200 per 15 minutes
+  config.rateLimitsEnabled ??= true;
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
   config.defaultFhirQuota ??= 50_000;
@@ -104,6 +105,7 @@ type DefaultConfigKeys =
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
   | 'emailProvider'
+  | 'rateLimitsEnabled'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
   | 'defaultFhirQuota'
@@ -175,6 +177,7 @@ const booleanKeys = new Set([
   'readonlyDatabase.ssl.rejectUnauthorized',
   'readonlyDatabase.ssl.require',
   'readonlyDatabase.disableConnectionConfiguration',
+  'rateLimitsEnabled',
   'logRequests',
   'logAuditEvents',
   'mcpEnabled',

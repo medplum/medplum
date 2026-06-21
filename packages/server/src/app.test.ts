@@ -330,6 +330,20 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
+  test('Server rate limit disabled', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.rateLimitsEnabled = false;
+    config.defaultRateLimit = 1;
+    await initApp(app, config);
+
+    const res = await request(app).get('/api/');
+    expect(res.status).toBe(200);
+    const res2 = await request(app).get('/api/');
+    expect(res2.status).toBe(200);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
   test('UnsupportedMediaTypeError', async () => {
     const app = express();
     app.get('/throw', () => {
