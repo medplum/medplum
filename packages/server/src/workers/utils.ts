@@ -25,21 +25,24 @@ export function findProjectMembership(
   profile: Reference
 ): Promise<WithId<ProjectMembership> | undefined> {
   const systemRepo = getGlobalSystemRepo();
-  return systemRepo.searchOne<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [
-      {
-        code: 'project',
-        operator: Operator.EQUALS,
-        value: `Project/${projectId}`,
-      },
-      {
-        code: 'profile',
-        operator: Operator.EQUALS,
-        value: profile.reference as string,
-      },
-    ],
-  });
+  return systemRepo.searchOne<ProjectMembership>(
+    {
+      resourceType: 'ProjectMembership',
+      filters: [
+        {
+          code: 'project',
+          operator: Operator.EQUALS,
+          value: `Project/${projectId}`,
+        },
+        {
+          code: 'profile',
+          operator: Operator.EQUALS,
+          value: profile.reference as string,
+        },
+      ],
+    },
+    { throwOnMultiple: true }
+  );
 }
 
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {

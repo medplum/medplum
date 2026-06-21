@@ -36,6 +36,10 @@ export type ReadHistoryOptions = {
   limit?: number;
 };
 
+export type SearchOneOptions = {
+  throwOnMultiple?: boolean;
+};
+
 export const RepositoryMode = {
   READER: 'reader',
   WRITER: 'writer',
@@ -211,10 +215,18 @@ export abstract class FhirRepository {
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    * @param searchRequest - The FHIR search request.
+   * @param options - Optional `searchOne` configuration options.
    * @returns Promise to the first search result or undefined.
    */
-  async searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T> | undefined> {
-    const bundle = await this.search({ ...searchRequest, count: 1 });
+  async searchOne<T extends Resource>(
+    searchRequest: SearchRequest<T>,
+    options?: SearchOneOptions
+  ): Promise<WithId<T> | undefined> {
+    const count = options?.throwOnMultiple ? 2 : 1;
+    const bundle = await this.search({ ...searchRequest, count });
+    if (options?.throwOnMultiple && (bundle.entry?.length ?? 0) > 1) {
+      throw new OperationOutcomeError(multipleMatches);
+    }
     return bundle.entry?.[0]?.resource;
   }
 

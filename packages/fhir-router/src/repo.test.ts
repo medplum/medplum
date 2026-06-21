@@ -152,6 +152,33 @@ describe('MemoryRepository', () => {
     expect(emptyResource).toBeUndefined();
   });
 
+  test('searchOne throwOnMultiple throws when more than one result', async () => {
+    const family = randomUUID();
+    await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+    await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+
+    await expect(
+      repo.searchOne<Patient>(parseSearchRequest('Patient?family=' + family), { throwOnMultiple: true })
+    ).rejects.toThrow(OperationOutcomeError);
+    await expect(
+      repo.searchOne<Patient>(parseSearchRequest('Patient?family=' + family), { throwOnMultiple: true })
+    ).rejects.toThrow('Multiple resources found matching condition');
+
+    // Without throwOnMultiple, returns the first match
+    const resource = await repo.searchOne<Patient>(parseSearchRequest('Patient?family=' + family));
+    expect(resource).toBeDefined();
+  });
+
+  test('searchOne throwOnMultiple does not throw with single result', async () => {
+    const family = randomUUID();
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+
+    const resource = await repo.searchOne<Patient>(parseSearchRequest('Patient?family=' + family), {
+      throwOnMultiple: true,
+    });
+    expect(resource?.id).toBe(patient.id);
+  });
+
   test('Sort unknown search parameter', async () => {
     for (let i = 0; i < 10; i++) {
       await repo.createResource<Patient>({ resourceType: 'Patient' });
