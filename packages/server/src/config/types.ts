@@ -300,6 +300,8 @@ export interface MedplumBullmqConfig {
 
 export interface MedplumExternalAuthConfig {
   readonly issuer: string;
+  /** Optional client ID used to select this external auth provider during token exchange. */
+  readonly clientId?: string;
   /** @deprecated Use identityProvider.userInfoUrl instead. */
   readonly userInfoUrl?: string;
   readonly identityProvider?: IdentityProvider;

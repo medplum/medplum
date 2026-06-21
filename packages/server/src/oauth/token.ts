@@ -17,7 +17,14 @@ import {
   parseJWTPayload,
   resolveId,
 } from '@medplum/core';
-import type { ClientApplication, Login, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type {
+  ClientApplication,
+  IdentityProvider,
+  Login,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
@@ -409,12 +416,46 @@ export async function exchangeExternalAuthToken(
   }
 
   const systemRepo = getGlobalSystemRepo();
-  const projectId = await getProjectIdByClientId(clientId, undefined);
-  const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  const idp = client.identityProvider;
+  let client: ClientApplication | undefined;
+  let idp = resolveExternalAuthProvider(clientId);
+  const useServerExternalAuth = !!idp;
+  if (!idp) {
+    try {
+      client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    } catch {
+      sendTokenError(res, 'invalid_request', 'Invalid client');
+      return;
+    }
+
+    idp = resolveExternalAuthProvider(clientId, client);
+  }
+
   if (!idp) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
+  }
+
+  let projectId: string | undefined;
+  if (useServerExternalAuth) {
+    if (!membershipId) {
+      projectId = undefined;
+    } else {
+      let membership: ProjectMembership;
+      try {
+        membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+      } catch {
+        sendTokenError(res, 'invalid_request', 'Invalid membership');
+        return;
+      }
+
+      projectId = resolveId(membership.project);
+      if (!projectId) {
+        sendTokenError(res, 'invalid_request', 'Invalid membership');
+        return;
+      }
+    }
+  } else {
+    projectId = await getProjectIdByClientId(clientId, undefined);
   }
 
   let userInfo;
@@ -439,7 +480,7 @@ export async function exchangeExternalAuthToken(
     email,
     externalId,
     projectId,
-    clientId,
+    clientId: client?.id,
     scope: req.body.scope || 'openid offline_access',
     nonce: req.body.nonce || randomUUID(),
     remoteAddress: req.ip,
@@ -449,6 +490,21 @@ export async function exchangeExternalAuthToken(
   });
 
   await sendTokenResponse(res, login, client);
+}
+
+function resolveExternalAuthProvider(clientId: string, client?: ClientApplication): IdentityProvider | undefined {
+  const externalAuthConfig = getConfig().externalAuthProviders?.find((provider) => provider.clientId === clientId);
+  if (externalAuthConfig) {
+    if (externalAuthConfig.identityProvider) {
+      return externalAuthConfig.identityProvider;
+    }
+
+    if (externalAuthConfig.userInfoUrl) {
+      return { userInfoUrl: externalAuthConfig.userInfoUrl } as IdentityProvider;
+    }
+  }
+
+  return client?.identityProvider;
 }
 
 /**
