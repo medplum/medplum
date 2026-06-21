@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Flex, Stack, Text } from '@mantine/core';
-import type { SearchRequest } from '@medplum/core';
-import { parseSearchRequest } from '@medplum/core';
+import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
+import { formatSearchQuery, parseSearchRequest, resolveId } from '@medplum/core';
 import type { Claim } from '@medplum/fhirtypes';
 import { ResourceBoard } from '@medplum/react';
+import type { ResourceBoardLoadResult } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
 import { ClaimDetailPanel } from './ClaimDetailPanel';
@@ -43,10 +44,53 @@ export function ClaimBoard(props: ClaimBoardProps): JSX.Element {
     [query, patientId]
   );
 
+  // Custom loader that warms the resource cache so each row's useResource(patient/coverage/
+  // payor) calls resolve synchronously instead of issuing a request per row. medplum.search
+  // caches every returned resource (matched and _included), and useResource reads that cache.
+  const loadItems = useCallback(
+    async (loadSearch: SearchRequest, client: MedplumClient): Promise<ResourceBoardLoadResult<Claim>> => {
+      // _include the patient so the row never has to fetch it (and getDisplayString works even
+      // when the reference carries no display).
+      const bundle = await client.search(
+        'Claim',
+        formatSearchQuery({
+          ...loadSearch,
+          total: loadSearch.total ?? 'accurate',
+          include: [{ resourceType: 'Claim', searchParam: 'patient' }],
+        }),
+        { cache: 'no-cache' }
+      );
+      const claims = (bundle.entry ?? [])
+        .filter((entry) => entry.search?.mode !== 'include')
+        .map((entry) => entry.resource)
+        .filter((resource): resource is WithId<Claim> => resource?.resourceType === 'Claim');
+
+      // Claim has no search param for insurance.coverage, so the payer chain can't be _included
+      // from the Claim search. Warm it in one batched Coverage search instead (Coverage:payor is
+      // includable), keyed by the claims' coverage ids.
+      const coverageIds = [
+        ...new Set(
+          claims.map((claim) => resolveId(claim.insurance?.[0]?.coverage)).filter((id): id is string => Boolean(id))
+        ),
+      ];
+      if (coverageIds.length > 0) {
+        await client.search(
+          'Coverage',
+          `_id=${coverageIds.join(',')}&_include=Coverage:payor&_count=${coverageIds.length}`,
+          { cache: 'no-cache' }
+        );
+      }
+
+      return { items: claims, total: bundle.total };
+    },
+    []
+  );
+
   return (
     <Box w="100%" h="100%">
       <ResourceBoard<Claim>
         search={search}
+        loadItems={loadItems}
         selectedId={claimId}
         renderItem={(claim, { index, items }) => (
           <ClaimListItem

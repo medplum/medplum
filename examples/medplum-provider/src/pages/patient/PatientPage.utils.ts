@@ -72,7 +72,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   {
     id: 'claim',
-    url: 'Claim?_count=20&_sort=-_lastUpdated&patient=%patient.id',
+    url: 'Claim',
     label: 'Claims',
   },
   {

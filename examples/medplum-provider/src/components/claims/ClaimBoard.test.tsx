@@ -39,6 +39,15 @@ const baseClaim: WithId<Claim> = {
   total: { value: 400, currency: 'USD' },
 };
 
+// A claim with no insurance (no coverage to warm) and a patient reference that carries no
+// display and resolves to nothing — exercises the never-empty-header fallback.
+const claimNoPatientName: WithId<Claim> = {
+  ...baseClaim,
+  id: 'claim-no-patient-name',
+  patient: { reference: 'Patient/ghost' },
+  insurance: [],
+};
+
 const mockClaimResponse: WithId<ClaimResponse> = {
   resourceType: 'ClaimResponse',
   id: 'claim-response-1',
@@ -124,7 +133,7 @@ describe('ClaimBoard', () => {
       await waitFor(() => expect(screen.getByText('Aetna')).toBeInTheDocument());
     });
 
-    test('passes the patient filter and sort/count through to the search', async () => {
+    test('passes the patient filter, sort/count, and _include=Claim:patient through to the search', async () => {
       medplum.search = vi.fn().mockResolvedValue(makeClaimBundle([baseClaim]));
       await setup(medplum);
       await waitFor(() => expect(medplum.search).toHaveBeenCalled());
@@ -134,6 +143,44 @@ describe('ClaimBoard', () => {
         expect.anything()
       );
       expect(medplum.search).toHaveBeenCalledWith('Claim', expect.stringContaining('_count=20'), expect.anything());
+      // The patient is _included so each row resolves it from cache without a per-row fetch.
+      expect(medplum.search).toHaveBeenCalledWith(
+        'Claim',
+        expect.stringContaining('_include=Claim:patient'),
+        expect.anything()
+      );
+    });
+
+    test('warms the coverage→payer chain with one batched Coverage search', async () => {
+      medplum.search = vi.fn().mockResolvedValue(makeClaimBundle([baseClaim]));
+      await setup(medplum);
+      await waitFor(() =>
+        expect(medplum.search).toHaveBeenCalledWith(
+          'Coverage',
+          expect.stringContaining(`_id=${COVERAGE_ID}`),
+          expect.anything()
+        )
+      );
+      expect(medplum.search).toHaveBeenCalledWith(
+        'Coverage',
+        expect.stringContaining('_include=Coverage:payor'),
+        expect.anything()
+      );
+    });
+
+    test('does not issue a Coverage search when no claim has coverage', async () => {
+      medplum.search = vi.fn().mockResolvedValue(makeClaimBundle([claimNoPatientName]));
+      await setup(medplum);
+      await waitFor(() => expect(medplum.search).toHaveBeenCalledWith('Claim', expect.anything(), expect.anything()));
+      expect(medplum.search).not.toHaveBeenCalledWith('Coverage', expect.anything(), expect.anything());
+    });
+
+    test('falls back to the claim title when the patient name is unavailable', async () => {
+      medplum.search = vi.fn().mockResolvedValue(makeClaimBundle([claimNoPatientName]));
+      await setup(medplum);
+      // No patient display and the reference does not resolve, so the bold line falls back
+      // to the claim title (type) rather than rendering blank.
+      await waitFor(() => expect(screen.getByText('professional')).toBeInTheDocument());
     });
   });
 

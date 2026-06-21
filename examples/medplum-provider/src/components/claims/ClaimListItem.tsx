@@ -6,6 +6,7 @@ import type { Claim } from '@medplum/fhirtypes';
 import { MedplumLink, StatusBadge, useResource } from '@medplum/react';
 import cx from 'clsx';
 import type { JSX } from 'react';
+import { getClaimTitle } from './claims.utils';
 import classes from './ClaimListItem.module.css';
 
 interface ClaimListItemProps {
@@ -37,7 +38,7 @@ export function ClaimListItem({ claim, getClaimUri, hideDivider }: ClaimListItem
           <Stack gap={2} flex={1} style={{ minWidth: 0 }}>
             <Group justify="space-between" align="flex-start" wrap="nowrap">
               <Text fw={700} className={classes.title} flex={1}>
-                {patientName}
+                {patientName ?? getClaimTitle(claim)}
               </Text>
               {claim.status && <StatusBadge status={claim.status} />}
             </Group>
