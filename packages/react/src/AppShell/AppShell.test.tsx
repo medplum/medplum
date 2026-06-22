@@ -5,12 +5,13 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { Logo } from '../Logo/Logo';
 import { act, fireEvent, render, screen, selectAutocompleteOption } from '../test-utils/render';
+import type { AppShellAnnouncement } from './AnnouncementBanners';
 import { AppShell } from './AppShell';
 
 const medplum = new MockClient();
 const navigateMock = vi.fn();
 
-async function setup(layoutVersion: 'v1' | 'v2' = 'v1'): Promise<void> {
+async function setup(layoutVersion: 'v1' | 'v2' = 'v1', announcements?: AppShellAnnouncement[]): Promise<void> {
   // Reset localStorage before each test
   localStorage.clear();
 
@@ -22,6 +23,7 @@ async function setup(layoutVersion: 'v1' | 'v2' = 'v1'): Promise<void> {
             logo={<Logo size={24} />}
             version="test.version"
             layoutVersion={layoutVersion}
+            announcements={announcements}
             menus={[
               {
                 title: 'Menu 1',
@@ -103,6 +105,25 @@ describe('AppShell v1', () => {
     });
 
     await selectAutocompleteOption(input, 'Test');
+  });
+
+  test('Dismissible announcement', async () => {
+    await setup('v1', [
+      {
+        id: 'maintenance',
+        message: 'Expected system maintenance tonight',
+        dismissible: true,
+      },
+    ]);
+
+    expect(screen.getByText('Expected system maintenance tonight')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Dismiss announcement'));
+    });
+
+    expect(screen.queryByText('Expected system maintenance tonight')).not.toBeInTheDocument();
+    expect(localStorage['appShellDismissedAnnouncements']).toBe(JSON.stringify(['maintenance']));
   });
 });
 
@@ -227,5 +248,18 @@ describe('AppShell v2', () => {
     });
 
     expect(navigateMock).toHaveBeenCalledWith('/Patient/123');
+  });
+
+  test('Persistent announcement', async () => {
+    await setup('v2', [
+      {
+        message: 'Warning: logged in as super admin',
+        color: 'red',
+        role: 'alert',
+      },
+    ]);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Warning: logged in as super admin');
+    expect(screen.queryByLabelText('Dismiss announcement')).not.toBeInTheDocument();
   });
 });
