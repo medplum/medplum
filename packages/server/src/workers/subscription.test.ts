@@ -31,9 +31,10 @@ import { mockClient } from 'aws-sdk-client-mock';
 import type { Job } from 'bullmq';
 import * as bullmqModule from 'bullmq';
 import { UnrecoverableError } from 'bullmq';
-import fetch from 'node-fetch';
+import type { Redis } from 'ioredis';
 import { createHmac, randomUUID } from 'node:crypto';
 import type { Mock, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type * as Constants from '../constants';
@@ -65,18 +66,12 @@ import {
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
 import * as workerUtils from './utils';
 
-vi.mock('../constants', () => ({
-  r4ProjectId: '161452d9-43b7-5c29-aa7b-c85680fa45c6',
-  syntheticR4Project: {
-    resourceType: 'Project',
-    id: '161452d9-43b7-5c29-aa7b-c85680fa45c6',
-    name: 'FHIR R4',
-    exportedResourceType: ['StructureDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter'],
-  },
-  systemResourceProjectId: '65897e4f-7add-55f3-9b17-035b5a4e6d52',
+vi.mock('../constants', async (importOriginal) => ({
+  ...(await importOriginal<typeof Constants>()),
   WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:worker',
 }));
 const mockBullmq = vi.mocked(bullmqModule);
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 
 describe('Subscription Worker', () => {
   let systemRepo: SystemRepository;
@@ -97,7 +92,7 @@ describe('Subscription Worker', () => {
   });
 
   beforeEach(async () => {
-    (fetch as unknown as Mock).mockClear();
+    fetchMock.mockClear();
 
     // Create one simple project with no advanced features enabled
     const { client, repo: _repo } = await withTestContext(() =>
@@ -164,7 +159,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -209,7 +204,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 201 }));
+      fetchMock.mockImplementation(() => ({ status: 201 }));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -246,7 +241,7 @@ describe('Subscription Worker', () => {
         });
         expect(patient).toBeDefined();
 
-        (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => ({ status: 200 }));
 
         await findAndExecSubscriptionJob(patient, 'create');
 
@@ -298,7 +293,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -420,7 +415,7 @@ describe('Subscription Worker', () => {
         });
         expect(patient).toBeDefined();
 
-        (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => ({ status: 200 }));
 
         const body = stringify(patient);
         const signature = createHmac('sha256', secret).update(body).digest('hex');
@@ -476,7 +471,7 @@ describe('Subscription Worker', () => {
         });
         expect(patient).toBeDefined();
 
-        (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => ({ status: 200 }));
 
         const body = stringify(patient);
         const signature = createHmac('sha256', secret).update(body).digest('hex');
@@ -594,7 +589,7 @@ describe('Subscription Worker', () => {
         });
         expect(patient).toBeDefined();
 
-        (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => ({ status: 200 }));
 
         await findAndExecSubscriptionJob(patient, 'create');
 
@@ -918,7 +913,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as Mock).mockImplementation(() => {
+      fetchMock.mockImplementation(() => {
         throw new Error();
       });
 
@@ -966,7 +961,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1026,7 +1021,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await findAndExecSubscriptionJob(patient, 'create');
       expect(fetch).not.toHaveBeenCalled();
@@ -1084,7 +1079,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await findAndExecSubscriptionJob(patient, 'create');
       expect(fetch).not.toHaveBeenCalled();
@@ -1140,7 +1135,7 @@ describe('Subscription Worker', () => {
         ],
       };
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       // Attempt to trigger the Subscription
       const patient = await repo.createResource<Patient>({
@@ -1340,7 +1335,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1402,7 +1397,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 515 }));
+      fetchMock.mockImplementation(() => ({ status: 515 }));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1450,7 +1445,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1516,7 +1511,7 @@ describe('Subscription Worker', () => {
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
-        (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => ({ status: 200 }));
 
         await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1583,7 +1578,7 @@ describe('Subscription Worker', () => {
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
-        (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => ({ status: 200 }));
 
         await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1647,7 +1642,7 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await repo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await findAndExecSubscriptionJob(patient2, 'update');
       expect(fetch).toHaveBeenCalledWith(
@@ -1747,7 +1742,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await expect(findAndExecSubscriptionJob(patient, 'update', subscription1)).rejects.toThrow('Job not found');
       await findAndExecSubscriptionJob(patient, 'update', subscription2);
@@ -1804,7 +1799,7 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await findAndExecSubscriptionJob(patient2, 'update', subscription);
       expect(fetch).toHaveBeenCalledWith(
@@ -1877,7 +1872,7 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await findAndExecSubscriptionJob(patient2, 'update', subscription);
       expect(fetch).toHaveBeenCalledWith(
@@ -1974,7 +1969,7 @@ describe('Subscription Worker', () => {
       });
       expect(documentRef).toBeDefined();
 
-      (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => ({ status: 200 }));
 
       await findAndExecSubscriptionJob(documentRef, 'create', subscription);
 
@@ -2459,7 +2454,7 @@ describe('Subscription Worker', () => {
 
         // The rest-hook subscription MUST still be enqueued -- satisfiesAccessPolicy()
         // unconditionally returns `true` for non-websocket channel types.
-        (fetch as unknown as Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => ({ status: 200 }));
         await findAndExecSubscriptionJob(patient, 'create', restHookSub);
       }));
 
@@ -3800,7 +3795,7 @@ describe('Subscription Worker', () => {
         queue.add.mockClear();
 
         let callCount = 0;
-        (fetch as unknown as Mock).mockImplementation(async () => {
+        fetchMock.mockImplementation(async () => {
           callCount++;
           if (callCount === 3) {
             // Simulate a concurrent process disabling the subscription after execSubscriptionJob

@@ -5,7 +5,6 @@ import { ContentType, encodeBase64Url, getReferenceString } from '@medplum/core'
 import type { Practitioner, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import fetch from 'node-fetch';
 import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
@@ -16,10 +15,9 @@ import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
 
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
-
 // RFC 7662 - External auth
 
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 describe('External auth', () => {
   const app = express();
   const npi = randomUUID();
@@ -103,7 +101,7 @@ describe('External auth', () => {
   });
 
   test('Remote call to userinfo fails', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 401,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: false }),
@@ -120,7 +118,7 @@ describe('External auth', () => {
   });
 
   test('Profile not found', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),
@@ -137,7 +135,7 @@ describe('External auth', () => {
   });
 
   test('Profile without membership', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),
@@ -156,7 +154,7 @@ describe('External auth', () => {
   });
 
   test('Success by reference', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),
@@ -181,7 +179,7 @@ describe('External auth', () => {
   });
 
   test('Success by search string', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),
@@ -198,7 +196,7 @@ describe('External auth', () => {
   });
 
   test('Success by absolute URL', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),
@@ -215,7 +213,7 @@ describe('External auth', () => {
   });
 
   test('Success by ext.fhirUser', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),
@@ -232,7 +230,7 @@ describe('External auth', () => {
   });
 
   test('Success by sub claim', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),
@@ -251,7 +249,7 @@ describe('External auth', () => {
   });
 
   test('Sub claim with caching', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),
@@ -274,7 +272,7 @@ describe('External auth', () => {
   });
 
   test('Sub claim with unknown externalId', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),
@@ -291,7 +289,7 @@ describe('External auth', () => {
   });
 
   test('Sub claim with remote userinfo failure', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 401,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: false }),
@@ -310,7 +308,7 @@ describe('External auth', () => {
   });
 
   test('fhirUser takes precedence over sub', async () => {
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),
@@ -344,7 +342,7 @@ describe('External auth', () => {
       active: false,
     });
 
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),
@@ -380,7 +378,7 @@ describe('External auth', () => {
       externalId: duplicateSub,
     });
 
-    (fetch as unknown as Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ ok: true }),

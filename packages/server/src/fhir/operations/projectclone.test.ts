@@ -17,7 +17,6 @@ import type {
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import request from 'supertest';
 import type { Mock } from 'vitest';
@@ -34,8 +33,8 @@ import {
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { createProject } from './projectinit';
 
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
 vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 
 describe('Project clone', () => {
   const app = express();
@@ -43,10 +42,10 @@ describe('Project clone', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    (fetch as unknown as Mock).mockClear();
+    fetchMock.mockClear();
     (pwnedPassword as unknown as Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
-    setupRecaptchaMock(fetch as unknown as Mock, true);
+    setupRecaptchaMock(true);
   });
 
   afterAll(async () => {

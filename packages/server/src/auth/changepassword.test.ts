@@ -4,7 +4,6 @@ import { badRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
@@ -14,8 +13,7 @@ import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestConte
 import { registerNew } from './register';
 
 vi.mock('hibp');
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
-
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('Change Password', () => {
@@ -29,10 +27,10 @@ describe('Change Password', () => {
   });
 
   beforeEach(() => {
-    (fetch as unknown as Mock).mockClear();
+    fetchMock.mockClear();
     (pwnedPassword as unknown as Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
-    setupRecaptchaMock(fetch as unknown as Mock, true);
+    setupRecaptchaMock(true);
   });
 
   test('Success', async () => {

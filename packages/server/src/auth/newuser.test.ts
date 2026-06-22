@@ -5,7 +5,6 @@ import type { OperationOutcome, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
@@ -16,8 +15,7 @@ import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../
 import { registerNew } from './register';
 
 vi.mock('hibp');
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
-
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('New user', () => {
@@ -38,10 +36,10 @@ describe('New user', () => {
   });
 
   beforeEach(async () => {
-    (fetch as unknown as Mock).mockClear();
+    fetchMock.mockClear();
     (pwnedPassword as unknown as Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
-    setupRecaptchaMock(fetch as unknown as Mock, true);
+    setupRecaptchaMock(true);
     getConfig().recaptchaSecretKey = prevRecaptchaSecretKey;
   });
 
@@ -97,7 +95,7 @@ describe('New user', () => {
   });
 
   test('Incorrect recaptcha', async () => {
-    setupRecaptchaMock(fetch as unknown as Mock, false);
+    setupRecaptchaMock(false);
 
     const res = await request(app)
       .post('/auth/newuser')

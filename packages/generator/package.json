@@ -34,11 +34,11 @@
     "@types/pg": "8.20.0",
     "@types/unzipper": "0.10.11",
     "csv-parser": "3.2.1",
-    "fast-xml-parser": "5.8.0",
+    "fast-xml-parser": "5.9.3",
     "fhirpath": "4.11.0",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
-    "pg": "8.21.0",
+    "pg": "8.22.0",
     "unzipper": "0.12.3"
   },
   "engines": {

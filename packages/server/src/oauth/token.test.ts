@@ -13,7 +13,6 @@ import type {
 import express from 'express';
 import type * as Jose from 'jose';
 import { decodeJwt, generateKeyPair, jwtVerify, SignJWT } from 'jose';
-import fetch from 'node-fetch';
 import { createHash, randomUUID, X509Certificate } from 'node:crypto';
 import request from 'supertest';
 import type { Mock } from 'vitest';
@@ -94,6 +93,7 @@ vi.mock('jose', async () => {
   };
 });
 
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 describe('OAuth2 Token', () => {
   const app = express();
   const domain = randomUUID() + '.example.com';
@@ -247,7 +247,7 @@ describe('OAuth2 Token', () => {
   afterEach(() => {
     joseMockState.count = 0;
     vi.mocked(jwtVerify).mockClear();
-    vi.mocked(fetch).mockClear();
+    fetchMock.mockClear();
   });
 
   afterAll(async () => {
@@ -2024,7 +2024,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange JSON success', async () => {
-    (fetch as unknown as Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       json: () => ({ email }),
       headers: { get: () => ContentType.JSON },
@@ -2041,7 +2041,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange JWT success', async () => {
-    (fetch as unknown as Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       text: () => `header.${encodeBase64Url(JSON.stringify({ email }))}.signature`,
       headers: { get: () => ContentType.JWT },
@@ -2058,7 +2058,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange GCIP success', async () => {
-    (fetch as unknown as Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ users: [{ email, localId: 'firebase-user-id' }] }),
@@ -2083,7 +2083,7 @@ describe('OAuth2 Token', () => {
         body: JSON.stringify({ idToken: 'firebase-token' }),
       })
     );
-    expect(new URL((fetch as unknown as Mock).mock.calls[0][0]).searchParams.get('key')).toBe('test-api-key');
+    expect(new URL(fetchMock.mock.calls[0][0]).searchParams.get('key')).toBe('test-api-key');
   });
 
   test('Token exchange GCIP subject success', async () => {
@@ -2096,7 +2096,7 @@ describe('OAuth2 Token', () => {
       lastName: 'User',
     });
 
-    (fetch as unknown as Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ users: [{ email: '', localId: externalId }] }),
@@ -2113,7 +2113,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange GCIP invalid response', async () => {
-    (fetch as unknown as Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ users: [] }),
@@ -2130,7 +2130,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange GCIP missing localId', async () => {
-    (fetch as unknown as Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ users: [{ email }] }),
@@ -2159,7 +2159,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange unsupported content type', async () => {
-    (fetch as unknown as Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.TEXT },
     }));
@@ -2176,7 +2176,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Too many requests', async () => {
-    (fetch as unknown as Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 429,
       headers: { get: () => ContentType.JSON },
     }));
@@ -2241,7 +2241,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange invalid external URL', async () => {
-    (fetch as unknown as Mock).mockClear();
+    fetchMock.mockClear();
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,

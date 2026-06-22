@@ -10,8 +10,6 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
-
 const app = express();
 
 describe('StructureDefinition $expand-profile', () => {

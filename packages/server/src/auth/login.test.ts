@@ -10,7 +10,6 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
-import fetch from 'node-fetch';
 import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
@@ -24,8 +23,7 @@ import { registerNew } from './register';
 import { setPassword } from './setpassword';
 
 vi.mock('hibp');
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
-
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 const email = randomUUID() + '@example.com';
 const password = randomUUID();
@@ -85,10 +83,10 @@ describe('Login', () => {
     mockSESv2Client.reset();
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
 
-    (fetch as unknown as Mock).mockClear();
+    fetchMock.mockClear();
     (pwnedPassword as unknown as Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
-    setupRecaptchaMock(fetch as unknown as Mock, true);
+    setupRecaptchaMock(true);
   });
 
   test('Invalid client UUID', async () => {

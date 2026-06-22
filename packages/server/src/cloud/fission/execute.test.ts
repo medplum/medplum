@@ -4,12 +4,15 @@ import type { WithId } from '@medplum/core';
 import type { Bot, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
-import { initTestAuth, mockFetch } from '../../test.setup';
+import { initTestAuth } from '../../test.setup';
 import { executeFissionBot } from './execute';
+
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 
 describe('Execute Fission bots', () => {
   const app = express();
@@ -34,11 +37,7 @@ describe('Execute Fission bots', () => {
   });
 
   beforeEach(() => {
-    mockFetch.mockClear();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
+    fetchMock.mockClear();
   });
 
   test('Success', async () => {
@@ -49,7 +48,7 @@ describe('Execute Fission bots', () => {
       runtimeVersion: 'fission',
     };
 
-    mockFetch.mockImplementationOnce(() =>
+    fetchMock.mockImplementationOnce(() =>
       Promise.resolve({
         status: 200,
         ok: true,
@@ -73,7 +72,7 @@ describe('Execute Fission bots', () => {
       returnValue: { result: 'test result' },
     });
 
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining(`bot-${bot.id}`),
       expect.objectContaining({ method: 'POST' })
     );
@@ -87,7 +86,7 @@ describe('Execute Fission bots', () => {
       runtimeVersion: 'fission',
     };
 
-    mockFetch.mockImplementationOnce(() =>
+    fetchMock.mockImplementationOnce(() =>
       Promise.resolve({
         status: 400,
         ok: false,
@@ -111,7 +110,7 @@ describe('Execute Fission bots', () => {
       success: false,
     });
 
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining(`bot-${bot.id}`),
       expect.objectContaining({ method: 'POST' })
     );

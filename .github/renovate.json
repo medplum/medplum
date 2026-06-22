@@ -19,6 +19,16 @@
       "pinDigests": false
     },
     {
+      "description": "DHI Dockerfile",
+      "matchManagers": ["dockerfile"],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["dhi.io/node"],
+      "versioning": "docker",
+      "groupName": "dependencies",
+      "groupSlug": "all",
+      "pinDigests": false
+    },
+    {
       "description": "GitHub Actions",
       "matchManagers": ["github-actions"],
       "groupName": "dependencies",

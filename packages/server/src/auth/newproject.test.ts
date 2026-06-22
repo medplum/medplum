@@ -4,7 +4,6 @@ import { badRequest, Operator } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
@@ -14,8 +13,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
 vi.mock('hibp');
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
-
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('New project', () => {
@@ -30,10 +28,10 @@ describe('New project', () => {
 
   beforeEach(async () => {
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
-    (fetch as unknown as Mock).mockClear();
+    fetchMock.mockClear();
     (pwnedPassword as unknown as Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
-    setupRecaptchaMock(fetch as unknown as Mock, true);
+    setupRecaptchaMock(true);
   });
 
   test('Success', async () => {

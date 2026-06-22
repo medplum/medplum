@@ -9,7 +9,6 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
-import fetch from 'node-fetch';
 import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
@@ -26,7 +25,7 @@ const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
 });
 
 vi.mock('hibp');
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 vi.mock('nodemailer', () => ({
   createTransport: mockCreateTransport,
   default: { createTransport: mockCreateTransport },
@@ -52,10 +51,10 @@ describe('Reset Password', () => {
     mockSESv2Client = mockClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
 
-    (fetch as unknown as Mock).mockClear();
+    fetchMock.mockClear();
     (pwnedPassword as unknown as Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
-    setupRecaptchaMock(fetch as unknown as Mock, true);
+    setupRecaptchaMock(true);
     getConfig().recaptchaSecretKey = testRecaptchaSecretKey;
   });
 
@@ -83,7 +82,7 @@ describe('Reset Password', () => {
   });
 
   test('Incorrect recaptcha', async () => {
-    setupRecaptchaMock(fetch as unknown as Mock, false);
+    setupRecaptchaMock(false);
 
     const res = await request(app).post('/auth/resetpassword').type('json').send({
       email: 'admin@example.com',
