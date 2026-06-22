@@ -94,6 +94,8 @@ export interface MedplumServerConfig {
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?: Project['features'];
   defaultProjectSystemSetting?: ProjectSetting[];
+  /** Enables HTTP request rate limits, FHIR quota, and resource cap accounting. Default is `true`. */
+  rateLimitsEnabled?: boolean;
   /** Number of HTTP requests per minute users can make by default; overridable by Project settings */
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;

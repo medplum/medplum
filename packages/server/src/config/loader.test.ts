@@ -133,11 +133,13 @@ describe('Config', () => {
     setEnv('MEDPLUM_REGISTER_ENABLED', 'true');
     setEnv('MEDPLUM_LOG_REQUESTS', 'false');
     setEnv('MEDPLUM_BOT_CUSTOM_FUNCTIONS_ENABLED', 'true');
+    setEnv('MEDPLUM_RATE_LIMITS_ENABLED', 'false');
 
     const config = await loadConfig('env');
     expect(config.registerEnabled).toBe(true);
     expect(config.logRequests).toBe(false);
     expect(config.botCustomFunctionsEnabled).toBe(true);
+    expect(config.rateLimitsEnabled).toBe(false);
   });
 
   test('Env config externalAuthProviders as JSON array', async () => {
@@ -487,6 +489,7 @@ describe('Config', () => {
     expect(config.approvedSenderEmails).toStrictEqual('no-reply@example.com');
     expect(config.emailProvider).toStrictEqual('none');
     expect(config.logLevel).toStrictEqual('error');
+    expect(config.rateLimitsEnabled).toBe(true);
     expect(config.defaultRateLimit).toStrictEqual(-1);
     expect(config.defaultSuperAdminClientId).toBeDefined();
     expect(config.defaultSuperAdminClientSecret).toBeDefined();

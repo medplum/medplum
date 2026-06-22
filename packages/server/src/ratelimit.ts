@@ -61,7 +61,7 @@ const blockedUsers = new LRUCache<InMemoryBlock>(1000);
 let handler: Handler | undefined;
 export function rateLimitHandler(config: MedplumServerConfig): Handler {
   if (!handler) {
-    if (config.defaultRateLimit === -1) {
+    if (config.rateLimitsEnabled === false || config.defaultRateLimit === -1) {
       handler = (_req, _res, next) => next(); // Disable rate limiter
     } else {
       handler = async function rateLimiter(req, res, next) {

@@ -5,7 +5,7 @@
  * Integration tests for `data-warehouse-sync.ts` through `processDataWarehouseSyncJob`.
  *
  * Exercises the scheduled job entry point end-to-end: server config → `getDataWarehouseSyncOptions`
- * → real `syncData` → local Parquet on disk, against `medplum_test` with a dedicated history table.
+ * → real `syncData` → local Parquet on disk, against `medplum_test` with a dedicated test schema.
  * Mocks only `getWarehouseSyncPostgresTableNames` to limit scope. Does not use BullMQ or Redis.
  *
  * Contrast with:
@@ -27,8 +27,18 @@ import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../d
 import type { DataWarehouseSyncJobData } from './data-warehouse-sync';
 import { processDataWarehouseSyncJob } from './data-warehouse-sync';
 
-/** Isolated history table in medplum_test so we do not collide with real FHIR history tables. */
-const HISTORY_TABLE = 'DwWorkerSyncIntTest_history';
+/** Dedicated schema so test tables are not visible to public-schema migration introspection. */
+const TEST_SCHEMA = 'dw_worker_sync_int_test';
+const HISTORY_TABLE = 'history';
+const QUALIFIED_HISTORY_TABLE = `${TEST_SCHEMA}.${HISTORY_TABLE}`;
+
+jest.mock('../data-warehouse/config', () => {
+  const actual: typeof DataWarehouseConfigModule = jest.requireActual('../data-warehouse/config');
+  return {
+    ...actual,
+    getWarehouseSyncPostgresTableNames: jest.fn(() => ['dw_worker_sync_int_test.history']),
+  };
+});
 
 function assertParquetMagic(bytes: Buffer): void {
   expect(bytes.subarray(0, 4).toString('ascii')).toBe('PAR1');
@@ -63,9 +73,10 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
     await initDatabase(baseConfig);
 
     const pool = getDatabasePool(DatabaseMode.WRITER);
-    await pool.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
+    await pool.query(`DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
+    await pool.query(`CREATE SCHEMA ${TEST_SCHEMA}`);
     await pool.query(`
-      CREATE TABLE "${HISTORY_TABLE}" (
+      CREATE TABLE ${TEST_SCHEMA}.${HISTORY_TABLE} (
         id TEXT NOT NULL,
         "versionId" TEXT NOT NULL,
         content TEXT NOT NULL,
@@ -73,7 +84,7 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
       );
     `);
     await pool.query(
-      `INSERT INTO "${HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO ${TEST_SCHEMA}.${HISTORY_TABLE} (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
       [
         'patient-worker-int-1',
         '1',
@@ -89,7 +100,7 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
 
   afterAll(async () => {
     const pool = getDatabasePool(DatabaseMode.WRITER);
-    await pool.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
+    await pool.query(`DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
     await closeDatabase();
     if (outDir) {
       rmSync(outDir, { recursive: true, force: true });
@@ -110,8 +121,8 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
   });
 
   test('exports projected history rows to a Parquet file via scheduled sync job', async () => {
-    const updateProgress = vi.fn().mockResolvedValue(undefined);
-    const icebergTable = toIcebergTableName(HISTORY_TABLE);
+    const updateProgress = jest.fn().mockResolvedValue(undefined);
+    const icebergTable = toIcebergTableName(QUALIFIED_HISTORY_TABLE);
     const expectedParquetPath = join(outDir as string, `${icebergTable}.parquet`);
 
     await processDataWarehouseSyncJob(config, {
