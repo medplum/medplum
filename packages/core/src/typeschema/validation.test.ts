@@ -808,6 +808,128 @@ describe('FHIR resource validation', () => {
     });
   });
 
+  describe('Sliced sub-element scoping (#8677)', () => {
+    // Regression tests for https://github.com/medplum/medplum/issues/8677.
+    // When a value matches a slice, only the matched slice's sub-element constraints
+    // should be enforced — sub-element requirements declared on other slices must not
+    // be applied to values that did not match those slices.
+    const slicedIdentifierUrl = 'http://example.com/StructureDefinition/SlicedIdentifierTest';
+    const slicedIdentifierSd: StructureDefinition = {
+      resourceType: 'StructureDefinition',
+      url: slicedIdentifierUrl,
+      name: 'SlicedIdentifierTest',
+      status: 'active',
+      kind: 'logical',
+      abstract: false,
+      type: slicedIdentifierUrl,
+      snapshot: {
+        element: [
+          { path: 'SlicedIdentifierTest' },
+          {
+            path: 'SlicedIdentifierTest.identifier',
+            min: 0,
+            max: '*',
+            base: { path: 'SlicedIdentifierTest.identifier', min: 0, max: '*' },
+            slicing: {
+              discriminator: [{ type: 'value', path: 'system' }],
+              ordered: false,
+              rules: 'open',
+            },
+            type: [{ code: 'Identifier' }],
+          },
+          // "passport" slice — requires both system and value sub-elements
+          {
+            id: 'SlicedIdentifierTest.identifier:passport',
+            path: 'SlicedIdentifierTest.identifier',
+            sliceName: 'passport',
+            min: 0,
+            max: '*',
+            base: { path: 'SlicedIdentifierTest.identifier', min: 0, max: '*' },
+            type: [{ code: 'Identifier' }],
+          },
+          {
+            id: 'SlicedIdentifierTest.identifier:passport.system',
+            path: 'SlicedIdentifierTest.identifier.system',
+            min: 1,
+            max: '1',
+            base: { path: 'Identifier.system', min: 0, max: '1' },
+            type: [{ code: 'uri' }],
+            fixedUri: 'http://example.com/passport',
+          },
+          {
+            id: 'SlicedIdentifierTest.identifier:passport.value',
+            path: 'SlicedIdentifierTest.identifier.value',
+            min: 1,
+            max: '1',
+            base: { path: 'Identifier.value', min: 0, max: '1' },
+            type: [{ code: 'string' }],
+          },
+          // "nationalid" slice — only requires system; deliberately omits the value requirement
+          {
+            id: 'SlicedIdentifierTest.identifier:nationalid',
+            path: 'SlicedIdentifierTest.identifier',
+            sliceName: 'nationalid',
+            min: 0,
+            max: '*',
+            base: { path: 'SlicedIdentifierTest.identifier', min: 0, max: '*' },
+            type: [{ code: 'Identifier' }],
+          },
+          {
+            id: 'SlicedIdentifierTest.identifier:nationalid.system',
+            path: 'SlicedIdentifierTest.identifier.system',
+            min: 1,
+            max: '1',
+            base: { path: 'Identifier.system', min: 0, max: '1' },
+            type: [{ code: 'uri' }],
+            fixedUri: 'http://example.com/nationalid',
+          },
+        ],
+      },
+    };
+
+    beforeAll(() => {
+      loadDataType(slicedIdentifierSd);
+    });
+
+    test('value matching looser slice is not penalized for stricter slice sub-element', () => {
+      // nationalid does not require "value", so a nationalid identifier without "value" must validate.
+      const typedValue = {
+        type: slicedIdentifierUrl,
+        value: { identifier: [{ system: 'http://example.com/nationalid' }] },
+      };
+      expect(() => validateTypedValue(typedValue)).not.toThrow();
+    });
+
+    test('value matching stricter slice with required sub-element validates', () => {
+      const typedValue = {
+        type: slicedIdentifierUrl,
+        value: { identifier: [{ system: 'http://example.com/passport', value: 'P12345' }] },
+      };
+      expect(() => validateTypedValue(typedValue)).not.toThrow();
+    });
+
+    test('value matching stricter slice missing required sub-element fails', () => {
+      const typedValue = {
+        type: slicedIdentifierUrl,
+        value: { identifier: [{ system: 'http://example.com/passport' }] },
+      };
+      expect(() => validateTypedValue(typedValue)).toThrow(/Invalid number of values: expected 1\.\.1, but found 0/);
+    });
+
+    test('mixed identifiers each enforce only their own slice constraints', () => {
+      const typedValue = {
+        type: slicedIdentifierUrl,
+        value: {
+          identifier: [
+            { system: 'http://example.com/nationalid' },
+            { system: 'http://example.com/passport', value: 'P12345' },
+          ],
+        },
+      };
+      expect(() => validateTypedValue(typedValue)).not.toThrow();
+    });
+  });
+
   test('validateResource', () => {
     expect(() => validateResource(null as unknown as Resource)).toThrow();
     expect(() => validateResource({} as unknown as Resource)).toThrow();
