@@ -49,9 +49,7 @@ describe('Execute Fission bots', () => {
     };
 
     fetchMock.mockImplementationOnce(() =>
-      mockFetchText(
-        JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } })
-      )
+      mockFetchText(JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } }))
     );
 
     await expect(

@@ -6,8 +6,8 @@ import useIsBrowser from '@docusaurus/useIsBrowser';
 import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react';
 import type { Props } from '@theme/ColorModeToggle';
 import clsx from 'clsx';
+import type { ReactNode } from 'react';
 import React from 'react';
-import type {ReactNode} from 'react';
 
 import styles from './styles.module.css';
 

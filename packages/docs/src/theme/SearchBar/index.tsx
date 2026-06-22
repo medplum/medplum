@@ -25,8 +25,8 @@ import Translate from '@docusaurus/Translate';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import { IconSearch } from '@tabler/icons-react';
 import translations from '@theme/SearchTranslations';
-import { useCallback, useMemo, useRef, useState  } from 'react';
-import type {ReactNode} from 'react';
+import type { ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './styles.css';
 
