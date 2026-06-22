@@ -87,10 +87,9 @@ Key components introduced:
 
 | New module | Responsibility |
 |---|---|
-| `src/queue/durable-queue.ts` | Owns the `node:sqlite` Database handle. Exposes typed CRUD: `enqueue`, `claimNext`, `markSent`, `markProcessed`, `markRejected`, `markFailed`, `setAckOutcome`, `recoverOnStartup`, `purge`; plus the lease primitives (`tryAcquireLease`, `heartbeatLease`, `releaseLease`, `setLeaseHolder`, `isLeaseHeldByPeer`) and the dispatch gate (`assertNotDemoted`) — see §9.2. |
+| `src/queue/durable-queue.ts` | Owns the `node:sqlite` Database handle. Exposes typed CRUD: `enqueue`, `claimNext`, `markSent`, `markProcessed`, `markRejected`, `markFailed`, `setAckOutcome`, `recoverOnStartup`, `purge`; the lease primitives (`tryAcquireLease`, `heartbeatLease`, `releaseLease`, `setLeaseHolder`, `isLeaseHeldByPeer`) and dispatch gate (`assertNotDemoted`); **and** the dispatch-lease loop itself — `startDispatchLease`/`stopDispatchLease`/`isLeader` (single-dispatcher leader election over the `_lease` row, formerly a separate `DispatchLeaseManager`). The lease gates *dispatch only* (claim + recovery), not intake/maintenance/diagnostics, which is what makes zero-downtime upgrades safe — see §9.2. |
 | `src/queue/schema.ts` | DDL + migration runner (versioned). |
 | `src/queue/worker.ts` | `ChannelQueueWorker` — one per channel, serial dequeue loop. Wires WS responses back to the row. Self-terminates on `QueueLeaseError` when a peer takes the dispatch lease (§9.2). |
-| `src/queue/dispatch-lease-manager.ts` | `DispatchLeaseManager` — single-dispatcher leader election over the `_lease` row. Gates *dispatch only* (claim + recovery), not intake/maintenance/diagnostics. Makes zero-downtime upgrades safe (§9.2). |
 | `src/queue/types.ts` | `MessageState`, `InboundRow`, lifecycle event types, `QueueError` / `QueueLeaseError`. |
 | `src/queue/retention.ts` | Background sweeper for time + size purge. |
 | `packages/agent/src/hl7.ts` | Agent-side commit ACKs: keep `enhancedMode` off the `Hl7Connection` (suppressing its auto-ACK) and send CA/AA/CE/CR/AE/AR via `AgentHl7ChannelConnection.sendCommitAck()` / `sendCommitNack(code, reason)` after the DB write (see §6). |
@@ -588,21 +587,24 @@ same rows. Exactly one process may dispatch at a time.
 That one-dispatcher invariant is enforced by a lease, not by process identity, so
 it survives the overlap cleanly:
 
-- **`DispatchLeaseManager`** (`src/queue/dispatch-lease-manager.ts`) runs a
-  lightweight leader election over the single-row `_lease` table. `start()`
-  attempts `tryAcquireLease(holderId, ttl)` (an atomic conditional UPSERT: claim
-  if no row, or if the existing lease has lapsed). On success it fires
-  `onBecameLeader` and heartbeats every `DEFAULT_LEASE_HEARTBEAT_MS` (10 s) to
-  re-extend a `DEFAULT_LEASE_TTL_MS` (30 s) lease; on failure it retries every
+- **The dispatch-lease loop** lives inside `DurableQueue` itself
+  (`startDispatchLease`/`stopDispatchLease`/`isLeader`) — a lightweight leader
+  election over the single-row `_lease` table. `startDispatchLease()` attempts
+  `tryAcquireLease(holderId, ttl)` (an atomic conditional UPSERT: claim if no row,
+  or if the existing lease has lapsed). On success it fires `onBecameLeader` and
+  heartbeats every `DEFAULT_LEASE_HEARTBEAT_MS` (10 s) to re-extend a
+  `DEFAULT_LEASE_TTL_MS` (30 s) lease; on failure it retries every
   `DEFAULT_LEASE_ACQUIRE_RETRY_MS` (2 s) as a follower until the lease frees up.
   TTL ≫ heartbeat so an ordinary GC pause doesn't cost the lease, yet a dead agent
-  is taken over within tens of seconds.
+  is taken over within tens of seconds. (This was once a separate
+  `DispatchLeaseManager`; folding it into `DurableQueue` makes the queue the single
+  point of interaction for the App — the loop drives the same lease primitives it
+  already owned, so there is no second object to keep in sync.)
 - **The lease gates dispatch only.** Intake (`enqueue` — a follower still persists
   every inbound message and returns its commit ACK), maintenance (WAL checkpoint,
   retention sweep), and diagnostics (stats) all run on any process with the file
-  open. Only **claiming and driving rows** is leader-restricted. This is the whole
-  point of the rename from the older generic `QueueLeaseManager`: the name now
-  states the scope.
+  open. Only **claiming and driving rows** is leader-restricted — the `Dispatch`
+  in the method names states the scope.
 
 **Two levels of enforcement, optimistic + authoritative:**
 
@@ -612,8 +614,8 @@ it survives the overlap cleanly:
    starts a worker only when `getDispatchQueue()` is non-null;
    `onBecameQueueLeader` calls back in to start workers the moment the lease is
    acquired (whether at startup or on a later takeover).
-2. *Authoritative (data layer):* the manager binds its holder ID to the queue via
-   `DurableQueue.setLeaseHolder()`, and every dispatch-class mutation
+2. *Authoritative (data layer):* `startDispatchLease()` binds this process's holder
+   ID into the queue (the same field `setLeaseHolder()` sets), and every dispatch-class mutation
    (`claimNext`, `recordServerResponse`, `markProcessed`, `markRejected`,
    `markFailed`, `requeue`) first calls `assertNotDemoted()`, which throws
    **`QueueLeaseError`** when `isLeaseHeldByPeer()` (a `_lease` row owned by a
@@ -641,12 +643,14 @@ process later reacquires the lease, `AgentHl7Channel.maybeStartWorker` reaps the
 stopped worker (`isRunning() === false`) and starts a fresh one.
 
 ```
-  ┌──────────────────────┐  tryAcquireLease / heartbeat / release
-  │ DispatchLeaseManager │───────────────►  _lease row (single writer of dispatch)
-  └─────────┬────────────┘                         ▲
-            │ onBecameLeader                        │ assertNotDemoted() reads it on
-            ▼                                       │ every dispatch-class mutation
-  App.onBecameQueueLeader: recoverOnStartup()       │
+  ┌──────────────────────────┐  tryAcquireLease / heartbeat / release
+  │ DurableQueue dispatch     │──────────────►  _lease row (single writer of dispatch)
+  │ lease loop (startDispatch │                         ▲
+  │ Lease/heartbeat/stop)     │                         │ assertNotDemoted() reads it on
+  └─────────┬────────────────┘                         │ every dispatch-class mutation
+            │ onBecameLeader                            │
+            ▼                                           │
+  App.onBecameQueueLeader: recoverOnStartup()           │
             │ + start channel workers               │
             ▼                                        │
   ChannelQueueWorker.claimNext / markProcessed / … ─┘  → throws QueueLeaseError
@@ -782,19 +786,18 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 **New:**
 - `packages/agent/src/queue/types.ts` — `MessageState`, `InboundRow`, `QueueError`, `QueueLeaseError`, etc.
 - `packages/agent/src/queue/schema.ts` — DDL + `MIGRATIONS` (incl. the `_lease` table).
-- `packages/agent/src/queue/durable-queue.ts` — `DurableQueue` class (opens DB, prepared statements, all CRUD, lease primitives + the `assertNotDemoted` dispatch gate).
+- `packages/agent/src/queue/durable-queue.ts` — `DurableQueue` class (opens DB, prepared statements, all CRUD, lease primitives, the `assertNotDemoted` dispatch gate, and the in-class dispatch-lease loop `startDispatchLease`/`stopDispatchLease`/`isLeader`; §9.2).
 - `packages/agent/src/queue/worker.ts` — `ChannelQueueWorker`.
-- `packages/agent/src/queue/dispatch-lease-manager.ts` — `DispatchLeaseManager` (single-dispatcher leader election; §9.2).
 - `packages/agent/src/queue/retention.ts` — `RetentionSweeper`.
 - `packages/agent/src/queue/durable-queue.test.ts` — unit tests (see §14).
 - `packages/agent/src/queue/worker.test.ts` — worker behavior tests.
-- `packages/agent/src/queue/dispatch-lease-manager.test.ts` — leader-election tests.
+- `packages/agent/src/queue/durable-queue-lease.test.ts` — dispatch-lease leader-election tests.
 - `packages/agent/src/queue/retention.test.ts` — retention/purge tests.
 
 **Modified:**
 - `packages/agent/src/app.ts` —
   - On construction, open `DurableQueue` if `durableQueue` setting is on.
-  - Start a `DispatchLeaseManager`; `onBecameQueueLeader` runs `recoverOnStartup` and brings up channel workers (§9.2). `isQueueLeader()` reads the manager.
+  - Call `durableQueue.startDispatchLease(...)`; `onBecameQueueLeader` runs `recoverOnStartup` and brings up channel workers (§9.2). `isQueueLeader()` reads `durableQueue.isLeader()`.
   - Expose `getDurableQueue()` (ungated handle, for intake/maintenance/diagnostics) vs `getDispatchQueue()` (leader-gated, for the worker-start path).
   - In WS message handler, route `agent:transmit:response` through the worker first (§9.1).
   - On `stop()`, drain workers, release the lease *before* closing the DB, close retention sweeper.
@@ -838,9 +841,9 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 - Peer steals the lease while the worker is **idle** → its next `claimNext` throws `QueueLeaseError`, the worker stops on its own (`isRunning()` goes false), and a row enqueued after the steal is never claimed (§9.2).
 - Peer steals the lease while a dispatch is **wedged** awaiting a response → the heartbeat-driven in-flight watchdog cancels it well before the response timeout, and the worker leaves the row unsettled (`claimed`/`inflight`) for the new leader (§9.2).
 
-`dispatch-lease-manager.test.ts`:
-- Acquires the lease on start and fires `onBecameLeader`; a second manager waits as follower until the first releases / its lease lapses, then takes over.
-- Heartbeat extends the lease beyond its initial TTL; `stop()` releases immediately so a peer can acquire without waiting out the TTL; `stop()` on a non-leader is idempotent.
+`durable-queue-lease.test.ts`:
+- `startDispatchLease` acquires the lease and fires `onBecameLeader`; a second queue (same DB file) waits as follower until the first releases / its lease lapses, then takes over. `startDispatchLease` is idempotent (a second call doesn't restart the loop).
+- Heartbeat extends the lease beyond its initial TTL; `stopDispatchLease()` releases immediately so a peer can acquire without waiting out the TTL; `stopDispatchLease()` on a non-leader is idempotent.
 - Losing the lease mid-run drops to follower and reacquires once the peer's lease lapses (there is no lost-leadership callback — loss is enforced at the data layer via `QueueLeaseError`).
 
 `retention.test.ts`:

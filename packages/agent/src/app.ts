@@ -58,7 +58,6 @@ import { AgentHl7Channel } from './hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
-import { DispatchLeaseManager } from './queue/dispatch-lease-manager';
 import { DurableQueue } from './queue/durable-queue';
 import { RetentionSweeper } from './queue/retention';
 import type { ChannelQueueWorker } from './queue/worker';
@@ -147,7 +146,6 @@ export class App {
   private lastHeartbeatSentTime: number = -1;
   private durableQueue: DurableQueue | undefined;
   private retentionSweeper: RetentionSweeper | undefined;
-  private dispatchLeaseManager: DispatchLeaseManager | undefined;
   private queueCheckpointListener: (() => void) | undefined;
   // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
   // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
@@ -645,10 +643,10 @@ export class App {
       if (this.durableQueue) {
         this.log.info('durableQueue disabled — closing queue.');
         this.removeQueueCheckpointListener();
-        this.dispatchLeaseManager?.stop();
-        this.dispatchLeaseManager = undefined;
         this.retentionSweeper?.stop();
         this.retentionSweeper = undefined;
+        // close() stops the dispatch-lease loop and releases the lease before
+        // tearing down the DB handle.
         this.durableQueue.close();
         this.durableQueue = undefined;
       }
@@ -677,14 +675,13 @@ export class App {
       this.heartbeatEmitter.addEventListener('heartbeat', this.queueCheckpointListener);
     }
 
-    // Start the lease manager — it'll attempt acquisition immediately and, on
-    // success, the callback runs recoverOnStartup() + brings up channel workers.
-    // If a peer (e.g. an old agent in the upgrade overlap) holds the lease, we
-    // sit as a follower until the lease is free, then take over.
-    if (!this.dispatchLeaseManager) {
-      this.dispatchLeaseManager = new DispatchLeaseManager({ queue: this.durableQueue, log: this.log });
-      this.dispatchLeaseManager.start(() => this.onBecameQueueLeader());
-    }
+    // Start the dispatch-lease loop — it'll attempt acquisition immediately and,
+    // on success, the callback runs recoverOnStartup() + brings up channel
+    // workers. If a peer (e.g. an old agent in the upgrade overlap) holds the
+    // lease, we sit as a follower until the lease is free, then take over.
+    // startDispatchLease is idempotent, so calling it on every heartbeat tick is
+    // safe — it won't restart an already-running loop.
+    this.durableQueue.startDispatchLease(() => this.onBecameQueueLeader());
 
     // (Re)start the retention sweeper with the latest settings. The sweeper runs
     // regardless of leadership because its only writes are DELETEs of terminal
@@ -712,7 +709,7 @@ export class App {
   }
 
   /**
-   * Called by the {@link DispatchLeaseManager} the first time we take the lease.
+   * Called by the {@link DurableQueue} dispatch-lease loop the first time we take the lease.
    *
    * This is the single point that runs `recoverOnStartup` and spins up the
    * channel workers. Both depend on us being the only writer — running them at
@@ -744,7 +741,7 @@ export class App {
 
   /** @returns True when this agent currently holds the durable-queue lease. */
   isQueueLeader(): boolean {
-    return this.dispatchLeaseManager?.isLeader() ?? false;
+    return this.durableQueue?.isLeader() ?? false;
   }
 
   /**
@@ -1162,12 +1159,8 @@ export class App {
       this.retentionSweeper.stop();
       this.retentionSweeper = undefined;
     }
-    // Release the lease BEFORE closing the DB so a waiting peer can take over
-    // immediately rather than waiting for our TTL to expire.
-    if (this.dispatchLeaseManager) {
-      this.dispatchLeaseManager.stop();
-      this.dispatchLeaseManager = undefined;
-    }
+    // close() releases the dispatch lease BEFORE tearing down the DB handle, so a
+    // waiting peer can take over immediately rather than waiting for our TTL to expire.
     if (this.durableQueue) {
       this.durableQueue.close();
       this.durableQueue = undefined;

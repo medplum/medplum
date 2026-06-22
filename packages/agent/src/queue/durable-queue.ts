@@ -3,6 +3,7 @@
 
 import type { ILogger } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
+import { randomUUID } from 'node:crypto';
 import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
 import {
@@ -26,11 +27,40 @@ import type {
 } from './types';
 import { AckOutcome as AckOutcomeValues, MessageState as MessageStateValues, QueueLeaseError } from './types';
 
+/**
+ * Default lease lifetime. Picked to be:
+ * - Long enough that ordinary GC pauses or slow disks don't cost us the lease
+ *   under load.
+ * - Short enough that, when an agent dies un-gracefully, a peer can take over
+ *   within tens of seconds rather than minutes.
+ */
+export const DEFAULT_LEASE_TTL_MS = 30_000;
+
+/**
+ * How often the leaseholder re-extends its lease. Must be comfortably less than
+ * {@link DEFAULT_LEASE_TTL_MS} so transient delays don't let the lease expire.
+ */
+export const DEFAULT_LEASE_HEARTBEAT_MS = 10_000;
+
+/**
+ * How often a non-leader retries acquisition. Shorter is fine — the underlying
+ * SQL is a single conditional UPSERT and is cheap.
+ */
+export const DEFAULT_LEASE_ACQUIRE_RETRY_MS = 2_000;
+
 export interface DurableQueueOptions {
   /** Filesystem path to the SQLite DB file. */
   path: string;
   /** Logger for migration / lifecycle messages. */
   log: ILogger;
+  /** Override the per-process dispatch-lease holder ID. Defaults to a fresh UUID. */
+  leaseHolder?: string;
+  /** Override the dispatch-lease TTL in ms. */
+  leaseTtlMs?: number;
+  /** Override the dispatch-lease heartbeat interval in ms. */
+  leaseHeartbeatMs?: number;
+  /** Override the dispatch-lease acquire retry interval in ms. */
+  leaseAcquireRetryMs?: number;
 }
 
 /** Counts by lifecycle state — used by stats and the retention sweeper. */
@@ -61,13 +91,39 @@ export class DurableQueue {
   private readonly log: ILogger;
   private readonly path: string;
   private closed = false;
-  // The lease holder ID of THIS process, bound once by its DispatchLeaseManager (see
-  // setLeaseHolder). Dispatch-class mutations are gated on the live lease still
-  // belonging to this holder; when a peer takes over, the gate throws
-  // QueueLeaseError so the demoted worker stops driving the queue. Undefined when
-  // no lease manager is attached (single-process use and most unit tests), in
-  // which case the gate is inert because no lease row exists.
+  // The dispatch-lease holder ID of THIS process, set when startDispatchLease()
+  // begins the acquire/heartbeat loop (or bound directly via setLeaseHolder in
+  // tests). Dispatch-class mutations are gated on the live lease still belonging
+  // to this holder; when a peer takes over, the gate throws QueueLeaseError so the
+  // demoted worker stops driving the queue. Undefined when the dispatch lease was
+  // never started (single-process use and most unit tests), in which case the gate
+  // is inert because no lease row exists.
   private leaseHolderId: string | undefined;
+
+  // ── Dispatch-lease orchestration (formerly DispatchLeaseManager) ──
+  // Lightweight leader election for the DISPATCH path. The lease gates *dispatch
+  // only* — claiming rows and driving them to the server (the worker +
+  // recoverOnStartup). It deliberately does NOT gate intake (followers still
+  // persist inbound messages via enqueue), maintenance (WAL checkpoint, retention
+  // sweep), or diagnostics (stats): those are valid on any process with the queue
+  // file open. Exactly one process may dispatch at a time, which is the
+  // load-bearing primitive that makes zero-downtime upgrades safe: during the
+  // overlap window where the old and new agent processes both have the SQLite file
+  // open, only the leaseholder claims/sends rows; the non-leader keeps accepting
+  // and persisting inbound traffic but does not dispatch.
+  //
+  // There is deliberately NO lost-leadership callback: loss is enforced at the
+  // data layer instead — the dispatch ops throw QueueLeaseError once a peer holds
+  // the lease (see assertNotDemoted), so the worker self-detects and drains
+  // without pushing an event down a chain of callbacks.
+  private readonly leaseTtlMs: number;
+  private readonly leaseHeartbeatMs: number;
+  private readonly leaseAcquireRetryMs: number;
+  private leaseLeader = false;
+  private leaseLoopActive = false;
+  private leaseAcquireTimer: NodeJS.Timeout | undefined;
+  private leaseHeartbeatTimer: NodeJS.Timeout | undefined;
+  private onBecameLeader: (() => void) | undefined;
   // True when the WAL may contain frames not yet checkpointed into the main DB
   // file. SQLite only attempts checkpoints piggybacked on commits, so once
   // traffic stops nothing would ever drain the WAL — the App polls this on every
@@ -106,6 +162,10 @@ export class DurableQueue {
     this.db = db;
     this.log = options.log;
     this.path = options.path;
+    this.leaseHolderId = options.leaseHolder;
+    this.leaseTtlMs = options.leaseTtlMs ?? DEFAULT_LEASE_TTL_MS;
+    this.leaseHeartbeatMs = options.leaseHeartbeatMs ?? DEFAULT_LEASE_HEARTBEAT_MS;
+    this.leaseAcquireRetryMs = options.leaseAcquireRetryMs ?? DEFAULT_LEASE_ACQUIRE_RETRY_MS;
 
     // Single-writer, durable-across-crash, WAL-friendly settings (§5).
     // Picked for HL7 inbound rates and the durability contract we owe the sender:
@@ -328,6 +388,10 @@ export class DurableQueue {
       return;
     }
     this.closed = true;
+    // Release the lease BEFORE closing the DB so a waiting peer can take over
+    // immediately rather than waiting for our TTL to expire. Idempotent and a
+    // no-op when the dispatch lease was never started.
+    this.stopDispatchLease();
     // SQLite only checkpoints + deletes the WAL on close when this is the last
     // connection to the file. An upgrade-overlap peer or an operator's sqlite3
     // shell defeats that, so flush explicitly — a clean shutdown should always
@@ -799,13 +863,164 @@ export class DurableQueue {
 
   /**
    * Binds this queue to the lease holder ID of the local process, so the
-   * dispatch gate ({@link assertNotDemoted}) can tell "us" from a peer. Called
-   * once by {@link DispatchLeaseManager} at construction; the manager keeps passing
-   * the same holder to {@link tryAcquireLease}/{@link heartbeatLease}.
+   * dispatch gate ({@link assertNotDemoted}) can tell "us" from a peer.
+   * {@link startDispatchLease} sets this automatically; call it directly only in
+   * tests that drive {@link tryAcquireLease}/{@link heartbeatLease} by hand.
    * @param holderId - This process's lease holder ID.
    */
   setLeaseHolder(holderId: string): void {
     this.leaseHolderId = holderId;
+  }
+
+  /**
+   * Begins the dispatch-lease acquire-and-heartbeat loop for this process.
+   *
+   * Tries to acquire the lease immediately. On success it fires `onBecameLeader`
+   * and begins heartbeating every `leaseHeartbeatMs`; on failure it retries every
+   * `leaseAcquireRetryMs` until the lease frees up. `onBecameLeader` fires every
+   * time this process transitions from follower to leader (typically once, but
+   * again if it loses the lease mid-run and reclaims it). There is no
+   * lost-leadership callback by design — loss surfaces as a {@link QueueLeaseError}
+   * from the dispatch ops, which the worker catches to drain itself.
+   *
+   * Idempotent: calling it again while the loop is already active is a no-op, so
+   * the App can call it on every heartbeat tick without restarting the loop.
+   * @param onBecameLeader - Callback invoked when this process takes the lease.
+   */
+  startDispatchLease(onBecameLeader: () => void): void {
+    if (this.leaseLoopActive) {
+      return;
+    }
+    this.onBecameLeader = onBecameLeader;
+    this.leaseLoopActive = true;
+    if (!this.leaseHolderId) {
+      this.leaseHolderId = randomUUID();
+    }
+    this.tryAcquireDispatchLease();
+  }
+
+  /**
+   * Stops the dispatch-lease loop and releases the lease if we hold it.
+   * Idempotent and a no-op when the loop was never started.
+   * @returns True if we were the leader when stopping (and released the lease).
+   */
+  stopDispatchLease(): boolean {
+    this.leaseLoopActive = false;
+    this.onBecameLeader = undefined;
+    this.clearLeaseAcquireTimer();
+    this.clearLeaseHeartbeatTimer();
+    const wasLeader = this.leaseLeader;
+    if (this.leaseLeader && this.leaseHolderId) {
+      try {
+        this.releaseLease(this.leaseHolderId);
+      } catch (err) {
+        this.log.warn(`Failed to release queue lease: ${normalizeErrorString(err)}`);
+      }
+      this.leaseLeader = false;
+    }
+    return wasLeader;
+  }
+
+  /** @returns True if this process currently holds the dispatch lease. */
+  isLeader(): boolean {
+    return this.leaseLeader;
+  }
+
+  /** @returns The dispatch-lease holder ID for this process (for diagnostics), or undefined if never started. */
+  getLeaseHolderId(): string | undefined {
+    return this.leaseHolderId;
+  }
+
+  private tryAcquireDispatchLease(): void {
+    if (!this.leaseLoopActive || this.closed || !this.leaseHolderId) {
+      return;
+    }
+    let acquired = false;
+    try {
+      acquired = this.tryAcquireLease(this.leaseHolderId, this.leaseTtlMs);
+    } catch (err) {
+      this.log.warn(`Queue lease acquire threw: ${normalizeErrorString(err)}`);
+    }
+
+    if (acquired) {
+      this.leaseLeader = true;
+      this.clearLeaseAcquireTimer();
+      this.log.info(`Acquired queue lease (holder=${this.leaseHolderId}).`);
+      this.scheduleLeaseHeartbeat();
+      // Fire callback last so any exception from it doesn't leave timers stopped.
+      try {
+        this.onBecameLeader?.();
+      } catch (err) {
+        this.log.error(`onBecameLeader callback threw: ${normalizeErrorString(err)}`);
+      }
+      return;
+    }
+
+    // Someone else holds the lease — try again in a bit.
+    this.scheduleLeaseAcquireRetry();
+  }
+
+  private scheduleLeaseAcquireRetry(): void {
+    if (!this.leaseLoopActive || this.leaseAcquireTimer) {
+      return;
+    }
+    this.leaseAcquireTimer = setTimeout(() => {
+      this.leaseAcquireTimer = undefined;
+      this.tryAcquireDispatchLease();
+    }, this.leaseAcquireRetryMs);
+    if (typeof this.leaseAcquireTimer.unref === 'function') {
+      this.leaseAcquireTimer.unref();
+    }
+  }
+
+  private scheduleLeaseHeartbeat(): void {
+    if (!this.leaseLoopActive || this.leaseHeartbeatTimer) {
+      return;
+    }
+    this.leaseHeartbeatTimer = setInterval(() => this.leaseHeartbeat(), this.leaseHeartbeatMs);
+    if (typeof this.leaseHeartbeatTimer.unref === 'function') {
+      this.leaseHeartbeatTimer.unref();
+    }
+  }
+
+  private leaseHeartbeat(): void {
+    if (!this.leaseLoopActive || !this.leaseLeader || !this.leaseHolderId) {
+      return;
+    }
+    let extended = false;
+    try {
+      extended = this.heartbeatLease(this.leaseHolderId, this.leaseTtlMs);
+    } catch (err) {
+      this.log.warn(`Queue lease heartbeat threw: ${normalizeErrorString(err)}`);
+      return;
+    }
+    if (!extended) {
+      // We lost the lease — a peer took over after our TTL elapsed. Drop back to
+      // follower mode and start trying to reclaim it. We do NOT push a drain
+      // event: the dispatch ops are bound to our holder and now throw
+      // QueueLeaseError (a peer owns the lease), so the worker self-detects and
+      // drains on its next claim/in-flight check — typically well before this
+      // heartbeat even runs. (A small overlap window is inherent to TTL leases:
+      // the peer could only acquire after our TTL expired.)
+      this.log.error(`Lost queue lease (holder=${this.leaseHolderId}); peer took over.`);
+      this.leaseLeader = false;
+      this.clearLeaseHeartbeatTimer();
+      this.scheduleLeaseAcquireRetry();
+    }
+  }
+
+  private clearLeaseAcquireTimer(): void {
+    if (this.leaseAcquireTimer) {
+      clearTimeout(this.leaseAcquireTimer);
+      this.leaseAcquireTimer = undefined;
+    }
+  }
+
+  private clearLeaseHeartbeatTimer(): void {
+    if (this.leaseHeartbeatTimer) {
+      clearInterval(this.leaseHeartbeatTimer);
+      this.leaseHeartbeatTimer = undefined;
+    }
   }
 
   /**
@@ -814,7 +1029,7 @@ export class DurableQueue {
    * exists (no coordination in play) or the lease is ours. Note this intentionally
    * does NOT consider expiry: a merely-expired-but-still-ours lease will be
    * re-extended by our next heartbeat, so only a foreign holder means "demoted",
-   * which keeps this exactly aligned with {@link DispatchLeaseManager.isLeader}.
+   * which keeps this exactly aligned with {@link DurableQueue.isLeader}.
    */
   isLeaseHeldByPeer(): boolean {
     const lease = this.getCurrentLease();
@@ -825,7 +1040,7 @@ export class DurableQueue {
    * Throws {@link QueueLeaseError} when a peer holds the lease. Called at the top
    * of every dispatch-class mutation so a demoted process can't claim, dispatch,
    * or settle rows the new leader now owns — the authoritative, data-layer half of
-   * leadership enforcement (the {@link DispatchLeaseManager}'s leader flag is the
+   * leadership enforcement (the {@link DurableQueue.isLeader} flag is the
    * cheap optimistic half). Intake, maintenance, diagnostics, and the physical
    * `markSent` marker are deliberately NOT gated.
    */
