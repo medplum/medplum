@@ -100,9 +100,8 @@ import { FhirQuotaCost } from './fhirquota';
 import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
-import { replaceConditionalReferences, validateResourceReferences } from './references';
+import { getResourceTypesFromReferences, replaceConditionalReferences, validateResourceReferences } from './references';
 import type { ExecuteSqlOptions, TransactionSqlOptions } from './repository/access-tracker';
-import { getResourceTypesFromReferences } from './repository/access-tracker';
 import { removeField } from './repository/field-utils';
 import { removeCachedProfile } from './repository/profile-cache';
 import type { ConnectionScope, StatementTimeoutOptions } from './repository/repository-connection';
@@ -415,7 +414,6 @@ export class Repository extends FhirRepository implements Disposable {
     options: ExecuteSqlOptions
   ): Promise<T[]> {
     this.assertUsable();
-    this.connection.recordResourceAccess('sql', options.operation, options.resourceTypes, options.source);
     return query.execute(this.getDatabaseClient(options));
   }
 
@@ -1213,10 +1211,12 @@ export class Repository extends FhirRepository implements Disposable {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    const resourceType = resources[0]?.resourceType;
+    if (!resources.length) {
+      return;
+    }
+    const resourceType = resources[0].resourceType;
     for (let i = 1; i < resources.length; i++) {
       if (resources[i].resourceType !== resourceType) {
-        // TODO add test for varyings types
         throw new OperationOutcomeError(badRequest('All resources must be of the same type'));
       }
     }
@@ -1920,6 +1920,9 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   protected async batchWriteLookupTables<T extends Resource>(resources: WithId<T>[], create: boolean): Promise<void> {
+    if (!resources.length) {
+      return;
+    }
     const client = this.getDatabaseClient({
       mode: DatabaseMode.WRITER,
       operation: 'write',

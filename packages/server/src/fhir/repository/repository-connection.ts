@@ -17,7 +17,7 @@ import type {
   RepositoryAccessOperation,
   TransactionSqlOptions,
 } from './access-tracker';
-import { createRepositoryAccessTracker } from './access-tracker';
+import { RepositoryAccessTracker } from './access-tracker';
 import type { TransactionIdleStatus, TransactionIdleTrackerOptions } from './transaction-idle-tracker';
 import { TransactionIdleTracker } from './transaction-idle-tracker';
 
@@ -107,7 +107,7 @@ export class RepositoryConnection implements Disposable {
   private readonly rootScope: RootScope;
   private currentScope: Scope;
 
-  private readonly accessTracker = createRepositoryAccessTracker();
+  private readonly accessTracker = new RepositoryAccessTracker();
 
   /**
    * Creates a connection that owns any PoolClient it acquires.
