@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Drawer, Group, Text } from '@mantine/core';
+import { ActionIcon, Box, Drawer, Group, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, EMPTY, getReferenceString, isReference, isResourceWithId } from '@medplum/core';
@@ -228,9 +228,9 @@ export function SchedulePage(): JSX.Element | null {
   const schedulingEnabled = project?.features?.includes('scheduling');
 
   return (
-    <Box pos="relative" className={classes.page} p="md">
-      <div className={classes.wrapper}>
-        <Group justify="space-between" mb="sm">
+    <>
+      <Stack p="sm" className={classes.page}>
+        <Group justify="space-between">
           <Box w={320}>
             <ReferenceInput
               key={schedule?.id}
@@ -252,16 +252,15 @@ export function SchedulePage(): JSX.Element | null {
           )}
         </Group>
         <div className={classes.container}>
-          <div className={classes.calendar}>
-            <Calendar
-              onSelectInterval={handleSelectInterval}
-              onSelectAppointment={handleSelectAppointment}
-              onSelectSlot={handleSelectSlot}
-              slots={slots ?? []}
-              appointments={appointments ?? []}
-              onRangeChange={setRange}
-            />
-          </div>
+          <Calendar
+            onSelectInterval={handleSelectInterval}
+            onSelectAppointment={handleSelectAppointment}
+            onSelectSlot={handleSelectSlot}
+            slots={slots ?? []}
+            appointments={appointments ?? []}
+            onRangeChange={setRange}
+            className={classes.calendar}
+          />
 
           {schedule && range && (
             <FindPane
@@ -273,7 +272,7 @@ export function SchedulePage(): JSX.Element | null {
             />
           )}
         </div>
-      </div>
+      </Stack>
 
       {/* Modals */}
       {practitioner && (
@@ -306,6 +305,6 @@ export function SchedulePage(): JSX.Element | null {
           />
         )}
       </Drawer>
-    </Box>
+    </>
   );
 }

@@ -66,6 +66,7 @@ export function Calendar(props: {
   onSelectSlot?: (slot: Slot) => void;
   onSelectAppointment?: (appointment: Appointment) => void;
   onRangeChange?: (range: Range) => void;
+  className?: string;
 }): JSX.Element {
   const { colorScheme } = useMantineColorScheme();
   const controller = useCalendarController();
@@ -115,7 +116,7 @@ export function Calendar(props: {
   }, [props.appointments, props.slots]);
 
   return (
-    <div data-testid="calendar" className={classes.wrapper}>
+    <div data-testid="calendar" className={cx(classes.wrapper, props.className)}>
       <Group justify="space-between" pb="sm">
         <Group gap="md">
           <Button.Group>
