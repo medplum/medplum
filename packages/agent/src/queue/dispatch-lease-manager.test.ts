@@ -5,8 +5,8 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createMockLogger, waitFor } from '../test-utils';
-import { DurableQueue } from './durable-queue';
 import { DispatchLeaseManager } from './dispatch-lease-manager';
+import { DurableQueue } from './durable-queue';
 
 describe('DispatchLeaseManager', () => {
   let dir: string;
