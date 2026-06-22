@@ -87,10 +87,11 @@ Key components introduced:
 
 | New module | Responsibility |
 |---|---|
-| `src/queue/durable-queue.ts` | Owns the `node:sqlite` Database handle. Exposes typed CRUD: `enqueue`, `claimNext`, `markSent`, `markProcessed`, `markRejected`, `markFailed`, `setAckOutcome`, `recoverOnStartup`, `purge`. |
+| `src/queue/durable-queue.ts` | Owns the `node:sqlite` Database handle. Exposes typed CRUD: `enqueue`, `claimNext`, `markSent`, `markProcessed`, `markRejected`, `markFailed`, `setAckOutcome`, `recoverOnStartup`, `purge`; plus the lease primitives (`tryAcquireLease`, `heartbeatLease`, `releaseLease`, `setLeaseHolder`, `isLeaseHeldByPeer`) and the dispatch gate (`assertNotDemoted`) — see §9.2. |
 | `src/queue/schema.ts` | DDL + migration runner (versioned). |
-| `src/queue/worker.ts` | `ChannelQueueWorker` — one per channel, serial dequeue loop. Wires WS responses back to the row. |
-| `src/queue/types.ts` | `MessageState`, `InboundRow`, lifecycle event types. |
+| `src/queue/worker.ts` | `ChannelQueueWorker` — one per channel, serial dequeue loop. Wires WS responses back to the row. Self-terminates on `QueueLeaseError` when a peer takes the dispatch lease (§9.2). |
+| `src/queue/dispatch-lease-manager.ts` | `DispatchLeaseManager` — single-dispatcher leader election over the `_lease` row. Gates *dispatch only* (claim + recovery), not intake/maintenance/diagnostics. Makes zero-downtime upgrades safe (§9.2). |
+| `src/queue/types.ts` | `MessageState`, `InboundRow`, lifecycle event types, `QueueError` / `QueueLeaseError`. |
 | `src/queue/retention.ts` | Background sweeper for time + size purge. |
 | `packages/agent/src/hl7.ts` | Agent-side commit ACKs: keep `enhancedMode` off the `Hl7Connection` (suppressing its auto-ACK) and send CA/AA/CE/CR/AE/AR via `AgentHl7ChannelConnection.sendCommitAck()` / `sendCommitNack(code, reason)` after the DB write (see §6). |
 
@@ -173,6 +174,17 @@ CREATE INDEX IF NOT EXISTS idx_inbound_dup_lookup
 -- Correlate WS callback IDs (what the server echoes back) to rows in O(1).
 CREATE UNIQUE INDEX IF NOT EXISTS uq_inbound_callback
   ON inbound_hl7_messages (callback_id);
+
+-- Single-row table holding the current dispatch lease. Coordinates which process
+-- may DRIVE the queue (claim rows + run recoverOnStartup) when two agents share
+-- the DB during a zero-downtime upgrade overlap. The CHECK keeps it single-row.
+-- See §9.2 for the leadership model.
+CREATE TABLE IF NOT EXISTS _lease (
+  id          INTEGER PRIMARY KEY CHECK (id = 1),
+  holder      TEXT    NOT NULL,             -- per-process holder UUID of the leaseholder
+  acquired_at INTEGER NOT NULL,             -- ms epoch
+  expires_at  INTEGER NOT NULL              -- ms epoch; a lapsed lease is free for a peer to claim
+) STRICT;
 ```
 
 Notes:
@@ -544,6 +556,7 @@ Notes:
 - **WS dispatch is queued** (not synchronous) — `addToWebSocketQueue` still drives the existing `webSocketQueue` for actual transport. The durable queue is the *source of truth*; the in-memory WS queue is just a fan-out buffer that gets re-filled from SQLite on restart for `queued` rows.
 - **On WS disconnect** while a row is in flight, the worker checks whether its `agent:transmit:request` is still sitting unsent in the in-memory WS queue. If it is, the row is still `claimed`, the server provably never saw it — the request is removed and the row is returned to `queued` (`DurableQueue.requeue`, which also un-counts the attempt), so it retries on reconnect with zero duplicate-delivery risk. If the request already went out on the wire (the row is `inflight`), delivery is ambiguous (the server may have processed it and the response was lost) and the row is left to the response timeout → `failed` — same conservative stance as `recoverOnStartup`. The `claimed`/`inflight` split mirrors this same unsent-vs-sent distinction durably on disk.
 - **Backpressure**: while the WS is disconnected (`app.isLive() === false`), the worker loop idles without claiming rows — no dispatch is started, no response timer runs. Rows accumulate in `queued` — that's exactly the point. On `agent:connect:response` the app notifies every channel worker so draining starts immediately.
+- **Leader-gated**: the worker only runs while this process holds the dispatch lease, and it self-terminates (without settling its in-flight row) the moment a peer takes the lease. The mechanics — `getDispatchQueue()` at start, `QueueLeaseError` on every dispatch-class op, and the heartbeat-driven in-flight watchdog — are detailed in §9.2.
 
 ### 9.1 Wiring server responses back to rows
 
@@ -562,11 +575,102 @@ case 'agent:transmit:response': {
 
 `routeServerResponse` does a single indexed `SELECT id, channel_name FROM inbound_hl7_messages WHERE callback_id = ?`, finds the channel worker, and resolves its `pendingResponse`.
 
+### 9.2 Dispatch leadership (single-dispatcher lease)
+
+The durable queue is a single shared SQLite file, but during a **zero-downtime
+upgrade** the old and new agent processes both have that file open at once (the
+old one keeps its TCP listeners until the new one is ready — the overlap window).
+SQLite tolerates concurrent readers and serializes writers, so persistence is
+safe from any process. **Dispatch is not.** If two processes both claimed rows and
+drove them to the server, they would double-process upstream and fight over the
+same rows. Exactly one process may dispatch at a time.
+
+That one-dispatcher invariant is enforced by a lease, not by process identity, so
+it survives the overlap cleanly:
+
+- **`DispatchLeaseManager`** (`src/queue/dispatch-lease-manager.ts`) runs a
+  lightweight leader election over the single-row `_lease` table. `start()`
+  attempts `tryAcquireLease(holderId, ttl)` (an atomic conditional UPSERT: claim
+  if no row, or if the existing lease has lapsed). On success it fires
+  `onBecameLeader` and heartbeats every `DEFAULT_LEASE_HEARTBEAT_MS` (10 s) to
+  re-extend a `DEFAULT_LEASE_TTL_MS` (30 s) lease; on failure it retries every
+  `DEFAULT_LEASE_ACQUIRE_RETRY_MS` (2 s) as a follower until the lease frees up.
+  TTL ≫ heartbeat so an ordinary GC pause doesn't cost the lease, yet a dead agent
+  is taken over within tens of seconds.
+- **The lease gates dispatch only.** Intake (`enqueue` — a follower still persists
+  every inbound message and returns its commit ACK), maintenance (WAL checkpoint,
+  retention sweep), and diagnostics (stats) all run on any process with the file
+  open. Only **claiming and driving rows** is leader-restricted. This is the whole
+  point of the rename from the older generic `QueueLeaseManager`: the name now
+  states the scope.
+
+**Two levels of enforcement, optimistic + authoritative:**
+
+1. *Optimistic (cheap, in-memory):* `App.getDispatchQueue()` returns the queue
+   handle only while `isQueueLeader()`, else `undefined`. `getDurableQueue()` is
+   the ungated handle for intake/maintenance/diagnostics. `AgentHl7Channel`
+   starts a worker only when `getDispatchQueue()` is non-null;
+   `onBecameQueueLeader` calls back in to start workers the moment the lease is
+   acquired (whether at startup or on a later takeover).
+2. *Authoritative (data layer):* the manager binds its holder ID to the queue via
+   `DurableQueue.setLeaseHolder()`, and every dispatch-class mutation
+   (`claimNext`, `recordServerResponse`, `markProcessed`, `markRejected`,
+   `markFailed`, `requeue`) first calls `assertNotDemoted()`, which throws
+   **`QueueLeaseError`** when `isLeaseHeldByPeer()` (a `_lease` row owned by a
+   different holder). This is the load-bearing check: it makes a demoted process
+   physically unable to write dispatch state, regardless of what its in-memory
+   leader flag still believes.
+
+**There is no `onLostLeadership` callback.** Loss is not pushed down a chain of
+callbacks; it surfaces as a `QueueLeaseError` at the point of mutation and the
+worker tears *itself* down:
+
+- An **idle** worker sees it on its next `claimNext` poll.
+- A worker **wedged awaiting a server response** can't poll, so an in-flight
+  watchdog — `onHeartbeat`, tied to the App's existing ~10 s heartbeat emitter —
+  checks `isLeaseHeldByPeer()` and, if a dispatch is pending, cancels it with a
+  `QueueLeaseError` rather than waiting out the full response timeout.
+- A worker that catches `QueueLeaseError` anywhere in its loop stops the loop,
+  removes its heartbeat listener, and sets `running = false`.
+
+Crucially, a demoted worker **does not settle its in-flight row.** A non-leader
+must never write dispatch state, so the row is left exactly as it was
+(`claimed` if the request never hit the socket, `inflight` if it did) for the new
+leader's `recoverOnStartup` to reconcile (§10) — never silently retried. When this
+process later reacquires the lease, `AgentHl7Channel.maybeStartWorker` reaps the
+stopped worker (`isRunning() === false`) and starts a fresh one.
+
+```
+  ┌──────────────────────┐  tryAcquireLease / heartbeat / release
+  │ DispatchLeaseManager │───────────────►  _lease row (single writer of dispatch)
+  └─────────┬────────────┘                         ▲
+            │ onBecameLeader                        │ assertNotDemoted() reads it on
+            ▼                                       │ every dispatch-class mutation
+  App.onBecameQueueLeader: recoverOnStartup()       │
+            │ + start channel workers               │
+            ▼                                        │
+  ChannelQueueWorker.claimNext / markProcessed / … ─┘  → throws QueueLeaseError
+            │                                            once a peer owns the lease
+            └─ catches QueueLeaseError → stop loop, leave row for new leader
+```
+
+On graceful shutdown `App.stop()` releases the lease *before* closing the DB so a
+waiting peer takes over immediately instead of waiting out the TTL.
+
 ---
 
 ## 10. Crash Recovery
 
-`DurableQueue.recoverOnStartup()` runs once after migrations, before any channel starts:
+`DurableQueue.recoverOnStartup()` runs from `App.onBecameQueueLeader` — i.e. the
+instant this process acquires the dispatch lease (§9.2), before its channel
+workers start claiming. Gating it on leadership is what makes it safe: it is the
+authoritative single-writer reconciliation of rows the *previous* dispatcher left
+mid-flight, so it must run only when no peer can still be dispatching. For a
+normally-started agent that is startup; for a process that takes over after an
+upgrade or a peer's death, it is the moment of takeover (and it fires again on any
+later re-acquisition — `recoverOnStartup` is idempotent). It also reconciles the
+in-flight row a *demoted* worker on this same process deliberately left behind
+when it stepped down (§9.2). The reconciliation:
 
 ```sql
 -- 1. Any `inflight` row is ambiguous — the request reached the wire but we never
@@ -676,23 +780,27 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 ## 13. Code Changes (file-by-file)
 
 **New:**
-- `packages/agent/src/queue/types.ts` — `MessageState`, `InboundRow`, etc.
-- `packages/agent/src/queue/schema.ts` — DDL + `MIGRATIONS`.
-- `packages/agent/src/queue/durable-queue.ts` — `DurableQueue` class (opens DB, prepared statements, all CRUD).
+- `packages/agent/src/queue/types.ts` — `MessageState`, `InboundRow`, `QueueError`, `QueueLeaseError`, etc.
+- `packages/agent/src/queue/schema.ts` — DDL + `MIGRATIONS` (incl. the `_lease` table).
+- `packages/agent/src/queue/durable-queue.ts` — `DurableQueue` class (opens DB, prepared statements, all CRUD, lease primitives + the `assertNotDemoted` dispatch gate).
 - `packages/agent/src/queue/worker.ts` — `ChannelQueueWorker`.
+- `packages/agent/src/queue/dispatch-lease-manager.ts` — `DispatchLeaseManager` (single-dispatcher leader election; §9.2).
 - `packages/agent/src/queue/retention.ts` — `RetentionSweeper`.
 - `packages/agent/src/queue/durable-queue.test.ts` — unit tests (see §14).
 - `packages/agent/src/queue/worker.test.ts` — worker behavior tests.
+- `packages/agent/src/queue/dispatch-lease-manager.test.ts` — leader-election tests.
 - `packages/agent/src/queue/retention.test.ts` — retention/purge tests.
 
 **Modified:**
 - `packages/agent/src/app.ts` —
   - On construction, open `DurableQueue` if `durableQueue` setting is on.
+  - Start a `DispatchLeaseManager`; `onBecameQueueLeader` runs `recoverOnStartup` and brings up channel workers (§9.2). `isQueueLeader()` reads the manager.
+  - Expose `getDurableQueue()` (ungated handle, for intake/maintenance/diagnostics) vs `getDispatchQueue()` (leader-gated, for the worker-start path).
   - In WS message handler, route `agent:transmit:response` through the worker first (§9.1).
-  - On `stop()`, drain workers, close DB, close retention sweeper.
+  - On `stop()`, drain workers, release the lease *before* closing the DB, close retention sweeper.
   - In `reloadConfig`, propagate `queueDbPath`, retention settings, etc.
 - `packages/agent/src/hl7.ts` —
-  - `AgentHl7Channel.start()` instantiates a `ChannelQueueWorker`; `stop()` drains it.
+  - `AgentHl7Channel.start()` instantiates a `ChannelQueueWorker`; `stop()` drains it. `maybeStartWorker()` is leader-gated on `getDispatchQueue()` and reaps a worker that stepped down (`!isRunning()`) so a later re-acquisition starts a fresh one.
   - `configureHl7ServerAndConnections()` leaves each `Hl7Connection`'s `enhancedMode` unset (via `setEnhancedMode(undefined)`) when `app.queue` exists, suppressing the library's auto-ACK; the channel keeps the real mode for `getEnhancedMode()`.
   - Adds the private `sendCommitAck` / `sendCommitNack` helpers (commit-ACK code `NackCommitCode`).
   - Parse new `duplicateBehavior` query param (default `idempotent`).
@@ -727,6 +835,13 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 - WS disconnect with the transmit request still unsent → row requeued (attempt un-counted); after the request was sent → left to the response timeout → `failed`.
 - Source ACK send fails / throws (`sendToRemote` returns false) → row stays `processed` with ack_outcome `undelivered` (NOT a Bot-leg error); loop continues.
 - Worker stop drains in-flight (waits for pending deferred to settle or timeout, then stops claiming).
+- Peer steals the lease while the worker is **idle** → its next `claimNext` throws `QueueLeaseError`, the worker stops on its own (`isRunning()` goes false), and a row enqueued after the steal is never claimed (§9.2).
+- Peer steals the lease while a dispatch is **wedged** awaiting a response → the heartbeat-driven in-flight watchdog cancels it well before the response timeout, and the worker leaves the row unsettled (`claimed`/`inflight`) for the new leader (§9.2).
+
+`dispatch-lease-manager.test.ts`:
+- Acquires the lease on start and fires `onBecameLeader`; a second manager waits as follower until the first releases / its lease lapses, then takes over.
+- Heartbeat extends the lease beyond its initial TTL; `stop()` releases immediately so a peer can acquire without waiting out the TTL; `stop()` on a non-leader is idempotent.
+- Losing the lease mid-run drops to follower and reacquires once the peer's lease lapses (there is no lost-leadership callback — loss is enforced at the data layer via `QueueLeaseError`).
 
 `retention.test.ts`:
 - Time-based deletion of fully-done `processed` rows; spares `failed` AND `processed`+`undelivered`.
@@ -746,6 +861,8 @@ Extend `packages/agent/src/hl7.test.ts`:
 - Simulate process restart mid-flight: stop the App while a row is `inflight`, restart with same DB path, assert it surfaces as `failed` (interrupted) and queued ones complete; a row left `claimed` (unsent) instead requeues and re-dispatches.
 - ACK delivery failure: Bot returns 2xx but the source connection has closed → row is `processed`+`undelivered`, never re-dispatched (upstream hit exactly once); a retransmit replays the stored ACK and flips it to `delivered`.
 - Duplicate MSH.10 in both modes.
+- Leadership handoff (graceful): the leader `App.stop()` drains its workers (settling in-flight rows to `failed`/`worker-stopped`) and only then releases the lease; a waiting peer takes over.
+- Loss of leadership mid-run (ungraceful): yank the lease from a still-running leader with a row wedged in flight → it stops driving the queue without settling that row (left `inflight`), leaves the rest `queued`, and the new owner's `recoverOnStartup` reconciles the abandoned row to `failed`/`interrupted` (§9.2, §10).
 
 ### 14.3 Manual test plan
 
