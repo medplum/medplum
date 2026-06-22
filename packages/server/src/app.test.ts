@@ -304,12 +304,18 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
-  test.skip('Preflight max age', async () => {
+  test('Preflight max age', async () => {
     const app = express();
-    const res = await request(app).options('/');
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const res = await request(app)
+      .options('/fhir/R4/Patient')
+      .set('Origin', 'http://localhost:3000')
+      .set('Access-Control-Request-Method', 'GET');
     expect(res.status).toBe(204);
-    expect(res.header['access-control-max-age']).toBe('86400');
-    expect(res.header['cache-control']).toBe('public, max-age=86400');
+    expect(res.header['access-control-max-age']).toBe('600');
+    expect(res.header['cache-control']).toBe('no-store, no-cache, must-revalidate');
+    expect(await shutdownApp()).toBeUndefined();
   });
 
   test('Server rate limit', async () => {
