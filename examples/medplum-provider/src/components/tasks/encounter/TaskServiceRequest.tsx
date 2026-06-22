@@ -22,7 +22,7 @@ const SNOMED_LAB_PROCEDURE_CODE = '108252007';
 export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element => {
   const { task } = props;
   const medplum = useMedplum();
-  const serviceRequest = useResource(task.focus);
+  const serviceRequest = useResource(task.focus) as ServiceRequest | undefined;
   const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
   const [labServiceRequest, setLabServiceRequest] = useState<ServiceRequest | undefined>(undefined);
   const [performingLab, setPerformingLab] = useState<LabOrganization | undefined>(undefined);
@@ -55,7 +55,10 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
 
   useEffect(() => {
     const fetchServiceRequest = async (): Promise<void> => {
-      const serviceRequest = await medplum.readReference(task.focus);
+      if (!task.focus) {
+        return;
+      }
+      const serviceRequest = await medplum.readReference(task.focus as Reference<ServiceRequest>);
       setLabServiceRequest(serviceRequest);
     };
     fetchServiceRequest().catch(showErrorNotification);

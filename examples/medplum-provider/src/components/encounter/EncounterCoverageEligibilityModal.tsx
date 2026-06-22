@@ -176,7 +176,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
       const savedRequest = await medplum.createResource(requestBody);
       setLatestRequest(savedRequest);
       try {
-        await medplum.executeBot(eligibilityBot.id, savedRequest, 'application/fhir+json');
+        await medplum.executeBot(eligibilityBot.id as string, savedRequest, 'application/fhir+json');
       } catch (err) {
         let errorMessage: string | undefined;
         try {

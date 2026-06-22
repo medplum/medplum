@@ -76,7 +76,7 @@ export function GetStartedPage(): JSX.Element {
     setImportingVisit(true);
     try {
       // The visit bundle is already a transaction bundle
-      const result = await medplum.executeBatch(visitBundleData);
+      const result = await medplum.executeBatch(visitBundleData as Bundle);
 
       const resourceCount =
         result.entry?.filter((entry: BundleEntry) => entry.response?.status?.startsWith('2')).length || 0;

@@ -69,12 +69,12 @@ export function Profile(): JSX.Element | null {
                 <TextInput
                   label="First Name"
                   name="givenName"
-                  defaultValue={formatGivenName(profile.name?.[0])}
+                  defaultValue={formatGivenName(profile.name?.[0] as HumanName)}
                 />
                 <TextInput
                   label="Last Name"
                   name="familyName"
-                  defaultValue={formatFamilyName(profile.name?.[0])}
+                  defaultValue={formatFamilyName(profile.name?.[0] as HumanName)}
                 />
                 <NativeSelect
                   label="Gender"

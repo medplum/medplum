@@ -10,7 +10,7 @@ import { InfoSection } from '../../components/InfoSection';
 export function ActionItem(): JSX.Element {
   const medplum = useMedplum();
   const { itemId } = useParams();
-  const resource: CarePlan = medplum.readResource('CarePlan', itemId).read();
+  const resource: CarePlan = medplum.readResource('CarePlan', itemId as string).read();
 
   return (
     <Box p="xl">

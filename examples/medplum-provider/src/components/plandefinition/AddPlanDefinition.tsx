@@ -50,7 +50,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
     }
 
     try {
-      await medplum.post(medplum.fhirUrl('PlanDefinition', selectedPlanDefinition.id, '$apply'), {
+      await medplum.post(medplum.fhirUrl('PlanDefinition', selectedPlanDefinition.id as string, '$apply'), {
         resourceType: 'Parameters',
         parameter: [
           {

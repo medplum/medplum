@@ -56,14 +56,14 @@ function createMockErrorResponse(status: number, message: string): Response {
 }
 
 describe('sendToBotStreaming', () => {
-  let mockMedplum: Partial<MedplumClient>;
+  let mockMedplum: MedplumClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockMedplum = {
       getAccessToken: vi.fn().mockReturnValue('mock-token'),
       fhirUrl: vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4/Bot/$execute')),
-    };
+    } as unknown as MedplumClient;
   });
 
   const botId = {
@@ -101,7 +101,7 @@ describe('sendToBotStreaming', () => {
   test('throws error when bot execution returns 404', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockErrorResponse(404, 'Bot not found'));
 
-    await expect(sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', vi.fn())).rejects.toThrow(
+    await expect(sendToBotStreaming(mockMedplum, botId, messages, 'gpt-4o', vi.fn())).rejects.toThrow(
       'Bot execution failed: 404 - Bot not found'
     );
   });
@@ -109,7 +109,7 @@ describe('sendToBotStreaming', () => {
   test('throws error when fetch fails', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockErrorResponse(500, 'Internal Server Error'));
 
-    await expect(sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', vi.fn())).rejects.toThrow(
+    await expect(sendToBotStreaming(mockMedplum, botId, messages, 'gpt-4o', vi.fn())).rejects.toThrow(
       'Bot execution failed: 500 - Internal Server Error'
     );
   });
@@ -122,7 +122,7 @@ describe('sendToBotStreaming', () => {
     Object.defineProperty(mockResponse, 'body', { value: null });
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(mockResponse);
 
-    await expect(sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', vi.fn())).rejects.toThrow(
+    await expect(sendToBotStreaming(mockMedplum, botId, messages, 'gpt-4o', vi.fn())).rejects.toThrow(
       'No response body'
     );
   });
