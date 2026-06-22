@@ -741,4 +741,3 @@ function PatientContextBubble({ patient }: { patient: Patient | Reference<Patien
     </div>
   );
 }
-

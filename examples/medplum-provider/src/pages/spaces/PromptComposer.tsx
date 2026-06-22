@@ -10,9 +10,9 @@ import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import type { SpaceModelOption } from '../../utils/spaceModels';
-import classes from './PromptComposer.module.css';
 import { OpenAILogo } from './OpenAILogo';
 import { PatientPicker } from './PatientPicker';
+import classes from './PromptComposer.module.css';
 
 type InputMode = 'idle' | 'voice';
 
