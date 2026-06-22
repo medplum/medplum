@@ -21,7 +21,7 @@ export function ResourcePage(): JSX.Element | null {
   useEffect(() => {
     if (resourceType && id) {
       medplum
-        .readResource(resourceType, id)
+        .readResource(resourceType as ResourceType, id)
         .then(setResource)
         .catch(console.error);
     }
