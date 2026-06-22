@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { HumanName } from '@medplum/fhirtypes';
-import { formatHumanName, getSimplePhone } from './cms1500pdf';
+import { formatDiagnosisPointers, formatHumanName, getSimplePhone } from './cms1500pdf';
 
 describe('CMS 1500 PDF Utils', () => {
   test('formats full name with middle name', () => {
@@ -85,5 +85,27 @@ describe('CMS 1500 PDF Utils', () => {
 
   test('removes standalone 1 prefix from the beginning of phone numbers', () => {
     expect(getSimplePhone('11234567890')).toBe('1234567890');
+  });
+
+  test('formats a single diagnosis pointer as a letter', () => {
+    expect(formatDiagnosisPointers([1])).toBe('A');
+  });
+
+  test('formats multiple diagnosis pointers with no separators (NUCC)', () => {
+    expect(formatDiagnosisPointers([1, 2])).toBe('AB');
+    expect(formatDiagnosisPointers([2, 4])).toBe('BD');
+  });
+
+  test('maps the 12th pointer to L (CMS-1500 Box 21 supports A-L)', () => {
+    expect(formatDiagnosisPointers([12])).toBe('L');
+  });
+
+  test('returns an empty string when there are no pointers', () => {
+    expect(formatDiagnosisPointers(undefined)).toBe('');
+    expect(formatDiagnosisPointers([])).toBe('');
+  });
+
+  test('ignores out-of-range pointers', () => {
+    expect(formatDiagnosisPointers([0, 1, 27])).toBe('A');
   });
 });
