@@ -175,6 +175,7 @@ export class DurableQueue {
   private readonly releaseLeaseStmt: StatementSync;
   private readonly getLeaseStmt: StatementSync;
   private readonly checkpointStmt: StatementSync;
+  private readonly dbSizeBytesStmt: StatementSync;
 
   constructor(db: DatabaseSync, options: DurableQueueOptions) {
     this.db = db;
@@ -271,6 +272,11 @@ export class DurableQueue {
     // heartbeat tick and every retention sweep, so re-compiling it per call would
     // leak GC-finalised statement objects proportional to heartbeat frequency.
     this.checkpointStmt = this.db.prepare(CHECKPOINT_WAL);
+
+    // Prepared once like the rest — the retention sweeper calls getDbSizeBytes()
+    // in a tight loop while purging under size pressure, so re-compiling it per
+    // call would leak GC-finalised statement objects proportional to sweep work.
+    this.dbSizeBytesStmt = this.db.prepare(DB_SIZE_BYTES);
   }
 
   /**
@@ -975,7 +981,7 @@ export class DurableQueue {
    * `page_count * page_size`. Used by the retention sweeper.
    */
   getDbSizeBytes(): number {
-    const row = this.db.prepare(DB_SIZE_BYTES).get() as { bytes: number } | undefined;
+    const row = this.dbSizeBytesStmt.get() as { bytes: number } | undefined;
     return row?.bytes ?? 0;
   }
 
