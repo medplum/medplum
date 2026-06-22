@@ -183,7 +183,7 @@ async function checkReferencesForDelete(repo: Repository, resource: WithId<Resou
   const results = await repo.executeSql<{ resourceId: string }>(checkForCriticalRefs, {
     mode: DatabaseMode.WRITER,
     operation: 'read',
-    resourceTypes: ['ProjectMembership', resource.resourceType],
+    resourceTypes: ['ProjectMembership'],
     source: 'precommit.checkReferencesForDelete',
   });
   if (results.length) {

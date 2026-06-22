@@ -245,7 +245,7 @@ async function includeInExpansion(
   const db = getAuthenticatedContext().repo.getDatabaseClient({
     mode: DatabaseMode.READER,
     operation: 'read',
-    resourceTypes: ['CodeSystem'],
+    resourceTypes: ['CodeSystem'], // used on non resource type tables derived from CodeSystem, like Coding and CodeSystem_Property
     source: 'expand.includeInExpansion',
   });
   await hydrateCodeSystemProperties(db, codeSystem);

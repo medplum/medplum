@@ -51,7 +51,7 @@ export class ResourceCap {
 
     let currentStatus = await this.limiter.get(this.projectKey);
     if (!currentStatus) {
-      const repo = await getRepoForLogin(this.authState, true);
+      using repo = await getRepoForLogin(this.authState, true);
       const subqueries = countedResourceTypes.map((rt) =>
         new SelectQuery(rt).raw(`COUNT(*)::int as "count"`).where('projectId', '=', this.projectKey)
       );
