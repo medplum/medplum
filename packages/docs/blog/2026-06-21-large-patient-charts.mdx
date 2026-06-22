@@ -1,0 +1,53 @@
+---
+slug: large-patient-charts
+title: 'Large Patient Charts'
+authors: cody
+tags: [fhir]
+---
+
+# Can FHIR Scale? The Large Patient Chart Edition
+
+There's a piece of conventional wisdom in health tech that won't die: FHIR is fine for interoperability, but too slow and bloated for real-time clinical apps.
+
+The skepticism isn't unreasonable. FHIR resources can be verbose, real charts are messy, and clinical workflows don't forgive much. A physician who opens a chart and watches a spinner for five seconds has already been let down by the architecture.
+
+{/* truncate */}
+
+We've benchmarked Medplum's performance before, mostly around throughput — can a FHIR server handle millions of small requests at once. A customer recently pushed us on the inverse question, which turns out to be harder: can a FHIR-native system handle one enormous chart?
+
+## The test case
+
+We built the largest patient we could justify: a synthetic chart with roughly 131,000 FHIR resources. Tens of thousands of Observations, a multi-year longitudinal history, dozens of resource types all referencing each other. No real clinician will ever open a chart like this. That was the point — we wanted something pathological enough to surface whatever breaks.
+
+## Four ways to load a chart
+
+Most "FHIR is slow" complaints assume you have to pull the entire payload in one shot. You don't. We tested four approaches:
+
+- **Patient/$everything** — the standard FHIR operation for retrieving a full chart.
+- **Resource-type queries** — fetching Medications, Labs, and so on independently and in parallel.
+- **Recent-first loading** — load the last 30 days of clinically relevant data first, then hydrate the older history in the background.
+- **Full browser download** — a React demo that streams the entire chart into the app with a live progress bar.
+
+The recent-first strategy is the one that matters in practice. A doctor shouldn't be blocked on ten years of history before they can start working. Load what's actionable now, fill in the rest behind it, and the UI is usable almost immediately.
+
+## Results
+
+<div className="responsive-iframe-wrapper">
+  <iframe
+    src="https://www.youtube.com/embed/rdhEx6T8Qu0"
+    title="YouTube video player"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowFullScreen
+  ></iframe>
+</div>
+
+The full, unmitigated 131,000-resource chart downloaded into the browser in about five seconds. That's not a backend microbenchmark — it's a React app pulling the whole thing over the wire, progress bar and all. With progressive loading, the critical data was on screen in a fraction of that time.
+
+## FHIR isn't the bottleneck
+
+131,000 resources. Five seconds. In a browser.
+
+Speed isn't a property of the data standard — it comes from query strategy, indexing, pagination, streaming, and front-end design. Get those right and a FHIR-native architecture delivers the lightning-fast experience clinicians expect, on a fully open standard. You don't have to choose between interoperability and performance.
+
+Want to see it for yourself? [Try the demo](https://github.com/medplum/medplum-large-chart-demo) or [spin up a free Medplum project](https://app.medplum.com/register). The whole platform is open source at [github.com/medplum/medplum](https://github.com/medplum/medplum) — clone it, load your own monster chart, and time it.
