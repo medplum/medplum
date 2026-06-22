@@ -146,7 +146,6 @@ export class App {
   private lastHeartbeatSentTime: number = -1;
   private durableQueue: DurableQueue | undefined;
   private retentionSweeper: RetentionSweeper | undefined;
-  private queueCheckpointListener: (() => void) | undefined;
   // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
   // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
   // the PID before start()). An upgrading agent stays non-primary until it wins the PID from the
@@ -642,7 +641,6 @@ export class App {
     if (!args.durableQueueOn) {
       if (this.durableQueue) {
         this.log.info('durableQueue disabled — closing queue.');
-        this.removeQueueCheckpointListener();
         this.retentionSweeper?.stop();
         this.retentionSweeper = undefined;
         // close() stops the dispatch-lease loop and releases the lease before
@@ -665,15 +663,8 @@ export class App {
       }
     }
 
-    // Flush the WAL on every heartbeat tick (same idiom as ChannelStatsTracker /
-    // Hl7ClientPool GC). SQLite only attempts checkpoints piggybacked on commits,
-    // so once traffic stops nothing else would drain the WAL until the hourly
-    // sweep or close(). checkpointWalIfDirty() is a no-op on an idle queue.
-    if (!this.queueCheckpointListener) {
-      const queue = this.durableQueue;
-      this.queueCheckpointListener = () => queue.checkpointWalIfDirty();
-      this.heartbeatEmitter.addEventListener('heartbeat', this.queueCheckpointListener);
-    }
+    // (The WAL-checkpoint loop is owned by the queue itself — DurableQueue.open()
+    // starts it and close() tears it down. See DurableQueue.startCheckpointLoop.)
 
     // Start the dispatch-lease loop — it'll attempt acquisition immediately and,
     // on success, the callback runs recoverOnStartup() + brings up channel
@@ -698,14 +689,6 @@ export class App {
       sweepIntervalSecs: args.queueSweepIntervalSecs,
     });
     this.retentionSweeper.start();
-  }
-
-  /** Unsubscribes the WAL-checkpoint heartbeat listener, if registered. Idempotent. */
-  private removeQueueCheckpointListener(): void {
-    if (this.queueCheckpointListener) {
-      this.heartbeatEmitter.removeEventListener('heartbeat', this.queueCheckpointListener);
-      this.queueCheckpointListener = undefined;
-    }
   }
 
   /**
@@ -1154,7 +1137,6 @@ export class App {
 
     // Channels drain their own workers in stop() above, so by the time we get
     // here no worker is touching the DB and it's safe to tear down.
-    this.removeQueueCheckpointListener();
     if (this.retentionSweeper) {
       this.retentionSweeper.stop();
       this.retentionSweeper = undefined;

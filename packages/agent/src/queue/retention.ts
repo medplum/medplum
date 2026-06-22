@@ -49,8 +49,8 @@ export interface SweepResult {
  * Running periodically (not just on size pressure) keeps the DB tidy on agents
  * with low message volume, where size-driven sweeps would never fire.
  *
- * Fast WAL checkpointing between sweeps is NOT this class's job — the App runs
- * {@link DurableQueue.checkpointWalIfDirty} on every agent heartbeat tick.
+ * Fast WAL checkpointing between sweeps is NOT this class's job — the queue's own
+ * checkpoint loop runs {@link DurableQueue.checkpointWalIfDirty} periodically.
  */
 export class RetentionSweeper {
   private readonly queue: DurableQueue;

@@ -566,6 +566,43 @@ describe('DurableQueue', () => {
     expect(statSync(walPath).size).toBe(0);
   });
 
+  test('open() starts a recurring WAL-checkpoint loop and close() stops it', () => {
+    // The loop is deliberately NOT gated on the dispatch lease: this queue never
+    // acquires a lease (it stays a "follower"), yet its WAL still drains on the
+    // interval — which is the whole reason the loop can't ride on the lease timers.
+    vi.useFakeTimers();
+    const loopDir = mkdtempSync(join(tmpdir(), 'dq-ckpt-loop-'));
+    const loopPath = join(loopDir, 'queue.sqlite');
+    const walPath = `${loopPath}-wal`;
+    const loopQueue = DurableQueue.open({ path: loopPath, log: createMockLogger(), checkpointIntervalMs: 50 });
+    try {
+      // open()'s startup writes were already flushed; a fresh row re-dirties the WAL.
+      loopQueue.enqueue(makeEnqueueInput());
+      expect(statSync(walPath).size).toBeGreaterThan(0);
+
+      // The interval fires → the dirty WAL is folded back into the main DB file.
+      vi.advanceTimersByTime(50);
+      expect(statSync(walPath).size).toBe(0);
+
+      // It recurs — a later write drains on the next tick, not just the first one.
+      loopQueue.enqueue(makeEnqueueInput());
+      expect(statSync(walPath).size).toBeGreaterThan(0);
+      vi.advanceTimersByTime(50);
+      expect(statSync(walPath).size).toBe(0);
+
+      // close() must stop the loop: no further checkpoint tick fires afterward.
+      // (close() flushes via checkpointWal() directly, not checkpointWalIfDirty.)
+      const ckptSpy = vi.spyOn(loopQueue, 'checkpointWalIfDirty');
+      loopQueue.close();
+      vi.advanceTimersByTime(500);
+      expect(ckptSpy).not.toHaveBeenCalled();
+    } finally {
+      loopQueue.close();
+      vi.useRealTimers();
+      rmSync(loopDir, { recursive: true, force: true });
+    }
+  });
+
   test('checkpointWal reuses a prepared statement instead of re-compiling on every call', () => {
     // Regression: checkpointWal() ran on every heartbeat tick + retention sweep,
     // and used to call db.prepare() each time — leaking GC-finalised statement

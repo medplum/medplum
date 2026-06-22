@@ -66,6 +66,15 @@ export const DEFAULT_LEASE_HEARTBEAT_MS = 10_000;
  */
 export const DEFAULT_LEASE_ACQUIRE_RETRY_MS = 2_000;
 
+/**
+ * How often the queue folds its WAL back into the main DB file. SQLite only
+ * checkpoints piggybacked on commits, so once traffic stops nothing else would
+ * drain the WAL until the next retention sweep or close(); this loop bounds how
+ * far the main DB file can lag behind the last write. Matches the agent
+ * heartbeat cadence — the loop's former home, before the queue took ownership.
+ */
+export const DEFAULT_CHECKPOINT_INTERVAL_MS = 10_000;
+
 export interface DurableQueueOptions {
   /** Filesystem path to the SQLite DB file. */
   path: string;
@@ -79,6 +88,8 @@ export interface DurableQueueOptions {
   leaseHeartbeatMs?: number;
   /** Override the dispatch-lease acquire retry interval in ms. */
   leaseAcquireRetryMs?: number;
+  /** Override the WAL-checkpoint loop interval in ms. */
+  checkpointIntervalMs?: number;
 }
 
 /** Counts by lifecycle state — used by stats and the retention sweeper. */
@@ -144,10 +155,17 @@ export class DurableQueue {
   private onBecameLeader: (() => void) | undefined;
   // True when the WAL may contain frames not yet checkpointed into the main DB
   // file. SQLite only attempts checkpoints piggybacked on commits, so once
-  // traffic stops nothing would ever drain the WAL — the App polls this on every
-  // heartbeat tick via checkpointWalIfDirty(). Starts true because open() itself
-  // writes (pragmas, migrations, lease).
+  // traffic stops nothing would ever drain the WAL — the queue's own checkpoint
+  // loop (startCheckpointLoop) polls this via checkpointWalIfDirty(). Starts true
+  // because open() itself writes (pragmas, migrations, lease).
   private walDirty = true;
+
+  // WAL-checkpoint loop. Runs while the queue is open, INDEPENDENT of the
+  // dispatch lease: a follower still accepts intake writes (enqueue runs on any
+  // process with the file open), so WAL draining can't be gated on leadership the
+  // way the lease timers are. Started in open(), cleared in close().
+  private readonly checkpointIntervalMs: number;
+  private checkpointTimer: NodeJS.Timeout | undefined;
 
   // Prepared statements — created once at open(), reused for every call.
   // Names mirror the public methods that use them.
@@ -185,6 +203,7 @@ export class DurableQueue {
     this.leaseTtlMs = options.leaseTtlMs ?? DEFAULT_LEASE_TTL_MS;
     this.leaseHeartbeatMs = options.leaseHeartbeatMs ?? DEFAULT_LEASE_HEARTBEAT_MS;
     this.leaseAcquireRetryMs = options.leaseAcquireRetryMs ?? DEFAULT_LEASE_ACQUIRE_RETRY_MS;
+    this.checkpointIntervalMs = options.checkpointIntervalMs ?? DEFAULT_CHECKPOINT_INTERVAL_MS;
 
     // Single-writer, durable-across-crash, WAL-friendly settings (§5).
     // Picked for HL7 inbound rates and the durability contract we owe the sender:
@@ -269,8 +288,8 @@ export class DurableQueue {
     this.getLeaseStmt = this.db.prepare(GET_LEASE);
 
     // Prepared once like every other statement — checkpointWal() runs on every
-    // heartbeat tick and every retention sweep, so re-compiling it per call would
-    // leak GC-finalised statement objects proportional to heartbeat frequency.
+    // checkpoint-loop tick and every retention sweep, so re-compiling it per call
+    // would leak GC-finalised statement objects proportional to that frequency.
     this.checkpointStmt = this.db.prepare(CHECKPOINT_WAL);
 
     // Prepared once like the rest — the retention sweeper calls getDbSizeBytes()
@@ -305,6 +324,10 @@ export class DurableQueue {
         // ignore
       }
     }
+    // Start the WAL-checkpoint loop here (not in the constructor) so a bare
+    // `new DurableQueue(db, opts)` — used by unit tests — stays timer-free; the
+    // production lifecycle is open() … close(), and close() clears it.
+    queue.startCheckpointLoop();
     return queue;
   }
 
@@ -314,6 +337,9 @@ export class DurableQueue {
       return;
     }
     this.closed = true;
+    // Stop the WAL-checkpoint loop — the final flush below covers shutdown, and a
+    // checkpointWalIfDirty() tick is a no-op once `closed` is set anyway.
+    this.stopCheckpointLoop();
     // Release the lease BEFORE closing the DB so a waiting peer can take over
     // immediately rather than waiting for our TTL to expire. Idempotent and a
     // no-op when the dispatch lease was never started.
@@ -353,9 +379,10 @@ export class DurableQueue {
 
   /**
    * Runs {@link DurableQueue.checkpointWal} only when writes have landed since
-   * the last completed checkpoint. Called by the App on every agent heartbeat
-   * tick so the WAL drains shortly after traffic stops instead of waiting for
-   * the next retention sweep or for close(). A no-op on an idle queue.
+   * the last completed checkpoint. Driven by the queue's own checkpoint loop
+   * (see {@link DurableQueue.startCheckpointLoop}) every `checkpointIntervalMs`,
+   * so the WAL drains shortly after traffic stops instead of waiting for the next
+   * retention sweep or for close(). A no-op on an idle queue.
    * @returns True when a checkpoint ran and fully completed.
    */
   checkpointWalIfDirty(): boolean {
@@ -363,6 +390,31 @@ export class DurableQueue {
       return false;
     }
     return this.checkpointWal();
+  }
+
+  /**
+   * Starts the periodic WAL-checkpoint loop. Idempotent. Called once by
+   * {@link DurableQueue.open}; runs regardless of dispatch leadership (see the
+   * `checkpointTimer` field) and is torn down by {@link DurableQueue.close}.
+   */
+  private startCheckpointLoop(): void {
+    if (this.checkpointTimer) {
+      return;
+    }
+    this.checkpointTimer = setInterval(() => this.checkpointWalIfDirty(), this.checkpointIntervalMs);
+    // Don't keep the event loop alive solely for housekeeping — same as the
+    // dispatch-lease timers.
+    if (typeof this.checkpointTimer.unref === 'function') {
+      this.checkpointTimer.unref();
+    }
+  }
+
+  /** Stops the WAL-checkpoint loop. Idempotent and a no-op when never started. */
+  private stopCheckpointLoop(): void {
+    if (this.checkpointTimer) {
+      clearInterval(this.checkpointTimer);
+      this.checkpointTimer = undefined;
+    }
   }
 
   /** @returns Filesystem path of the underlying SQLite file. */
