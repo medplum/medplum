@@ -58,7 +58,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
 
   const handleDeleteTask = async (deletedTask: Task): Promise<void> => {
     try {
-      await medplum.deleteResource('Task', deletedTask.id as string);
+      await medplum.deleteResource('Task', deletedTask.id);
       onDeleteTask?.(deletedTask);
     } catch (error) {
       showErrorNotification(error);

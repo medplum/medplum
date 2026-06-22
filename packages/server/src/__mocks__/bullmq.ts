@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
 export class Queue {
@@ -8,20 +9,20 @@ export class Queue {
     name: jobName,
     data: jobData,
     opts: options,
-  }));
-  obliterate = vi.fn().mockResolvedValue(undefined);
-  upsertJobScheduler = vi.fn().mockResolvedValue(undefined);
-  removeJobScheduler = vi.fn().mockResolvedValue(undefined);
-  close = vi.fn().mockResolvedValue(undefined);
-  getWaitingCount = vi.fn().mockResolvedValue(0);
-  getDelayedCount = vi.fn().mockResolvedValue(0);
+  })) as Mock;
+  obliterate = vi.fn().mockResolvedValue(undefined) as Mock;
+  upsertJobScheduler = vi.fn().mockResolvedValue(undefined) as Mock;
+  removeJobScheduler = vi.fn().mockResolvedValue(undefined) as Mock;
+  close = vi.fn().mockResolvedValue(undefined) as Mock;
+  getWaitingCount = vi.fn().mockResolvedValue(0) as Mock;
+  getDelayedCount = vi.fn().mockResolvedValue(0) as Mock;
 }
 export const Worker = vi.fn().mockImplementation(function Worker() {
   return {
     on: vi.fn().mockReturnThis(),
     close: vi.fn().mockResolvedValue(undefined),
   };
-});
+}) as Mock;
 export const DelayedError = class DelayedError extends Error {};
 export const Job = vi.fn().mockImplementation(function Job(
   _queue: unknown,
@@ -40,5 +41,5 @@ export const Job = vi.fn().mockImplementation(function Job(
     updateProgress: vi.fn().mockResolvedValue(undefined),
     updateData: vi.fn().mockResolvedValue(undefined),
   };
-});
+}) as Mock;
 export class UnrecoverableError extends Error {}

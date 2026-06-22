@@ -112,7 +112,7 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
     }
 
     try {
-      await medplum.deleteResource('Condition', condition.id as string);
+      await medplum.deleteResource('Condition', condition.id);
       setConditions(conditions?.filter((c) => c.id !== condition.id));
       const updatedDiagnosis = encounter.diagnosis?.filter(
         (d) => d.condition?.reference !== getReferenceString(condition)

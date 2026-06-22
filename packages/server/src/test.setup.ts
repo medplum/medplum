@@ -65,7 +65,7 @@ const { withAppLifecycle } = vi.hoisted(() => {
 // Share one `node-fetch` mock between setup and test files so `subscription.ts` and
 // tests configure the same `vi.fn()` instance.
 const { mockFetch } = vi.hoisted(() => ({
-  mockFetch: vi.fn(),
+  mockFetch: vi.fn() as Mock,
 }));
 
 vi.mock('node-fetch', () => ({ default: mockFetch }));

@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
-export const mockUpload = vi.fn().mockResolvedValue(undefined);
-export const mockUploadStream = vi.fn().mockResolvedValue(undefined);
-export const mockDownload = vi.fn();
-export const mockBeginCopyFromURL = vi.fn().mockResolvedValue({ pollUntilDone: vi.fn().mockResolvedValue({}) });
+export const mockUpload = vi.fn().mockResolvedValue(undefined) as Mock;
+export const mockUploadStream = vi.fn().mockResolvedValue(undefined) as Mock;
+export const mockDownload = vi.fn() as Mock;
+export const mockBeginCopyFromURL = vi.fn().mockResolvedValue({ pollUntilDone: vi.fn().mockResolvedValue({}) }) as Mock;
 export const mockGenerateUserDelegationSasUrl = vi
   .fn()
-  .mockReturnValue('https://example.blob.core.windows.net/container/file?sig=mockSasToken');
-export const mockGetUserDelegationKey = vi.fn().mockResolvedValue({ value: 'mock-delegation-key' });
+  .mockReturnValue('https://example.blob.core.windows.net/container/file?sig=mockSasToken') as Mock;
+export const mockGetUserDelegationKey = vi.fn().mockResolvedValue({ value: 'mock-delegation-key' }) as Mock;
 
 /**
  * Mock implementation of BlobSASPermissions (required for class instantiation)
@@ -63,4 +64,4 @@ export const BlobServiceClient = vi.fn(function () {
       })),
     })),
   };
-});
+}) as Mock;

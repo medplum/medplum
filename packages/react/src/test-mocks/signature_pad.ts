@@ -8,6 +8,7 @@
  * instance methods mirror what SignatureInput calls so tests can assert setup and
  * simulate strokes by invoking the handler passed to addEventListener('endStroke').
  */
+import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
 const SignaturePad = vi.fn(function () {
@@ -18,6 +19,6 @@ const SignaturePad = vi.fn(function () {
     removeEventListener: vi.fn(),
     toDataURL: vi.fn(() => 'data:image/png;base64,signature-data'),
   };
-});
+}) as Mock;
 
 export default SignaturePad;

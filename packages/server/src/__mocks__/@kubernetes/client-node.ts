@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
 export const KubeConfig = vi.fn().mockImplementation(() => ({
@@ -8,15 +9,15 @@ export const KubeConfig = vi.fn().mockImplementation(() => ({
     createNamespacedCustomObject: vi.fn().mockResolvedValue({}),
     patchNamespacedCustomObject: vi.fn().mockResolvedValue({}),
   }),
-}));
+})) as Mock;
 
 export const CustomObjectsApi = vi.fn().mockImplementation(() => ({
   createNamespacedCustomObject: vi.fn().mockResolvedValue({}),
   patchNamespacedCustomObject: vi.fn().mockResolvedValue({}),
-}));
+})) as Mock;
 
 export const PatchStrategy = {
   ServerSideApply: 'patch-apply',
 };
 
-export const setHeaderOptions = vi.fn().mockReturnValue({});
+export const setHeaderOptions = vi.fn().mockReturnValue({}) as Mock;

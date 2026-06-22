@@ -30,7 +30,7 @@ export function ManageClinicPage(): JSX.Element {
 
   useEffect(() => {
     const loadOrganization = async (): Promise<void> => {
-      const org = await medplum.readResource('Organization', id as string);
+      const org = await medplum.readResource('Organization', id);
       setOrganization(org);
     };
 

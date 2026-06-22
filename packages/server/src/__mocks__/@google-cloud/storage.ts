@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { PassThrough } from 'stream';
+import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 
 /**
@@ -50,4 +51,4 @@ export const Storage = vi.fn(function () {
       })),
     })),
   };
-});
+}) as Mock;

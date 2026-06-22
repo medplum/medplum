@@ -78,7 +78,7 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse(chunks));
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
+    const result = await sendToBotStreaming(mockMedplum, botId, messages, 'gpt-4o', (chunk) =>
       receivedChunks.push(chunk)
     );
 
@@ -90,7 +90,7 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockBufferedResponse('This is a buffered response'));
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
+    const result = await sendToBotStreaming(mockMedplum, botId, messages, 'gpt-4o', (chunk) =>
       receivedChunks.push(chunk)
     );
 
@@ -130,7 +130,7 @@ describe('sendToBotStreaming', () => {
   test('sends correct request headers and body', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockBufferedResponse('OK'));
 
-    await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', vi.fn());
+    await sendToBotStreaming(mockMedplum, botId, messages, 'gpt-4o', vi.fn());
 
     expect(fetchSpy).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https%3A%2F%2Fwww.medplum.com%2Fbots%7Ctest-bot',
@@ -166,7 +166,7 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response);
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
+    const result = await sendToBotStreaming(mockMedplum, botId, messages, 'gpt-4o', (chunk) =>
       receivedChunks.push(chunk)
     );
 
@@ -192,7 +192,7 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response);
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
+    const result = await sendToBotStreaming(mockMedplum, botId, messages, 'gpt-4o', (chunk) =>
       receivedChunks.push(chunk)
     );
 
@@ -219,7 +219,7 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response);
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
+    const result = await sendToBotStreaming(mockMedplum, botId, messages, 'gpt-4o', (chunk) =>
       receivedChunks.push(chunk)
     );
 
@@ -247,7 +247,7 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response);
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
+    const result = await sendToBotStreaming(mockMedplum, botId, messages, 'gpt-4o', (chunk) =>
       receivedChunks.push(chunk)
     );
 

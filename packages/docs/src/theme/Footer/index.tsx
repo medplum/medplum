@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import { ThemeClassNames, useThemeConfig } from '@docusaurus/theme-common';
-import { FooterColumnItem } from '@docusaurus/theme-common/lib/utils/useThemeConfig';
+import type { FooterColumnItem } from '@docusaurus/theme-common/lib/utils/useThemeConfig';
 import clsx from 'clsx';
-import { memo, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { memo } from 'react';
 import LogoSvg from '../logo.svg';
 import styles from './styles.module.css';
 

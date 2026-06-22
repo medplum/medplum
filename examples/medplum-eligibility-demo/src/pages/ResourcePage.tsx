@@ -33,7 +33,7 @@ export function ResourcePage(): JSX.Element | null {
     const fetchResource = async (): Promise<void> => {
       if (resourceType && id) {
         try {
-          const resourceData = await medplum.readResource(resourceType as ResourceType, id);
+          const resourceData = await medplum.readResource(resourceType, id);
           setResource(resourceData);
         } catch (error) {
           console.error(error);

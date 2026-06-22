@@ -27,7 +27,7 @@ export const TaskDetailsModal = (): JSX.Element => {
 
   useEffect(() => {
     const fetchTask = async (): Promise<void> => {
-      const task = await medplum.readResource('Task', taskId as string);
+      const task = await medplum.readResource('Task', taskId);
       setStatus(task.status);
       setTask(task);
       setDueDate(task.restriction?.period?.end);

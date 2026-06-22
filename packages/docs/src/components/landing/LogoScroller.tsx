@@ -1,4 +1,6 @@
-import { JSX } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { JSX } from 'react';
 import styles from './LogoScroller.module.css';
 
 export function LogoScroller(): JSX.Element {

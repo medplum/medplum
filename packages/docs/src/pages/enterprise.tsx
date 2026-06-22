@@ -16,7 +16,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react';
 import Layout from '@theme/Layout';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { CardContainer } from '../components/CardContainer';
 import { Container } from '../components/Container';
 import { ProfileCard } from '../components/ProfileCard';

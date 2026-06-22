@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import type { ColorMode } from '@docusaurus/theme-common';
 import { translate } from '@docusaurus/Translate';
 import useIsBrowser from '@docusaurus/useIsBrowser';
 import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react';
 import type { Props } from '@theme/ColorModeToggle';
 import clsx from 'clsx';
-import React, { type ReactNode } from 'react';
+import React from 'react';
+import type {ReactNode} from 'react';
 
 import styles from './styles.module.css';
 
