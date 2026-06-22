@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { AgentMessage, AgentTransmitResponse } from '@medplum/core';
-import { ContentType } from '@medplum/core';
+import { ContentType, TypedEventTarget } from '@medplum/core';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -36,6 +36,9 @@ function makeStubApp(options?: { live?: boolean }): {
   const stub = {
     agentId: 'agent-test',
     isLive: () => live,
+    // The worker ties its in-flight lease check to the App heartbeat; tests fire it
+    // by dispatching a 'heartbeat' event on this emitter.
+    heartbeatEmitter: new TypedEventTarget(),
     addToWebSocketQueue: (msg: AgentMessage) => {
       sent.push(msg);
     },
@@ -137,6 +140,79 @@ describe('ChannelQueueWorker', () => {
     for (const row of rows) {
       expect(queue.getById(row.id)?.state).toBe(MessageState.PROCESSED);
     }
+    await worker.stop();
+  });
+
+  test('steps down on its own when a peer steals the lease (idle: next claim throws)', async () => {
+    // Bind the queue to "us" and take the lease so the worker is the leader.
+    queue.setLeaseHolder('us');
+    expect(queue.tryAcquireLease('us', 60_000)).toBe(true);
+
+    const r1 = enqueueOne(queue, 'LD1');
+    const { app, sent } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      idlePollMs: 10,
+    });
+    worker.start();
+
+    // Drains the first row normally while we hold the lease.
+    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
+    worker.onServerResponse(makeResponse(r1.callbackId, 200));
+    await waitFor(() => queue.getById(r1.id)?.state === MessageState.PROCESSED);
+
+    // A peer steals the lease. The idle worker's next claimNext throws
+    // QueueLeaseError and it steps down on its own — no lost-leadership callback.
+    queue.releaseLease('us');
+    expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
+    await waitFor(() => !worker.isRunning(), 1000);
+
+    // A row enqueued after the steal is never claimed by the demoted worker.
+    const r2 = enqueueOne(queue, 'LD2');
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(queue.getById(r2.id)?.state).toBe(MessageState.QUEUED);
+    expect(sent.some((m) => (m as { callback?: string }).callback === r2.callbackId)).toBe(false);
+
+    await worker.stop();
+  });
+
+  test('in-flight lease check (on heartbeat) cancels a wedged dispatch without settling the row', async () => {
+    queue.setLeaseHolder('us');
+    expect(queue.tryAcquireLease('us', 60_000)).toBe(true);
+
+    const r1 = enqueueOne(queue, 'WD1');
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      idlePollMs: 10,
+      responseTimeoutMs: 60_000, // long — the heartbeat check, not the timeout, must end the wait
+    });
+    worker.start();
+
+    // Worker dispatches r1 and wedges awaiting a response that never comes.
+    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
+
+    // Peer steals the lease. A heartbeat tick fires the in-flight lease check, which
+    // cancels the wedged dispatch — well before the 60s response timeout.
+    queue.releaseLease('us');
+    expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
+    app.heartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
+    await waitFor(() => !worker.isRunning(), 1000);
+
+    // The demoted worker did NOT settle the row — it's left for the new owner's
+    // recoverOnStartup. (The stub app never calls markSent, so it's still `claimed`.)
+    expect(queue.getById(r1.id)?.state).toBe(MessageState.CLAIMED);
+
     await worker.stop();
   });
 

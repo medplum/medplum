@@ -136,6 +136,34 @@ export class QueueError extends Error {
   }
 }
 
+/**
+ * Thrown by a gated dispatch operation when a peer holds the queue lease — i.e.
+ * this process has been demoted and must stop driving the queue.
+ *
+ * This is control flow, NOT a dispatch failure: the worker catches it to tear
+ * itself down cleanly and must never settle a row from it (the new leader's
+ * `recoverOnStartup` reconciles whatever was left mid-flight). The lease check
+ * lives in {@link DurableQueue} (see `setLeaseHolder` / `isLeaseHeldByPeer`), so
+ * loss is detected at the point of mutation rather than pushed down through a
+ * chain of leadership callbacks.
+ */
+export class QueueLeaseError extends Error {
+  /** The holder this process believes it is (the one bound via `setLeaseHolder`). */
+  readonly localHolder: string | undefined;
+  /** The holder that actually owns the lease now (the peer that took over). */
+  readonly currentHolder: string | undefined;
+
+  constructor(localHolder: string | undefined, currentHolder: string | undefined) {
+    super(
+      `Queue lease held by a peer; this process is no longer leader ` +
+        `(local holder=${localHolder ?? 'unset'}, current holder=${currentHolder ?? 'none'})`
+    );
+    this.name = 'QueueLeaseError';
+    this.localHolder = localHolder;
+    this.currentHolder = currentHolder;
+  }
+}
+
 /** Per-channel intake policy for duplicate MSH.10 collisions. See §7 of the plan. */
 export const DuplicateBehavior = {
   REJECT: 'reject',

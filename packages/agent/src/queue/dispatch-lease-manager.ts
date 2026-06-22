@@ -27,7 +27,7 @@ export const DEFAULT_LEASE_HEARTBEAT_MS = 10_000;
  */
 export const DEFAULT_LEASE_ACQUIRE_RETRY_MS = 2_000;
 
-export interface QueueLeaseManagerOptions {
+export interface DispatchLeaseManagerOptions {
   queue: DurableQueue;
   log: ILogger;
   /** Override the per-process holder ID. Defaults to a fresh UUID. */
@@ -41,13 +41,17 @@ export interface QueueLeaseManagerOptions {
 }
 
 /**
- * Lightweight leader election over the durable queue.
+ * Lightweight leader election for the durable queue's DISPATCH path.
  *
- * One agent process per durable-queue file may run the queue worker and the
- * `recoverOnStartup` sweep at a time. This is the load-bearing primitive that
- * makes zero-downtime upgrades safe: during the overlap window where the old
- * and new agent processes both have the SQLite file open, only the leaseholder
- * acts on the data; the non-leader waits.
+ * The lease gates *dispatch only* — claiming rows and driving them to the server
+ * (the worker + `recoverOnStartup`). It deliberately does NOT gate intake
+ * (followers still persist inbound messages via `enqueue`), maintenance (WAL
+ * checkpoint, retention sweep), or diagnostics (stats): those are valid on any
+ * process with the queue file open. Exactly one process may dispatch at a time,
+ * which is the load-bearing primitive that makes zero-downtime upgrades safe:
+ * during the overlap window where the old and new agent processes both have the
+ * SQLite file open, only the leaseholder claims/sends rows; the non-leader keeps
+ * accepting and persisting inbound traffic but does not dispatch.
  *
  * Protocol:
  *  - `start(onBecameLeader)` tries to acquire the lease immediately. If it
@@ -57,15 +61,19 @@ export interface QueueLeaseManagerOptions {
  *    succeeds. Each successful acquisition (including the first) fires the
  *    callback exactly once per "run" of leadership.
  *  - A failed heartbeat means a peer stole the lease (we slept too long). We
- *    log, fire `onLostLeadership` so the caller can drain its workers, and
- *    switch back to follower mode; if we recover, a future acquire will fire
- *    `onBecameLeader` again.
+ *    log and switch back to follower mode; if we recover, a future acquire will
+ *    fire `onBecameLeader` again. There is deliberately NO lost-leadership
+ *    callback: loss is enforced at the data layer instead — the queue's dispatch
+ *    ops throw {@link QueueLeaseError} once a peer holds the lease (the holder is
+ *    bound via {@link DurableQueue.setLeaseHolder} in the constructor), so the
+ *    worker self-detects and drains without this class pushing an event down a
+ *    chain of callbacks.
  *  - `stop()` releases the lease (only if we still hold it) and clears timers.
  *
  * The class is deliberately stateless about what the leader *does* — the App
  * threads the `recoverOnStartup` call and worker bring-up through the callback.
  */
-export class QueueLeaseManager {
+export class DispatchLeaseManager {
   private readonly queue: DurableQueue;
   private readonly log: ILogger;
   private readonly holderId: string;
@@ -77,30 +85,31 @@ export class QueueLeaseManager {
   private acquireTimer: NodeJS.Timeout | undefined;
   private heartbeatTimer: NodeJS.Timeout | undefined;
   private onBecameLeader: (() => void) | undefined;
-  private onLostLeadership: (() => void) | undefined;
   private stopped = false;
 
-  constructor(options: QueueLeaseManagerOptions) {
+  constructor(options: DispatchLeaseManagerOptions) {
     this.queue = options.queue;
     this.log = options.log;
     this.holderId = options.holder ?? randomUUID();
     this.ttlMs = options.ttlMs ?? DEFAULT_LEASE_TTL_MS;
     this.heartbeatMs = options.heartbeatMs ?? DEFAULT_LEASE_HEARTBEAT_MS;
     this.acquireRetryMs = options.acquireRetryMs ?? DEFAULT_LEASE_ACQUIRE_RETRY_MS;
+    // Bind our holder ID to the queue so its dispatch gate can tell us from a
+    // peer (see DurableQueue.setLeaseHolder / isLeaseHeldByPeer).
+    this.queue.setLeaseHolder(this.holderId);
   }
 
   /**
    * Begins the acquire-and-heartbeat loop. `onBecameLeader` fires every time
    * we transition from follower to leader (typically once, but can repeat if
-   * we lose the lease mid-run and reclaim it). `onLostLeadership` fires when a
-   * heartbeat discovers a peer stole the lease, so the caller can drain workers
-   * before the peer starts acting on the shared data.
+   * we lose the lease mid-run and reclaim it). There is no lost-leadership
+   * callback by design — see the class doc: loss surfaces as a
+   * {@link QueueLeaseError} from the queue's dispatch ops, which the worker
+   * catches to drain itself.
    * @param onBecameLeader - Callback invoked when this process takes the lease.
-   * @param onLostLeadership - Callback invoked when a heartbeat finds the lease lost.
    */
-  start(onBecameLeader: () => void, onLostLeadership?: () => void): void {
+  start(onBecameLeader: () => void): void {
     this.onBecameLeader = onBecameLeader;
-    this.onLostLeadership = onLostLeadership;
     this.stopped = false;
     this.tryAcquire();
   }
@@ -199,21 +208,16 @@ export class QueueLeaseManager {
       return;
     }
     if (!extended) {
-      // We lost the lease — a peer took over after our TTL elapsed. Drop back
-      // to follower mode and notify the caller so it can drain its workers
-      // before the peer starts acting on the shared queue. (A small overlap
-      // window is inherent to TTL leases: the peer could only acquire after our
-      // TTL expired, so detection latency is bounded by the heartbeat interval.)
-      this.log.error(`Lost queue lease (holder=${this.holderId}); peer took over. Draining workers.`);
+      // We lost the lease — a peer took over after our TTL elapsed. Drop back to
+      // follower mode and start trying to reclaim it. We do NOT push a drain
+      // event: the queue's dispatch ops are bound to our holder and now throw
+      // QueueLeaseError (a peer owns the lease), so the worker self-detects and
+      // drains on its next claim/in-flight check — typically well before this
+      // heartbeat even runs. (A small overlap window is inherent to TTL leases:
+      // the peer could only acquire after our TTL expired.)
+      this.log.error(`Lost queue lease (holder=${this.holderId}); peer took over.`);
       this.leader = false;
       this.clearHeartbeatTimer();
-      // Fire callback before re-scheduling acquire so a drain exception can't
-      // skip the retry loop.
-      try {
-        this.onLostLeadership?.();
-      } catch (err) {
-        this.log.error(`onLostLeadership callback threw: ${normalizeErrorString(err)}`);
-      }
       this.scheduleAcquireRetry();
     }
   }

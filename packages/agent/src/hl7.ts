@@ -123,16 +123,19 @@ export class AgentHl7Channel extends BaseChannel {
    * running — so it's safe to call from either entry point.
    */
   private maybeStartWorker(): void {
+    // Reap a worker that stepped down on lease loss (it self-terminates on a
+    // QueueLeaseError rather than via a callback), so a later re-acquisition can
+    // start a fresh one — maybeStartWorker no-ops while `this.worker` is set.
+    if (this.worker && !this.worker.isRunning()) {
+      this.worker = undefined;
+    }
     if (this.worker) {
       return;
     }
-    const queue = this.app.getDurableQueue();
+    // Leader-gated: getDispatchQueue() is undefined when the queue is off or we
+    // don't hold the lease. `onBecameQueueLeader` calls back in once we acquire.
+    const queue = this.app.getDispatchQueue();
     if (!queue) {
-      return;
-    }
-    if (!this.app.isQueueLeader()) {
-      // Not leader yet — `onBecameQueueLeader` will start the worker when we
-      // acquire the lease.
       return;
     }
     this.worker = new ChannelQueueWorker({
@@ -155,31 +158,6 @@ export class AgentHl7Channel extends BaseChannel {
    */
   onBecameQueueLeader(): void {
     this.maybeStartWorker();
-  }
-
-  /**
-   * Notification from the App that a peer stole the durable-queue lease. Stops
-   * this channel's worker so the demoted process stops claiming and dispatching
-   * rows from the now peer-owned queue, and clears it so a later
-   * {@link onBecameQueueLeader} (on re-acquisition) brings a fresh worker back
-   * up — `maybeStartWorker` no-ops while `this.worker` is set, so clearing it is
-   * required.
-   *
-   * `worker.stop()` is awaited fire-and-forget: it drains in the background while
-   * we return promptly to the lease loop. Any in-flight dispatch is rejected and
-   * its row marked failed; SQLite serializes that write with the new leader's,
-   * and the leader's `recoverOnStartup` reconciles interrupted rows, so this is
-   * consistent.
-   */
-  onLostQueueLeadership(): void {
-    const worker = this.worker;
-    if (!worker) {
-      return;
-    }
-    this.worker = undefined;
-    worker.stop().catch((err) => {
-      this.log.error(`Error stopping worker after lease loss: ${normalizeErrorString(err)}`);
-    });
   }
 
   shouldAssignSeqNo(): boolean {

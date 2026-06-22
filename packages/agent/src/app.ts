@@ -59,7 +59,7 @@ import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { DurableQueue } from './queue/durable-queue';
-import { QueueLeaseManager } from './queue/lease-manager';
+import { DispatchLeaseManager } from './queue/dispatch-lease-manager';
 import { RetentionSweeper } from './queue/retention';
 import type { ChannelQueueWorker } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
@@ -147,7 +147,7 @@ export class App {
   private lastHeartbeatSentTime: number = -1;
   private durableQueue: DurableQueue | undefined;
   private retentionSweeper: RetentionSweeper | undefined;
-  private leaseManager: QueueLeaseManager | undefined;
+  private dispatchLeaseManager: DispatchLeaseManager | undefined;
   private queueCheckpointListener: (() => void) | undefined;
   // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
   // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
@@ -645,8 +645,8 @@ export class App {
       if (this.durableQueue) {
         this.log.info('durableQueue disabled — closing queue.');
         this.removeQueueCheckpointListener();
-        this.leaseManager?.stop();
-        this.leaseManager = undefined;
+        this.dispatchLeaseManager?.stop();
+        this.dispatchLeaseManager = undefined;
         this.retentionSweeper?.stop();
         this.retentionSweeper = undefined;
         this.durableQueue.close();
@@ -681,12 +681,9 @@ export class App {
     // success, the callback runs recoverOnStartup() + brings up channel workers.
     // If a peer (e.g. an old agent in the upgrade overlap) holds the lease, we
     // sit as a follower until the lease is free, then take over.
-    if (!this.leaseManager) {
-      this.leaseManager = new QueueLeaseManager({ queue: this.durableQueue, log: this.log });
-      this.leaseManager.start(
-        () => this.onBecameQueueLeader(),
-        () => this.onLostQueueLeadership()
-      );
+    if (!this.dispatchLeaseManager) {
+      this.dispatchLeaseManager = new DispatchLeaseManager({ queue: this.durableQueue, log: this.log });
+      this.dispatchLeaseManager.start(() => this.onBecameQueueLeader());
     }
 
     // (Re)start the retention sweeper with the latest settings. The sweeper runs
@@ -715,7 +712,7 @@ export class App {
   }
 
   /**
-   * Called by the {@link QueueLeaseManager} the first time we take the lease.
+   * Called by the {@link DispatchLeaseManager} the first time we take the lease.
    *
    * This is the single point that runs `recoverOnStartup` and spins up the
    * channel workers. Both depend on us being the only writer — running them at
@@ -745,24 +742,9 @@ export class App {
     }
   }
 
-  /**
-   * Called by the {@link QueueLeaseManager} when a heartbeat discovers a peer
-   * stole the lease. Stops every channel worker so the demoted process stops
-   * claiming and dispatching rows from the now peer-owned queue. A later
-   * re-acquisition fires {@link onBecameQueueLeader} again, which restarts the
-   * workers.
-   */
-  private onLostQueueLeadership(): void {
-    for (const channel of this.channels.values()) {
-      if (channel instanceof AgentHl7Channel) {
-        channel.onLostQueueLeadership();
-      }
-    }
-  }
-
   /** @returns True when this agent currently holds the durable-queue lease. */
   isQueueLeader(): boolean {
-    return this.leaseManager?.isLeader() ?? false;
+    return this.dispatchLeaseManager?.isLeader() ?? false;
   }
 
   /**
@@ -782,9 +764,26 @@ export class App {
     return `${baseDir}${sep}medplum-agent-queue.sqlite`;
   }
 
-  /** @returns The opened {@link DurableQueue}, or undefined when the queue setting is off. */
+  /**
+   * @returns The opened {@link DurableQueue}, or undefined when the queue setting
+   * is off. This is the OPEN handle, valid regardless of leadership — for intake,
+   * maintenance (WAL checkpoint, retention sweep), and diagnostics. For the
+   * dispatch path use {@link getDispatchQueue}.
+   */
   getDurableQueue(): DurableQueue | undefined {
     return this.durableQueue;
+  }
+
+  /**
+   * @returns The {@link DurableQueue} for DISPATCH (claim + state transitions),
+   * or undefined when the queue is off OR this process does not currently hold
+   * the lease. This is the leader-gated accessor the worker-start path uses — the
+   * cheap optimistic "should I spin up a worker?" check. The authoritative gate
+   * lives in the queue's dispatch ops themselves, which throw `QueueLeaseError`
+   * if the lease moves out from under an already-running worker.
+   */
+  getDispatchQueue(): DurableQueue | undefined {
+    return this.isQueueLeader() ? this.durableQueue : undefined;
   }
 
   getStats(): AgentStats {
@@ -1165,9 +1164,9 @@ export class App {
     }
     // Release the lease BEFORE closing the DB so a waiting peer can take over
     // immediately rather than waiting for our TTL to expire.
-    if (this.leaseManager) {
-      this.leaseManager.stop();
-      this.leaseManager = undefined;
+    if (this.dispatchLeaseManager) {
+      this.dispatchLeaseManager.stop();
+      this.dispatchLeaseManager = undefined;
     }
     if (this.durableQueue) {
       this.durableQueue.close();

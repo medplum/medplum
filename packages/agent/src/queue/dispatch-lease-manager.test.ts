@@ -6,9 +6,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createMockLogger, waitFor } from '../test-utils';
 import { DurableQueue } from './durable-queue';
-import { QueueLeaseManager } from './lease-manager';
+import { DispatchLeaseManager } from './dispatch-lease-manager';
 
-describe('QueueLeaseManager', () => {
+describe('DispatchLeaseManager', () => {
   let dir: string;
   let queue: DurableQueue;
 
@@ -23,7 +23,7 @@ describe('QueueLeaseManager', () => {
   });
 
   test('acquires the lease on start and fires onBecameLeader', async () => {
-    const mgr = new QueueLeaseManager({
+    const mgr = new DispatchLeaseManager({
       queue,
       log: createMockLogger(),
       ttlMs: 5_000,
@@ -41,14 +41,14 @@ describe('QueueLeaseManager', () => {
   });
 
   test('a second manager waits for the first to release before becoming leader', async () => {
-    const mgr1 = new QueueLeaseManager({
+    const mgr1 = new DispatchLeaseManager({
       queue,
       log: createMockLogger(),
       ttlMs: 5_000,
       heartbeatMs: 60_000,
       acquireRetryMs: 25,
     });
-    const mgr2 = new QueueLeaseManager({
+    const mgr2 = new DispatchLeaseManager({
       queue,
       log: createMockLogger(),
       ttlMs: 5_000,
@@ -85,14 +85,14 @@ describe('QueueLeaseManager', () => {
     // managed expiry by manually setting the lease very short.
     // We do this by constructing with ttlMs=50 and heartbeat far in the future,
     // so the lease lapses without being extended.
-    const mgr1 = new QueueLeaseManager({
+    const mgr1 = new DispatchLeaseManager({
       queue,
       log: createMockLogger(),
       ttlMs: 50,
       heartbeatMs: 60_000, // never heartbeats during this test
       acquireRetryMs: 25,
     });
-    const mgr2 = new QueueLeaseManager({
+    const mgr2 = new DispatchLeaseManager({
       queue,
       log: createMockLogger(),
       ttlMs: 5_000,
@@ -114,7 +114,7 @@ describe('QueueLeaseManager', () => {
   });
 
   test('heartbeat extends the lease beyond its initial TTL', async () => {
-    const mgr = new QueueLeaseManager({
+    const mgr = new DispatchLeaseManager({
       queue,
       log: createMockLogger(),
       ttlMs: 200,
@@ -137,14 +137,14 @@ describe('QueueLeaseManager', () => {
   });
 
   test('stop releases the lease so a peer can acquire immediately', async () => {
-    const mgr1 = new QueueLeaseManager({
+    const mgr1 = new DispatchLeaseManager({
       queue,
       log: createMockLogger(),
       ttlMs: 60_000, // long, to prove that stop() is what releases (not expiry)
       heartbeatMs: 60_000,
       acquireRetryMs: 25,
     });
-    const mgr2 = new QueueLeaseManager({
+    const mgr2 = new DispatchLeaseManager({
       queue,
       log: createMockLogger(),
       ttlMs: 60_000,
@@ -168,13 +168,13 @@ describe('QueueLeaseManager', () => {
   });
 
   test('stop on a non-leader manager returns false and is idempotent', () => {
-    const mgr = new QueueLeaseManager({ queue, log: createMockLogger() });
+    const mgr = new DispatchLeaseManager({ queue, log: createMockLogger() });
     expect(mgr.stop()).toBe(false);
     expect(mgr.stop()).toBe(false);
   });
 
   test('losing the lease mid-run drops back to follower', async () => {
-    const mgr = new QueueLeaseManager({
+    const mgr = new DispatchLeaseManager({
       queue,
       log: createMockLogger(),
       ttlMs: 100,
@@ -197,50 +197,27 @@ describe('QueueLeaseManager', () => {
     mgr.stop();
   });
 
-  test('losing the lease mid-run fires onLostLeadership so workers can drain', async () => {
-    const onLost = vi.fn();
-    const mgr = new QueueLeaseManager({
-      queue,
-      log: createMockLogger(),
-      ttlMs: 100,
-      heartbeatMs: 30,
-      acquireRetryMs: 50,
-    });
-    mgr.start(vi.fn(), onLost);
-    await waitFor(() => mgr.isLeader());
-    expect(onLost).not.toHaveBeenCalled();
-
-    // A peer steals the lease, so the next heartbeat finds it gone.
-    queue.releaseLease(mgr.getHolderId());
-    expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
-
-    await waitFor(() => onLost.mock.calls.length > 0, 500);
-    expect(mgr.isLeader()).toBe(false);
-
-    mgr.stop();
-  });
-
-  test('a throwing onLostLeadership does not stop the acquire-retry loop', async () => {
-    const onLost = vi.fn(() => {
-      throw new Error('drain blew up');
-    });
-    const mgr = new QueueLeaseManager({
+  test('reacquires the lease after a peer that stole it lapses', async () => {
+    // There is no lost-leadership callback: loss is enforced at the data layer
+    // (the queue's dispatch ops throw QueueLeaseError once a peer holds the lease).
+    // This manager's only job after losing the lease is to drop to follower and
+    // reclaim it when the peer's lease lapses.
+    const mgr = new DispatchLeaseManager({
       queue,
       log: createMockLogger(),
       ttlMs: 100,
       heartbeatMs: 30,
       acquireRetryMs: 25,
     });
-    mgr.start(vi.fn(), onLost);
+    mgr.start(vi.fn());
     await waitFor(() => mgr.isLeader());
 
-    // Peer steals, then releases — mgr should still be able to reclaim despite
-    // the drain callback throwing.
+    // A peer steals the lease; the next heartbeat drops us back to follower.
     queue.releaseLease(mgr.getHolderId());
     expect(queue.tryAcquireLease('peer', 50)).toBe(true);
-    await waitFor(() => onLost.mock.calls.length > 0, 500);
+    await waitFor(() => !mgr.isLeader(), 500);
 
-    // Let the peer's short lease lapse; mgr should reacquire on a later retry.
+    // Let the peer's short lease lapse; mgr reacquires on a later retry.
     queue.releaseLease('peer');
     await waitFor(() => mgr.isLeader(), 1000);
     expect(queue.getCurrentLease()?.holder).toBe(mgr.getHolderId());

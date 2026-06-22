@@ -24,7 +24,7 @@ import type {
   MessageState,
   QueueErrorCode,
 } from './types';
-import { AckOutcome as AckOutcomeValues, MessageState as MessageStateValues } from './types';
+import { AckOutcome as AckOutcomeValues, MessageState as MessageStateValues, QueueLeaseError } from './types';
 
 export interface DurableQueueOptions {
   /** Filesystem path to the SQLite DB file. */
@@ -61,6 +61,13 @@ export class DurableQueue {
   private readonly log: ILogger;
   private readonly path: string;
   private closed = false;
+  // The lease holder ID of THIS process, bound once by its DispatchLeaseManager (see
+  // setLeaseHolder). Dispatch-class mutations are gated on the live lease still
+  // belonging to this holder; when a peer takes over, the gate throws
+  // QueueLeaseError so the demoted worker stops driving the queue. Undefined when
+  // no lease manager is attached (single-process use and most unit tests), in
+  // which case the gate is inert because no lease row exists.
+  private leaseHolderId: string | undefined;
   // True when the WAL may contain frames not yet checkpointed into the main DB
   // file. SQLite only attempts checkpoints piggybacked on commits, so once
   // traffic stops nothing would ever drain the WAL — the App polls this on every
@@ -516,6 +523,7 @@ export class DurableQueue {
    * @returns The claimed row, or `null` if the channel queue is empty.
    */
   claimNext(channelName: string, now: number = Date.now()): InboundRow | null {
+    this.assertNotDemoted();
     const raw = this.claimNextStmt.get(now, channelName) as Record<string, SQLInputValue> | undefined;
     if (raw) {
       this.walDirty = true;
@@ -571,6 +579,7 @@ export class DurableQueue {
    * @param body - Response payload, or null when the server omitted one.
    */
   recordServerResponse(id: number, statusCode: number | null, body: Buffer | string | null): void {
+    this.assertNotDemoted();
     this.recordServerResponseStmt.run(statusCode, body === null ? null : toBlob(body), id);
     this.walDirty = true;
   }
@@ -587,6 +596,7 @@ export class DurableQueue {
    * @param now - Override for `processed_at` (for tests).
    */
   markProcessed(id: number, ackOutcome: AckOutcome, now: number = Date.now()): void {
+    this.assertNotDemoted();
     this.markProcessedStmt.run(ackOutcome, now, id);
     this.walDirty = true;
   }
@@ -600,6 +610,7 @@ export class DurableQueue {
    * @param now - Override for `errored_at` (for tests).
    */
   markRejected(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+    this.assertNotDemoted();
     this.markBotFailedStmt.run(MessageStateValues.REJECTED, now, error, errorCode, id);
     this.walDirty = true;
   }
@@ -616,6 +627,7 @@ export class DurableQueue {
    * @param now - Override for `errored_at` (for tests).
    */
   markFailed(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+    this.assertNotDemoted();
     this.markBotFailedStmt.run(MessageStateValues.FAILED, now, error, errorCode, id);
     this.walDirty = true;
   }
@@ -645,6 +657,7 @@ export class DurableQueue {
    * @returns True if the row was requeued; false if it was not in `claimed`.
    */
   requeue(id: number): boolean {
+    this.assertNotDemoted();
     const info = this.requeueStmt.run(id);
     if (Number(info.changes) > 0) {
       this.walDirty = true;
@@ -782,6 +795,44 @@ export class DurableQueue {
   getCurrentLease(): { holder: string; expiresAt: number } | null {
     const row = this.getLeaseStmt.get() as { holder: string; expires_at: number } | undefined;
     return row ? { holder: row.holder, expiresAt: row.expires_at } : null;
+  }
+
+  /**
+   * Binds this queue to the lease holder ID of the local process, so the
+   * dispatch gate ({@link assertNotDemoted}) can tell "us" from a peer. Called
+   * once by {@link DispatchLeaseManager} at construction; the manager keeps passing
+   * the same holder to {@link tryAcquireLease}/{@link heartbeatLease}.
+   * @param holderId - This process's lease holder ID.
+   */
+  setLeaseHolder(holderId: string): void {
+    this.leaseHolderId = holderId;
+  }
+
+  /**
+   * @returns True when a lease row exists and a DIFFERENT holder owns it — i.e. a
+   * peer has taken over and this process has been demoted. False when no lease
+   * exists (no coordination in play) or the lease is ours. Note this intentionally
+   * does NOT consider expiry: a merely-expired-but-still-ours lease will be
+   * re-extended by our next heartbeat, so only a foreign holder means "demoted",
+   * which keeps this exactly aligned with {@link DispatchLeaseManager.isLeader}.
+   */
+  isLeaseHeldByPeer(): boolean {
+    const lease = this.getCurrentLease();
+    return lease !== null && lease.holder !== this.leaseHolderId;
+  }
+
+  /**
+   * Throws {@link QueueLeaseError} when a peer holds the lease. Called at the top
+   * of every dispatch-class mutation so a demoted process can't claim, dispatch,
+   * or settle rows the new leader now owns — the authoritative, data-layer half of
+   * leadership enforcement (the {@link DispatchLeaseManager}'s leader flag is the
+   * cheap optimistic half). Intake, maintenance, diagnostics, and the physical
+   * `markSent` marker are deliberately NOT gated.
+   */
+  private assertNotDemoted(): void {
+    if (this.isLeaseHeldByPeer()) {
+      throw new QueueLeaseError(this.leaseHolderId, this.getCurrentLease()?.holder);
+    }
   }
 
   /**

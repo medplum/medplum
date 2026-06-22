@@ -6,7 +6,7 @@ import { ContentType, normalizeErrorString, sleep } from '@medplum/core';
 import type { App } from '../app';
 import type { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
-import { AckOutcome, MessageState, QueueError, QueueErrorCode } from './types';
+import { AckOutcome, MessageState, QueueError, QueueErrorCode, QueueLeaseError } from './types';
 
 /**
  * Maximum time we wait for the Medplum server to respond to an
@@ -106,10 +106,42 @@ export class ChannelQueueWorker {
     }
     this.running = true;
     this.stopping = false;
+    // Tie the in-flight lease check to the App's existing 10s heartbeat rather than
+    // a dedicated timer (same idiom as the WAL checkpoint / stats GC listeners).
+    this.app.heartbeatEmitter.addEventListener('heartbeat', this.onHeartbeat);
     this.loopPromise = this.loop().catch((err) => {
       this.log.error(`Worker loop crashed: ${normalizeErrorString(err)}`);
     });
   }
+
+  /**
+   * @returns True while the dispatch loop is live. Goes false after {@link stop}
+   * or after the worker self-terminates on lease loss — the channel checks this
+   * to reap a demoted worker before starting a fresh one on re-acquisition.
+   */
+  isRunning(): boolean {
+    return this.running;
+  }
+
+  /**
+   * In-flight lease check, fired on each App heartbeat tick (~10s). While a
+   * dispatch is awaiting the server, a worker can't notice via `claimNext` that a
+   * peer took the lease — it's wedged on the response. This cancels that wedged
+   * dispatch with a {@link QueueLeaseError} so the loop tears the worker down,
+   * instead of waiting out the full {@link DEFAULT_WORKER_RESPONSE_TIMEOUT_MS}. A
+   * no-op while no dispatch is pending — an idle worker detects loss far sooner on
+   * its next `claimNext` poll. An arrow field so add/removeEventListener share one
+   * stable reference.
+   */
+  private readonly onHeartbeat = (): void => {
+    const pending = this.pending;
+    if (!pending || !this.queue.isLeaseHeldByPeer()) {
+      return;
+    }
+    clearTimeout(pending.timeout);
+    this.pending = undefined;
+    pending.reject(new QueueLeaseError(undefined, this.queue.getCurrentLease()?.holder));
+  };
 
   /**
    * Signals to the loop that work may be available. Idempotent; multiple calls
@@ -164,7 +196,16 @@ export class ChannelQueueWorker {
         `Applying late server response to errored row id=${row.id} ` +
           `(control id=${row.msgControlId ?? 'n/a'}, status=${response.statusCode ?? 'n/a'})`
       );
-      this.applyServerResponse(row, response);
+      try {
+        this.applyServerResponse(row, response);
+      } catch (err) {
+        if (err instanceof QueueLeaseError) {
+          // A peer owns the lease now — this row is theirs to settle, not ours.
+          this.log.info(`Discarding late server response for row id=${row.id}: queue lease held by a peer`);
+          return false;
+        }
+        throw err;
+      }
       return true;
     }
     // claimed/inflight (a retry is in flight), processed/rejected (already
@@ -186,6 +227,7 @@ export class ChannelQueueWorker {
       return;
     }
     this.stopping = true;
+    this.app.heartbeatEmitter.removeEventListener('heartbeat', this.onHeartbeat);
     if (this.pending) {
       const pending = this.pending;
       clearTimeout(pending.timeout);
@@ -225,7 +267,17 @@ export class ChannelQueueWorker {
     }
     clearTimeout(pending.timeout);
     this.pending = undefined;
-    this.queue.requeue(pending.row.id);
+    try {
+      this.queue.requeue(pending.row.id);
+    } catch (err) {
+      if (err instanceof QueueLeaseError) {
+        // Demoted mid-disconnect: leave the row `claimed` for the new leader's
+        // recoverOnStartup to requeue, and tear ourselves down via the rejection.
+        pending.reject(err);
+        return;
+      }
+      throw err;
+    }
     this.log.info(
       `Row id=${pending.row.id} (control id=${pending.row.msgControlId ?? 'n/a'}) requeued: WebSocket disconnected before transmit was sent`
     );
@@ -233,21 +285,37 @@ export class ChannelQueueWorker {
   }
 
   private async loop(): Promise<void> {
-    while (!this.stopping) {
-      // Don't claim while the server connection is down — a dispatch started
-      // now would only sit in the in-memory WS queue until the response timer
-      // errored it. Rows stay durably `queued` and drain on reconnect (§9);
-      // app.ts notifies us when the connection comes back.
-      if (!this.app.isLive()) {
-        await this.waitForWork();
-        continue;
+    try {
+      while (!this.stopping) {
+        // Don't claim while the server connection is down — a dispatch started
+        // now would only sit in the in-memory WS queue until the response timer
+        // errored it. Rows stay durably `queued` and drain on reconnect (§9);
+        // app.ts notifies us when the connection comes back.
+        if (!this.app.isLive()) {
+          await this.waitForWork();
+          continue;
+        }
+        const row = this.queue.claimNext(this.channelName);
+        if (row) {
+          await this.process(row);
+        } else {
+          await this.waitForWork();
+        }
       }
-      const row = this.queue.claimNext(this.channelName);
-      if (row) {
-        await this.process(row);
-      } else {
-        await this.waitForWork();
+    } catch (err) {
+      if (!(err instanceof QueueLeaseError)) {
+        throw err; // a genuine crash — surfaces via start()'s loopPromise .catch
       }
+      // A peer took the lease (detected at claimNext, the in-flight watchdog, or a
+      // terminal write). Stop driving the queue and step down. We deliberately
+      // leave any row we had mid-flight untouched (it stays `claimed`/`inflight`)
+      // for the new leader's recoverOnStartup to reconcile — a demoted process
+      // must not write dispatch state. The channel reaps this stopped worker and
+      // starts a fresh one if we later reacquire (AgentHl7Channel.maybeStartWorker).
+      this.log.info(`Worker for channel '${this.channelName}' stepping down: queue lease taken by a peer.`);
+      this.stopping = true;
+      this.app.heartbeatEmitter.removeEventListener('heartbeat', this.onHeartbeat);
+      this.running = false;
     }
   }
 
@@ -260,6 +328,12 @@ export class ChannelQueueWorker {
         // onWebSocketDisconnect already returned the row to `queued`; the loop's
         // liveness gate keeps it there until the connection comes back.
         return;
+      }
+      if (err instanceof QueueLeaseError) {
+        // Lost the lease mid-dispatch (the watchdog cancelled the in-flight wait,
+        // or a terminal write was refused). Propagate so the loop tears the worker
+        // down; do NOT settle the row — it's the new leader's to reconcile.
+        throw err;
       }
       // A dispatch-leg failure (timeout, worker-stopped, unclassified) is always
       // transient/ambiguous — never a rejection of the message — so it lands in
