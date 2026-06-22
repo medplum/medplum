@@ -29,6 +29,7 @@ describe('FHIR Rate Limits', () => {
 
   beforeEach(async () => {
     app = express();
+    config.rateLimitsEnabled = true;
     config.defaultRateLimit = -1;
     rateLimitRedisConfig.keyPrefix = 'fhir-quota:';
   });
@@ -69,6 +70,20 @@ describe('FHIR Rate Limits', () => {
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
     expect(res.status).toBe(429);
+  });
+
+  test('Allows requests when rate limits are disabled', async () => {
+    config.rateLimitsEnabled = false;
+    config.defaultFhirQuota = 1;
+    await initApp(app, config);
+    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+
+    const res = await request(app)
+      .post('/fhir/R4/Patient')
+      .auth(accessToken, { type: 'bearer' })
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+    expect(res.get('ratelimit')).toBeUndefined();
   });
 
   test('Allows batch under limit', async () => {
