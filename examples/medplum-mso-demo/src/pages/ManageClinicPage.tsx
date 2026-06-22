@@ -7,8 +7,8 @@ import { normalizeErrorString } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { ClinicianList } from '../components/ClinicianList';
 import { PatientList } from '../components/PatientList';
@@ -29,6 +29,10 @@ export function ManageClinicPage(): JSX.Element {
   const { isAdmin, loading: adminLoading } = useAdminStatus();
 
   useEffect(() => {
+    if (!id) {
+      return;
+    }
+
     const loadOrganization = async (): Promise<void> => {
       const org = await medplum.readResource('Organization', id);
       setOrganization(org);
