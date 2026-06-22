@@ -5,7 +5,6 @@ import { readJson } from '@medplum/definitions';
 import type { Bundle, ElementDefinition, StructureDefinition, StructureDefinitionSnapshot } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
-import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';

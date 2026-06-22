@@ -293,16 +293,13 @@ export function setupPwnedPasswordMock(pwnedPassword: Mock, numPwns: number): vo
   pwnedPassword.mockImplementation(async () => numPwns);
 }
 
-/**
- * Sets up the fetch mock to handle Recaptcha requests.
- * @param success - Whether the mock should return a successful response.
- */
-export function setupRecaptchaMock(success: boolean): void {
-  (globalThis.fetch as Mock).mockImplementation(() => ({
-    status: 200,
-    json: () => ({ success }),
-  }));
-}
+export {
+  mockFetchJson,
+  mockFetchStatus,
+  mockFetchText,
+  setupRecaptchaMock,
+  type MockFetchInit,
+} from './test.setup.fetch';
 
 /**
  * Returns true if the resource is in an entry in the bundle.

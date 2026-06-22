@@ -4,7 +4,6 @@ import { createReference } from '@medplum/core';
 import type { AuditEvent, Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
-import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';

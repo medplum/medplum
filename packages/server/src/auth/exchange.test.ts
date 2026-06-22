@@ -6,7 +6,6 @@ import type { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
@@ -14,6 +13,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
+import { mockFetchJson, mockFetchText } from '../test.setup.fetch';
 import { registerNew } from './register';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
@@ -151,11 +151,7 @@ describe('Token Exchange', () => {
   });
 
   test('Unknown user', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ email: 'not-found@' + domain }),
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ email: 'not-found@' + domain }));
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
@@ -166,11 +162,7 @@ describe('Token Exchange', () => {
   });
 
   test('ClientApplication success', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ email }),
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
@@ -181,11 +173,7 @@ describe('Token Exchange', () => {
   });
 
   test('GCIP success', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ users: [{ email, localId: 'firebase-user-id' }] }),
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ users: [{ email, localId: 'firebase-user-id' }] }));
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'firebase-token',
@@ -204,15 +192,13 @@ describe('Token Exchange', () => {
         body: JSON.stringify({ idToken: 'firebase-token' }),
       })
     );
-    expect(new URL(fetchMock.mock.calls.at(-1)?.[0]).searchParams.get('key')).toBe('test-api-key');
+    const fetchUrl = fetchMock.mock.calls.at(-1)?.[0];
+    expect(typeof fetchUrl).toBe('string');
+    expect(new URL(fetchUrl as string).searchParams.get('key')).toBe('test-api-key');
   });
 
   test('Missing projectId success', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ email }),
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
@@ -223,10 +209,7 @@ describe('Token Exchange', () => {
   });
 
   test('Invalid token request', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.TEXT },
-    }));
+    fetchMock.mockImplementation(() => mockFetchText('', { contentType: ContentType.TEXT }));
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
@@ -238,11 +221,7 @@ describe('Token Exchange', () => {
   });
 
   test('Subject auth success', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ email: '', sub: externalId }),
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ email: '', sub: externalId }));
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
@@ -253,11 +232,7 @@ describe('Token Exchange', () => {
   });
 
   test('GCIP subject auth success', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ users: [{ email: '', localId: externalId }] }),
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ users: [{ email: '', localId: externalId }] }));
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'firebase-token',
@@ -268,11 +243,7 @@ describe('Token Exchange', () => {
   });
 
   test('GCIP missing localId', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ users: [{ email }] }),
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ users: [{ email }] }));
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'firebase-token',

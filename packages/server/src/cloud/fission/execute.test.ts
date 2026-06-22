@@ -4,12 +4,12 @@ import type { WithId } from '@medplum/core';
 import type { Bot, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth } from '../../test.setup';
+import { mockFetchText } from '../../test.setup.fetch';
 import { executeFissionBot } from './execute';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
@@ -49,11 +49,9 @@ describe('Execute Fission bots', () => {
     };
 
     fetchMock.mockImplementationOnce(() =>
-      Promise.resolve({
-        status: 200,
-        ok: true,
-        text: async () => JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } }),
-      })
+      mockFetchText(
+        JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } })
+      )
     );
 
     await expect(
@@ -87,12 +85,10 @@ describe('Execute Fission bots', () => {
     };
 
     fetchMock.mockImplementationOnce(() =>
-      Promise.resolve({
-        status: 400,
-        ok: false,
-        text: async () =>
-          JSON.stringify({ success: false, logResult: 'unhandled error', returnValue: { result: 'unhandled error' } }),
-      })
+      mockFetchText(
+        JSON.stringify({ success: false, logResult: 'unhandled error', returnValue: { result: 'unhandled error' } }),
+        { status: 400 }
+      )
     );
 
     await expect(
