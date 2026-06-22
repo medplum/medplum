@@ -35,8 +35,6 @@ import bcrypt from 'bcrypt';
 import type { Request } from 'express';
 import type { JWTPayload, VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
-import type { RequestInit as FetchRequestInit } from 'node-fetch';
-import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
@@ -896,7 +894,7 @@ function buildExternalUserInfoRequest(
   userInfoUrl: string,
   externalAccessToken: string,
   idp: IdentityProvider | undefined
-): { url: string; init: FetchRequestInit } {
+): { url: string; init: RequestInit } {
   if (idp?.userInfoMode === 'gcip') {
     const apiKey = idp.userInfoApiKey;
     if (!apiKey) {

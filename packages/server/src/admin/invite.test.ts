@@ -18,7 +18,6 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
-import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { Readable } from 'stream';
 import request from 'supertest';
@@ -39,7 +38,7 @@ import {
 import { inviteUser } from './invite';
 
 jest.mock('hibp');
-jest.mock('node-fetch');
+const fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
 
 const app = express();
 
@@ -60,10 +59,10 @@ describe('Admin Invite', () => {
     mockSESv2Client = mockClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
 
-    (fetch as unknown as jest.Mock).mockClear();
+    fetchMock.mockClear();
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    setupRecaptchaMock(true);
   });
 
   afterEach(() => {

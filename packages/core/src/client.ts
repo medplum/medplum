@@ -301,8 +301,6 @@ export interface MedplumClientOptions {
    * Fetch implementation.
    *
    * Default is `window.fetch` (if available).
-   *
-   * For Node.js applications, consider the 'node-fetch' package.
    */
   fetch?: FetchLike;
 

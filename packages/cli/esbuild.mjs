@@ -30,7 +30,6 @@ const options = {
     'dotenv',
     'fast-glob',
     'iconv-lite',
-    'node-fetch',
     'tar',
   ],
   banner: { js: '#!/usr/bin/env node' },

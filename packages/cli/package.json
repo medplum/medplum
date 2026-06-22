@@ -74,14 +74,12 @@
     "dotenv": "17.4.2",
     "fast-glob": "3.3.3",
     "iconv-lite": "0.7.2",
-    "node-fetch": "2.7.0",
     "semver": "7.8.4",
     "tar": "7.5.16"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "5.1.21",
     "@medplum/mock": "5.1.21",
-    "@types/node-fetch": "2.6.13",
     "@types/semver": "7.7.1",
     "aws-sdk-client-mock": "4.1.0"
   },

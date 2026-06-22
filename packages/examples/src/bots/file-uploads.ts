@@ -8,12 +8,6 @@ import type { BotEvent, MedplumClient } from '@medplum/core';
 import Client from 'ssh2-sftp-client';
 
 // end-block sftpImport
-// start-block formImports
-import FormData from 'form-data';
-import fetch from 'node-fetch';
-
-// end-block formImports
-
 // start-block botFn
 export async function handler(medplum: MedplumClient, _event: BotEvent): Promise<any> {
   // Create the PDF
@@ -38,10 +32,9 @@ export async function handler(medplum: MedplumClient, _event: BotEvent): Promise
 
   // start-block downloadPdf
   // Download the PDF
-  const pdfData = await medplum.download(binary.url);
-  const pdfStream = pdfData.stream();
+  const pdfBlob = await medplum.download(binary.url);
   // end-block downloadPdf
-  console.log(pdfStream);
+  console.log(pdfBlob);
 
   // start-block nl
 
@@ -51,7 +44,7 @@ export async function handler(medplum: MedplumClient, _event: BotEvent): Promise
   // Create a multipart form body
   const form = new FormData();
   form.append('otherValue', 'hello medplum');
-  form.append('testPdf', pdfStream);
+  form.append('testPdf', pdfBlob, 'document.pdf');
   // end-block formData
 
   // start-block postForm
@@ -59,7 +52,6 @@ export async function handler(medplum: MedplumClient, _event: BotEvent): Promise
   const response = await fetch('https://httpbin.org/post', {
     method: 'POST',
     body: form,
-    headers: form.getHeaders(),
   });
   // end-block postForm
 

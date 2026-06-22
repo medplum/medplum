@@ -20,7 +20,6 @@ import type {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import type { Handler, NextFunction, Request, Response } from 'express';
-import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
