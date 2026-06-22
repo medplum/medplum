@@ -204,6 +204,47 @@ describe('useWhisper', () => {
     expect(result.current.isListening).toBe(true);
   });
 
+  test('mute toggles the audio track and resets on stop', async () => {
+    const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
+
+    const track = { enabled: true, stop: vi.fn() };
+    const stream = {
+      getTracks: () => [track],
+      getAudioTracks: () => [track],
+    } as unknown as MediaStream;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
+    });
+
+    mockAudioContext();
+
+    const { result } = renderHook(() => useWhisper({}), { wrapper });
+
+    await startListening(result, wsServer);
+
+    // Starts unmuted with a live track
+    expect(result.current.muted).toBe(false);
+    expect(track.enabled).toBe(true);
+
+    // Muting disables the mic track but keeps capturing
+    act(() => result.current.setMuted(true));
+    expect(result.current.muted).toBe(true);
+    expect(track.enabled).toBe(false);
+    expect(result.current.isListening).toBe(true);
+
+    // Unmuting re-enables the track
+    act(() => result.current.setMuted(false));
+    expect(result.current.muted).toBe(false);
+    expect(track.enabled).toBe(true);
+
+    // Stop resets mute so the next capture session starts unmuted
+    act(() => result.current.setMuted(true));
+    expect(result.current.muted).toBe(true);
+    act(() => result.current.stop());
+    expect(result.current.muted).toBe(false);
+  });
+
   test('handles ai-realtime:error message from server', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
