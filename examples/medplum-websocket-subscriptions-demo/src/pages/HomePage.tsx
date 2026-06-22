@@ -178,7 +178,7 @@ export function HomePage(): JSX.Element {
 
     setWorking(true);
     for (const subscription of subscriptions) {
-      await medplum.deleteResource('Subscription', subscription.id);
+      await medplum.deleteResource('Subscription', subscription.id as string);
     }
     setSubscriptions(undefined);
     setPatient(undefined);
