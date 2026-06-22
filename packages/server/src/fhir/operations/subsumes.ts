@@ -81,7 +81,7 @@ export async function isSubsumed(
   const db = repo.getDatabaseClient({
     mode: DatabaseMode.READER,
     operation: 'read',
-    resourceTypes: ['CodeSystem'],
+    resourceTypes: ['CodeSystem'], // used on non resource type tables derived from CodeSystem
     source: 'subsumes.isA',
   });
 

@@ -343,8 +343,8 @@ async function getSearchEntries<T extends Resource>(
 
   const client = repo.getDatabaseClient({
     mode: DatabaseMode.READER,
-    operation: 'read',
-    resourceTypes: trackedResourceTypes,
+    operation: 'configuration',
+    resourceTypes: [],
     source: 'search.getSearchEntries.statementConfig',
   });
   let rows: any[];

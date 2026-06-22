@@ -1116,6 +1116,15 @@ describe('FHIR Repo', () => {
     }
   });
 
+  test('Reindex mixed resource types not allowed', async () => {
+    await expect(() =>
+      systemRepo.reindexResources([
+        { resourceType: 'Patient', id: randomUUID() },
+        { resourceType: 'Practitioner', id: randomUUID() },
+      ])
+    ).rejects.toThrow('All resources must be of the same type');
+  });
+
   test('Reindex resource errors logged', async () => {
     const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',

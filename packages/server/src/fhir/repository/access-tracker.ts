@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { isResourceType } from '@medplum/core';
 import type { TransactionOptions } from '@medplum/fhir-router';
-import type { Reference, ResourceType } from '@medplum/fhirtypes';
+import type { ResourceType } from '@medplum/fhirtypes';
 import type { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 
@@ -35,10 +34,6 @@ type TransactionAccessFrame = {
 };
 
 const splitTrackedResourceTypes = new Set<ResourceType>(['Project', 'ProjectMembership', 'User']);
-
-export function createRepositoryAccessTracker(): RepositoryAccessTracker {
-  return new RepositoryAccessTracker();
-}
 
 export class RepositoryAccessTracker {
   readonly transactionFrames: TransactionAccessFrame[] = [];
@@ -220,15 +215,4 @@ function mergeTransactionAccessFrame(target: TransactionAccessFrame, source: Tra
   for (const sourceName of source.sources) {
     target.sources.add(sourceName);
   }
-}
-
-export function getResourceTypesFromReferences(references: Reference[]): ResourceType[] {
-  const resourceTypes = new Set<ResourceType>();
-  for (const reference of references) {
-    const resourceType = reference.reference?.split('/')[0];
-    if (resourceType && isResourceType(resourceType)) {
-      resourceTypes.add(resourceType);
-    }
-  }
-  return Array.from(resourceTypes);
 }
