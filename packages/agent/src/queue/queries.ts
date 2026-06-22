@@ -4,25 +4,76 @@
 import { QueueErrorCode } from './types';
 
 /**
- * SQL for the queries whose performance depends on a specific index.
+ * Every SQL statement run by {@link DurableQueue} and {@link RetentionSweeper},
+ * as named constants. Two reasons they live here rather than inline at the
+ * `prepare()` call site:
  *
- * These are kept here, as named constants, so that the implementation (the
- * prepared statements in {@link DurableQueue} and {@link RetentionSweeper}) and
- * the `EXPLAIN QUERY PLAN` regression guards in `query-plan.test.ts` reference
- * the *exact same* SQL text. If a query changes shape, the plan test re-checks
- * its index against the change automatically — the two can never silently drift.
+ * 1. The implementation and the `EXPLAIN QUERY PLAN` regression guards in
+ *    `query-plan.test.ts` reference the *exact same* SQL text. If an
+ *    index-sensitive query changes shape, the plan test re-checks its index
+ *    against the change automatically — the two can never silently drift.
+ * 2. Keeping the SQL in one module gives a single, scannable picture of every
+ *    table access the queue makes, and keeps `durable-queue.ts` focused on
+ *    behavior rather than embedded SQL.
  *
- * Statements that only ever resolve a row by its INTEGER PRIMARY KEY (findById,
- * markProcessed, requeue, …) or hit a single-row/PK table (`_lease`,
- * `_channel_seq`) are intentionally NOT here — they need no index beyond the
- * rowid and there is nothing to guard.
+ * Not every query depends on an index — statements that resolve a row by its
+ * INTEGER PRIMARY KEY (findById, markProcessed, requeue, …) or hit a
+ * single-row/PK table (`_lease`, `_channel_seq`) need no index beyond the rowid,
+ * so only the index-sensitive subset (called out below) is covered by
+ * `query-plan.test.ts`.
  */
+
+// --- Intake ---
+
+/** Insert a new `queued` row. Column order matches {@link DurableQueue.enqueue}'s bind order. */
+export const ENQUEUE = `
+  INSERT INTO inbound_hl7_messages (
+    channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
+    enhanced_mode, state, attempt_count, callback_id,
+    seq_no, received_at
+  ) VALUES (
+    ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?
+  )
+`;
+
+/**
+ * Insert an audit row already in the `nacked` terminal state — used when intake
+ * rejected the message but we still want a forensics record. `ack_outcome` is
+ * fixed to `not_owed` since no app-level ACK is owed for a rejected message.
+ */
+export const ENQUEUE_REJECTED = `
+  INSERT INTO inbound_hl7_messages (
+    channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
+    enhanced_mode, state, attempt_count, callback_id,
+    ack_outcome, last_error, error_code, seq_no, received_at
+  ) VALUES (
+    ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 'not_owed', ?, ?, ?, ?
+  )
+`;
+
+// --- Per-channel sequence counter ---
+//
+// peek is a pure read of the last assigned value; commit advances it. They're
+// split (rather than a single advance-and-return) so the caller can stamp a
+// candidate sequence number and only commit it once the row is durably inserted —
+// a failed insert never consumes a sequence number.
+
+/** Read the last assigned sequence number for a channel (single-row PK table). */
+export const PEEK_LAST_SEQ_NO = `
+  SELECT last_seq_no FROM _channel_seq WHERE channel_name = ?
+`;
+
+/** Advance (upsert) the channel's last assigned sequence number. */
+export const COMMIT_SEQ_NO = `
+  INSERT INTO _channel_seq (channel_name, last_seq_no) VALUES (?, ?)
+    ON CONFLICT(channel_name) DO UPDATE SET last_seq_no = excluded.last_seq_no
+`;
 
 // --- Hot path (per inbound message / per worker tick) ---
 
 /**
  * Intake dedup: most recent prior row for a (channel, control_id) in any
- * non-`nacked` state. Served by `idx_inbound_dup_lookup`.
+ * non-`nacked` state. Served by `idx_inbound_dup_lookup`. [index-guarded]
  */
 export const FIND_SEEN_BY_CONTROL_ID = `
   SELECT * FROM inbound_hl7_messages
@@ -37,7 +88,7 @@ export const FIND_SEEN_BY_CONTROL_ID = `
  * FIFO claim: flip the lowest-id queued row for a channel to `claimed` in one
  * statement. The row stays `claimed` until {@link MARK_SENT} flips it to
  * `inflight` once the request is written to the socket. The inner SELECT is
- * served by `idx_inbound_channel_state_id`.
+ * served by `idx_inbound_channel_state_id`. [index-guarded]
  */
 export const CLAIM_NEXT = `
   UPDATE inbound_hl7_messages
@@ -57,7 +108,7 @@ export const CLAIM_NEXT = `
  * Phase A → B: the transmit request was written to the socket, so flip the
  * `claimed` row to `inflight` and stamp `sent_at`. Keyed by callback id (served
  * by `uq_inbound_callback`). The `state = 'claimed'` guard makes it a no-op for
- * legacy (non-durable) sends and for any row already past `claimed`.
+ * legacy (non-durable) sends and for any row already past `claimed`. [index-guarded]
  */
 export const MARK_SENT = `
   UPDATE inbound_hl7_messages
@@ -66,14 +117,82 @@ export const MARK_SENT = `
    WHERE callback_id = ? AND state = 'claimed'
 `;
 
-/** Late server-response lookup by callback id. Served by `uq_inbound_callback`. */
+/** Late server-response lookup by callback id. Served by `uq_inbound_callback`. [index-guarded] */
 export const FIND_BY_CALLBACK = `
   SELECT * FROM inbound_hl7_messages WHERE callback_id = ?
 `;
 
+/** Lookup by primary key. */
+export const FIND_BY_ID = `
+  SELECT * FROM inbound_hl7_messages WHERE id = ?
+`;
+
+// --- Row lifecycle transitions (all keyed by primary key) ---
+
+/** Record the server's `agent:transmit:response` status + body against the row. */
+export const RECORD_SERVER_RESPONSE = `
+  UPDATE inbound_hl7_messages
+     SET server_status_code = ?,
+         server_response_body = ?
+   WHERE id = ?
+`;
+
+/**
+ * Bot accepted (2xx). state → processed regardless of the source leg; the caller
+ * passes the ack_outcome (delivered / undelivered) separately so a failed return
+ * ACK is recorded on its own axis, never as a Bot-leg error.
+ */
+export const MARK_PROCESSED = `
+  UPDATE inbound_hl7_messages
+     SET state = 'processed',
+         ack_outcome = ?,
+         processed_at = ?
+   WHERE id = ?
+`;
+
+/**
+ * Bot-leg failure: state is the caller-supplied terminal (`rejected` for a
+ * permanent reject, `failed` for transient/ambiguous). No app-level ACK is owed
+ * in either case, so the source leg settles to not_owed.
+ */
+export const MARK_BOT_FAILED = `
+  UPDATE inbound_hl7_messages
+     SET state = ?,
+         errored_at = ?,
+         last_error = ?,
+         error_code = ?,
+         ack_outcome = 'not_owed'
+   WHERE id = ?
+`;
+
+/**
+ * Source leg only: used when a retransmit replays a previously-undelivered ACK
+ * and lands it, flipping the row's ack_outcome without touching state.
+ */
+export const SET_ACK_OUTCOME = `
+  UPDATE inbound_hl7_messages
+     SET ack_outcome = ?
+   WHERE id = ?
+`;
+
+/**
+ * Undo of {@link CLAIM_NEXT} for a dispatch that provably never left the process
+ * (the transmit request was still sitting in the in-memory WS queue when the
+ * connection dropped, so the row is still `claimed`, never `inflight`). The
+ * attempt_count decrement keeps the counter meaning "times the message could
+ * have reached the server".
+ */
+export const REQUEUE = `
+  UPDATE inbound_hl7_messages
+     SET state = 'queued',
+         processing_started_at = NULL,
+         attempt_count = MAX(0, attempt_count - 1)
+   WHERE id = ? AND state = 'claimed'
+`;
+
 // --- Startup / recovery ---
 
-/** Repopulate the in-memory wake signal. Served by `idx_inbound_channel_state_id`. */
+/** Repopulate the in-memory wake signal. Served by `idx_inbound_channel_state_id`. [index-guarded] */
 export const LIST_QUEUED_IDS_FOR_CHANNEL = `
   SELECT id FROM inbound_hl7_messages
    WHERE channel_name = ? AND state = 'queued'
@@ -84,7 +203,7 @@ export const LIST_QUEUED_IDS_FOR_CHANNEL = `
  * Crash recovery, ambiguous leg: a row left `inflight` (the request went out
  * but no response came back before the restart) may or may not have reached the
  * Bot, so it lands in `failed` for operator review — never silently retried. The
- * `WHERE state` scan (no channel filter) is served by `idx_inbound_state_processed_at`.
+ * `WHERE state` scan (no channel filter) is served by `idx_inbound_state_processed_at`. [index-guarded]
  */
 export const RECOVER_INFLIGHT = `
   UPDATE inbound_hl7_messages
@@ -101,7 +220,7 @@ export const RECOVER_INFLIGHT = `
  * the server, so it's returned to `queued` to re-dispatch with no duplicate
  * risk. The attempt_count decrement undoes the claim's increment, since the
  * claim never resulted in a real delivery attempt. The `WHERE state` scan is
- * served by `idx_inbound_state_processed_at`.
+ * served by `idx_inbound_state_processed_at`. [index-guarded]
  */
 export const RECOVER_CLAIMED = `
   UPDATE inbound_hl7_messages
@@ -111,15 +230,80 @@ export const RECOVER_CLAIMED = `
    WHERE state = 'claimed'
 `;
 
+// --- Stats / diagnostics ---
+
+/** Counts of rows by state (full GROUP BY scan — diagnostic, not on the hot path). */
+export const COUNT_BY_STATE = `
+  SELECT state, COUNT(*) AS n FROM inbound_hl7_messages GROUP BY state
+`;
+
+/** Per-channel queue depth snapshot (queued/claimed/inflight counts + oldest queued time). */
+export const CHANNEL_DEPTH = `
+  SELECT
+    SUM(state = 'queued')                                            AS queued,
+    SUM(state = 'claimed')                                           AS claimed,
+    SUM(state = 'inflight')                                          AS inflight,
+    MIN(CASE WHEN state = 'queued' THEN received_at ELSE NULL END)   AS oldest_queued_at
+  FROM inbound_hl7_messages
+  WHERE channel_name = ?
+`;
+
+/** Size of the DB file in bytes, from `page_count * page_size`. Used by the retention sweeper. */
+export const DB_SIZE_BYTES = `
+  SELECT page_count * page_size AS bytes FROM pragma_page_count, pragma_page_size
+`;
+
+// --- Dispatch lease coordination (single-row PK table `_lease`) ---
+
+/**
+ * Lease acquire — upsert that succeeds only if no current lease, or if the
+ * current lease is held by us, or if it has expired. The WHERE clause on the
+ * ON CONFLICT branch is the gate: a foreign holder with a still-valid lease
+ * makes the UPDATE a no-op, and `changes()` returning 0 tells the caller they
+ * didn't get it. Bound parameters (in order): holder, now, expires_at, holder, now.
+ */
+export const TRY_ACQUIRE_LEASE = `
+  INSERT INTO _lease (id, holder, acquired_at, expires_at)
+  VALUES (1, ?, ?, ?)
+  ON CONFLICT(id) DO UPDATE
+     SET holder = excluded.holder,
+         acquired_at = excluded.acquired_at,
+         expires_at = excluded.expires_at
+   WHERE _lease.holder = ? OR _lease.expires_at <= ?
+`;
+
+/**
+ * Heartbeat — extends our own lease. Fails (returns 0 changes) if the lease is
+ * now held by someone else, which is how a stale leader learns it lost.
+ */
+export const HEARTBEAT_LEASE = `
+  UPDATE _lease SET expires_at = ? WHERE id = 1 AND holder = ?
+`;
+
+/** Release the lease iff `holder` still owns it. */
+export const RELEASE_LEASE = `
+  DELETE FROM _lease WHERE id = 1 AND holder = ?
+`;
+
+/** Read the current lease row (diagnostics + the demotion gate). */
+export const GET_LEASE = `
+  SELECT holder, expires_at FROM _lease WHERE id = 1
+`;
+
+// --- Maintenance ---
+
+/** Fold the WAL into the main DB file and truncate the WAL to zero bytes. */
+export const CHECKPOINT_WAL = `PRAGMA wal_checkpoint(TRUNCATE)`;
+
 // --- Retention sweep (cold, periodic / under size pressure) ---
 
-/** Phase 1 — time-based purge of fully-done processed rows. `idx_inbound_state_processed_at`. */
+/** Phase 1 — time-based purge of fully-done processed rows. `idx_inbound_state_processed_at`. [index-guarded] */
 export const RETENTION_PHASE1_DELETE = `
   DELETE FROM inbound_hl7_messages
    WHERE state = 'processed' AND ack_outcome != 'undelivered' AND processed_at < ?
 `;
 
-/** Phase 2 — size-driven purge of oldest fully-done processed rows. `idx_inbound_state_processed_at`. */
+/** Phase 2 — size-driven purge of oldest fully-done processed rows. `idx_inbound_state_processed_at`. [index-guarded] */
 export const RETENTION_PHASE2_DELETE = `
   DELETE FROM inbound_hl7_messages
    WHERE id IN (
@@ -130,7 +314,7 @@ export const RETENTION_PHASE2_DELETE = `
    )
 `;
 
-/** Phase 3 — floor-protected purge of terminal/undelivered rows. `idx_inbound_state_processed_at`. */
+/** Phase 3 — floor-protected purge of terminal/undelivered rows. `idx_inbound_state_processed_at`. [index-guarded] */
 export const RETENTION_PHASE3_DELETE = `
   DELETE FROM inbound_hl7_messages
    WHERE id IN (

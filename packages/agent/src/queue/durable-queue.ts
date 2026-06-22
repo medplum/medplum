@@ -7,13 +7,31 @@ import { randomUUID } from 'node:crypto';
 import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
 import {
+  CHANNEL_DEPTH,
+  CHECKPOINT_WAL,
   CLAIM_NEXT,
+  COMMIT_SEQ_NO,
+  COUNT_BY_STATE,
+  DB_SIZE_BYTES,
+  ENQUEUE,
+  ENQUEUE_REJECTED,
   FIND_BY_CALLBACK,
+  FIND_BY_ID,
   FIND_SEEN_BY_CONTROL_ID,
+  GET_LEASE,
+  HEARTBEAT_LEASE,
   LIST_QUEUED_IDS_FOR_CHANNEL,
+  MARK_BOT_FAILED,
+  MARK_PROCESSED,
   MARK_SENT,
+  PEEK_LAST_SEQ_NO,
+  RECORD_SERVER_RESPONSE,
   RECOVER_CLAIMED,
   RECOVER_INFLIGHT,
+  RELEASE_LEASE,
+  REQUEUE,
+  SET_ACK_OUTCOME,
+  TRY_ACQUIRE_LEASE,
 } from './queries';
 import { runMigrations } from './schema';
 import type {
@@ -185,39 +203,14 @@ export class DurableQueue {
 
     runMigrations(this.db);
 
-    this.enqueueStmt = this.db.prepare(`
-      INSERT INTO inbound_hl7_messages (
-        channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
-        enhanced_mode, state, attempt_count, callback_id,
-        seq_no, received_at
-      ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?
-      )
-    `);
+    this.enqueueStmt = this.db.prepare(ENQUEUE);
 
-    this.enqueueRejectedStmt = this.db.prepare(`
-      INSERT INTO inbound_hl7_messages (
-        channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
-        enhanced_mode, state, attempt_count, callback_id,
-        ack_outcome, last_error, error_code, seq_no, received_at
-      ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 'not_owed', ?, ?, ?, ?
-      )
-    `);
+    this.enqueueRejectedStmt = this.db.prepare(ENQUEUE_REJECTED);
 
-    // Per-channel monotonic sequence counter (assignSeqNo). peek is a pure read
-    // of the last assigned value; commit advances it. They're split (rather than
-    // a single advance-and-return) so the caller can stamp a candidate sequence
-    // number and only commit it once the row is durably inserted — a failed
-    // insert never consumes a sequence number. Single-process + synchronous, so
-    // no locking is needed between peek and commit.
-    this.peekLastSeqNoStmt = this.db.prepare(`
-      SELECT last_seq_no FROM _channel_seq WHERE channel_name = ?
-    `);
-    this.commitSeqNoStmt = this.db.prepare(`
-      INSERT INTO _channel_seq (channel_name, last_seq_no) VALUES (?, ?)
-        ON CONFLICT(channel_name) DO UPDATE SET last_seq_no = excluded.last_seq_no
-    `);
+    // Per-channel monotonic sequence counter (assignSeqNo). Single-process +
+    // synchronous, so no locking is needed between peek and commit.
+    this.peekLastSeqNoStmt = this.db.prepare(PEEK_LAST_SEQ_NO);
+    this.commitSeqNoStmt = this.db.prepare(COMMIT_SEQ_NO);
 
     // Canonical prior row for a (channel, control_id): any state except `nacked`
     // (nacked rows are rejected-intake audit records and intentionally reuse
@@ -238,61 +231,17 @@ export class DurableQueue {
 
     this.findByCallbackStmt = this.db.prepare(FIND_BY_CALLBACK);
 
-    this.findByIdStmt = this.db.prepare(`
-      SELECT * FROM inbound_hl7_messages WHERE id = ?
-    `);
+    this.findByIdStmt = this.db.prepare(FIND_BY_ID);
 
-    this.recordServerResponseStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET server_status_code = ?,
-             server_response_body = ?
-       WHERE id = ?
-    `);
+    this.recordServerResponseStmt = this.db.prepare(RECORD_SERVER_RESPONSE);
 
-    // Bot accepted (2xx). state → processed regardless of the source leg; the
-    // caller passes the ack_outcome (delivered / undelivered) separately so a
-    // failed return ACK is recorded on its own axis, never as a Bot-leg error.
-    this.markProcessedStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = 'processed',
-             ack_outcome = ?,
-             processed_at = ?
-       WHERE id = ?
-    `);
+    this.markProcessedStmt = this.db.prepare(MARK_PROCESSED);
 
-    // Bot-leg failure: state is the caller-supplied terminal (`rejected` for a
-    // permanent reject, `failed` for transient/ambiguous). No app-level ACK is
-    // owed in either case, so the source leg settles to not_owed.
-    this.markBotFailedStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = ?,
-             errored_at = ?,
-             last_error = ?,
-             error_code = ?,
-             ack_outcome = 'not_owed'
-       WHERE id = ?
-    `);
+    this.markBotFailedStmt = this.db.prepare(MARK_BOT_FAILED);
 
-    // Source leg only: used when a retransmit replays a previously-undelivered
-    // ACK and lands it, flipping the row's ack_outcome without touching state.
-    this.setAckOutcomeStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET ack_outcome = ?
-       WHERE id = ?
-    `);
+    this.setAckOutcomeStmt = this.db.prepare(SET_ACK_OUTCOME);
 
-    // Undo of claimNext for a dispatch that provably never left the process
-    // (the transmit request was still sitting in the in-memory WS queue when
-    // the connection dropped, so the row is still `claimed`, never `inflight`).
-    // The attempt_count decrement keeps the counter meaning "times the message
-    // could have reached the server".
-    this.requeueStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = 'queued',
-             processing_started_at = NULL,
-             attempt_count = MAX(0, attempt_count - 1)
-       WHERE id = ? AND state = 'claimed'
-    `);
+    this.requeueStmt = this.db.prepare(REQUEUE);
 
     // Crash recovery splits on whether the request reached the wire:
     //   recoverInflight — rows left `inflight` are ambiguous (the server may or
@@ -306,51 +255,22 @@ export class DurableQueue {
 
     this.listQueuedIdsForChannelStmt = this.db.prepare(LIST_QUEUED_IDS_FOR_CHANNEL);
 
-    this.countByStateStmt = this.db.prepare(`
-      SELECT state, COUNT(*) AS n FROM inbound_hl7_messages GROUP BY state
-    `);
+    this.countByStateStmt = this.db.prepare(COUNT_BY_STATE);
 
-    this.channelDepthStmt = this.db.prepare(`
-      SELECT
-        SUM(state = 'queued')                                            AS queued,
-        SUM(state = 'claimed')                                           AS claimed,
-        SUM(state = 'inflight')                                          AS inflight,
-        MIN(CASE WHEN state = 'queued' THEN received_at ELSE NULL END)   AS oldest_queued_at
-      FROM inbound_hl7_messages
-      WHERE channel_name = ?
-    `);
+    this.channelDepthStmt = this.db.prepare(CHANNEL_DEPTH);
 
-    // Lease acquire — upsert that succeeds only if no current lease, or if the
-    // current lease is held by us, or if it has expired. The WHERE clause on the
-    // ON CONFLICT branch is the gate: a foreign holder with a still-valid lease
-    // makes the UPDATE a no-op, and `changes()` returning 0 tells the caller they
-    // didn't get it. Bound parameters (in order): holder, now, expires_at, holder, now.
-    this.tryAcquireLeaseStmt = this.db.prepare(`
-      INSERT INTO _lease (id, holder, acquired_at, expires_at)
-      VALUES (1, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE
-         SET holder = excluded.holder,
-             acquired_at = excluded.acquired_at,
-             expires_at = excluded.expires_at
-       WHERE _lease.holder = ? OR _lease.expires_at <= ?
-    `);
+    this.tryAcquireLeaseStmt = this.db.prepare(TRY_ACQUIRE_LEASE);
 
-    // Heartbeat — extends our own lease. Fails (returns 0 changes) if the lease
-    // is now held by someone else, which is how a stale leader learns it lost.
-    this.heartbeatLeaseStmt = this.db.prepare(`
-      UPDATE _lease SET expires_at = ? WHERE id = 1 AND holder = ?
-    `);
+    this.heartbeatLeaseStmt = this.db.prepare(HEARTBEAT_LEASE);
 
-    this.releaseLeaseStmt = this.db.prepare(`
-      DELETE FROM _lease WHERE id = 1 AND holder = ?
-    `);
+    this.releaseLeaseStmt = this.db.prepare(RELEASE_LEASE);
 
-    this.getLeaseStmt = this.db.prepare(`SELECT holder, expires_at FROM _lease WHERE id = 1`);
+    this.getLeaseStmt = this.db.prepare(GET_LEASE);
 
     // Prepared once like every other statement — checkpointWal() runs on every
     // heartbeat tick and every retention sweep, so re-compiling it per call would
     // leak GC-finalised statement objects proportional to heartbeat frequency.
-    this.checkpointStmt = this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)');
+    this.checkpointStmt = this.db.prepare(CHECKPOINT_WAL);
   }
 
   /**
@@ -1055,9 +975,7 @@ export class DurableQueue {
    * `page_count * page_size`. Used by the retention sweeper.
    */
   getDbSizeBytes(): number {
-    const row = this.db
-      .prepare('SELECT page_count * page_size AS bytes FROM pragma_page_count, pragma_page_size')
-      .get() as { bytes: number } | undefined;
+    const row = this.db.prepare(DB_SIZE_BYTES).get() as { bytes: number } | undefined;
     return row?.bytes ?? 0;
   }
 
