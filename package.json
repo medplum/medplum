@@ -39,10 +39,10 @@
     "whatwg-url": "14.0.0"
   },
   "devDependencies": {
-    "@babel/core": "7.29.7",
-    "@babel/preset-env": "7.29.7",
-    "@babel/preset-react": "7.29.7",
-    "@babel/preset-typescript": "7.29.7",
+    "@babel/core": "8.0.1",
+    "@babel/preset-env": "8.0.2",
+    "@babel/preset-react": "8.0.1",
+    "@babel/preset-typescript": "8.0.1",
     "@jest/globals": "30.4.1",
     "@jest/types": "30.4.1",
     "@microsoft/api-documenter": "7.30.7",
