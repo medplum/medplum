@@ -10,11 +10,15 @@ import { Outlet, useNavigate, useParams } from 'react-router';
 import classes from './ResourcePage.module.css';
 import { useResourceType } from './useResourceType';
 
-const tabs = ['Details', 'Edit', 'History'];
+const baseTabs = ['Details', 'Edit', 'History'];
 
 export function ResourcePage(): JSX.Element | null {
   const navigate = useNavigate();
   const medplum = useMedplum();
+
+  const project = medplum.getProject();
+  const schedulingEnabled = project?.features?.includes('scheduling');
+
   const { resourceType, id } = useParams();
   const [resource, setResource] = useState<Resource | undefined>(undefined);
 
@@ -28,6 +32,11 @@ export function ResourcePage(): JSX.Element | null {
         .catch(console.error);
     }
   }, [medplum, resourceType, id, navigate]);
+
+  const tabs = [...baseTabs];
+  if (resourceType === 'HealthcareService' && schedulingEnabled) {
+    tabs.push('Scheduling');
+  }
 
   if (!resource) {
     return null;

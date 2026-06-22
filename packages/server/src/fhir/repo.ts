@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobInteraction, Filter, SearchRequest, WithId } from '@medplum/core';
+import type { BackgroundJobInteraction, FhirPathPatch, Filter, SearchRequest, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
@@ -13,6 +13,7 @@ import {
   EMPTY,
   evalFhirPathTyped,
   extractAccountReferences,
+  fhirpathPatchTypedValue,
   forbidden,
   formatSearchQuery,
   getStatus,
@@ -38,6 +39,7 @@ import {
   satisfiedAccessPolicy,
   sleep,
   stringify,
+  toTypedValue,
   validateResourceType,
 } from '@medplum/core';
 import type {
@@ -55,7 +57,10 @@ import type {
   BundleEntry,
   ClientApplication,
   Meta,
+  OperationDefinition,
+  OperationDefinitionParameter,
   OperationOutcome,
+  Parameters,
   Project,
   Reference,
   Resource,
@@ -64,7 +69,7 @@ import type {
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import type { Operation } from 'rfc6902';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project } from '../constants';
@@ -99,13 +104,13 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
 import { FhirQuotaCost } from './fhirquota';
-import { clamp } from './operations/utils/parameters';
+import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { removeField } from './repository/field-utils';
 import { removeCachedProfile } from './repository/profile-cache';
-import type { StatementTimeoutOptions } from './repository/repository-connection';
+import type { ConnectionScope, StatementTimeoutOptions } from './repository/repository-connection';
 import { RepositoryConnection } from './repository/repository-connection';
 import type { CacheEntry } from './repository/resource-cache';
 import {
@@ -124,7 +129,7 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
 import { GLOBAL_SHARD_ID } from './sharding';
-import type { Expression } from './sql';
+import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
 
 export type { StatementTimeoutOptions } from './repository/repository-connection';
@@ -264,9 +269,10 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository extends FhirRepository<PoolClient> implements Disposable {
+export class Repository extends FhirRepository implements Disposable {
   private readonly context: RepositoryContext;
   private readonly connection: RepositoryConnection;
+  private readonly connectionScope: ConnectionScope;
   private readonly ownsConnection: boolean;
   private closed = false;
 
@@ -299,12 +305,20 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   static readonly VERSION: number = 15;
 
-  constructor(context: RepositoryContext, connection?: RepositoryConnection) {
+  /**
+   * Constructs a new Repository instance.
+   * @param context - The context of the repository.
+   * @param connection - (optional) The connection to use for the repository. See
+   * {@link RepositoryConnection.withTransaction} for more details.
+   * @param scope - (optional) The repository connection scope to use for the repository.
+   */
+  constructor(context: RepositoryContext, connection?: RepositoryConnection, scope?: ConnectionScope) {
     super();
     addSyntheticR4ProjectIfMissing(context);
     this.context = context;
     this.ownsConnection = connection === undefined;
     this.connection = connection ?? new RepositoryConnection();
+    this.connectionScope = scope ?? this.connection.getCurrentScope();
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
@@ -314,16 +328,33 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.connection.mode;
   }
 
-  set mode(mode: RepositoryMode) {
-    this.connection.mode = mode;
-  }
-
   /**
    * Convenience method to create a new repository with the same context but a new connection.
    * @returns A new repository with the same context but a new connection.
    */
   clone(): Repository {
+    this.assertUsable(); // technically not needed, but the implementation has been a moving target, so keep it locked down
     return new Repository(this.context);
+  }
+
+  /**
+   * Creates a repository with the same RepositoryContext and RepositoryConnection as the current repository for
+   * provided transaction scope. The current repository's connection must already be in a transaction.
+   * @param scope - The scope of the repository.
+   * @returns A repository with the same context as the current repository, but valid for the duration of the current transaction as well
+   * as post-commit callbacks.
+   */
+  private createTransactionScopedRepo(scope: ConnectionScope): this {
+    if (!this.connection.isInTransaction()) {
+      throw new Error('Not in transaction');
+    }
+    // use this.constructor to create the same concrete class, e.g. SystemRepository vs Repository, as this instance.
+    const RepositoryConstructor = this.constructor as new (
+      context: RepositoryContext,
+      connection?: RepositoryConnection,
+      scope?: ConnectionScope
+    ) => this;
+    return new RepositoryConstructor(this.context, this.connection, scope);
   }
 
   get shardId(): string {
@@ -336,30 +367,38 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns a SystemRepository for the same shard as this repository.
    */
   getSystemRepo(): SystemRepository {
+    this.assertUsable();
     const contextDefaults: SystemRepositoryContextDefaults = {
       skipBackgroundJobs: this.context.skipBackgroundJobs,
     };
+
+    let systemRepo: SystemRepository;
     if (this.connection.hasConnection()) {
-      this.assertNotClosed();
-      return createSystemRepository(this.shardId, this.connection, contextDefaults);
+      systemRepo = createSystemRepository(this.shardId, this.connection, this.connectionScope, contextDefaults);
+    } else {
+      systemRepo = createSystemRepository(this.shardId, undefined, undefined, contextDefaults);
     }
-    return createSystemRepository(this.shardId, undefined, contextDefaults);
+    return systemRepo;
   }
 
   withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository {
+    this.assertUsable();
+    let repo: Repository;
     if (this.connection.hasConnection()) {
-      this.assertNotClosed();
-      return new Repository({ ...this.context, ...config }, this.connection);
+      repo = new Repository({ ...this.context, ...config }, this.connection, this.connectionScope);
     } else {
-      return new Repository({ ...this.context, ...config });
+      repo = new Repository({ ...this.context, ...config });
     }
+    return repo;
   }
 
   setMode(mode: RepositoryMode): void {
+    this.assertUsable();
     this.connection.mode = mode;
   }
 
   async recordFhirQuota(points: number): Promise<void> {
+    this.assertUsable();
     const ctx = tryGetRequestContext();
     const limiter = this.isSuperAdmin() ? undefined : ctx?.fhirRateLimiter;
     if (ctx instanceof AuthenticatedRequestContext && ctx.isAsync) {
@@ -501,7 +540,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       //   throw new OperationOutcomeError(notFound);
       // }
       if (this.canPerformInteraction(AccessPolicyInteraction.READ, cacheRecord.resource)) {
-        return cacheRecord.resource;
+        return this.authorizeBinarySecurityContext(cacheRecord.resource);
       }
     }
 
@@ -512,7 +551,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.readResourceFromDatabase(resourceType, id);
   }
 
-  private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
+  private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<WithId<T>> {
     if (!isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
@@ -537,6 +576,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.setCacheEntry(resource);
     }
 
+    return this.authorizeBinarySecurityContext(resource);
+  }
+
+  private async authorizeBinarySecurityContext<T extends Resource>(resource: T): Promise<T> {
+    if (resource.resourceType === 'Binary' && resource.securityContext && !this.isSuperAdmin()) {
+      if (resource.securityContext.reference?.startsWith('Binary/')) {
+        throw new OperationOutcomeError(notFound);
+      }
+      await this.readReference(resource.securityContext);
+    }
     return resource;
   }
 
@@ -589,7 +638,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         if (!this.canPerformInteraction(AccessPolicyInteraction.READ, cacheEntry.resource)) {
           return new OperationOutcomeError(notFound);
         }
-        return cacheEntry.resource;
+        return await this.authorizeBinarySecurityContext(cacheEntry.resource);
       }
       return await this.readResourceFromDatabase(resourceType, id);
     } catch (err) {
@@ -606,6 +655,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>> {
+    this.assertUsable();
     let parts: [T['resourceType'], string];
     try {
       parts = parseReference(reference);
@@ -754,7 +804,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(notFound);
       }
 
-      const result = this.removeHiddenFields(JSON.parse(rows[0].content as string));
+      const result = await this.authorizeBinarySecurityContext(
+        this.removeHiddenFields(JSON.parse(rows[0].content as string))
+      );
       const durationMs = Date.now() - startTime;
       this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });
       return result;
@@ -773,7 +825,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       let result: WithId<T>;
       if (options?.ifMatch) {
         // Conditional update requires transaction
-        result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options));
+        result = await this.withTransaction((txRepo) => txRepo.updateResourceImpl(resource, false, options));
       } else {
         result = await this.updateResourceImpl(resource, false, options);
       }
@@ -813,6 +865,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return resource;
   }
 
+  private validateBinarySecurityContext(resource: Resource): void {
+    if (resource.resourceType === 'Binary' && resource.securityContext?.reference?.startsWith('Binary/')) {
+      throw new OperationOutcomeError(badRequest('Binary.securityContext cannot reference another Binary'));
+    }
+  }
+
   private async updateResourceImpl<T extends Resource>(
     resource: T,
     create: boolean,
@@ -820,6 +878,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   ): Promise<WithId<T>> {
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
     let validatedResource = this.checkResourcePermissions(resource, interaction);
+    this.validateBinarySecurityContext(validatedResource);
     const { resourceType, id } = validatedResource;
 
     const preCommitResult = await preCommitValidation(this, validatedResource, 'update');
@@ -829,6 +888,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       preCommitResult.id === validatedResource.id
     ) {
       validatedResource = this.checkResourcePermissions(preCommitResult, interaction);
+      this.validateBinarySecurityContext(validatedResource);
     }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
@@ -852,7 +912,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       ...updated.meta,
       versionId: this.generateId(),
       lastUpdated: this.getLastUpdated(existing, validatedResource),
-      author: this.getAuthor(validatedResource),
+      author: this.getAuthor(),
       onBehalfOf: this.context.onBehalfOf,
     };
 
@@ -1005,10 +1065,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param create - If true, then the resource is being created.
    */
   private async writeToDatabase<T extends WithId<Resource>>(resource: T, create: boolean): Promise<void> {
-    await this.ensureInTransaction(async (client) => {
-      await this.writeResource(client, resource);
-      await this.writeResourceVersion(client, resource);
-      await this.writeLookupTables(client, resource, create);
+    await this.ensureInTransaction(async (txRepo) => {
+      await txRepo.writeResource(resource);
+      await txRepo.writeResourceVersion(resource);
+      await txRepo.writeLookupTables(resource, create);
     });
   }
 
@@ -1073,13 +1133,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns Promise to complete.
    */
   async reindexResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+    this.assertUsable();
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
 
-    await this.withTransaction(async (conn) => {
-      const resource = await this.readResourceImpl<T>(resourceType, id);
-      return this.reindexResources(conn, [resource]);
+    await this.withTransaction(async (txRepo) => {
+      const resource = await txRepo.readResourceImpl<T>(resourceType, id);
+      return txRepo.reindexResources([resource]);
     });
   }
 
@@ -1087,10 +1148,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Internal implementation of reindexing a resource.
    * This accepts a resource as a parameter, rather than a resource type and ID.
    * When doing a bulk reindex, this will be more efficient because it avoids unnecessary reads.
-   * @param conn - Database client to use for reindex operations.
    * @param resources - The resource(s) to reindex.
    */
-  async reindexResources<T extends Resource>(conn: PoolClient, resources: WithId<T>[]): Promise<void> {
+  async reindexResources<T extends Resource>(resources: WithId<T>[]): Promise<void> {
+    this.assertUsable();
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -1108,8 +1169,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
-    await this.batchWriteLookupTables(conn, resources, false);
-    await this.batchWriteResources(conn, resources);
+    await this.ensureInTransaction(async (txRepo) => {
+      await txRepo.batchWriteLookupTables(resources, false);
+      await txRepo.batchWriteResources(resources);
+    });
   }
 
   /**
@@ -1126,6 +1189,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     options?: ResendSubscriptionsOptions
   ): Promise<void> {
+    this.assertUsable();
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -1201,25 +1265,26 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
 
       if (!this.isCacheOnly(resource)) {
-        await this.ensureInTransaction(async (conn) => {
+        await this.ensureInTransaction(async (txRepo) => {
           const columns = buildDeletedResourceRow(resourceType, id, resource.meta?.project);
 
-          await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
+          const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+          await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
 
           await new InsertQuery(resourceType + '_History', [
             {
               id,
-              versionId: this.generateId(),
+              versionId: txRepo.generateId(),
               lastUpdated: columns.lastUpdated,
               content: columns.content,
             },
-          ]).execute(conn);
+          ]).execute(client);
 
-          await this.deleteFromLookupTables(conn, resource);
+          await txRepo.deleteFromLookupTables(client, resource);
           const durationMs = Date.now() - startTime;
 
-          await this.postCommit(async () => {
-            this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });
+          await txRepo.postCommit(async () => {
+            txRepo.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });
           });
         });
       }
@@ -1243,15 +1308,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[],
+    patch: Operation[] | Parameters,
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
     try {
-      return await this.ensureInTransaction(async () => {
-        const resource = await this.readResourceFromDatabase<T>(resourceType, id);
+      return await this.ensureInTransaction(async (txRepo) => {
+        const resource = await txRepo.readResourceFromDatabase<T>(resourceType, id);
 
         if (resource.resourceType !== resourceType) {
           throw new OperationOutcomeError(badRequest('Incorrect resource type'));
@@ -1260,13 +1325,23 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           throw new OperationOutcomeError(badRequest('Incorrect ID'));
         }
 
-        patchObject(resource, patch);
+        if (Array.isArray(patch)) {
+          patchObject(resource, patch);
+        } else if (patch.parameter) {
+          const params = parseParametersFromDefinitions(
+            patchOperationDefinition.parameter as OperationDefinitionParameter[],
+            patch.parameter
+          );
+          fhirpathPatchTypedValue(toTypedValue(resource), params.operation as FhirPathPatch[]);
+        } else {
+          return resource; // No patch present, return unmodified
+        }
 
-        const result = await this.updateResourceImpl(resource, false, options);
+        const result = await txRepo.updateResourceImpl(resource, false, options);
         const durationMs = Date.now() - startTime;
 
-        await this.postCommit(async () => {
-          this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
+        await txRepo.postCommit(async () => {
+          txRepo.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
         });
         return result;
       });
@@ -1287,6 +1362,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param id - The resource ID.
    */
   async expungeResource(resourceType: string, id: string): Promise<void> {
+    this.assertUsable();
     await this.expungeResources(resourceType, [id]);
   }
 
@@ -1297,6 +1373,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param ids - The resource IDs.
    */
   async expungeResources(resourceType: string, ids: string[]): Promise<void> {
+    this.assertUsable();
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -1309,11 +1386,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const projectId = this.isSuperAdmin() ? undefined : this.context.currentProject?.id;
     const deletedIds = await this.withTransaction<string[]>(
-      async (client) => {
+      async (txRepo) => {
         const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
         if (projectId) {
           deleteQuery.where('projectId', '=', projectId);
         }
+        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
         const deleteResult = await deleteQuery.execute<{ id: string }>(client);
         if (deleteResult.length === 0) {
           return [];
@@ -1323,11 +1401,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         for (let i = 0; i < deleteResult.length; i++) {
           const res = deleteResult[i];
           deletedIds[i] = res.id;
-          await this.deleteFromLookupTables(client, { resourceType, id: res.id } as WithId<Resource>);
+          await txRepo.deleteFromLookupTables(client, { resourceType, id: res.id } as WithId<Resource>);
         }
 
         await new DeleteQuery(resourceType + '_History').where('id', 'IN', deletedIds).execute(client);
-        await this.postCommit(() => this.deleteCacheEntries(resourceType, deletedIds));
+        await txRepo.postCommit(() => txRepo.deleteCacheEntries(resourceType, deletedIds));
         return deletedIds;
       },
       { serializable: true }
@@ -1347,6 +1425,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param before - The date before which resources should be purged.
    */
   async purgeResources(resourceType: ResourceType, before: string): Promise<void> {
+    this.assertUsable();
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -1388,6 +1467,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     process: (resource: WithId<T>) => Promise<void>,
     options?: ProcessAllResourcesOptions
   ): Promise<void> {
+    this.assertUsable();
     let searchRequest: SearchRequest<T> | undefined = initialSearchRequest;
     while (searchRequest) {
       const bundle: Bundle<T> = await this.search<T>(searchRequest);
@@ -1585,19 +1665,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Writes the resource to the resource table.
    * This builds all search parameter columns.
    * This does *not* write the version to the history table.
-   * @param client - The database client inside the transaction.
    * @param resource - The resource.
    */
-  private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
+  protected async writeResource(resource: Resource): Promise<void> {
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     const row = buildResourceRow(resource, Repository.VERSION);
     await new InsertQuery(resource.resourceType, [row]).mergeOnConflict().execute(client);
   }
 
-  private async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
+  protected async batchWriteResources(resources: Resource[]): Promise<void> {
     if (!resources.length) {
       return;
     }
-
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     await new InsertQuery(
       resources[0].resourceType,
       resources.map((r) => buildResourceRow(r, Repository.VERSION))
@@ -1608,14 +1688,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   /**
    * Writes a version of the resource to the resource history table.
-   * @param client - The database client inside the transaction.
    * @param resource - The resource.
    */
-  private async writeResourceVersion(client: PoolClient, resource: Resource): Promise<void> {
+  protected async writeResourceVersion(resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = stringify(resource);
 
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     await new InsertQuery(resourceType + '_History', [
       {
         id: resource.id,
@@ -1682,21 +1762,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   /**
    * Writes resources values to the lookup tables.
-   * @param client - The database client inside the transaction.
    * @param resource - The resource to index.
    * @param create - If true, then the resource is being created.
    */
-  private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
+  protected async writeLookupTables(resource: WithId<Resource>, create: boolean): Promise<void> {
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(client, resource, create);
     }
   }
 
-  private async batchWriteLookupTables<T extends Resource>(
-    client: PoolClient,
-    resources: WithId<T>[],
-    create: boolean
-  ): Promise<void> {
+  protected async batchWriteLookupTables<T extends Resource>(resources: WithId<T>[], create: boolean): Promise<void> {
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
     for (const lookupTable of lookupTables) {
       await lookupTable.batchIndexResources(client, resources, create);
     }
@@ -1707,7 +1784,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param client - The database client inside the transaction.
    * @param resource - The resource to delete.
    */
-  private async deleteFromLookupTables(client: Pool | PoolClient, resource: WithId<Resource>): Promise<void> {
+  protected async deleteFromLookupTables(client: PgQueryable, resource: WithId<Resource>): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.deleteValuesForResource(client, resource);
     }
@@ -1776,23 +1853,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   /**
-   * Returns the author reference.
-   * If the current context is allowed to write meta,
-   * and the provided resource includes an author reference,
-   * then use the provided value.
-   * Otherwise uses the current context profile.
-   * @param resource - The FHIR resource.
+   * Returns the author reference from the repository context.
+   * meta.author is server-controlled and is never taken from the request body.
    * @returns The author value.
    */
-  getAuthor(resource?: Resource): Reference {
-    // If the resource has an author (whether provided or from existing),
-    // and the current context is allowed to write meta,
-    // then use the provided value.
-    const author = resource?.meta?.author;
-    if (author && this.canWriteProtectedMeta()) {
-      return author;
-    }
-
+  getAuthor(): Reference {
     return this.context.author;
   }
 
@@ -1866,7 +1931,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   /**
    * Determines if the current user can manually set certain protected meta fields
-   * such as author, project, lastUpdated, etc.
+   * such as project, lastUpdated, etc.
    * @returns True if the current user can manually set protected meta fields.
    */
   private canWriteProtectedMeta(): boolean {
@@ -2120,47 +2185,56 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   /**
-   * Returns a database client.
+   * Returns a query-capable database client.
    * Use this method when you don't care if you're in a transaction or not.
    * For example, use this method for "read by ID".
-   * The return value can either be a pool client or a pool.
-   * If in a transaction, then returns the transaction client (PoolClient).
-   * Otherwise, returns the pool (Pool).
+   * At runtime, this can be backed by a pool client or a pool, but the public type
+   * intentionally only exposes query operations.
    * @param mode - The database mode.
    * @returns The database client.
    */
-  getDatabaseClient(mode: DatabaseMode): Pool | PoolClient {
-    this.assertNotClosed();
-    return this.connection.getDatabaseClient(mode);
+  getDatabaseClient(mode: DatabaseMode): PgQueryable {
+    this.assertUsable();
+    return this.connection.getDatabaseClient(this.connectionScope, mode);
   }
 
   async withTransaction<TResult>(
-    callback: (client: PoolClient) => Promise<TResult>,
+    callback: (repo: this) => Promise<TResult>,
     options?: { serializable?: boolean }
   ): Promise<TResult> {
-    this.assertNotClosed();
-    return this.connection.withTransaction(callback, options);
+    this.assertUsable();
+    return this.connection.withTransaction(
+      this.connectionScope,
+      async (txScope) => {
+        // create transaction-scoped repository within RepositoryConnection.withTransaction callback
+        // since the callback is only invoked after a sticky PoolClient is established to begin the
+        // transaction.
+        const txnScopedRepo = this.createTransactionScopedRepo(txScope);
+        return callback(txnScopedRepo);
+      },
+      options
+    );
   }
 
   async withStatementTimeout<TResult>(
     options: StatementTimeoutOptions,
     callback: (client: PoolClient) => Promise<TResult>
   ): Promise<TResult> {
-    this.assertNotClosed();
+    this.assertUsable();
     if (!this.ownsConnection) {
       throw new Error('Cannot set statement timeout on a borrowed repository connection');
     }
     return this.connection.withStatementTimeout(options, callback);
   }
 
-  async preCommit(fn: () => Promise<void>): Promise<void> {
-    this.assertNotClosed();
-    return this.connection.preCommit(fn);
+  async preCommit(fn: () => void | Promise<void>): Promise<void> {
+    this.assertUsable();
+    return this.connection.preCommit(this.connectionScope, async () => fn());
   }
 
-  async postCommit(fn: () => Promise<void>): Promise<void> {
-    this.assertNotClosed();
-    return this.connection.postCommit(fn);
+  async postCommit(fn: () => void | Promise<void>): Promise<void> {
+    this.assertUsable();
+    return this.connection.postCommit(this.connectionScope, async () => fn());
   }
 
   /**
@@ -2241,9 +2315,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await deleteResourceCacheEntries(resourceType, ids);
   }
 
-  async ensureInTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
-    this.assertNotClosed();
-    return this.connection.ensureInTransaction(callback);
+  async ensureInTransaction<TResult>(callback: (repo: this) => Promise<TResult>): Promise<TResult> {
+    this.assertUsable();
+    if (this.connection.isInTransaction()) {
+      return callback(this);
+    }
+
+    return this.withTransaction(callback);
   }
 
   getConfig(): Readonly<RepositoryContext> {
@@ -2251,17 +2329,25 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   [Symbol.dispose](removeConnection?: boolean): void {
-    this.assertNotClosed();
+    // idempotent
+    if (this.closed) {
+      return;
+    }
+    this.closed = true;
     if (this.ownsConnection) {
       this.connection[Symbol.dispose](removeConnection);
     }
-    this.closed = true;
   }
 
-  private assertNotClosed(): void {
-    if (this.closed) {
+  isClosed(): boolean {
+    return this.closed || this.connection.isScopeEnded(this.connectionScope);
+  }
+
+  private assertUsable(): void {
+    if (this.isClosed()) {
       throw new Error('Already closed');
     }
+    this.connection.assertScope(this.connectionScope);
   }
 }
 
@@ -2273,12 +2359,14 @@ type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJo
  * Creates a SystemRepository for the specified shard.
  * @param shardId - The shard ID.
  * @param connection - Optional repository connection for transaction support.
+ * @param connectionScope - Optional scope for the connection.
  * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository instance.
  */
 function createSystemRepository(
   shardId: string,
   connection?: RepositoryConnection,
+  connectionScope?: ConnectionScope,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
   return new SystemRepository(
@@ -2293,7 +2381,8 @@ function createSystemRepository(
       },
       // System repo does not have an associated Project; it can write to any
     },
-    connection
+    connection,
+    connectionScope
   );
 }
 
@@ -2327,7 +2416,7 @@ export function getGlobalSystemRepo(
   connection?: RepositoryConnection,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
-  return createSystemRepository(GLOBAL_SHARD_ID, connection, contextDefaults);
+  return createSystemRepository(GLOBAL_SHARD_ID, connection, undefined, contextDefaults);
 }
 
 /**
@@ -2344,7 +2433,7 @@ export function getShardSystemRepo(
   connection?: RepositoryConnection,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
-  return createSystemRepository(shardId, connection, contextDefaults);
+  return createSystemRepository(shardId, connection, undefined, contextDefaults);
 }
 
 /**
@@ -2364,3 +2453,25 @@ export async function getProjectSystemRepo(
   // But for now, all projects are on the global shard.
   return getGlobalSystemRepo();
 }
+
+const patchOperationDefinition: OperationDefinition = {
+  resourceType: 'OperationDefinition',
+  name: 'FHIRPatch',
+  code: 'UNUSED',
+  kind: 'operation',
+  status: 'unknown',
+  system: false,
+  type: false,
+  instance: false,
+  parameter: [
+    makeOperationDefinitionParameter('in', 'operation', undefined, 1, '*', [
+      makeOperationDefinitionParameter('in', 'type', 'code', 1, '1'),
+      makeOperationDefinitionParameter('in', 'path', 'string', 1, '1'),
+      makeOperationDefinitionParameter('in', 'name', 'string', 0, '1'),
+      makeOperationDefinitionParameter('in', 'value', 'Any', 0, '1'),
+      makeOperationDefinitionParameter('in', 'index', 'integer', 0, '1'),
+      makeOperationDefinitionParameter('in', 'source', 'integer', 0, '1'),
+      makeOperationDefinitionParameter('in', 'destination', 'integer', 0, '1'),
+    ]),
+  ],
+};

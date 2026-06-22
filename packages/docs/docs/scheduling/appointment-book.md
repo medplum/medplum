@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 
 :::info[Alpha]
 
-The `$book` operation is currently in alpha.
+The `$book` operation is currently in [alpha](/docs/compliance/alpha-beta).
 
 :::
 

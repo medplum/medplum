@@ -35,8 +35,6 @@ import bcrypt from 'bcrypt';
 import type { Request } from 'express';
 import type { JWTPayload, VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
-import type { RequestInit as FetchRequestInit } from 'node-fetch';
-import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
@@ -885,7 +883,7 @@ export async function getExternalUserInfo(
     if (err instanceof OperationOutcomeError) {
       throw err;
     }
-    log.warn('Failed to verify external authorization code', err);
+    log.warn('Failed to verify external authorization code', { err, userInfoUrl, contentType });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
@@ -896,7 +894,7 @@ function buildExternalUserInfoRequest(
   userInfoUrl: string,
   externalAccessToken: string,
   idp: IdentityProvider | undefined
-): { url: string; init: FetchRequestInit } {
+): { url: string; init: RequestInit } {
   if (idp?.userInfoMode === 'gcip') {
     const apiKey = idp.userInfoApiKey;
     if (!apiKey) {
@@ -914,6 +912,7 @@ function buildExternalUserInfoRequest(
         method: 'POST',
         headers: {
           Accept: ContentType.JSON,
+          'Accept-Encoding': 'identity',
           'Content-Type': ContentType.JSON,
         },
         body: JSON.stringify({ idToken: externalAccessToken }),
@@ -927,6 +926,7 @@ function buildExternalUserInfoRequest(
       method: 'GET',
       headers: {
         Accept: ContentType.JSON,
+        'Accept-Encoding': 'identity',
         Authorization: `Bearer ${externalAccessToken}`,
       },
     },

@@ -166,7 +166,7 @@ async function handler(params: {
     assert(schedulingParameters);
 
     const scheduleSlots = existingSlots.filter((slot) => resolveId(slot.schedule) === schedule.id);
-    let availability = resolveAvailability(schedulingParameters, effectiveRange, schedulingParameters.timezone);
+    let availability = resolveAvailability(schedulingParameters, effectiveRange, schedulingParameters.get('timezone'));
     availability = applyExistingSlots({
       availability,
       slots: scheduleSlots,
@@ -176,8 +176,8 @@ async function handler(params: {
 
     // Trim off bufferBefore/bufferAfter from availability
     availability = availability.map((interval) => ({
-      start: addMinutes(interval.start, schedulingParameters.bufferBefore),
-      end: addMinutes(interval.end, -1 * schedulingParameters.bufferAfter),
+      start: addMinutes(interval.start, schedulingParameters.get('bufferBefore')),
+      end: addMinutes(interval.end, -1 * schedulingParameters.get('bufferAfter')),
     }));
 
     // Optimization: restrict to windows long enough for the requested duration
@@ -186,7 +186,7 @@ async function handler(params: {
     // `start` after our previous buffer-trimming step.
     availability = availability.filter((interval) => {
       const durationMs = interval.end.getTime() - interval.start.getTime();
-      return durationMs >= schedulingParameters.duration * 60 * 1000;
+      return durationMs >= schedulingParameters.get('duration') * 60 * 1000;
     });
 
     return availability;
@@ -201,9 +201,12 @@ async function handler(params: {
     intersectingAvailability,
     (interval, _idx, maxCount) =>
       findAlignedSlotTimes(interval, {
-        offsetMinutes: commonParameters.alignmentOffset,
+        alignment: {
+          interval: commonParameters.alignmentInterval,
+          offset: commonParameters.alignmentOffset,
+          timezone: commonParameters.alignmentTimezone,
+        },
         durationMinutes: commonParameters.duration,
-        alignment: commonParameters.alignmentInterval,
         maxCount,
       }),
     pageSize
@@ -228,10 +231,10 @@ async function handler(params: {
         },
       ];
 
-      if (parameters.bufferBefore) {
+      if (parameters.get('bufferBefore')) {
         resultSlots.push({
           resourceType: 'Slot',
-          start: addMinutes(interval.start, -1 * parameters.bufferBefore).toISOString(),
+          start: addMinutes(interval.start, -1 * parameters.get('bufferBefore')).toISOString(),
           end: start,
           schedule: createReference(schedule),
           status: 'busy-unavailable',
@@ -240,11 +243,11 @@ async function handler(params: {
         });
       }
 
-      if (parameters.bufferAfter) {
+      if (parameters.get('bufferAfter')) {
         resultSlots.push({
           resourceType: 'Slot',
           start: end,
-          end: addMinutes(interval.end, parameters.bufferAfter).toISOString(),
+          end: addMinutes(interval.end, parameters.get('bufferAfter')).toISOString(),
           schedule: createReference(schedule),
           status: 'busy-unavailable',
           serviceType,
@@ -285,6 +288,7 @@ async function handler(params: {
  * Endpoints:
  *   [fhir base]/Schedule/[id]/$find
  *
+ * @deprecated - use Appointment/$find instead.
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */
@@ -324,6 +328,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
  * Endpoints:
  *   [fhir base]/Appointment/$find
  *
+ * @experimental - Scheduling Alpha API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { concatUrls, isString, MEDPLUM_VERSION, MedplumClient } from '@medplum/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import fetch from 'node-fetch';
 import { z } from 'zod';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
@@ -63,7 +62,7 @@ export function getMcpServer(): McpServer {
       const baseFhirUrl = concatUrls(baseUrl, 'fhir/R4');
       const fhirUrl = concatUrls(baseFhirUrl, path);
       const accessToken = ctx.authState.accessToken;
-      const proxy = new MedplumClient({ baseUrl, accessToken, fetch });
+      const proxy = new MedplumClient({ baseUrl, accessToken, fetch: globalThis.fetch });
 
       // MCP allows sending JSON, but some clients (like Claude) send the body as a string
       if (isString(body)) {

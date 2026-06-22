@@ -13,7 +13,6 @@ import {
 } from '@medplum/core';
 import type { ClientApplication, DomainConfiguration, IdentityProvider, Project } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
@@ -262,6 +261,7 @@ async function verifyExternalCode(
 ): Promise<Record<string, unknown>> {
   const headers: HeadersInit = {
     Accept: ContentType.JSON,
+    'Accept-Encoding': 'identity',
     'Content-Type': ContentType.FORM_URL_ENCODED,
   };
 

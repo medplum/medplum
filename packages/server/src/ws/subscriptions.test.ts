@@ -40,8 +40,10 @@ import {
   publish,
   setActiveSubscription,
 } from '../pubsub';
+import * as redisModule from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDispatchJob } from '../workers/test-utils';
+import { cleanupR4SubscriptionResources } from './subscriptions';
 
 jest.mock('hibp');
 jest.mock('../constants', () => ({
@@ -1960,6 +1962,12 @@ describe('Subscription Heartbeat', () => {
     await shutdownApp();
   });
 
+  beforeEach(() => {
+    // subscriptions.ts keeps a module-level pub/sub subscriber that outlives individual
+    // WebSocket connections. Reset it between tests so each test starts from a clean state.
+    cleanupR4SubscriptionResources();
+  });
+
   test('Heartbeat received after binding to token', () =>
     withTestContext(async () => {
       // Create subscription to watch patient
@@ -2030,6 +2038,89 @@ describe('Subscription Heartbeat', () => {
         .expectClosed();
     }));
 
+  test('Recreates Redis subscriber when prior subscriber connection ends', () =>
+    withTestContext(async () => {
+      const subscriberSpy = jest.spyOn(redisModule, 'getPubSubRedisSubscriber');
+
+      try {
+        // First bind lazily creates the shared Redis subscriber for WebSocket fan-out.
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'websocket',
+          },
+        });
+
+        const res = await request(server)
+          .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+          .set('Authorization', 'Bearer ' + accessToken);
+
+        const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+
+        await request(server)
+          .ws('/ws/subscriptions-r4')
+          .sendJson({ type: 'bind-with-token', payload: { token } })
+          .expectJson((actual) => {
+            expect(actual).toMatchObject({
+              resourceType: 'Bundle',
+              type: 'history',
+            });
+          })
+          .close()
+          .expectClosed();
+
+        expect(subscriberSpy).toHaveBeenCalledTimes(1);
+        const firstSubscriber = subscriberSpy.mock.results[0].value;
+
+        // Simulate the pub/sub connection dropping. The `end` listener in
+        // setupSubscriptionHandler should clear the module reference so the next bind
+        // can call getPubSubRedisSubscriber again.
+        await new Promise<void>((resolve) => {
+          firstSubscriber.once('end', resolve);
+          firstSubscriber.disconnect();
+        });
+
+        // Use a second subscription so the rebind has a fresh cache entry. Closing the
+        // first socket runs onDisconnect, which removes the binding token from Redis.
+        const secondSubscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'websocket',
+          },
+        });
+
+        const secondRes = await request(server)
+          .get(`/fhir/R4/Subscription/${secondSubscription.id}/$get-ws-binding-token`)
+          .set('Authorization', 'Bearer ' + accessToken);
+
+        const secondToken = (secondRes.body as Parameters).parameter?.[0]?.valueString as string;
+
+        // A new WebSocket bind after the subscriber ended should recreate the connection.
+        await request(server)
+          .ws('/ws/subscriptions-r4')
+          .sendJson({ type: 'bind-with-token', payload: { token: secondToken } })
+          .expectJson((actual) => {
+            expect(actual).toMatchObject({
+              resourceType: 'Bundle',
+              type: 'history',
+            });
+          })
+          .close()
+          .expectClosed();
+
+        expect(subscriberSpy).toHaveBeenCalledTimes(2);
+        expect(firstSubscriber).not.toBe(subscriberSpy.mock.results[1].value);
+      } finally {
+        subscriberSpy.mockRestore();
+      }
+    }));
+
   test('Heartbeat not received before binding to token', () =>
     withTestContext(async () => {
       await request(server)
@@ -2047,5 +2138,149 @@ describe('Subscription Heartbeat', () => {
         })
         .close()
         .expectClosed();
+    }));
+
+  test('Logs and ignores a client message that is not valid JSON', () =>
+    withTestContext(async () => {
+      const errorSpy = jest.spyOn(globalLogger, 'error');
+      try {
+        await request(server)
+          .ws('/ws/subscriptions-r4')
+          // A malformed message must be logged and dropped; the connection stays usable
+          .sendText('{ not valid json')
+          .sendJson({ type: 'ping' })
+          .expectJson({ type: 'pong' })
+          .exec(() => {
+            expect(errorSpy).toHaveBeenCalledWith(
+              expect.stringContaining('Failed to parse client message'),
+              expect.objectContaining({ socketId: expect.any(String) })
+            );
+          })
+          .close()
+          .expectClosed();
+      } finally {
+        errorSpy.mockRestore();
+      }
+    }));
+
+  test('Logs and ignores a malformed redis subscription event payload', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+
+      const errorSpy = jest.spyOn(globalLogger, 'error');
+      try {
+        await request(server)
+          .ws('/ws/subscriptions-r4')
+          .sendJson({ type: 'bind-with-token', payload: { token } })
+          .expectJson((actual) => {
+            expect(actual).toMatchObject({ resourceType: 'Bundle', type: 'history' });
+          })
+          .exec(async () => {
+            // Wait until the subscription is active so the redis subscriber is listening
+            let subActive = false;
+            while (!subActive) {
+              await sleep(0);
+              subActive = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription.id}`)) === 1;
+            }
+            // A non-JSON payload must be logged and ignored, not crash the redis message handler
+            await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, 'not-valid-json{');
+            for (let i = 0; i < 25; i++) {
+              if (
+                errorSpy.mock.calls.some(
+                  (call) =>
+                    typeof call[0] === 'string' && call[0].includes('Failed to parse subscription event payload')
+                )
+              ) {
+                break;
+              }
+              await sleep(20);
+            }
+            expect(errorSpy).toHaveBeenCalledWith(
+              expect.stringContaining('Failed to parse subscription event payload'),
+              expect.objectContaining({ channel: WEBSOCKET_SUB_PUBLISH_CHANNEL })
+            );
+          })
+          .close()
+          .expectClosed();
+      } finally {
+        errorSpy.mockRestore();
+      }
+    }));
+
+  test('Recovers when the subscription handler fails to initialize', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+
+      // Reset module state so the next bind triggers a fresh setupSubscriptionHandler
+      cleanupR4SubscriptionResources();
+
+      const errorSpy = jest.spyOn(globalLogger, 'error');
+      // Fail the first attempt to create the redis subscriber
+      const subscriberSpy = jest.spyOn(redisModule, 'getPubSubRedisSubscriber').mockImplementationOnce(() => {
+        throw new Error('Redis unavailable');
+      });
+
+      try {
+        // First bind: setup throws, the cached promise is reset, and the bind error is logged
+        await request(server)
+          .ws('/ws/subscriptions-r4')
+          .sendJson({ type: 'bind-with-token', payload: { token } })
+          .exec(async () => {
+            for (let i = 0; i < 25; i++) {
+              if (
+                errorSpy.mock.calls.some(
+                  (call) => typeof call[0] === 'string' && call[0].includes('Error while binding with token')
+                )
+              ) {
+                break;
+              }
+              await sleep(20);
+            }
+          })
+          .close()
+          .expectClosed();
+        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Error while binding with token'));
+
+        subscriberSpy.mockRestore();
+
+        // Second bind: with the failure cleared, setup retries and the handshake succeeds
+        await request(server)
+          .ws('/ws/subscriptions-r4')
+          .sendJson({ type: 'bind-with-token', payload: { token } })
+          .expectJson((actual) => {
+            expect(actual).toMatchObject({
+              resourceType: 'Bundle',
+              type: 'history',
+              entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+            });
+          })
+          .close()
+          .expectClosed();
+      } finally {
+        subscriberSpy.mockRestore();
+        errorSpy.mockRestore();
+      }
     }));
 });

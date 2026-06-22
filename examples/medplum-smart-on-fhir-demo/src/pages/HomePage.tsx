@@ -12,14 +12,13 @@ import {
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  MEDPLUM_CLIENT_ID,
-  MEDPLUM_FHIR_URL,
-  SMART_HEALTH_IT_CLIENT_ID,
-  SMART_HEALTH_IT_FHIR_URL,
-  STANDALONE_SCOPE,
-} from '../config';
 import classes from './HomePage.module.css';
+
+const MEDPLUM_CLIENT_ID = import.meta.env.MEDPLUM_CLIENT_ID || 'your-client-id';
+const MEDPLUM_FHIR_URL = 'https://api.medplum.com/fhir/R4';
+const SMART_HEALTH_IT_CLIENT_ID = 'your-client-id'; // No need to set; Sandbox accepts any client ID
+const SMART_HEALTH_IT_FHIR_URL = 'https://launch.smarthealthit.org/v/r4/sim/e30=/fhir';
+const STANDALONE_SCOPE = 'launch/patient patient/*.read offline_access';
 
 async function initiateLaunch(clientId: string, fhirUrl: string): Promise<void> {
   // Store the FHIR base URL so LaunchPage can find it after the redirect
@@ -112,7 +111,7 @@ export function HomePage(): JSX.Element {
                     , also set the <strong>Launch URI</strong> to <code>http://localhost:8001/launch</code>
                   </List.Item>
                   <List.Item>
-                    Copy the client ID and paste it into <code>MEDPLUM_CLIENT_ID</code> in <code>src/config.ts</code>
+                    Copy the client ID and paste it into <code>MEDPLUM_CLIENT_ID</code> in <code>.env</code>
                   </List.Item>
                 </List>
               </Stack>

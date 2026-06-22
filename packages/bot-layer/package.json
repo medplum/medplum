@@ -1,6 +1,6 @@
 {
   "name": "@medplum/bot-layer",
-  "version": "5.1.17",
+  "version": "5.1.21",
   "description": "Medplum Bot Lambda Layer",
   "keywords": [
     "medplum",
@@ -22,11 +22,11 @@
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "dependencies": {
-    "@medplum/ccda": "5.1.17",
-    "@medplum/core": "5.1.17",
-    "@medplum/definitions": "5.1.17",
-    "fast-xml-parser": "5.8.0",
-    "form-data": "4.0.5",
+    "@medplum/ccda": "5.1.21",
+    "@medplum/core": "5.1.21",
+    "@medplum/definitions": "5.1.21",
+    "fast-xml-parser": "5.9.3",
+    "form-data": "4.0.6",
     "jose": "5.10.0",
     "jszip": "3.10.1",
     "node-fetch": "2.7.0",
@@ -34,15 +34,15 @@
     "ssh2": "1.17.0",
     "ssh2-sftp-client": "12.1.1",
     "twilio": "6.0.2",
-    "undici": "7.27.1"
+    "undici": "7.28.0"
   },
   "devDependencies": {
     "@types/node-fetch": "2.6.13"
   },
   "peerDependencies": {
-    "@medplum/ccda": "5.1.17",
-    "@medplum/core": "5.1.17",
-    "@medplum/definitions": "5.1.17",
+    "@medplum/ccda": "5.1.21",
+    "@medplum/core": "5.1.21",
+    "@medplum/definitions": "5.1.21",
     "fast-xml-parser": "^5.0.9",
     "form-data": "^4.0.0",
     "jose": "^5.10.0",

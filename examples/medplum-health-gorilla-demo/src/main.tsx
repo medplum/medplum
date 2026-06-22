@@ -10,10 +10,9 @@ import '@medplum/react/styles.css';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { App } from './App';
-import { getConfig } from './config';
 
 const medplum = new MedplumClient({
-  baseUrl: getConfig().baseUrl,
+  baseUrl: import.meta.env.MEDPLUM_BASE_URL,
   cacheTime: 60000,
   autoBatchTime: 100,
   onUnauthenticated: () => {

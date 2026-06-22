@@ -903,9 +903,9 @@ describe('Appointment/$hold', () => {
         actor: practitioner1,
         extension: [makeSchedulingExtension({ service: officeVisitService, duration: 60, bufferBefore: 20 })],
       });
-      const bufferStart = '2026-01-15T09:00:00-05:00';
-      const busyStart = '2026-01-15T09:20:00-05:00';
-      const busyEnd = '2026-01-15T10:20:00-05:00';
+      const bufferStart = '2026-01-15T09:40:00-05:00';
+      const busyStart = '2026-01-15T10:00:00-05:00';
+      const busyEnd = '2026-01-15T11:00:00-05:00';
 
       const response = await request
         .post('/fhir/R4/Appointment/$hold')
@@ -928,6 +928,7 @@ describe('Appointment/$hold', () => {
           })
         );
 
+      expect(response.body).not.toHaveProperty('issue');
       expect(response.status).toEqual(201);
 
       const entries = ((response.body as Bundle).entry ?? []).map((e) => e.resource).filter(isDefined);
@@ -945,15 +946,15 @@ describe('Appointment/$hold', () => {
         actor: practitioner1,
         extension: [makeSchedulingExtension({ service: officeVisitService, duration: 60, bufferBefore: 20 })],
       });
-      const bufferStart = '2026-01-15T09:00:00-05:00';
-      const busyStart = '2026-01-15T09:20:00-05:00';
-      const busyEnd = '2026-01-15T10:20:00-05:00';
+      const bufferStart = '2026-01-15T09:40:00-05:00';
+      const busyStart = '2026-01-15T10:00:00-05:00';
+      const busyEnd = '2026-01-15T11:00:00-05:00';
 
       // Create an existing slot partially overlapping the requested buffer
       await systemRepo.createResource<Slot>({
         resourceType: 'Slot',
-        start: '2026-01-15T08:40:00-05:00',
-        end: '2026-01-15T09:10:00-05:00',
+        start: '2026-01-15T09:20:00-05:00',
+        end: '2026-01-15T09:50:00-05:00',
         status: 'busy',
         schedule: createReference(schedule),
         meta: { project: project.project.id },

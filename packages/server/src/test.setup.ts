@@ -23,6 +23,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type internal from 'node:stream';
+import type { QueryConfigValues, QueryResult, QueryResultRow } from 'pg';
+import { Client as PgClient } from 'pg';
 import request from 'supertest';
 import type { ServerInviteResponse } from './admin/invite';
 import { inviteUser } from './admin/invite';
@@ -32,6 +34,7 @@ import { getRepoForLogin } from './fhir/accesspolicy';
 import type { Repository } from './fhir/repo';
 import { getProjectSystemRepo, getShardSystemRepo } from './fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
+import type { PgQueryable } from './fhir/sql';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
@@ -242,11 +245,10 @@ export function setupPwnedPasswordMock(pwnedPassword: jest.Mock, numPwns: number
 
 /**
  * Sets up the fetch mock to handle Recaptcha requests.
- * @param fetch - The fetch mock.
  * @param success - Whether the mock should return a successful response.
  */
-export function setupRecaptchaMock(fetch: jest.Mock, success: boolean): void {
-  fetch.mockImplementation(() => ({
+export function setupRecaptchaMock(success: boolean): void {
+  (globalThis.fetch as jest.Mock).mockImplementation(() => ({
     status: 200,
     json: () => ({ success }),
   }));
@@ -568,4 +570,59 @@ keyUsage = digitalSignature, keyEncipherment
     // Cleanup
     rmSync(tmpDir, { recursive: true, force: true });
   }
+}
+
+/**
+ * Installs a jest spy on `PgClient.prototype.query` that consults `interceptor`
+ * for each query and restores the spy after `fn` settles. The interceptor receives
+ * the SQL text (if any) and may:
+ *  - throw — the query rejects with the thrown error
+ *  - return a value — the query resolves with that value (the real DB is not hit)
+ *  - return undefined — the real query implementation runs
+ *
+ * Useful for injecting failures at the PG layer, which is necessary because the
+ * reindex worker runs its search via the transaction-scoped repo created inside
+ * `systemRepo.withTransaction(...)` — a distinct instance from `systemRepo`, so
+ * spying on `systemRepo.search` does not intercept it.
+ * @param interceptor - Called for each PG query with the SQL text; throws to reject, returns a value to resolve, or returns undefined to delegate to the real query.
+ * @param fn - The async block to run while the interceptor is installed.
+ * @returns The resolved value of `fn`.
+ */
+export async function withQueryInterceptor<T>(
+  interceptor: (sql: string | undefined) => unknown,
+  fn: () => Promise<T>
+): Promise<T> {
+  const realQuery = PgClient.prototype.query;
+  const spy = jest.spyOn(PgClient.prototype, 'query').mockImplementation(async function (
+    this: PgClient,
+    ...args: unknown[]
+  ): Promise<any> {
+    const query = args[0] as string | { text?: string } | undefined;
+    const sql = typeof query === 'string' ? query : query?.text;
+    const result = await interceptor(sql);
+    if (result !== undefined) {
+      return result;
+    }
+    return (realQuery as any).apply(this, args);
+  });
+  try {
+    return await fn();
+  } finally {
+    spy.mockRestore();
+  }
+}
+
+/**
+ * Convenience function to spy on the `query` method of the given `client: PgQueryable` returning
+ * the spy cast to the `query` overload signature commonly used in the codebase.
+ * @param client - The client to spy on.
+ * @returns The spy instance.
+ */
+export function spyOnQuery<R extends QueryResultRow = any, I = any[]>(
+  client: PgQueryable
+): jest.SpyInstance<Promise<QueryResult<R>>, [string, QueryConfigValues<I>]> {
+  return jest.spyOn(client, 'query') as unknown as jest.SpyInstance<
+    Promise<QueryResult<R>>,
+    [string, QueryConfigValues<I>]
+  >;
 }

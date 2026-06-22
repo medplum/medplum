@@ -22,12 +22,13 @@ If you have any questions, please [contact us](mailto:hello@medplum.com) or [joi
 
 To deploy Medplum in Azure, the process is divided into two parts:
 
-- Static Infrastructure (using terraform)
-- Medplum App (helm chart)
+- Static Infrastructure (using Terraform)
+- Medplum App (Helm chart)
 
-This division allows a fully customizable deployment, for example: if a customer wants to use an existing K8s cluster, they can just deploy the helm chart to it.
+This division allows a fully customizable deployment, for example: if a customer wants to use an existing Kubernetes cluster, they can just deploy the Helm chart to it.
 
-The Medplum application is configured using a secret in Azure KeyVault.  
+The Medplum application is configured using a secret in Azure Key Vault.
+
 See [Generate Configuration Secret](#generate-configuration-secret)
 
 ### Azure Architecture {/* #azure-architecture */}
@@ -37,35 +38,35 @@ See [Generate Configuration Secret](#generate-configuration-secret)
 ### Infrastructure summary {/* #infrastructure-summary */}
 
 - The Medplum backend (API) container runs in Kubernetes.
-  - The API is exposed using an Application Gateway, which is created in terraform
-  - Azure AppService managed certificates are used. (they need to be created and exported to a KeyVault)
+  - The API is exposed using an Application Gateway, which is created in Terraform
+  - Azure App Service managed certificates are used. (they need to be created and exported to a Key Vault)
 - We use a managed Redis cache and PostgreSQL flexible servers
 - CDN profiles are used to expose the frontend (app)
 
 ### High-level deployment process {/* #high-level-deployment-process */}
 
-1. Create a KeyVault for certificates. Generate the certificates and make them available in the KV.
-2. Deploy static infrastructure using terraform (VNET, AKS, PostgreSQL, Redis, Storage Accounts, Application Gateway)
+1. Create a Key Vault for certificates. Generate the certificates and make them available in the Key Vault.
+2. Deploy static infrastructure using Terraform (VNET, AKS, PostgreSQL, Redis, Storage Accounts, Application Gateway)
 3. With the values from Step 2, create the Medplum app configuration
 4. With the values from Step 2, point the DNS records
-5. Deploy the backend application using the helm chart
+5. Deploy the backend application using the Helm chart
 6. Copy the frontend files to the CDN storage, using the script
 
 ## Azure Deployment {/* #azure-deployment */}
 
 ### Prepare Certificates {/* #prepare-certificates */}
 
-You may choose another way of generating the certificates, ie: LetsEncrypt, but in this case, we have used all Azure services.
+You may choose another way of generating the certificates, i.e., Let's Encrypt, but in this case, we have used all Azure services.
 
-You can generate managed certificates using AppService:
+You can generate managed certificates using App Service:
 
 [https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-app-service-certificate?tabs=portal](https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-app-service-certificate?tabs=portal)
 
-After the validation, you can export the certificates to a KeyVault from the certificates UI in Azure.
+After the validation, you can export the certificates to a Key Vault from the certificates UI in Azure.
 
 ![Download Azure Certificate](./azure-certificates.webp)
 
-**This step is required before deploying the terraform code because the CDN requires the certificate to be generated for using custom domains.**
+**This step is required before deploying the Terraform code because the CDN requires the certificate to be generated for using custom domains.**
 
 ### Infrastructure Deployment {/* #infrastructure-deployment */}
 
@@ -74,7 +75,7 @@ The `terraform` folder contains **Terraform** configurations for deploying infra
 - Azure Resource Group
 - AKS
 - Log Analytics Workspace
-- KMS, DES and KeyVault for AKS
+- KMS, DES and Key Vault for AKS
 - CDN profile
 - Azure PostgreSQL Flexible Server
 - Redis cache
@@ -172,9 +173,9 @@ Use `terraform output postgresql_password` to retrieve the PostgreSQL password
 
 ### Generate configuration secret {/* #generate-configuration-secret */}
 
-The configuration secret holds the Medplum application configuration, and it contains the connection strings to the rest of the infrastructure that we deployed before using terraform.
+The configuration secret holds the Medplum application configuration, and it contains the connection strings to the rest of the infrastructure that we deployed before using Terraform.
 
-**1\. Use an existing or create a new KeyVault in Azure**
+**1\. Use an existing or create a new Key Vault in Azure**
 
 **2\. Prepare the Secret Data**  
 Create a JSON file containing your secret data. Save it as secret_data.json.
@@ -227,10 +228,11 @@ Create a JSON file containing your secret data. Save it as secret_data.json.
 
 - Replace **YOUR_DB_HOST** and **YOUR_REDIS_HOST** with your database's hostnames or IP addresses and Redis instances.
 - Ensure the JSON content is correctly formatted and that any variables or placeholders are replaced with actual values.
-- See [/docs/self-hosting/presigned-urls] to setup presigned URLs
+- See [Set up presigned URLs](/docs/self-hosting/presigned-urls) to set up presigned URLs
 
-**3\. Create a secret in the KeyVault:**  
-Use the az cli to add the secret data to your secret.
+**3\. Create a secret in the Key Vault:**
+
+Use the Azure CLI to add the secret data to your secret.
 
 ```
 az keyvault secret set --vault-name "my-keyvault" --name "medplum-config" --file "secret_data.json"
@@ -240,7 +242,8 @@ az keyvault secret set --vault-name "my-keyvault" --name "medplum-config" --file
 
 After deploying the infrastructure, you need to point your domains to the infrastructure created by Terraform.
 
-- **From the terraform output:**  
+- **From the Terraform output:**
+
   Retrieve the external IP address of the Application Gateway, and the CDN endpoint
 
 ```
@@ -255,11 +258,9 @@ cdn_endpoint = "medplumapp7d8c-endpoint-cv01.azurefd.net"
 - **For** `app.medplum.com`**:**
   - Create a CNAME record for app.medplum.com pointing to `medplumapp-endpoint-cv01.azurefd.net`
 
-### Deploy the APP Using Helm {/* #deploy-the-app-using-helm */}
+### Deploy the Backend API Using Helm {/* #deploy-the-backend-api-using-helm */}
 
-The Helm chart is a package containing `yaml` templates representing Kubernetes Objects.
-
-The helm chart can be found in the `helm` directory.
+The Medplum Helm chart is a package containing `yaml` templates representing Kubernetes objects.
 
 **It will deploy:**
 
@@ -270,71 +271,78 @@ The helm chart can be found in the `helm` directory.
   - The ingress is optional. Users can choose to expose the API with other methods
 - Service Account
 
-#### Deploy your backend API to the AKS cluster using Helm {/* #deploy-your-backend-api-to-the-aks-cluster-using-helm */}
-
 #### Configure kubectl {/* #configure-kubectl */}
 
-Get credentials for your GKE cluster:
+Get credentials for your AKS cluster:
 
-```
-az aks get-credentials --resource-group MY_RESOURCE_GROUP --name AKS_NAME --overwrite-existing --admin
+```bash
+az aks get-credentials --resource-group [MY_RESOURCE_GROUP] --name [MY_AKS_CLUSTER_NAME] --overwrite-existing --admin
 ```
 
-#### Navigate to Your Helm Chart Directory {/* #navigate-to-your-helm-chart-directory */}
+Replace `[MY_RESOURCE_GROUP]` with your Azure resource group name and `[MY_AKS_CLUSTER_NAME]` with your AKS cluster name.
 
+#### Set up the Helm Repository {/* #set-up-the-helm-repository */}
+
+Add the Medplum Helm repository:
+
+```bash
+helm repo add medplum https://charts.medplum.com
+helm repo update
 ```
-cd medplum/helm
+
+Generate a local `values.yaml` file:
+
+```bash
+helm show values medplum/medplum > values.yaml
 ```
 
 #### Edit the values.yaml File {/* #edit-the-values.yaml-file */}
 
-Edit the `values.yaml` file to override default values, specifying your cloud provider, project_id and config_sicret_id:
+Edit the `values.yaml` file to override default values, specifying your cloud provider and configuration source:
 
-```
+```yaml
 global:
   cloudProvider: azure
-  azure:
-    keyVaultURL: [MY_KEYVAULT_URL] # Your Azure Key Vault URL
-    secretName: [MY_CONFIG_SECRET_NAME] # The configuration secret Name in Azure
-
+  configSource:
+    type: "azure:[MY_KEY_VAULT_HOST]:[MY_CONFIG_SECRET_NAME]"
 ```
 
-Replace `[MY_KEYVAULT_URL]` with the key vault URL where the configuration secret is.  
-Replace [`[`](#generate-configuration-secret)`MY_CONFIG_SECRET_NAME]` with the secret name created in the step before.
+Replace `[MY_KEY_VAULT_HOST]` with the Key Vault host where the configuration secret is stored, for example `my-vault.vault.azure.net`. Do not include `https://` or a trailing slash.
+
+Replace `[MY_CONFIG_SECRET_NAME]` with the secret name created in the [Generate configuration secret](#generate-configuration-secret) step.
 
 #### Edit service account values {/* #edit-service-account-values */}
 
-```
+```yaml
 serviceAccount:
   annotations:
-    azure.workload.identity/client-id: "MY_AZURE_MANAGED_IDENTITY_ID" # Azure Managed Identity Client ID
-
+    azure.workload.identity/client-id: "[MY_AZURE_MANAGED_IDENTITY_ID]" # Azure Managed Identity Client ID
 ```
 
-    Replace `[MY_AZURE_MANAGED_IDENTITY_ID]` with the managed entity ID from the terraform output:
+Replace `[MY_AZURE_MANAGED_IDENTITY_ID]` with the managed identity ID from the Terraform output:
 
 ```
 medplum_server_identity_client_id = "7f61-4b27-ae90d7ee8"
 ```
 
-**Edit ingress values:**
+#### Edit ingress values {/* #edit-ingress-values */}
 
 (ingress is optional; customers can choose to use whatever method they like to expose the app)
 
-```
+```yaml
 ingress:
   deploy: true
   domain: [MY_DOMAIN] # Your domain name
   tlsSecretName: [TLS_SECRET_NAME] # Azure only
 ```
 
-    Replace `MY_DOMAIN` and `TLS_SECRET_NAME` with your actual domain and certificate secret name
+Replace `[MY_DOMAIN]` and `[TLS_SECRET_NAME]` with your actual domain and certificate secret name.
 
-**Create a K8s secret from the KeyVault certificate:**
+#### Create a Kubernetes secret from the Key Vault certificate {/* #create-a-kubernetes-secret-from-the-key-vault-certificate */}
 
-In the Step 1, we prepared a certificate for `api.medplum.com` and exported it to a KeyVault. Now we need to download that certificate and create a kubernetes secret with it:
+In Step 1, we prepared a certificate for `api.medplum.com` and exported it to a Key Vault. Now we need to download that certificate and create a Kubernetes secret with it:
 
-```
+```bash
 # download cert
 az keyvault secret show \
     --vault-name $KEYVAULT_NAME \
@@ -356,13 +364,20 @@ kubectl create secret tls api-certificate \
 
 Replace the variables. (this will create a secret called `api-certificate` in namespace `medplum`)
 
-**Install the Application:**
+#### Install the Application {/* #install-the-application */}
 
-```
-helm install medplum-server . -n medplum --create-namespace -f values.yaml
+```bash
+helm install medplum medplum/medplum \
+  --namespace medplum \
+  --create-namespace \
+  -f values.yaml
 ```
 
-Note: "." is the `./path-to-your-helm-chart.` The `values.yaml` is in the same directory as helm chart
+### Upgrade the backend application {/* #upgrade-the-backend-application */}
+
+Backend upgrades use the standard Medplum Helm upgrade process. See [Install on Kubernetes: Upgrade to a new version](/docs/self-hosting/install-on-kubernetes#upgrade-to-a-new-version).
+
+The Azure-specific settings in `values.yaml`, such as the configuration source, workload identity annotations, and ingress settings, continue to apply during the upgrade. This upgrades the Kubernetes backend only; frontend static assets are built and uploaded separately in the next section.
 
 ### Deploy the frontend (App) {/* #deploy-the-frontend-(app) */}
 
