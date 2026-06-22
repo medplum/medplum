@@ -6,7 +6,6 @@ import { Router } from 'express';
 import { authenticateRequest } from '../oauth/middleware';
 import { changePasswordHandler, changePasswordValidator } from './changepassword';
 import { clientInfoHandler } from './clientinfo';
-import { exchangeHandler, exchangeValidator } from './exchange';
 import { externalCallbackHandler } from './external';
 import { googleHandler, googleValidator } from './google';
 import { loginHandler, loginValidator } from './login';
@@ -42,7 +41,6 @@ authRouter.post('/resetpassword', resetPasswordValidator, validateRecaptcha(), r
 authRouter.post('/setpassword', setPasswordValidator, setPasswordHandler);
 authRouter.post('/verifyemail', verifyEmailValidator, verifyEmailHandler);
 authRouter.post('/google', googleValidator, googleHandler);
-authRouter.post('/exchange', exchangeValidator, exchangeHandler);
 authRouter.post('/revoke', authenticateRequest, revokeValidator, revokeHandler);
 authRouter.post('/preauthorize', authenticateRequest, preAuthorizeValidator, preAuthorizeHandler);
 authRouter.get('/login/:login', statusValidator, statusHandler);

@@ -60,7 +60,3 @@ The client makes a token exchange request to the token endpoint with an extensio
 :::
 
 The response will include a Medplum access token, which you can use to access the Medplum API. The Medplum SDK also provides the [`exchangeExternalAccessToken()`](/docs/sdk/core.medplumclient.exchangeexternalaccesstoken) helper method.
-
-## Legacy `/auth/exchange` endpoint
-
-Before supporting the OAuth 2.0 Token Exchange standard, Medplum provided the `/auth/exchange` endpoint. This endpoint is deprecated, and developers are encouraged to adopt the standard.
