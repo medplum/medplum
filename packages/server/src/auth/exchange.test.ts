@@ -5,7 +5,6 @@ import { ContentType } from '@medplum/core';
 import type { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import fetch from 'node-fetch';
 import request from 'supertest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
@@ -15,7 +14,7 @@ import { getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-jest.mock('node-fetch');
+const fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
 
 const app = express();
 const domain = randomUUID() + '.example.com';
@@ -26,6 +25,8 @@ let project: WithId<Project>;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
 let subjectAuthClient: ClientApplication;
+let gcipAuthClient: ClientApplication;
+let gcipSubjectAuthClient: ClientApplication;
 
 describe('Token Exchange', () => {
   beforeAll(async () => {
@@ -80,6 +81,31 @@ describe('Token Exchange', () => {
         },
       });
 
+      gcipAuthClient = await createClient(systemRepo, {
+        project,
+        name: 'GCIP Auth Client',
+        redirectUri,
+        identityProvider: {
+          ...identityProvider,
+          userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
+          userInfoMode: 'gcip',
+          userInfoApiKey: 'test-api-key',
+        },
+      });
+
+      gcipSubjectAuthClient = await createClient(systemRepo, {
+        project,
+        name: 'GCIP Subject Auth Client',
+        redirectUri,
+        identityProvider: {
+          ...identityProvider,
+          userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
+          userInfoMode: 'gcip',
+          userInfoApiKey: 'test-api-key',
+          useSubject: true,
+        },
+      });
+
       // Invite user with external ID
       await inviteUser({
         project,
@@ -123,7 +149,7 @@ describe('Token Exchange', () => {
   });
 
   test('Unknown user', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ email: 'not-found@' + domain }),
@@ -138,7 +164,7 @@ describe('Token Exchange', () => {
   });
 
   test('ClientApplication success', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ email }),
@@ -152,8 +178,35 @@ describe('Token Exchange', () => {
     expect(res.body.access_token).toBeTruthy();
   });
 
+  test('GCIP success', async () => {
+    fetchMock.mockImplementation(() => ({
+      status: 200,
+      headers: { get: () => ContentType.JSON },
+      json: () => ({ users: [{ email, localId: 'firebase-user-id' }] }),
+    }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'firebase-token',
+      clientId: gcipAuthClient.id,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=test-api-key',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Accept: ContentType.JSON,
+          'Content-Type': ContentType.JSON,
+        }),
+        body: JSON.stringify({ idToken: 'firebase-token' }),
+      })
+    );
+    expect(new URL(fetchMock.mock.calls.at(-1)?.[0]).searchParams.get('key')).toBe('test-api-key');
+  });
+
   test('Missing projectId success', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ email }),
@@ -168,7 +221,7 @@ describe('Token Exchange', () => {
   });
 
   test('Invalid token request', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.TEXT },
     }));
@@ -183,7 +236,7 @@ describe('Token Exchange', () => {
   });
 
   test('Subject auth success', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ email: '', sub: externalId }),
@@ -195,5 +248,35 @@ describe('Token Exchange', () => {
     });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('GCIP subject auth success', async () => {
+    fetchMock.mockImplementation(() => ({
+      status: 200,
+      headers: { get: () => ContentType.JSON },
+      json: () => ({ users: [{ email: '', localId: externalId }] }),
+    }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'firebase-token',
+      clientId: gcipSubjectAuthClient.id,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('GCIP missing localId', async () => {
+    fetchMock.mockImplementation(() => ({
+      status: 200,
+      headers: { get: () => ContentType.JSON },
+      json: () => ({ users: [{ email }] }),
+    }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'firebase-token',
+      clientId: gcipAuthClient.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error_description).toBe('Failed to verify code - missing localId in user info response');
   });
 });

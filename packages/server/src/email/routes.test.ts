@@ -4,6 +4,8 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { ContentType } from '@medplum/core';
 import express from 'express';
 import { simpleParser } from 'mailparser';
+import type { Transporter } from 'nodemailer';
+import nodemailer from 'nodemailer';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -86,6 +88,46 @@ describe('Email API Routes', () => {
     const parsed = await simpleParser(args.Content.Raw.Data);
     expect(parsed.subject).toBe('Subject');
     expect(parsed.text).toBe('Body\n');
+  });
+
+  test('Send email via project SMTP', async () => {
+    const sendMail = jest.fn().mockResolvedValue({ messageId: '123' });
+    const createTransportSpy = jest.spyOn(nodemailer, 'createTransport');
+    createTransportSpy.mockReturnValue({ sendMail } as unknown as Transporter);
+
+    try {
+      const accessToken = await initTestAuth({
+        membership: { admin: true },
+        project: {
+          secret: [
+            { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+            { name: 'smtpPort', valueInteger: 587 },
+            { name: 'smtpUsername', valueString: 'projectuser' },
+            { name: 'smtpPassword', valueString: 'projectpass' },
+            { name: 'smtpFromAddress', valueString: 'support@project.example.com' },
+          ],
+        },
+      });
+      const res = await request(app)
+        .post(`/email/v1/send`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON)
+        .send({
+          to: 'alice@example.com',
+          subject: 'Subject',
+          text: 'Body',
+        });
+      expect(res.status).toBe(200);
+
+      expect(createTransportSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ host: 'smtp.project.example.com', port: 587, secure: false })
+      );
+      expect(sendMail).toHaveBeenCalledTimes(1);
+      expect(sendMail.mock.calls[0][0].from).toBe('support@project.example.com');
+      expect(SESv2Client).toHaveBeenCalledTimes(0);
+    } finally {
+      createTransportSpy.mockRestore();
+    }
   });
 
   test('Handle SES error', async () => {

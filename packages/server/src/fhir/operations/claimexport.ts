@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Binary, Claim, Media, OperationDefinition } from '@medplum/fhirtypes';
+import type { Binary, Claim, Media } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { createPdf } from '../../util/pdf';
+import { makeOperationDefinition } from './definitions';
 import { getClaimPDFDocDefinition } from './utils/cms1500pdf';
 import { parseInputParameters } from './utils/parameters';
 
@@ -14,36 +15,31 @@ import { parseInputParameters } from './utils/parameters';
  * Operation definition for the Claim $export operation.
  * This operation exports a claim as a PDF document.
  */
-export const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'claim-export',
-  status: 'active',
-  kind: 'operation',
-  code: 'export',
-  experimental: true,
-  resource: ['Claim'],
-  system: false,
-  type: false,
-  instance: true,
-  parameter: [
-    {
-      use: 'in',
-      name: 'resource',
-      type: 'Resource',
-      min: 1,
-      max: '1',
-      documentation: 'The claim to export',
-    },
-    {
-      use: 'out',
-      name: 'return',
-      type: 'Media',
-      min: 1,
-      max: '1',
-      documentation: 'A Media resource containing the PDF document',
-    },
-  ],
-};
+export const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'Claim' },
+  {
+    name: 'claim-export',
+    code: 'export',
+    parameter: [
+      {
+        use: 'in',
+        name: 'resource',
+        type: 'Resource',
+        min: 1,
+        max: '1',
+        documentation: 'The claim to export',
+      },
+      {
+        use: 'out',
+        name: 'return',
+        type: 'Media',
+        min: 1,
+        max: '1',
+        documentation: 'A Media resource containing the PDF document',
+      },
+    ],
+  }
+);
 
 interface ClaimExportParameters {
   readonly resource: Claim;

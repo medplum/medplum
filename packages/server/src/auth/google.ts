@@ -127,7 +127,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     projectId,
     clientId,
     resourceType,
-    scope: req.body.scope || 'openid offline',
+    scope: req.body.scope ?? 'openid offline_access',
     nonce: req.body.nonce || randomUUID(),
     launchId: req.body.launch,
     codeChallenge: req.body.codeChallenge,

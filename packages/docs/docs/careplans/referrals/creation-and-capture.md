@@ -1,3 +1,8 @@
+---
+title: Referral Creation & Capture
+sidebar_label: Referral Creation & Capture
+---
+
 # Referral Creation & Capture {/* #referral-creation */}
 
 ## Capturing Referral Requests

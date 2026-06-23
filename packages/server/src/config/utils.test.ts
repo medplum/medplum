@@ -10,6 +10,7 @@ describe('utils', () => {
   test('isBooleanConfig', () => {
     expect(isBooleanConfig('baseUrl')).toBe(false);
     expect(isBooleanConfig('logRequests')).toBe(true);
+    expect(isBooleanConfig('rateLimitsEnabled')).toBe(true);
   });
 
   test('isIntegerConfig', () => {
@@ -22,6 +23,13 @@ describe('utils', () => {
       baseUrl: 'https://example.com',
     } as any);
     expect(config.maxSearchOffset).toBe(10_000);
+  });
+
+  test('addDefaults enables rate limits by default', () => {
+    const config = addDefaults({
+      baseUrl: 'https://example.com',
+    } as any);
+    expect(config.rateLimitsEnabled).toBe(true);
   });
 
   test('addDefaults preserves existing maxSearchOffset', () => {
@@ -50,6 +58,42 @@ describe('utils', () => {
         ssl: {
           require: true,
         },
+      },
+    });
+  });
+
+  test('setValue parses rateLimitsEnabled as boolean', () => {
+    const config = {};
+    setValue(config, 'rateLimitsEnabled', 'false');
+    expect(config).toEqual({ rateLimitsEnabled: false });
+  });
+
+  test('addDefaults preserves dataWarehouse.startDate as ISO-8601 string', () => {
+    const config = addDefaults({
+      baseUrl: 'https://example.com',
+      dataWarehouse: {
+        startDate: '2024-01-01T00:00:00.000Z',
+      },
+    } as any);
+    expect(config.dataWarehouse?.startDate).toBe('2024-01-01T00:00:00.000Z');
+  });
+
+  test('setValue stores dataWarehouse.startDate as string', () => {
+    const config = {};
+    setValue(config, 'dataWarehouse.startDate', '2024-01-01T00:00:00.000Z');
+    expect(config).toEqual({
+      dataWarehouse: {
+        startDate: '2024-01-01T00:00:00.000Z',
+      },
+    });
+  });
+
+  test('setValue stores dataWarehouse.includeResourceTypes as comma-separated list', () => {
+    const config = {};
+    setValue(config, 'dataWarehouse.includeResourceTypes', 'Patient,Observation');
+    expect(config).toEqual({
+      dataWarehouse: {
+        includeResourceTypes: ['Patient', 'Observation'],
       },
     });
   });

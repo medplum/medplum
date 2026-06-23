@@ -525,7 +525,7 @@ describe('QuestionnaireResponseDisplay', () => {
     } as QuestionnaireResponse & { id: string };
 
     // Mock the medplum client to return our test response
-    jest.spyOn(medplum, 'readResource').mockResolvedValue(mockQuestionnaireResponse);
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockQuestionnaireResponse);
 
     await act(async () => {
       setup({
@@ -539,7 +539,7 @@ describe('QuestionnaireResponseDisplay', () => {
   });
 
   test('Handles null/undefined response gracefully', () => {
-    jest.spyOn(medplum, 'readResource').mockResolvedValue(null as any);
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(null as any);
 
     setup({
       reference: 'QuestionnaireResponse/non-existent',

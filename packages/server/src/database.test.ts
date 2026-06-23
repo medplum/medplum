@@ -21,6 +21,7 @@ import {
   acquireAdvisoryLock,
   closeDatabase,
   DatabaseMode,
+  escapePgOptionsArg,
   getDatabasePool,
   getDefaultStatementTimeout,
   initDatabase,
@@ -213,7 +214,9 @@ describe('Database config', () => {
 
     // Use `jest.runAllTimersAsync().catch(...)` instead of `await jest.runAllTimersAsync()` since
     // we expect initDBPromise to reject. Based on https://github.com/jestjs/jest/issues/14120
-    jest.runAllTimersAsync().catch((reason) => console.error('Unexpected error in jest.runAllTimersAsync', reason));
+    jest
+      .runAllTimersAsync()
+      .catch((reason) => globalLogger.error('Unexpected error in jest.runAllTimersAsync', reason));
 
     await expect(initDBPromise).rejects.toThrow('Failed to acquire migration lock');
   });
@@ -251,6 +254,11 @@ describe('Database config', () => {
         options: undefined,
       })
     );
+  });
+
+  test('escapePgOptionsArg', () => {
+    expect(escapePgOptionsArg('repeatable read')).toBe('repeatable\\ read');
+    expect(escapePgOptionsArg('a\\b c')).toBe('a\\\\b\\ c');
   });
 
   test('getDefaultStatementTimeout', async () => {

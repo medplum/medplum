@@ -2,38 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'db-stats',
-  status: 'active',
-  kind: 'operation',
-  code: 'db-stats',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
-  parameter: [
-    {
-      use: 'in',
-      name: 'tableNames',
-      type: 'string',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'tableString',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-stats',
+    code: 'db-stats',
+    parameter: [
+      {
+        use: 'in',
+        name: 'tableNames',
+        type: 'string',
+        min: 0,
+        max: '1',
+      },
+      {
+        use: 'out',
+        name: 'tableString',
+        type: 'string',
+        min: 1,
+        max: '1',
+      },
+    ],
+  }
+);
 
 export async function dbStatsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();

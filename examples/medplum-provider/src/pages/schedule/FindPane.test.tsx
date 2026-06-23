@@ -4,15 +4,27 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { ReadablePromise } from '@medplum/core';
-import type { Appointment, CodeableConcept, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
+import type {
+  Appointment,
+  CodeableConcept,
+  Encounter,
+  HealthcareService,
+  PlanDefinition,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { createEncounter } from '../../utils/encounter';
+import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
 import { toCodeableReferenceLike } from '../../utils/servicetype';
 import { FindPane } from './FindPane';
+
+vi.mock('../../utils/encounter', () => ({ createEncounter: vi.fn() }));
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 const ServiceTypeReferenceURI = 'https://medlpum.com/fhir/service-type-reference';
@@ -35,22 +47,22 @@ describe('FindPane', () => {
     end: new Date('2024-01-21T23:59:59Z'),
   };
 
-  const mockSlots: Slot[] = [
+  const mockAppointments: Appointment[] = [
     {
-      resourceType: 'Slot',
-      id: 'slot-1',
-      schedule: { reference: 'Schedule/schedule-1' },
-      status: 'free',
+      resourceType: 'Appointment',
+      id: 'appointment-1',
+      status: 'proposed',
       start: '2024-01-16T10:00:00Z',
       end: '2024-01-16T10:30:00Z',
+      participant: [],
     },
     {
-      resourceType: 'Slot',
-      id: 'slot-2',
-      schedule: { reference: 'Schedule/schedule-1' },
-      status: 'free',
+      resourceType: 'Appointment',
+      id: 'appointment-2',
+      status: 'proposed',
       start: '2024-01-16T11:00:00Z',
       end: '2024-01-16T11:30:00Z',
+      participant: [],
     },
   ];
 
@@ -66,7 +78,7 @@ describe('FindPane', () => {
           Promise.resolve({
             resourceType: 'Bundle',
             type: 'searchset',
-            entry: mockSlots.map((slot) => ({ resource: slot })),
+            entry: mockAppointments.map((appointment) => ({ resource: appointment })),
           })
         );
       }
@@ -105,9 +117,7 @@ describe('FindPane', () => {
   type SetupOptions = {
     schedule?: WithId<Schedule>;
     range?: { start: Date; end: Date };
-    onChange?: (slots: Slot[]) => void;
-    onSuccess?: (results: { appointments: Appointment[]; slots: Slot[] }) => void;
-    slots?: Slot[];
+    onSuccess?: (results: { appointment: Appointment; slots: Slot[] }) => void;
   };
 
   const setup = (options: SetupOptions = {}): ReturnType<typeof render> => {
@@ -164,27 +174,36 @@ describe('FindPane', () => {
   });
 
   describe('HealthcareService Selection', () => {
-    test('fetches slots when a service type is selected', async () => {
+    test('fetches appointments when a service type is selected', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
 
       await act(async () => {
-        setup({ onChange });
+        setup();
       });
 
       await user.click(screen.getByText('Annual Checkup'));
 
-      // check that $find was called
+      // check that Appointment/$find was called
       expect(medplum.get).toHaveBeenCalledWith(
-        expect.stringContaining('Schedule/schedule-1/$find'),
+        expect.objectContaining({ href: expect.stringContaining('Appointment/$find') }),
         expect.any(Object)
       );
 
       // check that it was called with the service-type-reference parameter
       expect(medplum.get).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `service-type-reference=${encodeURIComponent(`HealthcareService/${healthcareService.id}`)}`
-        ),
+        expect.objectContaining({
+          href: expect.stringContaining(
+            `service-type-reference=${encodeURIComponent(`HealthcareService/${healthcareService.id}`)}`
+          ),
+        }),
+        expect.any(Object)
+      );
+
+      // check that the schedule reference is included
+      expect(medplum.get).toHaveBeenCalledWith(
+        expect.objectContaining({
+          href: expect.stringContaining(`schedule=${encodeURIComponent('Schedule/schedule-1')}`),
+        }),
         expect.any(Object)
       );
     });
@@ -202,19 +221,19 @@ describe('FindPane', () => {
       expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
     });
 
-    test('displays slot buttons after selection', async () => {
+    test('displays appointment buttons after selection', async () => {
       const user = userEvent.setup();
 
       await act(async () => {
-        setup({ slots: mockSlots });
+        setup();
       });
 
       await user.click(screen.getByText('Annual Checkup'));
 
-      // Slots should be rendered as buttons with formatted date/time
+      // Appointments should be rendered as buttons with formatted date/time
       const buttons = screen.getAllByRole('button');
 
-      // 1 dismiss button + 2 slot buttons
+      // 1 dismiss button + 2 appointment buttons
       expect(buttons.length).toEqual(3);
     });
   });
@@ -278,39 +297,39 @@ describe('FindPane', () => {
     });
   });
 
-  describe('Slot Selection', () => {
-    test('Displays a form for the chosen slot', async () => {
+  describe('Appointment Selection', () => {
+    test('Displays a form for the chosen appointment', async () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
 
       await act(async () => {
-        setup({ slots: mockSlots, onSuccess });
+        setup({ onSuccess });
       });
 
       // Select a service type first
       await user.click(screen.getByText('Annual Checkup'));
 
       await waitFor(() => {
-        // Find slot buttons (they contain formatted datetime)
-        const slotButtons = screen.getAllByRole('button').filter((btn) => btn.textContent?.includes('2024'));
-        expect(slotButtons.length).toBeGreaterThan(0);
+        // Find appointment buttons (they contain formatted datetime)
+        const appointmentButtons = screen.getAllByRole('button').filter((btn) => btn.textContent?.includes('2024'));
+        expect(appointmentButtons.length).toBeGreaterThan(0);
       });
 
-      // Click on a slot button
-      const slotButtons = screen.getAllByRole('button').filter((btn) => btn.textContent?.includes('2024'));
-      expect(slotButtons).not.toHaveLength(0);
-      await user.click(slotButtons[0]);
+      // Click on an appointment button
+      const appointmentButtons = screen.getAllByRole('button').filter((btn) => btn.textContent?.includes('2024'));
+      expect(appointmentButtons).not.toHaveLength(0);
+      await user.click(appointmentButtons[0]);
 
       // See creation form become visible
       expect(screen.getByRole('button', { name: 'Create Appointment' })).toBeInTheDocument();
 
-      // Dismissing the form takes us back to the slot choices
+      // Dismissing the form takes us back to the appointment choices
       const dismissButton = screen.getByLabelText('Clear selection');
       expect(dismissButton).toBeInTheDocument();
       await user.click(dismissButton);
 
-      const slotButtons2 = screen.getAllByRole('button').filter((btn) => btn.textContent?.includes('2024'));
-      expect(slotButtons2).not.toHaveLength(0);
+      const appointmentButtons2 = screen.getAllByRole('button').filter((btn) => btn.textContent?.includes('2024'));
+      expect(appointmentButtons2).not.toHaveLength(0);
     });
   });
 
@@ -350,8 +369,8 @@ describe('FindPane', () => {
         .map((call) => call[0])
         .find((url) => url.toString().includes('$find'));
 
-      expect(callUrl).toContain('start=');
-      expect(callUrl).toContain('end=');
+      expect(callUrl?.href).toContain('start=');
+      expect(callUrl?.href).toContain('end=');
     });
   });
 
@@ -403,6 +422,117 @@ describe('FindPane', () => {
     });
   });
 
+  describe('Encounter navigation', () => {
+    const AMB = { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'AMB' };
+    const MOCK_ENCOUNTER: WithId<Encounter> = { resourceType: 'Encounter', id: 'enc-1', status: 'planned', class: AMB };
+
+    let serviceWithEncounterConfig: WithId<HealthcareService>;
+
+    beforeEach(async () => {
+      const planDef = await medplum.createResource<PlanDefinition>({
+        resourceType: 'PlanDefinition',
+        id: 'pd-1',
+        status: 'active',
+      });
+
+      serviceWithEncounterConfig = await medplum.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        name: 'Encounter Service',
+        extension: [
+          { url: SchedulingParametersURI, extension: [{ url: 'duration', valueDuration: { value: 30, unit: 'min' } }] },
+          { url: SchedulingEncounterCodingURI, valueCoding: AMB },
+          { url: SchedulingPlanDefinitionURI, valueReference: { reference: `PlanDefinition/${planDef.id}` } },
+        ],
+      });
+
+      // $book returns a booked appointment with exactly one practitioner and one patient so
+      // bookEncounter (inside BookAppointmentForm) will proceed to call createEncounter.
+      const bookedAppointment: Appointment = {
+        resourceType: 'Appointment',
+        id: 'booked-1',
+        status: 'booked',
+        start: '2024-01-16T10:00:00Z',
+        end: '2024-01-16T10:30:00Z',
+        participant: [
+          { actor: { reference: 'Practitioner/prac-1' }, status: 'accepted' },
+          { actor: { reference: `Patient/${HomerSimpson.id}` }, status: 'accepted' },
+        ],
+      };
+
+      medplum.post = vi.fn().mockResolvedValue({
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [{ resource: bookedAppointment }],
+      });
+
+      vi.mocked(createEncounter).mockResolvedValue(MOCK_ENCOUNTER);
+    });
+
+    // Renders FindPane inside a router that has a destination route for the encounter page
+    // so tests can assert that navigation actually happened.
+    const setupWithRoutes = (schedule: WithId<Schedule>, onSuccess = vi.fn()): void => {
+      render(
+        <MemoryRouter initialEntries={['/find']}>
+          <MedplumProvider medplum={medplum}>
+            <MantineProvider>
+              <Notifications />
+              <Routes>
+                <Route
+                  path="/find"
+                  element={<FindPane schedule={schedule} range={defaultRange} onSuccess={onSuccess} />}
+                />
+                <Route
+                  path="/Patient/:patientId/Encounter/:encounterId"
+                  element={<div data-testid="encounter-page" />}
+                />
+              </Routes>
+            </MantineProvider>
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    };
+
+    // Selects a patient and submits BookAppointmentForm.
+    const bookWithHomer = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
+      const patientInput = await screen.findByRole('searchbox');
+      await user.type(patientInput, 'Homer');
+      await waitFor(() => expect(screen.getByText('Homer Simpson')).toBeInTheDocument());
+      await user.click(screen.getByText('Homer Simpson'));
+      await user.click(screen.getByRole('button', { name: 'Create Appointment' }));
+    };
+
+    test('navigates to the encounter page and does not call onSuccess when an encounter is returned', async () => {
+      const user = userEvent.setup();
+      const onSuccess = vi.fn();
+      // Single service → auto-selected; $find returns mock appointments from the outer beforeEach.
+      setupWithRoutes(createScheduleWithServices([serviceWithEncounterConfig]), onSuccess);
+
+      // Click the first appointment slot that appeared from $find (there are two)
+      const apptButtons = await screen.findAllByRole('button', { name: /2024/i });
+      await user.click(apptButtons[0]);
+      await bookWithHomer(user);
+
+      await waitFor(() => expect(screen.getByTestId('encounter-page')).toBeInTheDocument());
+      // handleBookSuccess returns early after navigate, so onSuccess is never called
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
+
+    test('calls onSuccess and does not navigate when no encounter is returned', async () => {
+      const user = userEvent.setup();
+      const onSuccess = vi.fn();
+      // healthcareService has no encounter extensions → bookEncounter returns undefined.
+      // Single service → auto-selected, so we go straight to waiting for the appointment buttons.
+      setupWithRoutes(createScheduleWithServices([healthcareService]), onSuccess);
+
+      const apptButtons = await screen.findAllByRole('button', { name: /2024/i });
+      await user.click(apptButtons[0]);
+      await bookWithHomer(user);
+
+      await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+      expect(screen.queryByTestId('encounter-page')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Request Cancellation', () => {
     test('passes abort signal to API call', async () => {
       const user = userEvent.setup();
@@ -413,7 +543,7 @@ describe('FindPane', () => {
 
       await user.click(screen.getByText('Annual Checkup'));
       expect(medplum.get).toHaveBeenCalledWith(
-        expect.any(String),
+        expect.objectContaining({ href: expect.stringContaining('$find') }),
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
     });

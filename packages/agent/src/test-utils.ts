@@ -8,6 +8,7 @@ import { mkdirSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import type { Mock } from 'vitest';
 import type { ExtendedHl7ClientOptions } from './enhanced-hl7-client';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
 import type { Hl7ClientPoolOptions } from './hl7-client-pool';
@@ -28,7 +29,7 @@ export function createTestWinstonLogger(
   loggerType: LoggerType = LoggerType.MAIN
 ): [WinstonWrapperLogger, () => void] {
   const uniqueId = randomUUID();
-  const testDir = path.join(os.tmpdir(), `jest-test-${uniqueId}`);
+  const testDir = path.join(os.tmpdir(), `vitest-test-${uniqueId}`);
   mkdirSync(testDir, { recursive: true });
 
   const config = {
@@ -44,17 +45,17 @@ export function createTestWinstonLogger(
   return [new WinstonWrapperLogger(config, loggerType), cleanup];
 }
 
-export function createMockLogger(logLevel: LogLevel = LogLevel.INFO): ILogger & { log: jest.Mock; clone: jest.Mock } {
+export function createMockLogger(logLevel: LogLevel = LogLevel.INFO): ILogger & { log: Mock; clone: Mock } {
   const logger: Record<string, any> = {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-    log: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    log: vi.fn(),
   };
   logger.level = logLevel;
-  logger.clone = jest.fn(() => logger);
-  return logger as ILogger & { log: jest.Mock; clone: jest.Mock };
+  logger.clone = vi.fn(() => logger);
+  return logger as ILogger & { log: Mock; clone: Mock };
 }
 
 /**
@@ -86,11 +87,15 @@ export function generateTestLogs(
 }
 
 export function createTestEnhancedHl7Client(
-  options: Omit<ExtendedHl7ClientOptions, 'messageTracker'> & { messageTracker?: Hl7MessageTracker }
-): { client: EnhancedHl7Client; messageTracker: Hl7MessageTracker } {
+  options: Omit<ExtendedHl7ClientOptions, 'messageTracker' | 'heartbeatEmitter'> & {
+    messageTracker?: Hl7MessageTracker;
+    heartbeatEmitter?: HeartbeatEmitter;
+  }
+): { client: EnhancedHl7Client; messageTracker: Hl7MessageTracker; heartbeatEmitter: HeartbeatEmitter } {
   const messageTracker = options.messageTracker ?? new Hl7MessageTracker();
-  const client = new EnhancedHl7Client({ ...options, messageTracker });
-  return { client, messageTracker };
+  const heartbeatEmitter = options.heartbeatEmitter ?? new TypedEventTarget();
+  const client = new EnhancedHl7Client({ ...options, messageTracker, heartbeatEmitter });
+  return { client, messageTracker, heartbeatEmitter };
 }
 
 export function createTestHl7ClientPool(

@@ -34,6 +34,7 @@ export interface TimelineItemProps<T extends Resource = Resource> extends PanelP
 export function TimelineItem(props: TimelineItemProps): JSX.Element {
   const { resource, profile, padding, popupMenuItems, ...others } = props;
   const author = profile ?? resource.meta?.author;
+  const onBehalfOf = resource.meta?.onBehalfOf;
   const dateTime = props.dateTime ?? resource.meta?.lastUpdated;
 
   return (
@@ -43,6 +44,12 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
         <div style={{ flex: 1 }}>
           <Text size="sm">
             <ResourceName c="inherit" fw={500} value={author} link={true} />
+            {onBehalfOf && (
+              <Text component="span" size="xs" c="dimmed">
+                {' on behalf of '}
+                <ResourceName c="inherit" value={onBehalfOf} link={true} />
+              </Text>
+            )}
           </Text>
           <Text size="xs">
             <MedplumLink c="dimmed" to={props.resource}>

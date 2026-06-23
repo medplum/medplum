@@ -27,6 +27,7 @@ import type {
   Quantity,
   Questionnaire,
   ServiceRequest,
+  SmartAppLaunch,
   StructureDefinition,
   Subscription,
   Task,
@@ -38,6 +39,7 @@ import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { tryLogin } from '../oauth/utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
@@ -3088,4 +3090,110 @@ describe('AccessPolicy', () => {
       const membershipsB = await repoB.searchResources<ProjectMembership>({ resourceType: 'ProjectMembership' });
       expect(membershipsB).toHaveLength(1);
     }));
+
+  describe('Patient scoped access token', () => {
+    let repo: Repository;
+    let project: WithId<Project>;
+    let membership: WithId<ProjectMembership>;
+    let patient: WithId<Patient>;
+    let email: string;
+    let password: string;
+
+    let compartmentCondition: WithId<Condition>;
+    let otherCondition: WithId<Condition>;
+
+    beforeAll(async () => {
+      ({ repo, project } = await createTestProject({ withRepo: true, membership: { admin: true } }));
+      password = randomUUID();
+      const {
+        membership: _membership,
+        profile,
+        user,
+      } = await inviteUser({
+        project,
+        resourceType: 'Patient',
+        firstName: 'Test',
+        lastName: 'Patient',
+        email: `patient+${randomUUID()}@example.com`,
+        password,
+      });
+      patient = profile as WithId<Patient>;
+      email = user.email as string;
+      membership = _membership;
+
+      const accessPolicy = await repo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Condition',
+            interaction: ['create', 'read'],
+          },
+        ],
+      });
+      await repo.updateResource<ProjectMembership>({ ...membership, accessPolicy: createReference(accessPolicy) });
+
+      compartmentCondition = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject: createReference(patient),
+      });
+      otherCondition = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject: { reference: `Patient/${randomUUID()}` },
+      });
+    });
+
+    test('Patient scoped token access policy with explicit launch context', async () =>
+      withTestContext(async () => {
+        const launch = await repo.createResource<SmartAppLaunch>({
+          resourceType: 'SmartAppLaunch',
+          patient: createReference(patient),
+        });
+        const login = await tryLogin({
+          authMethod: 'password',
+          email,
+          password,
+          projectId: project.id,
+          launchId: launch.id,
+          scope: 'openid launch/patient patient/*.crud',
+          nonce: randomUUID(),
+        });
+
+        expect(login.scope).toContain('patient/*.crud');
+
+        const patientRepo = await getRepoForLogin({
+          login,
+          smartAppLaunch: launch,
+          project,
+          membership,
+          userConfig: { resourceType: 'UserConfiguration' },
+        });
+
+        await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
+        await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
+      }));
+
+    test('Patient scoped token access policy with implicit Patient context', async () =>
+      withTestContext(async () => {
+        const login = await tryLogin({
+          authMethod: 'password',
+          email,
+          password,
+          projectId: project.id,
+          scope: 'openid launch/patient patient/*.crud',
+          nonce: randomUUID(),
+        });
+
+        expect(login.scope).toContain('patient/*.crud');
+
+        const patientRepo = await getRepoForLogin({
+          login,
+          project,
+          membership,
+          userConfig: { resourceType: 'UserConfiguration' },
+        });
+
+        await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
+        await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
+      }));
+  });
 });

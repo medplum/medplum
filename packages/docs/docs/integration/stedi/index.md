@@ -5,17 +5,16 @@ tags: [integration]
 
 # Stedi Integration
 
-## [Eligibility Checking](/docs/integration/stedi/eligibility-checks)
+Medplum integrates with [Stedi](https://www.stedi.com/) for billing and revenue cycle workflows.
 
-Send real time eligibility checks to Stedi based on a [CoverageEligibilityRequest](/docs/api/fhir/resources/coverageeligibilityrequest) resources, and receive a [CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse) resource with the benefits information.
+## Insurance eligibility
 
-## Insurance Discovery (Coming Soon)
+Send real-time eligibility and benefits checks (X12 270/271) using a [CoverageEligibilityRequest](/docs/api/fhir/resources/coverageeligibilityrequest) and receive a [CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse).
 
-Perform insurance discovery searches for a patient. This is useful for patients who don't have their insurance card, or can't provide insurance details.
+- [Eligibility checks](/docs/integration/stedi/insurance-eligibility/eligibility-checks)
 
-## Coordination of Benefits (Coming Soon)
+## Claim submission
 
-If a patient has multiple health plans, determine:
-- Overlapping coverage periods between plans
-- Need for benefits coordination between overlapping plans 
-- Payment responsibility and priority order among coordinated payers
+Submit professional claims (X12 837P) to payers from a [Claim](/docs/api/fhir/resources/claim) resource using the `$stedi-submit-claim` operation. On success, Stedi's correlation ID is written back onto the claim for tracking.
+
+- [Professional claims (837P)](/docs/integration/stedi/claim-submission/professional-claims)

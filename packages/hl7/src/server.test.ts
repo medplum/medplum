@@ -235,21 +235,25 @@ describe('HL7 Server', () => {
     );
     expect(response).toBeDefined();
 
-    jest.useFakeTimers();
+    // Only fake setTimeout/clearTimeout so real sockets still receive I/O events.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 
     // Call stop with no options - should use default 10 second timeout
     const stopPromise = server.stop();
 
     // Advance timers by 5 seconds - connection should still be open
-    jest.advanceTimersByTime(5000);
+    vi.advanceTimersByTime(5000);
     await Promise.resolve();
     expect(state.connectionCloseCalled).toBe(false);
 
     // Advance timers by another 5 seconds (total 10 seconds) - connection should be force-closed
-    jest.advanceTimersByTime(5000);
+    vi.advanceTimersByTime(5000);
     await Promise.resolve();
+    // connection.close() schedules a graceful destroy timer; advance it while still faking timers
+    // vi.advanceTimersByTime(GRACEFUL_CLOSE_TIMEOUT_MS);
+    await vi.runOnlyPendingTimersAsync();
 
-    jest.useRealTimers();
+    vi.useRealTimers();
 
     // Wait for the server to finish stopping
     await stopPromise;

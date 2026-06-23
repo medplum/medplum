@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Bundle } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
@@ -45,8 +46,33 @@ describe('ResourceBlame', () => {
     expect(el.length).not.toBe(0);
   });
 
+  test('ResourceBlame renders onBehalfOf when present', async () => {
+    const history: Bundle = {
+      resourceType: 'Bundle',
+      type: 'history',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: 'test-obo',
+            meta: {
+              versionId: '1',
+              lastUpdated: '2024-01-01T00:00:00Z',
+              author: { reference: 'Practitioner/123' },
+              onBehalfOf: { reference: 'Practitioner/123' },
+            },
+            name: [{ family: 'Doe' }],
+          },
+        },
+      ],
+    };
+    await setup({ history });
+    expect(await screen.findAllByText('Alice Smith')).toHaveLength(2);
+    expect(document.querySelector('.onBehalfOf')).not.toBeNull();
+  });
+
   test('getTimeString', () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     expect(getTimeString(new Date(Date.now() - 1e3).toUTCString())).toEqual('1 second ago');
     expect(getTimeString(new Date(Date.now() - 2e3).toUTCString())).toEqual('2 seconds ago');
     expect(getTimeString(new Date(Date.now() - 60e3).toUTCString())).toEqual('1 minute ago');
@@ -59,6 +85,6 @@ describe('ResourceBlame', () => {
     expect(getTimeString(new Date(Date.now() - 5184000e3).toUTCString())).toEqual('2 months ago');
     expect(getTimeString(new Date(Date.now() - 31536000e3).toUTCString())).toEqual('1 year ago');
     expect(getTimeString(new Date(Date.now() - 63072000e3).toUTCString())).toEqual('2 years ago');
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

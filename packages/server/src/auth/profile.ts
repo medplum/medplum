@@ -8,7 +8,7 @@ import { body } from 'express-validator';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { sendLoginCookie } from './utils';
+import { sendLoginResult } from './utils';
 
 /*
  * The profile handler is used during login when a user has multiple profiles.
@@ -35,12 +35,6 @@ export async function profileHandler(req: Request, res: Response): Promise<void>
   // Update the login
   const updated = await setLoginMembership(login, membership);
 
-  // Send login cookie
-  sendLoginCookie(res, login);
-
-  // Send code
-  res.status(200).json({
-    login: updated.id,
-    code: updated.code,
-  });
+  // Send login result
+  await sendLoginResult(res, updated);
 }

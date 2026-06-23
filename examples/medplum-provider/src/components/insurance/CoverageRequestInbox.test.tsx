@@ -261,10 +261,11 @@ describe('CoverageRequestInbox', () => {
 
   describe('Check Eligibility button', () => {
     test('shows error notification when the eligibility bot is not configured', async () => {
+      const user = userEvent.setup();
       medplum.searchOne = vi.fn().mockResolvedValue(undefined) as typeof medplum.searchOne;
       await setup(medplum, { coverageId: COVERAGE_ID });
 
-      screen.getByRole('button', { name: 'Check Eligibility' }).click();
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
 
       await waitFor(() =>
         expect(screen.getByText(/To enable Insurance Eligibility please contact support/)).toBeInTheDocument()
@@ -272,6 +273,7 @@ describe('CoverageRequestInbox', () => {
     });
 
     test('shows error notification when no PractitionerRole is found for the current user', async () => {
+      const user = userEvent.setup();
       medplum.searchOne = vi.fn().mockImplementation((resourceType: string) => {
         if (resourceType === 'Bot') {
           return Promise.resolve(mockBot);
@@ -280,7 +282,7 @@ describe('CoverageRequestInbox', () => {
       }) as typeof medplum.searchOne;
       await setup(medplum, { coverageId: COVERAGE_ID });
 
-      screen.getByRole('button', { name: 'Check Eligibility' }).click();
+      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
 
       await waitFor(() =>
         expect(screen.getByText(/No PractitionerRole found for the assigned practitioner/)).toBeInTheDocument()

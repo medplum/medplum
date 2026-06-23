@@ -64,7 +64,7 @@ export async function processBatch(
  */
 class BatchProcessor {
   private readonly router: FhirRouter;
-  private readonly repo: FhirRepository;
+  private repo: FhirRepository;
   private readonly bundle: Bundle;
   private readonly req: FhirRequest;
   private readonly resolvedIdentities: Record<string, string>;
@@ -108,9 +108,28 @@ class BatchProcessor {
       throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
     }
 
-    return this.repo.withTransaction(() => this.processBatch(bundleInfo, resultEntries), {
-      serializable: bundleInfo.requiresStrongTransaction,
-    });
+    return this.repo.withTransaction(
+      (txRepo) => this.withRepo(txRepo, () => this.processBatch(bundleInfo, resultEntries)),
+      {
+        serializable: bundleInfo.requiresStrongTransaction,
+      }
+    );
+  }
+
+  /**
+   * Executes a callback with the provided repository intended for use with transaction-scoped operations.
+   * @param repo - The repository to use.
+   * @param callback - The callback to execute.
+   * @returns The result of the callback.
+   */
+  private async withRepo<T>(repo: FhirRepository, callback: () => Promise<T>): Promise<T> {
+    const originalRepo = this.repo;
+    this.repo = repo;
+    try {
+      return await callback();
+    } finally {
+      this.repo = originalRepo;
+    }
   }
 
   /**

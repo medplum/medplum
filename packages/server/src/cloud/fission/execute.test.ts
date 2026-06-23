@@ -3,7 +3,6 @@
 import type { WithId } from '@medplum/core';
 import type { Bot, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
-import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
@@ -11,12 +10,11 @@ import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth } from '../../test.setup';
 import { executeFissionBot } from './execute';
 
-jest.mock('node-fetch');
-
 describe('Execute Fission bots', () => {
   const app = express();
   let config: MedplumServerConfig;
   let accessToken: string;
+  let fetchMock: jest.Mock;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -36,7 +34,7 @@ describe('Execute Fission bots', () => {
   });
 
   beforeEach(() => {
-    (fetch as unknown as jest.Mock).mockClear();
+    fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
   });
 
   afterEach(() => {
@@ -51,7 +49,7 @@ describe('Execute Fission bots', () => {
       runtimeVersion: 'fission',
     };
 
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 200,
       ok: true,
       text: jest.fn(async () =>
@@ -75,7 +73,7 @@ describe('Execute Fission bots', () => {
       returnValue: { result: 'test result' },
     });
 
-    expect(fetch).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining(`bot-${bot.id}`),
       expect.objectContaining({ method: 'POST' })
     );
@@ -89,7 +87,7 @@ describe('Execute Fission bots', () => {
       runtimeVersion: 'fission',
     };
 
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
+    fetchMock.mockImplementationOnce(() => ({
       status: 400,
       ok: false,
       text: jest.fn(async () =>
@@ -112,7 +110,7 @@ describe('Execute Fission bots', () => {
       success: false,
     });
 
-    expect(fetch).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining(`bot-${bot.id}`),
       expect.objectContaining({ method: 'POST' })
     );

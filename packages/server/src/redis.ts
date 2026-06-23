@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import Redis from 'ioredis';
+import { randomUUID } from 'node:crypto';
 import type { MedplumServerConfig } from './config/types';
-import { getLogger } from './logger';
+import { getLogger, globalLogger } from './logger';
 
 /*
  * The `duplicate` method is intentionally omitted to prevent accidental calling of `Redis.quit`
@@ -165,9 +166,29 @@ export function getPubSubRedisSubscriber(): RedisWithoutDuplicate & { quit: neve
   redisInstances.pubSub.subscribers ??= new Set();
   redisInstances.pubSub.subscribers.add(subscriber);
 
+  const subscriberId = randomUUID();
+  const logLifecycleEvent = (event: string, extra?: Record<string, unknown>): void => {
+    globalLogger.info('PubSub subscriber lifecycle', {
+      subscriberId,
+      event,
+      status: subscriber.status,
+      subscriberCount: redisInstances.pubSub.subscribers?.size ?? 0,
+      ...extra,
+    });
+  };
+
+  subscriber.on('connect', () => logLifecycleEvent('connect'));
+  subscriber.on('ready', () => logLifecycleEvent('ready'));
+  subscriber.on('reconnecting', (delay: number) => logLifecycleEvent('reconnecting', { delay }));
+  subscriber.on('close', () => logLifecycleEvent('close'));
+  subscriber.on('wait', () => logLifecycleEvent('wait'));
+  subscriber.on('error', (err: Error) => logLifecycleEvent('error', { error: err.message }));
   subscriber.on('end', () => {
+    logLifecycleEvent('end');
     redisInstances.pubSub.subscribers?.delete(subscriber);
   });
+
+  logLifecycleEvent('created');
 
   return subscriber as RedisWithoutDuplicate & { quit: never };
 }

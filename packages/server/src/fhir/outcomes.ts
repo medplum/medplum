@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { append, ContentType, EMPTY, getStatus, isAccepted, isRedirect } from '@medplum/core';
+import { append, ContentType, EMPTY, getOutcomeRedirectUrl, getStatus, isAccepted, isRedirect } from '@medplum/core';
 import type { Extension, OperationOutcome } from '@medplum/fhirtypes';
 import type { Response } from 'express';
 import type { Result, ValidationError } from 'express-validator';
@@ -41,7 +41,7 @@ export function sendOutcome(res: Response, outcome: OperationOutcome): Response 
     res.set('Content-Location', outcome.issue[0].diagnostics);
   }
   if (isRedirect(outcome)) {
-    const uri = outcome.issue[0].details?.coding?.find((c) => c.system === 'urn:ietf:rfc:3986')?.code;
+    const uri = getOutcomeRedirectUrl(outcome);
     if (uri) {
       res.set('Location', uri);
     }

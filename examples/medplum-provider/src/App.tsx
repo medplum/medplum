@@ -24,6 +24,7 @@ import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
+const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
 
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
@@ -52,6 +53,7 @@ import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
 import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
+import { ResourceSchedulingPage } from './pages/resource/ResourceSchedulingPage';
 import { SchedulePage } from './pages/schedule/SchedulePage';
 import { ScheduleSettingsPage } from './pages/schedule/ScheduleSettingsPage';
 import { SearchPage } from './pages/SearchPage';
@@ -65,14 +67,20 @@ export function App(): JSX.Element | null {
   const doseSpotCount = useDoseSpotNotifications();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const [setupDismissed, setSetupDismissed] = useState(() => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true');
+  const project = medplum.getProject();
+  const setupDisabledByProject =
+    project?.setting?.find((s) => s.name === PROVIDER_HIDE_GET_STARTED_SETTING)?.valueBoolean === true;
+  const [setupDismissedByUser, setSetupDismissedByUser] = useState(
+    () => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true'
+  );
+  const setupDismissed = setupDisabledByProject || setupDismissedByUser;
   const { hasAccess: hasDoseSpot } = useDoseSpotAccess();
   const membership = medplum.getProjectMembership();
   const hasScriptSure = hasScriptSureIdentifier(membership);
 
   const handleDismissSetup = (): void => {
     localStorage.setItem(SETUP_DISMISSED_KEY, 'true');
-    setSetupDismissed(true);
+    setSetupDismissedByUser(true);
   };
 
   if (medplum.isLoading()) {
@@ -205,6 +213,7 @@ export function App(): JSX.Element | null {
                 <Route path="ServiceRequest" element={<LabsPage />} />
                 <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
+                <Route path="MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path="Coverage" element={<CoveragePage />} />
                 <Route path="Coverage/:coverageId" element={<CoveragePage />} />
@@ -237,8 +246,10 @@ export function App(): JSX.Element | null {
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>
                 <Route path="" element={<ResourceDetailPage />} />
+                <Route path="details" element={<ResourceDetailPage />} />
                 <Route path="edit" element={<ResourceEditPage />} />
                 <Route path="history" element={<ResourceHistoryPage />} />
+                <Route path="scheduling" element={<ResourceSchedulingPage />} />
               </Route>
               {hasDoseSpot && <Route path="/integrations/dosespot" element={<DoseSpotFavoritesPage />} />}
             </>

@@ -17,8 +17,8 @@ npm run build
 # # Check Node version
 # # If not the expected default version, then warn
 # nodeversion=$(node -v)
-# if [$(echo nodeversion | cut -d '.' -f 1) != "v20"]; then
-#   echo "Expected to be on v20.x.x but on $(node -v)"
+# if [$(echo nodeversion | cut -d '.' -f 1) != "v22"]; then
+#   echo "Expected to be on v22.x.x but on $(node -v)"
 # fi
 
 # Generate blob to inject into node executable

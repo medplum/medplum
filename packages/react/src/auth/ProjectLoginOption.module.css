@@ -1,0 +1,25 @@
+.iconBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--mantine-radius-sm);
+  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  color: var(--project-login-icon-color, light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2)));
+}
+
+.interactive {
+  border-radius: var(--mantine-radius-sm);
+  padding: 8px 12px;
+  cursor: pointer;
+
+  &:hover,
+  &[data-hovered] {
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+
+    & .iconBox {
+      color: var(--mantine-color-text);
+    }
+  }
+}

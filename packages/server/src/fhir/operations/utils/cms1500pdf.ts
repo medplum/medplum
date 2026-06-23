@@ -254,7 +254,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
           createText(item.modifier?.[0]?.coding?.map((code) => code.code).join(', '), 246, y),
 
           // 24E. Diagnosis pointer
-          createText('', 335, y),
+          createText(formatDiagnosisPointers(item.diagnosisSequence), 335, y),
 
           // 24F. Charges
           createText(formatMoney(item.net), 373, y),
@@ -327,6 +327,24 @@ function createDate(date: string | undefined, x: number, y: number): (Content | 
     createText(date?.substring(8, 10), x + 21, y),
     createText(date?.substring(0, 4), x + 42, y),
   ];
+}
+
+/**
+ * Formats CMS-1500 Box 24E diagnosis pointers for a service line.
+ *
+ * `Claim.item.diagnosisSequence` holds 1-based references into the Box 21 diagnoses
+ * (`Claim.diagnosis.sequence`). Box 24E shows these as reference letters: 1 -> A, 2 -> B, ...
+ * Per the NUCC CMS-1500 instructions the letters are entered together with no separators
+ * (for example, a line justified by diagnoses A and B is shown as "AB").
+ *
+ * @param diagnosisSequence - The 1-based diagnosis pointers for a single service line.
+ * @returns The Box 24E reference letters (e.g. "AB"), or an empty string when there are none.
+ */
+export function formatDiagnosisPointers(diagnosisSequence: number[] | undefined): string {
+  return (diagnosisSequence ?? [])
+    .filter((seq) => seq >= 1 && seq <= 26)
+    .map((seq) => String.fromCharCode(64 + seq))
+    .join('');
 }
 
 export function getSimplePhone(phone: string | undefined): string | undefined {

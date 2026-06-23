@@ -3,15 +3,16 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { sep } from 'node:path';
+import type { Mock } from 'vitest';
 import { FileSystemStorage } from './storage';
 
-jest.mock('node:os');
+vi.mock('node:os');
 
 const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
 
 describe('FileSystemStorage', () => {
   beforeAll(async () => {
-    (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
+    (os.homedir as unknown as Mock).mockReturnValue(testHomeDir);
   });
 
   afterAll(async () => {

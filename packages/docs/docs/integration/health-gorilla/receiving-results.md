@@ -6,7 +6,16 @@ sidebar_position: 2
 
 This guide explains how laboratory results are handled in the Medplum-Health Gorilla labs integration.
 
-When Health Gorilla receives results from performing laboratories (Quest, Labcorp, regional labs, etc.), they will be synchronized into your project as structured FHIR resources via the `receive-from-health-gorilla` Bot.
+When Health Gorilla receives results from performing laboratories (Quest, Labcorp, regional labs, etc.), they are synchronized into your Medplum project as structured FHIR resources. The sections below describe the resulting data model and how results are matched to orders and patients.
+
+## How results arrive in Medplum 
+
+There are two ways results and related resources get into your project:
+
+| Mechanism | Bot | When to use |
+| --------- | --- | ----------- |
+| **Real-time (webhooks)** | `receive-from-health-gorilla` | Default path. Health Gorilla notifies Medplum when `DiagnosticReport`, `ServiceRequest`, or `RequestGroup` resources change. Configure subscriptions with `setup-subscriptions`. |
+| **Manual backfill** | `sync-resources-from-health-gorilla` | Pull resources from Health Gorilla for a `_lastUpdated` date range. Use after webhook failures, for historical imports, or to verify parity with Health Gorilla. |
 
 ## Key Concepts
 
@@ -460,8 +469,18 @@ When a result is received, Medplum attempts to match it to an existing order (`S
 4. If a matching patient exists, the result is imported normally, but without a `DiagnosticReport.basedOn` reference, and a `DetectedIssue` with code `unsolicited-diagnostic-report` is created.
 5. If no patient match is found, a new `Patient` resource is created using the demographic information provided by the lab, and a `DetectedIssue` with code `unknown-patient` is created.
 
+## Backfilling missed results
+
+If results are missing in Medplum but visible in the Health Gorilla portal, check that subscriptions are active (`setup-subscriptions`) and that the callback bot URL is current. When webhooks were down or never configured for a period, use [`sync-resources-from-health-gorilla`](./sync-resources-from-health-gorilla) to backfill:
+
+1. Choose a `startDate` and `endDate` that bracket the gap (based on `_lastUpdated` in Health Gorilla).
+2. Run a `DiagnosticReport` sync with `syncOnlyMissing: true` to avoid re-processing resources already in Medplum.
+3. Review `DetectedIssue` resources for any remaining [unsolicited or unknown-patient](#resolving-orders-with-results) cases, especially in receive-only migrations without placeholder orders.
+
+For receive-only migrations, syncing placeholder `ServiceRequest` orders with matching Placer or Accession identifiers before backfilling results reduces unsolicited reports.
+
 ## Lab-specific Behavior
 
 ### Quest
 
-- **Preliminary Results**: Quest sends preliminary results on a rolling basis, and will send the same report multiple times, updating Medplum's `DiagnosticReport` resource *in-place*. Monitor the value of `DiagnosticReport.status` to see when the report has been finalized.
+- **Preliminary Results**: Quest sends preliminary results on a rolling basis, and will send the same report multiple times, updating Medplum's `DiagnosticReport` resource *in-place*. Monitor the value of `DiagnosticReport.status` to see when the report has been finalized. The same in-place updates apply when the report is imported via manual sync.

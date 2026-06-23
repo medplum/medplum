@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import classes from './Header.module.css';
 import { HeaderDropdown } from './HeaderDropdown';
+import headerDropdownClasses from './HeaderDropdown.module.css';
 import { HeaderSearchInput } from './HeaderSearchInput';
 
 export interface HeaderProps {
@@ -46,7 +47,8 @@ export function Header(props: HeaderProps): JSX.Element {
           {props.notifications}
           <Menu
             width={260}
-            shadow="xl"
+            shadow="md"
+            radius="md"
             position="bottom-end"
             transitionProps={{ transition: 'fade-down' }}
             opened={userMenuOpened}
@@ -68,7 +70,7 @@ export function Header(props: HeaderProps): JSX.Element {
                 </Group>
               </UnstyledButton>
             </Menu.Target>
-            <Menu.Dropdown>
+            <Menu.Dropdown className={headerDropdownClasses.dropdown}>
               <HeaderDropdown version={props.version} />
             </Menu.Dropdown>
           </Menu>

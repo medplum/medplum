@@ -2,45 +2,40 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, parseSearchRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, Project, Reference } from '@medplum/fhirtypes';
+import { RepositoryMode } from '@medplum/fhir-router';
+import type { Project, Reference } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
-import { DatabaseMode } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
-import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
-import type { CountResult } from '../search';
 import { getCount, getSelectQueryForSearch } from '../search';
 import { SqlBuilder } from '../sql';
+import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
   makeOperationDefinitionParameter as param,
   parseInputParameters,
 } from './utils/parameters';
 
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'db-explain',
-  status: 'active',
-  kind: 'operation',
-  code: 'explain',
-  experimental: true,
-  system: true,
-  type: false,
-  instance: false,
-  parameter: [
-    param('in', 'query', 'string', 1, '1'),
-    param('in', 'analyze', 'boolean', 0, '1'),
-    param('in', 'format', 'string', 0, '1'),
-    param('in', 'count', 'boolean', 0, '1'),
-    param('out', 'query', 'string', 1, '1'),
-    param('out', 'parameters', 'string', 1, '1'),
-    param('out', 'explain', 'string', 1, '1'),
-    param('out', 'countEstimate', 'integer', 0, '1'),
-    param('out', 'countAccurate', 'integer', 0, '1'),
-  ],
-};
+const operation = makeOperationDefinition(
+  { scope: 'system' },
+  {
+    name: 'db-explain',
+    code: 'explain',
+    parameter: [
+      param('in', 'query', 'string', 1, '1'),
+      param('in', 'analyze', 'boolean', 0, '1'),
+      param('in', 'format', 'string', 0, '1'),
+      param('in', 'count', 'boolean', 0, '1'),
+      param('out', 'query', 'string', 1, '1'),
+      param('out', 'parameters', 'string', 1, '1'),
+      param('out', 'explain', 'string', 1, '1'),
+      param('out', 'countEstimate', 'integer', 0, '1'),
+      param('out', 'countAccurate', 'integer', 0, '1'),
+    ],
+  }
+);
 
 export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { repo } = requireSuperAdmin();
+  const ctx = requireSuperAdmin();
   const params = parseInputParameters<{
     query: string;
     project?: Reference<Project>;
@@ -49,6 +44,8 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     count?: boolean;
   }>(operation, req);
   const searchReq = parseSearchRequest(params.query);
+  const repo = ctx.repo.clone();
+  repo.setMode(RepositoryMode.READER);
   const selectQuery = getSelectQueryForSearch(repo, searchReq);
 
   // Capture SQL query and parameters before adding EXPLAIN
@@ -68,7 +65,11 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     selectQuery.explain.push('format json');
   }
 
-  const result = await withLongRunningDatabaseClient((client) => selectQuery.execute(client), DatabaseMode.READER);
+  const { result, countResult } = await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
+    const result = await selectQuery.execute(client);
+    const countResult = params.count ? await getCount(repo, searchReq, { forceAccurate: true }) : undefined;
+    return { result, countResult };
+  });
 
   let explain: string;
   if (params.format === 'json') {
@@ -76,14 +77,6 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     explain = JSON.stringify(explain, (key, value) => (key.endsWith('Blocks') && value === 0 ? undefined : value), 0);
   } else {
     explain = result.map((r) => r['QUERY PLAN']).join('\n');
-  }
-
-  let countResult: CountResult | undefined;
-  if (params.count) {
-    countResult = await withLongRunningDatabaseClient((client) => {
-      const countRepo = repo.clone(client);
-      return getCount(countRepo, searchReq, { forceAccurate: true });
-    }, DatabaseMode.READER);
   }
 
   const output = buildOutputParameters(operation, {

@@ -3,8 +3,10 @@
 import { sleep } from '@medplum/core';
 import type { PathOrFileDescriptor } from 'node:fs';
 import fs from 'node:fs';
-import os from 'node:os';
+import { platform, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import process from 'node:process';
+import type { MockInstance } from 'vitest';
 import {
   createPidFile,
   deregisterAgentCleanup,
@@ -18,15 +20,7 @@ import {
   waitForPidFile,
 } from './pid';
 
-jest.mock('node:fs');
-jest.mock('node:os', () => ({
-  ...jest.requireActual('node:os'),
-  platform: jest.fn(() => 'darwin'),
-  tmpdir: jest.fn(() => '/tmp'),
-}));
-
-const mockedFs = jest.mocked(fs);
-const mockedOs = jest.mocked(os);
+const mockedFs = vi.mocked(fs);
 const APP_NAME = 'test-pid-app';
 const PID_DIR = dirname(getPidFilePath(APP_NAME));
 const TEST_PID_PATH = join('/tmp', 'medplum-agent', 'test-pid-app.pid');
@@ -34,7 +28,8 @@ const createdPidFiles = new Set<string>();
 
 describe('PID File Manager', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.mocked(platform).mockReturnValue('darwin');
+    vi.mocked(tmpdir).mockReturnValue('/tmp');
     mockedFs.existsSync.mockImplementation((filePath: PathOrFileDescriptor) => {
       // This is for the `ensureDirectoryExists` check
       if (filePath.toString() === PID_DIR) {
@@ -65,8 +60,6 @@ describe('PID File Manager', () => {
       createdPidFiles.delete(filePath.toString());
       return undefined;
     });
-    mockedOs.platform.mockImplementation(() => 'darwin');
-    mockedOs.tmpdir.mockImplementation(() => '/tmp');
   });
 
   afterEach(() => {
@@ -102,15 +95,14 @@ describe('PID File Manager', () => {
     createPidFile(APP_NAME);
 
     // Mock process.kill to simulate existing process
-    const originalKill = process.kill;
-    process.kill = jest.fn();
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
 
     try {
       // Attempt to create PID file should throw
       expect(() => createPidFile(APP_NAME)).toThrow('test-pid-app already running');
-      expect(process.kill).toHaveBeenCalledWith(process.pid, 0);
+      expect(killSpy).toHaveBeenCalledWith(process.pid, 0);
     } finally {
-      process.kill = originalKill;
+      killSpy.mockRestore();
     }
   });
 
@@ -118,8 +110,7 @@ describe('PID File Manager', () => {
     createPidFile(APP_NAME);
 
     // Mock process.kill to simulate non-existent process
-    const originalKill = process.kill;
-    process.kill = jest.fn().mockImplementation(() => {
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => {
       // This is the Error thrown from Node when a process does not exist
       const esrchError = new Error();
       (esrchError as Error & { code: string }).code = 'ESRCH';
@@ -143,7 +134,7 @@ describe('PID File Manager', () => {
         })
       );
     } finally {
-      process.kill = originalKill;
+      killSpy.mockRestore();
     }
   });
 
@@ -152,8 +143,7 @@ describe('PID File Manager', () => {
     mockedFs.writeFileSync.mockClear();
 
     // Mock process.kill to simulate non-existent process
-    const originalKill = process.kill;
-    process.kill = jest.fn().mockImplementation(() => {
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => {
       const epermError = new Error();
       (epermError as Error & { code: string }).code = 'EPERM';
       throw epermError;
@@ -166,7 +156,7 @@ describe('PID File Manager', () => {
       // Verify write operations didn't occur
       expect(mockedFs.writeFileSync).not.toHaveBeenCalled();
     } finally {
-      process.kill = originalKill;
+      killSpy.mockRestore();
     }
   });
 
@@ -175,8 +165,7 @@ describe('PID File Manager', () => {
     mockedFs.writeFileSync.mockClear();
 
     // Mock process.kill to simulate non-existent process
-    const originalKill = process.kill;
-    process.kill = jest.fn().mockImplementation(() => {
+    const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => {
       throw new Error('Unknown error');
     });
 
@@ -187,24 +176,24 @@ describe('PID File Manager', () => {
       // Verify write operations didn't occur
       expect(mockedFs.writeFileSync).not.toHaveBeenCalled();
     } finally {
-      process.kill = originalKill;
+      killSpy.mockRestore();
     }
   });
 
   test.each(['darwin', 'linux'] as const)('returns appropriate file path for the current OS -- %s', (os) => {
-    mockedOs.platform.mockImplementationOnce(() => os);
+    vi.mocked(platform).mockImplementationOnce(() => os);
     const pidFilePath = getPidFilePath(APP_NAME);
     expect(pidFilePath).toEqual(TEST_PID_PATH);
   });
 
   test('returns appropriate file path for the current OS -- win32', () => {
-    mockedOs.platform.mockImplementationOnce(() => 'win32');
+    vi.mocked(platform).mockImplementationOnce(() => 'win32');
     const pidFilePath = getPidFilePath(APP_NAME);
     expect(pidFilePath).toEqual(join('C:', 'ProgramData', 'MedplumAgent', 'pids', `${APP_NAME}.pid`));
   });
 
   test('throws on unsupported or invalid OS', () => {
-    mockedOs.platform.mockImplementationOnce(() => 'freebsd');
+    vi.mocked(platform).mockImplementationOnce(() => 'freebsd');
     expect(() => getPidFilePath(APP_NAME)).toThrow(new Error('Invalid OS'));
   });
 
@@ -291,7 +280,7 @@ describe('PID File Manager', () => {
   });
 
   test('forceKillApp -- kills running process', () => {
-    const processKillSpy = jest.spyOn(process, 'kill').mockImplementation();
+    const processKillSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
     createPidFile('test-app');
     forceKillApp('test-app');
     removePidFile('test-app');
@@ -301,14 +290,14 @@ describe('PID File Manager', () => {
 
   describe('registerAgentCleanup', () => {
     let originalExit: typeof process.exit;
-    let processOnMock: jest.SpyInstance;
+    let processOnMock: MockInstance<typeof process.on>;
     let processEvents: Record<string, (err?: Error) => void> = {};
 
     beforeEach(() => {
       originalExit = process.exit;
-      process.exit = jest.fn() as unknown as typeof process.exit;
-      processOnMock = jest.spyOn(process, 'on').mockImplementation((event, cb) => {
-        processEvents[event.toString()] = cb;
+      process.exit = vi.fn() as unknown as typeof process.exit;
+      processOnMock = vi.spyOn(process, 'on').mockImplementation((event, cb) => {
+        processEvents[event.toString()] = cb as (err?: Error) => void;
         return process; // For chaining
       });
     });
@@ -321,7 +310,7 @@ describe('PID File Manager', () => {
     });
 
     test('registers handlers for SIGTERM, SIGINT, SIGHUP, and uncaughtException', () => {
-      const addListenerSpy = jest.spyOn(process, 'on');
+      const addListenerSpy = vi.spyOn(process, 'on');
       registerAgentCleanup();
 
       expect(addListenerSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
@@ -390,7 +379,7 @@ describe('PID File Manager', () => {
       registerAgentCleanup();
       const pidFilePath = createPidFile(APP_NAME);
       mockedFs.unlinkSync(pidFilePath);
-      mockedFs.unlinkSync.mockReset();
+      mockedFs.unlinkSync.mockClear();
 
       processEvents.SIGTERM?.();
 
@@ -400,7 +389,7 @@ describe('PID File Manager', () => {
     });
 
     test('handles file system errors during cleanup and still exits', () => {
-      const pidLoggerErrorSpy = jest.spyOn(pidLogger, 'error').mockImplementation();
+      const pidLoggerErrorSpy = vi.spyOn(pidLogger, 'error').mockImplementation(() => undefined);
       mockedFs.unlinkSync.mockImplementation(() => {
         throw new Error('Permission denied');
       });

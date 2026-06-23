@@ -4,7 +4,7 @@
     "composite": true,
     "rootDir": "src",
     "outDir": "dist/types",
-    "types": ["jest", "node", "vite/client"],
+    "types": ["node", "vitest/globals", "vite/client"],
     "lib": ["esnext", "dom"],
     "noEmit": false,
     "emitDeclarationOnly": true

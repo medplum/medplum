@@ -6,7 +6,7 @@ import type { AccessPolicy, Patient, Project, Subscription, UserConfiguration } 
 import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { systemLogger } from '../logger';
+import { globalLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
 import { createBot } from './operations/botinit';
 import { deployBot } from './operations/deploy';
@@ -161,7 +161,7 @@ describe('FHIR Repo', () => {
         },
       }));
 
-      logSpy = jest.spyOn(systemLogger, 'warn');
+      logSpy = jest.spyOn(globalLogger, 'warn');
     });
 
     afterEach(() => {

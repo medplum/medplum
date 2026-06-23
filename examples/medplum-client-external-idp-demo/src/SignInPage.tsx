@@ -4,20 +4,19 @@ import { Button, Stack, Title } from '@mantine/core';
 import { Document, useMedplum, useMedplumNavigate } from '@medplum/react';
 import { useCallback, useEffect } from 'react';
 import type { JSX } from 'react';
-import { MEDPLUM_BASE_URL } from './contants';
 
 /**
  * Your Medplum project ID.
  * You can find this value on the "Project Admin" page in the Medplum web app.
  */
-const MEDPLUM_PROJECT_ID = '';
+const MEDPLUM_PROJECT_ID = import.meta.env.MEDPLUM_PROJECT_ID;
 
 /**
  * Your Medplum client ID.
  * You can find this value on the "Project Admin" page in the Medplum web app.
  * Note that the client must have the correct external auth provider configured.
  */
-const MEDPLUM_CLIENT_ID = '=';
+const MEDPLUM_CLIENT_ID = import.meta.env.MEDPLUM_CLIENT_ID;
 
 /**
  * Your web application redirect URL.
@@ -30,13 +29,13 @@ const WEB_APP_REDIRECT_URI = 'http://localhost:8000/signin';
  * For example, this would be an Auth0, AWS Cognito, or Okta URL.
  * This value is specific to your external auth provider.
  */
-const EXTERNAL_AUTHORIZE_URL = '';
+const EXTERNAL_AUTHORIZE_URL = import.meta.env.EXTERNAL_AUTHORIZE_URL;
 
 /**
  * External OAuth2 client ID.
  * This value is specific to your external auth provider.
  */
-const EXTERNAL_CLIENT_ID = '';
+const EXTERNAL_CLIENT_ID = import.meta.env.EXTERNAL_CLIENT_ID;
 
 /**
  * External OAuth2 redirect URI.
@@ -44,7 +43,7 @@ const EXTERNAL_CLIENT_ID = '';
  * If using Medplum's hosted API server, the redirect URI must be "https://api.medplum.com/auth/external".
  * If using your own Medplum server, the redirect URI must be "https://<your server>/auth/external".
  */
-const EXTERNAL_REDIRECT_URI = MEDPLUM_BASE_URL + 'auth/external';
+const EXTERNAL_REDIRECT_URI = import.meta.env.MEDPLUM_BASE_URL + 'auth/external';
 
 export function SignInPage(): JSX.Element {
   const medplum = useMedplum();

@@ -94,9 +94,13 @@ export interface MedplumSourceInfraConfig {
   loadBalancerLoggingBucket?: ValueOrExternalSecret<string>;
   loadBalancerLoggingPrefix?: ValueOrExternalSecret<string>;
   loadBalancerAlgorithm?: ValueOrExternalSecret<'round_robin' | 'least_outstanding_requests' | 'weighted_random'>;
-  clamscanEnabled: ValueOrExternalSecret<boolean>;
-  clamscanLoggingBucket: ValueOrExternalSecret<string>;
-  clamscanLoggingPrefix: ValueOrExternalSecret<string>;
+  guardDutyMalwareProtectionEnabled?: ValueOrExternalSecret<boolean>;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
+  clamscanEnabled?: ValueOrExternalSecret<boolean>;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
+  clamscanLoggingBucket?: ValueOrExternalSecret<string>;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
+  clamscanLoggingPrefix?: ValueOrExternalSecret<string>;
   skipDns?: ValueOrExternalSecret<boolean>;
   hostedZoneName?: ValueOrExternalSecret<string>;
   wafLogGroupName?: ValueOrExternalSecret<string>;
@@ -263,8 +267,12 @@ export interface MedplumInfraConfig {
   loadBalancerLoggingBucket?: string;
   loadBalancerLoggingPrefix?: string;
   loadBalancerAlgorithm?: 'round_robin' | 'least_outstanding_requests' | 'weighted_random';
+  guardDutyMalwareProtectionEnabled?: boolean;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanEnabled: boolean;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanLoggingBucket: string;
+  /** @deprecated Use guardDutyMalwareProtectionEnabled instead */
   clamscanLoggingPrefix: string;
   skipDns?: boolean;
   hostedZoneName?: string;

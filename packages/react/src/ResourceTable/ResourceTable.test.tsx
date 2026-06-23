@@ -79,13 +79,13 @@ describe('ResourceTable', () => {
     for (const url of profileUrls) {
       const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
       if (!sd) {
-        fail(`could not find structure definition for ${url}`);
+        expect.fail(`could not find structure definition for ${url}`);
       }
       loadDataType(sd);
     }
 
     const mockedMedplum = new MockClient();
-    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
+    const fakeRequestProfileSchema = vi.fn(async (_profileUrl: string) => {});
     mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
 
     const value = HomerSimpsonUSCorePatient;

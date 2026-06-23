@@ -13,6 +13,8 @@ import * as executeBotModule from '../bots/execute';
 import type { BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { globalLogger } from '../logger';
+import * as redisModule from '../redis';
 import { getCacheRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
 
@@ -455,6 +457,35 @@ describe('Agent WebSockets', () => {
     });
   });
 
+  test('Logs when updating agent status fails on disconnect', async () => {
+    const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+    // Simulate Redis being unavailable (e.g. closing during shutdown) so the disconnect
+    // status update rejects -- the close handler must catch it, not leak the rejection
+    const cacheSpy = jest.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
+      get: jest.fn().mockRejectedValue(new Error('Connection is closed.')),
+      set: jest.fn(),
+    } as any);
+
+    try {
+      await request(server).ws('/ws/agent').close().expectClosed();
+
+      // The close handler updates status asynchronously; wait for the failure to be logged
+      for (let i = 0; i < 10; i++) {
+        if (errorSpy.mock.calls.some((call) => call[0] === '[Agent]: Failed to update agent status on disconnect')) {
+          break;
+        }
+        await sleep(20);
+      }
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Agent]: Failed to update agent status on disconnect',
+        expect.objectContaining({ error: 'Connection is closed.' })
+      );
+    } finally {
+      cacheSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
+  });
+
   test('Ping IP', async () => {
     let pushRequest: any = undefined;
     let pushResponse: any = undefined;
@@ -525,8 +556,7 @@ describe('Agent WebSockets', () => {
   });
 
   test('Received agent:error without callback', async () => {
-    const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
     await request(server)
       .ws('/ws/agent')
       .sendText(
@@ -537,8 +567,10 @@ describe('Agent WebSockets', () => {
       )
       .close()
       .expectClosed();
-    expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('[Agent]: Error received from agent'));
-    console.log = originalConsoleLog;
+    expect(writeSpy).toHaveBeenLastCalledWith(
+      expect.stringMatching(/"level":"ERROR".*\[Agent\]: Error received from agent/)
+    );
+    writeSpy.mockRestore();
   });
 
   describe('Bot failures', () => {

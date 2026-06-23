@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType, getReferenceString } from '@medplum/core';
-import type { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fhirtypes';
+import type { Bundle, Meta, Organization, Parameters, Patient, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -479,6 +479,37 @@ describe('FHIR Routes', () => {
         },
       ]);
     expect(res.status).toBe(200);
+  });
+
+  test('FHIRPath Patch resource success', async () => {
+    expect(testPatient.name?.[0]?.given).toStrictEqual(['Alice']);
+    const res = await request(app)
+      .patch(`/fhir/R4/Patient/${patientId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'operation',
+            part: [
+              { name: 'type', valueCode: 'add' },
+              { name: 'path', valueString: `Patient.name.where(family = 'Smith')` },
+              { name: 'name', valueString: 'given' },
+              { name: 'value', valueString: 'Jan' },
+            ],
+          },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/Patient/${patientId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res2.status).toStrictEqual(200);
+    const updatedPatient = res2.body as Patient;
+    expect(updatedPatient.name?.[0].given).toStrictEqual(['Alice', 'Jan']);
   });
 
   describe.each<['writer' | 'reader']>([['writer'], ['reader']])('On %s', (repoMode) => {

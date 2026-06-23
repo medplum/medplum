@@ -157,7 +157,7 @@ To date, the community has not yet aligned on a standard for modeling patient re
 
 ## Storing Insurance Card Photos
 
-Digital health implementations often need to store photos of a patient's insurance card, alongside their coverage information. While FHIR does not support the direct storing of images within the Coverage resource, you can use the `DocumentReference` resource to store the image and connect it to the [`Coverage`](/docs/api/fhir/resources/coverage) using the `DocumentReference.context.related` element. See our guide on [handling external files](/docs/charting/external-documents) for more information.
+Digital health implementations often need to store photos of a patient's insurance card, alongside their coverage information. While FHIR does not support the direct storing of images within the Coverage resource, you can use the `DocumentReference` resource to store the image and connect it to the [`Coverage`](/docs/api/fhir/resources/coverage) using the `DocumentReference.context.related` element. See [External files and Document references](/docs/fhir-datastore/external-documents) for more information.
 
 ## A Detailed Example {/* #example */}
 

@@ -3,9 +3,19 @@ sidebar_label: Defining Availability (Alpha)
 sidebar_position: 10
 ---
 
-# Defining Availability (Alpha)
+# Defining Availability
 
-This guide covers how to configure availability using the `SchedulingParameters` extension — at both the actor level (per Schedule) and the service type level (via HealthcareService). It covers scheduling constraints, override behavior, timezone handling, and multi-resource scheduling patterns.
+:::info[Alpha]
+
+Medplum Scheduling APIs are currently in [alpha](/docs/compliance/alpha-beta).
+
+:::
+
+This guide covers how to configure availability using the `SchedulingParameters` extension — at both the actor level (per Schedule) and the service type level (via HealthcareService). It covers scheduling constraints, field-level inheritance, override behavior, timezone handling, and multi-resource scheduling patterns.
+
+Parameters may be defined on a HealthcareService and shared amongst all Schedules that book that type
+of appointment. Each Schedule may also override these parameters to define behaviors specific to that
+schedule as needed.
 
 The diagram below shows how availability can be defined at both
 - The [actor level](/docs/scheduling/defining-availability#actor-level-availability) (via Schedule)
@@ -15,8 +25,8 @@ The diagram below shows how availability can be defined at both
 %%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%
 graph TD
     C1[Practitioner<br/>*Dr. Smith*] --> B1
-    A[HealthcareService<br/>*Initial Visit Defaults*<br/><br/><b>Service-level<br/>defined availability</b><br/>ex. <i>1hr slot duration</i>] -.-> B1[Schedule<br/>*Dr. Smith's Schedule*<br/><br/><b>Actor-level<br/>defined availability</b><br/>ex. <i>Mon–Fri, 9am–5pm</i>]
-    A -.-> B2[Schedule<br/>*Dr. Johnson's Schedule*<br/><br/><b>Actor-level<br/>defined availability</b><br/>ex. <i>Mon–Fri, 9am–5pm</i>]
+    A[HealthcareService<br/>*Initial Visit Defaults*<br/><br/><b>Service-level defaults</b><br/>ex. <i>1hr slot duration, 10min buffer</i><br/><i>Mon–Fri 9am–5pm availability</i>] -.->|inherited by| B1[Schedule<br/>*Dr. Smith's Schedule*<br/><br/><b>Actor-level overrides</b><br/>ex. <i>availability: Mon–Wed only</i>]
+    A -.->|inherited by| B2[Schedule<br/>*Dr. Johnson's Schedule*<br/><br/><b>no overrides</b><br/><i>uses all service defaults</i>]
     C2[Practitioner<br/>*Dr. Johnson*] --> B2
 
     B1 --> D1[Slot<br/>*status: busy*]
@@ -42,24 +52,112 @@ graph TD
 
 ## The Scheduling Parameters Extension
 
-All scheduling constraints are managed through a single consolidated extension: `SchedulingParameters`. This extension can appear on both [HealthcareService](/docs/api/fhir/resources/healthcareservice) (for defaults) and [Schedule](/docs/api/fhir/resources/schedule).
+All scheduling constraints are managed through a single consolidated extension: `SchedulingParameters`. This extension can appear on both [HealthcareService](/docs/api/fhir/resources/healthcareservice) (for shared configuration) and [Schedule](/docs/api/fhir/resources/schedule).
 
-#### Extension Fields Reference
+To use scheduling APIs for a Schedule and HealthcareService, at least one of them must define the `duration` attribute (used to set how long the scheduled appointment will last). There must be a `timezone` attribute, which may also be defined on the Schedule's actor. (See [Timezone Resolution](#timezone-resolution))
 
-| Url                 | Type                                                        | Applies To                          | Required                                        | Behavior when defined                                                                                                                                                                | Behavior when not defined                                                              |
-| ------------------- | ----------------------------------------------------------- | ----------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `service`           | Reference(HealthcareService)                                | Schedule only                       | Required                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                       | N/A - must be specified                                                                |
-| `availability`      | [Nested extension](#availability-extension)                 | Schedule only                       | Optional                                        | Bookings must fully fit within the recurring windows (day-of-week + start time + end time).                                                                                          | Time is implicitly available by default (unless blocked by Slots or other constraints) |
-| `timezone`          | Code                                                        | Schedule only                       | Optional                                        | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability times. Falls back to the Schedule's actor timezone if not specified        | Uses the timezone defined on the Schedule's actor reference                            |
-| `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Required                                        | Determines how long the time increments for a Slot are                                                                                                                               | N/A - must be specified                                                                |
-| `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Requires prep time before start to also be free                                                                                                                                      | No prep time required                                                                  |
-| `bufferAfter`       | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Requires cleanup time after end to also be free                                                                                                                                      | No cleanup time required                                                               |
-| `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Start times must align to the interval (e.g., every 15 minutes)                                                                                                                      | Start times are not constrained by an interval grid                                    |
-| `alignmentOffset`   | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional, and alignmentInterval must be defined | Shifts allowed start times by the offset relative to the interval (e.g., with a 15-minute alignmentInterval and a 5-minute alignmentOffset, valid starts are :05, :20, :35, :50)     | Grid anchored to :00 (no shift)                                                        |
-| `bookingLimit`      | [Timing](/docs/api/fhir/datatypes/timing)                   | Both Schedule and HealthcareService | Optional                                        | Caps number of appointments per period (multiple entries can stack)                                                                                                                  | No capacity cap for that period                                                        |
+When using scheduling APIs to interact with multiple `Schedule` resources at once, they must be configured with matching `duration`, `alignmentInterval`, `alignmentTimezone`, and `alignmentOffset` parameters. For this reason, Medplum recommends that these parameters only be set on `HealthcareService` resources.
+
+#### Extension Fields
+
+| Url                 | Type                                                        | Default Value                               | Description                                                                                                                                                             | `HealthcareService` usage notes                               | `Schedule` usage notes                                    |
+| ------------------- | ----------------------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------- |
+| `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | *none*                                      | Determines how long the time increments for a Slot are                                                                                                                  |                                                               | Recommended to prefer setting this on `HealthcareService` |
+| `timezone`          | Code                                                        | *none*                                      | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability. When not set, falls back to the `Schedule.actor`'s timezone. |                                                               |                                                           |
+| `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes (no buffer needed)                | Sets prep-time needed before appointment start. It must be free at booking time, and will be reserved with a Slot.                                                      |                                                               |                                                           |
+| `bufferAfter`       | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes (no buffer needed)                | Sets cleanup time needed after appointment end. It must be free at booking time, and will be reserved with a Slot.                                                      |                                                               |                                                           |
+| `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration)               | 60 minutes (appointments start on-the-hour) | Start times must align to this interval (e.g., every 15 minutes)                                                                                                        |                                                               | Recommended to prefer setting this on `HealthcareService` |
+| `alignmentOffset`   | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes                                   | Shifts allowed start times by this offset (e.g., with a 15-minute alignmentInterval and a 5-minute alignmentOffset, valid starts are :05, :20, :35, :50)                |                                                               | Recommended to prefer setting this on `HealthcareService` |
+| `alignmentTimezone` | Code                                                        | 'Etc/UTC'                                   | Anchors the alignment grid to local midnight of the given timezone, keeping start times stable across DST transitions.                                                  |                                                               | Recommended to prefer setting this on `HealthcareService` |
+| `service`           | `Reference(HealthcareService)`                              | *none*                                      | Pointer to the `HealthcareService` that these parameters  should override.                                                                                              | Not permitted                                                 |                                                           |
+| `availability`      | [Nested Extension](#availability-extension)                 | Always available                            | Weekly recurring availability windows. When set, appointments must fit inside these windows.                                                                            | Not permitted (use `HealthcareService.availableTime` instead) |                                                           |
 
 <details>
-<summary>Example of the `SchedulingParameters` extension</summary>
+<summary>Example of the `SchedulingParameters` extension on a `HealthcareService`</summary>
+
+```tsx
+{
+  "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
+  "extension": [
+    // Recommended: duration determines how long the time increments for a Slot are.
+    // If not set here, must be defined on all related Schedules. To book on multiple
+    // schedules at once, they must all match in this dimension.
+    {
+      "url": "duration",
+      "valueDuration": {
+        "value": 1,
+        "unit": "h"
+      }
+    },
+
+    // Recommended: Time alignment interval (appointment start time boundaries)
+    // To book on multiple schedules at once, they must all match in this dimension.
+    {
+      "url": "alignmentInterval",
+      "valueDuration": {
+        "value": 15,
+        "unit": "min",
+        "system": "http://unitsofmeasure.org",
+        "code": "min"
+      }
+    },
+
+    // Recommended: Time alignment offset (shift from interval boundaries)
+    // To book on multiple schedules at once, they must all match in this dimension.
+    {
+      "url": "alignmentOffset",
+      "valueDuration": {
+        "value": 0,
+        "unit": "min",
+        "system": "http://unitsofmeasure.org",
+        "code": "min"
+      }
+    },
+
+    // Optional: Timezone for anchoring the alignment grid to local midnight
+    // Independent of `timezone`, which controls availability window interpretation
+    {
+      "url": "alignmentTimezone",
+      "valueCode": "America/New_York"
+    },
+
+    // Optional: specify time zone for availability interpretation
+    // Falls back to Schedule's actor time zone if not specified
+    {
+      "url": "timezone",
+      "valueCode": "America/Los_Angeles"
+    },
+
+
+    // Optional: Buffer time required before appointment
+    {
+      "url": "bufferBefore",
+      "valueDuration": {
+        "value": 15,
+        "unit": "min",
+        "system": "http://unitsofmeasure.org",
+        "code": "min"
+      }
+    },
+
+    // Optional: Buffer time required after appointment
+    {
+      "url": "bufferAfter",
+      "valueDuration": {
+        "value": 10,
+        "unit": "min",
+        "system": "http://unitsofmeasure.org",
+        "code": "min"
+      }
+    }
+  ]
+}
+```
+</details>
+
+
+<details>
+<summary>Example of the `SchedulingParameters` extension on a `Schedule`</summary>
 
 ```tsx
 {
@@ -74,14 +172,15 @@ All scheduling constraints are managed through a single consolidated extension: 
       }
     },
 
-    // Optional: specify time zone for availability interpretation (Schedule only)
+    // Optional: specify time zone for availability interpretation
     // Falls back to Schedule's actor time zone if not specified
     {
       "url": "timezone",
       "valueCode": "America/Los_Angeles"
     },
 
-    // Required: duration determines how long the time increments for a Slot are
+    // Optional: duration determines how long the time increments for a Slot are.
+    // If not set here, must be defined on the related HealthcareService
     {
       "url": "duration",
       "valueDuration": {
@@ -151,22 +250,45 @@ All scheduling constraints are managed through a single consolidated extension: 
       }
     },
 
-    // Booking limits (can have multiple)
+    // Timezone for anchoring the alignment grid to local midnight
+    // Independent of `timezone`, which controls availability window interpretation
     {
-      "url": "bookingLimit",
-      "valueTiming": {
-        "repeat": {
-          "frequency": 8,
-          "period": 1,
-          "periodUnit": "d"
-        }
-      }
+      "url": "alignmentTimezone",
+      "valueCode": "America/New_York"
     }
   ]
 }
 ```
 
 </details>
+
+### Alignment grid
+
+Medplum Scheduling APIs generate possible appointments by projecting a repeating daily grid. These parameters control that grid:
+
+| Parameter           | Description                            | Default    |
+| ------------------- | -------------------------------------- | ---------- |
+| `alignmentInterval` | How frequently slot start times occur  | 60 minutes |
+| `alignmentOffset`   | Shifts slot start times by this amount | 0 minutes  |
+| `alignmentTimezone` | What timezone the grid is anchored to  | `Etc/UTC`  |
+
+#### `alignmentInterval`
+
+Sets how frequently appointments may begin. For back-to-back scheduling without gaps, set this value to match the `duration` parameter.
+
+#### `alignmentOffset`
+
+Example: to align your appointments starting at 9:15, 10:15, ..., set `alignmentOffset` to 15 minutes (with a 60-minute `alignmentInterval`).
+
+#### `alignmentTimezone`
+
+When clocks change for DST, slots appear to shift by an hour in local time — for example, a 9:00am slot may appear at 8:00am or 10:00am. Setting `alignmentTimezone` anchors the grid to local midnight instead, keeping slot times consistent year-round.
+
+**Relationship to `timezone`:** The two fields serve distinct purposes and can be set independently:
+- `timezone` — which timezone to use when reading `availableStartTime`/`availableEndTime` values
+- `alignmentTimezone` — which timezone's midnight to use as the alignment grid anchor
+
+The rare case in which they differ: a provider whose availability hours and appointment grid are managed in different timezones.
 
 ## Actor Level Availability
 
@@ -248,7 +370,7 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
 
 ### `availability` Extension
 
-The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape.  It is encoded using nested R4 extensions (because R4 does not have a native `Availability` data type).  This is close to the R4 definition of `HealthcareService.availabileTime`, which is another possible source of scheduling availability data.
+The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape.  It is encoded using nested R4 extensions (because R4 does not have a native `Availability` data type).  This is close to the R4 definition of `HealthcareService.availabileTime`, which is another possible source of scheduling availability data. If this sub-extension is not present, availability is constrained only by the presence of existing `Slot` resources for the schedule.
 
 | Sub-extension         | Type          | Description                                          | Repeatable |
 | --------------------- | ------------- | ---------------------------------------------------- | ---------- |
@@ -321,9 +443,9 @@ The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://h
 
 ### Service Types and HealthcareService
 
-An [HealthcareService](/docs/api/fhir/resources/healthcareservice) gives a mechanism to define the default scheduling parameters for a specific service type (appointment type), which can then be used by multiple [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedules](/docs/api/fhir/resources/schedule). This allows you to define standard appointment durations, buffer times, alignment intervals, and booking limits once and apply them across multiple providers.
+A [HealthcareService](/docs/api/fhir/resources/healthcareservice) gives a mechanism to define common scheduling parameters for an appointment type, which can then be used by multiple [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedules](/docs/api/fhir/resources/schedule). This allows you to define standard appointment durations, buffer times, alignment intervals, and booking limits once and apply them across multiple providers.
 
-To get the [Schedule](/docs/api/fhir/resources/schedule) to use the [HealthcareService](/docs/api/fhir/resources/healthcareservice)'s scheduling parameters, the `Schedule.serviceType` must include a reference to the HealthcareService in its extensions.
+For a `Schedule` to use the `HealthcareService`'s scheduling parameters, the `Schedule.serviceType` must include a reference to the HealthcareService in its extensions.
 
 ```tsx
 {
@@ -385,44 +507,29 @@ To get the [Schedule](/docs/api/fhir/resources/schedule) to use the [HealthcareS
 
 ### Override Behavior
 
-A [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedule](/docs/api/fhir/resources/schedule) can also override the default [HealthcareService](/docs/api/fhir/resources/healthcareservice)'s availability for a specific service type by defining a `serviceType` extension.
+A [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedule](/docs/api/fhir/resources/schedule) can override individual scheduling parameters for a specific service type by adding a `SchedulingParameters` extension that references that service. **Only the fields explicitly set on the Schedule override the HealthcareService defaults** — all other fields are inherited.
 
-Here is an example Schedule that overrides the availability for a specific service type.
+This means you only need to specify what differs. For example, to restrict availability to Tuesday and Thursday mornings while keeping all other parameters (duration, buffers, alignment) from the HealthcareService:
 
 ```tsx
 {
   "resourceType": "Schedule",
   "id": "dr-chen-schedule",
   "active": true,
+  "actor": [{"reference": "Practitioner/dr-chen"}],
   "serviceType": [
     {
-      "coding": [{"code": "new-patient-visit"}]
-      "extension":[
-        {
-          "url": "https://medplum.com/fhir/service-type-reference",
-          "valueReference": {
-            "reference": "HealthcareService/f44bbf25-bf57-4263-8f10-be060cc91672",
-            "display": "New Patient visit"
-          }
+      "coding": [{"code": "new-patient-visit"}],
+      "extension": [{
+        "url": "https://medplum.com/fhir/service-type-reference",
+        "valueReference": {
+          "reference": "HealthcareService/f44bbf25-bf57-4263-8f10-be060cc91672",
+          "display": "New Patient Visit"
         }
-      ]
-    },
-    {
-      "coding": [{"code": "follow-up"}]
-      "extension":[
-        {
-          "url": "https://medplum.com/fhir/service-type-reference",
-          "valueReference": {
-            "reference": "HealthcareService/5f93269f-b5de-4d76-9672-e35ecb37f201",
-            "display": "Follow-up visit"
-          }
-        }
-      ]
+      }]
     }
   ],
-  "actor": [{"reference": "Practitioner/dr-chen"}],
   "extension": [
-    // Service type level availability for this Practitioner - overrides any availability parameters specified elsewhere
     {
       "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
       "extension": [
@@ -430,16 +537,10 @@ Here is an example Schedule that overrides the availability for a specific servi
           "url": "service",
           "valueReference": {
             "reference": "HealthcareService/f44bbf25-bf57-4263-8f10-be060cc91672",
-            "display": "New Patient visit"
+            "display": "New Patient Visit"
           }
         },
-        {
-          "url": "duration",
-          "valueDuration": {
-            "value": 1,
-            "unit": "h"
-          }
-        },
+        // Only availability is overridden; duration, buffers, and alignment are inherited from HealthcareService
         {
           "url": "availability",
           "extension": [
@@ -460,12 +561,14 @@ Here is an example Schedule that overrides the availability for a specific servi
 }
 ```
 
-**All-or-nothing rule**: When a `SchedulingParameters` extension includes a `service`, it **completely replaces** the default configuration for that service. No attribute-level merging occurs.
+**Field-level inheritance**: When a Schedule has a `SchedulingParameters` extension for a service, each field is resolved independently using this priority order (highest to lowest):
 
-**Priority order** (highest to lowest):
+1. The field value from the Schedule's `SchedulingParameters` extension for that service
+2. The field value from the HealthcareService's `SchedulingParameters` extension
+3. The system default (0 for buffers and offset; 60 minutes for alignment interval; always-available for availability)
+4. Per-actor timezone information (via `Schedule.actor`; only for `timezone` attribute)
 
-1. Schedule where `https://medplum.com/fhir/StructureDefinition/SchedulingParameters.service` extension matches `service-type-reference` parameter on `$find` request.
-2. HealthcareService matching `service-type-reference` param on `$find` request. HealthcareService parameters are used.
+If a Schedule has **no** `SchedulingParameters` extension at all, all parameters are inherited from this chain.
 
 ### Blocking Time by Service Type
 
@@ -486,24 +589,13 @@ Here is an example of a [Slot](/docs/api/fhir/resources/slot) resource that bloc
 - **With serviceType**: Blocks only that specific service
 - **Without serviceType**: Blocks all services
 
+## Timezone Resolution
+
 ### Timezone per Scheduling Parameters Entry
 
 The `timezone` parameter allows you to specify different timezones for different service types within the same Schedule. This is useful when a provider needs to define availability in different timezones for different services (e.g., a doctor who provides cardiac surgery where they might travel to in one time zone and call center availability in another time zone).
 
 **Fallback Logic:** If no time zone is specified in the `scheduling-parameters` extension, then the availability will be interpreted in the time zone defined on the Schedule's actor reference (Practitioner, Location, or Device). It looks for the FHIR sanctioned time zone extension:
-
-```tsx
-{
-  "resourceType": "Practitioner",
-  "id": "dr-smith",
-  "extension": [
-    {
-      "url": "http://hl7.org/fhir/StructureDefinition/timezone",
-      "valueCode": "America/Los_Angeles"
-    }
-  ]
-}
-```
 
 :::tip[Adding a Timezone to an Actor]
 
@@ -532,7 +624,6 @@ There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/p
 
 **Important Notes:**
 
-- `timezone` is only available on Schedule resources, not HealthcareService
 - The time zone value should be an IANA time zone identifier (e.g., `America/New_York`, `America/Los_Angeles`, `America/Miami`)
 - When `timezone` is specified, all Time values in the `availability` extension are interpreted in that time zone
 
@@ -562,9 +653,10 @@ Here is an example of a Schedule with multiple service types, each with its own 
       "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
       "extension": [
         {
-          "url": "serviceType",
-          "valueCodeableConcept": {
-            "coding": [{"code": "cardiac-surgery"}]
+          "url": "service",
+          "valueReference": {
+            "reference": "HealthcareService/a8f88a98-2578-4644-b408-7ba73f104298",
+            "display": "Cardiac Surgery"
           }
         },
         {
@@ -603,9 +695,10 @@ Here is an example of a Schedule with multiple service types, each with its own 
           "valueCode": "America/New_York"
         },
         {
-          "url": "serviceType",
-          "valueCodeableConcept": {
-            "coding": [{"code": "call-center-availability"}]
+          "url": "service",
+          "valueReference": {
+            "reference": "HealthcareService/0dbe6bf1-40b8-4204-a406-f78b5a0e59d0"
+            "display": "Call Center Availability"
           }
         },
         {
@@ -789,13 +882,7 @@ This HealthcareService defines a 60-minute new patient visit with 15-minute buff
       },
       {"url": "bufferBefore", "valueDuration": {"value": 15, "unit": "min"}},
       {"url": "bufferAfter", "valueDuration": {"value": 15, "unit": "min"}},
-      {"url": "alignmentInterval", "valueDuration": {"value": 30, "unit": "min"}},
-      {
-        "url": "bookingLimit",
-        "valueTiming": {
-          "repeat": {"frequency": 3, "period": 1, "periodUnit": "d"}
-        }
-      }
+      {"url": "alignmentInterval", "valueDuration": {"value": 30, "unit": "min"}}
     ]
   }]
 }
@@ -852,7 +939,7 @@ It defines default availability of Monday-Friday, 9am-5pm.
 
 This schedule declares in its `serviceType` array that it can be booked for New Patient visits and Follow-Up visits.
 
-This Schedule will use the default availability for the "Follow-Up" service (Mon-Fri 9am-5pm), then override new patient visits to only be available on Tuesday and Thursday mornings (9am-1pm).
+This Schedule will use the default availability for the "Follow-Up" service (Mon-Fri 9am-5pm). It will override "New Patient Visit" appointment type to only be available on Tuesday and Thursday mornings (9am-1pm).
 
 ```tsx
 {
@@ -872,6 +959,13 @@ This Schedule will use the default availability for the "Follow-Up" service (Mon
           "system": "http://example.org/appointment-types",
           "code": "new-patient-visit"
         }
+      ],
+      "extension": [
+        "url": "https://medplum.com/fhir/service-type-reference",
+        "valueReference": {
+          "reference": "HealthcareService/new-patient-visit",
+          "display": "New Patient Visit"
+        }
       ]
     },
     {
@@ -880,6 +974,13 @@ This Schedule will use the default availability for the "Follow-Up" service (Mon
         {
           "system": "http://example.org/appointment-types",
           "code": "follow-up"
+        }
+      ],
+      "extension": [
+        "url": "https://medplum.com/fhir/service-type-reference",
+        "valueReference": {
+          "reference": "HealthcareService/follow-up",
+          "display": "Follow-up Visit"
         }
       ]
     }
@@ -890,19 +991,10 @@ This Schedule will use the default availability for the "Follow-Up" service (Mon
       "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
       "extension": [
         {
-          "url": "serviceType",
-          "valueCodeableConcept": {
-            "coding": [{
-              "system": "http://example.org/appointment-types",
-              "code": "new-patient-visit"
-            }]
-          }
-        },
-        {
-          "url": "duration",
-          "valueDuration": {
-            "value": 1,
-            "unit": "h"
+          "url": "service",
+          "valueReference": {
+            "reference": "HeathcareService/new-patient-visit",
+            dislpay: "New Patient Visit"
           }
         },
         {
@@ -929,8 +1021,8 @@ This Schedule will use the default availability for the "Follow-Up" service (Mon
 
 **Result**:
 
-- **New patient visits (ie. `$find` called with `service-type=new-patient-visit`)**: Tue/Thu 9am-1pm only, 60 minutes, can start every 30 minutes, max 3 per day, 15-min buffers
-- **Follow-ups (ie. `$find` called with `service-type=follow-up`)**: Mon-Fri 9am-5pm, 20 minutes, can start every 10 minutes, 5-min buffers
+- **New patient visits (ie. `$find` with the "New patient visit" HealthcareService)**: Tue/Thu 9am-1pm only, 60 minutes, can start every 30 minutes, 15-min buffers
+- **Follow-ups (ie. `$find` called with the "Follow-up visit" HealthcareService)**: Mon-Fri 9am-5pm, 20 minutes, can start every 10 minutes, 5-min buffers
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px'}, 'flowchart': {'useMaxWidth': false, 'htmlLabels': true}}}%%
@@ -1262,9 +1354,9 @@ graph TD
 
 ### Best Practices
 
-#### 1. Use All-or-Nothing Overrides
+#### 1. Set Defaults on HealthcareService, Override Only What Differs on Schedule
 
-If adding a `service` configuration on Schedule, **specify ALL attributes** to avoid confusion about inheritance.
+Define `duration`, buffers, and alignment once on the HealthcareService. Only add a `SchedulingParameters` extension to a Schedule when that actor's availability or parameters differ from the service defaults. Omit any field that should be inherited.
 
 #### 2. Minimize Pre-Generated Slots
 

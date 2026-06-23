@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest } from '@medplum/core';
-import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { allOk, badRequest, EMPTY, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
+import type { Login, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { sendOutcome } from '../fhir/outcomes';
+import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -38,20 +40,27 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   }
 
   const user = await systemRepo.readReference(securityRequest.user);
-
-  const numPwns = await pwnedPassword(req.body.password);
-  if (numPwns > 0) {
-    sendOutcome(res, badRequest('Password found in breach database', 'password'));
-    return;
-  }
-
-  await setPassword({ ...user, emailVerified: true }, req.body.password);
+  await setPassword(systemRepo, { ...user, emailVerified: true }, req.body.password);
   await systemRepo.updateResource<typeof securityRequest>({ ...securityRequest, used: true });
+
   sendOutcome(res, allOk);
 }
 
-export async function setPassword(user: User, password: string): Promise<void> {
+export async function setPassword(systemRepo: SystemRepository, user: WithId<User>, password: string): Promise<void> {
+  const numPwns = await pwnedPassword(password);
+  if (numPwns > 0) {
+    throw new OperationOutcomeError(badRequest('Password found in breach database'));
+  }
+
   const passwordHash = await bcryptHashPassword(password);
-  const systemRepo = getGlobalSystemRepo();
   await systemRepo.updateResource<User>({ ...user, passwordHash });
+
+  const activeSessions = await systemRepo.search<Login>({
+    resourceType: 'Login',
+    filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
+  });
+  for (const entry of activeSessions.entry ?? EMPTY) {
+    const login = entry.resource as Login;
+    await systemRepo.updateResource({ ...login, revoked: true });
+  }
 }

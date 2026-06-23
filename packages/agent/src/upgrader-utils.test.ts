@@ -3,42 +3,59 @@
 import type { ReleaseManifest } from '@medplum/core';
 import { MEDPLUM_RELEASES_URL, clearReleaseCache } from '@medplum/core';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
-import os from 'node:os';
+import { platform } from 'node:os';
 import { resolve } from 'node:path';
+import { buildManifest } from './upgrader-test-utils';
 import { downloadRelease, getReleaseBinPath, parseDownloadUrl } from './upgrader-utils';
 
 const ALL_PLATFORMS_LIST = ['win32', 'linux', 'darwin'];
 const VALID_PLATFORMS_LIST = ['win32', 'linux'];
 
 describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_platform) => {
-  let platformSpy: jest.SpyInstance;
-
   beforeEach(() => {
-    // @ts-expect-error Platform type is not exported
-    platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => _platform);
-  });
-
-  afterEach(() => {
-    platformSpy.mockRestore();
+    vi.mocked(platform).mockReturnValue(_platform as NodeJS.Platform);
   });
 
   test('parseDownloadUrl', () => {
-    const manifest = {
-      tag_name: 'v4.2.4',
+    const manifest = buildManifest('4.2.4');
+    expect(parseDownloadUrl(manifest, 'win32')).toStrictEqual('https://example.com/win32');
+    expect(parseDownloadUrl(manifest, 'linux')).toStrictEqual('https://example.com/linux');
+    expect(() => parseDownloadUrl(manifest, 'darwin')).toThrow('Unsupported platform: darwin');
+  });
+
+  test('parseDownloadUrl -- missing artifact for platform', () => {
+    const manifestOnlyWindows = {
+      tag_name: 'v4.2.5',
       assets: [
         {
-          name: 'medplum-agent-4.2.4-linux',
-          browser_download_url: 'https://example.com/linux',
-        },
-        {
-          name: 'medplum-agent-installer-4.2.4-windows.exe',
+          name: 'medplum-agent-installer-4.2.5-windows.exe',
           browser_download_url: 'https://example.com/win32',
         },
       ],
     } satisfies ReleaseManifest;
-    expect(parseDownloadUrl(manifest, 'win32')).toStrictEqual('https://example.com/win32');
-    expect(parseDownloadUrl(manifest, 'linux')).toStrictEqual('https://example.com/linux');
-    expect(() => parseDownloadUrl(manifest, 'darwin')).toThrow('Unsupported platform: darwin');
+    const manifestOnlyLinux = {
+      tag_name: 'v4.2.5',
+      assets: [
+        {
+          name: 'medplum-agent-4.2.5-linux',
+          browser_download_url: 'https://example.com/linux',
+        },
+      ],
+    } satisfies ReleaseManifest;
+    const emptyManifest = {
+      tag_name: 'v4.2.5',
+      assets: [],
+    } satisfies ReleaseManifest;
+
+    expect(() => parseDownloadUrl(manifestOnlyWindows, 'linux')).toThrow(
+      "No download URL found for release 'v4.2.5' for linux"
+    );
+    expect(() => parseDownloadUrl(manifestOnlyLinux, 'win32')).toThrow(
+      "No download URL found for release 'v4.2.5' for win32"
+    );
+    expect(() => parseDownloadUrl(emptyManifest, 'win32')).toThrow(
+      "No download URL found for release 'v4.2.5' for win32"
+    );
   });
 
   test('getReleaseBinPath', () => {
@@ -56,15 +73,8 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
 });
 
 describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (_platform) => {
-  let platformSpy: jest.SpyInstance;
-
   beforeEach(() => {
-    // @ts-expect-error Platform type is not exported
-    platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => _platform);
-  });
-
-  afterEach(() => {
-    platformSpy.mockRestore();
+    vi.mocked(platform).mockReturnValue(_platform as NodeJS.Platform);
   });
 
   describe('downloadRelease', () => {
@@ -83,25 +93,13 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
     });
 
     test('Happy path', async () => {
-      const manifest = {
-        tag_name: 'v4.2.4',
-        assets: [
-          {
-            name: 'medplum-agent-4.2.4-linux',
-            browser_download_url: 'https://example.com/linux',
-          },
-          {
-            name: 'medplum-agent-installer-4.2.4-windows.exe',
-            browser_download_url: 'https://example.com/win32',
-          },
-        ],
-      } satisfies ReleaseManifest;
+      const manifest = buildManifest('4.2.4');
 
       let count = 0;
 
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async () => {
-          return new Promise((resolve) => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async (): Promise<Response> => {
+          return new Promise<Response>((resolve) => {
             switch (count) {
               case 0:
                 count++;
@@ -166,25 +164,13 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
     });
 
     test('Cleans up file when stream errors', async () => {
-      const manifest = {
-        tag_name: 'v4.2.4',
-        assets: [
-          {
-            name: 'medplum-agent-4.2.4-linux',
-            browser_download_url: 'https://example.com/linux',
-          },
-          {
-            name: 'medplum-agent-installer-4.2.4-windows.exe',
-            browser_download_url: 'https://example.com/win32',
-          },
-        ],
-      } satisfies ReleaseManifest;
+      const manifest = buildManifest('4.2.4');
 
       let count = 0;
 
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async () => {
-          return new Promise((resolve) => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async (): Promise<Response> => {
+          return new Promise<Response>((resolve) => {
             switch (count) {
               case 0:
                 count++;
@@ -231,25 +217,13 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
     });
 
     test('Download returns 404', async () => {
-      const manifest = {
-        tag_name: 'v4.2.4',
-        assets: [
-          {
-            name: 'medplum-agent-4.2.4-linux',
-            browser_download_url: 'https://example.com/linux',
-          },
-          {
-            name: 'medplum-agent-installer-4.2.4-windows.exe',
-            browser_download_url: 'https://example.com/win32',
-          },
-        ],
-      } satisfies ReleaseManifest;
+      const manifest = buildManifest('4.2.4');
 
       let count = 0;
 
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async () => {
-          return new Promise((resolve) => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async (): Promise<Response> => {
+          return new Promise<Response>((resolve) => {
             switch (count) {
               case 0:
                 count++;

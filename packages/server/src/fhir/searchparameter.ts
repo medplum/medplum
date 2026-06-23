@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchParameterDetails } from '@medplum/core';
-import { capitalize, getSearchParameterDetails } from '@medplum/core';
+import { capitalize, getSearchParameterDetails, SearchParameterType } from '@medplum/core';
 import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { AddressTable } from './lookups/address';
 import { CodingTable } from './lookups/coding';
@@ -17,11 +17,25 @@ export const SearchStrategies = {
   COLUMN: 'column',
   LOOKUP_TABLE: 'lookup-table',
   TOKEN_COLUMN: 'token-column',
+  RANGE_COLUMN: 'range-column',
 } as const;
 
 export interface ColumnSearchParameterImplementation extends SearchParameterDetails {
   readonly searchStrategy: typeof SearchStrategies.COLUMN;
   readonly columnName: string;
+  /**
+   * For literal (non-canonical) reference search parameters that resolve to
+   * exactly one target resource type on this resource, the name of that
+   * target type (e.g. `Encounter` for `DeviceRequest.encounter`).
+   *
+   * Derived from the resource's element definition target profiles when the
+   * global SearchParameter has multiple targets but the element narrows to one.
+   * Pre-computed at impl build time so that {@link buildReferenceSearchFilter}
+   * can prepend a `Type/` prefix to spec-compliant bare-id search values
+   * without re-reading the SearchParameter for every query. Undefined for
+   * multi-target references, canonical references, and non-reference params.
+   */
+  readonly singleTargetType?: ResourceType;
 }
 
 export interface LookupTableSearchParameterImplementation extends SearchParameterDetails {
@@ -40,10 +54,18 @@ export interface TokenColumnSearchParameterImplementation extends SearchParamete
   readonly textSearch: boolean;
 }
 
+export interface RangeColumnSearchParameterImplementation extends SearchParameterDetails {
+  readonly searchStrategy: typeof SearchStrategies.RANGE_COLUMN;
+  readonly rangeColumnName: string;
+  readonly sortColumnName: string;
+  readonly columnName: string; // Original column name for migration; to be removed
+}
+
 export type SearchParameterImplementation =
   | ColumnSearchParameterImplementation
   | LookupTableSearchParameterImplementation
-  | TokenColumnSearchParameterImplementation;
+  | TokenColumnSearchParameterImplementation
+  | RangeColumnSearchParameterImplementation;
 
 interface ResourceTypeSearchParameterInfo {
   searchParamsImplementations: Record<string, SearchParameterImplementation>;
@@ -102,6 +124,17 @@ function buildSearchParameterImplementation(
     throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
   }
 
+  if (searchParam.type === 'date' || searchParam.type === 'number' || searchParam.type === 'quantity') {
+    const writeable = impl as Writeable<RangeColumnSearchParameterImplementation>;
+    writeable.searchStrategy = 'range-column';
+
+    const baseName = convertCodeToColumnName(code);
+    writeable.rangeColumnName = '__' + baseName;
+    writeable.sortColumnName = '__' + baseName + 'Sort';
+    writeable.columnName = baseName;
+    return impl;
+  }
+
   const tokenIndexType = getTokenIndexType(searchParam, resourceType);
   if (tokenIndexType) {
     const writeable = impl as Writeable<TokenColumnSearchParameterImplementation>;
@@ -139,6 +172,13 @@ function buildSearchParameterImplementation(
   const writeable = impl as Writeable<ColumnSearchParameterImplementation>;
   writeable.searchStrategy = 'column';
   writeable.columnName = convertCodeToColumnName(code);
+  if (
+    searchParam.type === 'reference' &&
+    impl.type !== SearchParameterType.CANONICAL &&
+    impl.referenceTargetTypes?.length === 1
+  ) {
+    writeable.singleTargetType = impl.referenceTargetTypes[0];
+  }
 
   return impl;
 }

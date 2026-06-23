@@ -76,7 +76,7 @@ describe('Auth middleware', () => {
 
   test('No auth header', async () => {
     const res = await request(app).get('/fhir/R4/Patient');
-    expect(res.header['www-authenticate']).toBeUndefined();
+    expect(res.header['www-authenticate']).toBe(`Bearer realm="${getConfig().baseUrl}"`);
     expect(res.status).toBe(401);
   });
 
@@ -99,11 +99,13 @@ describe('Auth middleware', () => {
   test('Invalid bearer token', async () => {
     const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Bearer foo');
     expect(res.status).toBe(401);
+    expect(res.header['www-authenticate']).toBe(`Bearer realm="${getConfig().baseUrl}"`);
   });
 
   test('Basic auth empty string', async () => {
     const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Basic ');
     expect(res.status).toBe(401);
+    expect(res.header['www-authenticate']).toBe(`Basic realm="${getConfig().baseUrl}"`);
   });
 
   test('Basic auth malformed string', async () => {

@@ -20,7 +20,7 @@ describe('ResourceVersionPage', () => {
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   test('Resource not found', async () => {
@@ -29,7 +29,7 @@ describe('ResourceVersionPage', () => {
     });
 
     await act(async () => {
-      await jest.runAllTimersAsync();
+      await vi.runAllTimersAsync();
     });
 
     expect(await screen.findByText('Not found')).toBeInTheDocument();

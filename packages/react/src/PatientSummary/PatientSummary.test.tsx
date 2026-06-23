@@ -331,7 +331,7 @@ describe('PatientSummary', () => {
   });
 
   test('createLabsSection creates a labs section config', () => {
-    const callback = jest.fn();
+    const callback = vi.fn();
     const section = createLabsSection(callback);
     expect(section.key).toBe('labs');
     expect(section.title).toBe('Labs');
@@ -601,7 +601,7 @@ describe('PatientSummary', () => {
   });
 
   test('Renders with onClickResource callback', async () => {
-    const onClick = jest.fn();
+    const onClick = vi.fn();
 
     await setup({
       patient: HomerSimpson,
@@ -613,7 +613,7 @@ describe('PatientSummary', () => {
   });
 
   test('Renders with onRequestLabs callback (default sections)', async () => {
-    const onRequestLabs = jest.fn();
+    const onRequestLabs = vi.fn();
 
     await setup({
       patient: HomerSimpson,

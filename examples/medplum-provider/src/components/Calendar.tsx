@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, SegmentedControl, Title } from '@mantine/core';
+import { EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import dayjs from 'dayjs';
@@ -12,7 +13,6 @@ import type { Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
 import { Calendar as ReactBigCalendar, dayjsLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import type { Range } from '../types/scheduling';
-import { SchedulingTransientIdentifier } from '../utils/scheduling';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -128,6 +128,13 @@ function eventPropGetter(
     result.style.opacity = 0.6;
   }
 
+  // style "pending" appointments with an outlined event
+  if (event.type === 'appointment' && event.appointment.status === 'pending') {
+    result.style.border = '1px solid #228be6'; // blue.6
+    result.style.color = '#228be6'; // blue.6
+    result.style.backgroundColor = 'white';
+  }
+
   return result;
 }
 
@@ -183,18 +190,35 @@ export function Calendar(props: {
     [onSelectAppointment, onSelectSlot]
   );
 
-  const events = useMemo(
-    () => [
-      ...appointmentsToEvents(props.appointments),
-      ...slotsToEvents(props.slots.filter((slot) => SchedulingTransientIdentifier.get(slot))),
-    ],
-    [props.appointments, props.slots]
-  );
+  const events = useMemo(() => appointmentsToEvents(props.appointments), [props.appointments]);
 
-  const backgroundEvents = useMemo(
-    () => slotsToEvents(props.slots.filter((slot) => !SchedulingTransientIdentifier.get(slot))),
-    [props.slots]
-  );
+  const backgroundEvents = useMemo(() => {
+    const appointmentIndex = props.appointments.reduce<Record<string, Appointment>>((acc, appointment) => {
+      (appointment.slot ?? EMPTY).forEach((slotRef) => {
+        const key = getReferenceString(slotRef);
+        if (key) {
+          acc[key] = appointment;
+        }
+      });
+      return acc;
+    }, {});
+
+    const filteredSlots = props.slots.filter((slot) => {
+      // never show "entered-in-error" slots on the calendar
+      if (slot.status === 'entered-in-error') {
+        return false;
+      }
+      const key = getReferenceString(slot);
+      if (key && appointmentIndex[key]) {
+        const appointment = appointmentIndex[key];
+        if (slot.start === appointment.start && slot.end === appointment.end) {
+          return false;
+        }
+      }
+      return true;
+    });
+    return slotsToEvents(filteredSlots);
+  }, [props.slots, props.appointments]);
 
   const onNavigate = useCallback((newDate: Date, newView: View) => {
     setDate(newDate);

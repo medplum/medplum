@@ -356,6 +356,7 @@ export interface ProcessMessageParams {
   setCurrentFhirRequest: (request: string | undefined) => void;
   onNewTopic: (topic: Communication) => void;
   onStreamChunk?: (chunk: string) => void;
+  onComponentStart?: () => void;
   onComponentStreamChunk?: (chunk: string) => void;
 }
 
@@ -379,6 +380,7 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
     setCurrentFhirRequest,
     onNewTopic,
     onStreamChunk,
+    onComponentStart,
     onComponentStreamChunk,
   } = params;
 
@@ -472,6 +474,10 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
 
   let componentCode: string | undefined;
   if (visualize && allResourceRefs.length > 0) {
+    // Signal that component generation has begun so the UI can show feedback
+    // while we fetch FHIR data and wait for the bot's first streamed chunk.
+    onComponentStart?.();
+
     const fhirData = await collectFhirData(medplum, allResourceRefs);
 
     const componentChunkCallback = onComponentStreamChunk ?? onStreamChunk;

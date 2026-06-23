@@ -21,12 +21,12 @@ async function setup(ui: ReactElement): Promise<void> {
 
 describe('RequestGroupDisplay', () => {
   test('Renders undefined', async () => {
-    await setup(<RequestGroupDisplay onStart={jest.fn()} onEdit={jest.fn()} />);
+    await setup(<RequestGroupDisplay onStart={vi.fn()} onEdit={vi.fn()} />);
   });
 
   test('Renders reference', async () => {
-    const onStart = jest.fn();
-    const onEdit = jest.fn();
+    const onStart = vi.fn();
+    const onEdit = vi.fn();
 
     await setup(
       <RequestGroupDisplay

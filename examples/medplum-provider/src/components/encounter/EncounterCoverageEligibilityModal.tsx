@@ -33,6 +33,7 @@ import { useMedplum, useMedplumProfile, useResource, useSearchOne } from '@medpl
 import { IconChevronDown, IconChevronUp, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
 import { BenefitsTable } from '../insurance/BenefitsTable';
 
@@ -62,9 +63,9 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
     medplum
       .searchResources('Coverage', `patient=Patient/${patient.id}&status=active`)
       .then((results) => {
-        const sorted = results.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
-        setCoverages(sorted);
-        setSelectedId(sorted[0]?.id ?? null);
+        const filtered = results.filter((c) => !isSelfPayCoverage(c));
+        setCoverages(filtered);
+        setSelectedId(filtered[0]?.id ?? null);
       })
       .catch(showErrorNotification)
       .finally(() => setCoverageLoading(false));

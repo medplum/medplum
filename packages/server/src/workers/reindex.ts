@@ -310,7 +310,7 @@ export class ReindexJob {
     let cursor = '';
     let nextTimestamp = new Date(0).toISOString();
     try {
-      await systemRepo.withTransaction(async (conn) => {
+      await systemRepo.withTransaction(async (txRepo) => {
         /*
         When a ReindexJob needs to scan a very large table for resources to reindex,
         but most/all have already been reindexed, the search will scan the most/all of table
@@ -328,10 +328,11 @@ export class ReindexJob {
         ORDER BY "Task"."lastUpdated" LIMIT 501
         ```
         */
+        const conn = txRepo.getDatabaseClient(DatabaseMode.WRITER);
         let bundle: Bundle<WithId<Resource>>;
         try {
           await conn.query(`SELECT set_config('statement_timeout', $1, true)`, [String(searchStatementTimeout)]);
-          bundle = await systemRepo.search(searchRequest, { maxResourceVersion });
+          bundle = await txRepo.search(searchRequest, { maxResourceVersion });
         } finally {
           if (upsertStatementTimeout === 'DEFAULT') {
             await conn.query(`RESET statement_timeout`);
@@ -341,7 +342,7 @@ export class ReindexJob {
         }
         if (bundle.entry?.length) {
           const resources = bundle.entry.map((e) => e.resource as WithId<Resource>);
-          await systemRepo.reindexResources(conn, resources);
+          await txRepo.reindexResources(resources);
           newCount += resources.length;
           nextTimestamp = bundle.entry.at(-1)?.resource?.meta?.lastUpdated ?? nextTimestamp;
         }

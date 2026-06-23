@@ -3,7 +3,7 @@
 import { MEDPLUM_VERSION } from '@medplum/core';
 import type { UserConfiguration } from '@medplum/fhirtypes';
 import type { NavbarMenu } from '@medplum/react';
-import { AppShell, Loading, Logo, useMedplum } from '@medplum/react';
+import { AppShell, Loading, Logo, ScrollToTop, useMedplum } from '@medplum/react';
 import {
   IconBrandAsana,
   IconBuilding,
@@ -46,6 +46,7 @@ export function App(): JSX.Element {
       menus={userConfigToMenu(config)}
       displayAddBookmark={!!config?.id}
     >
+      <ScrollToTop />
       <Suspense fallback={<Loading />}>
         <AppRoutes />
       </Suspense>

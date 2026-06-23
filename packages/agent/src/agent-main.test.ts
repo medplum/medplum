@@ -1,27 +1,33 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { LogLevel, sleep } from '@medplum/core';
-import fs from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import type { Mock } from 'vitest';
 import { agentMain } from './agent-main';
 import { App } from './app';
+import type * as AgentConstants from './constants';
 import * as loggerModule from './logger';
 import { createMockLogger } from './test-utils';
 
-jest.mock('./constants', () => ({
-  RETRY_WAIT_DURATION_MS: 150,
-}));
+vi.mock('./constants', async (importOriginal) => {
+  const actual = await importOriginal<typeof AgentConstants>();
+  return {
+    ...actual,
+    RETRY_WAIT_DURATION_MS: 150,
+  };
+});
 
 describe('Main', () => {
   beforeEach(() => {
-    console.log = jest.fn();
+    console.log = vi.fn();
 
-    jest.spyOn(process, 'exit').mockImplementation(() => {
+    vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit');
     });
 
-    jest.spyOn(App.prototype, 'start').mockImplementation(() => Promise.resolve());
+    vi.spyOn(App.prototype, 'start').mockImplementation(() => Promise.resolve());
 
-    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
       return {
         ok: true,
         json: async () => ({
@@ -32,7 +38,7 @@ describe('Main', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('Missing arguments', async () => {
@@ -50,7 +56,7 @@ describe('Main', () => {
     expect(console.log).toHaveBeenCalledWith('Expected arguments:');
     expect(process.exit).toHaveBeenLastCalledWith(0);
 
-    (console.log as jest.Mock).mockClear();
+    (console.log as Mock).mockClear();
 
     try {
       await agentMain(['node', 'index.js', '-h']);
@@ -68,10 +74,10 @@ describe('Main', () => {
   });
 
   test('Command line arguments with optional logLevel', async () => {
-    const WinstonWrapperLoggerMock = jest.fn().mockImplementation((config) => {
+    const WinstonWrapperLoggerMock = vi.fn(function (config: { logLevel: LogLevel }) {
       return createMockLogger(config.logLevel);
     });
-    jest.spyOn(loggerModule, 'WinstonWrapperLogger').mockImplementation(WinstonWrapperLoggerMock);
+    vi.spyOn(loggerModule, 'WinstonWrapperLogger').mockImplementation(WinstonWrapperLoggerMock);
 
     const app = await agentMain([
       'node',
@@ -92,8 +98,8 @@ describe('Main', () => {
   });
 
   test('Empty properties file', async () => {
-    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-    jest.spyOn(fs, 'readFileSync').mockReturnValue('');
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue('');
 
     await expect(agentMain([])).rejects.toThrow('process.exit');
     expect(console.log).toHaveBeenCalledWith('Missing arguments');
@@ -101,18 +107,16 @@ describe('Main', () => {
   });
 
   test('Properties file success', async () => {
-    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-    jest
-      .spyOn(fs, 'readFileSync')
-      .mockReturnValueOnce(
-        [
-          'baseUrl=http://example.com',
-          'clientId=clientId',
-          'clientSecret=clientSecret',
-          'agentId=agentId',
-          'logLevel=DEBUG',
-        ].join('\n')
-      );
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValueOnce(
+      [
+        'baseUrl=http://example.com',
+        'clientId=clientId',
+        'clientSecret=clientSecret',
+        'agentId=agentId',
+        'logLevel=DEBUG',
+      ].join('\n')
+    );
     const app = await agentMain(['node', 'index.js']);
     expect(app.log.level).toStrictEqual(LogLevel.DEBUG);
     await app.stop();
@@ -120,10 +124,10 @@ describe('Main', () => {
   });
 
   test('Agent should retry client login when network is down', async () => {
-    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
       throw new Error('Fetch failed');
     });
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(jest.fn());
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(vi.fn());
 
     const appPromise = agentMain(['node', 'index.js', 'http://example.com', 'clientId', 'clientSecret', 'agentId']);
 
@@ -147,7 +151,7 @@ describe('Main', () => {
 
     fetchSpy.mockClear();
     consoleErrorSpy.mockClear();
-    (console.log as jest.Mock).mockClear();
+    (console.log as Mock).mockClear();
 
     while (fetchSpy.mock.calls.length !== 3) {
       await sleep(100);
@@ -163,7 +167,7 @@ describe('Main', () => {
 
     fetchSpy.mockClear();
     consoleErrorSpy.mockClear();
-    (console.log as jest.Mock).mockClear();
+    (console.log as Mock).mockClear();
 
     // Finally restore original fetch implementation and allow it to succeed
     fetchSpy.mockImplementation(async () => {
@@ -196,7 +200,7 @@ describe('Main', () => {
     const mockChannelLogger = createMockLogger(LogLevel.INFO);
 
     // Mock the WinstonWrapperLogger constructor to return our mock
-    const WinstonWrapperLoggerMock = jest.fn().mockImplementation((config, loggerType) => {
+    const WinstonWrapperLoggerMock = vi.fn(function (_config: unknown, loggerType: string) {
       if (loggerType === 'main') {
         return mockMainLogger;
       } else {
@@ -205,7 +209,7 @@ describe('Main', () => {
     });
 
     // Mock parseLoggerConfigFromArgs to return warnings
-    const mockParseLoggerConfigFromArgs = jest.fn().mockReturnValue([
+    const mockParseLoggerConfigFromArgs = vi.fn().mockReturnValue([
       {
         main: { logDir: '/tmp', maxFileSizeMb: 10, filesToKeep: 10, logLevel: LogLevel.INFO },
         channel: { logDir: '/tmp', maxFileSizeMb: 10, filesToKeep: 10, logLevel: LogLevel.INFO },
@@ -214,8 +218,8 @@ describe('Main', () => {
     ]);
 
     // Mock the logger module functions directly
-    jest.spyOn(loggerModule, 'WinstonWrapperLogger').mockImplementation(WinstonWrapperLoggerMock);
-    jest.spyOn(loggerModule, 'parseLoggerConfigFromArgs').mockImplementation(mockParseLoggerConfigFromArgs);
+    vi.spyOn(loggerModule, 'WinstonWrapperLogger').mockImplementation(WinstonWrapperLoggerMock);
+    vi.spyOn(loggerModule, 'parseLoggerConfigFromArgs').mockImplementation(mockParseLoggerConfigFromArgs);
 
     await agentMain(['node', 'index.js', 'http://example.com', 'clientId', 'clientSecret', 'agentId']);
 
@@ -227,26 +231,24 @@ describe('Main', () => {
 
   test('Command line log level overrides agent.properties log level', async () => {
     // Mock existsSync to return true for agent.properties
-    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+    vi.mocked(existsSync).mockReturnValue(true);
 
     // Mock readFileSync to return properties with DEBUG log level
-    jest
-      .spyOn(fs, 'readFileSync')
-      .mockReturnValue(
-        [
-          'baseUrl=http://example.com',
-          'clientId=clientId',
-          'clientSecret=clientSecret',
-          'agentId=agentId',
-          'logger.main.logLevel=DEBUG',
-        ].join('\n')
-      );
+    vi.mocked(readFileSync).mockReturnValue(
+      [
+        'baseUrl=http://example.com',
+        'clientId=clientId',
+        'clientSecret=clientSecret',
+        'agentId=agentId',
+        'logger.main.logLevel=DEBUG',
+      ].join('\n')
+    );
 
     // Create a mock logger to capture the config
     let capturedMainLoggerConfig!: loggerModule.AgentLoggerConfig;
     let capturedChannelLoggerConfig!: loggerModule.AgentLoggerConfig;
 
-    const WinstonWrapperLoggerMock = jest.fn().mockImplementation((config, loggerType) => {
+    const WinstonWrapperLoggerMock = vi.fn(function (config: loggerModule.AgentLoggerConfig, loggerType: string) {
       if (loggerType === 'main') {
         capturedMainLoggerConfig = config;
       } else if (loggerType === 'channel') {
@@ -256,7 +258,7 @@ describe('Main', () => {
     });
 
     // Mock the logger module functions directly
-    jest.spyOn(loggerModule, 'WinstonWrapperLogger').mockImplementation(WinstonWrapperLoggerMock);
+    vi.spyOn(loggerModule, 'WinstonWrapperLogger').mockImplementation(WinstonWrapperLoggerMock);
 
     // Call with command line log level INFO (which should override DEBUG from properties)
     const app = await agentMain([

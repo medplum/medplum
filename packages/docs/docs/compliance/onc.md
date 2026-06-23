@@ -37,8 +37,8 @@ This is the list of certified criteria. Related to this criteria these scripts a
 | Criteria                                            | Description                                          |
 | --------------------------------------------------- | ---------------------------------------------------- |
 | [a2](/docs/careplans/diagnostic-catalog) | CPOE - Laboratory  |
-| [a5](/docs/charting/patient-demographics) | Demographics  |
-| [a14](/docs/charting/implantable-devices) | Implantable Device List  |
+| [a5](/docs/charting/chart-data-model#patient-demographics) | Demographics  |
+| [a14](/docs/charting/chart-data-model#implantable-devices) | Implantable Device List  |
 | [b1](/docs/integration/c-cda)                                                  | Transitions of Care                        |
 | [b10](/docs/api/fhir/operations/patient-everything) | Electronic Health Information Export (Cures Update)  |
 | b11                                                 | Decision Support Interventions                       |

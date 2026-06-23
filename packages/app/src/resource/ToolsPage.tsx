@@ -15,6 +15,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
+import type { AgentChannelStats, AgentStats } from '@medplum/core';
 import { ContentType, fetchLatestVersionString, formatDateTime, normalizeErrorString } from '@medplum/core';
 import type { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
 import { Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
@@ -84,6 +85,108 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
   );
 }
 
+const SUMMARY_STAT_KEYS = [
+  'live',
+  'ping',
+  'hl7ConnectionsOpen',
+  'hl7ClientCount',
+  'hl7QueueDepth',
+  'webSocketQueueDepth',
+  'outstandingHeartbeats',
+] as const satisfies readonly (keyof AgentStats)[];
+
+function formatStatValue(value: Record<string, unknown> | boolean | number | string): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  if (typeof value === 'number') {
+    return value.toLocaleString();
+  }
+  return value.toString();
+}
+
+function AgentChannelStatsTable(props: {
+  readonly title: string;
+  readonly entries: Record<string, AgentChannelStats>;
+}): JSX.Element | null {
+  const names = Object.keys(props.entries).filter((name) => props.entries[name]?.rtt);
+  if (!names.length) {
+    return null;
+  }
+  return (
+    <>
+      <Title order={3} mt="md">
+        {props.title}
+      </Title>
+      <Table>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Name</Table.Th>
+            <Table.Th>Count</Table.Th>
+            <Table.Th>Pending</Table.Th>
+            <Table.Th>Min (ms)</Table.Th>
+            <Table.Th>Avg (ms)</Table.Th>
+            <Table.Th>Max (ms)</Table.Th>
+            <Table.Th>p50 (ms)</Table.Th>
+            <Table.Th>p95 (ms)</Table.Th>
+            <Table.Th>p99 (ms)</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {names.map((name) => {
+            const rtt = props.entries[name].rtt;
+            return (
+              <Table.Tr key={name}>
+                <Table.Td>{name}</Table.Td>
+                <Table.Td>{rtt.count}</Table.Td>
+                <Table.Td>{rtt.pendingCount}</Table.Td>
+                <Table.Td>{rtt.min}</Table.Td>
+                <Table.Td>{rtt.average}</Table.Td>
+                <Table.Td>{rtt.max}</Table.Td>
+                <Table.Td>{rtt.p50}</Table.Td>
+                <Table.Td>{rtt.p95}</Table.Td>
+                <Table.Td>{rtt.p99}</Table.Td>
+              </Table.Tr>
+            );
+          })}
+        </Table.Tbody>
+      </Table>
+    </>
+  );
+}
+
+function AgentStatsTables(props: { readonly stats: AgentStats }): JSX.Element {
+  const { stats } = props;
+  const knownKeys = new Set<string>([...SUMMARY_STAT_KEYS, 'channelStats', 'clientStats']);
+  const extraEntries = Object.entries(stats).filter(([key]) => !knownKeys.has(key));
+
+  return (
+    <>
+      <Table mt="sm">
+        <Table.Tbody>
+          {SUMMARY_STAT_KEYS.map((key) => (
+            <Table.Tr key={key}>
+              <Table.Td>{key}</Table.Td>
+              <Table.Td>{formatStatValue(stats[key])}</Table.Td>
+            </Table.Tr>
+          ))}
+          {extraEntries.map(([key, value]) => (
+            <Table.Tr key={key}>
+              <Table.Td>{key}</Table.Td>
+              <Table.Td>{formatStatValue(value)}</Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+      <AgentChannelStatsTable title="Channel Stats" entries={stats.channelStats} />
+      <AgentChannelStatsTable title="Client Stats" entries={stats.clientStats} />
+    </>
+  );
+}
+
 export function ToolsPage(): JSX.Element | null {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
@@ -92,22 +195,17 @@ export function ToolsPage(): JSX.Element | null {
   const [reloadingConfig, setReloadingConfig] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   const [fetchingLogs, setFetchingLogs] = useState(false);
+  const [fetchingStats, setFetchingStats] = useState(false);
   const [status, setStatus] = useState<string>();
   const [version, setVersion] = useState<string>();
   const [lastUpdated, setLastUpdated] = useState<string>();
   const [lastPing, setLastPing] = useState<string | undefined>();
   const [pinging, setPinging] = useState(false);
-  const [working, setWorking] = useState(false);
   const [logs, setLogs] = useState<string | undefined>();
+  const [stats, setStats] = useState<AgentStats | undefined>();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
 
-  useEffect(() => {
-    if (loadingStatus || reloadingConfig || upgrading || pinging) {
-      setWorking(true);
-      return;
-    }
-    setWorking(false);
-  }, [loadingStatus, reloadingConfig, upgrading, pinging]);
+  const working = loadingStatus || reloadingConfig || upgrading || pinging || fetchingLogs || fetchingStats;
 
   const handleStatus = useCallback(() => {
     setLoadingStatus(true);
@@ -185,6 +283,24 @@ export function ToolsPage(): JSX.Element | null {
     },
     [medplum, id]
   );
+
+  const handleFetchStats = useCallback(() => {
+    setFetchingStats(true);
+    medplum
+      .get(medplum.fhirUrl('Agent', id, '$stats'), { cache: 'reload' })
+      .then((result: Parameters) => {
+        const valueString = result.parameter?.find((p) => p.name === 'stats')?.valueString;
+        if (valueString) {
+          try {
+            setStats(JSON.parse(valueString) as AgentStats);
+          } catch (err) {
+            showError(normalizeErrorString(err));
+          }
+        }
+      })
+      .catch((err) => showError(normalizeErrorString(err)))
+      .finally(() => setFetchingStats(false));
+  }, [medplum, id]);
 
   function showSuccess(message: string): void {
     showNotification({
@@ -291,6 +407,21 @@ export function ToolsPage(): JSX.Element | null {
           </Button>
         </Group>
       </Form>
+      <Divider my="lg" />
+      <Title order={2}>Agent Stats</Title>
+      <p>
+        Fetch runtime statistics from the agent, including connection counts, queue depths, RTT metrics, and overall
+        agent health.
+      </p>
+      <Button
+        onClick={handleFetchStats}
+        loading={fetchingStats}
+        disabled={working && !fetchingStats}
+        aria-label="Get stats"
+      >
+        Get Stats
+      </Button>
+      {!fetchingStats && stats && <AgentStatsTables stats={stats} />}
       <Divider my="lg" />
       <Title order={2}>Ping from Agent</Title>
       <p>

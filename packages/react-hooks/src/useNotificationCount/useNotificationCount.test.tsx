@@ -3,7 +3,7 @@
 import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, renderHook } from '@testing-library/react';
-import 'jest-websocket-mock';
+
 import type { JSX, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
@@ -13,7 +13,7 @@ describe('useNotificationCount', () => {
   let medplum: MockClient;
 
   beforeAll(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe('useNotificationCount', () => {
   });
 
   afterAll(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   function wrapper({ children }: { children: ReactNode }): JSX.Element {
@@ -78,8 +78,8 @@ describe('useNotificationCount', () => {
   });
 
   test('Handles search errors gracefully', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-    jest.spyOn(medplum, 'search').mockRejectedValue(new Error('Search failed'));
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(medplum, 'search').mockRejectedValue(new Error('Search failed'));
 
     renderHook(
       () =>

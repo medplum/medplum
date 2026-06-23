@@ -6,6 +6,7 @@ import type { Attachment } from '@medplum/fhirtypes';
 import { useCachedBinaryUrl } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { CcdaDisplay } from '../CcdaDisplay/CcdaDisplay';
+import { ScannedImage } from './ScannedImage';
 
 export interface AttachmentDisplayProps {
   readonly value?: Attachment;
@@ -23,7 +24,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
   return (
     <div data-testid="attachment-display">
       {contentType?.startsWith('image/') && (
-        <img data-testid="attachment-image" style={{ maxWidth: props.maxWidth }} src={url} alt={title} />
+        <ScannedImage data-testid="attachment-image" style={{ maxWidth: props.maxWidth }} src={url} alt={title} />
       )}
       {contentType?.startsWith('video/') && (
         <video data-testid="attachment-video" style={{ maxWidth: props.maxWidth }} controls={true}>

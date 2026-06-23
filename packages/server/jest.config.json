@@ -5,6 +5,7 @@
   },
   "testTimeout": 30000,
   "testSequencer": "<rootDir>/jest.sequencer.mjs",
+  "setupFilesAfterEnv": ["<rootDir>/src/test-matchers.ts"],
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },

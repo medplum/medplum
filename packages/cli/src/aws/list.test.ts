@@ -108,7 +108,7 @@ describe('list command', () => {
   });
 
   test('List command', async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     await main(['node', 'index.js', 'aws', 'list']);
     expect(console.log).toHaveBeenCalledWith('Stack ID:              123');
   });

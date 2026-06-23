@@ -43,14 +43,14 @@ const mockLastCommunication1: Communication = {
   sent: '2024-01-01T12:00:00Z',
 };
 
-const mockGetThreadUri = jest.fn((topic: Communication) => `/Message/${topic.id}`);
+const mockGetThreadUri = vi.fn((topic: Communication) => `/Message/${topic.id}`);
 
 describe('ChatList', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
     medplum = new MockClient();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     await medplum.createResource(mockPatient1);
     await medplum.createResource(mockPatient2);
   });

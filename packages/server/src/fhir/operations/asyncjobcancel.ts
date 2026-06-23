@@ -2,23 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, assert, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { AsyncJob, OperationDefinition } from '@medplum/fhirtypes';
+import type { AsyncJob } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { makeOperationDefinition } from './definitions';
 
-export const operation: OperationDefinition = {
-  id: 'AsyncJob-cancel',
-  resourceType: 'OperationDefinition',
-  name: 'asyncjob-cancel',
-  status: 'active',
-  kind: 'operation',
-  code: 'cancel',
-  experimental: true,
-  resource: ['AsyncJob'],
-  system: false,
-  type: false,
-  instance: true,
-  parameter: [{ use: 'out', name: 'return', type: 'OperationOutcome', min: 1, max: '1' }],
-};
+export const operation = makeOperationDefinition(
+  { scope: 'instance', resource: 'AsyncJob' },
+  {
+    id: 'AsyncJob-cancel',
+    name: 'asyncjob-cancel',
+    code: 'cancel',
+    parameter: [{ use: 'out', name: 'return', type: 'OperationOutcome', min: 1, max: '1' }],
+  }
+);
 
 /**
  * Handles HTTP requests for the AsyncJob $cancel operation.

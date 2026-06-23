@@ -64,5 +64,6 @@ Medplum is provider-agnostic and supports connecting to lab and imaging provider
 
 - [Sending Orders](/docs/integration/health-gorilla/sending-orders) — React components, bot-based order transmission, and AOE handling
 - [Receiving Results](/docs/integration/health-gorilla/receiving-results) — structured FHIR result synchronization from Quest, Labcorp, and regional labs
+- [Sync Resources from Health Gorilla](/docs/integration/health-gorilla/sync-resources-from-health-gorilla) — manual backfill when webhooks miss results
 
 For organizations connecting directly to a performing lab, see the [HL7 Interface](/docs/integration/hl7-interfacing) and [On-Prem Agent](/docs/agent) docs.

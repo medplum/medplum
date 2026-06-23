@@ -20,6 +20,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { MessageEvent } from 'ws';
 import { WebSocket } from 'ws';
+import { globalLogger } from '../../../logger';
 
 let serverPort: number | undefined;
 const agentWsMap = new Map<string, WebSocket>();
@@ -117,7 +118,7 @@ async function getConnectionPromise(ws: WebSocket, agentId: string, accessToken:
               } satisfies AgentHeartbeatResponse)
             );
           } else if (msg.type === 'agent:error') {
-            console.debug('Error from server to agent:', msg.body);
+            globalLogger.debug('Error from server to agent', { body: msg.body });
           }
         });
 

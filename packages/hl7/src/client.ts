@@ -3,7 +3,7 @@
 import type { Hl7Message } from '@medplum/core';
 import assert from 'node:assert';
 import type { Socket } from 'node:net';
-import { connect } from 'node:net';
+import net from 'node:net';
 import { Hl7Base } from './base';
 import type { EnhancedMode, Hl7ConnectionOptions, SendAndWaitOptions } from './connection';
 import { Hl7Connection } from './connection';
@@ -54,7 +54,7 @@ export class Hl7Client extends Hl7Base {
     const deferredPromise = (this.deferredConnectionPromise = this.createDeferredConnectionPromise());
 
     // Create the socket
-    this.socket = connect({
+    this.socket = net.connect({
       host: this.host,
       port: this.port,
       keepAlive: this.keepAlive,

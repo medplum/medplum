@@ -115,6 +115,7 @@ Explore our dedicated integrations to learn more:
 
 - **[Medplum `$ai` ](/docs/ai/ai-operation):** The FHIR-compliant operation for integrating with large language models (LLMs) and enabling conversational AI within healthcare applications.
 - **[Medplum AI (MCP)](/docs/ai/mcp):** Connect with Medplum's MCP integration to enable AI models to securely access and interact with healthcare data using FHIR standards.
+- **[Spaces (Medplum Provider)](/docs/provider/spaces):** An example implementation of an in-app AI assistant in the Provider app, built on `$ai` and a four-bot pipeline that translates natural language into FHIR API calls, summarizes results, and renders generated charts.
 - **[AWS Textract](/docs/ai/aws):** Extract and analyze text from clinical documents, faxes, and other unstructured data sources.
 - **[AWS Comprehend Medical](/docs/ai/aws):** Uncover valuable insights from clinical text, identifying medical conditions, medications, and treatments.
 

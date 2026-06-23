@@ -23,7 +23,7 @@ describe('VerifyEmailPage', () => {
   const secret = '456';
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   test('Renders', () => {
@@ -32,14 +32,14 @@ describe('VerifyEmailPage', () => {
   });
 
   test('Submit success', async () => {
-    const postSpy = jest.spyOn(medplum, 'post');
+    const postSpy = vi.spyOn(medplum, 'post');
     setup(`/verifyemail/${id}/${secret}`);
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(await screen.findByTestId('success')).toBeInTheDocument();
     expect(postSpy).toHaveBeenCalledWith('auth/verifyemail', { id, secret });
   });
 });

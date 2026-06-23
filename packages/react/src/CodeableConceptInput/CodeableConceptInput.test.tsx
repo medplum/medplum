@@ -4,7 +4,7 @@ import type { CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
-import { act, fireEvent, render, screen, within } from '../test-utils/render';
+import { act, fireEvent, render, screen, selectAutocompleteOption, within } from '../test-utils/render';
 import type { CodeableConceptInputProps } from './CodeableConceptInput';
 import { CodeableConceptInput } from './CodeableConceptInput';
 
@@ -13,14 +13,14 @@ const binding = 'https://example.com/test';
 
 describe('CodeableConceptInput', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   async function setup(props?: Partial<CodeableConceptInputProps>): Promise<void> {
@@ -29,7 +29,7 @@ describe('CodeableConceptInput', () => {
       name: 'test',
       path: 'Resource.test',
       outcome: undefined,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
       ...props,
     };
     await act(async () => {
@@ -58,26 +58,7 @@ describe('CodeableConceptInput', () => {
     await setup();
 
     const input = screen.getByRole('searchbox');
-
-    // Enter random text
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await selectAutocompleteOption(input, 'Test', 'Test Display');
 
     const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
     expect(selected.getByText('Test Display')).toBeDefined();

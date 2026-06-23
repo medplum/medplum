@@ -8,11 +8,12 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { getDefaultNormalizer } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
+import type { MockInstance } from 'vitest';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
 describe('SuperAdminPage', () => {
-  let postSpy: jest.SpyInstance;
+  let postSpy: MockInstance;
   let medplum: MockClient;
 
   function setup(): void {
@@ -30,18 +31,18 @@ describe('SuperAdminPage', () => {
 
   beforeEach(() => {
     medplum = new MockClient();
-    jest.useFakeTimers();
-    jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
-    postSpy = jest.spyOn(medplum, 'post');
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
+    postSpy = vi.spyOn(medplum, 'post');
   });
 
   afterEach(async () => {
     await act(async () => notifications.clean());
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      await vi.runOnlyPendingTimersAsync();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Rebuild StructureDefinitions', async () => {
@@ -258,7 +259,7 @@ describe('SuperAdminPage', () => {
 
   test('Reconcile Database Schema Drift - Success', async () => {
     setup();
-    const startAsyncRequestSpy = jest.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce({
+    const startAsyncRequestSpy = vi.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce({
       resourceType: 'AsyncJob',
       id: '123',
     });
@@ -274,7 +275,7 @@ describe('SuperAdminPage', () => {
 
   test('Reconcile Database Schema Drift - Forbidden', async () => {
     setup();
-    const startAsyncRequestSpy = jest.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce(forbidden);
+    const startAsyncRequestSpy = vi.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce(forbidden);
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Reconcile Schema Drift' }));
@@ -296,7 +297,7 @@ describe('SuperAdminPage', () => {
   });
 
   test('Access denied', async () => {
-    jest.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
+    vi.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
     setup();
     expect(screen.getByText('Forbidden')).toBeInTheDocument();
   });
@@ -376,7 +377,7 @@ describe('SuperAdminPage', () => {
       });
       // Advance the debounce timer so the dropdown populates
       await act(async () => {
-        jest.advanceTimersByTime(1000);
+        await vi.advanceTimersByTimeAsync(1000);
       });
       await act(async () => {
         fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
@@ -583,7 +584,7 @@ describe('SuperAdminPage', () => {
 
       // Wait for the drop down
       await act(async () => {
-        jest.advanceTimersByTime(1000);
+        await vi.advanceTimersByTimeAsync(1000);
       });
 
       // Press the down arrow
@@ -688,7 +689,7 @@ describe('SuperAdminPage', () => {
       });
 
       // Wait for the drop down
-      await act(async () => jest.advanceTimersByTime(1000));
+      await act(async () => vi.advanceTimersByTimeAsync(1000));
 
       // Press the down arrow
       await act(async () => {
@@ -708,7 +709,7 @@ describe('SuperAdminPage', () => {
       });
 
       // Wait for the drop down
-      await act(async () => jest.advanceTimersByTime(1000));
+      await act(async () => vi.advanceTimersByTimeAsync(1000));
 
       // Press the down arrow
       await act(async () => {
@@ -761,7 +762,7 @@ describe('SuperAdminPage', () => {
     });
 
     test('ExplainSearchForm access denied for non-super admin', async () => {
-      jest.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
+      vi.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
       setup();
 
       // The ExplainSearchForm should show forbidden when user is not super admin

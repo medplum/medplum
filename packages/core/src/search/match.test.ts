@@ -156,6 +156,15 @@ describe('Search matching', () => {
 
     search.filters[0].value = 'Patient/456';
     expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(true);
+
+    // ID-only special case does not work with `subject` because it has multiple target types
+    search.filters[0].operator = Operator.EQUALS;
+    search.filters[0].value = '123';
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(false);
+
+    // ID-only special case does work with `patient` because it has only one target type
+    search.filters[0].code = 'patient';
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(true);
   });
 
   test('Empty reference filter', () => {

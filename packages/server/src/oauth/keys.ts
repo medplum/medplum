@@ -93,14 +93,17 @@ const DEFAULT_REFRESH_LIFETIME = '2w';
 
 let issuer: string | undefined;
 const publicKeys: Record<string, KeyLike> = {};
+const allSigningKeys: Record<string, KeyLike> = {};
 const jwks: { keys: JWK[] } = { keys: [] };
 let jsonWebKey: JsonWebKey | undefined;
-let signingKey: KeyLike | undefined;
+let jsonWebKeys: JsonWebKey[] = [];
+let defaultSigningKey: KeyLike | undefined;
 
 export async function initKeys(config: MedplumServerConfig): Promise<void> {
   issuer = undefined;
   jsonWebKey = undefined;
-  signingKey = undefined;
+  jsonWebKeys = [];
+  defaultSigningKey = undefined;
   jwks.keys = [];
 
   if (!config) {
@@ -117,8 +120,6 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     resourceType: 'JsonWebKey',
     filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }],
   });
-
-  let jsonWebKeys: JsonWebKey[] | undefined;
 
   if (searchResult.length > 0) {
     globalLogger.info(`Loaded ${searchResult.length} key(s) from the database`);
@@ -163,14 +164,15 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
 
     // Convert from JWK to PKCS and add to the collection of public keys
     publicKeys[jwk.id as string] = (await importJWK(publicKey)) as KeyLike;
+    allSigningKeys[jwk.id as string] = (await importJWK({
+      ...(jwk as JWK),
+      use: 'sig',
+    })) as KeyLike;
   }
 
   // Use the first key as the signing key
   jsonWebKey = jsonWebKeys[0];
-  signingKey = (await importJWK({
-    ...(jsonWebKey as JWK),
-    use: 'sig',
-  })) as KeyLike;
+  defaultSigningKey = allSigningKeys[jsonWebKey.id as string];
 }
 
 /**
@@ -184,10 +186,23 @@ export function getJwks(): { keys: JWK[] } {
 
 /**
  * Returns the current signing key.
+ * @param alg - Optional signing algorithm.  If not provided, the default signing key will be returned.
  * @returns The current signing key.
  */
-export function getSigningKey(): KeyLike {
-  return signingKey as KeyLike;
+export function getSigningKey(alg?: string): KeyLike {
+  if (!alg) {
+    if (!defaultSigningKey) {
+      throw new Error('Signing key not initialized');
+    }
+    return defaultSigningKey;
+  }
+
+  const jwk = jsonWebKeys.find((key) => (key.alg ?? LEGACY_DEFAULT_ALG) === alg);
+  const key = jwk?.id ? allSigningKeys[jwk.id] : undefined;
+  if (!key) {
+    throw new Error(`Signing key not found for alg: ${alg}`);
+  }
+  return key;
 }
 
 /**
@@ -242,7 +257,7 @@ export function generateRefreshToken(claims: MedplumRefreshTokenClaims, lifetime
  * @returns Promise to generate and sign the JWT.
  */
 async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
-  if (!jsonWebKey || !signingKey || !issuer) {
+  if (!jsonWebKey || !defaultSigningKey || !issuer) {
     throw new Error('Signing key not initialized');
   }
 
@@ -263,7 +278,7 @@ async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
     .setIssuer(issuer)
     .setAudience(claims.aud ?? (claims.client_id as string))
     .setExpirationTime(exp)
-    .sign(signingKey);
+    .sign(defaultSigningKey);
 }
 
 /**

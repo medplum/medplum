@@ -753,25 +753,25 @@
       "name": "patient",
       "type": "reference",
       "description": " Who has the condition?\r",
-      "expression": "Condition.subject.where(resolve() is Patient)"
+      "expression": "Condition.subject.where((resolve() is Patient))"
     },
     {
       "name": "abatement-age",
       "type": "quantity",
       "description": "Abatement as age or age range",
-      "expression": "Condition.abatement.as(Age) | Condition.abatement.as(Range)"
+      "expression": "Condition.abatement.ofType(Age) | Condition.abatement.ofType(Range)"
     },
     {
       "name": "abatement-date",
       "type": "date",
       "description": "Date-related abatements (dateTime and period)",
-      "expression": "Condition.abatement.as(dateTime) | Condition.abatement.as(Period)"
+      "expression": "Condition.abatement.ofType(dateTime) | Condition.abatement.ofType(Period)"
     },
     {
       "name": "abatement-string",
       "type": "string",
       "description": "Abatement as a string",
-      "expression": "Condition.abatement.as(string)"
+      "expression": "Condition.abatement.ofType(string)"
     },
     {
       "name": "asserter",
@@ -819,19 +819,19 @@
       "name": "onset-age",
       "type": "quantity",
       "description": "Onsets as age or age range",
-      "expression": "Condition.onset.as(Age) | Condition.onset.as(Range)"
+      "expression": "Condition.onset.ofType(Age) | Condition.onset.ofType(Range)"
     },
     {
       "name": "onset-date",
       "type": "date",
       "description": "Date related onsets (dateTime and Period)",
-      "expression": "Condition.onset.as(dateTime) | Condition.onset.as(Period)"
+      "expression": "Condition.onset.ofType(dateTime) | Condition.onset.ofType(Period)"
     },
     {
       "name": "onset-info",
       "type": "string",
       "description": "Onsets as a string",
-      "expression": "Condition.onset.as(string)"
+      "expression": "Condition.onset.ofType(string)"
     },
     {
       "name": "recorded-date",

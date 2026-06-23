@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Communication } from '@medplum/fhirtypes';
+import type { Bundle, Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -48,6 +48,15 @@ const INBOX_FAX: WithId<Communication> = {
   sender: { display: '5551234567', reference: 'Organization/external-org' },
 };
 
+function bundleOf(...comms: WithId<Communication>[]): Bundle<WithId<Communication>> {
+  return {
+    resourceType: 'Bundle',
+    type: 'searchset',
+    total: comms.length,
+    entry: comms.map((resource) => ({ resource })),
+  };
+}
+
 describe('FaxPage', () => {
   let medplum: MockClient;
 
@@ -73,7 +82,7 @@ describe('FaxPage', () => {
   };
 
   test('renders inbox tab by default', async () => {
-    medplum.searchResources = vi.fn().mockResolvedValue([]);
+    medplum.search = vi.fn().mockResolvedValue(bundleOf());
     vi.spyOn(medplum, 'post').mockResolvedValue({});
 
     setup();
@@ -85,7 +94,7 @@ describe('FaxPage', () => {
   });
 
   test('shows empty state when no faxes in inbox', async () => {
-    medplum.searchResources = vi.fn().mockResolvedValue([]);
+    medplum.search = vi.fn().mockResolvedValue(bundleOf());
     vi.spyOn(medplum, 'post').mockResolvedValue({});
 
     setup();
@@ -96,7 +105,7 @@ describe('FaxPage', () => {
   });
 
   test('shows loading skeleton initially', async () => {
-    medplum.searchResources = vi.fn().mockImplementation(() => new Promise(() => {}));
+    medplum.search = vi.fn().mockImplementation(() => new Promise(() => {}));
     vi.spyOn(medplum, 'post').mockResolvedValue({});
 
     setup();
@@ -108,7 +117,7 @@ describe('FaxPage', () => {
   });
 
   test('renders fax list items when faxes are returned', async () => {
-    medplum.searchResources = vi.fn().mockResolvedValue([INBOX_FAX]);
+    medplum.search = vi.fn().mockResolvedValue(bundleOf(INBOX_FAX));
     vi.spyOn(medplum, 'post').mockResolvedValue({});
     vi.spyOn(medplum, 'readResource').mockResolvedValue(INBOX_FAX);
 
@@ -120,7 +129,7 @@ describe('FaxPage', () => {
   });
 
   test('shows empty state for sent tab', async () => {
-    medplum.searchResources = vi.fn().mockResolvedValue([]);
+    medplum.search = vi.fn().mockResolvedValue(bundleOf());
     vi.spyOn(medplum, 'post').mockResolvedValue({});
 
     setup('/Fax/Communication?category=outbound');
@@ -131,7 +140,7 @@ describe('FaxPage', () => {
   });
 
   test('renders send fax action icon', async () => {
-    medplum.searchResources = vi.fn().mockResolvedValue([]);
+    medplum.search = vi.fn().mockResolvedValue(bundleOf());
     vi.spyOn(medplum, 'post').mockResolvedValue({});
 
     setup();
@@ -144,7 +153,7 @@ describe('FaxPage', () => {
   });
 
   test('shows no fax selected empty state when faxId not in list', async () => {
-    medplum.searchResources = vi.fn().mockResolvedValue([]);
+    medplum.search = vi.fn().mockResolvedValue(bundleOf());
     vi.spyOn(medplum, 'post').mockResolvedValue({});
     vi.spyOn(medplum, 'readResource').mockRejectedValue(new Error('Not found'));
 

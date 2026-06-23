@@ -4,7 +4,16 @@ import { Button, Container, Group, Input, Radio, Stack, TextInput } from '@manti
 import { showNotification } from '@mantine/notifications';
 import type { MedplumClient } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { Encounter, Patient, Practitioner, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
+import type {
+  Coding,
+  Encounter,
+  Patient,
+  Practitioner,
+  Reference,
+  ServiceRequest,
+  Task,
+  ValueSetExpansionContains,
+} from '@medplum/fhirtypes';
 import type {
   BillingInformation,
   DiagnosisCodeableConcept,
@@ -23,7 +32,6 @@ import {
   useMedplum,
   useResource,
   ValueSetAutocomplete,
-  valueSetElementToCoding,
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -45,6 +53,7 @@ async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: Ser
 }
 
 export interface OrderLabsPageProps {
+  patient?: Patient | Reference<Patient> | undefined;
   encounter?: Encounter | Reference<Encounter> | undefined;
   task?: Task | Reference<Task> | undefined;
   tests?: TestCoding[] | undefined;
@@ -53,11 +62,12 @@ export interface OrderLabsPageProps {
 }
 
 export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
-  const { encounter, task, tests, performingLab, onSubmitLabOrder } = props;
+  const { patient: defaultPatient, encounter, task, tests, performingLab, onSubmitLabOrder } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();
-  const [patient, setPatient] = useState<Patient | undefined>();
   const [requester, setRequester] = useState<Practitioner | undefined>(medplum.getProfile() as Practitioner);
+  const defaultPatientResource = useResource(defaultPatient);
+  const [patient, setPatient] = useState<Patient | undefined>(defaultPatientResource);
   const encounterResource = useResource(encounter);
   const taskResource = useResource(task);
   const labOrderReturn = useHealthGorillaLabOrder({
@@ -163,6 +173,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
             </Input.Wrapper>
             <Input.Wrapper label="Patient" required error={createError?.validation?.patient?.message}>
               <ResourceInput<Patient>
+                key={patient?.id ?? 'patient'}
                 resourceType="Patient"
                 name="patient"
                 defaultValue={patient}
@@ -202,7 +213,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
             <div>
               <ValueSetAutocomplete
                 label="Diagnoses"
-                binding="http://hl7.org/fhir/sid/icd-10-cm/vs"
+                binding="http://hl7.org/fhir/sid/icd-10-cm/vs/billable"
                 name="diagnoses"
                 maxValues={10}
                 onChange={(items) => {
@@ -253,6 +264,19 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
       </Container>
     </HealthGorillaLabOrderProvider>
   );
+}
+
+/**
+ * Local copy — not all published `@medplum/react` bundles export this helper in `.d.ts`.
+ * @param element - A row from ValueSet expansion.
+ * @returns A FHIR Coding for the expansion element.
+ */
+function valueSetElementToCoding(element: ValueSetExpansionContains): Coding {
+  return {
+    system: element.system,
+    code: element.code,
+    display: element.display,
+  };
 }
 
 function TestCodingToOption(element: TestCoding): AsyncAutocompleteOption<TestCoding> {

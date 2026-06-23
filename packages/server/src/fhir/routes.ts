@@ -18,6 +18,7 @@ import { agentBulkStatusHandler } from './operations/agentbulkstatus';
 import { agentFetchLogsHandler } from './operations/agentfetchlogs';
 import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
+import { agentStatsHandler } from './operations/agentstats';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { aiOperationHandler } from './operations/ai';
@@ -25,15 +26,18 @@ import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { binaryPresignedUrlHandler } from './operations/binary-presigned-url';
 import { appointmentBookHandler } from './operations/book';
 import { botInitHandler } from './operations/botinit';
+import { appointmentCancelHandler } from './operations/cancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
+import { claimSubmitGetHandler, claimSubmitPostHandler } from './operations/claimsubmit';
 import { clearAllWsSubsHandler } from './operations/clearallwssubs';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
 import { conceptMapImportHandler } from './operations/conceptmapimport';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
+import { appointmentConfirmHandler } from './operations/confirm';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
 import { getColumnStatisticsHandler } from './operations/db-column-statistics';
@@ -51,29 +55,39 @@ import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { extractHandler } from './operations/extract';
-import { scheduleFindHandler } from './operations/find';
+import { appointmentFindHandler, scheduleFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
 import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
+import { appointmentHoldHandler } from './operations/hold';
 import { appLaunchHandler } from './operations/launch';
 import { packageInstallHandler } from './operations/packageinstall';
 import { patientEverythingHandler } from './operations/patienteverything';
 import { patientMatchHandler } from './operations/patientmatch';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
+import { projectRateLimitsHandler } from './operations/project-rate-limits';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
+import { userRescopeOperation } from './operations/rescope';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
 import { setAccountsHandler } from './operations/set-accounts';
+import { generateSmartHealthCardHandler, verifySmartHealthCardHandler } from './operations/smarthealthcards';
+import {
+  generateSmartHealthLinkHandler,
+  resolveSmartHealthLinkHandler,
+  smartHealthLinkManifestHandler,
+} from './operations/smarthealthlinks';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { updateUserEmailOperation } from './operations/update-user-email';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import type { ResendSubscriptionsOptions } from './repo';
+import { validateRepositoryResourceStrictly } from './repository/validation';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
@@ -161,6 +175,7 @@ publicRoutes.get(['/$versions', '/%24versions'], (_req: Request, res: Response) 
 // See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#sample-request
 publicRoutes.get('/.well-known/smart-configuration', smartConfigurationHandler);
 publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
+publicRoutes.post('/.well-known/smart-health-links/:id/manifest.json', smartHealthLinkManifestHandler);
 
 // Protected routes require authentication
 const protectedRoutes = Router().use(authenticateRequest);
@@ -226,11 +241,17 @@ function initInternalFhirRouter(): FhirRouter {
   // Project $clone
   router.add('POST', '/Project/:id/$clone', projectCloneHandler);
 
+  // Project $rate-limits
+  router.add('GET', '/Project/:id/$rate-limits', projectRateLimitsHandler);
+
   // Project $init
   router.add('POST', '/Project/$init', projectInitHandler);
 
   // Update User email
   router.add('POST', '/User/:id/$update-email', updateUserEmailOperation);
+
+  // Rescope User between server and project scope
+  router.add('POST', '/User/:id/$rescope', userRescopeOperation);
 
   // ConceptMap $translate
   router.add('GET', '/ConceptMap/$translate', conceptMapTranslateHandler);
@@ -293,6 +314,10 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Agent/$fetch-logs', agentFetchLogsHandler);
   router.add('GET', '/Agent/:id/$fetch-logs', agentFetchLogsHandler);
 
+  // Agent $stats operation
+  router.add('GET', '/Agent/$stats', agentStatsHandler);
+  router.add('GET', '/Agent/:id/$stats', agentStatsHandler);
+
   // AsyncJob $cancel operation
   router.add('POST', '/AsyncJob/:id/$cancel', asyncJobCancelHandler);
 
@@ -308,6 +333,11 @@ function initInternalFhirRouter(): FhirRouter {
   // Claim $export operation
   router.add('POST', '/Claim/$export', claimExportPostHandler);
   router.add('GET', '/Claim/:id/$export', claimExportGetHandler);
+
+  // Claim $submit operation (dispatches to the custom operation configured via CLAIM_SUBMIT_OPERATION).
+  // POST passes the Claim via the 'resource' input parameter; GET reads the Claim from the URL.
+  router.add('POST', '/Claim/$submit', claimSubmitPostHandler);
+  router.add('GET', '/Claim/:id/$submit', claimSubmitGetHandler);
 
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
@@ -350,6 +380,14 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
   router.add('POST', '/Patient/:id/$ccda-export', ccdaExportHandler);
 
+  // SMART Health Cards operations
+  router.add('POST', '/Patient/:id/$generate-smart-health-card', generateSmartHealthCardHandler);
+  router.add('POST', '/$verify-smart-health-card', verifySmartHealthCardHandler);
+
+  // SMART Health Links operations
+  router.add('POST', '/Patient/:id/$generate-smart-health-link', generateSmartHealthLinkHandler);
+  router.add('POST', '/$resolve-smart-health-link', resolveSmartHealthLinkHandler);
+
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);
   router.add('POST', '/QuestionnaireResponse/:id/$extract', extractHandler);
@@ -376,8 +414,12 @@ function initInternalFhirRouter(): FhirRouter {
   // Schedule $find operation
   router.add('GET', '/Schedule/:id/$find', scheduleFindHandler);
 
-  // Appointment $book operation
+  // Appointment Scheduling operations
+  router.add('GET', '/Appointment/$find', appointmentFindHandler);
   router.add('POST', '/Appointment/$book', appointmentBookHandler);
+  router.add('POST', '/Appointment/$hold', appointmentHoldHandler);
+  router.add('POST', '/Appointment/:id/$cancel', appointmentCancelHandler);
+  router.add('POST', '/Appointment/:id/$confirm', appointmentConfirmHandler);
 
   // PackageRelease $install operation
   router.add('POST', '/PackageRelease/:id/$install', packageInstallHandler);
@@ -385,7 +427,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    await ctx.repo.validateResourceStrictly(req.body);
+    await validateRepositoryResourceStrictly(ctx.repo, req.body);
     return [allOk];
   });
 

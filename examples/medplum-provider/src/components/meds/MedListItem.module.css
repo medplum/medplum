@@ -1,0 +1,37 @@
+.content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/*
+ * Mantine's `.mantine-Text-root` (specificity 0,1,0) ships defaults that won
+ * the cascade against a bare `.title` selector and let long medication names
+ * push past the row width. Scoping the rule to `.contentContainer .title`
+ * raises the specificity to 0,2,0 so the truncation wins without needing
+ * `!important`.
+ */
+.contentContainer .title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  max-width: 100%;
+}
+
+.contentContainer {
+  transition: background 0.2s;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-2));
+}
+
+.contentContainer:hover {
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.contentContainer.selected {
+  background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-8));
+}

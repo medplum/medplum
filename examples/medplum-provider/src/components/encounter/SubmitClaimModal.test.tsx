@@ -48,7 +48,6 @@ const mockSelfPay: WithId<Coverage> = {
 
 const defaultProps = {
   opened: true,
-  submitting: false,
   patient: HomerSimpson as WithId<Patient>,
   coverages: [mockInsurance1, mockSelfPay],
   selectedCoverage: mockInsurance1 as WithId<Coverage> | undefined,
@@ -56,6 +55,7 @@ const defaultProps = {
   practitioner: DrAliceSmith,
   onClose: vi.fn(),
   onSubmitClaim: vi.fn(),
+  ensureSelfPayCoverage: vi.fn(async () => mockSelfPay),
 };
 
 function getCoverageCheckbox(payerName: string): HTMLElement {
@@ -222,20 +222,24 @@ describe('SubmitClaimModal', () => {
       expect(onSubmitClaim).toHaveBeenCalledWith([createReference(mockSelfPay)]);
     });
 
-    test('submits empty array when self-pay selected but no self-pay coverage exists', async () => {
+    test('creates and submits a self-pay coverage when none exists', async () => {
       const onSubmitClaim = vi.fn();
+      const createdSelfPay: WithId<Coverage> = { ...mockSelfPay, id: 'created-self-pay' };
+      const ensureSelfPayCoverage = vi.fn(async () => createdSelfPay);
       const user = userEvent.setup();
 
       setup({
         coverages: [mockInsurance1],
         selectedCoverage: mockInsurance1,
         onSubmitClaim,
+        ensureSelfPayCoverage,
       });
 
       await user.click(screen.getByRole('button', { name: 'Self-pay' }));
       await user.click(screen.getByRole('button', { name: /Submit to Candid/i }));
 
-      expect(onSubmitClaim).toHaveBeenCalledWith([]);
+      expect(ensureSelfPayCoverage).toHaveBeenCalled();
+      expect(onSubmitClaim).toHaveBeenCalledWith([createReference(createdSelfPay)]);
     });
 
     test('self-pay submit button is always enabled', async () => {

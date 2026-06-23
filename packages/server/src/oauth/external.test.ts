@@ -5,7 +5,6 @@ import { ContentType, encodeBase64Url, getReferenceString } from '@medplum/core'
 import type { Practitioner, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import fetch from 'node-fetch';
 import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
@@ -14,7 +13,25 @@ import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
 
-jest.mock('node-fetch');
+const originalFetch = globalThis.fetch;
+const fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
+
+const USER_INFO_URL = 'https://external-auth.example.com/oauth2/userinfo';
+
+function mockUserInfoResponse(status: 200 | 401): void {
+  let userInfoUrlCalled = false;
+  fetchMock.mockImplementation((url, ...rest) => {
+    if (!userInfoUrlCalled && url === USER_INFO_URL) {
+      userInfoUrlCalled = true;
+      return {
+        status: status,
+        headers: { get: () => ContentType.JSON },
+        json: () => ({ ok: status === 200 }),
+      };
+    }
+    return originalFetch(url, ...rest);
+  });
+}
 
 // RFC 7662 - External auth
 
@@ -31,7 +48,7 @@ describe('External auth', () => {
     config.externalAuthProviders = [
       {
         issuer: 'https://external-auth.example.com',
-        userInfoUrl: 'https://external-auth.example.com/oauth2/userinfo',
+        userInfoUrl: USER_INFO_URL,
       },
     ];
 
@@ -65,6 +82,10 @@ describe('External auth', () => {
       lastName: 'User',
       externalId: externalSub,
     });
+  });
+
+  beforeEach(() => {
+    fetchMock.mockReset();
   });
 
   afterAll(async () => {
@@ -101,11 +122,7 @@ describe('External auth', () => {
   });
 
   test('Remote call to userinfo fails', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 401,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: false }),
-    }));
+    mockUserInfoResponse(401);
 
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
@@ -118,11 +135,7 @@ describe('External auth', () => {
   });
 
   test('Profile not found', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
@@ -135,11 +148,7 @@ describe('External auth', () => {
   });
 
   test('Profile without membership', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     // Create a Practitioner profile that is not a member of the project
     const p2 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
@@ -154,11 +163,7 @@ describe('External auth', () => {
   });
 
   test('Success by reference', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
@@ -179,11 +184,7 @@ describe('External auth', () => {
   });
 
   test('Success by search string', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
@@ -196,11 +197,7 @@ describe('External auth', () => {
   });
 
   test('Success by absolute URL', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
@@ -213,11 +210,7 @@ describe('External auth', () => {
   });
 
   test('Success by ext.fhirUser', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
@@ -230,11 +223,7 @@ describe('External auth', () => {
   });
 
   test('Success by sub claim', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
@@ -249,11 +238,7 @@ describe('External auth', () => {
   });
 
   test('Sub claim with caching', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
@@ -272,11 +257,7 @@ describe('External auth', () => {
   });
 
   test('Sub claim with unknown externalId', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
@@ -289,11 +270,7 @@ describe('External auth', () => {
   });
 
   test('Sub claim with remote userinfo failure', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 401,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: false }),
-    }));
+    mockUserInfoResponse(401);
 
     // Use a unique nonce to avoid cache hits from prior tests
     const jwt = createFakeJwt({
@@ -308,11 +285,7 @@ describe('External auth', () => {
   });
 
   test('fhirUser takes precedence over sub', async () => {
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     // JWT has both fhirUser and sub; fhirUser should be used
     // Use a unique nonce to avoid cache hits from prior tests
@@ -342,11 +315,7 @@ describe('External auth', () => {
       active: false,
     });
 
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
@@ -378,11 +347,7 @@ describe('External auth', () => {
       externalId: duplicateSub,
     });
 
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ ok: true }),
-    }));
+    mockUserInfoResponse(200);
 
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',

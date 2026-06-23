@@ -55,7 +55,44 @@
           ]
         },
         "kind": "ServiceRequest",
-        "intent": "order"
+        "intent": "order",
+        "dynamicValue": [
+          {
+            "path": "category.coding.system",
+            "expression": {
+              "language": "text/fhirpath",
+              "expression": "'http://snomed.info/sct'"
+            }
+          },
+          {
+            "path": "category.coding.code",
+            "expression": {
+              "language": "text/fhirpath",
+              "expression": "'108252007'"
+            }
+          },
+          {
+            "path": "category.coding.display",
+            "expression": {
+              "language": "text/fhirpath",
+              "expression": "'Laboratory procedure'"
+            }
+          },
+          {
+            "path": "performer.reference",
+            "expression": {
+              "language": "text/fhirpath",
+              "expression": "'Organization/258a1dbb-ccec-4cb3-b9ff-4dc28f8f28a0'"
+            }
+          },
+          {
+            "path": "performer.display",
+            "expression": {
+              "language": "text/fhirpath",
+              "expression": "'National HGDX LabCorp'"
+            }
+          }
+        ]
       },
       "request": {
         "method": "POST",

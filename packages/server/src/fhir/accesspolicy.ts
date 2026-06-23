@@ -99,6 +99,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     checkReferencesOnWrite: project.checkReferencesOnWrite,
     validateTerminology: project.features?.includes('validate-terminology'),
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
+    client: login.client,
   });
 }
 
@@ -116,7 +117,7 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
   if (login.scope) {
     // If the login specifies SMART scopes,
     // then set the access policy to use those scopes
-    accessPolicy = applySmartScopes(accessPolicy, login.scope);
+    accessPolicy = applySmartScopes(accessPolicy, authState);
   }
 
   // Apply project admin access policies

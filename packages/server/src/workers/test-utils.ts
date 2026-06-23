@@ -4,6 +4,7 @@ import type { BackgroundJobInteraction } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import type { Resource, Subscription } from '@medplum/fhirtypes';
 import type { Job, Queue } from 'bullmq';
+import { UnrecoverableError } from '../__mocks__/bullmq';
 import { execDispatchJob, getDispatchQueue } from './dispatch';
 import { execDownloadJob, getDownloadQueue } from './download';
 import { execSubscriptionJob, getSubscriptionQueue } from './subscription';
@@ -113,7 +114,7 @@ async function findAndExecJob(
       await execJob(job);
       break; // Exit loop if successful
     } catch (err) {
-      if (attempt === maxRetries - 1) {
+      if (attempt === maxRetries - 1 || err instanceof UnrecoverableError) {
         throw err;
       }
     }
@@ -131,19 +132,12 @@ async function findAndExecJob(
  * @returns The mock Response object with the given status, body, and headers.
  */
 export function mockFetchResponse(status: number, body: any, headers: Record<string, string> = {}): Response {
-  return {
+  return new Response(body, {
     status,
     headers: {
-      get(name: string): string | null {
-        return (
-          {
-            'content-disposition': 'attachment; filename=download-1',
-            'content-type': ContentType.TEXT,
-            ...headers,
-          }[name] ?? null
-        );
-      },
-    } as Headers,
-    body,
-  } as Response;
+      'content-disposition': 'attachment; filename=download-1',
+      'content-type': ContentType.TEXT,
+      ...headers,
+    },
+  });
 }

@@ -3,17 +3,14 @@
 import { ContentType } from '@medplum/core';
 import type { DocumentReference, Media } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import fetch from 'node-fetch';
-import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDownloadJob, mockFetchResponse } from './test-utils';
 
-jest.mock('node-fetch');
-
 let repo: Repository;
+const fetchMock = jest.spyOn(globalThis, 'fetch');
 
 describe('Download Worker', () => {
   beforeAll(async () => {
@@ -28,7 +25,7 @@ describe('Download Worker', () => {
   });
 
   beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
+    fetchMock.mockClear();
     getConfig().autoDownloadEnabled = true;
   });
 
@@ -47,26 +44,21 @@ describe('Download Worker', () => {
         });
         expect(media).toBeDefined();
 
-        const body = new Readable();
-        body.push('foo');
-        body.push(null);
-
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({
-          status: 200,
-          headers: {
-            get(name: string): string | undefined {
-              return {
+        fetchMock.mockImplementation(() =>
+          Promise.resolve(
+            new Response('foo', {
+              status: 200,
+              headers: {
                 'content-disposition': 'attachment; filename=download',
                 'content-type': ContentType.TEXT,
-              }[name];
-            },
-          },
-          body,
-        }));
+              },
+            })
+          )
+        );
 
         await findAndExecDownloadJob(media, 'create');
 
-        expect(fetch).toHaveBeenCalledWith(url, {
+        expect(fetchMock).toHaveBeenCalledWith(url, {
           headers: {
             'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
             traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
@@ -122,13 +114,13 @@ describe('Download Worker', () => {
       });
       expect(media).toBeDefined();
 
-      (fetch as unknown as jest.Mock)
-        .mockImplementationOnce(() => mockFetchResponse(400, 'Bad Request'))
-        .mockImplementationOnce(() => mockFetchResponse(200, ''));
+      fetchMock
+        .mockImplementationOnce(() => Promise.resolve(mockFetchResponse(400, 'Bad Request')))
+        .mockImplementationOnce(() => Promise.resolve(mockFetchResponse(200, '')));
 
       const jobs = await findAndExecDownloadJob(media, 'create');
       expect(jobs).toHaveLength(2);
-      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     }));
 
   test('Retry on exception', () =>
@@ -145,15 +137,15 @@ describe('Download Worker', () => {
       });
       expect(media).toBeDefined();
 
-      (fetch as unknown as jest.Mock)
+      fetchMock
         .mockImplementationOnce(() => {
           throw new Error();
         })
-        .mockImplementationOnce(() => mockFetchResponse(200, ''));
+        .mockImplementationOnce(() => Promise.resolve(mockFetchResponse(200, '')));
 
       const jobs = await findAndExecDownloadJob(media, 'create');
       expect(jobs).toHaveLength(2);
-      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     }));
 
   test('Stop retries if Resource deleted', () =>
@@ -174,7 +166,7 @@ describe('Download Worker', () => {
       await findAndExecDownloadJob(media, 'create');
 
       // Fetch should not have been called
-      expect(fetch).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
     }));
 
   test('Stop if URL changed', () =>
@@ -202,7 +194,7 @@ describe('Download Worker', () => {
       await findAndExecDownloadJob(media, 'create');
 
       // Fetch should not have been called
-      expect(fetch).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
     }));
 
   test('Ignore if disabled', () =>
@@ -348,7 +340,7 @@ describe('Download Worker', () => {
       await expect(findAndExecDownloadJob(media, 'create')).rejects.toThrow('Job not found');
 
       // Fetch should not have been called
-      expect(fetch).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
     }));
 
   test('Does not enqueue when mutating non-URL fields', () =>
@@ -397,40 +389,26 @@ describe('Download Worker', () => {
       });
       expect(doc).toBeDefined();
 
-      const body1 = new Readable();
-      body1.push('foo1');
-      body1.push(null);
-
-      const body2 = new Readable();
-      body2.push('foo2');
-      body2.push(null);
-
-      (fetch as unknown as jest.Mock).mockImplementation((url: string) =>
+      fetchMock.mockImplementation((url: string | URL | Request) =>
         url === firstUrl
-          ? {
-              status: 200,
-              headers: {
-                get(name: string): string | undefined {
-                  return {
-                    'content-disposition': 'attachment; filename=download-1',
-                    'content-type': ContentType.TEXT,
-                  }[name];
+          ? Promise.resolve(
+              new Response('foo1', {
+                status: 200,
+                headers: {
+                  'content-disposition': 'attachment; filename=download-1',
+                  'content-type': ContentType.TEXT,
                 },
-              },
-              body: body1,
-            }
-          : {
-              status: 200,
-              headers: {
-                get(name: string): string | undefined {
-                  return {
-                    'content-disposition': 'attachment; filename=download-2',
-                    'content-type': ContentType.TEXT,
-                  }[name];
+              })
+            )
+          : Promise.resolve(
+              new Response('foo2', {
+                status: 200,
+                headers: {
+                  'content-disposition': 'attachment; filename=download-2',
+                  'content-type': ContentType.TEXT,
                 },
-              },
-              body: body2,
-            }
+              })
+            )
       );
 
       const jobs1 = await findAndExecDownloadJob(doc, 'create', firstUrl);
@@ -474,6 +452,6 @@ describe('Download Worker', () => {
       await expect(findAndExecDownloadJob(media, 'create')).rejects.toThrow('Job not found');
 
       // Fetch should not have been called
-      expect(fetch).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
     }));
 });

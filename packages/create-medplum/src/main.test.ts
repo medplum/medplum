@@ -3,18 +3,19 @@
 import cp from 'node:child_process';
 import fs from 'node:fs';
 import readline from 'node:readline/promises';
+import { vi } from 'vitest';
 import { main } from './main';
 
-jest.mock('node:child_process');
-jest.mock('node:fs');
-jest.mock('node:readline/promises');
+vi.mock('node:child_process');
+vi.mock('node:fs');
+vi.mock('node:readline/promises');
 
 describe('Medplum initializer', () => {
   test('Happy path', async () => {
-    console.log = jest.fn();
-    fs.existsSync = jest.fn(() => true);
-    fs.readFileSync = jest.fn(() => "baseUrl: 'https://example.com',") as any;
-    readline.createInterface = jest.fn(() =>
+    console.log = vi.fn();
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readFileSync).mockReturnValue("baseUrl: 'https://example.com',");
+    vi.mocked(readline.createInterface).mockReturnValue(
       mockReadline(
         '1', // Choose project #1 - Hello World
         '', // Choose project name - use default
@@ -26,8 +27,8 @@ describe('Medplum initializer', () => {
   });
 
   test('Validation errors', async () => {
-    console.log = jest.fn();
-    readline.createInterface = jest.fn(() =>
+    console.log = vi.fn();
+    vi.mocked(readline.createInterface).mockReturnValue(
       mockReadline(
         '1000', // Invalid project #
         '1', // Choose project #1 - Hello World
@@ -42,13 +43,13 @@ describe('Medplum initializer', () => {
   });
 
   test('Cleanup on git error', async () => {
-    console.log = jest.fn();
-    console.error = jest.fn();
-    cp.execSync = jest.fn(() => {
+    console.log = vi.fn();
+    console.error = vi.fn();
+    vi.mocked(cp.execSync).mockImplementation(() => {
       throw new Error('git error');
     });
-    fs.existsSync = jest.fn(() => true);
-    readline.createInterface = jest.fn(() =>
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(readline.createInterface).mockReturnValue(
       mockReadline(
         '1', // Choose project #1 - Hello World
         '', // Choose project name - use default
@@ -66,7 +67,7 @@ describe('Medplum initializer', () => {
 });
 
 export function mockReadline(...answers: string[]): readline.Interface {
-  const result = { write: jest.fn(), question: jest.fn(), close: jest.fn() };
+  const result = { write: vi.fn(), question: vi.fn(), close: vi.fn() };
   const debug = true;
   for (const answer of answers) {
     result.question.mockImplementationOnce(async (q: string) => {

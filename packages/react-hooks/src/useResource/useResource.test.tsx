@@ -31,7 +31,7 @@ function TestComponent(props: TestComponentProps): JSX.Element {
 
 describe('useResource', () => {
   beforeAll(() => {
-    console.error = jest.fn();
+    console.error = vi.fn();
   });
 
   describe.each([undefined, 0])('MedplumClient.cacheTime=%j', (cacheTime: number | undefined) => {
@@ -98,7 +98,7 @@ describe('useResource', () => {
     });
 
     test('Set outcome on error', async () => {
-      const setOutcome = jest.fn();
+      const setOutcome = vi.fn();
       await setup(<TestComponent value={{ reference: 'Patient/not-found' }} setOutcome={setOutcome} />);
       await waitFor(() => expect(setOutcome).toHaveBeenCalled());
     });

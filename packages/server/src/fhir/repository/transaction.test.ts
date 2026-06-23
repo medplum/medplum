@@ -1,0 +1,1325 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { conflict, notFound, OperationOutcomeError, Operator, parseSearchRequest } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
+import assert from 'node:assert';
+import { randomUUID } from 'node:crypto';
+import type { PoolClient } from 'pg';
+import { initAppServices, shutdownApp } from '../../app';
+import { loadTestConfig } from '../../config/loader';
+import { DatabaseMode } from '../../database';
+import { getLogger } from '../../logger';
+import { createTestProject, spyOnQuery, withTestContext } from '../../test.setup';
+import * as workersModule from '../../workers';
+import type { Repository, SystemRepository } from '../repo';
+import { getShardSystemRepo } from '../repo';
+import { RepositoryConnection } from '../repository/repository-connection';
+import { PostgresError } from '../sql';
+
+const TRANSACTION_SCOPE_ERROR =
+  'Repository is in an active transaction; use the transaction-scoped repository passed to the callback';
+const SAVEPOINT_RELEASED_ERROR = 'Savepoint has been released; use the outer transaction-scoped repository';
+
+describe('FHIR Repo Transactions', () => {
+  let repo: Repository;
+  let systemRepo: SystemRepository;
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initAppServices(config);
+
+    repo = (await createTestProject({ withRepo: true })).repo;
+    systemRepo = repo.getSystemRepo();
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('withTransaction parent repo unusable during transaction callback', () =>
+    withTestContext(async () => {
+      const patient = await repo.withTransaction(async (txRepo) => {
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies scoped repo identity.
+        const alias = repo;
+        expect(txRepo).not.toBe(alias);
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies scoped repo identity.
+        expect(txRepo).not.toBe(repo);
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+        expect(() => repo.getDatabaseClient(DatabaseMode.WRITER)).toThrow(TRANSACTION_SCOPE_ERROR);
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+        await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
+          TRANSACTION_SCOPE_ERROR
+        );
+        return txRepo.createResource<Patient>({ resourceType: 'Patient' });
+      });
+      await expectPatientVisible(repo, patient.id);
+    }));
+
+  test('ensureInTransaction callback must use the scoped repository when starting transaction', () =>
+    withTestContext(async () => {
+      const patient = await repo.ensureInTransaction(async (txRepo) => {
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies scoped repo identity.
+        expect(txRepo).not.toBe(repo);
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+        await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
+          TRANSACTION_SCOPE_ERROR
+        );
+        return txRepo.createResource<Patient>({ resourceType: 'Patient' });
+      });
+      await expectPatientVisible(repo, patient.id);
+    }));
+
+  test('ensureInTransaction passes the current repository inside transaction', () =>
+    withTestContext(async () => {
+      await repo.withTransaction(async (txRepo) => {
+        const patient = await txRepo.ensureInTransaction(async (ensuredRepo) => {
+          // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies scoped repo identity.
+          expect(ensuredRepo).toBe(txRepo);
+          return ensuredRepo.createResource<Patient>({ resourceType: 'Patient' });
+        });
+
+        expect(patient).toBeDefined();
+      });
+    }));
+
+  test('withTransaction rejects concurrent calls', async () => {
+    const cb1 = jest.fn().mockReturnValue('first success');
+    const cb2 = jest.fn().mockReturnValue('second success');
+    const promise1 = repo.withTransaction(cb1);
+    const promise2 = repo.withTransaction(cb2);
+
+    const [result1, result2] = await Promise.allSettled([promise1, promise2]);
+    assert(result1.status === 'fulfilled');
+    expect(result1.value).toBe('first success');
+    expect(cb1).toHaveBeenCalledTimes(1);
+
+    assert(result2.status === 'rejected');
+    expect((result2.reason as Error).message).toContain(TRANSACTION_SCOPE_ERROR);
+    expect(cb2).toHaveBeenCalledTimes(0);
+  });
+
+  test('Transaction rollback', () =>
+    withTestContext(async () => {
+      let patient: WithId<Patient> | undefined;
+
+      await expect(
+        repo.withTransaction(async (txRepo) => {
+          // Create one patient
+          // This will initially succeed, but should then be rolled back
+          patient = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+          await expectPatientVisible(txRepo, patient.id);
+
+          // Now try to create a malformed patient
+          // This will fail, and should rollback the entire transaction
+          await txRepo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+        })
+      ).rejects.toMatchObject(
+        new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'error',
+              code: 'structure',
+              details: {
+                text: 'Invalid additional property "foo"',
+              },
+              expression: ['Patient.foo'],
+            },
+          ],
+        })
+      );
+
+      await expectPatientAbsent(repo, patient?.id);
+    }));
+
+  test('Nested transaction commit', () =>
+    withTestContext(async () => {
+      let patient1: Patient | undefined;
+      let patient2: Patient | undefined;
+
+      await repo.withTransaction(async (txRepo) => {
+        patient1 = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+        patient2 = await txRepo.withTransaction(async (nestedRepo) => {
+          return nestedRepo.createResource<Patient>({ resourceType: 'Patient' });
+        });
+      });
+      await expectPatientVisible(repo, patient1?.id);
+      await expectPatientVisible(repo, patient2?.id);
+    }));
+
+  test('Nested transaction rollback', () =>
+    withTestContext(async () => {
+      let patient1: Patient | undefined;
+      let patient2: Patient | undefined;
+
+      // Start an outer transaction - this should succeed
+      await repo.withTransaction(async (txRepo) => {
+        // Create one patient
+        // This will initially succeed, and should not be rolled back
+        patient1 = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+        // Start an inner transaction - this will be rolled back
+        await expect(
+          txRepo.withTransaction(async (nestedRepo) => {
+            patient2 = await nestedRepo.createResource<Patient>({ resourceType: 'Patient' });
+            await expectPatientVisible(nestedRepo, patient1?.id);
+            await expectPatientVisible(nestedRepo, patient2?.id);
+
+            // Now try to create a malformed patient
+            // This will fail, and should rollback the entire transaction
+            await nestedRepo.createResource({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
+          })
+        ).rejects.toMatchObject(
+          new OperationOutcomeError({
+            resourceType: 'OperationOutcome',
+            issue: [
+              {
+                severity: 'error',
+                code: 'structure',
+                details: {
+                  text: 'Invalid additional property "foo"',
+                },
+                expression: ['Patient.foo'],
+              },
+            ],
+          })
+        );
+
+        await expectPatientVisible(txRepo, patient1?.id);
+        await expectPatientAbsent(txRepo, patient2?.id);
+      });
+    }));
+
+  test('Nested transaction rollback from DB error', () =>
+    withTestContext(async () => {
+      let patient1: Patient | undefined;
+      let patient2: Patient | undefined;
+
+      // Start an outer transaction - this should succeed
+      await repo.withTransaction(async (txRepo) => {
+        // Create one patient
+        // This will initially succeed, and should not be rolled back
+        patient1 = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+        expect(patient1).toBeDefined();
+
+        // Start an inner transaction - this will be rolled back
+        await expect(
+          txRepo.withTransaction(async (nestedRepo) => {
+            patient2 = await nestedRepo.createResource<Patient>({ resourceType: 'Patient' });
+            expect(patient2).toBeDefined();
+
+            await expectPatientVisible(nestedRepo, patient1?.id);
+            await expectPatientVisible(nestedRepo, patient2?.id);
+
+            const db = nestedRepo.getDatabaseClient(DatabaseMode.READER);
+            await expect(db.query(`SELECT * FROM "TableDoesNotExist"`)).rejects.toMatchObject({
+              message: 'relation "TableDoesNotExist" does not exist',
+            });
+          })
+        ).rejects.toThrow('current transaction is aborted, commands ignored until end of transaction block');
+
+        await expectPatientVisible(txRepo, patient1?.id);
+        await expectPatientAbsent(txRepo, patient2?.id, { outcome: notFound });
+      });
+
+      await expectPatientVisible(repo, patient1?.id);
+      await expectPatientAbsent(repo, patient2?.id, { outcome: notFound });
+    }));
+
+  test.each([
+    { name: 'commit', shouldRollback: false },
+    { name: 'rollback', shouldRollback: true },
+  ])('Post-commit callback on $name', ({ shouldRollback }) =>
+    withTestContext(async () => {
+      const callback = jest.fn();
+      const txn = repo.withTransaction(async (txRepo) => {
+        await txRepo.postCommit(callback);
+        expect(callback).not.toHaveBeenCalled();
+        if (shouldRollback) {
+          throw new Error('Roll it back!');
+        }
+      });
+
+      if (shouldRollback) {
+        await expect(txn).rejects.toThrow('Roll it back!');
+        expect(callback).not.toHaveBeenCalled();
+      } else {
+        await txn;
+        expect(callback).toHaveBeenCalledTimes(1);
+      }
+    })
+  );
+
+  test('Nested transaction post-commit', () =>
+    withTestContext(async () => {
+      const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+      const postCommitCb = jest.fn();
+      try {
+        await repo.withTransaction(async (txRepo) => {
+          await txRepo.postCommit(() => postCommitCb('first'));
+          await txRepo.withTransaction(async (nestedRepo) => {
+            await nestedRepo.postCommit(async () => {
+              postCommitCb('second');
+              // Registered while post-commit callbacks are being processed, so it is
+              // invoked immediately (depth-first) rather than queued
+              await nestedRepo.postCommit(() => {
+                postCommitCb('third');
+              });
+            });
+            expect(postCommitCb).not.toHaveBeenCalled();
+          });
+          expect(postCommitCb).not.toHaveBeenCalled();
+          await txRepo.postCommit(async () => {
+            postCommitCb('fourth');
+            await txRepo.postCommit(() => postCommitCb('fifth'));
+          });
+        });
+        expect(postCommitCb.mock.calls.map(([arg]) => arg)).toStrictEqual([
+          'first',
+          'second',
+          'third',
+          'fourth',
+          'fifth',
+        ]);
+        expect(errorSpy).not.toHaveBeenCalled();
+      } finally {
+        errorSpy.mockRestore();
+      }
+    }));
+
+  test('Released nested repo can write in post-commit callbacks', () =>
+    withTestContext(async () => {
+      let nestedPatient: WithId<Patient> | undefined;
+      let postCommitPatient: WithId<Patient> | undefined;
+
+      await repo.withTransaction(async (txRepo) => {
+        await txRepo.withTransaction(async (nestedRepo) => {
+          nestedPatient = await nestedRepo.createResource<Patient>({ resourceType: 'Patient' });
+          await nestedRepo.postCommit(async () => {
+            postCommitPatient = await nestedRepo.createResource<Patient>({ resourceType: 'Patient' });
+          });
+        });
+      });
+
+      // Post-commit callbacks run before the outer withTransaction resolves, and errors
+      // in them are logged rather than thrown, so assert the write actually happened
+      assert(postCommitPatient);
+      await expectPatientVisible(repo, nestedPatient?.id);
+      await expectPatientVisible(repo, postCommitPatient.id);
+    }));
+
+  test('Released nested repo can read in pre-commit callbacks', () =>
+    withTestContext(async () => {
+      let nestedPatient: WithId<Patient> | undefined;
+      let preCommitPatient: WithId<Patient> | undefined;
+
+      await repo.withTransaction(async (txRepo) => {
+        await txRepo.withTransaction(async (nestedRepo) => {
+          nestedPatient = await nestedRepo.createResource<Patient>({ resourceType: 'Patient' });
+          // Mirrors how validateResourceReferences reads through the registering repo
+          await nestedRepo.preCommit(async () => {
+            assert(nestedPatient);
+            preCommitPatient = await nestedRepo.readResource<Patient>('Patient', nestedPatient.id);
+          });
+        });
+        // Pre-commit callbacks only run when the outermost transaction commits
+        expect(preCommitPatient).toBeUndefined();
+      });
+
+      expect(preCommitPatient?.id).toStrictEqual(nestedPatient?.id);
+    }));
+
+  test('Released nested repo is locked until the outer transaction begins committing', () =>
+    withTestContext(async () => {
+      await repo.withTransaction(async (txRepo) => {
+        const releasedRepo = await txRepo.withTransaction(async (nestedRepo) => nestedRepo);
+
+        expect(() => releasedRepo.getDatabaseClient(DatabaseMode.WRITER)).toThrow(SAVEPOINT_RELEASED_ERROR);
+        await expect(releasedRepo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
+          SAVEPOINT_RELEASED_ERROR
+        );
+        await expect(releasedRepo.withTransaction(async () => undefined)).rejects.toThrow(SAVEPOINT_RELEASED_ERROR);
+        await expect(releasedRepo.preCommit(async () => undefined)).rejects.toThrow(SAVEPOINT_RELEASED_ERROR);
+        await expect(releasedRepo.postCommit(async () => undefined)).rejects.toThrow(SAVEPOINT_RELEASED_ERROR);
+
+        // The outer transaction-scoped repo remains fully usable
+        const patient = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+        await expectPatientVisible(txRepo, patient.id);
+      });
+    }));
+
+  test('Retry executes post-commit hook once from outer transaction', async () => {
+    const postCommit = jest.fn();
+    let shouldError = true;
+
+    await repo.withTransaction(async (txRepo) => {
+      await txRepo.postCommit(postCommit);
+      expect(postCommit).not.toHaveBeenCalled();
+
+      await txRepo.withTransaction(async () => {
+        if (shouldError) {
+          shouldError = false;
+          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
+        }
+      });
+      expect(postCommit).not.toHaveBeenCalled();
+    });
+    expect(postCommit).toHaveBeenCalledTimes(1);
+  });
+
+  test('Retry should not execute post-commit hook from rollback', async () => {
+    const postCommit = jest.fn();
+
+    await repo.withTransaction(async (txRepo) => {
+      try {
+        await txRepo.withTransaction(async (nestedRepo) => {
+          await nestedRepo.postCommit(postCommit);
+          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
+        });
+      } catch {
+        // Ignore error
+      }
+    });
+
+    expect(postCommit).toHaveBeenCalledTimes(0);
+  });
+
+  test('getSystemRepo() shares parent post-commit state', () =>
+    withTestContext(async () => {
+      const callback = jest.fn();
+      let callsBeforeCommit: number | undefined;
+
+      await repo.withTransaction(async (txRepo) => {
+        await txRepo.getSystemRepo().postCommit(callback);
+        callsBeforeCommit = callback.mock.calls.length;
+      });
+
+      expect(callsBeforeCommit).toStrictEqual(0);
+      expect(callback).toHaveBeenCalledTimes(1);
+    }));
+
+  test('getSystemRepo() withTransaction() nests in the parent transaction', () =>
+    withTestContext(async () => {
+      let queries: string[] = [];
+
+      await repo.withTransaction(async (txRepo) => {
+        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+        const querySpy = spyOnQuery(client);
+        try {
+          await txRepo.getSystemRepo().withTransaction(async () => undefined);
+        } finally {
+          queries = querySpy.mock.calls.map(([query]) =>
+            typeof query === 'string' ? query : (query as { text: string }).text
+          );
+          querySpy.mockRestore();
+        }
+      });
+      // only a savepoint, no commit
+      expect(queries).toStrictEqual(['SAVEPOINT sp2', 'RELEASE SAVEPOINT sp2']);
+    }));
+
+  test('getSystemRepo() defers cache writes while parent transaction is active', () =>
+    withTestContext(async () => {
+      let cacheReadDuringTransaction = false;
+      const patient = await repo.withTransaction(async (txRepo) => {
+        const created = await txRepo.getSystemRepo().createResource<Patient>({ resourceType: 'Patient' });
+        try {
+          await systemRepo.readResource<Patient>('Patient', created.id, { checkCacheOnly: true });
+          cacheReadDuringTransaction = true;
+        } catch {
+          cacheReadDuringTransaction = false;
+        }
+        return created;
+      });
+
+      expect(cacheReadDuringTransaction).toBe(false);
+      await expect(systemRepo.readResource('Patient', patient.id, { checkCacheOnly: true })).resolves.toBeDefined();
+    }));
+
+  test('clone() does NOT share parent transaction state', () =>
+    withTestContext(async () => {
+      const callbackFn = jest.fn();
+      let patient: WithId<Patient> | undefined;
+      await expect(
+        repo.withTransaction(async (txRepo) => {
+          const clonedRepo = txRepo.clone();
+          patient = await clonedRepo.createResource<Patient>({ resourceType: 'Patient' });
+          await clonedRepo.postCommit(callbackFn);
+          expect(callbackFn).toHaveBeenCalledTimes(1);
+          throw new Error('rollback clone transaction');
+        })
+      ).rejects.toThrow('rollback clone transaction');
+
+      expect(callbackFn).toHaveBeenCalledTimes(1);
+      assert(patient);
+      await expectPatientVisible(repo, patient.id);
+    }));
+
+  test('Conflicting concurrent writes', () =>
+    withTestContext(async () => {
+      const existing = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+      const tx1UpdateFinished = Promise.withResolvers<undefined>();
+      const allowTx1Commit = Promise.withResolvers<undefined>();
+      const tx2SnapshotTaken = Promise.withResolvers<undefined>();
+
+      const events: string[] = [];
+      const log = jest.fn().mockImplementation((msg: string) => {
+        events.push(msg);
+      });
+
+      /*
+      1. tx1 begins a REPEATABLE READ transaction and updates the patient row.
+      2. tx1 stays open, so it still holds the row/update conflict.
+      3. tx2 begins its own REPEATABLE READ transaction while tx1 is still open.
+      4. tx2 takes its snapshot by reading the patient row (any query would do)
+      5. tx2 tries to update the same patient row.
+      6. Once tx1 commits, Postgres can’t safely let tx2 continue using the snapshot it started with, because that snapshot predates tx1’s committed update.
+      7. Postgres raises serialization failure 40001.
+      8. RepositoryConnection.withTransaction() treats 40001 as retryable, rolls back tx2, starts a fresh transaction, reruns tx2 callback and succeeds.
+      */
+
+      const tx1 = repo.clone().withTransaction(async (txRepo) => {
+        log('tx1 start');
+        try {
+          await txRepo.updateResource({ ...existing, gender: 'unknown' });
+        } catch (err) {
+          log('tx1 update error');
+          throw err;
+        }
+        tx1UpdateFinished.resolve(undefined);
+        log('tx1 after update');
+        await allowTx1Commit.promise;
+        log('tx1 committing');
+        return 'tx1 success';
+      });
+
+      await tx1UpdateFinished.promise;
+
+      const tx2 = repo.clone().withTransaction(async (txRepo) => {
+        log('tx2 start');
+        await txRepo.readResource('Patient', existing.id);
+        tx2SnapshotTaken.resolve(undefined);
+        try {
+          await txRepo.updateResource({ ...existing, deceasedBoolean: false });
+        } catch (err) {
+          log('tx2 update error');
+          throw err;
+        }
+        log('tx2 after update');
+        log('tx2 committing');
+        return 'tx2 success';
+      });
+
+      await tx2SnapshotTaken.promise;
+
+      allowTx1Commit.resolve(undefined);
+      const results = await Promise.allSettled([tx1, tx2]);
+      expect(results.map((r) => r.status)).toStrictEqual(['fulfilled', 'fulfilled']);
+      expect(results.map((r) => (r as any).value)).toStrictEqual(['tx1 success', 'tx2 success']);
+      expect(events).toStrictEqual([
+        'tx1 start',
+        'tx1 after update',
+        'tx2 start',
+        'tx1 committing',
+        'tx2 update error',
+        'tx2 start',
+        'tx2 after update',
+        'tx2 committing',
+      ]);
+    }));
+
+  test.each<['first' | 'second', 'serializable' | 'repeatable read']>([
+    ['first', 'serializable'],
+    ['first', 'repeatable read'],
+    ['second', 'serializable'],
+    ['second', 'repeatable read'],
+  ])('Conflicting conditional creates with %s transaction winning and %s isolation level', (winner, isolation) =>
+    withTestContext(async () => {
+      const identifier = randomUUID();
+      const criteria = 'Patient?identifier=http://example.com/mrn|' + identifier;
+      const resource: Patient = {
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com/mrn', value: identifier }],
+      };
+
+      await expect(repo.searchResources(parseSearchRequest(criteria))).resolves.toHaveLength(0);
+
+      const tx1CreateFinished = Promise.withResolvers<undefined>();
+      const tx2CreateFinished = Promise.withResolvers<undefined>();
+      const allowTx1Commit = Promise.withResolvers<undefined>();
+      const allowTx2Commit = Promise.withResolvers<undefined>();
+
+      const search1 = jest.fn();
+      const create1 = jest.fn();
+      const search2 = jest.fn();
+      const create2 = jest.fn();
+
+      // 1. tx1 begins a transaction, searches for and creates the missing patient.
+      // 2. tx1 held open
+      // 3. tx2 begins a transaction, searches for and creates the missing patient.
+      // 4. tx2 held open
+
+      const tx1 = repo.clone().withTransaction(
+        async (txRepo) => {
+          search1();
+          const existing = await txRepo.searchResources(parseSearchRequest(criteria));
+          if (!existing.length) {
+            create1();
+            await txRepo.createResource(resource);
+          }
+          tx1CreateFinished.resolve(undefined);
+          await allowTx1Commit.promise;
+        },
+        { serializable: isolation === 'serializable' }
+      );
+      await tx1CreateFinished.promise;
+
+      const tx2 = repo.clone().withTransaction(
+        async (txRepo) => {
+          search2();
+          const existing = await txRepo.searchResources(parseSearchRequest(criteria));
+          if (!existing.length) {
+            create2();
+            await txRepo.createResource(resource);
+          }
+          tx2CreateFinished.resolve(undefined);
+          await allowTx2Commit.promise;
+        },
+        { serializable: isolation === 'serializable' }
+      );
+      await tx2CreateFinished.promise;
+
+      // both tx1 and tx2 are ready to commit. First to commit wins, other must retry
+      if (winner === 'first') {
+        allowTx1Commit.resolve(undefined);
+        await tx1;
+        allowTx2Commit.resolve(undefined);
+      } else {
+        allowTx2Commit.resolve(undefined);
+        await tx2;
+        allowTx1Commit.resolve(undefined);
+      }
+
+      const results = await Promise.allSettled([tx1, tx2]);
+      expect(results.map((r) => r.status)).not.toContain('rejected');
+
+      if (isolation === 'serializable') {
+        await expect(repo.searchResources(parseSearchRequest(criteria))).resolves.toHaveLength(1);
+        expect(search1).toHaveBeenCalledTimes(winner === 'first' ? 1 : 2);
+        expect(search2).toHaveBeenCalledTimes(winner === 'second' ? 1 : 2);
+        // create only called on first attempt regardless of winning; second attempt finds the existing patient
+        expect(create1).toHaveBeenCalledTimes(1);
+        expect(create2).toHaveBeenCalledTimes(1);
+      } else {
+        // repeatable read does not protect against the both txns making the same search; only serializable does
+        await expect(repo.searchResources(parseSearchRequest(criteria))).resolves.toHaveLength(2);
+        expect(search1).toHaveBeenCalledTimes(1);
+        expect(search2).toHaveBeenCalledTimes(1);
+        expect(create1).toHaveBeenCalledTimes(1);
+        expect(create2).toHaveBeenCalledTimes(1);
+      }
+    })
+  );
+
+  test('Conflicting update with patch', () =>
+    withTestContext(async () => {
+      const existing = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+      const tx1SearchFinished = Promise.withResolvers<undefined>();
+      const allowTx1Update = Promise.withResolvers<undefined>();
+
+      const events: string[] = [];
+      const log = jest.fn().mockImplementation((msg: string) => {
+        events.push(msg);
+      });
+
+      // Simulate patch operation with long delay in the middle to ensure conflict
+      const tx1 = repo.clone().withTransaction(async (txRepo) => {
+        log('tx1 search');
+        const found = await txRepo.readResource<Patient>(existing.resourceType, existing.id);
+        tx1SearchFinished.resolve(undefined);
+        await allowTx1Update.promise;
+        log('tx1 update');
+        return txRepo.updateResource({ ...found, gender: 'other' });
+      });
+
+      await tx1SearchFinished.promise;
+      const tx2Patient = await repo.clone().updateResource({ ...existing, deceasedBoolean: false });
+      expect(tx2Patient.deceasedBoolean).toStrictEqual(false);
+      expect(tx2Patient.gender).toBeUndefined();
+
+      expect(events).toStrictEqual(['tx1 search']);
+      allowTx1Update.resolve(undefined);
+      const tx1Patient = await tx1;
+      expect(events).toStrictEqual(['tx1 search', 'tx1 update', 'tx1 search', 'tx1 update']);
+      expect(tx1Patient.deceasedBoolean).toStrictEqual(false);
+      expect(tx1Patient.gender).toStrictEqual('other');
+
+      const finalPatient = await repo.readResource<Patient>(existing.resourceType, existing.id);
+      expect(finalPatient.deceasedBoolean).toStrictEqual(false);
+      expect(finalPatient.gender).toStrictEqual('other');
+    }));
+
+  test.each([
+    {
+      name: 'Retry on transaction conflict',
+      createError: () => new OperationOutcomeError(conflict('transaction', PostgresError.SerializationFailure)),
+      succeedsOnRetry: true,
+      expectedCalls: 2,
+      expectedResult: true,
+    },
+    {
+      name: 'Do not retry on non-transaction conflict',
+      createError: () => new OperationOutcomeError(conflict('a different conflict', 'other-error')),
+      succeedsOnRetry: true,
+      expectedCalls: 1,
+      expectedError: 'a different conflict',
+    },
+    {
+      name: 'Do not retry combined transaction conflict and other errors',
+      createError: () => {
+        const outcome = conflict('transaction conflict', PostgresError.SerializationFailure);
+        outcome.issue.push({ code: 'invalid', severity: 'error', details: { text: 'invalid data' } });
+        return new OperationOutcomeError(outcome);
+      },
+      succeedsOnRetry: true,
+      expectedCalls: 1,
+      expectedError: 'transaction conflict; invalid data',
+    },
+    {
+      name: 'Retry transaction only once before emitting failure',
+      createError: () =>
+        new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure)),
+      succeedsOnRetry: false,
+      expectedCalls: 2,
+      expectedError: 'transaction conflict',
+    },
+  ])('$name', ({ createError, succeedsOnRetry, expectedCalls, expectedError, expectedResult }) =>
+    withTestContext(async () => {
+      let shouldReturn = false;
+      const txFn = jest.fn(async (): Promise<boolean> => {
+        if (succeedsOnRetry && shouldReturn) {
+          return true;
+        }
+        shouldReturn = true;
+        throw createError();
+      });
+
+      if (expectedError) {
+        await expect(repo.withTransaction(txFn)).rejects.toThrow(expectedError);
+      } else {
+        await expect(repo.withTransaction(txFn)).resolves.toStrictEqual(expectedResult);
+      }
+      expect(txFn).toHaveBeenCalledTimes(expectedCalls);
+    })
+  );
+
+  test.each([
+    {
+      name: 'Retry nested transaction',
+      succeedsOnRetry: true,
+      catchNestedError: false,
+      expectedResult: true,
+      expectedTxCalls: 2,
+      expectedOuterCalls: 2,
+    },
+    {
+      name: 'Retry nested transaction to failure',
+      succeedsOnRetry: false,
+      catchNestedError: false,
+      expectedError: 'transaction conflict',
+      expectedTxCalls: 2,
+      expectedOuterCalls: 2,
+    },
+    {
+      name: 'Nested transaction does not retry independently',
+      succeedsOnRetry: false,
+      catchNestedError: true,
+      expectedResult: false,
+      expectedTxCalls: 1,
+      expectedOuterCalls: 1,
+    },
+  ])(
+    '$name',
+    ({ succeedsOnRetry, catchNestedError, expectedError, expectedResult, expectedTxCalls, expectedOuterCalls }) =>
+      withTestContext(async () => {
+        const outerRepos: Repository[] = [];
+        let shouldReturn = false;
+        const txFn = jest.fn(async (): Promise<boolean> => {
+          if (succeedsOnRetry && shouldReturn) {
+            return true;
+          }
+          shouldReturn = true;
+          throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
+        });
+        const outerTx = jest.fn(async (txRepo): Promise<boolean> => {
+          outerRepos.push(txRepo);
+          if (!catchNestedError) {
+            return txRepo.withTransaction(txFn);
+          }
+          try {
+            await txRepo.withTransaction(txFn);
+            return true;
+          } catch (_) {
+            return false;
+          }
+        });
+
+        if (expectedError) {
+          await expect(repo.withTransaction(outerTx)).rejects.toThrow(expectedError);
+        } else {
+          await expect(repo.withTransaction(outerTx)).resolves.toStrictEqual(expectedResult);
+        }
+        expect(txFn).toHaveBeenCalledTimes(expectedTxCalls);
+        expect(outerTx).toHaveBeenCalledTimes(expectedOuterCalls);
+        expect(outerRepos).toHaveLength(expectedOuterCalls);
+        expect(outerRepos.map((r) => r.isClosed())).toStrictEqual(Array(expectedOuterCalls).fill(true));
+      })
+  );
+
+  test('Retry after create should not execute post-commit hooks from rollback', () =>
+    withTestContext(async () => {
+      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs');
+      const patients: WithId<Patient>[] = [];
+      let shouldError = true;
+
+      const createdPatient = await repo.withTransaction(async (txRepo) => {
+        const patient = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+        patients.push(patient);
+
+        if (shouldError) {
+          shouldError = false;
+          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
+        }
+
+        return patient;
+      });
+
+      expect(patients).toHaveLength(2);
+      expect(createdPatient).toEqual(patients[1]);
+      expect(addBackgroundJobsSpy).toHaveBeenCalledTimes(1);
+      expect(addBackgroundJobsSpy).toHaveBeenCalledWith(
+        {
+          resourceType: 'Patient',
+          id: createdPatient.id,
+          meta: expect.any(Object),
+        },
+        undefined,
+        expect.any(Object)
+      );
+
+      await expect(repo.readResource('Patient', patients[0].id)).rejects.toMatchObject(
+        new OperationOutcomeError(notFound)
+      );
+
+      addBackgroundJobsSpy.mockRestore();
+    }));
+
+  test('Patch post-commit stores full resource in cache', async () =>
+    withTestContext(async () => {
+      expect(repo.getConfig().extendedMode).toBe(true);
+
+      const project = repo.currentProject();
+      assert(project?.id);
+
+      const unextendedRepo = repo.withOverrideConfig({ extendedMode: false });
+      const patient = await unextendedRepo.createResource<Patient>({ resourceType: 'Patient' });
+      expect(patient.meta?.project).toBeUndefined();
+      expect(patient.gender).toBeUndefined();
+
+      const updatedPatient = await unextendedRepo.patchResource<Patient>('Patient', patient.id, [
+        { op: 'add', path: '/gender', value: 'unknown' },
+      ]);
+      expect(updatedPatient.meta?.project).toBeUndefined();
+      expect(updatedPatient.gender).toStrictEqual('unknown');
+
+      const cachedPatient = await repo.readResource<Patient>('Patient', patient.id);
+      expect(cachedPatient.meta?.project).toStrictEqual(project.id);
+      expect(cachedPatient.gender).toStrictEqual('unknown');
+    }));
+
+  test('withTransaction releases connection when rollback fails on a dead backend', async () => {
+    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    let querySpy: jest.SpyInstance | undefined;
+
+    await expect(
+      repo.withTransaction(async (txRepo) => {
+        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+        querySpy = spyOnQuery(client).mockImplementation(() => {
+          // Simulates a session killed by idle_in_transaction_session_timeout: every query
+          // issued on the client — including the ROLLBACK the error handler sends — rejects.
+          const terminationErr = Object.assign(new Error('terminating connection due to idle-in-transaction timeout'), {
+            code: '57P01',
+          });
+          throw terminationErr;
+        });
+        await client.query('SELECT 1');
+      })
+    ).rejects.toThrow('terminating connection due to idle-in-transaction timeout');
+
+    assert(querySpy);
+
+    // Bookkeeping must be fully reset so the repo is safe for future use
+    expect((repo as any).connection.transactionDepth).toBe(0);
+    expect((repo as any).connection.conn).toBeUndefined();
+
+    // The rollback failure should be logged, not thrown
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Error rolling back transaction',
+      expect.objectContaining({
+        err: expect.stringContaining('terminating connection'),
+      })
+    );
+
+    querySpy.mockRestore();
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  test('withStatementTimeout pins connection and discards it after callback', async () => {
+    let escapedClient: PoolClient | undefined;
+    await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
+      escapedClient = client;
+      await repo.withTransaction(async (txRepo) => {
+        expect(txRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
+      });
+    });
+    assert(escapedClient);
+    expect(repo.getDatabaseClient(DatabaseMode.WRITER)).not.toBe(escapedClient);
+  });
+
+  test('withStatementTimeout rejects borrowed repository connections', async () => {
+    await repo.withTransaction(async (txRepo) => {
+      await expect(
+        txRepo.getSystemRepo().withStatementTimeout({ timeoutMs: 0 }, async () => undefined)
+      ).rejects.toThrow('borrowed repository connection');
+    });
+  });
+
+  test('withStatementTimeout prevents writer operations on a pinned reader connection', async () => {
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    let reachedEnd = false;
+    try {
+      await repo.withStatementTimeout({ timeoutMs: 0, mode: DatabaseMode.READER }, async () => {
+        // The timeout wrapper pins one physical reader client. A nested transaction
+        // must not silently reuse that reader client for writer work.
+        await expect(repo.withTransaction(async () => undefined)).rejects.toThrow('reader database connection');
+        reachedEnd = true;
+      });
+      expect(reachedEnd).toBe(true);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('borrowed repository connections do not reacquire clients after forced release', async () => {
+    const rollbackError = new Error('rollback failed');
+    const client = {
+      query: jest.fn(async (query: string) => {
+        if (query === 'ROLLBACK') {
+          throw rollbackError;
+        }
+        return { rows: [] };
+      }),
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const borrowedClientRepo = createBorrowedRepo(client);
+    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(
+        borrowedClientRepo.withTransaction(async () => {
+          throw new Error('work failed');
+        })
+      ).rejects.toThrow('work failed');
+
+      // The repository only borrowed this PoolClient, so it drops its local reference
+      // after the fatal rollback path but never releases a client it does not own.
+      expect(client.release).not.toHaveBeenCalled();
+
+      await expect(borrowedClientRepo.withTransaction(async () => undefined)).rejects.toThrow(
+        'Borrowed repository connection is no longer available'
+      );
+    } finally {
+      warnSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('withTransaction does not publish transaction state when BEGIN fails', async () => {
+    const beginError = new Error('begin failed');
+    const client = {
+      query: jest.fn(async () => Promise.reject(beginError)),
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const borrowedClientRepo = createBorrowedRepo(client);
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const txnCallback = jest.fn();
+
+    try {
+      await expect(borrowedClientRepo.withTransaction(txnCallback)).rejects.toThrow('begin failed');
+      expect(txnCallback).not.toHaveBeenCalled();
+
+      // BEGIN never succeeded, so the in-memory state must not claim an active
+      // transaction or have published a transaction scope for one.
+      expect((borrowedClientRepo as any).connection.transactionDepth).toBe(0);
+      expect((borrowedClientRepo as any).connection.currentScope).toBe(
+        (borrowedClientRepo as any).connection.rootScope
+      );
+      expect((borrowedClientRepo as any).connection.hasConnection()).toBe(false);
+      expect(client.release).not.toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('withTransaction rejects nested isolation upgrades', async () => {
+    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const borrowedClientRepo = createBorrowedRepo(client);
+    await borrowedClientRepo.withTransaction(
+      async (txRepo) => {
+        await expect(txRepo.withTransaction(async () => undefined, { serializable: true })).rejects.toThrow(
+          'Cannot start SERIALIZABLE transaction inside active REPEATABLE READ transaction'
+        );
+      },
+      { serializable: false }
+    );
+
+    expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'COMMIT']);
+  });
+
+  test('withTransaction allows nested calls at a weaker isolation level', async () => {
+    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const borrowedClientRepo = createBorrowedRepo(client);
+    await borrowedClientRepo.withTransaction(
+      async (txRepo) => {
+        await txRepo.withTransaction(async () => undefined);
+      },
+      { serializable: true }
+    );
+
+    expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
+      'BEGIN ISOLATION LEVEL SERIALIZABLE',
+      'SAVEPOINT sp2',
+      'RELEASE SAVEPOINT sp2',
+      'COMMIT',
+    ]);
+  });
+
+  test('Derived transaction-scoped repos share transaction scope', async () => {
+    let escapedTxnRepo: Repository | undefined;
+    let escapedTxnSystemRepo: Repository | undefined;
+    let escapedTxnOverrideRepo: Repository | undefined;
+    await repo.withTransaction(async (txnRepo) => {
+      // disposing a derived transaction repo does not dispose the main txnRepo
+      const derivedTxnRepo = txnRepo.withOverrideConfig({ extendedMode: false });
+      derivedTxnRepo[Symbol.dispose]();
+      expect(() => derivedTxnRepo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
+
+      const client = txnRepo.getDatabaseClient(DatabaseMode.WRITER);
+      assert(client);
+
+      const systemRepo = txnRepo.getSystemRepo();
+      const overrideRepo = txnRepo.withOverrideConfig({ extendedMode: false });
+
+      expect(systemRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
+      expect(overrideRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
+
+      // disposing the main txnRepo does not close derived repos
+      txnRepo[Symbol.dispose]();
+      expect(() => txnRepo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
+      expect(systemRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
+      expect(overrideRepo.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
+
+      escapedTxnRepo = txnRepo;
+      escapedTxnSystemRepo = systemRepo;
+      escapedTxnOverrideRepo = overrideRepo;
+    });
+
+    assert(escapedTxnRepo);
+    assert(escapedTxnSystemRepo);
+    assert(escapedTxnOverrideRepo);
+
+    const closedTxnRepo = escapedTxnRepo;
+    const closedTxnSystemRepo = escapedTxnSystemRepo;
+    const closedTxnOverrideRepo = escapedTxnOverrideRepo;
+
+    // After the transaction commits, both the txnRepo and derived repos are all closed.
+    expect(() => closedTxnRepo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
+    expect(() => closedTxnSystemRepo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
+    expect(() => closedTxnOverrideRepo.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
+  });
+
+  test('withTransaction rejects a writer client that is not a PoolClient', async () => {
+    // Borrow a connection whose writer client is Pool-like: it answers queries but has no
+    // release(), so each transaction statement could run on a different physical connection.
+    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const poolLikeClient = { query } as unknown as PoolClient;
+    const borrowedClientRepo = createBorrowedRepo(poolLikeClient);
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await expect(borrowedClientRepo.withTransaction(async () => undefined)).rejects.toThrow(
+        'Transactions require a dedicated PoolClient'
+      );
+      expect(query).not.toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('Concurrent nested transaction is rejected while sibling savepoint is in flight', async () => {
+    const savepointIssued = Promise.withResolvers<undefined>();
+    const allowSavepoint = Promise.withResolvers<undefined>();
+    const finishFirstNestedTransaction = Promise.withResolvers<undefined>();
+    const queries: string[] = [];
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      if (sql.startsWith('SAVEPOINT')) {
+        // Pause the first nested begin inside its SAVEPOINT query, while it still holds
+        // the connection state lock and before it publishes the new transaction scope
+        savepointIssued.resolve(undefined);
+        await allowSavepoint.promise;
+      }
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const borrowedClientRepo = createBorrowedRepo(client);
+    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+
+    try {
+      await borrowedClientRepo.withTransaction(async (txRepo) => {
+        const txRepo2 = txRepo.getSystemRepo();
+        const nestedCallback2 = jest.fn();
+
+        const tx1 = txRepo.withTransaction(async () => {
+          await finishFirstNestedTransaction.promise;
+        });
+        await savepointIssued.promise;
+
+        // While the first nested begin is suspended, a sibling repo sharing the connection
+        // attempts to start its own transaction. It passes its initial usability check since
+        // the new scope is not yet published, so the connection state lock must force it to
+        // wait for the first begin, after which it is rejected without issuing any SQL.
+        const tx2 = txRepo2.withTransaction(nestedCallback2);
+        allowSavepoint.resolve(undefined);
+        await expect(tx2).rejects.toThrow(TRANSACTION_SCOPE_ERROR);
+        expect(nestedCallback2).not.toHaveBeenCalled();
+        expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'SAVEPOINT sp2']);
+
+        finishFirstNestedTransaction.resolve(undefined);
+        await tx1;
+      });
+
+      expect(queries).toStrictEqual([
+        'BEGIN ISOLATION LEVEL REPEATABLE READ',
+        'SAVEPOINT sp2',
+        'RELEASE SAVEPOINT sp2',
+        'COMMIT',
+      ]);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  test('processing pre-commit callbacks does not deadlock a transaction', async () => {
+    const queries: string[] = [];
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const precommit = jest.fn();
+    const repo = createBorrowedRepo(client);
+
+    const result = await Promise.race([
+      repo.withTransaction(async (txRepo) => {
+        await txRepo.preCommit(async () => {
+          // Pre-commit callbacks are allowed to start their own nested transaction.
+          // If the outer commit held connectionStateLock while running callbacks, this nested
+          // transaction would wait for the lock while the outer commit waited for the callback.
+          await txRepo.withTransaction(precommit);
+        });
+        return 'completed';
+      }),
+      new Promise((resolve) => {
+        // The broken implementation deadlocks, so the race gives the test a bounded failure mode.
+        setTimeout(() => resolve('timed out'), 100);
+      }),
+    ]);
+
+    expect(result).toBe('completed');
+    expect(precommit).toHaveBeenCalledTimes(1);
+    expect(queries).toStrictEqual([
+      'BEGIN ISOLATION LEVEL REPEATABLE READ',
+      'SAVEPOINT sp2',
+      'RELEASE SAVEPOINT sp2',
+      'COMMIT',
+    ]);
+  });
+
+  test('pre-commit callbacks can add additional pre-commit callbacks', async () => {
+    const preCommitEntries: string[] = [];
+
+    await repo.withTransaction(async (txRepo) => {
+      await txRepo.preCommit(async () => {
+        preCommitEntries.push('first');
+        await txRepo.preCommit(async () => {
+          preCommitEntries.push('second');
+        });
+      });
+    });
+
+    expect(preCommitEntries).toStrictEqual(['first', 'second']);
+  });
+
+  test('parent repository cannot start a transaction during scoped pre-commit', async () => {
+    const queries: string[] = [];
+    const query = jest.fn(async (sql: string) => {
+      queries.push(sql);
+      return { rows: [] };
+    });
+    const client = {
+      query,
+      release: jest.fn(),
+    } as unknown as PoolClient;
+    const repo = createBorrowedRepo(client);
+    let parentTransactionError: unknown;
+    let parentDatabaseClientError: unknown;
+
+    await repo.withTransaction(async (txRepo) => {
+      await txRepo.preCommit(async () => {
+        try {
+          // The parent repo should also be blocked for ordinary repository/database operations, not
+          // only for nested withTransaction calls.
+          // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+          repo.getDatabaseClient(DatabaseMode.WRITER);
+        } catch (err) {
+          parentDatabaseClientError = err;
+        }
+
+        try {
+          // A pre-commit callback runs before the outer COMMIT. Starting a transaction through the
+          // original repo here used to create SAVEPOINT sp2 and convert the outer commit into a
+          // savepoint release. Only the transaction-scoped repo is allowed to nest in this window.
+          // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+          await repo.withTransaction(async () => undefined);
+        } catch (err) {
+          parentTransactionError = err;
+        }
+      });
+    });
+
+    expect(parentTransactionError).toEqual(expect.any(Error));
+    expect((parentTransactionError as Error).message).toContain('transaction-scoped repository');
+    expect(parentDatabaseClientError).toEqual(expect.any(Error));
+    expect((parentDatabaseClientError as Error).message).toContain('transaction-scoped repository');
+    expect(queries).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'COMMIT']);
+  });
+
+  test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
+    const repo = systemRepo;
+    const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const finalPostCommit = jest.fn();
+
+    const error = new Error('Post-commit hook failed');
+    const promise = repo.withTransaction(async (txRepo) => {
+      await txRepo.postCommit(async () => {
+        throw new Error('Post-commit hook failed');
+      });
+      await txRepo.postCommit(async () => {
+        // eslint-disable-next-line no-throw-literal
+        throw 'Post-commit hook failed with string';
+      });
+      await txRepo.postCommit(finalPostCommit);
+      if (mode === 'rollback') {
+        throw new Error('Transaction failed');
+      }
+    });
+
+    if (mode === 'commit') {
+      await promise;
+      expect(finalPostCommit).toHaveBeenCalled();
+      expect(loggerErrorSpy).toHaveBeenCalledTimes(2);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Error processing post-commit callback', error);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Error processing post-commit callback', {
+        err: 'Post-commit hook failed with string',
+      });
+    } else {
+      await expect(promise).rejects.toThrow('Transaction failed');
+      expect(finalPostCommit).not.toHaveBeenCalled();
+    }
+
+    loggerErrorSpy.mockRestore();
+  });
+
+  test('clone does not share the same connection as the original repository', async () =>
+    withTestContext(async () => {
+      // const { repo } = await createTestProject({ withRepo: true });
+
+      let checked = false;
+      await repo.withTransaction(async (txRepo) => {
+        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
+        // starting a transaction will have pinned a connection to `txRepo`.
+        // so ensure that cloning after that pinning does not propagate the pinned connection
+        // to the cloned repository.
+        const clonedRepo1 = txRepo.clone();
+        expect(clonedRepo1.getDatabaseClient(DatabaseMode.WRITER)).not.toBe(client);
+        checked = true;
+      });
+      expect(checked).toBe(true);
+    }));
+});
+
+async function expectPatientVisible(repo: Repository, id: string | undefined): Promise<void> {
+  assert(id);
+  await expect(repo.readResource('Patient', id)).resolves.toBeDefined();
+  await expectPatientSearchCount(repo, id, 1);
+}
+
+async function expectPatientAbsent(
+  repo: Repository,
+  id: string | undefined,
+  expectedReadError: string | object = 'Not found'
+): Promise<void> {
+  assert(id);
+  const expectation = expect(repo.readResource('Patient', id)).rejects;
+  if (typeof expectedReadError === 'string') {
+    await expectation.toThrow(expectedReadError);
+  } else {
+    await expectation.toMatchObject(expectedReadError);
+  }
+  await expectPatientSearchCount(repo, id, 0);
+}
+
+async function expectPatientSearchCount(repo: Repository, id: string | undefined, count: number): Promise<void> {
+  assert(id);
+  const result = await repo.search<Patient>({
+    resourceType: 'Patient',
+    filters: [{ code: '_id', operator: Operator.EQUALS, value: id }],
+  });
+  expect(result).toBeDefined();
+  expect(result.entry).toHaveLength(count);
+}
+
+function createBorrowedRepo(client: PoolClient): Repository {
+  return getShardSystemRepo('test-shard', RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER }));
+}
