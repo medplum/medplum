@@ -1,0 +1,1612 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import {
+  OperationOutcomeError,
+  SearchParameterType,
+  append,
+  badRequest,
+  conflict,
+  normalizeOperationOutcome,
+  serverTimeout,
+} from '@medplum/core';
+import type { Period } from '@medplum/fhirtypes';
+import { env } from 'node:process';
+import type { SqlConnection } from './connection.js';
+import { SqlDialect, type SqlDialect as SqlDialectType } from './dialect.js';
+import type { ColumnSearchParameterImplementation } from '../indexing/searchparameter.js';
+
+let DEBUG: string | undefined = env['SQL_DEBUG'];
+
+export type { SqlConnection } from './connection.js';
+export { SqliteConnection } from './connection.js';
+export { SqlDialect } from './dialect.js';
+
+export function setSqlDebug(value: string | undefined): void {
+  DEBUG = value;
+}
+
+export function resetSqlDebug(): void {
+  DEBUG = env['SQL_DEBUG'];
+}
+
+export const ColumnType = {
+  UUID: 'uuid',
+  TIMESTAMP: 'timestamp',
+  TEXT: 'text',
+  TSTZRANGE: 'tstzrange',
+  NUMRANGE: 'numrange',
+  DATERANGE: 'daterange',
+} as const;
+export type ColumnType = (typeof ColumnType)[keyof typeof ColumnType];
+
+export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
+
+export type TransactionIsolationLevel = 'REPEATABLE READ' | 'SERIALIZABLE';
+
+export const Operator = {
+  '=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    if (parameter === null) {
+      sql.append(' IS NULL');
+    } else {
+      sql.append(' = ');
+      sql.appendParameters(parameter, true);
+    }
+  },
+  '!=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    if (parameter === null) {
+      sql.append(' IS NOT NULL');
+    } else {
+      sql.append(' <> ');
+      sql.appendParameters(parameter, true);
+    }
+  },
+  LOWER_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('LOWER(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' LIKE ');
+    sql.param((parameter as string).toLowerCase());
+  },
+  ILIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      Operator.LOWER_LIKE(sql, column, parameter, _paramType);
+      return;
+    }
+    sql.appendColumn(column);
+    sql.append(' ILIKE ');
+    sql.param(parameter as string);
+  },
+  '<': simpleBinaryOperator('<'),
+  '<=': simpleBinaryOperator('<='),
+  '>': simpleBinaryOperator('>'),
+  '>=': simpleBinaryOperator('>='),
+  IN: simpleBinaryOperator('IN'),
+  IS_DISTINCT_FROM: simpleBinaryOperator('IS DISTINCT FROM'),
+  /*
+    Why do both of these exist? Mainly for consideration when negating the condition:
+    Negating ARRAY_OVERLAPS_AND_IS_NOT_NULL includes records where the column is NULL.
+    Negating ARRAY_OVERLAPS does NOT include records where the column is NULL.
+  */
+  ARRAY_OVERLAPS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      appendSqliteJsonArrayOverlap(sql, column, parameter);
+      return;
+    }
+    sql.appendColumn(column);
+    // && is the overlap operator, @> is the contains operator
+    // When `parameter` is a single value, @> is functionally equivalent to && and
+    // can lead to better query plans
+    if (sql.parameterCount(parameter) > 1) {
+      sql.append(' && ARRAY[');
+    } else {
+      sql.append(' @> ARRAY[');
+    }
+    sql.appendParameters(parameter, false);
+    sql.append(']');
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  ARRAY_OVERLAPS_AND_IS_NOT_NULL: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      sql.append('(');
+      sql.appendColumn(column);
+      sql.append(' IS NOT NULL AND ');
+      appendSqliteJsonArrayOverlap(sql, column, parameter);
+      sql.append(')');
+      return;
+    }
+    sql.append('(');
+    sql.appendColumn(column);
+    sql.append(' IS NOT NULL AND ');
+    sql.appendColumn(column);
+    // && is the overlap operator, @> is the contains operator
+    // When `parameter` is a single value, @> is functionally equivalent to && and
+    // can lead to better query plans
+    if (sql.parameterCount(parameter) > 1) {
+      sql.append(' && ARRAY[');
+    } else {
+      sql.append(' @> ARRAY[');
+    }
+    sql.appendParameters(parameter, false);
+    sql.append(']');
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+    sql.append(')');
+  },
+  TOKEN_ARRAY_IREGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      sql.append('EXISTS(SELECT 1 FROM json_each(');
+      sql.appendColumn(column);
+      sql.append(') WHERE LOWER(value) LIKE ');
+      sql.param('%' + (parameter as string).toLowerCase() + '%');
+      sql.append(')');
+      return;
+    }
+    sql.append(`${TokenArrayToTextFn.name}(`);
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' ~* ');
+    sql.appendParameters(parameter, false);
+  },
+  ARRAY_EMPTY: (sql: SqlBuilder, column: Column, _parameter: any, paramType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      sql.append('(');
+      sql.appendColumn(column);
+      sql.append(' IS NULL OR ');
+      sql.appendColumn(column);
+      sql.append(" = '[]')");
+      return;
+    }
+    sql.appendColumn(column);
+    sql.append(' = ARRAY[]');
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  ARRAY_NOT_EMPTY: (sql: SqlBuilder, column: Column, _parameter: any, _paramType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      sql.append('(');
+      sql.appendColumn(column);
+      sql.append(" IS NOT NULL AND ");
+      sql.appendColumn(column);
+      sql.append(" != '[]')");
+      return;
+    }
+    sql.append('array_length(');
+    sql.appendColumn(column);
+    sql.append(', 1) > 0');
+  },
+  TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      sql.append('LOWER(');
+      sql.appendColumn(column);
+      sql.append(') LIKE ');
+      sql.param('%' + (parameter as string).toLowerCase() + '%');
+      return;
+    }
+    const query = formatTsquery(parameter);
+    if (!query) {
+      sql.append('true');
+      return;
+    }
+
+    sql.append(`to_tsvector('simple',`);
+    sql.appendColumn(column);
+    sql.append(`) @@ to_tsquery('simple',`);
+    sql.param(query);
+    sql.append(')');
+  },
+  TSVECTOR_ENGLISH: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      sql.append('LOWER(');
+      sql.appendColumn(column);
+      sql.append(') LIKE ');
+      sql.param('%' + (parameter as string).toLowerCase() + '%');
+      return;
+    }
+    const query = formatTsquery(parameter);
+    if (!query) {
+      sql.append('true');
+      return;
+    }
+
+    sql.append(`to_tsvector('english',`);
+    sql.appendColumn(column);
+    sql.append(`) @@ to_tsquery('english',`);
+    sql.param(query);
+    sql.append(')');
+  },
+  IN_SUBQUERY: (sql: SqlBuilder, column: Column, expression: Expression, expressionType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      sql.appendColumn(column);
+      sql.append(' IN (');
+      if (expressionType) {
+        sql.append('(');
+      }
+      sql.appendExpression(expression);
+      if (expressionType) {
+        sql.append(')');
+      }
+      sql.append(')');
+      return;
+    }
+    sql.appendColumn(column);
+    sql.append('=ANY(');
+    if (expressionType) {
+      sql.append('(');
+    }
+    sql.appendExpression(expression);
+    if (expressionType) {
+      sql.append(')::' + expressionType);
+    }
+    sql.append(')');
+  },
+  RANGE_OVERLAPS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      appendSqliteRangeOverlap(sql, column, parameter);
+      return;
+    }
+    sql.appendColumn(column);
+    sql.append(' && ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  RANGE_STRICTLY_RIGHT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      appendSqliteRangeStrictlyRightOf(sql, column, parameter);
+      return;
+    }
+    sql.appendColumn(column);
+    sql.append(' >> ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  RANGE_STRICTLY_LEFT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      appendSqliteRangeStrictlyLeftOf(sql, column, parameter);
+      return;
+    }
+    sql.appendColumn(column);
+    sql.append(' << ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+};
+
+function simpleBinaryOperator(operator: string): OperatorFunc {
+  return (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(` ${operator} `);
+    sql.appendParameters(parameter, true);
+  };
+}
+
+function appendSqliteJsonArrayOverlap(sql: SqlBuilder, column: Column, parameter: any): void {
+  sql.append('EXISTS(SELECT 1 FROM json_each(');
+  sql.appendColumn(column);
+  sql.append(') WHERE value IN (');
+  sql.appendParameters(parameter, false);
+  sql.append('))');
+}
+
+function parseRangeEndpoints(range: string): { start?: string; end?: string } {
+  const trimmed = range.slice(1, -1);
+  const commaIndex = trimmed.indexOf(',');
+  if (commaIndex < 0) {
+    return {};
+  }
+  const start = trimmed.slice(0, commaIndex).trim();
+  const end = trimmed.slice(commaIndex + 1).trim();
+  return {
+    start: start || undefined,
+    end: end || undefined,
+  };
+}
+
+function appendSqliteRangeOverlap(sql: SqlBuilder, column: Column, parameter: string): void {
+  const { start, end } = parseRangeEndpoints(parameter);
+  sql.append('(');
+  if (end !== undefined) {
+    sql.append("json_extract(");
+    sql.appendColumn(column);
+    sql.append(", '$.start') < ");
+    sql.param(end);
+  } else {
+    sql.append('true');
+  }
+  sql.append(' AND ');
+  if (start !== undefined) {
+    sql.append("json_extract(");
+    sql.appendColumn(column);
+    sql.append(", '$.end') > ");
+    sql.param(start);
+  } else {
+    sql.append('true');
+  }
+  sql.append(')');
+}
+
+function appendSqliteRangeStrictlyRightOf(sql: SqlBuilder, column: Column, parameter: string): void {
+  const { start } = parseRangeEndpoints(parameter);
+  sql.append("json_extract(");
+  sql.appendColumn(column);
+  sql.append(", '$.start') >= ");
+  sql.param(start ?? '');
+}
+
+function appendSqliteRangeStrictlyLeftOf(sql: SqlBuilder, column: Column, parameter: string): void {
+  const { end } = parseRangeEndpoints(parameter);
+  sql.append("json_extract(");
+  sql.appendColumn(column);
+  sql.append(", '$.end') <= ");
+  sql.param(end ?? '');
+}
+
+export function escapeLikeString(str: string): string {
+  return str.replaceAll(/[\\_%]/g, (c) => '\\' + c);
+}
+
+function formatTsquery(filter: string | undefined): string | undefined {
+  if (!filter) {
+    return undefined;
+  }
+
+  const noPunctuation = filter.replaceAll(/[^\p{Letter}\p{Number}-]/gu, ' ').trim();
+  if (!noPunctuation) {
+    return undefined;
+  }
+
+  return noPunctuation.replaceAll(/\s+/g, ':* & ') + ':*';
+}
+
+export interface Expression {
+  buildSql(builder: SqlBuilder): void;
+}
+
+abstract class Executable implements Expression {
+  buildSql(_builder: SqlBuilder): void {
+    throw new Error('Method not implemented');
+  }
+
+  async execute<T = any>(conn: SqlConnection): Promise<T[]> {
+    const sql = new SqlBuilder(conn.dialect);
+    sql.appendExpression(this);
+    return (await sql.execute(conn)).rows;
+  }
+}
+
+export class Column implements Expression {
+  readonly tableName: string | undefined;
+  actualColumnName: string;
+  readonly raw?: boolean;
+  readonly alias?: string;
+
+  constructor(tableName: string | undefined, columnName: string, raw?: boolean, alias?: string) {
+    this.tableName = tableName;
+    this.actualColumnName = columnName;
+    this.raw = raw;
+    this.alias = alias;
+  }
+
+  /**
+   * @returns - the column name to be used in the SQL query.
+   * This is the alias if provided, otherwise the actual column name.
+   */
+  get effectiveColumnName(): string {
+    return this.alias || this.actualColumnName;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.appendColumn(this);
+  }
+}
+
+/**
+ * Scalar subquery for comparison operands, e.g. `"col" > (SELECT MAX(x) FROM t)`.
+ */
+export class Subquery implements Expression {
+  readonly query: Expression;
+
+  constructor(query: Expression) {
+    this.query = query;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append('(');
+    sql.appendExpression(this.query);
+    sql.append(')');
+  }
+}
+
+export class Constant implements Expression {
+  readonly value: string;
+
+  constructor(value: string) {
+    this.value = value;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append(this.value);
+  }
+}
+
+export class Parameter implements Expression {
+  readonly value: string;
+
+  constructor(value: string) {
+    this.value = value;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.param(this.value);
+  }
+}
+
+export class Negation implements Expression {
+  readonly expression: Expression;
+
+  constructor(expression: Expression) {
+    this.expression = expression;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append('NOT (');
+    sql.appendExpression(this.expression);
+    sql.append(')');
+  }
+}
+
+export class IsNull implements Expression {
+  readonly expression: Expression;
+
+  constructor(expression: Expression) {
+    this.expression = expression;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.appendExpression(this.expression);
+    sql.append(' IS NULL');
+  }
+}
+
+export class Condition implements Expression {
+  readonly column: Column;
+  readonly operator: keyof typeof Operator;
+  parameter: any;
+  readonly parameterType?: string;
+
+  constructor(column: Column | string, operator: keyof typeof Operator, parameter: any, parameterType?: string) {
+    if (
+      (operator === 'ARRAY_OVERLAPS_AND_IS_NOT_NULL' || operator === 'ARRAY_OVERLAPS' || operator === 'ARRAY_EMPTY') &&
+      !parameterType
+    ) {
+      throw new Error(`${operator} requires paramType`);
+    }
+
+    this.column = getColumn(column);
+    this.operator = operator;
+    this.parameter = parameter;
+    this.parameterType = parameterType;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    const operator = Operator[this.operator];
+    operator(sql, this.column, this.parameter, this.parameterType);
+  }
+}
+
+export class TypedCondition<T extends keyof typeof Operator> extends Condition {
+  readonly operator: T;
+  readonly parameter: Parameters<(typeof Operator)[T]>[2];
+  readonly parameterType?: string;
+  constructor(
+    column: Column | string,
+    operator: T,
+    parameter: Parameters<(typeof Operator)[T]>[2],
+    parameterType?: string
+  ) {
+    super(column, operator, parameter, parameterType);
+    this.operator = operator;
+    this.parameter = parameter;
+    this.parameterType = parameterType;
+  }
+}
+
+export abstract class Connective implements Expression {
+  readonly keyword: string;
+  readonly expressions: Expression[];
+
+  constructor(keyword: string, expressions: Expression[]) {
+    this.keyword = keyword;
+    this.expressions = expressions;
+  }
+
+  whereExpr(expression: Expression): this {
+    this.expressions.push(expression);
+    return this;
+  }
+
+  where(column: Column | string, operator?: keyof typeof Operator, value?: any, type?: string): this {
+    return this.whereExpr(new Condition(column, operator as keyof typeof Operator, value, type));
+  }
+
+  buildSql(builder: SqlBuilder): void {
+    if (this.expressions.length > 1) {
+      builder.append('(');
+    }
+    let first = true;
+    for (const expr of this.expressions) {
+      if (!first) {
+        builder.append(this.keyword);
+      }
+      builder.appendExpression(expr);
+      first = false;
+    }
+    if (this.expressions.length > 1) {
+      builder.append(')');
+    }
+  }
+}
+
+export class Conjunction extends Connective {
+  constructor(expressions: Expression[]) {
+    super(' AND ', expressions);
+  }
+}
+
+export class Disjunction extends Connective {
+  constructor(expressions: Expression[]) {
+    super(' OR ', expressions);
+  }
+}
+
+export class SqlFunction implements Expression {
+  readonly name: string;
+  readonly args: (Expression | Column)[];
+
+  constructor(name: string, args: (Expression | Column)[]) {
+    this.name = name;
+    this.args = args;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append(this.name + '(');
+    for (let i = 0; i < this.args.length; i++) {
+      const arg = this.args[i];
+      sql.appendExpression(arg);
+      if (i + 1 < this.args.length) {
+        sql.append(', ');
+      }
+    }
+    sql.append(')');
+  }
+}
+
+export class UnionAllBuilder {
+  private readonly queries: SelectQuery[] = [];
+  private readonly dialect: SqlDialectType;
+
+  constructor(dialect: SqlDialectType = SqlDialect.SQLITE) {
+    this.dialect = dialect;
+  }
+
+  add(query: SelectQuery): void {
+    this.queries.push(query);
+  }
+
+  async execute(conn: SqlConnection): Promise<any[]> {
+    if (this.queries.length === 0) {
+      return [];
+    }
+    const sql = new SqlBuilder(this.dialect);
+    for (let i = 0; i < this.queries.length; i++) {
+      if (i > 0) {
+        sql.append(' UNION ALL ');
+      }
+      sql.appendExpression(this.queries[i]);
+    }
+    return (await sql.execute(conn)).rows;
+  }
+}
+
+export class Union extends Executable implements Expression {
+  readonly queries: SelectQuery[];
+  private allFlag = false;
+
+  constructor(...queries: SelectQuery[]) {
+    super();
+    this.queries = queries;
+  }
+
+  all(): this {
+    this.allFlag = true;
+    return this;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    for (let i = 0; i < this.queries.length; i++) {
+      if (i > 0) {
+        sql.append(' UNION ');
+        if (this.allFlag) {
+          sql.append('ALL ');
+        }
+      }
+      sql.appendExpression(this.queries[i]);
+    }
+  }
+}
+
+export type JoinType = 'INNER JOIN' | 'LEFT JOIN' | 'INNER JOIN LATERAL' | 'LEFT JOIN LATERAL';
+
+export class Join {
+  readonly joinType: JoinType;
+  readonly joinItem: SelectQuery | string;
+  readonly joinAlias: string;
+  readonly onExpression: Expression;
+
+  constructor(joinType: JoinType, joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression) {
+    this.joinType = joinType;
+    this.joinItem = joinItem;
+    this.joinAlias = joinAlias;
+    this.onExpression = onExpression;
+  }
+}
+
+export class GroupBy {
+  readonly column: Column;
+
+  constructor(column: Column) {
+    this.column = column;
+  }
+}
+
+export class OrderBy {
+  readonly key: Column | Expression;
+  readonly descending?: boolean;
+
+  constructor(key: Column | Expression, descending?: boolean) {
+    this.key = key;
+    this.descending = descending;
+  }
+}
+
+export class SqlBuilder {
+  private readonly sql: string[];
+  private readonly values: any[];
+  private readonly dialect: SqlDialectType;
+  debug = DEBUG;
+
+  constructor(dialect: SqlDialectType = SqlDialect.POSTGRES) {
+    this.sql = [];
+    this.values = [];
+    this.dialect = dialect;
+  }
+
+  getDialect(): SqlDialectType {
+    return this.dialect;
+  }
+
+  append(value: any): this {
+    this.sql.push(value.toString());
+    return this;
+  }
+
+  appendSql(builder: SqlBuilder): this {
+    this.sql.push(builder.toString());
+    this.values.push(...builder.getValues());
+    return this;
+  }
+
+  appendIdentifier(str: string): this {
+    this.sql.push('"', str, '"');
+    return this;
+  }
+
+  appendColumn(column: Column): this {
+    if (column.raw) {
+      this.append(column.actualColumnName);
+    } else {
+      if (column.tableName) {
+        this.appendIdentifier(column.tableName);
+        this.append('.');
+      }
+      this.appendIdentifier(column.actualColumnName);
+    }
+    if (column.alias) {
+      this.append(' AS ');
+      this.appendIdentifier(column.alias);
+    }
+    return this;
+  }
+
+  appendExpression(expr: Expression): this {
+    expr.buildSql(this);
+    return this;
+  }
+
+  param(value: any): this {
+    if (value instanceof Column) {
+      this.appendColumn(value);
+    } else if (value instanceof Subquery) {
+      this.appendExpression(value);
+    } else if (value === null || value === undefined) {
+      this.append('NULL');
+    } else {
+      this.values.push(value);
+      if (this.dialect === SqlDialect.SQLITE) {
+        this.sql.push('?');
+      } else {
+        this.sql.push('$' + this.values.length);
+      }
+    }
+    return this;
+  }
+
+  parameterCount(value: any): number {
+    if (Array.isArray(value)) {
+      return value.length;
+    }
+    if (value instanceof Set) {
+      return value.size;
+    }
+    return 1;
+  }
+
+  appendParameters(parameter: any, addParens: boolean): void {
+    if (Array.isArray(parameter) || parameter instanceof Set) {
+      if (addParens) {
+        this.append('(');
+      }
+      let i = 0;
+      for (const value of parameter) {
+        if (i++) {
+          this.append(',');
+        }
+        this.param(value);
+      }
+      if (addParens) {
+        this.append(')');
+      }
+    } else {
+      this.param(parameter);
+    }
+  }
+
+  toString(): string {
+    return this.sql.join('');
+  }
+
+  getValues(): any[] {
+    return this.values;
+  }
+
+  async execute(conn: SqlConnection): Promise<{ rowCount: number; rows: any[] }> {
+    const sql = this.toString();
+    try {
+      return await conn.query(sql, this.values);
+    } catch (err) {
+      throw normalizeDatabaseError(err);
+    }
+  }
+}
+
+export const PostgresError = {
+  UniqueViolation: '23505',
+  SerializationFailure: '40001',
+  QueryCanceled: '57014',
+  InFailedSqlTransaction: '25P02',
+  DatetimeFieldOverflow: '22008',
+} as const;
+
+/**
+ * Checks whether an error represents a serialization conflict that can safely be retried.
+ * NOTE: Retrying a transaction must be done in full: the entire transaction block
+ * should be re-executed, in a new transaction. Nested transactions (savepoints) are
+ * NOT retryable per the Postgres docs; the caller must check transactionDepth separately.
+ * @param err - The error to check.
+ * @returns True if the error indicates a retryable transaction failure.
+ * @see https://www.postgresql.org/docs/16/mvcc-serialization-failure-handling.html
+ */
+export function isRetryableTransactionError(err: OperationOutcomeError): boolean {
+  if (err.outcome.issue.length !== 1) {
+    return false;
+  }
+  const issue = err.outcome.issue[0];
+  return Boolean(
+    issue.code === 'conflict' && issue.details?.coding?.some((c) => c.code === PostgresError.SerializationFailure)
+  );
+}
+
+export function normalizeDatabaseError(err: any): OperationOutcomeError {
+  if (err instanceof OperationOutcomeError) {
+    // Pass through already-normalized errors
+    return err;
+  }
+
+  if (err.code) {
+    // Handle known Postgres error codes
+    // @see https://www.postgresql.org/docs/16/errcodes-appendix.html
+    switch (err.code) {
+      case PostgresError.UniqueViolation:
+        // Duplicate key error -> 409 Conflict
+        // @see https://github.com/brianc/node-postgres/issues/1602
+        return new OperationOutcomeError(conflict(err.detail), err);
+      case PostgresError.SerializationFailure:
+        // Transaction rollback due to serialization error -> 409 Conflict
+        return new OperationOutcomeError(conflict(err.message, err.code), err);
+      case PostgresError.QueryCanceled:
+        return new OperationOutcomeError(serverTimeout(err.message), err);
+      case PostgresError.InFailedSqlTransaction:
+        return new OperationOutcomeError(normalizeOperationOutcome(err), err);
+      case PostgresError.DatetimeFieldOverflow:
+        return new OperationOutcomeError(badRequest(err.message), err);
+    }
+  }
+
+  return new OperationOutcomeError(normalizeOperationOutcome(err), err);
+}
+
+export abstract class BaseQuery extends Executable {
+  readonly actualTableName: string;
+  readonly predicate: Conjunction;
+  explain: boolean | string[] = false;
+
+  constructor(tableName: string) {
+    super();
+    this.actualTableName = tableName;
+    this.predicate = new Conjunction([]);
+  }
+
+  /**
+   * @returns - the table name to be used in the SQL query.
+   * This is the alias if provided, otherwise the actual table name.
+   */
+  get effectiveTableName(): string {
+    return this.actualTableName;
+  }
+
+  whereExpr(expression: Expression): this {
+    this.predicate.whereExpr(expression);
+    return this;
+  }
+
+  where(column: Column | string, operator?: keyof typeof Operator, value?: any, type?: string): this {
+    this.predicate.where(getColumn(column, this.actualTableName), operator, value, type);
+    return this;
+  }
+
+  protected buildConditions(sql: SqlBuilder): void {
+    if (this.predicate.expressions.length > 0) {
+      sql.append(' WHERE ');
+      sql.appendExpression(this.predicate);
+    }
+  }
+}
+
+export interface CTE {
+  name: string;
+  expr: Expression;
+  recursive?: boolean;
+}
+
+export class SelectQuery extends BaseQuery {
+  readonly innerQuery?: BaseQuery | Union | ValuesQuery;
+  readonly distinctOns: Column[];
+  readonly columns: Column[];
+  readonly joins: Join[];
+  readonly groupBys: GroupBy[];
+  readonly orderBys: OrderBy[];
+  private readonly alias?: string;
+  with?: CTE;
+  limit_: number;
+  offset_: number;
+  joinCount = 0;
+
+  constructor(tableName: string, innerQuery?: BaseQuery | Union | ValuesQuery, alias?: string) {
+    super(tableName);
+    this.innerQuery = innerQuery;
+    this.distinctOns = [];
+    this.columns = [];
+    this.joins = [];
+    this.groupBys = [];
+    this.orderBys = [];
+    this.alias = alias;
+    this.limit_ = 0;
+    this.offset_ = 0;
+  }
+
+  get effectiveTableName(): string {
+    return this.alias || this.actualTableName;
+  }
+
+  withCte(name: string, expr: Expression): this {
+    this.with = { name, expr };
+    return this;
+  }
+
+  withRecursive(name: string, expr: Expression): this {
+    this.with = { name, expr, recursive: true };
+    return this;
+  }
+
+  distinctOn(column: Column | string): this {
+    this.distinctOns.push(getColumn(column, this.effectiveTableName));
+    return this;
+  }
+
+  raw(column: string): this {
+    this.columns.push(new Column(undefined, column, true));
+    return this;
+  }
+
+  column(column: Column | string): this {
+    this.columns.push(getColumn(column, this.effectiveTableName));
+    return this;
+  }
+
+  addColumns(columns: Column[]): this {
+    for (const col of columns) {
+      this.columns.push(new Column(this.effectiveTableName, col.effectiveColumnName));
+    }
+    return this;
+  }
+
+  getNextJoinAlias(): string {
+    this.joinCount++;
+    return `T${this.joinCount}`;
+  }
+
+  join(joinType: JoinType, joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
+    this.joins.push(new Join(joinType, joinItem, joinAlias, onExpression));
+    return this;
+  }
+
+  groupBy(column: Column | string): this {
+    this.groupBys.push(new GroupBy(getColumn(column, this.effectiveTableName)));
+    return this;
+  }
+
+  orderBy(column: Column | string, descending?: boolean): this {
+    this.orderBys.push(new OrderBy(getColumn(column, this.effectiveTableName), descending));
+    return this;
+  }
+
+  orderByExpr(expr: Expression, descending?: boolean): this {
+    this.orderBys.push(new OrderBy(expr, descending));
+    return this;
+  }
+
+  limit(limit: number): this {
+    this.limit_ = limit;
+    return this;
+  }
+
+  offset(offset: number): this {
+    this.offset_ = offset;
+    return this;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    if (this.explain) {
+      sql.append('EXPLAIN ');
+      if (Array.isArray(this.explain)) {
+        sql.append('(');
+        sql.append(this.explain.join(', '));
+        sql.append(')');
+      }
+    }
+    if (this.with) {
+      sql.append('WITH ');
+      if (this.with.recursive) {
+        sql.append('RECURSIVE ');
+      }
+      sql.appendIdentifier(this.with.name);
+      sql.append(' AS (');
+      sql.appendExpression(this.with.expr);
+      sql.append(') ');
+    }
+    sql.append('SELECT ');
+    this.buildDistinctOn(sql);
+    this.buildColumns(sql);
+    this.buildFrom(sql);
+    this.buildConditions(sql);
+    this.buildGroupBy(sql);
+    this.buildOrderBy(sql);
+
+    if (this.limit_ > 0) {
+      sql.append(' LIMIT ');
+      sql.append(this.limit_);
+    }
+
+    if (this.offset_ > 0) {
+      sql.append(' OFFSET ');
+      sql.append(this.offset_);
+    }
+  }
+
+  private buildDistinctOn(sql: SqlBuilder): void {
+    if (this.distinctOns.length > 0) {
+      if (sql.getDialect() === SqlDialect.SQLITE) {
+        sql.append('DISTINCT ');
+        return;
+      }
+      sql.append('DISTINCT ON (');
+      let first = true;
+      for (const column of this.distinctOns) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendColumn(column);
+        first = false;
+      }
+      sql.append(') ');
+    }
+  }
+
+  private buildColumns(sql: SqlBuilder): void {
+    if (this.columns.length === 0) {
+      sql.append('1');
+      return;
+    }
+
+    let first = true;
+    for (const column of this.columns) {
+      if (!first) {
+        sql.append(', ');
+      }
+      sql.appendColumn(column);
+      first = false;
+    }
+  }
+
+  private buildFrom(sql: SqlBuilder): void {
+    sql.append(' FROM ');
+
+    if (this.innerQuery) {
+      sql.append('(');
+      sql.appendExpression(this.innerQuery);
+      sql.append(') AS ');
+    }
+
+    sql.appendIdentifier(this.actualTableName);
+    if (this.alias) {
+      sql.append(' ');
+      sql.appendIdentifier(this.alias);
+      sql.append(' ');
+    }
+
+    for (const join of this.joins) {
+      const joinType =
+        sql.getDialect() === SqlDialect.SQLITE ? join.joinType.replace(' LATERAL', '') : join.joinType;
+      sql.append(` ${joinType} `);
+      if (join.joinItem instanceof SelectQuery) {
+        sql.append('(');
+        sql.appendExpression(join.joinItem);
+        sql.append(')');
+      } else {
+        sql.appendIdentifier(join.joinItem);
+      }
+      sql.append(' AS ');
+      sql.appendIdentifier(join.joinAlias);
+      sql.append(' ON ');
+      sql.appendExpression(join.onExpression);
+    }
+  }
+
+  private buildGroupBy(sql: SqlBuilder): void {
+    let first = true;
+
+    for (const groupBy of this.groupBys) {
+      sql.append(first ? ' GROUP BY ' : ', ');
+      sql.appendColumn(groupBy.column);
+      first = false;
+    }
+  }
+
+  private buildOrderBy(sql: SqlBuilder): void {
+    if (this.orderBys.length === 0) {
+      return;
+    }
+
+    const combined = [...this.distinctOns.map((d) => new OrderBy(d)), ...this.orderBys];
+    let first = true;
+
+    for (const orderBy of combined) {
+      sql.append(first ? ' ORDER BY ' : ', ');
+      sql.appendExpression(orderBy.key);
+      if (orderBy.descending) {
+        sql.append(' DESC');
+      }
+      first = false;
+    }
+  }
+}
+
+export class ArraySubquery implements Expression {
+  private readonly filter: Expression;
+  private readonly column: Column;
+
+  constructor(column: Column, filter: Expression) {
+    this.filter = filter;
+    this.column = column;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    if (sql.getDialect() === SqlDialect.SQLITE) {
+      sql.append('EXISTS(SELECT 1 FROM json_each(');
+      sql.appendColumn(this.column);
+      sql.append(') WHERE ');
+      const sqliteFilter = rewriteFilterForJsonEach(this.filter, this.column);
+      sql.appendExpression(sqliteFilter);
+      sql.append(' LIMIT 1)');
+      return;
+    }
+    sql.append('EXISTS(SELECT 1 FROM unnest(');
+    sql.appendColumn(this.column);
+    sql.append(') AS ');
+    sql.appendIdentifier(this.column.effectiveColumnName);
+    sql.append(' WHERE ');
+    sql.appendExpression(this.filter);
+    sql.append(' LIMIT 1');
+    sql.append(')');
+  }
+}
+
+function rewriteFilterForJsonEach(filter: Expression, column: Column): Expression {
+  if (filter instanceof Condition) {
+    return new Condition(new Column(undefined, 'value', true), filter.operator, filter.parameter, filter.parameterType);
+  }
+  if (filter instanceof Negation) {
+    return new Negation(rewriteFilterForJsonEach(filter.expression, column));
+  }
+  if (filter instanceof Disjunction) {
+    return new Disjunction(filter.expressions.map((e) => rewriteFilterForJsonEach(e, column)));
+  }
+  if (filter instanceof Conjunction) {
+    return new Conjunction(filter.expressions.map((e) => rewriteFilterForJsonEach(e, column)));
+  }
+  return filter;
+}
+
+export class UpdateQuery extends BaseQuery {
+  private _from?: CTE;
+  private readonly setColumns: [Column, any][];
+  readonly returning?: Column[];
+
+  constructor(tableName: string, returning?: (Column | string)[]) {
+    super(tableName);
+    this.setColumns = [];
+    this.returning = returning?.map((c) => getColumn(c, this.actualTableName));
+  }
+
+  set(column: Column | string, value: any): this {
+    // Including the table name is invalid; from the spec:
+    // Do not include the table's name in the specification of a target column — for example,
+    // UPDATE table_name SET table_name.col = 1 is invalid.
+    if (column instanceof Column) {
+      this.setColumns.push([new Column(undefined, column.actualColumnName), value]);
+    } else {
+      this.setColumns.push([new Column(undefined, column), value]);
+    }
+    return this;
+  }
+
+  from(fromQuery: CTE): this {
+    this._from = fromQuery;
+    return this;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    if (this._from) {
+      sql.append('WITH ');
+      if (this._from.recursive) {
+        sql.append('RECURSIVE ');
+      }
+      sql.appendIdentifier(this._from.name);
+      sql.append(' AS (');
+      sql.appendExpression(this._from.expr);
+      sql.append(') ');
+    }
+    sql.append('UPDATE ');
+    sql.appendIdentifier(this.actualTableName);
+    sql.append(' SET ');
+
+    let firstSet = true;
+    for (const [column, expr] of this.setColumns) {
+      if (!firstSet) {
+        sql.append(', ');
+      }
+      sql.appendColumn(column);
+      sql.append(' = ');
+      sql.appendParameters(expr, false);
+      firstSet = false;
+    }
+
+    if (this._from) {
+      sql.append(' FROM ');
+      sql.appendIdentifier(this._from.name);
+    }
+
+    if (this.predicate.expressions.length) {
+      sql.append(' WHERE ');
+      sql.appendExpression(this.predicate);
+    }
+
+    if (this.returning?.length) {
+      sql.append(' RETURNING ');
+      let first = true;
+      for (const column of this.returning) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendColumn(column);
+        first = false;
+      }
+    }
+  }
+}
+
+export class InsertQuery extends BaseQuery {
+  private readonly values?: Record<string, any>[];
+  private readonly query?: SelectQuery;
+  private readonly queryColumns?: string[];
+  private returnColumns?: string[];
+  private conflictColumns?: string[];
+  private conflictCondition?: Condition;
+  private ignoreConflict?: boolean;
+
+  constructor(tableName: string, values: Record<string, any>[] | SelectQuery, queryColumns?: string[]) {
+    super(tableName);
+    if (Array.isArray(values)) {
+      this.values = values;
+      if (queryColumns?.length) {
+        throw new Error('InsertQuery queryColumns are only valid for INSERT ... SELECT');
+      }
+    } else {
+      this.query = values;
+      this.queryColumns = queryColumns;
+    }
+  }
+
+  mergeOnConflict(columns?: string[], where?: Condition): this {
+    this.conflictColumns = columns ?? ['id'];
+    if (where) {
+      this.conflictCondition = where;
+    }
+    return this;
+  }
+
+  ignoreOnConflict(): this {
+    this.ignoreConflict = true;
+    return this;
+  }
+
+  returnColumn(column: Column | string): this {
+    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.effectiveColumnName : column);
+    return this;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append('INSERT INTO ');
+    sql.appendIdentifier(this.actualTableName);
+    if (this.values) {
+      const columnNames = Object.keys(this.values[0]);
+      this.appendColumns(sql, columnNames);
+      this.appendAllValues(sql, columnNames);
+    } else {
+      if (this.queryColumns?.length) {
+        this.appendColumns(sql, this.queryColumns);
+      }
+      this.appendSubquery(sql);
+    }
+    this.appendMerge(sql);
+    if (this.returnColumns) {
+      sql.append(` RETURNING ${this.returnColumns.join(', ')}`);
+    }
+  }
+
+  private appendColumns(sql: SqlBuilder, columnNames: string[]): void {
+    sql.append(' (');
+    let first = true;
+    for (const columnName of columnNames) {
+      if (!first) {
+        sql.append(', ');
+      }
+      sql.appendIdentifier(columnName);
+      first = false;
+    }
+    sql.append(')');
+  }
+
+  private appendAllValues(sql: SqlBuilder, columnNames: string[]): void {
+    if (!this.values) {
+      return;
+    }
+
+    for (let i = 0; i < this.values.length; i++) {
+      if (i === 0) {
+        sql.append(' VALUES ');
+      } else {
+        sql.append(', ');
+      }
+      this.appendValues(sql, columnNames, this.values[i]);
+    }
+  }
+
+  private appendSubquery(sql: SqlBuilder): void {
+    if (!this.query) {
+      return;
+    }
+    sql.append(' ');
+    sql.appendExpression(this.query);
+  }
+
+  private appendValues(sql: SqlBuilder, columnNames: string[], values: Record<string, any>): void {
+    sql.append(' (');
+    let first = true;
+    for (const columnName of columnNames) {
+      if (!first) {
+        sql.append(', ');
+      }
+      sql.param(values[columnName]);
+      first = false;
+    }
+    sql.append(')');
+  }
+
+  private appendMerge(sql: SqlBuilder): void {
+    if (this.ignoreConflict) {
+      sql.append(` ON CONFLICT DO NOTHING`);
+      return;
+    } else if (!this.conflictColumns?.length || !this.values) {
+      return;
+    }
+
+    sql.append(` ON CONFLICT (`);
+    sql.append(this.conflictColumns.map((c) => '"' + c + '"').join(', '));
+    sql.append(`)`);
+    if (this.conflictCondition) {
+      sql.append(' WHERE ');
+      sql.appendExpression(this.conflictCondition);
+    }
+    sql.append(` DO UPDATE SET `);
+
+    const columns = Object.keys(this.values[0]);
+    let first = true;
+    for (const columnName of columns) {
+      if (this.conflictColumns.includes(columnName)) {
+        continue;
+      }
+      if (!first) {
+        sql.append(', ');
+      }
+      sql.appendIdentifier(columnName);
+      sql.append('= EXCLUDED.');
+      sql.appendIdentifier(columnName);
+      first = false;
+    }
+  }
+
+  async execute(conn: SqlConnection): Promise<any[]> {
+    if (!this.values?.length) {
+      return [];
+    }
+    return super.execute(conn);
+  }
+}
+
+export class DeleteQuery extends BaseQuery {
+  usingTables?: string[];
+  private returningColumns?: Column[];
+
+  using(...tableNames: string[]): this {
+    for (const table of tableNames) {
+      this.usingTables = append(this.usingTables, table);
+    }
+    return this;
+  }
+
+  returning(column: Column | string): this {
+    this.returningColumns ??= [];
+    this.returningColumns.push(getColumn(column, this.actualTableName));
+    return this;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append('DELETE FROM ');
+    sql.appendIdentifier(this.actualTableName);
+
+    if (this.usingTables) {
+      sql.append(' USING ');
+      let first = true;
+      for (const tableName of this.usingTables) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendIdentifier(tableName);
+        first = false;
+      }
+    }
+
+    this.buildConditions(sql);
+    if (this.returningColumns?.length) {
+      sql.append(' RETURNING ');
+      let first = true;
+      for (const column of this.returningColumns) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendColumn(column);
+        first = false;
+      }
+    }
+  }
+}
+
+export class ValuesQuery implements Expression {
+  readonly tableName: string;
+  readonly columnNames: string[];
+  readonly rows: any[][];
+  constructor(tableName: string, columnNames: string[], rows: any[][]) {
+    this.tableName = tableName;
+    this.columnNames = columnNames;
+    this.rows = rows;
+  }
+
+  buildSql(builder: SqlBuilder): void {
+    /*
+    Since a VALUES expression has a special alias format of "tableName"("columnName"),
+    wrap its sql with SELECT * FROM (VALUES ...) AS "tableName"("columnName") for compatibility
+    other query builders that may include a ValuesQuery:
+
+    SELECT * FROM (VALUES
+      ('val1'),
+		  ('val2'),
+		  ('val3'),
+    ) AS "values"("val")
+    */
+
+    builder.append('SELECT * FROM (VALUES');
+    for (let r = 0; r < this.rows.length; r++) {
+      builder.append(r === 0 ? '(' : ',(');
+      for (let v = 0; v < this.rows[r].length; v++) {
+        builder.append(v === 0 ? '' : ',');
+        builder.param(this.rows[r][v]);
+      }
+      builder.append(')');
+    }
+    builder.append(') AS ');
+    builder.appendIdentifier(this.tableName);
+    builder.append('(');
+    for (let c = 0; c < this.columnNames.length; c++) {
+      builder.append(c === 0 ? '' : ',');
+      builder.appendIdentifier(this.columnNames[c]);
+    }
+    builder.append(')');
+  }
+}
+
+function getColumn(column: Column | string, defaultTableName?: string): Column {
+  if (typeof column === 'string') {
+    return new Column(defaultTableName, column);
+  } else {
+    return column;
+  }
+}
+
+export function periodToRangeString(period: Period): string | undefined {
+  if (period.start && period.end) {
+    return `[${period.start},${period.end}]`;
+  }
+  if (period.start) {
+    return `[${period.start},]`;
+  }
+  if (period.end) {
+    return `[,${period.end}]`;
+  }
+  return undefined;
+}
+
+export interface SqlFunctionDefinition {
+  readonly name: string;
+  readonly createQuery: string;
+}
+
+/**
+ * WARNING: Custom SQL functions should be avoided unless absolutely necessary.
+ *
+ * This function is necessary since the postgres `array_to_string` function is not IMMUTABLE,
+ * but only IMMUTABLE functions can be used in index expressions.
+ */
+export const TokenArrayToTextFn: SqlFunctionDefinition = {
+  name: 'token_array_to_text',
+  createQuery: `CREATE FUNCTION token_array_to_text(text[])
+    RETURNS text LANGUAGE sql IMMUTABLE
+    AS $function$SELECT e'\x03'||array_to_string($1, e'\x03')||e'\x03'$function$`,
+};
+
+export function isValidTableName(tableName: string): boolean {
+  return /^\w+$/.test(tableName);
+}
+
+export function isValidColumnName(columnName: string): boolean {
+  return /^\w+$/.test(columnName);
+}
+
+export function replaceNullWithUndefinedInRows(rows: any[]): void {
+  for (const row of rows) {
+    for (const k of Object.keys(row)) {
+      row[k] ??= undefined;
+    }
+  }
+}
+
+export function getSearchParamColumnType(impl: ColumnSearchParameterImplementation): string {
+  let baseColumnType: string;
+  switch (impl.type) {
+    case SearchParameterType.UUID:
+      baseColumnType = 'UUID';
+      break;
+    case SearchParameterType.BOOLEAN:
+      baseColumnType = 'BOOLEAN';
+      break;
+    case SearchParameterType.DATE:
+      baseColumnType = 'DATE';
+      break;
+    case SearchParameterType.DATETIME:
+      baseColumnType = 'TIMESTAMPTZ';
+      break;
+    case SearchParameterType.NUMBER:
+    case SearchParameterType.QUANTITY:
+      if ('columnName' in impl && impl.columnName === 'priorityOrder') {
+        baseColumnType = 'INTEGER';
+      } else {
+        baseColumnType = 'DOUBLE PRECISION';
+      }
+      break;
+    default:
+      baseColumnType = 'TEXT';
+  }
+  return impl.array ? baseColumnType + '[]' : baseColumnType;
+}
+
+// PostgreSQL btree index entries have a maximum size of 2704 bytes. The index tuple includes
+// a few bytes of overhead on top of the column data, but we use a more conservative limit
+// of 2048 bytes for the data payload to stay well within the btree maximum.
+export const MAX_INDEX_DATA_BYTES = 2048;
+const truncationEncoder = new TextEncoder();
+const truncationDecoder = new TextDecoder();
+const truncationBuffer = new Uint8Array(MAX_INDEX_DATA_BYTES);
+
+/**
+ * Apply a maximum string length to ensure the value can be stored in a btree-indexed column.
+ * Uses {@link TextEncoder.encodeInto} to write the longest valid UTF-8 prefix that fits
+ * within the byte limit, avoiding both partial multi-byte characters and unnecessarily
+ * aggressive truncation.
+ * @param value - The column value to truncate.
+ * @returns The possibly truncated column value.
+ */
+export function truncateTextColumn(value: string | null | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if (truncationEncoder.encode(value).length <= MAX_INDEX_DATA_BYTES) {
+    return value;
+  }
+
+  // encodeInto writes as many complete UTF-8 characters as fit in the buffer,
+  // never producing a partial multi-byte sequence.
+  const { written } = truncationEncoder.encodeInto(value, truncationBuffer);
+  return truncationDecoder.decode(truncationBuffer.subarray(0, written));
+}

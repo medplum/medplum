@@ -31,13 +31,25 @@
   "sideEffects": false,
   "type": "module",
   "exports": {
-    "import": {
-      "types": "./dist/esm/index.d.ts",
-      "default": "./dist/esm/index.mjs"
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.cjs"
+      }
     },
-    "require": {
-      "types": "./dist/cjs/index.d.ts",
-      "default": "./dist/cjs/index.cjs"
+    "./sqlite": {
+      "import": {
+        "types": "./dist/esm/sqlite/index.d.ts",
+        "default": "./dist/esm/sqlite/index.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/sqlite/index.d.ts",
+        "default": "./dist/cjs/sqlite/index.cjs"
+      }
     }
   },
   "main": "dist/cjs/index.cjs",
@@ -49,7 +61,7 @@
   ],
   "scripts": {
     "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
-    "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
+    "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor && shx mkdir -p dist/cjs/sqlite dist/esm/sqlite && shx cp dist/types/sqlite/index.d.ts dist/cjs/sqlite/index.d.ts && shx cp dist/types/sqlite/index.d.ts dist/esm/sqlite/index.d.ts",
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

@@ -193,6 +193,15 @@ export abstract class FhirRepository {
   ): Promise<Record<string, WithId<T>[]>>;
 
   /**
+   * Runs a callback while preserving caller-provided meta fields during bulk seeding.
+   * @param fn - The callback to run.
+   * @returns The callback result.
+   */
+  async withSeeding<T>(fn: () => T | Promise<T>): Promise<T> {
+    return fn();
+  }
+
+  /**
    * Runs a callback function within a transaction.
    *
    * @param callback - The callback function to be run within a transaction.

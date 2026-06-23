@@ -23,8 +23,10 @@ import {
   loadDataType,
   normalizeCreateBinaryOptions,
 } from '@medplum/core';
-import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
+import type { FhirRequest, FhirRepository, HttpMethod } from '@medplum/fhir-router';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
+import { SqliteRepository } from '@medplum/fhir-router/sqlite';
+import { MOCK_ALICE_PRACTITIONER_ID } from './constants';
 import type {
   Agent,
   Binary,
@@ -102,6 +104,11 @@ export interface MockClientOptions extends Pick<
    */
   readonly profile?: ReturnType<MedplumClient['getProfile']> | null;
   /**
+   * Repository backend for FHIR data. Use `sqlite` for SQL-backed search parity with the server.
+   * Defaults to `memory` for browser/jsdom compatibility.
+   */
+  readonly repository?: 'memory' | 'sqlite';
+  /**
    * Override the `MockFetchClient` used by this `MockClient`.
    */
   readonly mockFetchOverride?: MockFetchOverrideOptions;
@@ -113,12 +120,12 @@ export interface MockClientOptions extends Pick<
 export type MockFetchOverrideOptions = {
   client: MockFetchClient;
   router: FhirRouter;
-  repo: MemoryRepository;
+  repo: FhirRepository;
 };
 
 export class MockClient extends MedplumClient {
   readonly router: FhirRouter;
-  readonly repo: MemoryRepository;
+  readonly repo: FhirRepository;
   readonly client: MockFetchClient;
   readonly debug: boolean;
   activeLoginOverride?: LoginState;
@@ -130,7 +137,7 @@ export class MockClient extends MedplumClient {
     const baseUrl = clientOptions?.baseUrl ?? 'https://example.com/';
 
     let router: FhirRouter;
-    let repo: MemoryRepository;
+    let repo: FhirRepository;
     let client: MockFetchClient;
 
     if (clientOptions?.mockFetchOverride) {
@@ -148,7 +155,7 @@ export class MockClient extends MedplumClient {
       client = clientOptions.mockFetchOverride.client;
     } else {
       router = new FhirRouter();
-      repo = new MemoryRepository();
+      repo = clientOptions?.repository === 'sqlite' ? new SqliteRepository() : new MemoryRepository();
       client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
     }
 
@@ -392,13 +399,13 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
 
 export class MockFetchClient {
   readonly router: FhirRouter;
-  readonly repo: MemoryRepository;
+  readonly repo: FhirRepository;
   readonly baseUrl: string;
   readonly debug: boolean;
   initialized = false;
   initPromise?: Promise<void>;
 
-  constructor(router: FhirRouter, repo: MemoryRepository, baseUrl: string, debug = false) {
+  constructor(router: FhirRouter, repo: FhirRepository, baseUrl: string, debug = false) {
     this.router = router;
     this.repo = repo;
     this.baseUrl = baseUrl;
@@ -726,7 +733,7 @@ export class MockFetchClient {
           login_id: '123',
         }),
         refresh_token: createFakeJwt({ client_id: 123 }),
-        profile: { reference: 'Practitioner/123' },
+        profile: { reference: `Practitioner/${MOCK_ALICE_PRACTITIONER_ID}` },
       };
     }
 

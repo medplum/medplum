@@ -73,7 +73,7 @@ describe('Header', () => {
         accessToken: 'abc',
         refreshToken: 'xyz',
         profile: {
-          reference: 'Practitioner/123',
+          reference: 'Practitioner/124',
           display: 'Alice Smith',
         },
         project: {
@@ -89,7 +89,7 @@ describe('Header', () => {
           accessToken: 'abc',
           refreshToken: 'xyz',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
             display: 'Alice Smith',
           },
           project: {
@@ -153,7 +153,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Account settings'));
     });
 
-    expect(navigateMock).toHaveBeenCalledWith('/Practitioner/123');
+    expect(navigateMock).toHaveBeenCalledWith('/Practitioner/124');
   });
 
   test('Sign out', async () => {

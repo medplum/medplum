@@ -539,7 +539,7 @@ export const WithPages = (): JSX.Element => (
         ],
         status: 'completed',
         source: {
-          reference: 'Practitioner/123',
+          reference: 'Practitioner/124',
           display: 'Alice Smith',
         },
         authored: '2025-07-23T21:18:24.488Z',
