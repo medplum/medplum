@@ -40,7 +40,6 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
 
   const queue = new Queue<SetAccountsJobData>(queueName, {
     ...defaultOptions,
-    defaultJobOptions: { attempts: 1 },
   });
 
   let worker: Worker<SetAccountsJobData> | undefined;
