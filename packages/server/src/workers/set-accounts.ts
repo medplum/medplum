@@ -56,6 +56,17 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
         ...workerBullmq,
       }
     );
+
+    worker.on('failed', async (job) => {
+      if (!job) {
+        return;
+      }
+
+      // Mark AsyncJob as failed
+      const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
+      const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
+      await exec.failJob();
+    });
   }
 
   return { queue, worker, name: queueName };
