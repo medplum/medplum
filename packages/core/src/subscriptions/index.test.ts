@@ -1850,7 +1850,7 @@ describe('resourceMatchesSubscriptionCriteria', () => {
   );
 
   describe('Account matching logic', () => {
-    const ORGANIZATION_ONE = { reference: 'Organization/123' };
+    const ORGANIZATION_ONE = { reference: 'Organization/125' };
     const ORGANIZATION_TWO = { reference: 'Organization/456' };
     const ORGANIZATION_THREE = { reference: 'Organization/789' };
     const ORGANIZATION_FOUR = { reference: 'Organization/999' };

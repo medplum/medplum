@@ -37,6 +37,7 @@ import type {
   Subscription,
   UserConfiguration,
 } from '@medplum/fhirtypes';
+import { MOCK_ALICE_PRACTITIONER_ID } from './constants';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -726,7 +727,7 @@ export class MockFetchClient {
           login_id: '123',
         }),
         refresh_token: createFakeJwt({ client_id: 123 }),
-        profile: { reference: 'Practitioner/123' },
+        profile: { reference: `Practitioner/${MOCK_ALICE_PRACTITIONER_ID}` },
       };
     }
 

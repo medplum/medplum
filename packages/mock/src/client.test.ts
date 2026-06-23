@@ -31,6 +31,7 @@ import type {
 import { randomUUID, webcrypto } from 'node:crypto';
 import { TextEncoder } from 'node:util';
 import { MockClient, MockFetchClient } from './client';
+import { MOCK_ALICE_PRACTITIONER_ID } from './constants';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson } from './mocks';
 import { MockSubscriptionManager } from './subscription-manager';
 
@@ -334,7 +335,7 @@ describe('MockClient', () => {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
       refreshToken: '456',
       profile: {
-        reference: 'Practitioner/123',
+        reference: `Practitioner/${MOCK_ALICE_PRACTITIONER_ID}`,
       },
       project: {
         reference: 'Project/123',
@@ -809,7 +810,7 @@ describe('MockClient', () => {
       id: '456',
       user: { reference: 'User/123' },
       project: { reference: 'Project/123', display: 'Project 123' },
-      profile: { reference: 'Practitioner/123', display: 'Alice Smith' },
+      profile: { reference: `Practitioner/${MOCK_ALICE_PRACTITIONER_ID}`, display: 'Alice Smith' },
     });
 
     const createdBot = await medplum.post(
