@@ -7,7 +7,7 @@ import TabItem from '@theme/TabItem';
 
 :::info[Alpha]
 
-The `$hold` operation is currently in alpha.
+The `$hold` operation is currently in [alpha](/docs/compliance/alpha-beta).
 
 :::
 

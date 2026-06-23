@@ -296,7 +296,7 @@ describe('FHIR Router', () => {
       makeSimpleRequest('PATCH', `/Patient/${patient?.id}`, { foo: 'bar' }),
       repo
     );
-    expect(res4).toMatchObject(badRequest('Patch body must be an array'));
+    expect(res4).toMatchObject(badRequest('Invalid patch body'));
     expect(patient4).toBeUndefined();
   });
 

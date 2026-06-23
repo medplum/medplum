@@ -12,16 +12,22 @@ This guide walks through completing your ScriptSure account setup after Medplum 
 
 ## 1. Accept the invite and complete sign-up
 
-You'll receive an invite email from ScriptSure–To add the first user, Medplum will initiate, but after this, Admin users can invite new users. Click the link and complete the registration flow: Eligibility, User, Password, and Identification.
+You'll receive an invite email from ScriptSure. To add the first user, Medplum will initiate, but after this, admin users can invite new users. Click the link in the email and complete the registration flow:
 
-**Staging credentials:**
+- **Eligibility** — Verify that you are a licensed provider
+- **User** — Fill in your profile details
+- **Password** — Set your account password
+- **Identification** — Identity proofing, typically via ID.me
+
+### Staging environment
 
 - Staging portal: [spu.scriptsure.com](https://spu.scriptsure.com/)
 
-:::note[Staging only: test NPI / DEA / license numbers]
-These credentials can just be placeholder values in Staging. To quickly get correctly formatted credentials, you can generate them with the following prompt to an LLM:
+:::note[Staging test credentials]
+NPI, DEA, and state license numbers can be placeholder values, but NPIs must be correctly formatted (you can validate NPIs using [this tool](https://jsfiddle.net/alexdresko/cLNB6)). To generate valid-format credentials, you can prompt an LLM:
+
 ```
-Can you create an example NPI for <full_name> in <your_state>. Please include a State Medical License Number and DEA as well.
+Create an example NPI for <full_name> in <state>, including a State Medical License Number and DEA.
 ```
 When prompted for ID.me verification in staging, use:
 - Email: `vendors@dawsystems.com`

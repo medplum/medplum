@@ -7,7 +7,7 @@ sidebar_position: 2
 
 :::info[Alpha]
 
-The `$find` operation is currently in alpha.
+The `$find` operation is currently in [alpha](/docs/compliance/alpha-beta).
 
 :::
 

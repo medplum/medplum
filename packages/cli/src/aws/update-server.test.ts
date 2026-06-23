@@ -9,7 +9,6 @@ import {
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import type { MedplumClient } from '@medplum/core';
 import { mockClient } from 'aws-sdk-client-mock';
-import fetch from 'node-fetch';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
@@ -17,9 +16,10 @@ import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
 import { createMedplumClient } from '../util/client';
 
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
 vi.mock('node:child_process');
 vi.mock('../util/client');
+
+const fetchMock = vi.spyOn(globalThis, 'fetch') as unknown as Mock;
 
 describe('update-server command', () => {
   const currentVersion = '2.4.17';
@@ -44,7 +44,7 @@ describe('update-server command', () => {
     vi.resetModules();
     vi.clearAllMocks();
 
-    (fetch as unknown as Mock).mockResolvedValue({
+    fetchMock.mockResolvedValue({
       json: vi
         .fn()
         .mockResolvedValue([

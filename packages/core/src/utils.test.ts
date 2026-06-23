@@ -9,6 +9,7 @@ import type {
   ObservationDefinition,
   Patient,
   Resource,
+  Slot,
   User,
 } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
@@ -220,6 +221,40 @@ describe('Core Utils', () => {
       })
     ).toStrictEqual('foo');
     expect(getDisplayString({ resourceType: 'PractitionerRole', code: [{ text: 'foo' }] })).toStrictEqual('foo');
+    expect(
+      getDisplayString({
+        resourceType: 'Appointment',
+        status: 'booked',
+        participant: [{ status: 'accepted' }],
+        serviceType: [{ text: 'Consultation' }],
+      })
+    ).toStrictEqual('Consultation');
+    expect(
+      getDisplayString({
+        resourceType: 'Appointment',
+        id: '123',
+        status: 'booked',
+        participant: [{ status: 'accepted' }],
+      })
+    ).toStrictEqual('Appointment/123');
+    expect(
+      getDisplayString({
+        resourceType: 'Slot',
+        id: '123',
+        status: 'free',
+        schedule: { reference: 'Schedule/123' },
+        start: '2021-06-01T12:00:00Z',
+        end: '2021-06-01T13:00:00Z',
+      })
+    ).toMatch(/2021.* - .*2021/);
+    expect(
+      getDisplayString({
+        resourceType: 'Slot',
+        id: '123',
+        status: 'free',
+        schedule: { reference: 'Schedule/123' },
+      } as Slot)
+    ).toStrictEqual('Slot/123');
     expect(
       getDisplayString({
         resourceType: 'Subscription',

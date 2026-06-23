@@ -364,6 +364,7 @@ function applyValueSetFilters(
         break;
       }
 
+      case 'exists':
       case '=':
       case 'in': {
         const property = codeSystem.property?.find((p) => p.code === condition.property);

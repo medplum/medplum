@@ -201,9 +201,12 @@ async function handler(params: {
     intersectingAvailability,
     (interval, _idx, maxCount) =>
       findAlignedSlotTimes(interval, {
-        offsetMinutes: commonParameters.alignmentOffset,
+        alignment: {
+          interval: commonParameters.alignmentInterval,
+          offset: commonParameters.alignmentOffset,
+          timezone: commonParameters.alignmentTimezone,
+        },
         durationMinutes: commonParameters.duration,
-        alignment: commonParameters.alignmentInterval,
         maxCount,
       }),
     pageSize
@@ -285,6 +288,7 @@ async function handler(params: {
  * Endpoints:
  *   [fhir base]/Schedule/[id]/$find
  *
+ * @deprecated - use Appointment/$find instead.
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */
@@ -324,6 +328,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
  * Endpoints:
  *   [fhir base]/Appointment/$find
  *
+ * @experimental - Scheduling Alpha API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */

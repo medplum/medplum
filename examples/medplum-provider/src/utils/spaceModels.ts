@@ -17,9 +17,9 @@ export const AI_MODELS_SETTING = 'aiModels';
 
 /** Built-in fallback used when the project has not configured `aiModels`. */
 export const DEFAULT_MODELS: SpaceModelOption[] = [
-  { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
-  { value: 'gpt-5.4', label: 'GPT-5.4' },
   { value: 'gpt-5.5', label: 'GPT-5.5' },
+  { value: 'gpt-5.4', label: 'GPT-5.4' },
+  { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
 ];
 
 /**

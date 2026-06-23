@@ -24,7 +24,6 @@ import type {
 } from '@medplum/fhirtypes';
 import express from 'express';
 import { decodeJwt, generateKeyPair, jwtVerify, SignJWT } from 'jose';
-import fetch from 'node-fetch';
 import { createHash, randomUUID, X509Certificate } from 'node:crypto';
 import request from 'supertest';
 import { createClient } from '../admin/client';
@@ -71,7 +70,7 @@ jest.mock('jose', () => {
   };
 });
 
-jest.mock('node-fetch');
+const fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
 
 describe('OAuth2 Token', () => {
   const app = express();
@@ -2000,7 +1999,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange JSON success', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       json: () => ({ email }),
       headers: { get: () => ContentType.JSON },
@@ -2017,7 +2016,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange JWT success', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       text: () => `header.${encodeBase64Url(JSON.stringify({ email }))}.signature`,
       headers: { get: () => ContentType.JWT },
@@ -2034,7 +2033,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange GCIP success', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ users: [{ email, localId: 'firebase-user-id' }] }),
@@ -2048,7 +2047,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeTruthy();
-    expect(fetch).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=test-api-key',
       expect.objectContaining({
         method: 'POST',
@@ -2059,7 +2058,7 @@ describe('OAuth2 Token', () => {
         body: JSON.stringify({ idToken: 'firebase-token' }),
       })
     );
-    expect(new URL((fetch as unknown as jest.Mock).mock.calls[0][0]).searchParams.get('key')).toBe('test-api-key');
+    expect(new URL(fetchMock.mock.calls[0][0]).searchParams.get('key')).toBe('test-api-key');
   });
 
   test('Token exchange GCIP subject success', async () => {
@@ -2072,7 +2071,7 @@ describe('OAuth2 Token', () => {
       lastName: 'User',
     });
 
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ users: [{ email: '', localId: externalId }] }),
@@ -2089,7 +2088,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange GCIP invalid response', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ users: [] }),
@@ -2106,7 +2105,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange GCIP missing localId', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.JSON },
       json: () => ({ users: [{ email }] }),
@@ -2131,11 +2130,11 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.error_description).toBe('Missing user info API key - check your identity provider configuration');
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test('Token exchange unsupported content type', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.TEXT },
     }));
@@ -2152,7 +2151,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Too many requests', async () => {
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    fetchMock.mockImplementation(() => ({
       status: 429,
       headers: { get: () => ContentType.JSON },
     }));
@@ -2217,7 +2216,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange invalid external URL', async () => {
-    (fetch as unknown as jest.Mock).mockClear();
+    fetchMock.mockClear();
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2228,7 +2227,7 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid user info URL - check your identity provider configuration');
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test('FHIRcast scopes added to client credentials flow', async () => {

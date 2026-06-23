@@ -1358,6 +1358,51 @@ describe('Appointment/$book', () => {
         issue: [{ details: { text: 'Requested time slot is not available' } }],
       });
     });
+
+    test('rejects when the proposed slot start is not aligned to the scheduling grid', async () => {
+      const schedule = await makeSchedule({
+        actor: practitioner1,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              threeDayAvailability,
+              { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+              { url: 'alignmentInterval', valueDuration: { value: 30, unit: 'min' } },
+              { url: 'alignmentOffset', valueDuration: { value: 0, unit: 'min' } },
+              { url: 'service', valueReference: createReference(officeVisitService) },
+            ],
+          },
+        ],
+      });
+
+      // 14:15Z is not on the 30-minute grid (valid starts are :00 and :30)
+      const misalignedStart = '2026-01-15T14:15:00Z';
+      const misalignedEnd = '2026-01-15T15:15:00Z';
+
+      const misalignedResponse = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send(appointmentParam({ schedule, start: misalignedStart, end: misalignedEnd }));
+
+      expect(misalignedResponse.status).toEqual(400);
+      expect(misalignedResponse.body).toMatchObject({
+        resourceType: 'OperationOutcome',
+        issue: [{ details: { text: 'Slot start time is not aligned to the scheduling grid' } }],
+      });
+
+      // 14:30Z is on the 30-minute grid
+      const alignedStart = '2026-01-15T14:30:00Z';
+      const alignedEnd = '2026-01-15T15:30:00Z';
+
+      const alignedResponse = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send(appointmentParam({ schedule, start: alignedStart, end: alignedEnd }));
+
+      expect(alignedResponse.body).not.toHaveProperty('issue');
+      expect(alignedResponse.status).toEqual(201);
+    });
   });
 
   describe('Loading schedulingParameters from HealthcareService', () => {

@@ -931,6 +931,67 @@ describe('Expand', () => {
     expect(expansion.contains?.[0]?.code).toStrictEqual('ERECCAP');
   });
 
+  test('Property filter with exists=true', async () => {
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.com/fhir/ValueSet/property-filter' + randomUUID(),
+      compose: {
+        include: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm',
+            filter: [{ property: 'status', op: 'exists', value: 'true' }],
+          },
+        ],
+      },
+    };
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(valueSet);
+    expect(res1.status).toBe(201);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${valueSet.url}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toStrictEqual(200);
+    const expansion = res2.body.expansion as ValueSetExpansion;
+    // Only one code in the set has a `status` property
+    expect(expansion.contains).toHaveLength(1);
+    expect(expansion.contains?.[0]?.code).toStrictEqual('ERECCAP');
+  });
+
+  test('Property filter with exists=false', async () => {
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.com/fhir/ValueSet/property-filter' + randomUUID(),
+      compose: {
+        include: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm',
+            filter: [{ property: 'status', op: 'exists', value: 'false' }],
+          },
+        ],
+      },
+    };
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(valueSet);
+    expect(res1.status).toBe(201);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${valueSet.url}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toStrictEqual(200);
+    const expansion = res2.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(160);
+    expect(expansion.contains?.find((c) => c.code === 'ERECCAP')).toBeUndefined();
+  });
+
   test('Reference to other ValueSet', async () => {
     const valueSetResource: ValueSet = {
       resourceType: 'ValueSet',
