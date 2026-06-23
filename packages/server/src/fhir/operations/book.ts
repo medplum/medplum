@@ -41,7 +41,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   const bundle = await createProposedAppointment(
     ctx.repo,
     withPath(params.appointment, 'Parameters.appointment'),
-    (appointment, _slots) => {
+    (appointment) => {
       // Create appointment with "booked" status
       appointment.status = 'booked';
     }
