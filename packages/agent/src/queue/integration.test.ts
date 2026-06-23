@@ -572,11 +572,27 @@ describe('Durable queue integration', () => {
     await app.start();
     const client = new Hl7Client({ host: 'localhost', port });
 
+    // The Bot's app-level AA is forwarded back to the source (standard enhanced +
+    // default appLevelAck=AL) and echoes MSH.10=INT_RJ — the same control ID the
+    // retransmit below reuses. The client correlates ACKs by control ID and FIRST
+    // resolves on any ACK, so if that stale AA reached the client *after* the
+    // retransmit registered its pending entry, it would be misattributed as the
+    // retransmit's ACK (resolving 'AA' instead of the 'CR' we assert). The first
+    // send (FIRST) resolves on the CA and drops its pending entry, so the later AA
+    // arrives unmatched and surfaces as an "unknown control ID" warning. Listen for
+    // that warning (registered up front to avoid racing the AA's arrival) and wait
+    // for it before retransmitting, so the stale AA is provably drained first.
+    let staleAckDrained = false;
+    client.addEventListener('warning', () => {
+      staleAckDrained = true;
+    });
+
     const first = await client.sendAndWait(TEST_MSG('INT_RJ'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
     expect(first.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
 
     const queue = app.getDurableQueue() as DurableQueue;
     await waitForRow(queue, (counts) => counts.processed === 1, 3000);
+    await waitFor(() => staleAckDrained, 3000, 'forwarded app-level AA drained at client');
 
     // The exact same message again. Idempotent mode would replay the AA; reject
     // mode terminally rejects it: standard enhanced → CR (the peer must NOT retry,
