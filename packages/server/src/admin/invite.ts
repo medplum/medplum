@@ -14,7 +14,7 @@ import {
   Operator,
   resolveId,
 } from '@medplum/core';
-import type { AccessPolicy, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { AccessPolicy, Patient, Project, ProjectMembership, Reference, RelatedPerson, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
@@ -42,6 +42,10 @@ export const inviteValidator = makeValidationMiddleware([
     ],
     { message: 'Either email or externalId is required' }
   ),
+  body('patient.reference')
+    .optional()
+    .matches(/^Patient\/[^/]+$/)
+    .withMessage('Patient must be a reference to a Patient resource'),
 ]);
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
@@ -200,7 +204,7 @@ async function upsertProfileResource(
     }
     return profile;
   } else {
-    const { resourceType, firstName, lastName, project, email } = request;
+    const { resourceType, firstName, lastName, project, email, patient } = request;
     const resource = {
       resourceType,
       meta: {
@@ -214,6 +218,19 @@ async function upsertProfileResource(
       ],
       telecom: email ? [{ system: 'email', use: 'work', value: email }] : undefined,
     } as ProfileResource;
+
+    if (resourceType === 'RelatedPerson') {
+      // RelatedPerson.patient is a required FHIR field, so a patient must be
+      // provided in order to provision a new RelatedPerson profile.
+      if (!patient) {
+        throw new OperationOutcomeError(badRequest('Patient is required to create a RelatedPerson'));
+      }
+      const referencedPatient = await systemRepo.readReference<Patient>(patient);
+      if (referencedPatient.meta?.project !== project.id) {
+        throw new OperationOutcomeError(badRequest('Patient does not belong to project'));
+      }
+      (resource as RelatedPerson).patient = createReference(referencedPatient);
+    }
 
     if (email) {
       const { resource: result, outcome } = await systemRepo.conditionalCreate(resource, {

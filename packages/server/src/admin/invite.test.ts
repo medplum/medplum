@@ -1697,4 +1697,84 @@ describe('Admin Invite', () => {
 
       expect(membership.accessPolicy).toBeUndefined();
     }));
+
+  test('Invite RelatedPerson provisions profile with patient', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const { profile } = await inviteUser({
+        project,
+        resourceType: 'RelatedPerson',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+        patient: createReference(patient),
+      });
+
+      expect(profile.resourceType).toStrictEqual('RelatedPerson');
+      expect((profile as RelatedPerson).patient).toMatchObject(createReference(patient));
+    }));
+
+  test('Invite RelatedPerson without patient throws', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+
+      await expect(
+        inviteUser({
+          project,
+          resourceType: 'RelatedPerson',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          externalId: randomUUID(),
+          sendEmail: false,
+        })
+      ).rejects.toThrow('Patient is required to create a RelatedPerson');
+    }));
+
+  test('Invite RelatedPerson with patient from another project throws', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const { project: otherProject } = await createTestProject();
+      const otherSystemRepo = await getProjectSystemRepo(otherProject);
+      const otherPatient = await otherSystemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: otherProject.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await expect(
+        inviteUser({
+          project,
+          resourceType: 'RelatedPerson',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          externalId: randomUUID(),
+          sendEmail: false,
+          patient: createReference(otherPatient),
+        })
+      ).rejects.toThrow('Patient does not belong to project');
+    }));
+
+  test('Invite Practitioner without patient does not error', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+
+      const { profile } = await inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Carol',
+        lastName: 'Davis',
+        externalId: randomUUID(),
+        sendEmail: false,
+      });
+
+      expect(profile.resourceType).toStrictEqual('Practitioner');
+    }));
 });
