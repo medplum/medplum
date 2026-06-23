@@ -1039,6 +1039,61 @@ describe('FHIR Repo Transactions', () => {
     errorSpy.mockRestore();
   });
 
+  test('withTransaction logs mixed access as rolled_back when rollback fails on a dead backend', async () => {
+    const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => undefined);
+    let querySpy: MockInstance | undefined;
+
+    await expect(
+      repo.withTransaction(
+        async (txRepo) => {
+          const client = txRepo.getDatabaseClient({
+            mode: DatabaseMode.WRITER,
+            operation: 'write',
+            resourceTypes: [],
+            source: 'test.deadBackendMixed.getDatabaseClient',
+          });
+          querySpy = spyOnQuery(client).mockImplementation(() => {
+            const terminationErr = Object.assign(
+              new Error('terminating connection due to idle-in-transaction timeout'),
+              { code: '57P01' }
+            );
+            throw terminationErr;
+          });
+          await client.query('SELECT 1');
+        },
+        // Declaring a special (Project) + other (Patient) type seeds the frame as mixed, so the
+        // teardown must still emit the transaction-level log even though ROLLBACK itself fails.
+        { resourceTypes: ['Patient', 'Project'], source: 'test.withTransaction.deadBackendMixed' }
+      )
+    ).rejects.toThrow('terminating connection due to idle-in-transaction timeout');
+
+    assert(querySpy);
+
+    // Bookkeeping must be fully reset so the repo is safe for future use
+    expect((repo as any).connection.transactionDepth).toBe(0);
+    expect((repo as any).connection.conn).toBeUndefined();
+    // The dead transaction's frame stack must be drained, not leaked
+    expect((repo as any).connection.accessTracker.transactionFrames).toHaveLength(0);
+
+    // The mixed-access transaction is surfaced as rolled_back rather than silently dropped
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[RepoSplit] Mixed transaction access',
+      expect.objectContaining({
+        scope: 'transaction',
+        status: 'rolled_back',
+        specialResourceTypes: ['Project'],
+        otherResourceTypes: ['Patient'],
+      })
+    );
+
+    querySpy.mockRestore();
+    infoSpy.mockRestore();
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
   test('withStatementTimeout pins connection and discards it after callback', async () => {
     let escapedClient: PoolClient | undefined;
     await repo.withStatementTimeout({ timeoutMs: 0 }, async () => {

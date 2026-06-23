@@ -67,8 +67,20 @@ export class RepositoryAccessTracker {
     mergeTransactionAccessFrame(current, popped);
   }
 
-  clearTransactionFrames(): void {
-    this.transactionFrames.length = 0;
+  /**
+   * Folds every live transaction frame into a single aggregate frame, empties the stack, and
+   * returns the aggregate (or undefined if no frames were live). Used on abnormal termination —
+   * e.g. when ROLLBACK itself fails and the whole transaction is torn down at once — where the
+   * normal per-level commit/rollback bookkeeping cannot run. Inner savepoint frames may still be
+   * unmerged at that point (a failed `ROLLBACK TO SAVEPOINT` skips {@link mergeLastTransactionFrame}),
+   * so they are folded in here to give the caller the full picture for a final log.
+   * @returns The aggregate of all live frames, or undefined if the stack was empty.
+   */
+  collapseTransactionFrames(): TransactionAccessFrame | undefined {
+    while (this.transactionFrames.length > 1) {
+      this.mergeLastTransactionFrame();
+    }
+    return this.transactionFrames.pop();
   }
 
   logTransactionAccess(frame: TransactionAccessFrame, status: 'committed' | 'rolled_back'): void {
@@ -194,24 +206,20 @@ function partitionResourceTypes(resourceTypes: Iterable<ResourceType>): Resource
   return { all, special, other };
 }
 
+const setsToMerge = ['readResourceTypes', 'writeResourceTypes', 'specialResourceTypes', 'otherResourceTypes'] as const;
+
 function mergeTransactionAccessFrame(target: TransactionAccessFrame, source: TransactionAccessFrame): void {
   target.sqlReadCount += source.sqlReadCount;
   target.sqlWriteCount += source.sqlWriteCount;
   target.cacheReadCount += source.cacheReadCount;
   target.cacheWriteCount += source.cacheWriteCount;
 
-  for (const resourceType of source.readResourceTypes) {
-    target.readResourceTypes.add(resourceType);
+  for (const set of setsToMerge) {
+    for (const item of source[set]) {
+      target[set].add(item);
+    }
   }
-  for (const resourceType of source.writeResourceTypes) {
-    target.writeResourceTypes.add(resourceType);
-  }
-  for (const resourceType of source.specialResourceTypes) {
-    target.specialResourceTypes.add(resourceType);
-  }
-  for (const resourceType of source.otherResourceTypes) {
-    target.otherResourceTypes.add(resourceType);
-  }
+
   for (const sourceName of source.sources) {
     target.sources.add(sourceName);
   }
