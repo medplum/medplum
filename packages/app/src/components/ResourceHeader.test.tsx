@@ -91,7 +91,7 @@ describe('ResourceHeader', () => {
 
   test('Handles reference', async () => {
     await setup({
-      reference: 'Organization/123',
+      reference: 'Organization/125',
     });
 
     expect(await screen.findByText('Test Organization')).toBeInTheDocument();

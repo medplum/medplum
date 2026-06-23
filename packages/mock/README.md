@@ -6,7 +6,7 @@ For example:
 
 - `GET fhir/R4/Patient/123` returns Homer Simpson
 - `GET fhir/R4/Practitioner/124` returns Dr. Alice Smith
-- `GET fhir/R4/Organization/123` returns Test Organization
+- `GET fhir/R4/Organization/125` returns Test Organization
 
 Well-known resource ids are exported as constants from `@medplum/mock` (for example `MOCK_HOMER_PATIENT_ID`, `MOCK_ALICE_PRACTITIONER_ID`).
 

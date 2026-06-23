@@ -643,14 +643,14 @@ describe('QuestionnaireForm', () => {
               },
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                 },
               },
             ],
             initial: [
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                 },
               },
             ],
@@ -664,7 +664,7 @@ describe('QuestionnaireForm', () => {
     expect(radioButton1).toBeInTheDocument();
     expect((radioButton1 as HTMLInputElement).checked).toBe(false);
 
-    const radioButton2 = screen.getByLabelText('Organization/123');
+    const radioButton2 = screen.getByLabelText('Organization/125');
     expect(radioButton2).toBeInTheDocument();
     expect((radioButton2 as HTMLInputElement).checked).toBe(true);
   });
@@ -1084,7 +1084,7 @@ describe('QuestionnaireForm', () => {
               },
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },
@@ -1092,7 +1092,7 @@ describe('QuestionnaireForm', () => {
             initial: [
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },
