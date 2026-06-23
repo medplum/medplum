@@ -68,12 +68,16 @@ const COLOR_THEMES: ColorTheme[] = [
   { appointment: 'grape.7', slot: 'grape.5' },
 ];
 
+const themeMap = new Map<string, ColorTheme>();
+
 function colorThemeForId(id: string): ColorTheme {
-  // #HAX: assume ID is a UUID4 or UUID7; in either case the last 60 bits are random,
-  // so we take a suffix from the ID, interpret the hex as a number, as treat that
-  // value as the hash of the ID.
-  const hash = parseInt(id.slice(id.length - 4), 16);
-  return COLOR_THEMES[hash % COLOR_THEMES.length];
+  let theme = themeMap.get(id);
+  if (theme) {
+    return theme;
+  }
+  theme = COLOR_THEMES[themeMap.size % COLOR_THEMES.length];
+  themeMap.set(id, theme);
+  return theme;
 }
 
 function appointmentToEvent(appointment: Appointment): EventInput {
