@@ -132,10 +132,13 @@ export class AgentHl7Channel extends BaseChannel {
     if (this.worker) {
       return;
     }
-    // Leader-gated: getDispatchQueue() is undefined when the queue is off or we
-    // don't hold the lease. `onBecameQueueLeader` calls back in once we acquire.
-    const queue = this.app.getDispatchQueue();
-    if (!queue) {
+    // Leader-gated, the cheap optimistic half: getDurableQueue() is undefined when
+    // the queue is off, and isLeader() is false until we hold the lease.
+    // `onBecameQueueLeader` calls back in once we acquire. The authoritative gate
+    // is implicit in the queue's dispatch ops, which throw QueueLeaseError if the
+    // lease moves out from under a running worker (the loop catches it and steps down).
+    const queue = this.app.getDurableQueue();
+    if (!queue?.isLeader()) {
       return;
     }
     this.worker = new ChannelQueueWorker({

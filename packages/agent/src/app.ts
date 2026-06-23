@@ -748,22 +748,12 @@ export class App {
    * @returns The opened {@link DurableQueue}, or undefined when the queue setting
    * is off. This is the OPEN handle, valid regardless of leadership — for intake,
    * maintenance (WAL checkpoint, retention sweep), and diagnostics. For the
-   * dispatch path use {@link getDispatchQueue}.
+   * dispatch path, gate worker startup on {@link DurableQueue.isLeader} (the cheap
+   * optimistic check); the authoritative gate is implicit in the dispatch ops
+   * themselves, which throw `QueueLeaseError` once a peer holds the lease.
    */
   getDurableQueue(): DurableQueue | undefined {
     return this.durableQueue;
-  }
-
-  /**
-   * @returns The {@link DurableQueue} for DISPATCH (claim + state transitions),
-   * or undefined when the queue is off OR this process does not currently hold
-   * the lease. This is the leader-gated accessor the worker-start path uses — the
-   * cheap optimistic "should I spin up a worker?" check. The authoritative gate
-   * lives in the queue's dispatch ops themselves, which throw `QueueLeaseError`
-   * if the lease moves out from under an already-running worker.
-   */
-  getDispatchQueue(): DurableQueue | undefined {
-    return this.isQueueLeader() ? this.durableQueue : undefined;
   }
 
   getStats(): AgentStats {
