@@ -49,6 +49,7 @@ export function InvitePage(): JSX.Element {
         mfaRequired: formData.mfaRequired === 'on',
         patient: formData.resourceType === 'RelatedPerson' ? patient : undefined,
       };
+
       return medplum
         .invite(project?.id as string, body as InviteRequest)
         .then((response: ProjectMembership | OperationOutcome) => {
@@ -91,7 +92,10 @@ export function InvitePage(): JSX.Element {
             label="Role"
             defaultValue="Practitioner"
             data={['Practitioner', 'Patient', 'RelatedPerson']}
-            onChange={(e) => setResourceType(e.currentTarget.value as 'Practitioner' | 'Patient' | 'RelatedPerson')}
+            onChange={(e) => {
+              setResourceType(e.currentTarget.value as 'Practitioner' | 'Patient' | 'RelatedPerson');
+              setPatient(undefined);
+            }}
             error={getErrorsForInput(outcome, 'resourceType')}
           />
           <TextInput
@@ -115,7 +119,6 @@ export function InvitePage(): JSX.Element {
                 resourceType="Patient"
                 name="patient"
                 placeholder="Patient"
-                required={true}
                 onChange={(value) => setPatient(value ? createReference(value) : undefined)}
               />
             </FormSection>
