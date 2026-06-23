@@ -81,11 +81,11 @@ describe('ResourceHeader', () => {
   test('Renders name', async () => {
     await setup({
       resourceType: 'Organization',
-      id: '123',
+      id: '125',
       name: 'Test Organization',
     });
 
-    expect(screen.queryByText('123')).not.toBeInTheDocument();
+    expect(screen.queryByText('125')).not.toBeInTheDocument();
     expect(screen.getByText('Test Organization')).toBeInTheDocument();
   });
 
