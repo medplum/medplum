@@ -9,13 +9,15 @@ After several months of preview as an [Alpha](/docs/compliance/alpha-beta) produ
 
 Medplum's Scheduling API provides an interface for applications to atomically interact with [Schedule](/docs/api/fhir/resources/schedule), [Slot](/docs/api/fhir/resources/slot), and [Appointment](/docs/api/fhir/resources/appointment) resources to safely create and manage bookings without creating scheduling conflicts. Developing a feature like this required the ability to iterate as we learned, and our Alpha period provided exactly that.
 
+{/* truncate */}
+
 ## What changed during Alpha
 
 We made some breaking changes over the course of the Alpha period to simplify the API surface and support multi-resource scheduling:
 
 - **Removed `Schedule/:id/$find`**: This route has been replaced by `Appointment/$find`, which handles single-Schedule lookups as a basic case of its ability to query multiple Schedules at once.
 - **Removed slot-based `Appointment/$book`**: The `slot` parameter input to `$book` has been removed. The operation now only accepts an `appointment` as input, which can act as a container for the potentially many Slot resources involved in a single atomic booking operation.
-- **`HealthcareService` as required service type**: Our original specification considered using [ActivityDefinition](/docs/api/fhir/resources/ActivityDefinition) resources as an optional place to store shared service type definitions. After considering the impact it would have when booking appointments with several participants, we decided to require that service types be explicitly defined as [`HealthcareService`](/docs/api/fhir/resources/HealthcareService) resources, and a reference to such a healthcare service must be included to search for available appointments in `$find`.
+- **`HealthcareService` as required service type**: Our original specification considered using [ActivityDefinition](/docs/api/fhir/resources/activitydefinition) resources as an optional place to store shared service type definitions. After considering the impact it would have when booking appointments with several participants, we decided to require that service types be explicitly defined as [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) resources, and a reference to such a healthcare service must be included to search for available appointments in `$find`.
 - **Changed `availability` format**: We've chosen a storage format for customizing availability that mirrors the [FHIR R5 Availability type](https://hl7.org/fhir/R5/metadatatypes.html#Availability). This will let us migrate these definitions easily when Medplum Server adds support for later FHIR releases.
 
 ## The Beta API surface
