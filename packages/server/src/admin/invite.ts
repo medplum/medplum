@@ -14,7 +14,15 @@ import {
   Operator,
   resolveId,
 } from '@medplum/core';
-import type { AccessPolicy, Patient, Project, ProjectMembership, Reference, RelatedPerson, User } from '@medplum/fhirtypes';
+import type {
+  AccessPolicy,
+  Patient,
+  Project,
+  ProjectMembership,
+  Reference,
+  RelatedPerson,
+  User,
+} from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';

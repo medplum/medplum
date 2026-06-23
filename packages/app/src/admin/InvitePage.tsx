@@ -91,9 +91,7 @@ export function InvitePage(): JSX.Element {
             label="Role"
             defaultValue="Practitioner"
             data={['Practitioner', 'Patient', 'RelatedPerson']}
-            onChange={(e) =>
-              setResourceType(e.currentTarget.value as 'Practitioner' | 'Patient' | 'RelatedPerson')
-            }
+            onChange={(e) => setResourceType(e.currentTarget.value as 'Practitioner' | 'Patient' | 'RelatedPerson')}
             error={getErrorsForInput(outcome, 'resourceType')}
           />
           <TextInput
