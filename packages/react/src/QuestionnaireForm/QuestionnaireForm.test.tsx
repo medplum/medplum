@@ -770,7 +770,7 @@ describe('QuestionnaireForm', () => {
       questionnaire: 'Questionnaire/' + questionnaire.id,
       source: {
         display: 'Alice Smith',
-        reference: 'Practitioner/123',
+        reference: 'Practitioner/124',
       },
       item: [
         {

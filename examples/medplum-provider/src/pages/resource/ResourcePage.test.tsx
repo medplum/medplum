@@ -32,7 +32,7 @@ describe('ResourcePage', () => {
   }
 
   test('Details tab renders', async () => {
-    await setup('/Practitioner/123');
+    await setup('/Practitioner/124');
     expect((await screen.findAllByText('Name'))[0]).toBeInTheDocument();
     expect(screen.getByText('Gender')).toBeInTheDocument();
   });
@@ -81,7 +81,7 @@ describe('ResourcePage', () => {
         id: 'project-1',
         features: ['scheduling'],
       });
-      await setup('/Practitioner/123', medplum);
+      await setup('/Practitioner/124', medplum);
       await screen.findByText('Details');
       expect(screen.queryByText('Scheduling')).not.toBeInTheDocument();
     });

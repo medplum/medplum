@@ -25,6 +25,7 @@ import {
 } from '@medplum/core';
 import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
+import { MOCK_ALICE_PRACTITIONER_ID } from './constants';
 import type {
   Agent,
   Binary,
@@ -726,7 +727,7 @@ export class MockFetchClient {
           login_id: '123',
         }),
         refresh_token: createFakeJwt({ client_id: 123 }),
-        profile: { reference: 'Practitioner/123' },
+        profile: { reference: `Practitioner/${MOCK_ALICE_PRACTITIONER_ID}` },
       };
     }
 
