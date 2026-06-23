@@ -1,7 +1,5 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
-// SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
-import type { JSX, ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import styles from './CardButton.module.css';
 
 export interface CardButtonProps {

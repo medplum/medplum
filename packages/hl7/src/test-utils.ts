@@ -3,14 +3,13 @@
 import { EventEmitter } from 'node:events';
 import { createServer } from 'node:net';
 import { Duplex } from 'node:stream';
-import type { Mock } from 'vitest';
 
 export class MockSocket extends Duplex {
   destroyed = false;
   closed = false;
   handlers: Record<string, () => void> = {};
-  setEncoding = vi.fn() as Mock;
-  setTimeout = vi.fn() as Mock;
+  setEncoding = vi.fn();
+  setTimeout = vi.fn();
 
   on(event: unknown, listener: unknown): this {
     this.handlers[event as string] = listener as () => void;

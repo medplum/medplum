@@ -1,11 +1,9 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
-// SPDX-License-Identifier: Apache-2.0
 import { buildTypeName } from '@medplum/core';
 import { marked } from 'marked';
-import type { JSX } from 'react';
+import { JSX } from 'react';
 import styles from './ResourceTables.module.css';
 
-import type {
+import {
   DocumentationLocation,
   PropertyDocInfo,
   PropertyTypeDocInfo,

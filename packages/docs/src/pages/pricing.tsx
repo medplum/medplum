@@ -1,8 +1,6 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
-// SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
-import type { JSX } from 'react';
+import { JSX } from 'react';
 import { Container } from '../components/Container';
 import styles from './pricing.module.css';
 

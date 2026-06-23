@@ -1,6 +1,4 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
-// SPDX-License-Identifier: Apache-2.0
-import type { JSX, ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import styles from './Jumbotron.module.css';
 
 export interface JumbotronProps {

@@ -29,12 +29,8 @@ export function ManageClinicPage(): JSX.Element {
   const { isAdmin, loading: adminLoading } = useAdminStatus();
 
   useEffect(() => {
-    if (!id) {
-      return;
-    }
-
     const loadOrganization = async (): Promise<void> => {
-      const org = await medplum.readResource('Organization', id);
+      const org = await medplum.readResource('Organization', id as string);
       setOrganization(org);
     };
 

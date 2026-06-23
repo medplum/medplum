@@ -1,5 +1,3 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
-// SPDX-License-Identifier: Apache-2.0
 import type {
   DocSearchHit,
   DocSearchModalProps,
@@ -25,8 +23,7 @@ import Translate from '@docusaurus/Translate';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import { IconSearch } from '@tabler/icons-react';
 import translations from '@theme/SearchTranslations';
-import type { ReactNode } from 'react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import './styles.css';
 
@@ -221,7 +218,7 @@ function DocSearch({ externalUrlRegex, ...props }: DocSearchV4Props) {
     // TODO Docusaurus v4: cleanup after we drop support for DocSearch v3
     isAskAiActive: boolean;
     onAskAiToggle: (askAiToggle: boolean) => void;
-  });
+  } as UseDocSearchKeyboardEventsProps);
 
   return (
     <>
