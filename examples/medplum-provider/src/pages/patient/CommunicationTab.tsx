@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest } from '@medplum/core';
-import { formatSearchQuery, Operator } from '@medplum/core';
-import type { Communication } from '@medplum/fhirtypes';
-import { ThreadInbox } from '@medplum/react';
+import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
+import type { Communication, DocumentReference, Reference } from '@medplum/fhirtypes';
+import { ThreadInbox, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { normalizeCommunicationSearch } from '../../utils/communication-search';
 
 export function CommunicationTab(): JSX.Element {
+  const medplum = useMedplum();
   const { patientId, messageId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,6 +65,17 @@ export function CommunicationTab(): JSX.Element {
     navigate(getThreadUri(message))?.catch(console.error);
   };
 
+  const onViewInDocuments = (reference: Reference<DocumentReference>): void => {
+    medplum
+      .readReference(reference)
+      .then((docRef) => {
+        const subject = docRef.subject?.reference;
+        const path = subject ? `/${subject}/${getReferenceString(reference)}` : `/${getReferenceString(reference)}`;
+        navigate(path)?.catch(console.error);
+      })
+      .catch(console.error);
+  };
+
   return (
     <div style={{ height: '100%' }}>
       <ThreadInbox
@@ -76,6 +88,9 @@ export function CommunicationTab(): JSX.Element {
         onChange={onChange}
         inProgressUri={inProgressUri}
         completedUri={completedUri}
+        onViewInDocuments={onViewInDocuments}
+        uploadEnabled={true}
+        dictationEnabled={medplum.getProject()?.features?.includes('ai-realtime') ?? false}
       />
     </div>
   );

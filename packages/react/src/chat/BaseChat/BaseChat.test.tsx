@@ -697,6 +697,117 @@ describe('BaseChat', () => {
     expect(screen.getByRole('button', { name: /attach file/i })).toBeInTheDocument();
   });
 
+  test('dictationEnabled defaults to false - no dictate button shown', async () => {
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+    });
+    expect(screen.queryByRole('button', { name: /dictate/i })).not.toBeInTheDocument();
+  });
+
+  test('dictationEnabled shows dictate button', async () => {
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      dictationEnabled: true,
+    });
+    expect(screen.getByRole('button', { name: /dictate/i })).toBeInTheDocument();
+  });
+
+  test('Clicking the dictate button does not submit/send the form', async () => {
+    // The non-send buttons must be type="button"; otherwise they default to submit inside the
+    // form and send the current input. (Same root cause as the dictation Accept button sending.)
+    const sendMessage = vi.fn();
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage,
+      dictationEnabled: true,
+    });
+
+    const chatInput = screen.getByPlaceholderText('Type a message...');
+    act(() => {
+      fireEvent.change(chatInput, { target: { value: 'draft text, not ready to send' } });
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /dictate/i }));
+    });
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  test('Selecting a recent document shows a removable attachment pill', async () => {
+    await defaultMedplum.createResource<DocumentReference>({
+      resourceType: 'DocumentReference',
+      status: 'current',
+      description: 'Lab summary',
+      content: [{ attachment: { title: 'lab.pdf', url: 'https://example.com/lab.pdf' } }],
+    });
+
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      uploadEnabled: true,
+    });
+
+    // Open the attach menu and drill into the recent-documents view
+    await act(() => fireEvent.click(screen.getByRole('button', { name: /attach file/i })));
+    const recentItem = await screen.findByText('Recent Documents');
+    await act(() => fireEvent.click(recentItem));
+
+    // Pick the document; a pill with its name should appear in the input box
+    const docItem = await screen.findByText('Lab summary');
+    await act(() => fireEvent.click(docItem));
+    expect(await screen.findByText('Lab summary')).toBeInTheDocument();
+
+    // Remove the attachment; the pill should disappear
+    const removeButton = screen.getByRole('button', { name: /remove attachment/i });
+    await act(() => fireEvent.click(removeButton));
+    expect(screen.queryByText('Lab summary')).not.toBeInTheDocument();
+  });
+
+  test('Choosing a file shows a removable attachment pill with the file name', async () => {
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      uploadEnabled: true,
+    });
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['data'], 'scan.png', { type: 'image/png' });
+    await act(() => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    expect(await screen.findByText('scan.png')).toBeInTheDocument();
+
+    // Removing via click clears the pill
+    await act(() => fireEvent.click(screen.getByRole('button', { name: /remove attachment/i })));
+    expect(screen.queryByText('scan.png')).not.toBeInTheDocument();
+  });
+
+  test('Upload menu item opens the file picker', async () => {
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      uploadEnabled: true,
+    });
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const clickSpy = vi.spyOn(fileInput, 'click').mockImplementation(() => undefined);
+
+    await act(() => fireEvent.click(screen.getByRole('button', { name: /attach file/i })));
+    const uploadItem = await screen.findByText('Upload a file or image');
+    await act(() => fireEvent.click(uploadItem));
+
+    expect(clickSpy).toHaveBeenCalled();
+    clickSpy.mockRestore();
+  });
+
   test('Messages with contentAttachment show filename and icon', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
     medplum.setSubscriptionManager(defaultSubManager);
@@ -758,7 +869,7 @@ describe('BaseChat', () => {
 
     await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
 
-    expect(await screen.findByRole('button', { name: /attachment options/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /open attachment/i })).toBeInTheDocument();
   });
 
   test('3-dots menu does not appear for text-only messages', async () => {
@@ -773,7 +884,7 @@ describe('BaseChat', () => {
     });
 
     expect(await screen.findByText('Hello, Medplum!')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /attachment options/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /open attachment/i })).not.toBeInTheDocument();
   });
 
   test('onViewInDocuments called when View in Documents clicked', async () => {
@@ -798,10 +909,10 @@ describe('BaseChat', () => {
       medplum
     );
 
-    const menuButton = await screen.findByRole('button', { name: /attachment options/i });
+    const menuButton = await screen.findByRole('button', { name: /open attachment/i });
     await act(() => fireEvent.click(menuButton));
 
-    const viewItem = await screen.findByRole('menuitem', { name: /view in documents/i });
+    const viewItem = await screen.findByRole('menuitem', { name: /open in documents/i });
     await act(() => fireEvent.click(viewItem));
 
     expect(onViewInDocuments).toHaveBeenCalledWith(createReference(docRef));
@@ -820,10 +931,10 @@ describe('BaseChat', () => {
 
     await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
 
-    const menuButton = await screen.findByRole('button', { name: /attachment options/i });
+    const menuButton = await screen.findByRole('button', { name: /open attachment/i });
     await act(() => fireEvent.click(menuButton));
 
-    const downloadItem = await screen.findByRole('menuitem', { name: /download/i });
+    const downloadItem = await screen.findByRole('menuitem', { name: /open in browser/i });
     await act(() => fireEvent.click(downloadItem));
 
     expect(mockOpen).toHaveBeenCalledWith('https://example.com/file.pdf', '_blank', 'noopener,noreferrer');
@@ -843,10 +954,10 @@ describe('BaseChat', () => {
 
     await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
 
-    const menuButton = await screen.findByRole('button', { name: /attachment options/i });
+    const menuButton = await screen.findByRole('button', { name: /open attachment/i });
     await act(() => fireEvent.click(menuButton));
 
-    const downloadItem = await screen.findByRole('menuitem', { name: /download/i });
+    const downloadItem = await screen.findByRole('menuitem', { name: /open in browser/i });
     await act(() => fireEvent.click(downloadItem));
 
     expect(mockOpen).not.toHaveBeenCalled();

@@ -97,6 +97,7 @@ export function MessagesPage(): JSX.Element {
         inProgressUri={inProgressUri}
         completedUri={completedUri}
         uploadEnabled={true}
+        dictationEnabled={medplum.getProject()?.features?.includes('ai-realtime') ?? false}
       />
     </div>
   );

@@ -26,6 +26,13 @@ export type UseWhisperOptions = {
   model?: string;
   onTranscript?: (text: string) => void;
   /**
+   * Called with the partial transcript of the in-progress utterance as it streams in, before the
+   * final `onTranscript` fires. The argument is the full interim text so far (cumulative),
+   * or an empty string once the utterance finalizes. Use it to show a live preview of what the
+   * speaker is saying. Not all models emit deltas; when none arrive this simply never fires.
+   */
+  onInterimTranscript?: (text: string) => void;
+  /**
    * How long to keep the WebSocket warm after stop() before fully closing it, in milliseconds.
    * Defaults to 120000 (2 minutes). Set to 0 or a non-finite value to keep the socket warm
    * until unmount (the previous behavior).
@@ -44,12 +51,15 @@ export type UseWhisperResult = {
   start: () => Promise<void>;
   stop: () => void;
   isListening: boolean;
+  muted: boolean;
+  setMuted: (value: boolean) => void;
 };
 
 export function useWhisper({
   language = 'en',
   model = 'gpt-4o-transcribe',
   onTranscript,
+  onInterimTranscript,
   idleTimeoutMs = DEFAULT_IDLE_TIMEOUT_MS,
 }: UseWhisperOptions): UseWhisperResult {
   const medplum = useMedplum();
@@ -57,6 +67,12 @@ export function useWhisper({
   useEffect(() => {
     onTranscriptRef.current = onTranscript;
   }, [onTranscript]);
+  const onInterimTranscriptRef = useRef(onInterimTranscript);
+  useEffect(() => {
+    onInterimTranscriptRef.current = onInterimTranscript;
+  }, [onInterimTranscript]);
+  // Accumulates streamed delta text for the current utterance; cleared when it finalizes.
+  const interimRef = useRef('');
   const [status, setStatus] = useState<WhisperStatus>('idle');
   const [error, setError] = useState<unknown>(undefined);
   const [transcripts, setTranscripts] = useState<TranscriptItem[]>([]);
@@ -68,6 +84,18 @@ export function useWhisper({
   const startingCaptureRef = useRef(false);
   const sessionReadyRef = useRef(false);
   const capturingRef = useRef(false);
+  const [muted, setMutedState] = useState(false);
+  const mutedRef = useRef(false);
+
+  // Mute/unmute by toggling the captured mic track; keeps the warm session and worklet running
+  // (a disabled track emits silence, so the server VAD simply hears nothing).
+  const setMuted = useCallback((value: boolean) => {
+    mutedRef.current = value;
+    setMutedState(value);
+    audioStreamRef.current?.getAudioTracks().forEach((track) => {
+      track.enabled = !value;
+    });
+  }, []);
 
   // Stop capturing audio and release the microphone, but leave the WebSocket + OpenAI
   // session warm so the next start() can reuse them. This is the user-facing `stop`.
@@ -82,6 +110,10 @@ export function useWhisper({
 
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
     audioStreamRef.current = undefined;
+
+    // Each capture session starts unmuted
+    mutedRef.current = false;
+    setMutedState(false);
 
     setStatus(websocketRef.current ? 'idle' : 'disconnected');
   }, []);
@@ -226,6 +258,9 @@ export function useWhisper({
           break;
 
         case 'input_audio_buffer.speech_started':
+          // New utterance: drop any interim text left over from the previous one.
+          interimRef.current = '';
+          onInterimTranscriptRef.current?.('');
           setStatus('speech_started');
           break;
 
@@ -233,8 +268,19 @@ export function useWhisper({
           setStatus('speech_stopped');
           break;
 
+        case 'conversation.item.input_audio_transcription.delta':
+        case 'input_audio_transcription.delta':
+          if (message.delta) {
+            interimRef.current += message.delta;
+            onInterimTranscriptRef.current?.(interimRef.current);
+          }
+          break;
+
         case 'conversation.item.input_audio_transcription.completed':
         case 'input_audio_transcription.completed':
+          // The utterance finalized: clear the interim preview before emitting the final text.
+          interimRef.current = '';
+          onInterimTranscriptRef.current?.('');
           if (message.transcript) {
             const item = {
               text: message.transcript,
@@ -373,6 +419,8 @@ export function useWhisper({
     start,
     stop: stopCapture,
     isListening: status === 'listening' || status === 'speech_started' || status === 'speech_stopped',
+    muted,
+    setMuted,
   };
 }
 

@@ -63,6 +63,7 @@ export interface ThreadInboxProps {
   readonly inProgressUri: string;
   readonly completedUri: string;
   readonly uploadEnabled?: boolean;
+  readonly dictationEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
   readonly allowPatientSelection?: boolean;
 }
@@ -77,6 +78,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     onNew,
     getThreadUri,
     uploadEnabled,
+    dictationEnabled,
     onViewInDocuments,
     onChange,
     inProgressUri,
@@ -263,9 +265,9 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
           {selectedThread ? (
             <>
               {/* Main chat area */}
-              <Flex direction="column" style={{ flex: 1 }} h="100%" className={classes.rightBorder}>
-                <Paper h="100%">
-                  <Stack h="100%" gap={0}>
+              <Flex direction="column" style={{ flex: 1, minHeight: 0 }} className={classes.rightBorder}>
+                <Paper style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                  <Stack style={{ flex: 1, minHeight: 0 }} gap={0}>
                     <Flex h={64} align="center" justify="space-between" p="md">
                       <Text fw={800} truncate fz="lg">
                         {selectedThread.topic?.text ?? 'Messages'}
@@ -299,13 +301,14 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                       </Menu>
                     </Flex>
                     <Divider />
-                    <Flex direction="column" style={{ flex: 1 }} h="100%">
+                    <Flex direction="column" style={{ flex: 1, minHeight: 0 }}>
                       <ThreadChat
                         key={`${getReferenceString(selectedThread)}`}
                         title={'Messages'}
                         thread={selectedThread}
                         excludeHeader={true}
                         uploadEnabled={uploadEnabled}
+                        dictationEnabled={dictationEnabled}
                         onViewInDocuments={onViewInDocuments}
                       />
                     </Flex>

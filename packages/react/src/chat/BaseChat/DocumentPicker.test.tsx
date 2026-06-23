@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Menu } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { createReference, getReferenceString } from '@medplum/core';
 import type { DocumentReference } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
@@ -7,10 +9,15 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render';
-import type { DocumentPickerProps } from './DocumentPicker';
-import { DocumentPicker } from './DocumentPicker';
+import type { DocumentPickerListProps } from './DocumentPicker';
+import { DocumentPickerList, truncateMiddle } from './DocumentPicker';
 
-describe('DocumentPicker', () => {
+vi.mock(import('@mantine/notifications'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  showNotification: vi.fn(),
+}));
+
+describe('DocumentPickerList', () => {
   let medplum: MockClient;
 
   beforeEach(() => {
@@ -22,13 +29,18 @@ describe('DocumentPicker', () => {
     vi.useRealTimers();
   });
 
-  async function setup(props: DocumentPickerProps): Promise<void> {
+  async function setup(props: DocumentPickerListProps): Promise<void> {
     await act(async () =>
-      render(<DocumentPicker {...props} />, ({ children }: { children: ReactNode }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      ))
+      render(
+        <Menu opened>
+          <DocumentPickerList {...props} />
+        </Menu>,
+        ({ children }: { children: ReactNode }) => (
+          <MemoryRouter>
+            <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+          </MemoryRouter>
+        )
+      )
     );
   }
 
@@ -38,15 +50,18 @@ describe('DocumentPicker', () => {
     });
   }
 
-  test('Shows header, search input, and upload option', async () => {
-    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
-    expect(screen.getByText('Attachments')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Search for a Document...')).toBeInTheDocument();
-    expect(screen.getByText('Upload an image, pdf, etc.')).toBeInTheDocument();
+  test('Shows Recent Documents label', async () => {
+    await setup({ onSelect: vi.fn() });
+    expect(screen.getByText('Recent Documents')).toBeInTheDocument();
+  });
+
+  test('Focuses the search input on mount', async () => {
+    await setup({ onSelect: vi.fn() });
+    expect(screen.getByPlaceholderText('Search documents...')).toHaveFocus();
   });
 
   test('Shows No documents found when no results', async () => {
-    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
+    await setup({ onSelect: vi.fn() });
     await flushDebounce();
     expect(await screen.findByText('No documents found')).toBeInTheDocument();
   });
@@ -59,7 +74,7 @@ describe('DocumentPicker', () => {
       content: [{ attachment: { title: 'blood-test.pdf' } }],
     });
 
-    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
+    await setup({ onSelect: vi.fn() });
     await flushDebounce();
 
     expect(await screen.findByText('Blood test results')).toBeInTheDocument();
@@ -72,7 +87,7 @@ describe('DocumentPicker', () => {
       content: [{ attachment: { title: 'xray.pdf' } }],
     });
 
-    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
+    await setup({ onSelect: vi.fn() });
     await flushDebounce();
 
     expect(await screen.findByText('xray.pdf')).toBeInTheDocument();
@@ -87,7 +102,7 @@ describe('DocumentPicker', () => {
       content: [{ attachment: { title: 'radiology.pdf' } }],
     });
 
-    await setup({ onSelect, onUpload: vi.fn() });
+    await setup({ onSelect });
     await flushDebounce();
 
     const docButton = await screen.findByText('Radiology report');
@@ -97,20 +112,11 @@ describe('DocumentPicker', () => {
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: doc.id }));
   });
 
-  test('Calls onUpload when upload option is clicked', async () => {
-    const onUpload = vi.fn();
-    await setup({ onSelect: vi.fn(), onUpload });
-
-    await act(async () => fireEvent.click(screen.getByText('Upload an image, pdf, etc.')));
-
-    expect(onUpload).toHaveBeenCalledTimes(1);
-  });
-
   test('Passes subject filter to search when subjectRef provided', async () => {
     const subjectRef = createReference(HomerSimpson);
     const searchSpy = vi.spyOn(medplum, 'searchResources').mockImplementation(() => Promise.resolve([]) as never);
 
-    await setup({ onSelect: vi.fn(), onUpload: vi.fn(), subjectRef });
+    await setup({ onSelect: vi.fn(), subjectRef });
     await flushDebounce();
 
     await waitFor(() => expect(searchSpy).toHaveBeenCalled());
@@ -125,7 +131,7 @@ describe('DocumentPicker', () => {
   test('Does not pass subject filter when subjectRef is not provided', async () => {
     const searchSpy = vi.spyOn(medplum, 'searchResources').mockImplementation(() => Promise.resolve([]) as never);
 
-    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
+    await setup({ onSelect: vi.fn() });
     await flushDebounce();
 
     await waitFor(() => expect(searchSpy).toHaveBeenCalled());
@@ -136,24 +142,67 @@ describe('DocumentPicker', () => {
     searchSpy.mockRestore();
   });
 
-  test('Passes description:contains filter when searching', async () => {
-    const searchSpy = vi.spyOn(medplum, 'searchResources').mockImplementation(() => Promise.resolve([]) as never);
+  test('Filters results client-side when searching', async () => {
+    await medplum.createResource<DocumentReference>({
+      resourceType: 'DocumentReference',
+      status: 'current',
+      description: 'Blood test results',
+      content: [{ attachment: { title: 'results.pdf' } }],
+    });
+    await medplum.createResource<DocumentReference>({
+      resourceType: 'DocumentReference',
+      status: 'current',
+      content: [{ attachment: { title: 'xray.pdf' } }],
+    });
+    const searchSpy = vi.spyOn(medplum, 'searchResources');
 
-    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
+    await setup({ onSelect: vi.fn() });
     await flushDebounce();
-    searchSpy.mockClear();
+    expect(await screen.findByText('Blood test results')).toBeInTheDocument();
 
     act(() => {
-      fireEvent.change(screen.getByPlaceholderText('Search for a Document...'), {
-        target: { value: 'blood' },
-      });
+      fireEvent.change(screen.getByPlaceholderText('Search documents...'), { target: { value: 'blood' } });
     });
     await flushDebounce();
 
-    await waitFor(() => expect(searchSpy).toHaveBeenCalled());
-    const [, params] = searchSpy.mock.calls[0];
-    expect((params as URLSearchParams).get('description:contains')).toBe('blood');
+    // The matching title-only doc is filtered out; the description match remains
+    expect(screen.getByText('Blood test results')).toBeInTheDocument();
+    expect(screen.queryByText('xray.pdf')).not.toBeInTheDocument();
+
+    // A search request widens the page size so client-side filtering has results to work with
+    const searchCall = searchSpy.mock.calls.at(-1);
+    expect((searchCall?.[1] as URLSearchParams).get('_count')).toBe('50');
 
     searchSpy.mockRestore();
+  });
+
+  test('Shows an error notification when the search fails', async () => {
+    vi.spyOn(medplum, 'searchResources').mockRejectedValue(new Error('boom'));
+
+    await setup({ onSelect: vi.fn() });
+    await flushDebounce();
+
+    await waitFor(() => expect(showNotification).toHaveBeenCalledWith(expect.objectContaining({ color: 'red' })));
+  });
+});
+
+describe('truncateMiddle', () => {
+  test('returns the name unchanged when within the limit', () => {
+    expect(truncateMiddle('short.pdf', 24)).toBe('short.pdf');
+  });
+
+  test('middle-truncates a long name while keeping the extension', () => {
+    const result = truncateMiddle('a-very-long-document-name.pdf', 20);
+    expect(result).toContain('….');
+    expect(result.endsWith('pdf')).toBe(true);
+    expect(result.length).toBeLessThanOrEqual(20);
+  });
+
+  test('truncates with a trailing ellipsis when there is no extension', () => {
+    expect(truncateMiddle('a-very-long-name-without-extension', 10)).toBe('a-very-lo…');
+  });
+
+  test('truncates with a trailing ellipsis when the extension leaves no room', () => {
+    expect(truncateMiddle('ab.superlongextension', 8)).toBe('ab.supe…');
   });
 });

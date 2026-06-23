@@ -204,6 +204,79 @@ describe('useWhisper', () => {
     expect(result.current.isListening).toBe(true);
   });
 
+  test('streams interim transcripts and clears them on speech start and completion', async () => {
+    const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
+
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
+    });
+
+    mockAudioContext();
+
+    const interim: string[] = [];
+    const onTranscript = vi.fn();
+    const { result } = renderHook(() => useWhisper({ onTranscript, onInterimTranscript: (t) => interim.push(t) }), {
+      wrapper,
+    });
+
+    await startListening(result, wsServer);
+
+    // A new utterance clears any leftover interim text
+    await act(async () => {
+      wsServer.send({ type: 'input_audio_buffer.speech_started' });
+    });
+
+    // Deltas accumulate into a cumulative interim preview
+    await act(async () => {
+      wsServer.send({ type: 'conversation.item.input_audio_transcription.delta', delta: 'hel' });
+      wsServer.send({ type: 'conversation.item.input_audio_transcription.delta', delta: 'lo' });
+    });
+
+    // Completion clears the interim and emits the final transcript
+    await act(async () => {
+      wsServer.send({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'hello' });
+    });
+
+    await waitFor(() => expect(onTranscript).toHaveBeenCalledWith('hello'));
+    expect(interim).toContain('hel');
+    expect(interim).toContain('hello');
+    expect(interim.at(-1)).toBe('');
+  });
+
+  test('mute toggles the audio track and resets on stop', async () => {
+    const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
+
+    const track = { stop: vi.fn(), enabled: true };
+    const stream = { getTracks: () => [track], getAudioTracks: () => [track] } as unknown as MediaStream;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
+    });
+
+    mockAudioContext();
+
+    const { result } = renderHook(() => useWhisper({}), { wrapper });
+
+    await startListening(result, wsServer);
+    expect(result.current.muted).toBe(false);
+
+    act(() => result.current.setMuted(true));
+    await waitFor(() => expect(result.current.muted).toBe(true));
+    expect(track.enabled).toBe(false);
+
+    act(() => result.current.setMuted(false));
+    await waitFor(() => expect(result.current.muted).toBe(false));
+    expect(track.enabled).toBe(true);
+
+    // Stopping capture resets the muted state for the next session
+    act(() => result.current.setMuted(true));
+    await waitFor(() => expect(result.current.muted).toBe(true));
+    act(() => result.current.stop());
+    await waitFor(() => expect(result.current.muted).toBe(false));
+  });
+
   test('handles ai-realtime:error message from server', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
