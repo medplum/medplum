@@ -73,7 +73,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       }
       const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
       const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
-      await exec.failJob().catch(() => {});
+      await exec.failJob();
     });
   }
 
