@@ -736,7 +736,13 @@ export class RepositoryConnection implements Disposable {
           this.currentScope = this.currentScope.parent;
         }
         this.transactionIsolationLevel = undefined;
-        this.accessTracker.clearTransactionFrames();
+        // The transaction died as a whole, so the per-level commit/rollback logging never runs.
+        // Collapse whatever frames are still live into one and emit the rolled_back transaction
+        // record here so a mixed-access transaction is still surfaced on the dead-connection path.
+        const frame = this.accessTracker.collapseTransactionFrames();
+        if (frame) {
+          this.accessTracker.logTransactionAccess(frame, 'rolled_back');
+        }
         // Pass the original triggering error so the client is released with the right root cause.
         this.releaseConnection(error);
         return;
