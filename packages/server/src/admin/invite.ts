@@ -231,7 +231,17 @@ async function upsertProfileResource(
     // patient reference when one is provided. The requirement is only enforced
     // below, when a new RelatedPerson would actually be created.
     if (resourceType === 'RelatedPerson' && patient) {
-      const referencedPatient = await systemRepo.readReference<Patient>(patient);
+      let referencedPatient: WithId<Patient>;
+      try {
+        referencedPatient = await systemRepo.readReference<Patient>(patient);
+      } catch (err) {
+        // Convert notFound into a descriptive badRequest, since a bad patient
+        // reference in the request is a client error (consistent with access policies).
+        if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
+          throw new OperationOutcomeError(badRequest(`Patient ${getReferenceString(patient)} does not exist`));
+        }
+        throw err;
+      }
       if (referencedPatient.meta?.project !== project.id) {
         throw new OperationOutcomeError(badRequest('Patient does not belong to project'));
       }

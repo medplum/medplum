@@ -8,6 +8,7 @@ import type {
   Patient,
   Practitioner,
   ProjectMembership,
+  Reference,
   RelatedPerson,
   User,
 } from '@medplum/fhirtypes';
@@ -1736,6 +1737,24 @@ describe('Admin Invite', () => {
           sendEmail: false,
         })
       ).rejects.toThrow('Patient is required to create a RelatedPerson');
+    }));
+
+  test('Invite RelatedPerson with non-existent patient throws badRequest', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const patientReference = { reference: `Patient/${randomUUID()}` } as Reference<Patient>;
+
+      await expect(
+        inviteUser({
+          project,
+          resourceType: 'RelatedPerson',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          externalId: randomUUID(),
+          sendEmail: false,
+          patient: patientReference,
+        })
+      ).rejects.toThrow(`Patient ${patientReference.reference} does not exist`);
     }));
 
   test('Invite existing RelatedPerson by email does not require patient', async () => {
