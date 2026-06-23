@@ -36,8 +36,10 @@ export type ReadHistoryOptions = {
   limit?: number;
 };
 
+type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
+
 export interface TransactionOptions {
-  readonly resourceTypes: Iterable<ResourceType>;
+  readonly resourceTypes: ResourceTypeInput;
   readonly serializable?: boolean;
 }
 

@@ -3,7 +3,6 @@
 import type { OperationOutcomeError } from '@medplum/core';
 import { normalizeErrorString, sleep } from '@medplum/core';
 import { RepositoryMode } from '@medplum/fhir-router';
-import type { ResourceType } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import type { PoolClient } from 'pg';
 import { getConfig } from '../../config/loader';
@@ -13,8 +12,11 @@ import type { PgQueryable, TransactionIsolationLevel } from '../sql';
 import { isPoolClient, isRetryableTransactionError, normalizeDatabaseError } from '../sql';
 import type {
   ExecuteSqlOptions,
+  NormalizedResourceTypes,
   RepositoryAccessLayer,
   RepositoryAccessOperation,
+  RepositoryAccessOptions,
+  ResourceTypeInput,
   TransactionSqlOptions,
 } from './access-tracker';
 import { RepositoryAccessTracker } from './access-tracker';
@@ -239,10 +241,11 @@ export class RepositoryConnection implements Disposable {
   recordResourceAccess(
     layer: RepositoryAccessLayer,
     operation: RepositoryAccessOperation,
-    resourceTypes: Iterable<ResourceType>,
-    source: string
+    resourceTypes: ResourceTypeInput,
+    source: string | undefined
   ): void {
-    this.accessTracker.recordResourceAccess(layer, operation, resourceTypes, source);
+    const normalizedResourceTypes = RepositoryAccessTracker.normalizeResourceTypes(resourceTypes);
+    this.accessTracker.recordResourceAccess(layer, operation, normalizedResourceTypes, source);
   }
 
   /**
@@ -736,7 +739,13 @@ export class RepositoryConnection implements Disposable {
           this.currentScope = this.currentScope.parent;
         }
         this.transactionIsolationLevel = undefined;
-        this.accessTracker.clearTransactionFrames();
+        // The transaction died as a whole, so the per-level commit/rollback logging never runs.
+        // Collapse whatever frames are still live into one and emit the rolled_back transaction
+        // record here so a mixed-access transaction is still surfaced on the dead-connection path.
+        const frame = this.accessTracker.collapseTransactionFrames();
+        if (frame) {
+          this.accessTracker.logTransactionAccess(frame, 'rolled_back');
+        }
         // Pass the original triggering error so the client is released with the right root cause.
         this.releaseConnection(error);
         return;
@@ -917,5 +926,16 @@ export class RepositoryConnection implements Disposable {
     if (this.closed) {
       throw new Error('Already closed');
     }
+  }
+
+  static noramlizeResourceTypes(input: ResourceTypeInput): NormalizedResourceTypes {
+    return RepositoryAccessTracker.normalizeResourceTypes(input);
+  }
+
+  static normalizeOptions<T extends RepositoryAccessOptions>(opts: T): T & { resourceTypes: NormalizedResourceTypes } {
+    return {
+      ...opts,
+      resourceTypes: RepositoryAccessTracker.normalizeResourceTypes(opts.resourceTypes),
+    };
   }
 }

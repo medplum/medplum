@@ -11,9 +11,9 @@ import {
 import type { ResourceType } from '@medplum/fhirtypes';
 import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
-import { DatabaseMode } from '../database';
 import type { AuthState } from '../oauth/middleware';
 import { getRepoForLogin } from './accesspolicy';
+import { repoAccess } from './repository/access-tracker';
 import { SelectQuery, Union } from './sql';
 
 const ONE_DAY = 60 * 60 * 24;
@@ -56,12 +56,10 @@ export class ResourceCap {
         new SelectQuery(rt).raw(`COUNT(*)::int as "count"`).where('projectId', '=', this.projectKey)
       );
       const query = new SelectQuery('combined', new Union(...subqueries)).column('count');
-      const tableCounts = await repo.executeSql<{ count: number }>(query, {
-        mode: DatabaseMode.READER,
-        operation: 'read',
-        resourceTypes: countedResourceTypes,
-        source: 'resourceCap.init',
-      });
+      const tableCounts = await repo.executeSql<{ count: number }>(
+        query,
+        repoAccess.sqlRead(countedResourceTypes, { source: 'resourceCap.init' })
+      );
       const totalCount = tableCounts.reduce((sum, row) => sum + row.count, 0);
       currentStatus = await this.limiter.set(this.projectKey, totalCount, ONE_DAY);
     }

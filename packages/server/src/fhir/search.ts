@@ -47,10 +47,10 @@ import type {
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
-import { DatabaseMode } from '../database';
 import { clamp } from './operations/utils/parameters';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
+import { repoAccess } from './repository/access-tracker';
 import { parseHistoryContent } from './repository/row-builder';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
@@ -209,12 +209,10 @@ export async function searchByReferenceImpl<T extends Resource>(
   const rows: {
     content: string;
     ref: string;
-  }[] = await repo.executeSql(unionAllBuilder, {
-    mode: DatabaseMode.READER,
-    operation: 'read',
-    resourceTypes: trackedResourceTypes,
-    source: 'search.searchByReference',
-  });
+  }[] = await repo.executeSql(
+    unionAllBuilder,
+    repoAccess.sqlRead(trackedResourceTypes, { source: 'search.searchByReference' })
+  );
 
   const results: Record<string, WithId<T>[]> = Object.create(null);
   for (const ref of referenceValues) {
@@ -342,28 +340,27 @@ async function getSearchEntries<T extends Resource>(
     builder.limit(config.fhirSearchMinLimit);
   }
 
-  const client = repo.getDatabaseClient({
-    mode: DatabaseMode.READER,
-    operation: 'configuration',
-    resourceTypes: [],
-    source: 'search.getSearchEntries.statementConfig',
-  });
-  let rows: any[];
+  let rows: { id: string; content: string; lastUpdated?: Date }[];
   try {
     if (config.fhirSearchDiscourageSeqScan) {
       // Despite the name, this doesn't truly remove the possibility of a sequential scan,
       // just massively inflates the cost of a sequential scan to the planner.
-      await client.query('SET enable_seqscan = off');
+      await repo.executeRawSql(
+        'SET enable_seqscan = off',
+        undefined,
+        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.setSeqScan' })
+      );
     }
-    rows = await repo.executeSql(builder, {
-      mode: DatabaseMode.READER,
-      operation: 'read',
-      resourceTypes: trackedResourceTypes,
+    rows = await repo.sqlRead<(typeof rows)[number]>(builder, trackedResourceTypes, {
       source: 'search.getSearchEntries',
     });
   } finally {
     if (config.fhirSearchDiscourageSeqScan) {
-      await client.query('RESET enable_seqscan');
+      await repo.executeRawSql(
+        'RESET enable_seqscan',
+        undefined,
+        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.resetSeqScan' })
+      );
     }
   }
 
@@ -371,7 +368,7 @@ async function getSearchEntries<T extends Resource>(
   const resources: WithId<T>[] = [];
   for (let i = 0; i < rowCount; i++) {
     const row = rows[i];
-    const parsed = parseHistoryContent(row.content as string);
+    const parsed = parseHistoryContent(row.content);
     if (!parsed.meta?.deleted) {
       resources.push(parsed as WithId<T>);
     } else {
@@ -952,12 +949,10 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
     builder.raw('COUNT(*)::int AS "count"');
   }
 
-  const rows = await repo.executeSql<{ count: number }>(builder, {
-    mode: DatabaseMode.READER,
-    operation: 'read',
-    resourceTypes: trackedResourceTypes,
-    source: 'search.getAccurateCount',
-  });
+  const rows = await repo.executeSql<{ count: number }>(
+    builder,
+    repoAccess.sqlRead(trackedResourceTypes, { source: 'search.getAccurateCount' })
+  );
   return rows[0].count;
 }
 
@@ -976,12 +971,10 @@ async function getEstimateCount(repo: Repository, searchRequest: SearchRequest):
 
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.
-  const rows = await repo.executeSql<{ 'QUERY PLAN': string }>(builder, {
-    mode: DatabaseMode.READER,
-    operation: 'read',
-    resourceTypes: trackedResourceTypes,
-    source: 'search.getEstimateCount',
-  });
+  const rows = await repo.executeSql<{ 'QUERY PLAN': string }>(
+    builder,
+    repoAccess.sqlRead(trackedResourceTypes, { source: 'search.getEstimateCount' })
+  );
   for (const row of rows) {
     const queryPlan = row['QUERY PLAN'];
     const match = /rows=(\d+)/.exec(queryPlan);
@@ -1383,11 +1376,7 @@ function buildFilterParameterComparison(
     selectQuery,
     resourceType,
     table,
-    {
-      code: filterComparison.path,
-      operator: filterComparison.operator,
-      value: filterComparison.value,
-    },
+    { code: filterComparison.path, operator: filterComparison.operator, value: filterComparison.value },
     trackedResourceTypes
   );
 }
@@ -1822,11 +1811,7 @@ function buildChainedSearch(
       selectQuery,
       resourceType as ResourceType,
       resourceType,
-      {
-        code,
-        operator: param.filter.operator,
-        value: `${targetType}/${targetId}`,
-      },
+      { code, operator: param.filter.operator, value: `${targetType}/${targetId}` },
       trackedResourceTypes
     );
   }

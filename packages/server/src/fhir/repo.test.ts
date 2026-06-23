@@ -48,7 +48,7 @@ import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationT
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
-import type { PgQueryable } from './sql';
+import { repoAccess } from './repository/access-tracker';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
@@ -1103,13 +1103,15 @@ describe('FHIR Repo', () => {
       expect(history2.entry?.[0]?.request?.method).toStrictEqual('DELETE');
       expect(history2.entry?.[0]?.request?.url).toStrictEqual(`Patient/${patient.id}`);
 
-      const tombstoneRows = await new SelectQuery('Patient_History')
-        .column('versionId')
-        .column('content')
-        .where('id', '=', patient.id)
-        .orderBy('lastUpdated', true)
-        .limit(1)
-        .execute(systemRepo.getDatabaseClient(DatabaseMode.READER));
+      const tombstoneRows = await systemRepo.sqlRead(
+        new SelectQuery('Patient_History')
+          .column('versionId')
+          .column('content')
+          .where('id', '=', patient.id)
+          .orderBy('lastUpdated', true)
+          .limit(1),
+        'Patient'
+      );
       expect(tombstoneRows).toHaveLength(1);
       const deleteVersionId = tombstoneRows[0].versionId as string;
       const tombstone = JSON.parse(tombstoneRows[0].content as string);
@@ -1404,42 +1406,21 @@ describe('FHIR Repo', () => {
       return patients;
     }
 
-    async function countRows(db: PgQueryable, tableName: string, id: string): Promise<number> {
+    async function countRows(tableName: string, id: string): Promise<number> {
       const query = new SelectQuery(tableName).column('id').where('id', '=', id);
-      return (
-        await query.execute(
-          systemRepo.getDatabaseClient({
-            mode: DatabaseMode.READER,
-            operation: 'read',
-            resourceTypes: ['Patient'],
-            source: 'repo.test.countRows',
-          })
-        )
-      ).length;
+      return (await systemRepo.sqlRead(query, 'Patient')).length;
     }
 
     async function expectPatientExpunged(patient: WithId<Patient>): Promise<void> {
       await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow();
-      const db = systemRepo.getDatabaseClient({
-        mode: DatabaseMode.READER,
-        operation: 'read',
-        resourceTypes: ['Patient'],
-        source: 'repo.test.countRows',
-      });
-      expect(await countRows(db, 'Patient', patient.id)).toStrictEqual(0);
-      expect(await countRows(db, 'Patient_History', patient.id)).toStrictEqual(0);
+      expect(await countRows('Patient', patient.id)).toStrictEqual(0);
+      expect(await countRows('Patient_History', patient.id)).toStrictEqual(0);
     }
 
     async function expectPatientPresent(patient: WithId<Patient>): Promise<void> {
       expect((await systemRepo.readResource('Patient', patient.id)).id).toStrictEqual(patient.id);
-      const db = systemRepo.getDatabaseClient({
-        mode: DatabaseMode.READER,
-        operation: 'read',
-        resourceTypes: ['Patient'],
-        source: 'repo.test.countRows',
-      });
-      expect(await countRows(db, 'Patient', patient.id)).toStrictEqual(1);
-      expect(await countRows(db, 'Patient_History', patient.id)).toBeGreaterThan(0);
+      expect(await countRows('Patient', patient.id)).toStrictEqual(1);
+      expect(await countRows('Patient_History', patient.id)).toBeGreaterThan(0);
     }
 
     async function expectPatientsExpunged(...patients: WithId<Patient>[]): Promise<void> {
@@ -1823,13 +1804,7 @@ describe('FHIR Repo', () => {
 
   async function getProjectIdColumn(id: string): Promise<string | null> {
     const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
-    const client = systemRepo.getDatabaseClient({
-      mode: DatabaseMode.WRITER,
-      operation: 'read',
-      resourceTypes: ['User'],
-      source: 'repo.test.getProjectIdColumn',
-    });
-    return (await projectIdQuery.execute(client))[0].projectId;
+    return (await systemRepo.sqlRead(projectIdQuery, 'User', { mode: DatabaseMode.WRITER }))[0].projectId;
   }
 
   test('Super admin can edit User.meta.project', async () =>
@@ -1915,12 +1890,7 @@ describe('FHIR Repo', () => {
       let finishedTransaction = false;
       await repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: ['Patient'],
-            source: 'repo.test.insertReferenceBatching.client',
-          });
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWrite('Patient'));
           const querySpy = spyOnQuery(client);
           await txRepo.createResource(patient);
           const calls = querySpy.mock.calls;
@@ -1950,38 +1920,41 @@ describe('FHIR Repo', () => {
       });
 
       const versionQuery = new SelectQuery('Patient').column('__version').where('id', '=', patient.id);
+      const readVersion = async (): Promise<number> =>
+        (await repo.sqlRead(versionQuery, 'Patient', { mode: DatabaseMode.WRITER }))[0].__version;
+      const setVersion = async (version: number): Promise<void> => {
+        await repo.executeRawSql(
+          'UPDATE "Patient" SET __version = $1 WHERE id = $2',
+          [version, patient.id],
+          repoAccess.sqlWrite('Patient')
+        );
+      };
 
-      const client = repo.getDatabaseClient({
-        mode: DatabaseMode.WRITER,
-        operation: 'write',
-        resourceTypes: ['Patient'],
-        source: 'repo.test.versionColumn',
-      });
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+      expect(await readVersion()).toStrictEqual(Repository.VERSION);
 
       // Simulate the resource being at an older version
       const OLDER_VERSION = Repository.VERSION - 1;
-      await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient.id]);
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+      await setVersion(OLDER_VERSION);
+      expect(await readVersion()).toStrictEqual(OLDER_VERSION);
 
       // noop update should not change the version
       await repo.updateResource<Patient>(patient);
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+      expect(await readVersion()).toStrictEqual(OLDER_VERSION);
 
       // meaningful update should change the version
       await repo.updateResource<Patient>({
         ...patient,
         name: [{ given: ['Bob'], family: 'Smith' }],
       });
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+      expect(await readVersion()).toStrictEqual(Repository.VERSION);
 
       // Simulate the resource being at an older version
-      await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient.id]);
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+      await setVersion(OLDER_VERSION);
+      expect(await readVersion()).toStrictEqual(OLDER_VERSION);
 
       // reindex SHOULD change the version
       await repo.reindexResource('Patient', patient.id);
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+      expect(await readVersion()).toStrictEqual(Repository.VERSION);
     });
   });
 

@@ -11,6 +11,7 @@ import { DatabaseMode } from '../../database';
 import { createTestProject, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
 import { SelectQuery } from '../sql';
+import { repoAccess } from './access-tracker';
 
 type MemberKind = 'method' | 'getter' | 'setter';
 
@@ -114,13 +115,18 @@ const guardedInvocations: MethodInvocation[] = [
   {
     name: 'getDatabaseClient',
     kind: 'method',
-    invoke: (repo) =>
-      repo.getDatabaseClient({
-        mode: DatabaseMode.WRITER,
-        operation: 'write',
-        resourceTypes: [],
-        source: 'repo-guard.test',
-      }),
+    invoke: (repo) => repo.getDatabaseClient(repoAccess.sqlWriteConfig()),
+  },
+  {
+    name: 'sqlRead',
+    kind: 'method',
+    invoke: (repo) => repo.sqlRead(new SelectQuery('Patient').column('id').limit(0), 'Patient'),
+  },
+  {
+    name: 'sqlWrite',
+    kind: 'method',
+    // not actually writing anything, just testing the guard
+    invoke: (repo) => repo.sqlWrite(new SelectQuery('Patient').column('id').limit(0), 'Patient'),
   },
   {
     name: 'executeSql',
@@ -412,14 +418,7 @@ describe('transaction-scoped repository guards', () => {
       const cloned = repo.clone();
       cloned[Symbol.dispose]();
 
-      expect(() =>
-        cloned.getDatabaseClient({
-          mode: DatabaseMode.WRITER,
-          operation: 'write',
-          resourceTypes: [],
-          source: 'repo-guard.test',
-        })
-      ).toThrow('Already closed');
+      expect(() => cloned.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
       await expect(cloned.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow('Already closed');
       await expect(
         cloned.withTransaction(async () => undefined, { resourceTypes: [], source: 'repo-guard.test' })

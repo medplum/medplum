@@ -21,6 +21,7 @@ import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
 import { findProjectMembership } from '../workers/utils';
 import type { Repository } from './repo';
+import { repoAccess } from './repository/access-tracker';
 import { SelectQuery } from './sql';
 
 export const PRE_COMMIT_SUBSCRIPTION_URL = 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot';
@@ -180,12 +181,10 @@ async function checkReferencesForDelete(repo: Repository, resource: WithId<Resou
     .where('code', 'IN', criticalProjectMembershipReferences)
     .limit(1);
 
-  const results = await repo.executeSql<{ resourceId: string }>(checkForCriticalRefs, {
-    mode: DatabaseMode.WRITER,
-    operation: 'read',
-    resourceTypes: ['ProjectMembership'],
-    source: 'precommit.checkReferencesForDelete',
-  });
+  const results = await repo.executeSql<{ resourceId: string }>(
+    checkForCriticalRefs,
+    repoAccess.sqlRead('ProjectMembership', { mode: DatabaseMode.WRITER, source: 'precommit.checkReferencesForDelete' })
+  );
   if (results.length) {
     throw new OperationOutcomeError(
       badRequest(
