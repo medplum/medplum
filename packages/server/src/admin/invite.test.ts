@@ -1738,6 +1738,53 @@ describe('Admin Invite', () => {
       ).rejects.toThrow('Patient is required to create a RelatedPerson');
     }));
 
+  test('Invite existing RelatedPerson by email does not require patient', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const bobEmail = `bob${randomUUID()}@example.com`;
+
+    // Pre-create a Patient and a RelatedPerson with a matching email in the project.
+    const relatedPerson = await withTestContext(async () => {
+      const systemRepo = await getProjectSystemRepo(project);
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Carol'], family: 'Patient' }],
+      });
+      return systemRepo.createResource<RelatedPerson>({
+        resourceType: 'RelatedPerson',
+        meta: { project: project.id },
+        patient: createReference(patient),
+        name: [{ given: ['Bob'], family: 'Jones' }],
+        telecom: [{ system: 'email', use: 'work', value: bobEmail }],
+      });
+    });
+
+    // Invite by email with NO patient param. The existing RelatedPerson matches
+    // by project + email, so it should be reused rather than requiring a patient.
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'RelatedPerson',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.profile).toMatchObject(createReference(relatedPerson));
+  });
+
   test('Invite RelatedPerson with patient from another project throws', () =>
     withTestContext(async () => {
       const { project } = await createTestProject();

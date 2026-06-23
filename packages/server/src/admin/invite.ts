@@ -227,12 +227,10 @@ async function upsertProfileResource(
       telecom: email ? [{ system: 'email', use: 'work', value: email }] : undefined,
     } as ProfileResource;
 
-    if (resourceType === 'RelatedPerson') {
-      // RelatedPerson.patient is a required FHIR field, so a patient must be
-      // provided in order to provision a new RelatedPerson profile.
-      if (!patient) {
-        throw new OperationOutcomeError(badRequest('Patient is required to create a RelatedPerson'));
-      }
+    // RelatedPerson.patient is a required FHIR field. Validate and attach the
+    // patient reference when one is provided. The requirement is only enforced
+    // below, when a new RelatedPerson would actually be created.
+    if (resourceType === 'RelatedPerson' && patient) {
       const referencedPatient = await systemRepo.readReference<Patient>(patient);
       if (referencedPatient.meta?.project !== project.id) {
         throw new OperationOutcomeError(badRequest('Patient does not belong to project'));
@@ -241,20 +239,33 @@ async function upsertProfileResource(
     }
 
     if (email) {
+      const filters = [
+        {
+          code: '_project',
+          operator: Operator.EQUALS,
+          value: project.id,
+        },
+        {
+          code: 'email',
+          operator: Operator.EQUALS,
+          value: email,
+        },
+      ];
+
+      // Inviting by email may match an existing profile (e.g. a previously
+      // created RelatedPerson), in which case no patient is required. Only
+      // enforce the patient requirement when a new RelatedPerson would be created.
+      if (resourceType === 'RelatedPerson' && !patient) {
+        const existing = await systemRepo.searchOne<RelatedPerson>({ resourceType, filters });
+        if (!existing) {
+          throw new OperationOutcomeError(badRequest('Patient is required to create a RelatedPerson'));
+        }
+        return existing;
+      }
+
       const { resource: result, outcome } = await systemRepo.conditionalCreate(resource, {
         resourceType,
-        filters: [
-          {
-            code: '_project',
-            operator: Operator.EQUALS,
-            value: project.id,
-          },
-          {
-            code: 'email',
-            operator: Operator.EQUALS,
-            value: email,
-          },
-        ],
+        filters,
       });
 
       if (isCreated(outcome)) {
@@ -266,6 +277,11 @@ async function upsertProfileResource(
       }
       return result;
     } else {
+      // Without an email there is nothing to match against, so a new resource is
+      // always created and the RelatedPerson patient requirement applies.
+      if (resourceType === 'RelatedPerson' && !patient) {
+        throw new OperationOutcomeError(badRequest('Patient is required to create a RelatedPerson'));
+      }
       const profile = await systemRepo.createResource(resource);
       getLogger().info('Profile created', {
         reference: getReferenceString(profile),
