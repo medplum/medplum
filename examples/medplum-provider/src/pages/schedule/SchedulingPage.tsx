@@ -42,6 +42,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 import { useNotifyOnError } from '../../hooks/useNotifyOnError';
+import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
 import { isSchedulableFor } from '../../utils/scheduling';
@@ -53,6 +54,8 @@ type ColorTheme = {
   appointment: string;
   slot: string;
 };
+
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 const COLOR_THEMES: ColorTheme[] = [
   { appointment: 'indigo.7', slot: 'indigo.5' },
@@ -340,6 +343,8 @@ export function SchedulingPage(): JSX.Element | null {
   const allSchedulable =
     healthcareService && selectedSchedules?.every((schedule) => isSchedulableFor(schedule, healthcareService));
 
+  const earliestSchedulable = useSchedulingStartsAt({ minimumNoticeMinutes: 30 });
+
   const medplum = useMedplum();
   const [availableAppointments, setAvailableAppointments] = useState<Appointment[] | undefined>();
   useEffect(() => {
@@ -350,9 +355,12 @@ export function SchedulingPage(): JSX.Element | null {
       return () => {};
     }
 
+    const searchStart = range.start < earliestSchedulable ? earliestSchedulable : range.start;
+    const searchEnd = searchStart < range.end ? range.end : new Date(searchStart.getTime() + ONE_WEEK_MS);
+
     const url = medplum.fhirUrl('Appointment', '$find');
-    url.searchParams.append('start', range.start.toISOString());
-    url.searchParams.append('end', range.end.toISOString());
+    url.searchParams.append('start', searchStart.toISOString());
+    url.searchParams.append('end', searchEnd.toISOString());
     url.searchParams.append('service-type-reference', getReferenceString(healthcareService));
 
     selectedSchedules.forEach((schedule) => {
@@ -375,7 +383,7 @@ export function SchedulingPage(): JSX.Element | null {
     return () => {
       running = false;
     };
-  }, [medplum, range, selectedSchedules, healthcareService, allSchedulable]);
+  }, [medplum, range, selectedSchedules, healthcareService, allSchedulable, earliestSchedulable]);
 
   const [chosenAppointment, setChosenAppointment] = useState<Appointment>();
 
