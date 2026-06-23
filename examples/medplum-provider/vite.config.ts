@@ -6,6 +6,7 @@ import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
 import type { UserConfig } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { globalSetupFiles } from '../../vitest.config';
 
 dns.setDefaultResultOrder('verbatim');
 
@@ -45,6 +46,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/test.setup.ts',
+    setupFiles: [...globalSetupFiles, './src/test.setup.ts'],
   },
 });
