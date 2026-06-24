@@ -55,9 +55,7 @@ export const EditTopicDialog = (props: EditTopicDialogProps): JSX.Element => {
   // defaultValue on its own timeline, so a cached field renders instantly while an uncached
   // one (typically the patient) pops in late. Gating on a single Promise.all makes all fields
   // appear together, fed pre-resolved resources so they have no further reads to do.
-  const [resolved, setResolved] = useState<{ patient?: Patient; practitioners: Practitioner[] } | undefined>(
-    undefined
-  );
+  const [resolved, setResolved] = useState<{ patient?: Patient; practitioners: Practitioner[] } | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
