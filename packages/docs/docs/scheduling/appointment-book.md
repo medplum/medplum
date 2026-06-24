@@ -282,7 +282,7 @@ Returns `201 Created` with a [`Bundle`](/docs/api/fhir/resources/bundle) wrappin
 }
 ```
 
-## Beta Limitations
+## Beta Status
 
 The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.
 

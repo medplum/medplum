@@ -240,7 +240,7 @@ See [Defining Availability](/docs/scheduling/defining-availability) for full det
 }
 ```
 
-## Beta Limitations
+## Beta Status
 
 The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.
 

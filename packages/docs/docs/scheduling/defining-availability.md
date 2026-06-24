@@ -1341,7 +1341,7 @@ Let `$find` calculate available windows dynamically.
 
 Always use [FHIR transaction bundles](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions) when booking appointments that require multiple resources to ensure atomicity.
 
-## Beta Limitations
+## Beta Status
 
 The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.
 
