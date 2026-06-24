@@ -18,7 +18,11 @@ export const POSTGRES_CATALOG = 'pg_db';
 /** the path to the project id in the content JSON */
 export const PROJECT_ID_JSON_PATH = '$.meta.project';
 
-/** DuckDB expression that extracts project_id without casting empty tombstone content to JSON. */
+/**
+ * DuckDB expression that extracts project_id without casting empty tombstone content to JSON.
+ *
+ * @returns SQL fragment for the outer `project_id` projection column.
+ */
 export function buildProjectIdProjectionSql(): string {
   return `CASE WHEN NULLIF("src"."content", '') IS NULL THEN NULL ELSE json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}') END AS project_id`;
 }
