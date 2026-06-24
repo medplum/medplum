@@ -255,6 +255,40 @@ describe('DurableQueue', () => {
     expect(queue.markSent('cb-unknown')).toBe(false);
   });
 
+  test('runInTransaction rolls back markSent when the send fails, leaving the row claimed', () => {
+    // Mirrors App.sendToWebSocket: flip claimed→inflight and write the socket in
+    // one transaction. If the socket write throws, the marker must roll back so
+    // the row stays `claimed` (provably unsent, safe to requeue) instead of a
+    // phantom `inflight` that no bytes ever backed.
+    const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'TXN1', callbackId: 'cb-txn' }));
+    if (r.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    queue.claimNext(r.row.channelName);
+    expect(queue.getById(r.row.id)?.state).toBe(MessageState.CLAIMED);
+
+    const sendError = new Error('WebSocket send failed');
+    expect(() =>
+      queue.runInTransaction(() => {
+        queue.markSent('cb-txn');
+        throw sendError; // simulate the socket write throwing after the marker ran
+      })
+    ).toThrow(sendError);
+
+    // The markSent inside the transaction was rolled back: still `claimed`, sent_at null.
+    const after = queue.getById(r.row.id);
+    expect(after?.state).toBe(MessageState.CLAIMED);
+    expect(after?.sentAt).toBeNull();
+
+    // And the committed path still transitions normally afterwards.
+    queue.runInTransaction(() => {
+      queue.markSent('cb-txn', 1700000000000);
+    });
+    const committed = queue.getById(r.row.id);
+    expect(committed?.state).toBe(MessageState.INFLIGHT);
+    expect(committed?.sentAt).toBe(1700000000000);
+  });
+
   test('markProcessed records the source-leg ack outcome and processed timestamp', () => {
     const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS1' }));
     if (r.kind !== 'inserted') {

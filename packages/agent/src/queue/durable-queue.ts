@@ -428,6 +428,31 @@ export class DurableQueue {
   }
 
   /**
+   * Runs `fn` inside a single SQLite transaction, committing if it returns and
+   * rolling back if it throws. Used to make a row state transition atomic with an
+   * external side effect — e.g. flipping a row `claimed` → `inflight` only if the
+   * socket write that puts it on the wire also succeeds (see `App.sendToWebSocket`):
+   * if the write throws, the marker rolls back and the row stays `claimed`
+   * (provably unsent, safe to requeue) rather than a phantom `inflight`.
+   *
+   * `node:sqlite` is synchronous, so `fn` must be synchronous too — do any `await`
+   * (e.g. token refresh) before calling, not inside.
+   * @param fn - The work to run transactionally.
+   * @returns Whatever `fn` returns.
+   */
+  runInTransaction<T>(fn: () => T): T {
+    this.db.exec('BEGIN');
+    try {
+      const result = fn();
+      this.db.exec('COMMIT');
+      return result;
+    } catch (err) {
+      this.db.exec('ROLLBACK');
+      throw err;
+    }
+  }
+
+  /**
    * Inserts a new `queued` row.
    *
    * If any prior non-`nacked` row already owns this `(channel_name,

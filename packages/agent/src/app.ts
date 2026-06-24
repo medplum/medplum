@@ -1610,7 +1610,8 @@ export class App {
   }
 
   private async sendToWebSocket(message: AgentMessage): Promise<void> {
-    if (!this.webSocket) {
+    const ws = this.webSocket;
+    if (!ws) {
       throw new Error('WebSocket not connected');
     }
     if ('accessToken' in message) {
@@ -1619,15 +1620,27 @@ export class App {
       await this.medplum.refreshIfExpired();
       message.accessToken = this.medplum.getAccessToken();
     }
-    this.webSocket.send(JSON.stringify(message));
+    const payload = JSON.stringify(message);
 
-    // The request is now on the wire. For a durable-queue dispatch this is the
+    // For a durable-queue dispatch, putting the request on the wire is the
     // Phase A → B transition: flip its row from `claimed` to `inflight` and stamp
     // sent_at, so crash recovery can tell a provably-unsent row (safe to requeue)
-    // from an ambiguous in-flight one. Keyed by callback; a no-op for legacy
-    // (non-durable) sends and for any non-transmit frame.
-    if (message.type === 'agent:transmit:request' && message.callback) {
-      this.durableQueue?.markSent(message.callback);
+    // from an ambiguous in-flight one. We do the marker first and the socket write
+    // inside the SAME transaction: if the write throws (e.g. socket not OPEN), the
+    // marker rolls back and the row stays `claimed` instead of a phantom `inflight`
+    // that no bytes ever backed. This also closes the converse window — a failed
+    // marker can never leave bytes on the wire recorded as `claimed`, since we
+    // never reach the send. Keyed by callback; a no-op for legacy (non-durable)
+    // sends and for any non-transmit frame, which just send.
+    const callback = message.type === 'agent:transmit:request' ? message.callback : undefined;
+    if (callback && this.durableQueue) {
+      const durableQueue = this.durableQueue;
+      durableQueue.runInTransaction(() => {
+        durableQueue.markSent(callback);
+        ws.send(payload);
+      });
+    } else {
+      ws.send(payload);
     }
   }
 
