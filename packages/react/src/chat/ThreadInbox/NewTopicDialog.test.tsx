@@ -6,7 +6,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { render, screen, waitFor } from '../../test-utils/render';
+import { render, screen } from '../../test-utils/render';
 import { NewTopicDialog } from './NewTopicDialog';
 
 const mockOnSubmit = vi.fn();
@@ -70,7 +70,7 @@ describe('NewTopicDialog', () => {
 
   test('displays practitioner input field', () => {
     setup(true);
-    expect(screen.getByText('Practitioner (optional)')).toBeInTheDocument();
+    expect(screen.getByText('Practitioner')).toBeInTheDocument();
   });
 
   test('displays topic input field', () => {
@@ -84,16 +84,12 @@ describe('NewTopicDialog', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
   });
 
-  test('shows error when submitting without patient and search is enabled', async () => {
-    const user = userEvent.setup();
+  test('disables submit until a patient is selected when search is enabled', () => {
     setup(true, undefined, true);
 
-    const submitButton = screen.getByRole('button', { name: 'Next' });
-    await user.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Please select a patient/i)).toBeInTheDocument();
-    });
+    // With no patient chosen, the patient is required, so Next is disabled
+    // and cannot be submitted.
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
 
   test('calls onClose when modal is closed', async () => {
