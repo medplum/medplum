@@ -325,20 +325,38 @@ export function buildRangeColumnsSearchFilter(
     throw new Error('Invalid search strategy: ' + impl.searchStrategy);
   }
 
-  const approximate = filter.operator === Operator.APPROXIMATELY;
-  let range: Interval<number | Date>;
-  let colType: ColumnType;
-  if (param.type === 'date') {
-    range = parseDateTimeToRange(
-      impl.type === SearchParameterType.DATE ? filter.value.substring(0, 10) : filter.value,
-      approximate
-    );
-    colType = impl.type === SearchParameterType.DATE ? ColumnType.DATERANGE : ColumnType.TSTZRANGE;
-  } else {
-    range = parseNumberToRange(Number.parseFloat(filter.value), approximate);
-    colType = ColumnType.NUMRANGE;
-  }
+  const { range, colType } = parseFilterRange(param, impl, filter);
   const column = new Column(tableName, impl.rangeColumnName);
+  return buildRangeFilterCondition(column, range, colType, filter);
+}
+
+function parseFilterRange(
+  param: SearchParameter,
+  impl: RangeColumnSearchParameterImplementation,
+  filter: Filter
+): { range: Interval<number | Date>; colType: ColumnType } {
+  const approximate = filter.operator === Operator.APPROXIMATELY;
+  if (param.type === 'date') {
+    return {
+      range: parseDateTimeToRange(
+        impl.type === SearchParameterType.DATE ? filter.value.substring(0, 10) : filter.value,
+        approximate
+      ),
+      colType: impl.type === SearchParameterType.DATE ? ColumnType.DATERANGE : ColumnType.TSTZRANGE,
+    };
+  }
+  return {
+    range: parseNumberToRange(Number.parseFloat(filter.value), approximate),
+    colType: ColumnType.NUMRANGE,
+  };
+}
+
+function buildRangeFilterCondition(
+  column: Column,
+  range: Interval<number | Date>,
+  colType: ColumnType,
+  filter: Filter
+): Expression {
   switch (filter.operator) {
     case Operator.EXACT: // Alias needed for _filter search
     case Operator.APPROXIMATELY: // Approximate target range calculated above, match against it here

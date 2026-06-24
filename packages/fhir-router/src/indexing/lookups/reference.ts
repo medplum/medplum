@@ -73,37 +73,16 @@ export class ReferenceTable extends LookupTable {
       return;
     }
 
-    const existingHashesByResource = new Map<string, Set<string>>();
-    for (const row of existingRows) {
-      let hashes = existingHashesByResource.get(row.resourceId);
-      if (!hashes) {
-        hashes = new Set<string>();
-        existingHashesByResource.set(row.resourceId, hashes);
-      }
-      hashes.add(hashRow(row));
-    }
+    const existingHashesByResource = buildHashesByResourceId(existingRows);
 
     const newRowsByResource = new Map<string, ReferenceTableRow[]>();
     await this.extractAllValues(newRowsByResource, resources, resourceBatchSize);
 
-    const resourcesWithChangedReferences: Resource[] = [];
-    const rowsToInsert: LookupTableRow[] = [];
-    for (const resource of resources) {
-      const existingHashes = existingHashesByResource.get(resource.id);
-      const newRowsForResource = newRowsByResource.get(resource.id);
-      const newHashes = newRowsForResource && new Set(newRowsForResource.map(hashRow));
-
-      const identical =
-        (existingHashes?.size ?? 0) === (newHashes?.size ?? 0) &&
-        (!existingHashes || !newHashes || existingHashes.values().every((h) => newHashes.has(h)));
-
-      if (!identical) {
-        resourcesWithChangedReferences.push(resource);
-        if (newRowsForResource) {
-          rowsToInsert.push(...newRowsForResource);
-        }
-      }
-    }
+    const { resourcesWithChangedReferences, rowsToInsert } = findChangedReferenceRows(
+      resources,
+      existingHashesByResource,
+      newRowsByResource
+    );
 
     if (resourcesWithChangedReferences.length > 0) {
       getLogger().info('Reference changes detected', {
@@ -148,16 +127,7 @@ export class ReferenceTable extends LookupTable {
           );
         }
         try {
-          if (result instanceof Map) {
-            let rowArray = result.get(resource.id);
-            if (!rowArray) {
-              rowArray = [];
-              result.set(resource.id, rowArray);
-            }
-            this.extractValues(rowArray, resource);
-          } else {
-            this.extractValues(result, resource);
-          }
+          this.addResourceToResult(result, resource);
         } catch (err) {
           getLogger().error('Error extracting values for resource', {
             resource: `${resourceType}/${resource.id}`,
@@ -174,6 +144,22 @@ export class ReferenceTable extends LookupTable {
         });
       }
     }
+  }
+
+  private addResourceToResult(
+    result: ReferenceTableRow[] | Map<string, ReferenceTableRow[]>,
+    resource: WithId<Resource>
+  ): void {
+    if (result instanceof Map) {
+      let rowArray = result.get(resource.id);
+      if (!rowArray) {
+        rowArray = [];
+        result.set(resource.id, rowArray);
+      }
+      this.extractValues(rowArray, resource);
+      return;
+    }
+    this.extractValues(result, resource);
   }
 
   extractValues(result: ReferenceTableRow[], resource: WithId<Resource>): void {
@@ -238,30 +224,93 @@ function hashRow(row: ReferenceTableRow): string {
  */
 function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resource>): void {
   const searchParams = getSearchParameters(resource.resourceType);
-  if (searchParams) {
-    const resultMap = new Map<string, ReferenceTableRow>();
-    for (const searchParam of Object.values(searchParams)) {
-      if (!isIndexed(searchParam)) {
-        continue;
-      }
-
-      const details = getSearchParameterDetails(resource.resourceType, searchParam);
-      const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
-      for (const value of typedValues) {
-        if (value.type === PropertyType.Reference && value.value.reference) {
-          const targetId = resolveId(value.value);
-          if (targetId && isUUID(targetId)) {
-            addSearchReferenceResult(resultMap, resource, searchParam, targetId);
-          }
-        }
-
-        if (isResource(value.value) && value.value.id && isUUID(value.value.id)) {
-          addSearchReferenceResult(resultMap, resource, searchParam, value.value.id);
-        }
-      }
-    }
-    result.push(...resultMap.values());
+  if (!searchParams) {
+    return;
   }
+
+  const resultMap = new Map<string, ReferenceTableRow>();
+  for (const searchParam of Object.values(searchParams)) {
+    if (!isIndexed(searchParam)) {
+      continue;
+    }
+    addSearchReferencesForParam(resultMap, resource, searchParam);
+  }
+  result.push(...resultMap.values());
+}
+
+function addSearchReferencesForParam(
+  resultMap: Map<string, ReferenceTableRow>,
+  resource: WithId<Resource>,
+  searchParam: SearchParameter
+): void {
+  const details = getSearchParameterDetails(resource.resourceType, searchParam);
+  const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
+  for (const value of typedValues) {
+    addReferenceFromTypedValue(resultMap, resource, searchParam, value);
+  }
+}
+
+function addReferenceFromTypedValue(
+  resultMap: Map<string, ReferenceTableRow>,
+  resource: WithId<Resource>,
+  searchParam: SearchParameter,
+  value: ReturnType<typeof evalFhirPathTyped>[number]
+): void {
+  if (value.type === PropertyType.Reference && value.value.reference) {
+    const targetId = resolveId(value.value);
+    if (targetId && isUUID(targetId)) {
+      addSearchReferenceResult(resultMap, resource, searchParam, targetId);
+    }
+  }
+
+  if (isResource(value.value) && value.value.id && isUUID(value.value.id)) {
+    addSearchReferenceResult(resultMap, resource, searchParam, value.value.id);
+  }
+}
+
+function buildHashesByResourceId(rows: ReferenceTableRow[]): Map<string, Set<string>> {
+  const hashesByResource = new Map<string, Set<string>>();
+  for (const row of rows) {
+    let hashes = hashesByResource.get(row.resourceId);
+    if (!hashes) {
+      hashes = new Set<string>();
+      hashesByResource.set(row.resourceId, hashes);
+    }
+    hashes.add(hashRow(row));
+  }
+  return hashesByResource;
+}
+
+function findChangedReferenceRows(
+  resources: Resource[],
+  existingHashesByResource: Map<string, Set<string>>,
+  newRowsByResource: Map<string, ReferenceTableRow[]>
+): { resourcesWithChangedReferences: Resource[]; rowsToInsert: LookupTableRow[] } {
+  const resourcesWithChangedReferences: Resource[] = [];
+  const rowsToInsert: LookupTableRow[] = [];
+  for (const resource of resources) {
+    const existingHashes = existingHashesByResource.get(resource.id);
+    const newRowsForResource = newRowsByResource.get(resource.id);
+    if (areReferenceRowsIdentical(existingHashes, newRowsForResource)) {
+      continue;
+    }
+    resourcesWithChangedReferences.push(resource);
+    if (newRowsForResource) {
+      rowsToInsert.push(...newRowsForResource);
+    }
+  }
+  return { resourcesWithChangedReferences, rowsToInsert };
+}
+
+function areReferenceRowsIdentical(
+  existingHashes: Set<string> | undefined,
+  newRowsForResource: ReferenceTableRow[] | undefined
+): boolean {
+  const newHashes = newRowsForResource && new Set(newRowsForResource.map(hashRow));
+  return (
+    (existingHashes?.size ?? 0) === (newHashes?.size ?? 0) &&
+    (!existingHashes || !newHashes || existingHashes.values().every((h) => newHashes.has(h)))
+  );
 }
 
 /**

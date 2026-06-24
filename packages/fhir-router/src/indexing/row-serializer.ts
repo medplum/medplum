@@ -19,33 +19,31 @@ export function serializeRowForDialect(row: Record<string, any>, dialect: SqlDia
     if (value === undefined) {
       continue;
     }
-    if (value === null) {
-      result[key] = null;
-      continue;
-    }
-    if (typeof value === 'boolean') {
-      result[key] = value ? 1 : 0;
-      continue;
-    }
-    if (typeof value === 'number') {
-      result[key] = value;
-      continue;
-    }
-    if (Array.isArray(value)) {
-      result[key] = JSON.stringify(value);
-      continue;
-    }
-    if (typeof value === 'string' && isPostgresRange(value)) {
-      result[key] = JSON.stringify(parsePostgresRange(value));
-      continue;
-    }
-    if (typeof value === 'object') {
-      result[key] = JSON.stringify(value);
-      continue;
-    }
-    result[key] = value;
+    result[key] = serializeValueForDialect(value);
   }
   return result;
+}
+
+function serializeValueForDialect(value: unknown): unknown {
+  if (value === null) {
+    return null;
+  }
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0;
+  }
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return JSON.stringify(value);
+  }
+  if (typeof value === 'string' && isPostgresRange(value)) {
+    return JSON.stringify(parsePostgresRange(value));
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  return value;
 }
 
 function isPostgresRange(value: string): boolean {

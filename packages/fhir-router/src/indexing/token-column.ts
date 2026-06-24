@@ -41,73 +41,7 @@ export function buildTokenColumns(
 
   let sortColumnValue: string | null = null;
   for (const t of allTokens) {
-    const code = t.code;
-    const system = t.system?.trim?.();
-    let value = t.value?.trim?.();
-    if (!code || (!system && !value)) {
-      continue;
-    }
-
-    if (value && impl.caseInsensitive) {
-      value = value.toLocaleLowerCase();
-    }
-
-    // sanity check
-    if (code !== searchParam.code) {
-      throw new Error(`Invalid token code ${code} for search parameter with code ${searchParam.code}`);
-    }
-
-    // text search
-    if (value && (system === TEXT_SEARCH_SYSTEM || impl.textSearch)) {
-      if (impl.hasDedicatedColumns) {
-        textSearchTokens.add(value);
-      } else {
-        textSearchTokens.add(code + DELIM + value);
-      }
-
-      /*
-      Ideally we could continue here when system === TEXT_SEARCH_SYSTEM, but right now Medplum supports exact searches on the text content
-      as if it were a normal token value, e.g. the following resource should match the search `Task?code=cursor_test` 
-
-      {
-        resourceType: 'Task',
-        status: 'accepted',
-        intent: 'order',
-        code: { text: 'cursor_test' },
-      }
-      */
-    }
-
-    // :missing/:present - in a token column per search parameter, the presence of any elements
-    // in the main token column, `impl.tokenColumnName`, is sufficient.
-    if (!impl.hasDedicatedColumns) {
-      addHashedToken(tokens, code);
-    }
-
-    const prefix = impl.hasDedicatedColumns ? '' : code + DELIM;
-
-    // The TEXT_SEARCH_SYSTEM is never searchable
-    if (system && system !== TEXT_SEARCH_SYSTEM) {
-      // [parameter]=[system]|
-      addHashedToken(tokens, prefix + system);
-
-      if (value) {
-        // [parameter]=[system]|[code]
-        addHashedToken(tokens, prefix + system + DELIM + value);
-      }
-    }
-
-    if (value) {
-      sortColumnValue = sortColumnValue && sortColumnValue.localeCompare(value) <= 0 ? sortColumnValue : value;
-
-      // [parameter]=[code]
-      addHashedToken(tokens, prefix + DELIM + value);
-
-      if (!system) {
-        // [parameter]=|[code]
-        addHashedToken(tokens, prefix + NULL_SYSTEM + DELIM + value);
-      }
-    }
+    sortColumnValue = processTokenForColumns(t, searchParam, impl, tokens, textSearchTokens, sortColumnValue);
   }
 
   if (options?.paddingConfig) {
@@ -124,6 +58,123 @@ export function buildTokenColumns(
 
 function addHashedToken(tokenSet: Set<string>, token: string): void {
   tokenSet.add(hashTokenColumnValue(token));
+}
+
+function processTokenForColumns(
+  t: Token,
+  searchParam: SearchParameter,
+  impl: TokenColumnSearchParameterImplementation,
+  tokens: Set<string>,
+  textSearchTokens: Set<string>,
+  sortColumnValue: string | null
+): string | null {
+  const code = t.code;
+  const system = t.system?.trim?.();
+  let value = t.value?.trim?.();
+  if (!code || (!system && !value)) {
+    return sortColumnValue;
+  }
+
+  if (value && impl.caseInsensitive) {
+    value = value.toLocaleLowerCase();
+  }
+
+  if (code !== searchParam.code) {
+    throw new Error(`Invalid token code ${code} for search parameter with code ${searchParam.code}`);
+  }
+
+  addTextSearchToken(textSearchTokens, code, system, value, impl);
+  addMissingPresentToken(tokens, code, impl);
+
+  const prefix = impl.hasDedicatedColumns ? '' : code + DELIM;
+  addSystemTokens(tokens, prefix, system, value);
+  return addValueTokens(tokens, prefix, system, value, sortColumnValue);
+}
+
+function addTextSearchToken(
+  textSearchTokens: Set<string>,
+  code: string,
+  system: string | undefined,
+  value: string | undefined,
+  impl: TokenColumnSearchParameterImplementation
+): void {
+  if (!value || (system !== TEXT_SEARCH_SYSTEM && !impl.textSearch)) {
+    return;
+  }
+
+  /*
+  Ideally we could return here when system === TEXT_SEARCH_SYSTEM, but right now Medplum supports exact searches on the text content
+  as if it were a normal token value, e.g. the following resource should match the search `Task?code=cursor_test`
+
+  {
+    resourceType: 'Task',
+    status: 'accepted',
+    intent: 'order',
+    code: { text: 'cursor_test' },
+  }
+  */
+  if (impl.hasDedicatedColumns) {
+    textSearchTokens.add(value);
+  } else {
+    textSearchTokens.add(code + DELIM + value);
+  }
+}
+
+function addMissingPresentToken(
+  tokens: Set<string>,
+  code: string,
+  impl: TokenColumnSearchParameterImplementation
+): void {
+  // :missing/:present - in a token column per search parameter, the presence of any elements
+  // in the main token column, `impl.tokenColumnName`, is sufficient.
+  if (!impl.hasDedicatedColumns) {
+    addHashedToken(tokens, code);
+  }
+}
+
+function addSystemTokens(
+  tokens: Set<string>,
+  prefix: string,
+  system: string | undefined,
+  value: string | undefined
+): void {
+  // The TEXT_SEARCH_SYSTEM is never searchable
+  if (!system || system === TEXT_SEARCH_SYSTEM) {
+    return;
+  }
+
+  // [parameter]=[system]|
+  addHashedToken(tokens, prefix + system);
+
+  if (value) {
+    // [parameter]=[system]|[code]
+    addHashedToken(tokens, prefix + system + DELIM + value);
+  }
+}
+
+function addValueTokens(
+  tokens: Set<string>,
+  prefix: string,
+  system: string | undefined,
+  value: string | undefined,
+  sortColumnValue: string | null
+): string | null {
+  if (!value) {
+    return sortColumnValue;
+  }
+
+  const nextSortValue =
+    sortColumnValue && sortColumnValue.localeCompare(value) <= 0 ? sortColumnValue : value;
+
+  // [parameter]=[code]
+  addHashedToken(tokens, prefix + DELIM + value);
+
+  if (!system) {
+    // [parameter]=|[code]
+    addHashedToken(tokens, prefix + NULL_SYSTEM + DELIM + value);
+  }
+
+  return nextSortValue;
 }
 
 export function hashTokenColumnValue(value: string): string {
@@ -330,38 +381,7 @@ function buildTokenColumnsWhereConditionEqualsAndExact(
   const searchStrings: string[] = [];
   const queries = splitSearchOnComma(filterValue).map((query) => query.trim());
   for (const query of queries) {
-    /*
-    exact matches on the formats:
-    <system>|
-    <system>|<value>
-    |<value>
-    <value>
-    */
-    let system: string;
-    let value: string;
-    let searchString: string;
-    const parts = splitN(query, '|', 2);
-    if (parts.length === 2) {
-      // If query is "|foo", searching for "foo" values without a system, aka NULL_SYSTEM
-      system = parts[0] || NULL_SYSTEM; // Use || instead of ?? to handle empty strings
-      value = parts[1];
-      if (value) {
-        value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
-        searchString = system + DELIM + value;
-      } else {
-        searchString = system;
-      }
-    } else {
-      value = query;
-      value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
-      searchString = DELIM + value;
-    }
-
-    if (!impl.hasDedicatedColumns) {
-      searchString = code + DELIM + searchString;
-    }
-    searchString = hashTokenColumnValue(searchString);
-    searchStrings.push(searchString);
+    searchStrings.push(buildHashedSearchStringFromQuery(query, code, impl));
   }
 
   const condition = new Condition(
@@ -371,6 +391,41 @@ function buildTokenColumnsWhereConditionEqualsAndExact(
     'UUID[]'
   );
   return condition;
+}
+
+function buildHashedSearchStringFromQuery(
+  query: string,
+  code: string,
+  impl: TokenColumnSearchParameterImplementation
+): string {
+  /*
+  exact matches on the formats:
+  <system>|
+  <system>|<value>
+  |<value>
+  <value>
+  */
+  let searchString: string;
+  const parts = splitN(query, '|', 2);
+  if (parts.length === 2) {
+    // If query is "|foo", searching for "foo" values without a system, aka NULL_SYSTEM
+    const system = parts[0] || NULL_SYSTEM; // Use || instead of ?? to handle empty strings
+    const value = parts[1];
+    if (value) {
+      const normalizedValue = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
+      searchString = system + DELIM + normalizedValue;
+    } else {
+      searchString = system;
+    }
+  } else {
+    const normalizedValue = impl.caseInsensitive ? query.toLocaleLowerCase() : query;
+    searchString = DELIM + normalizedValue;
+  }
+
+  if (!impl.hasDedicatedColumns) {
+    searchString = code + DELIM + searchString;
+  }
+  return hashTokenColumnValue(searchString);
 }
 
 export function escapeRegexString(str: string): string {
