@@ -11,26 +11,8 @@ import { Logger, LogLevel } from '../logger';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, sleep } from '../utils';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
-import type { DEFAULT_PING_INTERVAL_MS, UNREF_GRACE_PERIOD_MS, WS_SUB_TOKEN_REFRESH_INTERVAL_MS } from './constants';
 import { WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS } from './constants';
 import { sendHandshakeBundle, sendSubscriptionMessage } from './test-utils';
-
-// fake type for eslint to avoid importing the actual module
-type SubscriptionsConstantsModule = {
-  DEFAULT_PING_INTERVAL_MS: typeof DEFAULT_PING_INTERVAL_MS;
-  WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS: typeof WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS;
-  WS_SUB_TOKEN_REFRESH_INTERVAL_MS: typeof WS_SUB_TOKEN_REFRESH_INTERVAL_MS;
-  UNREF_GRACE_PERIOD_MS: typeof UNREF_GRACE_PERIOD_MS;
-};
-
-vi.mock('./constants', async (importOriginal) => {
-  const mod = await importOriginal<SubscriptionsConstantsModule>();
-  return {
-    ...mod,
-    WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
-    UNREF_GRACE_PERIOD_MS: 50,
-  };
-});
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
