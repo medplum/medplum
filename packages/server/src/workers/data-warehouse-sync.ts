@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Job, QueueBaseOptions } from 'bullmq';
+import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { S3TablesWarehouseDestination } from '../cloud/aws/data-warehouse-destination';
 import type { MedplumServerConfig } from '../config/types';
@@ -20,7 +20,7 @@ import {
 } from '../database';
 import { globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { addVerboseQueueLogging, getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { addVerboseQueueLogging, defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 export interface DataWarehouseSyncJobData {
   trigger: 'scheduler';
@@ -73,13 +73,10 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
     return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
   }
 
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<DataWarehouseSyncJobData>(DataWarehouseSyncQueueName, {
     ...defaultOptions,
-    defaultJobOptions: { attempts: 1 },
+    defaultJobOptions: { ...defaultOptions.defaultJobOptions, attempts: 1 },
   });
 
   const workerBullmq = getWorkerBullmqConfig(config, 'data-warehouse-sync') ?? {};
