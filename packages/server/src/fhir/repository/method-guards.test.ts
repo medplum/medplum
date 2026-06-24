@@ -43,6 +43,8 @@ const unguardedMembers = new Set<PropertyKey>([
   'addSecurityFilters',
   'isClosed',
   'validateBinarySecurityContext',
+  // Inherited from FhirRepository; default implementation is a passthrough and does not call assertUsable().
+  'withSeeding',
 ]);
 
 /**

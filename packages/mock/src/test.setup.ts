@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type * as SubscriptionConstants from '@medplum/core/subscriptions/constants';
 import { vi } from 'vitest';
 import { TextDecoder, TextEncoder } from 'node:util';
 
@@ -13,7 +12,7 @@ import { TextDecoder, TextEncoder } from 'node:util';
 // Shorten both intervals globally so this package's subscription tests stay
 // fast and deterministic without per-file vi.mock overrides.
 vi.mock('@medplum/core/subscriptions/constants', async (importOriginal) => {
-  const mod = await importOriginal<typeof SubscriptionConstants>();
+  const mod = await importOriginal<Record<string, unknown>>();
   return {
     ...mod,
     WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,

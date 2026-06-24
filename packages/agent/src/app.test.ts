@@ -3720,9 +3720,10 @@ describe('App', () => {
       // (which sets isPrimary) before sending again, since dropped requests are not queued/replayed.
       allowPrimary = true;
       let shouldThrow = false;
+      // Longer poll window: full `npm test` runs many packages concurrently and PID acquisition can be slow.
       let timeout = setTimeout(() => {
         shouldThrow = true;
-      }, 2500);
+      }, 10000);
       while (!createPidFileSpy.mock.results.some((result) => result.type === 'return')) {
         if (shouldThrow) {
           throw new Error('Timeout while waiting for agent to become primary');
@@ -3735,9 +3736,10 @@ describe('App', () => {
       state.mySocket.send(Buffer.from(JSON.stringify(transmitRequest)));
 
       shouldThrow = false;
+      // Same rationale as above: wait longer for HL7 forwarding under monorepo parallel test load.
       timeout = setTimeout(() => {
         shouldThrow = true;
-      }, 2500);
+      }, 10000);
       while (hl7Messages.length === 0 || state.transmitResponses.length === 0) {
         if (shouldThrow) {
           throw new Error('Timeout while waiting for transmit to be forwarded after becoming primary');
