@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+// @vitest-environment node
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { FhirRouter, SqliteRepository } from '@medplum/fhir-router';
+import { FhirRouter } from '@medplum/fhir-router';
+import { SqliteRepository } from '@medplum/fhir-router/sqlite';
 import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient, MockFetchClient } from './client';
 import { createSqliteMockClient } from './sqlite-client';
