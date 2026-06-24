@@ -75,9 +75,9 @@ export const EditTopicDialog = (props: EditTopicDialogProps): JSX.Element => {
         }
         setResolved({
           patient,
-          practitioners: settledPractitioners
-            .filter((r): r is PromiseFulfilledResult<Practitioner> => r.status === 'fulfilled')
-            .map((r) => r.value),
+          // Discriminant narrowing on `status` keeps the resolved value's type (WithId<Practitioner>)
+          // without an explicit type predicate, which would not be assignable here.
+          practitioners: settledPractitioners.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : [])),
         });
       })
       .catch(() => {
