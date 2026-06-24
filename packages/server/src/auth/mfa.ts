@@ -105,6 +105,9 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
     enrolled: Boolean(user.mfaEnrolled),
     enrolledMethods: getEnrolledMfaMethods(user),
     allowedMethods,
+    // When MFA is required for the account, the client must not offer to disable
+    // it (the `/disable` endpoint enforces this server-side as well).
+    mfaRequired: Boolean(user.mfaRequired),
     email: user.email,
     enrollUri: otp,
     enrollQrCode: await toDataURL(otp),
@@ -333,6 +336,18 @@ mfaRouter.post(
       }
     }
 
+    const remainingMethods = methodToRemove ? enrolledMethods.filter((m) => m !== methodToRemove) : [];
+
+    // An account that requires MFA must always retain at least one factor.
+    // Removing the user's only remaining factor (or disabling MFA entirely via
+    // an omitted `method`) would leave a required account with no second factor,
+    // so reject it. Such a user can still rotate factors by enrolling a
+    // replacement before removing the old one.
+    if (user.mfaRequired && remainingMethods.length === 0) {
+      sendOutcome(res, badRequest('Cannot remove the last MFA factor because MFA is required'));
+      return;
+    }
+
     // Require the user to prove control of one of their connected factors. The
     // token may be an authenticator code or the code emailed via
     // `/send-email-challenge` — whichever method they are enrolled in.
@@ -344,8 +359,6 @@ mfaRouter.post(
       sendOutcome(res, badRequest('Invalid token'));
       return;
     }
-
-    const remainingMethods = methodToRemove ? enrolledMethods.filter((m) => m !== methodToRemove) : [];
 
     // Regenerate the authenticator secret whenever TOTP is being removed, so a
     // future re-enrollment gets a fresh secret. This covers the lost / stolen

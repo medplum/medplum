@@ -1309,6 +1309,174 @@ describe('MFA', () => {
   });
 
   // ===========================================================================
+  // MFA-required accounts must always keep at least one factor.
+  //
+  // When `User.mfaRequired` is true, `/disable` must refuse to remove the user's
+  // only remaining factor — otherwise a required account would be left with no
+  // second factor at all. The block depends only on `mfaRequired` and the number
+  // of enrolled factors, NOT on the project's `allowedMfaMethods` setting, so the
+  // matrix below pins that down across both the default (TOTP-only) project and a
+  // project that has opted into both factors.
+  //
+  // (Voluntarily-enrolled users — `mfaRequired` falsy — can still remove their
+  // last factor; that is covered by 'Removing the last factor disables MFA'.)
+  // ===========================================================================
+  describe('MFA-required accounts cannot remove their last factor', () => {
+    /**
+     * Puts the user into a known single-factor, MFA-required state by writing the
+     * enrollment directly, bypassing the `/enroll` endpoint so the setup does not
+     * depend on the project's `allowedMfaMethods` setting. Visiting `/status`
+     * first lets the server generate and persist a TOTP secret.
+     * @param accessToken - The user's access token.
+     * @param user - The user to mutate.
+     * @param method - The single factor to enroll in.
+     * @returns The base32 TOTP secret, for generating valid authenticator codes.
+     */
+    async function enrollSingleFactorRequired(
+      accessToken: string,
+      user: WithId<User>,
+      method: 'totp' | 'email'
+    ): Promise<string> {
+      const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+      const secret = new URL(statusRes.body.enrollUri).searchParams.get('secret') as string;
+
+      await withTestContext(async () => {
+        const systemRepo = getGlobalSystemRepo();
+        const current = await systemRepo.readResource<User>('User', user.id);
+        await systemRepo.updateResource<User>({
+          ...current,
+          mfaEnrolled: true,
+          mfaMethod: [method],
+          mfaRequired: true,
+        });
+      });
+
+      return secret;
+    }
+
+    /**
+     * Returns a valid token proving control of the user's enrolled factor, so the
+     * `/disable` request is rejected for being the last factor rather than for a
+     * missing or invalid token.
+     * @param accessToken - The user's access token.
+     * @param method - The enrolled factor.
+     * @param secret - The TOTP secret (used only for the `totp` method).
+     * @returns A valid connected-factor token.
+     */
+    async function connectedToken(accessToken: string, method: 'totp' | 'email', secret: string): Promise<string> {
+      if (method === 'totp') {
+        return authenticator.generate(secret);
+      }
+      await request(app)
+        .post('/auth/mfa/send-email-challenge')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .type('json')
+        .send({});
+      return getCodeFromEmail();
+    }
+
+    const factors: Array<'totp' | 'email'> = ['email', 'totp'];
+    const allowedConfigs: Array<{ label: string; value?: string }> = [
+      { label: 'allowedMfaMethods not configured' },
+      { label: 'allowedMfaMethods configured with totp,email', value: 'totp,email' },
+    ];
+
+    for (const factor of factors) {
+      for (const allowed of allowedConfigs) {
+        test(`blocks removing ${factor} when it is the only factor (${allowed.label})`, async () => {
+          const email = `last-factor-${factor}-${randomUUID()}@example.com`;
+          const password = 'password!@#';
+
+          const { accessToken, project, user } = await withTestContext(() =>
+            registerNew({
+              firstName: 'Last',
+              lastName: 'Factor',
+              projectName: `Last Factor Project ${randomUUID()}`,
+              email,
+              password,
+            })
+          );
+
+          if (allowed.value) {
+            await setAllowedMfaMethods(project, allowed.value);
+          }
+
+          const secret = await enrollSingleFactorRequired(accessToken, user, factor);
+          const token = await connectedToken(accessToken, factor, secret);
+
+          // Even with a valid connected-factor token, removing the only factor is
+          // rejected because the account requires MFA.
+          const res = await request(app)
+            .post('/auth/mfa/disable')
+            .set('Authorization', `Bearer ${accessToken}`)
+            .type('json')
+            .send({ method: factor, token });
+          expect(res.status).toBe(400);
+          expect(res.body).toMatchObject(badRequest('Cannot remove the last MFA factor because MFA is required'));
+
+          // The factor is still enrolled — the rejection left the user untouched.
+          const persisted = await withTestContext(() => getGlobalSystemRepo().readResource<User>('User', user.id));
+          expect(persisted.mfaEnrolled).toBe(true);
+          expect(getEnrolledMfaMethods(persisted)).toEqual([factor]);
+
+          // The status endpoint surfaces mfaRequired so the UI can hide "Disable MFA".
+          const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+          expect(status.body.mfaRequired).toBe(true);
+        });
+      }
+    }
+  });
+
+  // An enrolled user is always challenged for MFA at login, even when their
+  // account does not *require* MFA (i.e. they opted in voluntarily).
+  test('enrolled user is prompted for MFA at login even when mfaRequired is false', async () => {
+    const email = `opt-in-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, user } = await withTestContext(() =>
+      registerNew({
+        firstName: 'OptIn',
+        lastName: 'Mfa',
+        projectName: `Opt In MFA Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    // Voluntarily enroll in TOTP. `mfaRequired` is never set.
+    const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    const secret = new URL(statusRes.body.enrollUri).searchParams.get('secret') as string;
+    await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'totp', token: authenticator.generate(secret) });
+
+    // The account is enrolled but does NOT require MFA.
+    const persisted = await withTestContext(() => getGlobalSystemRepo().readResource<User>('User', user.id));
+    expect(persisted.mfaEnrolled).toBe(true);
+    expect(persisted.mfaRequired).toBeFalsy();
+    const statusAfter = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    expect(statusAfter.body.mfaRequired).toBe(false);
+
+    // A password login is still challenged for MFA verification and is not yet
+    // granted an authorization code.
+    const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(loginRes.status).toBe(200);
+    expect(loginRes.body.mfaRequired).toBe(true);
+    expect(loginRes.body.mfaMethods).toEqual(['totp']);
+    expect(loginRes.body.code).toBeUndefined();
+
+    // Completing the challenge with a valid TOTP token grants the login.
+    const verify = await request(app)
+      .post('/auth/mfa/verify')
+      .type('json')
+      .send({ login: loginRes.body.login, token: authenticator.generate(secret) });
+    expect(verify.status).toBe(200);
+    expect(verify.body.code).toBeDefined();
+  });
+
+  // ===========================================================================
   // Backward-compatibility regression tests.
   //
   // These intentionally reproduce the state and the request shapes that existed

@@ -21,6 +21,7 @@ export function MfaPage(): JSX.Element | null {
   const [enrolled, setEnrolled] = useState<boolean | undefined>(undefined);
   const [enrolledMethods, setEnrolledMethods] = useState<MfaMethod[]>([]);
   const [allowedMethods, setAllowedMethods] = useState<MfaMethod[]>([]);
+  const [mfaRequired, setMfaRequired] = useState(false);
   const [email, setEmail] = useState<string>();
   const [addingTotp, setAddingTotp] = useState(false);
   const [disabling, setDisabling] = useState(false);
@@ -34,6 +35,7 @@ export function MfaPage(): JSX.Element | null {
         setEnrolled(response.enrolled);
         setEnrolledMethods(response.enrolledMethods ?? []);
         setAllowedMethods(response.allowedMethods ?? ['totp']);
+        setMfaRequired(Boolean(response.mfaRequired));
         setEmail(response.email);
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
@@ -224,11 +226,17 @@ export function MfaPage(): JSX.Element | null {
             </Stack>
           )}
 
-          <Group>
-            <Button color="red" variant="outline" onClick={openDisable} fullWidth>
-              Disable MFA
-            </Button>
-          </Group>
+          {mfaRequired ? (
+            <Text c="dimmed" size="sm" ta="center">
+              MFA is required for your account and can't be disabled.
+            </Text>
+          ) : (
+            <Group>
+              <Button color="red" variant="outline" onClick={openDisable} fullWidth>
+                Disable MFA
+              </Button>
+            </Group>
+          )}
         </Stack>
       </Document>
     );

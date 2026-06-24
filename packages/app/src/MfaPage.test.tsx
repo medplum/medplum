@@ -110,6 +110,29 @@ describe('MfaPage', () => {
     postSpy.mockRestore();
   });
 
+  test('Disable MFA is hidden when MFA is required', async () => {
+    // An enrolled user whose account requires MFA cannot disable it, so the
+    // "Disable MFA" button is replaced with an explanatory message. Per-factor
+    // removal is still offered while more than one factor remains.
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['totp', 'email'],
+      allowedMethods: ['totp', 'email'],
+      mfaRequired: true,
+      email: 'alice.smith@example.com',
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    await setup();
+
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Disable MFA' })).not.toBeInTheDocument();
+    expect(screen.getByText("MFA is required for your account and can't be disabled.")).toBeInTheDocument();
+    expect(screen.getAllByText('Remove')).toHaveLength(2);
+
+    getSpy.mockRestore();
+  });
+
   test('Disable -- success', async () => {
     const getSpy = vi.spyOn(medplum, 'get');
     const user = await setup();
