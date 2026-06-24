@@ -137,6 +137,9 @@ export class RetentionSweeper {
       );
     }
     this.running = true;
+    // Wall-clock start for the sweep duration log. Independent of `now` (which
+    // may be a test-supplied retention cutoff, not real time).
+    const startedAt = Date.now();
     try {
       const cutoffProcessed = now - this.retentionMs;
       const cutoffErrored = now - this.erroredRetentionMs;
@@ -194,7 +197,7 @@ export class RetentionSweeper {
 
       if (deletedProcessed > 0 || deletedErrored > 0) {
         this.log.info(
-          `Retention sweep: deleted ${deletedProcessed} processed, ${deletedErrored} errored. DB ${result.dbSizeBytesAfter} bytes.`
+          `Retention sweep: deleted ${deletedProcessed} processed, ${deletedErrored} errored. DB ${result.dbSizeBytesAfter} bytes. Took ${Date.now() - startedAt} ms.`
         );
       }
       return result;
