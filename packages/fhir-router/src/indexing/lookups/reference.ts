@@ -281,12 +281,12 @@ function buildHashesByResourceId(rows: ReferenceTableRow[]): Map<string, Set<str
   return hashesByResource;
 }
 
-function findChangedReferenceRows(
-  resources: Resource[],
+function findChangedReferenceRows<T extends Resource>(
+  resources: WithId<T>[],
   existingHashesByResource: Map<string, Set<string>>,
   newRowsByResource: Map<string, ReferenceTableRow[]>
-): { resourcesWithChangedReferences: Resource[]; rowsToInsert: LookupTableRow[] } {
-  const resourcesWithChangedReferences: Resource[] = [];
+): { resourcesWithChangedReferences: WithId<T>[]; rowsToInsert: LookupTableRow[] } {
+  const resourcesWithChangedReferences: WithId<T>[] = [];
   const rowsToInsert: LookupTableRow[] = [];
   for (const resource of resources) {
     const existingHashes = existingHashesByResource.get(resource.id);
