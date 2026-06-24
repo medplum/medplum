@@ -4,8 +4,6 @@ import type { ResourceType } from '@medplum/fhirtypes';
 import type { DatabaseSync } from 'node:sqlite';
 import { getSearchParameterImplementation, SearchStrategies } from '../indexing/searchparameter.js';
 import { getStandardAndDerivedSearchParameters } from '../indexing/lookups/util.js';
-import type { SearchParameterImplementation } from '../indexing/searchparameter.js';
-
 const BASE_COLUMNS = ['id', 'content', 'lastUpdated', 'deleted', 'projectId', '__version'] as const;
 
 const LOOKUP_TABLES: Record<string, string[]> = {
@@ -108,7 +106,7 @@ function getSearchColumns(searchParam: { code: string; type: string }, resourceT
     return ['compartments'];
   }
 
-  const impl = getSearchParameterImplementation(resourceType, searchParam as any) as SearchParameterImplementation;
+  const impl = getSearchParameterImplementation(resourceType, searchParam as any);
   switch (impl.searchStrategy) {
     case SearchStrategies.COLUMN:
       return [impl.columnName];

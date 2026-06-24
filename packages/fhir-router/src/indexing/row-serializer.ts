@@ -1,9 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { SqlDialect, type SqlDialect as SqlDialectType } from '../sql/dialect.js';
+import { SqlDialect  } from '../sql/dialect.js';
+import type {SqlDialect as SqlDialectType} from '../sql/dialect.js';
 
 /**
  * Converts a resource row from the indexing layer into dialect-specific storage values.
+ * @param row - The resource row object to serialize.
+ * @param dialect - The SQL dialect to serialize for.
+ * @returns A dialect-specific serialized row.
  */
 export function serializeRowForDialect(row: Record<string, any>, dialect: SqlDialectType): Record<string, any> {
   if (dialect === SqlDialect.POSTGRES) {

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SearchRequest, WithId } from '@medplum/core';
-import type { CreateResourceOptions, UpdateResourceOptions } from '../repo.js';
+import type { SearchRequest, WithId ,
+  AccessPolicyInteraction} from '@medplum/core';
+import type { CreateResourceOptions, UpdateResourceOptions ,RepositoryMode} from '../repo.js';
 import {
-  AccessPolicyInteraction,
   badRequest,
   deepClone,
   generateId,
@@ -20,9 +20,10 @@ import { buildResourceRow } from '../indexing/row-builder.js';
 import { serializeRowForDialect } from '../indexing/row-serializer.js';
 import { lookupTables } from '../indexing/searchparameter.js';
 import { SqlDialect } from '../sql/dialect.js';
-import { SqliteConnection, type SqlConnection } from '../sql/connection.js';
+import { SqliteConnection  } from '../sql/connection.js';
+import type {SqlConnection} from '../sql/connection.js';
 import { DeleteQuery, InsertQuery, SelectQuery, UpdateQuery } from '../sql/sql.js';
-import { FhirRepository, type RepositoryMode } from '../repo.js';
+import { FhirRepository  } from '../repo.js';
 import { searchByReferenceImpl, searchImpl } from './search.js';
 import type { SqliteSearchRepo } from './search-repo.js';
 import { SqliteSchema } from './schema.js';
@@ -104,22 +105,22 @@ export class SqliteRepository extends FhirRepository implements SqliteSearchRepo
       ...parsed,
       id: parsed.id ?? this.generateId(),
       meta: { ...(parsed.meta ?? {}) },
-    } as WithId<T>;
+    };
 
     if (!this.seeding) {
-      if (result.meta!.versionId) {
-        delete result.meta!.versionId;
+      if (result.meta.versionId) {
+        delete result.meta.versionId;
       }
-      if (result.meta!.lastUpdated) {
-        delete result.meta!.lastUpdated;
+      if (result.meta.lastUpdated) {
+        delete result.meta.lastUpdated;
       }
     }
 
-    result.meta!.versionId ??= generateId();
-    result.meta!.lastUpdated ??= new Date().toISOString();
+    result.meta.versionId ??= generateId();
+    result.meta.lastUpdated ??= new Date().toISOString();
 
     const { resourceType, id } = result;
-    this.schema.ensureResourceTable(resourceType as ResourceType);
+    this.schema.ensureResourceTable(resourceType);
 
     if (!update) {
       const existing = await this.tryReadResource(resourceType, id);

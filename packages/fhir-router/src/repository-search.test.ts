@@ -52,7 +52,7 @@ describe.each(['memory', 'sqlite'] as const)('%s repository search', (kind) => {
       code: { text: 'test' },
       subject: createReference(patient),
       valueString: '42',
-    } as Observation);
+    });
 
     const bundle = await repo.search<Observation>(
       parseSearchRequest('Observation?subject=' + getReferenceString(patient))
@@ -83,7 +83,7 @@ describe.each(['memory', 'sqlite'] as const)('%s repository search', (kind) => {
       code: { text: 'test' },
       subject: createReference(patient),
       valueString: '1',
-    } as Observation);
+    });
 
     const result = await repo.searchByReference<Observation>(
       { resourceType: 'Observation', count: 10 },

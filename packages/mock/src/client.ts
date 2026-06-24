@@ -23,10 +23,8 @@ import {
   loadDataType,
   normalizeCreateBinaryOptions,
 } from '@medplum/core';
-import type { FhirRequest, FhirRepository, HttpMethod } from '@medplum/fhir-router';
+import type { FhirRepository, FhirRequest, HttpMethod } from '@medplum/fhir-router';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
-import { SqliteRepository } from '@medplum/fhir-router/sqlite';
-import { MOCK_ALICE_PRACTITIONER_ID } from './constants';
 import type {
   Agent,
   Binary,
@@ -105,11 +103,6 @@ export interface MockClientOptions extends Pick<
    */
   readonly profile?: ReturnType<MedplumClient['getProfile']> | null;
   /**
-   * Repository backend for FHIR data. Use `sqlite` for SQL-backed search parity with the server.
-   * Defaults to `memory` for browser/jsdom compatibility.
-   */
-  readonly repository?: 'memory' | 'sqlite';
-  /**
    * Override the `MockFetchClient` used by this `MockClient`.
    */
   readonly mockFetchOverride?: MockFetchOverrideOptions;
@@ -156,7 +149,7 @@ export class MockClient extends MedplumClient {
       client = clientOptions.mockFetchOverride.client;
     } else {
       router = new FhirRouter();
-      repo = clientOptions?.repository === 'sqlite' ? new SqliteRepository() : new MemoryRepository();
+      repo = new MemoryRepository();
       client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
     }
 

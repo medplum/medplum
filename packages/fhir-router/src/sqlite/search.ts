@@ -46,10 +46,9 @@ import type {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { systemResourceProjectId } from '../indexing/constants.js';
-import { clamp } from './utils.js';
+import { clamp , getFullUrl } from './utils.js';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from '../indexing/range-column.js';
 import type { SqliteSearchRepo } from './search-repo.js';
-import { getFullUrl } from './utils.js';
 import type { ColumnSearchParameterImplementation } from '../indexing/searchparameter.js';
 import { getSearchParameterImplementation, SearchStrategies } from '../indexing/searchparameter.js';
 import type { Expression, Operator as SQL } from '../sql/sql.js';

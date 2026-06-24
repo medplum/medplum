@@ -12,7 +12,8 @@ import {
 import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
 import type { SqlConnection } from './connection.js';
-import { SqlDialect, type SqlDialect as SqlDialectType } from './dialect.js';
+import { SqlDialect  } from './dialect.js';
+import type {SqlDialect as SqlDialectType} from './dialect.js';
 import type { ColumnSearchParameterImplementation } from '../indexing/searchparameter.js';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];

@@ -6,6 +6,7 @@ import { FhirRouter } from '@medplum/fhir-router';
 import { SqliteRepository } from '@medplum/fhir-router/sqlite';
 import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient, MockFetchClient } from './client';
+import { createSqliteMockClient } from './sqlite-client';
 
 describe('MockClient sqlite repository', () => {
   beforeAll(() => {
@@ -38,7 +39,7 @@ describe('MockClient sqlite repository', () => {
   });
 
   test('Default seed search by name with sqlite backend', async () => {
-    const client = new MockClient({ repository: 'sqlite' });
+    const client = createSqliteMockClient();
     const result = await client.search('Patient', 'name:contains=Simpson');
     expect(result.entry?.length).toBe(2);
   });
