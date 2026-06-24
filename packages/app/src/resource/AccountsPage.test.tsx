@@ -49,7 +49,7 @@ describe('AccountsPage', () => {
   });
 
   test('Unsupported resource type', async () => {
-    await setup('/Practitioner/123/accounts');
+    await setup('/Practitioner/124/accounts');
     expect(await screen.findByText('Unsupported resource type')).toBeInTheDocument();
   });
 });

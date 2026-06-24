@@ -38,7 +38,7 @@ describe('pharmacy-utils re-exports from @medplum/core', () => {
 
   test('PreferredPharmacy type is re-exported', () => {
     const pharmacy: PreferredPharmacy = {
-      organizationRef: { reference: 'Organization/123' },
+      organizationRef: { reference: 'Organization/125' },
       isPrimary: true,
     };
     expect(pharmacy.isPrimary).toBe(true);
