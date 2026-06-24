@@ -560,6 +560,15 @@ const drJohnsonSchedule: Schedule =
       {
         text: 'Office Visit',
         coding: [{ code: 'office-visit' }],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/service-type-reference',
+            valueReference: {
+              reference: 'HealthcareService/office-visit',
+              display: 'Office Visit',
+            },
+          },
+        ],
       },
     ],
     // No SchedulingParameters extension: everything is inherited from the HealthcareService
