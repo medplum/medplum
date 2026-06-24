@@ -55,7 +55,7 @@ describe('AnnotationInput', () => {
       text: 'TEST',
       authorReference: {
         display: 'Alice Smith',
-        reference: 'Practitioner/123',
+        reference: 'Practitioner/124',
       },
       time: expect.anything(),
     });

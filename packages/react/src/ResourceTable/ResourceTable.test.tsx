@@ -38,7 +38,7 @@ describe('ResourceTable', () => {
   test('Renders Practitioner resource', async () => {
     await setup({
       value: {
-        reference: 'Practitioner/123',
+        reference: 'Practitioner/124',
       },
     });
 
@@ -51,7 +51,7 @@ describe('ResourceTable', () => {
   test('Ignore missing values', async () => {
     await setup({
       value: {
-        reference: 'Practitioner/123',
+        reference: 'Practitioner/124',
       },
       ignoreMissingValues: true,
     });

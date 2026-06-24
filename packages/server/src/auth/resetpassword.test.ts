@@ -7,7 +7,6 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
-import fetch from 'node-fetch';
 import type { Transporter } from 'nodemailer';
 import nodemailer from 'nodemailer';
 import request from 'supertest';
@@ -19,7 +18,7 @@ import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
-jest.mock('node-fetch');
+const fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
 
 describe('Reset Password', () => {
   const app = express();
@@ -39,10 +38,10 @@ describe('Reset Password', () => {
   beforeEach(() => {
     (SESv2Client as unknown as jest.Mock).mockClear();
     (SendEmailCommand as unknown as jest.Mock).mockClear();
-    (fetch as unknown as jest.Mock).mockClear();
+    fetchMock.mockClear();
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    setupRecaptchaMock(true);
     getConfig().recaptchaSecretKey = testRecaptchaSecretKey;
   });
 
@@ -66,7 +65,7 @@ describe('Reset Password', () => {
   });
 
   test('Incorrect recaptcha', async () => {
-    setupRecaptchaMock(fetch as unknown as jest.Mock, false);
+    setupRecaptchaMock(false);
 
     const res = await request(app).post('/auth/resetpassword').type('json').send({
       email: 'admin@example.com',

@@ -25,8 +25,8 @@
     "@medplum/ccda": "5.1.21",
     "@medplum/core": "5.1.21",
     "@medplum/definitions": "5.1.21",
-    "fast-xml-parser": "5.8.0",
-    "form-data": "4.0.5",
+    "fast-xml-parser": "5.9.3",
+    "form-data": "4.0.6",
     "jose": "5.10.0",
     "jszip": "3.10.1",
     "node-fetch": "2.7.0",
@@ -34,7 +34,7 @@
     "ssh2": "1.17.0",
     "ssh2-sftp-client": "12.1.1",
     "twilio": "6.0.2",
-    "undici": "7.27.2"
+    "undici": "7.28.0"
   },
   "devDependencies": {
     "@types/node-fetch": "2.6.13"

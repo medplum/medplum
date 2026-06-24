@@ -3,7 +3,6 @@
 
 // start-block core-imports
 import { MedplumClient } from '@medplum/core';
-import fetch from 'node-fetch';
 
 // end-block core-imports
 
@@ -14,7 +13,6 @@ const MY_CLIENT_SECRET = 'MY_CLIENT_SECRET';
 
 const medplum = new MedplumClient({
   baseUrl: 'https://api.medplum.com/',
-  fetch: fetch,
 });
 await medplum.startClientLogin(MY_CLIENT_ID, MY_CLIENT_SECRET);
 

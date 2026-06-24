@@ -36,7 +36,6 @@ import type {
 } from '@medplum/fhirtypes';
 import type { Job, MinimalJob, QueueBaseOptions } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
-import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
@@ -76,7 +75,7 @@ import {
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.
- * This is passed into fetch and will make fetch abort the request after REQUEST_TIMEOUT milliseconds.
+ * This is passed into fetch using an AbortSignal and will abort the request after REQUEST_TIMEOUT milliseconds.
  */
 const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 
@@ -738,7 +737,7 @@ async function sendRestHook(
       projectId: subscription.meta?.project,
     });
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
-    const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
+    const response = await fetch(url, { method: 'POST', headers, body, signal: AbortSignal.timeout(REQUEST_TIMEOUT) });
     fetchEndTime = Date.now();
     log.info('Received rest hook response', {
       status: response.status,
