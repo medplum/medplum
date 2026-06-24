@@ -113,9 +113,7 @@ export async function verifyEmailMfaCode(login: Login, token: string | undefined
   if (!token || !login.emailMfa) {
     return false;
   }
-  return (
-    new Date(login.emailMfa.expiresAt).getTime() >= Date.now() && bcrypt.compare(token, login.emailMfa.codeHash)
-  );
+  return new Date(login.emailMfa.expiresAt).getTime() >= Date.now() && bcrypt.compare(token, login.emailMfa.codeHash);
 }
 
 export async function createProfile(
