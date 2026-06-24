@@ -6,5 +6,5 @@
     "esModuleInterop": true,
     "strictNullChecks": true
   },
-  "include": ["./blog", "./docs", "./src", "docusaurus.config.ts", "sidebars.ts"]
+  "include": ["./blog", "./docs", "./src"]
 }

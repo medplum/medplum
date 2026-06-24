@@ -1,4 +1,4 @@
-import type { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
+import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
 
 type DocumentationLocation = 'resource' | 'datatype' | 'medplum';
 

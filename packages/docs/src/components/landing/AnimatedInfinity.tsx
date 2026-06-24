@@ -1,4 +1,4 @@
-import type { JSX } from 'react';
+import { JSX } from 'react';
 import { useInView } from 'react-intersection-observer';
 import './animations.css';
 

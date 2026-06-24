@@ -4,13 +4,12 @@ import useIsBrowser from '@docusaurus/useIsBrowser';
 import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react';
 import type { Props } from '@theme/ColorModeToggle';
 import clsx from 'clsx';
-import type { ReactNode } from 'react';
-import React from 'react';
+import React, { type ReactNode } from 'react';
 
 import styles from './styles.module.css';
 
 // The order of color modes is defined here, and can be customized with swizzle
-function getNextColorMode(colorMode: ColorMode | null, respectPrefersColorScheme: boolean): ColorMode | null {
+function getNextColorMode(colorMode: ColorMode | null, respectPrefersColorScheme: boolean) {
   // 2-value transition
   if (!respectPrefersColorScheme) {
     return colorMode === 'dark' ? 'light' : 'dark';
@@ -54,7 +53,7 @@ function getColorModeLabel(colorMode: ColorMode | null): string {
   }
 }
 
-function getColorModeAriaLabel(colorMode: ColorMode | null): string {
+function getColorModeAriaLabel(colorMode: ColorMode | null) {
   return translate(
     {
       message: 'Switch between dark and light mode (currently {mode})',

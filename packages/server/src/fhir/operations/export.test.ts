@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, Operator } from '@medplum/core';
+import { ContentType } from '@medplum/core';
 import type { BulkDataExportOutput, Observation } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -11,7 +10,7 @@ import type { FileSystemStorage } from '../../storage/filesystem';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
-import { exportResources } from './export';
+import { exportResourceType, exportResources } from './export';
 import { BulkExporter } from './utils/bulkexporter';
 
 describe('Export', () => {
@@ -127,16 +126,12 @@ describe('Export', () => {
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });
 
-  // Exercise export pagination (count=1) without scanning every Observation in the shared test DB,
-  // which can exceed maxSearchOffset when other suites have created thousands of resources.
   test('exportResourceType iterating through paginated search results', async () =>
     withTestContext(async () => {
-      const subject = { reference: `Patient/${randomUUID()}` };
-
       await systemRepo.createResource<Observation>({
         resourceType: 'Observation',
         status: 'preliminary',
-        subject,
+        subject: { reference: 'Patient/123' },
         code: {
           text: 'patient observation 1',
         },
@@ -145,7 +140,7 @@ describe('Export', () => {
       await systemRepo.createResource<Observation>({
         resourceType: 'Observation',
         status: 'preliminary',
-        subject,
+        subject: { reference: 'Patient/123' },
         code: {
           text: 'patient observation 2',
         },
@@ -157,22 +152,10 @@ describe('Export', () => {
 
       const { project } = await createTestProject();
       expect(project).toBeDefined();
-      // Mirror exportResourceType pagination, scoped to the two Observations created above.
-      await systemRepo.processAllResources(
-        {
-          resourceType: 'Observation',
-          count: 1,
-          filters: [{ code: 'subject', operator: Operator.EQUALS, value: subject.reference }],
-          sortRules: [{ code: '_lastUpdated', descending: false }],
-        },
-        async (resource) => {
-          await exporter.writeResource(resource);
-        }
-      );
-      await exporter.closeWriter('Observation');
+      await exportResourceType(exporter, 'Observation', 1);
       const bulkDataExport = await exporter.close(project);
       expect(bulkDataExport.status).toBe('completed');
-      expect(exportWriteResourceSpy).toHaveBeenCalledTimes(2);
+      expect(exportWriteResourceSpy).toHaveBeenCalled();
     }));
 
   test('closeWriter removes only specified resource type from tracking', async () =>

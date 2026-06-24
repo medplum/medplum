@@ -8,8 +8,31 @@ import { MedplumClient } from './client';
 import { createFakeJwt, mockFetchWithStatus } from './client-test-utils';
 import type { SubscriptionEventMap } from './subscriptions';
 import { SubscriptionEmitter, SubscriptionManager } from './subscriptions';
+import type {
+  DEFAULT_PING_INTERVAL_MS,
+  UNREF_GRACE_PERIOD_MS,
+  WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS,
+  WS_SUB_TOKEN_REFRESH_INTERVAL_MS,
+} from './subscriptions/constants';
 import { sendHandshakeBundle } from './subscriptions/test-utils';
 import { sleep } from './utils';
+
+// fake type for eslint to avoid importing the actual module
+type SubscriptionsConstantsModule = {
+  DEFAULT_PING_INTERVAL_MS: typeof DEFAULT_PING_INTERVAL_MS;
+  WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS: typeof WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS;
+  WS_SUB_TOKEN_REFRESH_INTERVAL_MS: typeof WS_SUB_TOKEN_REFRESH_INTERVAL_MS;
+  UNREF_GRACE_PERIOD_MS: typeof UNREF_GRACE_PERIOD_MS;
+};
+
+vi.mock('./subscriptions/constants', async (importOriginal) => {
+  const mod = await importOriginal<SubscriptionsConstantsModule>();
+  return {
+    ...mod,
+    WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
+    UNREF_GRACE_PERIOD_MS: 50,
+  };
+});
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';

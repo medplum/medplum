@@ -23,8 +23,7 @@ import Translate from '@docusaurus/Translate';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import { IconSearch } from '@tabler/icons-react';
 import translations from '@theme/SearchTranslations';
-import type { ReactNode } from 'react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import './styles.css';
 
@@ -49,7 +48,7 @@ interface DocSearchV4Props extends DocSearchProps {
 
 let DocSearchModal: typeof DocSearchModalType | null = null;
 
-function importDocSearchModalIfNeeded(): Promise<void> {
+function importDocSearchModalIfNeeded() {
   if (DocSearchModal) {
     return Promise.resolve();
   }
@@ -60,9 +59,7 @@ function importDocSearchModalIfNeeded(): Promise<void> {
   );
 }
 
-function useNavigator({
-  externalUrlRegex,
-}: Pick<DocSearchProps, 'externalUrlRegex'>): DocSearchModalProps['navigator'] {
+function useNavigator({ externalUrlRegex }: Pick<DocSearchProps, 'externalUrlRegex'>) {
   const history = useHistory();
   const [navigator] = useState<DocSearchModalProps['navigator']>(() => {
     return {
@@ -93,7 +90,7 @@ function useTransformSearchClient(): DocSearchModalProps['transformSearchClient'
   );
 }
 
-function useTransformItems(props: Pick<DocSearchProps, 'transformItems'>): DocSearchModalProps['transformItems'] {
+function useTransformItems(props: Pick<DocSearchProps, 'transformItems'>) {
   const processSearchResultUrl = useSearchResultUrlProcessor();
   const [transformItems] = useState<DocSearchModalProps['transformItems']>(() => {
     return (items: DocSearchHit[]) =>
@@ -121,7 +118,7 @@ function useResultsFooterComponent({
   );
 }
 
-function Hit({ hit, children }: { hit: InternalDocSearchHit | StoredDocSearchHit; children: ReactNode }): ReactNode {
+function Hit({ hit, children }: { hit: InternalDocSearchHit | StoredDocSearchHit; children: ReactNode }) {
   return <Link to={hit.url}>{children}</Link>;
 }
 
@@ -130,7 +127,7 @@ type ResultsFooterProps = {
   onClose: () => void;
 };
 
-function ResultsFooter({ state, onClose }: ResultsFooterProps): ReactNode {
+function ResultsFooter({ state, onClose }: ResultsFooterProps) {
   const createSearchLink = useSearchLinkCreator();
 
   return (
@@ -160,7 +157,7 @@ function useSearchParameters({ contextualSearch, ...props }: DocSearchProps): Do
   };
 }
 
-function DocSearch({ externalUrlRegex, ...props }: DocSearchV4Props): ReactNode {
+function DocSearch({ externalUrlRegex, ...props }: DocSearchV4Props) {
   const navigator = useNavigator({ externalUrlRegex });
   const searchParameters = useSearchParameters({ ...props });
   const transformItems = useTransformItems(props);
@@ -183,9 +180,7 @@ function DocSearch({ externalUrlRegex, ...props }: DocSearchV4Props): ReactNode 
 
   const openModal = useCallback(() => {
     prepareSearchContainer();
-    importDocSearchModalIfNeeded()
-      .then(() => setIsOpen(true))
-      .catch(() => undefined);
+    importDocSearchModalIfNeeded().then(() => setIsOpen(true));
   }, [prepareSearchContainer]);
 
   const closeModal = useCallback(() => {
@@ -223,7 +218,7 @@ function DocSearch({ externalUrlRegex, ...props }: DocSearchV4Props): ReactNode 
     // TODO Docusaurus v4: cleanup after we drop support for DocSearch v3
     isAskAiActive: boolean;
     onAskAiToggle: (askAiToggle: boolean) => void;
-  });
+  } as UseDocSearchKeyboardEventsProps);
 
   return (
     <>

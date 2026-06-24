@@ -1,4 +1,4 @@
-import type { JSX, ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 
 export interface ContainerProps {
   readonly children?: ReactNode;

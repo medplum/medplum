@@ -1,9 +1,9 @@
 import { buildTypeName } from '@medplum/core';
 import { marked } from 'marked';
-import type { JSX } from 'react';
+import { JSX } from 'react';
 import styles from './ResourceTables.module.css';
 
-import type {
+import {
   DocumentationLocation,
   PropertyDocInfo,
   PropertyTypeDocInfo,

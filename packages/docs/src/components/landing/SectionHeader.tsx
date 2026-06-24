@@ -1,4 +1,4 @@
-import type { CSSProperties, JSX, ReactNode } from 'react';
+import { CSSProperties, JSX, ReactNode } from 'react';
 import styles from './SectionHeader.module.css';
 
 export interface SectionHeaderProps {

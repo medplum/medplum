@@ -1,4 +1,5 @@
-/* global console, process */
+/* global process */
+/* global console */
 
 import esbuild from 'esbuild';
 import { writeFileSync } from 'fs';

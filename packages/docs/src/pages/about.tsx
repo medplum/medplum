@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { IconCode, IconPlayerPlay, IconSettings, IconStar } from '@tabler/icons-react';
 import Layout from '@theme/Layout';
-import type { JSX } from 'react';
+import { JSX } from 'react';
 import { Card } from '../components/Card';
 import { CardContainer } from '../components/CardContainer';
 import { Container } from '../components/Container';

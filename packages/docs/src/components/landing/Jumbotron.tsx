@@ -1,4 +1,4 @@
-import type { JSX, ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import styles from './Jumbotron.module.css';
 
 export interface JumbotronProps {
