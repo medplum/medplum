@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { FhirRouter } from '@medplum/fhir-router';
-import { SqliteRepository } from '@medplum/fhir-router/sqlite';
+import { FhirRouter, SqliteRepository } from '@medplum/fhir-router';
 import type { MockClientOptions } from './client';
 import { MockClient, MockFetchClient } from './client';
 
@@ -9,7 +8,7 @@ export type CreateSqliteMockClientOptions = Omit<MockClientOptions, 'mockFetchOv
 
 /**
  * Creates a MockClient backed by SqliteRepository for Node.js tests.
- * Not exported from the main package entry to keep browser/jsdom bundles free of node:sqlite.
+ * Not exported from the main @medplum/mock entry; use for Node.js tests only.
  * @param clientOptions - Optional mock client configuration.
  * @returns A MockClient instance backed by SQLite storage.
  */

@@ -3,7 +3,7 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { FhirRouter } from '@medplum/fhir-router';
-import { SqliteRepository } from '@medplum/fhir-router/sqlite';
+import { SqliteRepository } from '@medplum/fhir-router';
 import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient, MockFetchClient } from './client';
 import { createSqliteMockClient } from './sqlite-client';
