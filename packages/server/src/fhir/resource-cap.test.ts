@@ -24,6 +24,7 @@ describe('FHIR Resource Limits', () => {
 
   beforeEach(async () => {
     app = express();
+    config.rateLimitsEnabled = true;
     config.defaultRateLimit = -1;
     redisConfig.db = 6; // Use different temp Redis instance for these tests
     redisConfig.keyPrefix = 'resource-cap:';
@@ -66,6 +67,31 @@ describe('FHIR Resource Limits', () => {
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
     expect(res4.status).toBe(422);
+  });
+
+  test('Allows requests above resource cap when rate limits are disabled', async () => {
+    config.rateLimitsEnabled = false;
+    const { accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: {
+        systemSetting: [
+          { name: 'enableResourceCap', valueBoolean: true },
+          { name: 'resourceCap', valueInteger: 1 },
+        ],
+      },
+    });
+
+    const res = await request(app)
+      .post('/fhir/R4/Patient')
+      .auth(accessToken, { type: 'bearer' })
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+
+    const res2 = await request(app)
+      .post('/fhir/R4/Patient')
+      .auth(accessToken, { type: 'bearer' })
+      .send({ resourceType: 'Patient' });
+    expect(res2.status).toBe(201);
   });
 
   test('Loads current count', async () => {

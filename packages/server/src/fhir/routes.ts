@@ -55,7 +55,7 @@ import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { extractHandler } from './operations/extract';
-import { appointmentFindHandler, scheduleFindHandler } from './operations/find';
+import { appointmentFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
 import { getWsSubStatsHandler } from './operations/getwssubstats';
@@ -410,9 +410,6 @@ function initInternalFhirRouter(): FhirRouter {
 
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
-
-  // Schedule $find operation
-  router.add('GET', '/Schedule/:id/$find', scheduleFindHandler);
 
   // Appointment Scheduling operations
   router.add('GET', '/Appointment/$find', appointmentFindHandler);

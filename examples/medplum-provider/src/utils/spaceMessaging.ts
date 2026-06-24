@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import { getReferenceString, isNotFound, OperationOutcomeError } from '@medplum/core';
-import type { Bundle, Communication, Identifier, Resource, ResourceType } from '@medplum/fhirtypes';
+import { getDisplayString, getReferenceString, isNotFound, OperationOutcomeError } from '@medplum/core';
+import type { Bundle, Communication, Identifier, Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { useMedplum } from '@medplum/react';
 import type { Message } from '../types/spaces';
 import { createConversationTopic, saveMessage } from './spacePersistence';
@@ -358,6 +358,7 @@ export interface ProcessMessageParams {
   onStreamChunk?: (chunk: string) => void;
   onComponentStart?: () => void;
   onComponentStreamChunk?: (chunk: string) => void;
+  selectedPatients?: (Patient | Reference<Patient>)[];
 }
 
 export interface ProcessMessageResult {
@@ -382,6 +383,7 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
     onStreamChunk,
     onComponentStart,
     onComponentStreamChunk,
+    selectedPatients,
   } = params;
 
   // Create topic on first message
@@ -397,6 +399,18 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
   // Save user message
   if (activeTopicId) {
     await saveMessage(medplum, activeTopicId, userMessage, currentMessages.length - 1);
+  }
+
+  if (selectedPatients && selectedPatients.length > 0) {
+    const patientLines = selectedPatients.map((p) => {
+      const displayName = 'resourceType' in p ? getDisplayString(p) : (p.display ?? 'Unknown');
+      return `- ${displayName} (${getReferenceString(p)})`;
+    });
+    const patientContext: Message = {
+      role: 'system',
+      content: `The user has pre-selected the following patient(s) for this request. Use these patient references when the request involves a patient and do not ask which patient:\n${patientLines.join('\n')}`,
+    };
+    currentMessages.push(patientContext);
   }
 
   const MAX_AGENT_ITERATIONS = 10;

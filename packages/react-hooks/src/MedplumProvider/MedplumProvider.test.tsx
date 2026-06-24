@@ -104,7 +104,7 @@ describe('MedplumProvider', () => {
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
           refreshToken: '456',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
           },
           project: {
             reference: 'Project/123',
@@ -196,7 +196,7 @@ describe('MedplumProvider', () => {
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
         refreshToken: '456',
         profile: {
-          reference: 'Practitioner/123',
+          reference: 'Practitioner/124',
         },
         project: {
           reference: 'Project/123',
@@ -244,7 +244,7 @@ describe('MedplumProvider', () => {
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
         refreshToken: '456',
         profile: {
-          reference: 'Practitioner/123',
+          reference: 'Practitioner/124',
         },
         project: {
           reference: 'Project/123',
@@ -303,7 +303,7 @@ describe('MedplumProvider', () => {
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
           refreshToken: '456',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
           },
           project: {
             reference: 'Project/123',
@@ -364,7 +364,7 @@ describe('MedplumProvider', () => {
         }),
         refreshToken: createFakeJwt({ client_id: '123' }),
         profile: {
-          reference: 'Practitioner/123',
+          reference: 'Practitioner/124',
         },
         project: {
           reference: 'Project/123',

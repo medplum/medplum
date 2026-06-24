@@ -1,20 +1,38 @@
 {
-  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests", ":gitSignOff"],
   "enabledManagers": ["dockerfile", "github-actions"],
+  "prBodyTemplate": "{{{table}}}{{{warnings}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
   "dependencyDashboard": false,
   "automerge": false,
   "minimumReleaseAge": "3 days",
+  "separateMajorMinor": false,
+  "statusCheckNames": {
+    "minimumReleaseAge": null
+  },
   "packageRules": [
     {
-      "description": "Docker base images: grouped weekly PR, pinned digests",
+      "description": "Dockerfile",
       "matchManagers": ["dockerfile"],
-      "groupName": "docker base image updates",
-      "pinDigests": true
+      "groupName": "dependencies",
+      "groupSlug": "all",
+      "pinDigests": false
     },
     {
-      "description": "GitHub Actions: update SHA pins using upstream tags",
+      "description": "DHI Dockerfile",
+      "matchManagers": ["dockerfile"],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["dhi.io/node"],
+      "versioning": "docker",
+      "groupName": "dependencies",
+      "groupSlug": "all",
+      "pinDigests": false
+    },
+    {
+      "description": "GitHub Actions",
       "matchManagers": ["github-actions"],
-      "groupName": "github actions updates",
+      "groupName": "dependencies",
+      "groupSlug": "all",
       "pinDigests": true
     }
   ]

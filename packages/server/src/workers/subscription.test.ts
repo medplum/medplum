@@ -31,7 +31,6 @@ import { mockClient } from 'aws-sdk-client-mock';
 import type { Job, Worker } from 'bullmq';
 import * as bullmqModule from 'bullmq';
 import type { Redis } from 'ioredis';
-import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
 import { UnrecoverableError } from '../__mocks__/bullmq';
 import { initAppServices, shutdownApp } from '../app';
@@ -65,12 +64,12 @@ import {
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
 import * as workerUtils from './utils';
 
-jest.mock('node-fetch');
 jest.mock('../constants', () => ({
   ...jest.requireActual('../constants'),
   WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:worker',
 }));
 const mockBullmq = jest.mocked(bullmqModule);
+const fetchMock = jest.spyOn(globalThis, 'fetch');
 
 describe('Subscription Worker', () => {
   let systemRepo: SystemRepository;
@@ -89,7 +88,7 @@ describe('Subscription Worker', () => {
   });
 
   beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
+    fetchMock.mockClear();
 
     // Create one simple project with no advanced features enabled
     const { client, repo: _repo } = await withTestContext(() =>

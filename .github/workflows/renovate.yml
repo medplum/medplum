@@ -6,6 +6,19 @@ on:
     # Every Monday at 1:00 AM PST (2:00 AM PDT)
     - cron: '0 9 * * 1'
   workflow_dispatch:
+    inputs:
+      log_level:
+        description: 'Log level'
+        required: false
+        default: 'info'
+        type: choice
+        options:
+          - trace
+          - debug
+          - info
+          - warn
+          - error
+          - fatal
 
 permissions:
   contents: write
@@ -24,6 +37,21 @@ jobs:
           RENOVATE_ONBOARDING: 'false'
           RENOVATE_REQUIRE_CONFIG: 'required'
           RENOVATE_AUTODISCOVER: 'false'
-          LOG_LEVEL: 'info'
+          RENOVATE_HOST_RULES: >-
+            [
+              {
+                "hostType": "docker",
+                "matchHost": "docker.io",
+                "username": "${{ secrets.DOCKERHUB_USERNAME }}",
+                "password": "${{ secrets.DOCKERHUB_TOKEN }}"
+              },
+              {
+                "hostType": "docker",
+                "matchHost": "dhi.io",
+                "username": "${{ secrets.DOCKERHUB_USERNAME }}",
+                "password": "${{ secrets.DOCKERHUB_TOKEN }}"
+              }
+            ]
+          LOG_LEVEL: ${{ github.event.inputs.log_level || 'info' }}
         with:
           token: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}

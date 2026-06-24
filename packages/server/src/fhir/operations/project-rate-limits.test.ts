@@ -5,7 +5,6 @@ import type { Parameters, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import type { RegisterResponse } from '../../auth/register';
@@ -14,7 +13,7 @@ import { loadTestConfig } from '../../config/loader';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
 
 jest.mock('hibp');
-jest.mock('node-fetch');
+const fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
 
 const app = express();
 
@@ -53,10 +52,10 @@ describe('Project $rate-limits operation', () => {
   });
 
   beforeEach(() => {
-    (fetch as unknown as jest.Mock).mockClear();
+    fetchMock.mockClear();
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    setupRecaptchaMock(true);
   });
 
   test('Returns only active consumers when no membershipId specified', async () => {
