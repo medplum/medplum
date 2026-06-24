@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import type { SqlDialect as SqlDialectType } from '../sql/dialect.js';
 import { SqlDialect } from '../sql/dialect.js';
 

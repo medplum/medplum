@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { FhirRouter } from '@medplum/fhir-router';
 import { SqliteRepository } from '@medplum/fhir-router/sqlite';
 import type { MockClientOptions } from './client';

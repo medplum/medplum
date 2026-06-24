@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import type { DatabaseSync } from 'node:sqlite';
 import { SqlDialect } from './dialect.js';
 

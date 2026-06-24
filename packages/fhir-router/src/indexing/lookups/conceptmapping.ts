@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
 import type { SqlConnection } from '../../sql/sql.js';
