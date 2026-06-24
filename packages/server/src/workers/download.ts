@@ -11,7 +11,7 @@ import {
   toTypedValue,
 } from '@medplum/core';
 import type { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
-import type { Job, QueueBaseOptions } from 'bullmq';
+import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { Readable } from 'node:stream';
 import { Pointer } from 'rfc6902';
@@ -23,7 +23,7 @@ import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -48,19 +48,9 @@ const queueName = 'DownloadQueue';
 const jobName = 'DownloadJobData';
 
 export const initDownloadWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<DownloadJobData>(queueName, {
     ...defaultOptions,
-    defaultJobOptions: {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
-      },
-    },
   });
 
   let worker: Worker<DownloadJobData> | undefined;
