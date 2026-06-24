@@ -32,6 +32,7 @@ export * from './CalendarInput/CalendarInput';
 export * from './chat/BaseChat/BaseChat';
 export * from './chat/ChatModal/ChatModal';
 export * from './chat/ThreadChat/ThreadChat';
+export * from './chat/ThreadInbox/EditTopicDialog';
 export * from './chat/ThreadInbox/NewTopicDialog';
 export * from './chat/ThreadInbox/ParticipantFilter';
 export * from './chat/ThreadInbox/ThreadInbox';
