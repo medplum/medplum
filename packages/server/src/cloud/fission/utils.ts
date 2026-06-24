@@ -156,7 +156,13 @@ export async function deployFissionFunction(id: string, zipFile: Uint8Array): Pr
  * @param body - The request body to be sent to the function.
  * @returns A promise that resolves to the response body from the Fission function.
  */
-export async function executeFissionFunction(id: string, body: string): Promise<string> {
+export interface FissionFunctionResponse {
+  readonly ok: boolean;
+  readonly status: number;
+  readonly body: string;
+}
+
+export async function executeFissionFunction(id: string, body: string): Promise<FissionFunctionResponse> {
   const config = getFissionConfig();
 
   const relativeUrl = getRelativeUrl(id);
@@ -168,11 +174,9 @@ export async function executeFissionFunction(id: string, body: string): Promise<
     body,
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorText}`);
-  }
-
-  const data = await response.text();
-  return data;
+  return {
+    ok: response.ok,
+    status: response.status,
+    body: await response.text(),
+  };
 }
