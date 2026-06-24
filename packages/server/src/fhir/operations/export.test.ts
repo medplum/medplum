@@ -162,7 +162,7 @@ describe('Export', () => {
         {
           resourceType: 'Observation',
           count: 1,
-          filters: [{ code: 'subject', operator: Operator.EQUALS, value: subject.reference as string }],
+          filters: [{ code: 'subject', operator: Operator.EQUALS, value: subject.reference }],
           sortRules: [{ code: '_lastUpdated', descending: false }],
         },
         async (resource) => {

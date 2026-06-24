@@ -319,7 +319,13 @@ export const medplumEslintConfig = [
    * we don't need type checking for vite.config or vitest.config files
    */
   {
-    files: ['eslint.config.mjs', '**/vite.config.ts', '**/vitest.config.ts', '**/vite.config.js', '**/vitest.config.js'],
+    files: [
+      'eslint.config.mjs',
+      '**/vite.config.ts',
+      '**/vitest.config.ts',
+      '**/vite.config.js',
+      '**/vitest.config.js',
+    ],
     rules: {
       'import/no-unresolved': 'off',
     },

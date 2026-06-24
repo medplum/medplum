@@ -269,15 +269,11 @@ describe('FHIR resource validation', () => {
   });
 
   // Validates large StructureDefinition bundles; allow extra time when turbo runs many packages in parallel.
-  test(
-    'StructureDefinition',
-    () => {
-      expect(() => validateResource(typesBundle)).not.toThrow();
-      expect(() => validateResource(resourcesBundle)).not.toThrow();
-      expect(() => validateResource(medplumBundle)).not.toThrow();
-    },
-    15000
-  );
+  test('StructureDefinition', () => {
+    expect(() => validateResource(typesBundle)).not.toThrow();
+    expect(() => validateResource(resourcesBundle)).not.toThrow();
+    expect(() => validateResource(medplumBundle)).not.toThrow();
+  }, 15000);
 
   test('StructureDefinition with differential', () => {
     const sd: StructureDefinition = {

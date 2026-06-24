@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { vi } from 'vitest';
 import { TextDecoder, TextEncoder } from 'node:util';
+import { vi } from 'vitest';
 
 // MockSubscriptionManager extends core SubscriptionManager, which starts background
 // timers when the WebSocket opens: one refreshes subscription tokens on
