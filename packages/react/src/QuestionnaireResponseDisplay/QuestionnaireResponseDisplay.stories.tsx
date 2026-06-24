@@ -376,7 +376,7 @@ export const KitchenSink = (): JSX.Element => (
             answer: [
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },
@@ -429,7 +429,7 @@ export const KitchenSink = (): JSX.Element => (
             answer: [
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },

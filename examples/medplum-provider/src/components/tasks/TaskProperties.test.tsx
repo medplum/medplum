@@ -181,7 +181,7 @@ describe('TaskProperties', () => {
   test('handles task with organization owner and displays organization', async () => {
     const organization: Organization = {
       resourceType: 'Organization',
-      id: 'org-123',
+      id: 'org-125',
       name: 'Test Organization',
     };
 
@@ -189,7 +189,7 @@ describe('TaskProperties', () => {
 
     const taskWithOrgOwner: Task = {
       ...mockTask,
-      owner: { reference: 'Organization/org-123', display: 'Test Organization' },
+      owner: { reference: 'Organization/org-125', display: 'Test Organization' },
     };
 
     setup(taskWithOrgOwner);

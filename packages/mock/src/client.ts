@@ -39,6 +39,7 @@ import type {
   Subscription,
   UserConfiguration,
 } from '@medplum/fhirtypes';
+import { MOCK_ALICE_PRACTITIONER_ID } from './constants';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';

@@ -129,7 +129,7 @@ describe('SearchFilterValueInput', () => {
 
   test('Reference input', async () => {
     // Warm up the default value
-    await medplum.readResource('Organization', '123');
+    await medplum.readResource('Organization', '125');
 
     const onChange = vi.fn();
 
@@ -137,7 +137,7 @@ describe('SearchFilterValueInput', () => {
       <SearchFilterValueInput
         resourceType="Patient"
         searchParam={globalSchema.types['Patient'].searchParams?.['organization'] as SearchParameter}
-        defaultValue="Organization/123"
+        defaultValue="Organization/125"
         onChange={onChange}
       />
     );

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { createReference } from '@medplum/core';
-import { DrAliceSmith } from './alice';
+import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MOCK_HOMER_PATIENT_ID } from '../constants';
+import { DrAliceSmith } from './alice';
 
 export const ExampleQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
