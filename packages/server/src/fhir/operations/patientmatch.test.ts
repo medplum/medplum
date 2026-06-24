@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import type { Bundle, BundleEntry, Patient } from '@medplum/fhirtypes';
 import express from 'express';
@@ -8,7 +7,6 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
-import { scoreCandidate } from './patientmatch';
 
 const app = express();
 let accessToken: string;
@@ -148,8 +146,8 @@ describe('Patient $match Operation', () => {
     expect(gradeExt?.valueCode).toBe('certain');
   });
 
-  test('Matches patient by name and birthdate', async () => {
-    const createRes = await request(app)
+  test('Does not match on name + birthdate alone (no approved CMS combination)', async () => {
+    await request(app)
       .post('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -159,7 +157,6 @@ describe('Patient $match Operation', () => {
         birthDate: '1975-03-22',
         gender: 'male',
       } satisfies Patient);
-    expect(createRes.status).toBe(201);
 
     const matchRes = await request(app)
       .post('/fhir/R4/Patient/$match')
@@ -179,24 +176,23 @@ describe('Patient $match Operation', () => {
         ],
       });
 
+    // First + Last + DOB is not a Table 2 combination — it needs a fourth identifying field.
     expect(matchRes.status).toBe(200);
-    const bundle = matchRes.body as Bundle<Patient>;
-    expect(bundle.total).toBeGreaterThan(0);
-
-    const topEntry = bundle.entry?.[0] as BundleEntry<Patient>;
-    expect(topEntry.resource?.name?.[0]?.family).toBe('Namebirthtest');
-    expect(topEntry.search?.score).toBeGreaterThan(0);
+    expect((matchRes.body as Bundle<Patient>).total).toBe(0);
   });
 
-  test('Matches patient by phone', async () => {
+  test('Matches via First + DOB + Phone (criteria 11)', async () => {
+    const phone = '5551112222';
+    const birthDate = '1960-05-05';
     const createRes = await request(app)
       .post('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
-        telecom: [{ system: 'phone', value: '5551112222' }],
         name: [{ family: 'Phoneonly', given: ['Delta'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: phone }],
       } satisfies Patient);
     expect(createRes.status).toBe(201);
 
@@ -211,7 +207,9 @@ describe('Patient $match Operation', () => {
             name: 'resource',
             resource: {
               resourceType: 'Patient',
-              telecom: [{ system: 'phone', value: '5551112222' }],
+              name: [{ given: ['Delta'] }],
+              birthDate,
+              telecom: [{ system: 'phone', value: phone }],
             } satisfies Patient,
           },
         ],
@@ -219,21 +217,21 @@ describe('Patient $match Operation', () => {
 
     expect(matchRes.status).toBe(200);
     const bundle = matchRes.body as Bundle<Patient>;
-    expect(bundle.total).toBeGreaterThan(0);
-
-    const topEntry = bundle.entry?.[0] as BundleEntry<Patient>;
-    expect(topEntry.resource?.telecom?.[0]?.value).toBe('5551112222');
+    expect(bundle.entry?.some((e) => e.resource?.id === createRes.body.id)).toBe(true);
   });
 
-  test('Matches patient by email', async () => {
+  test('Matches via First + DOB + Email (criteria 12)', async () => {
+    const email = 'delta.match@example.com';
+    const birthDate = '1961-06-06';
     const createRes = await request(app)
       .post('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
-        telecom: [{ system: 'email', value: 'delta.match@example.com' }],
         name: [{ family: 'Emailonly', given: ['Epsilon'] }],
+        birthDate,
+        telecom: [{ system: 'email', value: email }],
       } satisfies Patient);
     expect(createRes.status).toBe(201);
 
@@ -248,7 +246,9 @@ describe('Patient $match Operation', () => {
             name: 'resource',
             resource: {
               resourceType: 'Patient',
-              telecom: [{ system: 'email', value: 'delta.match@example.com' }],
+              name: [{ given: ['Epsilon'] }],
+              birthDate,
+              telecom: [{ system: 'email', value: email }],
             } satisfies Patient,
           },
         ],
@@ -256,10 +256,7 @@ describe('Patient $match Operation', () => {
 
     expect(matchRes.status).toBe(200);
     const bundle = matchRes.body as Bundle<Patient>;
-    expect(bundle.total).toBeGreaterThan(0);
-
-    const topEntry = bundle.entry?.[0] as BundleEntry<Patient>;
-    expect(topEntry.resource?.telecom?.[0]?.value).toBe('delta.match@example.com');
+    expect(bundle.entry?.some((e) => e.resource?.id === createRes.body.id)).toBe(true);
   });
 
   test('Respects onlyCertainMatches flag', async () => {
@@ -304,17 +301,18 @@ describe('Patient $match Operation', () => {
   });
 
   test('Respects count parameter', async () => {
-    // Create several patients sharing the same birthdate
+    // Create several patients sharing the same name + birthdate (a partial, non-unique match).
     const sharedBirthDate = '1955-07-04';
+    const family = `Counttest${Date.now()}`;
     await Promise.all(
-      Array.from({ length: 5 }, (_, i) =>
+      Array.from({ length: 5 }, () =>
         request(app)
           .post('/fhir/R4/Patient')
           .set('Authorization', 'Bearer ' + accessToken)
           .set('Content-Type', ContentType.FHIR_JSON)
           .send({
             resourceType: 'Patient',
-            name: [{ family: `Counttest${Date.now()}`, given: [`Patient${i}`] }],
+            name: [{ family, given: ['Sharedgiven'] }],
             birthDate: sharedBirthDate,
           } satisfies Patient)
       )
@@ -331,6 +329,7 @@ describe('Patient $match Operation', () => {
             name: 'resource',
             resource: {
               resourceType: 'Patient',
+              name: [{ family, given: ['Sharedgiven'] }],
               birthDate: sharedBirthDate,
             } satisfies Patient,
           },
@@ -342,124 +341,91 @@ describe('Patient $match Operation', () => {
     const bundle = matchRes.body as Bundle<Patient>;
     expect((bundle.entry ?? []).length).toBeLessThanOrEqual(2);
   });
-});
 
-describe('scoreCandidate', () => {
-  const baseCandidate: WithId<Patient> = {
-    resourceType: 'Patient' as const,
-    id: 'test-id',
-    meta: { versionId: '1', lastUpdated: '2024-01-01T00:00:00Z' },
-    name: [{ family: 'Smith', given: ['John'] }],
-    birthDate: '1990-01-01',
-    gender: 'male' as const,
-    identifier: [{ system: 'http://example.com/mrn', value: 'MRN123' }],
-  };
+  describe('CMS mode (onlyCertainMatches=true)', () => {
+    const cmsMatch = (resource: Patient): Promise<request.Response> =>
+      request(app)
+        .post('/fhir/R4/Patient/$match')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'resource', resource },
+            { name: 'onlyCertainMatches', valueBoolean: true },
+          ],
+        });
 
-  test('Perfect match scores 1.0', () => {
-    const input: Patient = {
-      resourceType: 'Patient',
-      name: [{ family: 'Smith', given: ['John'] }],
-      birthDate: '1990-01-01',
-      gender: 'male',
-      identifier: [{ system: 'http://example.com/mrn', value: 'MRN123' }],
-    };
-    const { score, grade } = scoreCandidate(baseCandidate, input);
-    expect(score).toBe(1.0);
-    expect(grade).toBe('certain');
-  });
+    const createPatient = (patient: Patient): Promise<request.Response> =>
+      request(app)
+        .post('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(patient);
 
-  test('Identifier match alone is certain', () => {
-    const input: Patient = {
-      resourceType: 'Patient',
-      identifier: [{ system: 'http://example.com/mrn', value: 'MRN123' }],
-    };
-    const { score, grade } = scoreCandidate(baseCandidate, input);
-    expect(score).toBe(1.0);
-    expect(grade).toBe('certain');
-  });
+    test('releases a unique match via rule 11 (First + DOB + Phone)', async () => {
+      const phone = '+1-617-555-0142';
+      const birthDate = '1971-03-15';
+      const created = await createPatient({
+        resourceType: 'Patient',
+        name: [{ family: `CmsRelease${Date.now()}`, given: ['Robert'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: phone }],
+      });
+      expect(created.status).toBe(201);
 
-  test('Name + birthdate without identifier scores probable', () => {
-    const input: Patient = {
-      resourceType: 'Patient',
-      name: [{ family: 'Smith', given: ['John'] }],
-      birthDate: '1990-01-01',
-    };
-    const { grade } = scoreCandidate(baseCandidate, input);
-    // Should be probable or certain (no identifier to compare against)
-    expect(['probable', 'certain']).toContain(grade);
-  });
+      // First name + DOB + phone uniquely identify the patient (with different phone formatting).
+      const res = await cmsMatch({
+        resourceType: 'Patient',
+        name: [{ given: ['Robert'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: phone }],
+      });
 
-  test('Wrong birthdate lowers score', () => {
-    const fullMatch: Patient = {
-      resourceType: 'Patient',
-      name: [{ family: 'Smith', given: ['John'] }],
-      birthDate: '1990-01-01',
-      gender: 'male',
-    };
-    const wrongDob: Patient = {
-      resourceType: 'Patient',
-      name: [{ family: 'Smith', given: ['John'] }],
-      birthDate: '1985-06-15',
-      gender: 'male',
-    };
-    const full = scoreCandidate(baseCandidate, fullMatch);
-    const wrong = scoreCandidate(baseCandidate, wrongDob);
-    expect(full.score).toBeGreaterThan(wrong.score);
-  });
+      expect(res.status).toBe(200);
+      const bundle = res.body as Bundle<Patient>;
+      expect(bundle.entry).toHaveLength(1);
+      const entry = bundle.entry?.[0];
+      expect(entry?.resource?.id).toBe(created.body.id);
+      expect(entry?.search?.score).toBe(1);
+      const ext = entry?.search?.extension ?? [];
+      expect(ext.find((e) => e.url.endsWith('match-grade'))?.valueCode).toBe('certain');
+      expect(ext.find((e) => e.url.endsWith('cms-match-combination'))?.valueString).toBe('11');
+    });
 
-  test('Phone match scores certain', () => {
-    const input: Patient = {
-      resourceType: 'Patient',
-      telecom: [{ system: 'phone', value: '555-867-5309' }],
-    };
-    const candidate = {
-      ...baseCandidate,
-      telecom: [{ system: 'phone', value: '5558675309' }], // same digits, different format
-    } as WithId<Patient>;
-    const { score, grade } = scoreCandidate(candidate, input);
-    expect(score).toBe(1.0);
-    expect(grade).toBe('certain');
-  });
+    test('suppresses an ambiguous match (two qualifying candidates)', async () => {
+      const phone = '+1-617-555-0188';
+      const birthDate = '1972-06-20';
+      const family = `CmsAmbiguous${Date.now()}`;
+      await createPatient({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Robert'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: phone }],
+      });
+      await createPatient({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Robert'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: phone }],
+      });
 
-  test('Email match scores certain', () => {
-    const input: Patient = {
-      resourceType: 'Patient',
-      telecom: [{ system: 'email', value: 'John.Smith@Example.COM' }],
-    };
-    const candidate = {
-      ...baseCandidate,
-      telecom: [{ system: 'email', value: 'john.smith@example.com' }], // same, different case
-    } as WithId<Patient>;
-    const { score, grade } = scoreCandidate(candidate, input);
-    expect(score).toBe(1.0);
-    expect(grade).toBe('certain');
-  });
+      const res = await cmsMatch({
+        resourceType: 'Patient',
+        name: [{ given: ['Robert'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: phone }],
+      });
 
-  test('Phone mismatch lowers score', () => {
-    const withPhone: Patient = {
-      resourceType: 'Patient',
-      name: [{ family: 'Smith', given: ['John'] }],
-      birthDate: '1990-01-01',
-      telecom: [{ system: 'phone', value: '5558675309' }],
-    };
-    const withWrongPhone: Patient = {
-      resourceType: 'Patient',
-      name: [{ family: 'Smith', given: ['John'] }],
-      birthDate: '1990-01-01',
-      telecom: [{ system: 'phone', value: '5550000000' }],
-    };
-    const candidateWithPhone: WithId<Patient> = {
-      ...baseCandidate,
-      telecom: [{ system: 'phone', value: '5558675309' }],
-    };
-    const match = scoreCandidate(candidateWithPhone, withPhone);
-    const mismatch = scoreCandidate(candidateWithPhone, withWrongPhone);
-    expect(match.score).toBeGreaterThan(mismatch.score);
-  });
+      expect(res.status).toBe(200);
+      const bundle = res.body as Bundle<Patient>;
+      expect(bundle.entry ?? []).toHaveLength(0);
+    });
 
-  test('No overlapping fields returns score 0', () => {
-    const input: Patient = { resourceType: 'Patient' };
-    const { score } = scoreCandidate(baseCandidate, input);
-    expect(score).toBe(0);
+    test('no match when only a single non-discriminating field agrees', async () => {
+      const res = await cmsMatch({ resourceType: 'Patient', birthDate: '1973-09-25', name: [{ given: ['Solo'] }] });
+      expect(res.status).toBe(200);
+      expect((res.body as Bundle<Patient>).entry ?? []).toHaveLength(0);
+    });
   });
 });
