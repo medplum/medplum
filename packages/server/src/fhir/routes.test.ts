@@ -317,7 +317,7 @@ describe('FHIR Routes', () => {
       .send({
         resourceType: 'Patient',
         managingOrganization: {
-          reference: 'Organization/123',
+          reference: 'Organization/125',
         },
       });
     expect(res.status).toBe(201);
@@ -328,7 +328,7 @@ describe('FHIR Routes', () => {
       .send({
         ...patient,
         managingOrganization: {
-          reference: 'Organization/123',
+          reference: 'Organization/125',
           display: '',
         },
       });

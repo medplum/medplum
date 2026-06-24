@@ -9,7 +9,6 @@ import {
   DEFAULT_SEARCH_COUNT,
   isNotFound,
   isReference,
-  isResource,
   OperationOutcomeError,
   resolveId,
 } from '@medplum/core';
@@ -34,21 +33,6 @@ import {
 } from './utils/scheduling';
 import { extractCommonParameters } from './utils/scheduling-parameters';
 
-const scheduleFindOperation = makeOperationDefinition(
-  { scope: 'instance', resource: 'Schedule' },
-  {
-    name: 'find',
-    code: 'find',
-    parameter: [
-      { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
-      { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
-      { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
-      { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
-      { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
-    ],
-  }
-);
-
 const appointmentFindOperation = makeOperationDefinition(
   { scope: 'type', resource: 'Appointment' },
   {
@@ -64,13 +48,6 @@ const appointmentFindOperation = makeOperationDefinition(
     ],
   }
 );
-
-type ScheduleFindParameters = {
-  start: string;
-  end: string;
-  'service-type-reference': string;
-  _count?: number;
-};
 
 type AppointmentFindParameters = {
   start: string;
@@ -280,46 +257,6 @@ async function handler(params: {
 
     return appointment;
   });
-}
-
-/**
- * Handles HTTP requests for the Schedule $find operation.
- *
- * Endpoints:
- *   [fhir base]/Schedule/[id]/$find
- *
- * @deprecated - use Appointment/$find instead.
- * @param req - The FHIR request.
- * @returns The FHIR response.
- */
-export async function scheduleFindHandler(req: FhirRequest): Promise<FhirResponse> {
-  const params = parseInputParameters<ScheduleFindParameters>(scheduleFindOperation, req);
-  const proposed = await handler({
-    start: params.start,
-    end: params.end,
-    _count: params._count,
-    schedules: [withPath({ reference: `Schedule/${req.params.id}` }, 'Schedule')],
-    healthcareService: { reference: params['service-type-reference'] },
-  });
-
-  const entry = proposed.map((appointment) => {
-    // We passed in a single schedule, so each resulting appointment should have
-    // a single "busy" slot.
-    const slots = appointment.contained?.filter((s) => isResource<Slot>(s, 'Slot'));
-    const slot = slots?.find((s) => s.status === 'busy');
-    assert(slot);
-    // In the single schedule $find, we show the potential slots as "free", as they represent
-    // bookable time rather than a proposed set of resources to create during booking.
-    return { resource: { ...slot, status: 'free' as const } };
-  });
-
-  const bundle: Bundle<Slot> = {
-    resourceType: 'Bundle',
-    type: 'searchset',
-    entry,
-  };
-
-  return [allOk, buildOutputParameters(scheduleFindOperation, bundle)];
 }
 
 /**

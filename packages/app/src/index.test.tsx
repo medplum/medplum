@@ -19,7 +19,7 @@ describe('App Index', () => {
         accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
         refreshToken: '456',
         project: { reference: 'Project/123' },
-        profile: { reference: 'Practitioner/123' },
+        profile: { reference: 'Practitioner/124' },
       })
     );
 
