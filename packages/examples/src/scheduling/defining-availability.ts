@@ -913,7 +913,7 @@ const seedBundle: Bundle =
     type: 'transaction',
     entry: [
       {
-        fullUrl: 'urn:uuid:0000-org',
+        fullUrl: 'urn:uuid:caae036f-8872-4d5c-ac2b-bbb37df5f08e',
         resource: {
           resourceType: 'Organization',
           name: 'Bayview Surgery Center',
@@ -927,10 +927,10 @@ const seedBundle: Bundle =
         },
       },
       {
-        fullUrl: 'urn:uuid:0000-hs',
+        fullUrl: 'urn:uuid:fe101ba5-44f9-45e9-803c-201605a5dde3',
         resource: {
           resourceType: 'HealthcareService',
-          providedBy: { reference: 'urn:uuid:0000-org', display: 'Bayview Surgery Center' },
+          providedBy: { reference: 'urn:uuid:caae036f-8872-4d5c-ac2b-bbb37df5f08e', display: 'Bayview Surgery Center' },
           name: 'Surgical Procedure',
           type: [
             {
@@ -978,7 +978,7 @@ const seedBundle: Bundle =
         },
       },
       {
-        fullUrl: 'urn:uuid:0000-loc-or1',
+        fullUrl: 'urn:uuid:39ff8f6a-5557-496a-b5cd-05f61899d223',
         resource: {
           resourceType: 'Location',
           name: 'OR-1',
@@ -988,7 +988,7 @@ const seedBundle: Bundle =
         request: { method: 'POST', url: 'Location' },
       },
       {
-        fullUrl: 'urn:uuid:0000-pract-surgeon',
+        fullUrl: 'urn:uuid:a152fbf8-aef5-450f-9868-0819bb06a1cd',
         resource: {
           resourceType: 'Practitioner',
           name: [{ given: ['Maria'], family: 'Martinez', prefix: ['Dr.'] }],
@@ -997,13 +997,12 @@ const seedBundle: Bundle =
         request: { method: 'POST', url: 'Practitioner' },
       },
       {
-        fullUrl: 'urn:uuid:0000-sched-surgeon',
         resource: {
           resourceType: 'Schedule',
           active: true,
           // Schedule has no 'name' field in R4 - use comment for a label
           comment: 'Dr. Martinez (Surgeon) - Surgical Procedure',
-          actor: [{ reference: 'urn:uuid:0000-pract-surgeon', display: 'Dr. Maria Martinez' }],
+          actor: [{ reference: 'urn:uuid:a152fbf8-aef5-450f-9868-0819bb06a1cd', display: 'Dr. Maria Martinez' }],
           serviceType: [
             {
               text: 'Surgical Procedure',
@@ -1011,7 +1010,10 @@ const seedBundle: Bundle =
               extension: [
                 {
                   url: 'https://medplum.com/fhir/service-type-reference',
-                  valueReference: { reference: 'urn:uuid:0000-hs', display: 'Surgical Procedure' },
+                  valueReference: {
+                    reference: 'urn:uuid:fe101ba5-44f9-45e9-803c-201605a5dde3',
+                    display: 'Surgical Procedure',
+                  },
                 },
               ],
             },
@@ -1022,7 +1024,10 @@ const seedBundle: Bundle =
               extension: [
                 {
                   url: 'service',
-                  valueReference: { reference: 'urn:uuid:0000-hs', display: 'Surgical Procedure' },
+                  valueReference: {
+                    reference: 'urn:uuid:fe101ba5-44f9-45e9-803c-201605a5dde3',
+                    display: 'Surgical Procedure',
+                  },
                 },
                 {
                   url: 'availability',
@@ -1045,12 +1050,11 @@ const seedBundle: Bundle =
         request: { method: 'POST', url: 'Schedule' },
       },
       {
-        fullUrl: 'urn:uuid:0000-sched-or1',
         resource: {
           resourceType: 'Schedule',
           active: true,
           comment: 'OR-1 - Surgical Procedure',
-          actor: [{ reference: 'urn:uuid:0000-loc-or1', display: 'OR-1' }],
+          actor: [{ reference: 'urn:uuid:39ff8f6a-5557-496a-b5cd-05f61899d223', display: 'OR-1' }],
           serviceType: [
             {
               text: 'Surgical Procedure',
@@ -1058,7 +1062,10 @@ const seedBundle: Bundle =
               extension: [
                 {
                   url: 'https://medplum.com/fhir/service-type-reference',
-                  valueReference: { reference: 'urn:uuid:0000-hs', display: 'Surgical Procedure' },
+                  valueReference: {
+                    reference: 'urn:uuid:fe101ba5-44f9-45e9-803c-201605a5dde3',
+                    display: 'Surgical Procedure',
+                  },
                 },
               ],
             },
@@ -1069,7 +1076,10 @@ const seedBundle: Bundle =
               extension: [
                 {
                   url: 'service',
-                  valueReference: { reference: 'urn:uuid:0000-hs', display: 'Surgical Procedure' },
+                  valueReference: {
+                    reference: 'urn:uuid:fe101ba5-44f9-45e9-803c-201605a5dde3',
+                    display: 'Surgical Procedure',
+                  },
                 },
                 {
                   url: 'availability',
