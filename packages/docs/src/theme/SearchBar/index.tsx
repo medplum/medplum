@@ -193,7 +193,9 @@ function DocSearch({ externalUrlRegex, ...props }: DocSearchV4Props): ReactNode 
 
   const openModal = useCallback(() => {
     prepareSearchContainer();
-    void importDocSearchModalIfNeeded().then(() => setIsOpen(true));
+    importDocSearchModalIfNeeded()
+      .then(() => setIsOpen(true))
+      .catch(() => undefined);
   }, [prepareSearchContainer]);
 
   const closeModal = useCallback(() => {
