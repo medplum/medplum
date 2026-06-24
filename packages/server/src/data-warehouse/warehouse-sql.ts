@@ -18,6 +18,11 @@ export const POSTGRES_CATALOG = 'pg_db';
 /** the path to the project id in the content JSON */
 export const PROJECT_ID_JSON_PATH = '$.meta.project';
 
+/** DuckDB expression that extracts project_id without casting empty tombstone content to JSON. */
+export function buildProjectIdProjectionSql(): string {
+  return `CASE WHEN NULLIF("src"."content", '') IS NULL THEN NULL ELSE json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}') END AS project_id`;
+}
+
 /** Iceberg / Parquet column names written for each resource history row (order matters for INSERT). */
 export const WAREHOUSE_HISTORY_COLUMN_NAMES = ['id', 'version_id', 'content', 'last_updated', 'project_id'] as const;
 
@@ -157,7 +162,7 @@ export function buildSelectFromHistoryTableQuery(
     .column('version_id')
     .column('content')
     .column('last_updated')
-    .raw(`json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}') AS project_id`)
+    .raw(buildProjectIdProjectionSql())
     .orderBy('last_updated');
 }
 

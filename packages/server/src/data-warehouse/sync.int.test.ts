@@ -15,6 +15,7 @@ import { syncData } from './sync';
 
 /** Isolated history table in medplum_test so we do not collide with real FHIR history tables. */
 const HISTORY_TABLE = 'DwSyncIntTest_history';
+const EMPTY_CONTENT_HISTORY_TABLE = 'DwSyncIntTest_empty_content_history';
 
 function assertParquetMagic(bytes: Buffer): void {
   expect(bytes.subarray(0, 4).toString('ascii')).toBe('PAR1');
@@ -24,6 +25,11 @@ function assertParquetMagic(bytes: Buffer): void {
 function buildReadParquetFirstRowProjectionQuery(parquetPath: string): string {
   const escapedPath = parquetPath.replaceAll("'", "''");
   return `SELECT id::VARCHAR AS id, project_id::VARCHAR AS project_id FROM read_parquet('${escapedPath}') LIMIT 1`;
+}
+
+function buildReadParquetRowQuery(parquetPath: string): string {
+  const escapedPath = parquetPath.replaceAll("'", "''");
+  return `SELECT id::VARCHAR AS id, content::VARCHAR AS content, project_id::VARCHAR AS project_id FROM read_parquet('${escapedPath}')`;
 }
 
 /**
@@ -132,4 +138,60 @@ describe('syncData local destination (integration)', () => {
       instance.closeSync();
     }
   }, 30_000); // longer timeout because of database operations
+
+  test('exports history rows with empty content to Parquet (deleted resource tombstones)', async () => {
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    await pool.query(`DROP TABLE IF EXISTS "${EMPTY_CONTENT_HISTORY_TABLE}"`);
+    await pool.query(`
+      CREATE TABLE "${EMPTY_CONTENT_HISTORY_TABLE}" (
+        id TEXT NOT NULL,
+        "versionId" TEXT NOT NULL,
+        content TEXT NOT NULL,
+        "lastUpdated" TIMESTAMPTZ NOT NULL
+      );
+    `);
+    await pool.query(
+      `INSERT INTO "${EMPTY_CONTENT_HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
+      ['patient-tombstone-1', '1', '', '2024-06-01T12:00:00.000Z']
+    );
+
+    try {
+      const warehouseSources = [EMPTY_CONTENT_HISTORY_TABLE].map((postgresTable) => ({
+        postgresTable,
+        icebergTable: toIcebergTableName(postgresTable),
+      }));
+      const destination = new LocalParquetWarehouseDestination(outDir as string);
+
+      const result = await syncData({
+        database: { host, port, dbname: database, username, password },
+        warehouseSources,
+        destination,
+      });
+
+      expect(result.tables).toHaveLength(1);
+      expect(result.tables[0]?.rowsInserted).toBe(1);
+
+      const parquetPath = result.tables[0]?.destination;
+      assertParquetMagic(readFileSync(parquetPath));
+
+      const instance = await DuckDBInstance.create(':memory:');
+      const c = await instance.connect();
+      try {
+        const res = await c.runAndReadAll(buildReadParquetRowQuery(parquetPath));
+        const row = res.getRowObjectsJson()[0] as {
+          id: string;
+          content: string | null;
+          project_id: string | null;
+        };
+        expect(row.id).toBe('patient-tombstone-1');
+        expect(row.content).toBe('');
+        expect(row.project_id).toBeNull();
+      } finally {
+        c.closeSync();
+        instance.closeSync();
+      }
+    } finally {
+      await pool.query(`DROP TABLE IF EXISTS "${EMPTY_CONTENT_HISTORY_TABLE}"`);
+    }
+  }, 30_000);
 });
