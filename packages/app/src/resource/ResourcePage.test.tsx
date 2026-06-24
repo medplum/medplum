@@ -31,7 +31,7 @@ describe('ResourcePage', () => {
   });
 
   test('Details tab renders', async () => {
-    await setup('/Practitioner/123/details');
+    await setup('/Practitioner/124/details');
     expect((await screen.findAllByText('Name'))[0]).toBeInTheDocument();
     expect(screen.getByText('Gender')).toBeInTheDocument();
   });
@@ -60,12 +60,12 @@ describe('ResourcePage', () => {
   });
 
   test('History tab renders', async () => {
-    await setup('/Practitioner/123/history');
+    await setup('/Practitioner/124/history');
     expect(await screen.findByText('History')).toBeInTheDocument();
   });
 
   test('Blame tab renders', async () => {
-    await setup('/Practitioner/123/blame');
+    await setup('/Practitioner/124/blame');
     expect(await screen.findByText('Blame')).toBeInTheDocument();
   });
 
@@ -318,7 +318,7 @@ describe('ResourcePage', () => {
   test('Left click on tab', async () => {
     window.open = vi.fn();
 
-    await setup('/Practitioner/123/details');
+    await setup('/Practitioner/124/details');
 
     await act(async () => {
       fireEvent.click(screen.getByRole('tab', { name: 'History' }));

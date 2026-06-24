@@ -14,7 +14,8 @@ import {
   Text,
   ThemeIcon,
 } from '@mantine/core';
-import type { Communication, Reference } from '@medplum/fhirtypes';
+import { getDisplayString } from '@medplum/core';
+import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react';
 import {
   IconArrowDown,
@@ -25,11 +26,12 @@ import {
   IconList,
   IconPlus,
   IconRobot,
+  IconUser,
 } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChatInput } from '../../pages/spaces/ChatInput';
+import { PromptComposer } from '../../pages/spaces/PromptComposer';
 import type { Message } from '../../types/spaces';
 import { showErrorNotification } from '../../utils/notifications';
 import { processMessage } from '../../utils/spaceMessaging';
@@ -66,6 +68,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
   const [selectedResources, setSelectedResources] = useState<string[] | undefined>();
   const [resourceFromComponent, setResourceFromComponent] = useState(false);
+  const [selectedPatients, setSelectedPatients] = useState<(Patient | Reference<Patient>)[]>([]);
   const [streamingContent, setStreamingContent] = useState<string | undefined>();
   const [streamingComponentCode, setStreamingComponentCode] = useState<string | undefined>();
   const [componentPanelOpen, setComponentPanelOpen] = useState(false);
@@ -202,7 +205,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       return;
     }
     const text = (overrideInput ?? input).trim();
-    if (!text) {
+    // A message can be sent with patient context alone, no text required
+    if (!text && selectedPatients.length === 0) {
       return;
     }
 
@@ -211,7 +215,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       setHasStarted(true);
     }
 
-    const userMessage: Message = { role: 'user', content: text };
+    const userMessage: Message = {
+      role: 'user',
+      content: text,
+      selectedPatients: selectedPatients.length > 0 ? selectedPatients : undefined,
+    };
     const currentMessages = [...messages, userMessage];
     setMessages(currentMessages);
     isAtBottomRef.current = true;
@@ -237,6 +245,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         setRefreshKey,
         setCurrentFhirRequest,
         onNewTopic,
+        selectedPatients,
         onStreamChunk: (chunk) => {
           setStreamingContent((prev) => (prev ?? '') + chunk);
           setCurrentFhirRequest(undefined);
@@ -364,11 +373,10 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           ) : (
             <ScrollArea
               style={{ flex: 1 }}
-              offsetScrollbars
               viewportRef={scrollViewportRef}
               onScrollPositionChange={handleScrollPositionChange}
             >
-              <Stack gap="xl" p="xs">
+              <Stack gap="xl" py="xl" px={52} w="100%" maw={864} mx="auto">
                 {visibleMessages.map((message, index) => {
                   // FHIR tool calls — show each request paired with its response
                   if (message.role === 'assistant' && message.tool_calls && !message.content) {
@@ -458,6 +466,13 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                         message.role === 'user' ? classes.userMessage : classes.assistantMessage
                       )}
                     >
+                      {message.role === 'user' && message.selectedPatients && message.selectedPatients.length > 0 && (
+                        <Stack gap={4} mb={4} align="flex-end">
+                          {message.selectedPatients.map((patient, i) => (
+                            <PatientContextBubble key={i} patient={patient} />
+                          ))}
+                        </Stack>
+                      )}
                       {message.content && (
                         <div className={classes.messageContent}>
                           {message.role === 'assistant' ? (
@@ -596,7 +611,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
             </div>
           )}
           <div className={classes.inputWrapper}>
-            <ChatInput
+            <PromptComposer
               input={input}
               onInputChange={setInput}
               onKeyDown={handleKeyDown}
@@ -605,9 +620,13 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
               models={models}
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
-              backgroundColor="transparent"
+              selectedPatients={selectedPatients}
+              setSelectedPatients={setSelectedPatients}
             />
           </div>
+          <Text size="xs" c="gray.6" className={classes.inputDisclaimer}>
+            AI models can make mistakes. Please double-check important information.
+          </Text>
         </div>
       </div>
 
@@ -709,4 +728,16 @@ const METHOD_COLORS: Record<string, string> = {
 
 function getMethodColor(method: string | undefined): string {
   return METHOD_COLORS[method ?? ''] ?? 'gray';
+}
+
+function PatientContextBubble({ patient }: { patient: Patient | Reference<Patient> }): JSX.Element {
+  const resource = useResource(patient);
+  return (
+    <div className={classes.contextBubble}>
+      <Group gap={4} wrap="nowrap">
+        <IconUser size={12} />
+        <Text fz="xs">{resource ? getDisplayString(resource) : ''}</Text>
+      </Group>
+    </div>
+  );
 }
