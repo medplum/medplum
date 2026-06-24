@@ -101,6 +101,23 @@ export async function sendMfaEmailCode(login: WithId<Login>, user: User): Promis
   });
 }
 
+/**
+ * Verifies that the supplied token matches the single-use email code stored on
+ * the login (and that it has not expired). Used both to complete email-based
+ * MFA enrollment and to satisfy the email factor when changing MFA settings.
+ * @param login - The login holding the hashed email code, if any.
+ * @param token - The user supplied 6-digit code.
+ * @returns True if the code matches and is unexpired.
+ */
+export async function verifyEmailMfaCode(login: Login, token: string | undefined): Promise<boolean> {
+  if (!token || !login.emailMfa) {
+    return false;
+  }
+  return (
+    new Date(login.emailMfa.expiresAt).getTime() >= Date.now() && bcrypt.compare(token, login.emailMfa.codeHash)
+  );
+}
+
 export async function createProfile(
   systemRepo: SystemRepository,
   project: Project,

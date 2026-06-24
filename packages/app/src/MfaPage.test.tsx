@@ -225,7 +225,14 @@ describe('MfaPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Enable email-based MFA' }));
 
-    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'email' });
+    // A verification code is emailed and the code-entry dialog opens; the user
+    // must reverify their email before enrollment completes.
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'email', token: '123456' });
     await expect(screen.findByText('Email-based MFA enabled')).resolves.toBeInTheDocument();
     // After enrolling we land on the enrolled view with Email listed
     expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
@@ -252,7 +259,13 @@ describe('MfaPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Continue with email-based MFA' }));
 
-    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'email' });
+    // The user must reverify their email by entering the emailed code
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'email', token: '123456' });
     await expect(screen.findByText('Email-based MFA enabled')).resolves.toBeInTheDocument();
     expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
 
@@ -301,12 +314,18 @@ describe('MfaPage', () => {
     const user = await setup();
 
     expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
-    // Adding email is a single click (the server emails codes on later sign-ins)
+    // TOTP is already enrolled, so only the email option is offered
     expect(screen.queryByRole('button', { name: 'Add an authenticator app' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Add email-based MFA' }));
 
-    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'email' });
+    // Adding email requires reverifying the email via an emailed code
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'email', token: '123456' });
     await expect(screen.findByText('Email-based MFA enabled')).resolves.toBeInTheDocument();
     expect(screen.getByText('Email')).toBeInTheDocument();
 

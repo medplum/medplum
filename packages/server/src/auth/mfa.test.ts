@@ -51,6 +51,33 @@ async function getCodeFromEmail(): Promise<string> {
   return match[1];
 }
 
+/**
+ * Enrolls the authenticated user in email-based MFA via the reverification flow:
+ * requests an emailed code, reads it, and submits it to `/enroll`. Mirrors how
+ * the Security page enrolls email MFA, where the user must prove control of
+ * their email before the factor is added.
+ * @param accessToken - The user's access token.
+ */
+async function enrollEmailMfa(accessToken: string): Promise<void> {
+  const challenge = await request(app)
+    .post('/auth/mfa/send-email-challenge')
+    .set('Authorization', `Bearer ${accessToken}`)
+    .type('json')
+    .send({});
+  if (challenge.status !== 200) {
+    throw new Error('Failed to send enrollment email: ' + JSON.stringify(challenge.body));
+  }
+  const code = await getCodeFromEmail();
+  const res = await request(app)
+    .post('/auth/mfa/enroll')
+    .set('Authorization', `Bearer ${accessToken}`)
+    .type('json')
+    .send({ method: 'email', token: code });
+  if (res.status !== 200) {
+    throw new Error('Failed to enroll in email MFA: ' + JSON.stringify(res.body));
+  }
+}
+
 describe('MFA', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -349,14 +376,8 @@ describe('MFA', () => {
     expect(statusRes.body.enrolled).toBe(false);
     expect(statusRes.body.allowedMethods).toEqual(expect.arrayContaining(['totp', 'email']));
 
-    // Enroll in email-based MFA (no token required)
-    const enrollRes = await request(app)
-      .post('/auth/mfa/enroll')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .type('json')
-      .send({ method: 'email' });
-    expect(enrollRes.status).toBe(200);
-    expect(enrollRes.body).toMatchObject(allOk);
+    // Enroll in email-based MFA (requires reverifying the email via a code)
+    await enrollEmailMfa(accessToken);
 
     // Status should now report email enrollment
     const status2 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
@@ -394,6 +415,86 @@ describe('MFA', () => {
     expect(verifyRes.body.code).toBeDefined();
   });
 
+  test('Enrolling in email MFA requires reverifying the email', async () => {
+    const email = `email-enroll${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project, user } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'Reverify',
+        projectName: `Email Reverify Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setAllowedMfaMethods(project, 'totp,email');
+
+    const systemRepo = getGlobalSystemRepo();
+    await withTestContext(async () => {
+      const current = await systemRepo.readResource<User>('User', user.id);
+      await systemRepo.updateResource<User>({ ...current, emailVerified: false });
+    });
+
+    // Enrolling without a code is rejected
+    const noToken = await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email' });
+    expect(noToken.status).toBe(400);
+    expect(noToken.body).toMatchObject(badRequest('Missing token'));
+
+    // Request the verification code, but try to enroll with the wrong one
+    const challengeRes = await request(app)
+      .post('/auth/mfa/send-email-challenge')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({});
+    expect(challengeRes.status).toBe(200);
+    const code = await getCodeFromEmail();
+
+    const wrongToken = await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email', token: '000000' === code ? '111111' : '000000' });
+    expect(wrongToken.status).toBe(400);
+    expect(wrongToken.body).toMatchObject(badRequest('Invalid token'));
+
+    // The user is still not enrolled or email-verified
+    const status1 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    expect(status1.body.enrolled).toBe(false);
+    const userBefore = await systemRepo.readResource<User>('User', user.id);
+    expect(userBefore.emailVerified).toBeFalsy();
+
+    // The correct emailed code enrolls the user and reverifies their email
+    const enrollRes = await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email', token: code });
+    expect(enrollRes.status).toBe(200);
+    expect(enrollRes.body).toMatchObject(allOk);
+
+    const status2 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    expect(status2.body.enrolled).toBe(true);
+    expect(status2.body.enrolledMethods).toEqual(['email']);
+
+    const userAfter = await systemRepo.readResource<User>('User', user.id);
+    expect(userAfter.emailVerified).toBe(true);
+
+    // A second enrollment attempt is rejected because email is now enrolled
+    const reuse = await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email', token: code });
+    expect(reuse.status).toBe(400);
+    expect(reuse.body).toMatchObject(badRequest('Already enrolled'));
+  });
+
   test('Verifying email code marks the user emailVerified', async () => {
     const email = `email-mfa${randomUUID()}@example.com`;
     const password = 'password!@#';
@@ -409,11 +510,7 @@ describe('MFA', () => {
     );
 
     await setAllowedMfaMethods(project, 'email');
-    await request(app)
-      .post('/auth/mfa/enroll')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .type('json')
-      .send({ method: 'email' });
+    await enrollEmailMfa(accessToken);
 
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
     expect(loginRes.body.mfaRequired).toBe(true);
@@ -421,7 +518,12 @@ describe('MFA', () => {
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', loginRes.body.login);
 
-    // The user should not be email-verified before entering the code
+    // Enrolling already reverified the email, so clear the flag to isolate the
+    // login-verify path: entering the emailed code at sign-in must (re)set it.
+    await withTestContext(async () => {
+      const current = await systemRepo.readReference<User>(login.user as Reference<User>);
+      await systemRepo.updateResource<User>({ ...current, emailVerified: false });
+    });
     const userBefore = await systemRepo.readReference<User>(login.user as Reference<User>);
     expect(userBefore.emailVerified).toBeFalsy();
 
@@ -453,11 +555,7 @@ describe('MFA', () => {
     );
 
     await setAllowedMfaMethods(project, 'email');
-    await request(app)
-      .post('/auth/mfa/enroll')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .type('json')
-      .send({ method: 'email' });
+    await enrollEmailMfa(accessToken);
 
     // Login emails a verification code automatically
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
@@ -510,13 +608,8 @@ describe('MFA', () => {
       .send({ method: 'totp', token: authenticator.generate(totpSecret) });
     expect(enrollTotp.status).toBe(200);
 
-    // Add email as a second method
-    const enrollEmail = await request(app)
-      .post('/auth/mfa/enroll')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .type('json')
-      .send({ method: 'email' });
-    expect(enrollEmail.status).toBe(200);
+    // Add email as a second method (reverifying the email via a code)
+    await enrollEmailMfa(accessToken);
 
     const status2 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
     expect(status2.body.enrolledMethods).toEqual(expect.arrayContaining(['totp', 'email']));
@@ -561,11 +654,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'totp', token: authenticator.generate(totpSecret) });
-    await request(app)
-      .post('/auth/mfa/enroll')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .type('json')
-      .send({ method: 'email' });
+    await enrollEmailMfa(accessToken);
 
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
     expect(loginRes.body.mfaRequired).toBe(true);
@@ -733,11 +822,7 @@ describe('MFA', () => {
 
     await setAllowedMfaMethods(project, 'totp,email');
 
-    await request(app)
-      .post('/auth/mfa/enroll')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .type('json')
-      .send({ method: 'email' });
+    await enrollEmailMfa(accessToken);
 
     // Disabling now requires proving control of a connected factor
     const noToken = await request(app)
@@ -779,7 +864,7 @@ describe('MFA', () => {
     expect(status.body.enrolled).toBe(false);
   });
 
-  test('send-email-challenge requires email enrollment', async () => {
+  test('send-email-challenge requires email to be enrolled or allowed', async () => {
     const email = `email-mfa${randomUUID()}@example.com`;
     const password = 'password!@#';
 
@@ -793,7 +878,8 @@ describe('MFA', () => {
       })
     );
 
-    // Enroll in TOTP only
+    // Enroll in TOTP only. The project does not allow email MFA, and the user
+    // is not enrolled in it, so no email code can be requested.
     const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
     const secret = new URL(statusRes.body.enrollUri).searchParams.get('secret') as string;
     await request(app)
@@ -808,7 +894,7 @@ describe('MFA', () => {
       .type('json')
       .send({});
     expect(res.status).toBe(400);
-    expect(res.body).toMatchObject(badRequest('User not enrolled in email MFA'));
+    expect(res.body).toMatchObject(badRequest('Email MFA not available'));
   });
 
   /**
@@ -826,11 +912,7 @@ describe('MFA', () => {
       .type('json')
       .send({ method: 'totp', token: authenticator.generate(secret) });
 
-    await request(app)
-      .post('/auth/mfa/enroll')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .type('json')
-      .send({ method: 'email' });
+    await enrollEmailMfa(accessToken);
 
     return secret;
   }
@@ -927,11 +1009,7 @@ describe('MFA', () => {
     );
 
     await setAllowedMfaMethods(project, 'totp,email');
-    await request(app)
-      .post('/auth/mfa/enroll')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .type('json')
-      .send({ method: 'email' });
+    await enrollEmailMfa(accessToken);
 
     // Email is the only connected factor, so verify with an emailed code
     await request(app)
@@ -1143,17 +1221,38 @@ describe('MFA', () => {
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.mfaEnrollRequired).toBe(true);
 
-    // Enroll in email-based MFA via login-enroll (no token required)
+    // Enroll in email-based MFA via login-enroll. No token is supplied here;
+    // because email becomes the only factor, the response requires MFA and a
+    // verification code is emailed automatically, forcing email reverification
+    // before the login can be granted.
+    (SendEmailCommand as unknown as jest.Mock).mockClear();
     const enrollRes = await request(app)
       .post('/auth/mfa/login-enroll')
       .type('json')
       .send({ login: loginRes.body.login, method: 'email' });
     expect(enrollRes.status).toBe(200);
+    expect(enrollRes.body.mfaRequired).toBe(true);
+    expect(enrollRes.body.mfaMethods).toEqual(['email']);
+    expect(enrollRes.body.code).not.toBeDefined();
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
-    // The user should now be enrolled in email MFA
+    // The user is enrolled in email MFA but the login is not yet granted
     const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
     expect(status.body.enrolled).toBe(true);
     expect(status.body.enrolledMethods).toEqual(['email']);
+
+    // Entering the emailed code reverifies the email and completes the login
+    const code = await getCodeFromEmail();
+    const verifyRes = await request(app)
+      .post('/auth/mfa/verify')
+      .type('json')
+      .send({ login: loginRes.body.login, token: code });
+    expect(verifyRes.status).toBe(200);
+    expect(verifyRes.body.code).toBeDefined();
+
+    const systemRepo = getGlobalSystemRepo();
+    const verifiedUser = await systemRepo.readResource<User>('User', user.id);
+    expect(verifiedUser.emailVerified).toBe(true);
   });
 
   test('login-enroll rejects an already-enrolled user', async () => {

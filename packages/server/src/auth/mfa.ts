@@ -3,7 +3,6 @@
 import type { WithId } from '@medplum/core';
 import { allOk, badRequest } from '@medplum/core';
 import type { Login, Reference, User } from '@medplum/fhirtypes';
-import bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -16,7 +15,13 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
 import type { MfaMethod } from './utils';
-import { getAllowedMfaMethods, getEnrolledMfaMethods, sendLoginResult, sendMfaEmailCode } from './utils';
+import {
+  getAllowedMfaMethods,
+  getEnrolledMfaMethods,
+  sendLoginResult,
+  sendMfaEmailCode,
+  verifyEmailMfaCode,
+} from './utils';
 
 export const mfaRouter = Router();
 
@@ -69,13 +74,8 @@ export async function verifyConnectedFactor(user: User, login: Login, token: str
   }
 
   // Emailed code
-  if (methods.includes('email') && login.emailMfa) {
-    if (
-      new Date(login.emailMfa.expiresAt).getTime() >= Date.now() &&
-      (await bcrypt.compare(token, login.emailMfa.codeHash))
-    ) {
-      return true;
-    }
+  if (methods.includes('email') && (await verifyEmailMfaCode(login, token))) {
+    return true;
   }
 
   return false;
@@ -136,9 +136,11 @@ mfaRouter.post(
     const method = parseMfaMethod(req.body.method);
 
     if (method === 'email') {
-      // Enroll in email-based MFA. No token to verify here; the user proves
-      // control of their email by clicking the magic link sent during the
-      // subsequent MFA challenge (see sendLoginResult).
+      // Enroll in email-based MFA. No token to verify here; because email
+      // becomes the user's only factor, sendLoginResult immediately emails a
+      // code and returns `mfaRequired`, forcing the user to enter it via
+      // `/verify` (which sets `emailVerified`) before the login is granted.
+      // This is what reverifies the user's email during first-login enrollment.
       await systemRepo.updateResource({
         ...user,
         mfaEnrolled: true,
@@ -190,11 +192,28 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
   }
 
   if (method === 'email') {
+    // Reverify the user's email before enrolling: they must enter the code
+    // emailed via `/send-email-challenge`, proving they currently control the
+    // address that will become their second factor. Entering it also marks
+    // the user `emailVerified`.
+    if (!req.body.token) {
+      sendOutcome(res, badRequest('Missing token'));
+      return;
+    }
+    if (!(await verifyEmailMfaCode(ctx.login, req.body.token as string))) {
+      sendOutcome(res, badRequest('Invalid token'));
+      return;
+    }
     await systemRepo.updateResource({
       ...user,
       mfaEnrolled: true,
       mfaMethod: addMfaMethod(user, 'email'),
+      emailVerified: true,
     });
+    // Consume the emailed code so it cannot be reused.
+    if (ctx.login.emailMfa) {
+      await systemRepo.updateResource<Login>({ ...ctx.login, emailMfa: undefined });
+    }
     sendOutcome(res, allOk);
     return;
   }
@@ -281,16 +300,21 @@ mfaRouter.post(
 
 /**
  * Emails a verification code to the currently authenticated user so they can
- * prove control of their email factor when changing MFA settings (removing a
- * factor or disabling MFA). The code is stored on the current login and later
- * checked by the `/disable` endpoint.
+ * prove control of their email address. The same endpoint serves two flows:
+ * reverifying the email when enrolling in email-based MFA (`/enroll`), and
+ * satisfying the email factor when changing MFA settings — removing a factor or
+ * disabling MFA (`/disable`). The code is stored on the current login and later
+ * checked by the corresponding endpoint. It is therefore available whenever the
+ * user is already enrolled in email MFA or the project allows enrolling in it.
  */
 mfaRouter.post('/send-email-challenge', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
   const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 
-  if (!user.mfaEnrolled || !getEnrolledMfaMethods(user).includes('email')) {
-    sendOutcome(res, badRequest('User not enrolled in email MFA'));
+  const emailEnrolled = getEnrolledMfaMethods(user).includes('email');
+  const emailAllowed = getAllowedMfaMethods(ctx.project).includes('email');
+  if (!emailEnrolled && !emailAllowed) {
+    sendOutcome(res, badRequest('Email MFA not available'));
     return;
   }
 

@@ -24,6 +24,7 @@ export function MfaPage(): JSX.Element | null {
   const [mfaRequired, setMfaRequired] = useState(false);
   const [email, setEmail] = useState<string>();
   const [addingTotp, setAddingTotp] = useState(false);
+  const [enrollingEmail, setEnrollingEmail] = useState(false);
   const [disabling, setDisabling] = useState(false);
   const [removingMethod, setRemovingMethod] = useState<MfaMethod>();
 
@@ -64,21 +65,32 @@ export function MfaPage(): JSX.Element | null {
     [medplum, markEnrolled]
   );
 
-  const enrollEmail = useCallback(() => {
-    medplum
-      .post('auth/mfa/enroll', { method: 'email' })
-      .then(() => {
-        markEnrolled('email');
-        showNotification({ color: 'green', message: 'Email-based MFA enabled' });
-      })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
-  }, [medplum, markEnrolled]);
-
   // Email a verification code to the current user so they can prove control of
-  // their email factor when changing MFA settings.
+  // their email address — both when reverifying to enroll in email-based MFA
+  // and when changing MFA settings.
   const requestEmailChallenge = useCallback(async (): Promise<void> => {
     await medplum.post('auth/mfa/send-email-challenge', {});
   }, [medplum]);
+
+  // Begin email MFA enrollment by emailing a verification code and opening the
+  // code-entry dialog. Enrollment only completes once the user reverifies their
+  // email by entering the code (see completeEnrollEmail).
+  const enrollEmail = useCallback((): void => {
+    requestEmailChallenge()
+      .then(() => setEnrollingEmail(true))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }, [requestEmailChallenge]);
+
+  const completeEnrollEmail = useCallback(
+    async (token: string): Promise<void> => {
+      // This will throw if the emailed code is missing, invalid, or expired.
+      await medplum.post('auth/mfa/enroll', { method: 'email', token });
+      setEnrollingEmail(false);
+      markEnrolled('email');
+      showNotification({ color: 'green', message: 'Email-based MFA enabled' });
+    },
+    [medplum, markEnrolled]
+  );
 
   const disableMfa = useCallback(
     async (token: string): Promise<OperationOutcome> => {
@@ -107,6 +119,21 @@ export function MfaPage(): JSX.Element | null {
   const totpAllowed = allowedMethods.includes('totp');
   const emailEnrolled = enrolledMethods.includes('email');
   const totpEnrolled = enrolledMethods.includes('totp');
+
+  // Shown in both the enrolled and not-yet-enrolled views: enrolling in email
+  // MFA requires the user to reverify their email by entering an emailed code.
+  const emailEnrollModal = (
+    <Modal title="Verify your email" opened={enrollingEmail} onClose={() => setEnrollingEmail(false)}>
+      <MfaVerificationForm
+        methods={['email']}
+        email={email}
+        initialEmailMode
+        onRequestEmailCode={requestEmailChallenge}
+        onSubmit={completeEnrollEmail}
+        buttonText="Verify and enable"
+      />
+    </Modal>
+  );
 
   if (enrolled) {
     const canAddEmail = emailAllowed && !emailEnrolled;
@@ -138,6 +165,7 @@ export function MfaPage(): JSX.Element | null {
 
     return (
       <Document width={400}>
+        {emailEnrollModal}
         <Modal title="Disable MFA" opened={disabling} onClose={() => setDisabling(false)}>
           <MfaVerificationForm
             methods={enrolledMethods}
@@ -245,6 +273,7 @@ export function MfaPage(): JSX.Element | null {
   // Not yet enrolled: chooser, email-only, or authenticator (TOTP) enrollment.
   return (
     <Document width={400}>
+      {emailEnrollModal}
       <MfaEnrollForm
         allowedMethods={allowedMethods}
         qrCodeUrl={qrCodeUrl}
