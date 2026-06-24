@@ -34,7 +34,7 @@ import type {
   ResourceType,
   Subscription,
 } from '@medplum/fhirtypes';
-import type { Job, MinimalJob, QueueBaseOptions } from 'bullmq';
+import type { Job, MinimalJob } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import { createHmac } from 'node:crypto';
 import type { Operation } from 'rfc6902';
@@ -66,8 +66,8 @@ import {
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
+  defaultQueueOptions,
   findProjectMembership,
-  getBullmqRedisConnectionOptions,
   getWorkerBullmqConfig,
   isJobSuccessful,
   queueRegistry,
@@ -149,13 +149,11 @@ const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
 
 export const initSubscriptionWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
+      ...defaultOptions.defaultJobOptions,
       attempts: MAX_JOB_ATTEMPTS, // can be overridden in catchJobError() below
       backoff: { type: 'cappedExponential' }, // see below
     },

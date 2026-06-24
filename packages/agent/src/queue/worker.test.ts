@@ -1,0 +1,668 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import type { AgentMessage, AgentTransmitResponse } from '@medplum/core';
+import { ContentType, TypedEventTarget } from '@medplum/core';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import type { App } from '../app';
+import { createMockLogger, waitFor } from '../test-utils';
+import { DurableQueue } from './durable-queue';
+import type { InboundRow } from './types';
+import { AckOutcome, MessageState, QueueErrorCode } from './types';
+import { ChannelQueueWorker } from './worker';
+
+/**
+ * Stub App used by worker tests. Only the surface the worker touches is implemented;
+ * everything else is intentionally absent so a slipped dependency surfaces as a clear
+ * runtime error rather than silent behavior.
+ *
+ * `sent` plays the role of the real App's `webSocketQueue`: messages the stub has
+ * accepted but (since the stub never sends) that remain "unsent" for the purposes
+ * of `removeUnsentTransmit`. Tests that need to simulate a request that already
+ * went out on the wire can clear/splice `sent` directly.
+ * @param options - Stub options.
+ * @param options.live - Initial `live` state (defaults to true).
+ * @returns A minimal App stub, the captured WS messages, and a setter for the live flag.
+ */
+function makeStubApp(options?: { live?: boolean }): {
+  app: App;
+  sent: AgentMessage[];
+  setLive: (live: boolean) => void;
+} {
+  const sent: AgentMessage[] = [];
+  let live = options?.live ?? true;
+  const stub = {
+    agentId: 'agent-test',
+    isLive: () => live,
+    // The worker ties its in-flight lease check to the App heartbeat; tests fire it
+    // by dispatching a 'heartbeat' event on this emitter.
+    heartbeatEmitter: new TypedEventTarget(),
+    addToWebSocketQueue: (msg: AgentMessage) => {
+      sent.push(msg);
+    },
+    removeUnsentTransmit: (callbackId: string) => {
+      const index = sent.findIndex((msg) => msg.type === 'agent:transmit:request' && msg.callback === callbackId);
+      if (index === -1) {
+        return false;
+      }
+      sent.splice(index, 1);
+      return true;
+    },
+  };
+  return {
+    app: stub as unknown as App,
+    sent,
+    setLive: (value: boolean) => {
+      live = value;
+    },
+  };
+}
+
+function enqueueOne(
+  queue: DurableQueue,
+  callbackId: string,
+  body: string = 'MSH|^~\\&|...|2.5\r',
+  enhancedMode: 'standard' | 'aaMode' | null = 'standard'
+): InboundRow {
+  const r = queue.enqueue({
+    channelName: 'ch1',
+    remote: '127.0.0.1:5000',
+    msgControlId: callbackId,
+    msgType: 'ADT^A01',
+    originalMessage: Buffer.from(body),
+    finalizedMessage: Buffer.from(body),
+    encoding: 'utf-8',
+    enhancedMode,
+    callbackId,
+    seqNo: null,
+    receivedAt: Date.now(),
+  });
+  if (r.kind !== 'inserted') {
+    throw new Error('expected inserted');
+  }
+  return r.row;
+}
+
+function makeResponse(callback: string, statusCode: number, body: string = 'MSH|...\rMSA|AA|x'): AgentTransmitResponse {
+  return {
+    type: 'agent:transmit:response',
+    channel: 'ch1',
+    remote: '127.0.0.1:5000',
+    callback,
+    contentType: ContentType.HL7_V2,
+    statusCode,
+    body,
+  };
+}
+
+describe('ChannelQueueWorker', () => {
+  let dir: string;
+  let queue: DurableQueue;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'wq-test-'));
+    queue = DurableQueue.open({ path: join(dir, 'queue.sqlite'), log: createMockLogger() });
+  });
+
+  afterEach(() => {
+    queue.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test('processes queued rows in FIFO order with successful end-to-end ACK', async () => {
+    const rows = ['M1', 'M2', 'M3', 'M4', 'M5'].map((id) => enqueueOne(queue, id));
+    const { app, sent } = makeStubApp();
+    const sendAck = vi.fn(() => true);
+
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck,
+      responseTimeoutMs: 5000,
+      idlePollMs: 10,
+    });
+    worker.start();
+
+    // The worker dispatches one row at a time; satisfy each in order.
+    for (const row of rows) {
+      await waitFor(() => sent.length >= 1 && (sent.at(-1) as { callback?: string }).callback === row.callbackId);
+      worker.onServerResponse(makeResponse(row.callbackId, 200));
+      // Let the worker finish processing this row before the next dispatch.
+      await waitFor(() => queue.getById(row.id)?.state === MessageState.PROCESSED);
+    }
+
+    expect(sendAck).toHaveBeenCalledTimes(5);
+    expect(sent).toHaveLength(5);
+    for (const row of rows) {
+      expect(queue.getById(row.id)?.state).toBe(MessageState.PROCESSED);
+    }
+    await worker.stop();
+  });
+
+  test('steps down on its own when a peer steals the lease (idle: next claim throws)', async () => {
+    // Bind the queue to "us" and take the lease so the worker is the leader.
+    queue.setLeaseHolder('us');
+    expect(queue.tryAcquireLease('us', 60_000)).toBe(true);
+
+    const r1 = enqueueOne(queue, 'LD1');
+    const { app, sent } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      idlePollMs: 10,
+    });
+    worker.start();
+
+    // Drains the first row normally while we hold the lease.
+    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
+    worker.onServerResponse(makeResponse(r1.callbackId, 200));
+    await waitFor(() => queue.getById(r1.id)?.state === MessageState.PROCESSED);
+
+    // A peer steals the lease. The idle worker's next claimNext throws
+    // QueueLeaseError and it steps down on its own — no lost-leadership callback.
+    queue.releaseLease('us');
+    expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
+    await waitFor(() => !worker.isRunning(), 1000);
+
+    // A row enqueued after the steal is never claimed by the demoted worker.
+    const r2 = enqueueOne(queue, 'LD2');
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(queue.getById(r2.id)?.state).toBe(MessageState.QUEUED);
+    expect(sent.some((m) => (m as { callback?: string }).callback === r2.callbackId)).toBe(false);
+
+    await worker.stop();
+  });
+
+  test('in-flight lease check (on heartbeat) cancels a wedged dispatch without settling the row', async () => {
+    queue.setLeaseHolder('us');
+    expect(queue.tryAcquireLease('us', 60_000)).toBe(true);
+
+    const r1 = enqueueOne(queue, 'WD1');
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      idlePollMs: 10,
+      responseTimeoutMs: 60_000, // long — the heartbeat check, not the timeout, must end the wait
+    });
+    worker.start();
+
+    // Worker dispatches r1 and wedges awaiting a response that never comes.
+    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
+
+    // Peer steals the lease. A heartbeat tick fires the in-flight lease check, which
+    // cancels the wedged dispatch — well before the 60s response timeout.
+    queue.releaseLease('us');
+    expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
+    app.heartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
+    await waitFor(() => !worker.isRunning(), 1000);
+
+    // The demoted worker did NOT settle the row — it's left for the new owner's
+    // recoverOnStartup. (The stub app never calls markSent, so it's still `claimed`.)
+    expect(queue.getById(r1.id)?.state).toBe(MessageState.CLAIMED);
+
+    await worker.stop();
+  });
+
+  test('server 5xx marks the row failed (transient) and proceeds to the next', async () => {
+    const r1 = enqueueOne(queue, 'E1');
+    const r2 = enqueueOne(queue, 'E2');
+    const { app } = makeStubApp();
+
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      idlePollMs: 10,
+    });
+    worker.start();
+
+    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
+    worker.onServerResponse(makeResponse(r1.callbackId, 503, 'service down'));
+
+    await waitFor(() => queue.getById(r1.id)?.state === MessageState.FAILED);
+    expect(queue.getById(r1.id)?.lastError).toContain('503');
+    expect(queue.getById(r1.id)?.errorCode).toBe(QueueErrorCode.ServerError);
+    // 5xx is a Bot-leg failure → no source ACK is owed.
+    expect(queue.getById(r1.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
+
+    await waitFor(() => worker.hasInFlight() && r2.callbackId === lastCallback(worker));
+    worker.onServerResponse(makeResponse(r2.callbackId, 200));
+    await waitFor(() => queue.getById(r2.id)?.state === MessageState.PROCESSED);
+
+    await worker.stop();
+  });
+
+  test('server 4xx marks the row rejected (permanent) and proceeds to the next', async () => {
+    const r1 = enqueueOne(queue, 'RJ1');
+    const r2 = enqueueOne(queue, 'RJ2');
+    const { app } = makeStubApp();
+
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      idlePollMs: 10,
+    });
+    worker.start();
+
+    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
+    worker.onServerResponse(makeResponse(r1.callbackId, 422, 'bad message'));
+
+    await waitFor(() => queue.getById(r1.id)?.state === MessageState.REJECTED);
+    expect(queue.getById(r1.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
+    expect(queue.getById(r1.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
+
+    // 429 is the one 4xx that's transient → failed, not rejected.
+    await waitFor(() => worker.hasInFlight() && r2.callbackId === lastCallback(worker));
+    worker.onServerResponse(makeResponse(r2.callbackId, 429, 'slow down'));
+    await waitFor(() => queue.getById(r2.id)?.state === MessageState.FAILED);
+    expect(queue.getById(r2.id)?.errorCode).toBe(QueueErrorCode.ServerRateLimited);
+
+    await worker.stop();
+  });
+
+  test('sendAck returning false leaves the row processed with ack_outcome=undelivered', async () => {
+    const r = enqueueOne(queue, 'A1');
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => false,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    // The Bot accepted it (processed); only the source-leg ACK failed. No Bot-leg
+    // error code is set — a closed source connection is never an upstream failure.
+    expect(queue.getById(r.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
+    expect(queue.getById(r.id)?.errorCode).toBeNull();
+    await worker.stop();
+  });
+
+  test('aaMode suppresses the app-level ACK (commit AA already acknowledged the source)', async () => {
+    // In aaMode the deferred-commit ACK already sent the source an AA at intake;
+    // the Bot's app-level AA would be a redundant second AA the source (which closes
+    // on ACK) is no longer listening for. The worker must NOT call sendAck, yet still
+    // mark the row processed+delivered — the source was already acknowledged.
+    const r = enqueueOne(queue, 'AA1', 'MSH|^~\\&|...|2.5\r', 'aaMode');
+    const { app } = makeStubApp();
+    const sendAck = vi.fn(() => true);
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    expect(sendAck).not.toHaveBeenCalled();
+    expect(queue.getById(r.id)?.ackOutcome).toBe(AckOutcome.DELIVERED);
+    expect(queue.getById(r.id)?.errorCode).toBeNull();
+    await worker.stop();
+  });
+
+  test('sendAck throwing leaves the row processed+undelivered without crashing the loop', async () => {
+    const r1 = enqueueOne(queue, 'T1');
+    const r2 = enqueueOne(queue, 'T2');
+    const { app } = makeStubApp();
+    let throwOnce = true;
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => {
+        if (throwOnce) {
+          throwOnce = false;
+          throw new Error('socket gone');
+        }
+        return true;
+      },
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r1.callbackId, 200));
+    await waitFor(() => queue.getById(r1.id)?.state === MessageState.PROCESSED);
+    expect(queue.getById(r1.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
+    expect(queue.getById(r1.id)?.errorCode).toBeNull();
+
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r2.callbackId, 200));
+    await waitFor(() => queue.getById(r2.id)?.state === MessageState.PROCESSED);
+    expect(queue.getById(r2.id)?.ackOutcome).toBe(AckOutcome.DELIVERED);
+    await worker.stop();
+  });
+
+  test('response timeout marks the row failed', async () => {
+    const r = enqueueOne(queue, 'TIMEOUT');
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      responseTimeoutMs: 50,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
+    expect(queue.getById(r.id)?.lastError).toContain('Timed out');
+    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    await worker.stop();
+  });
+
+  test('late server response settles a timed-out row as processed', async () => {
+    const r = enqueueOne(queue, 'LATE-OK');
+    const { app } = makeStubApp();
+    const sendAck = vi.fn(() => true);
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck,
+      responseTimeoutMs: 50,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
+    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    await worker.stop();
+
+    // The server's response finally arrives, after the row already errored. The
+    // server is authoritative on the Bot-leg outcome, so the row is settled from
+    // it — not discarded and left for an ambiguous re-dispatch.
+    expect(worker.onServerResponse(makeResponse(r.callbackId, 200))).toBe(true);
+
+    const settled = queue.getById(r.id);
+    expect(settled?.state).toBe(MessageState.PROCESSED);
+    expect(settled?.serverStatusCode).toBe(200);
+    expect(settled?.ackOutcome).toBe(AckOutcome.DELIVERED);
+    expect(sendAck).toHaveBeenCalledTimes(1);
+  });
+
+  test('late server response settles a timed-out row as rejected on a permanent 4xx', async () => {
+    const r = enqueueOne(queue, 'LATE-REJ');
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      responseTimeoutMs: 50,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
+    await worker.stop();
+
+    expect(worker.onServerResponse(makeResponse(r.callbackId, 422, 'bad message'))).toBe(true);
+    const settled = queue.getById(r.id);
+    expect(settled?.state).toBe(MessageState.REJECTED);
+    expect(settled?.errorCode).toBe(QueueErrorCode.ServerRejected);
+  });
+
+  test('late server response is discarded when a peer took the lease (not ours to settle)', async () => {
+    // Hold the lease so the worker is the leader, then let a row time out into `failed`.
+    queue.setLeaseHolder('us');
+    expect(queue.tryAcquireLease('us', 60_000)).toBe(true);
+
+    const r = enqueueOne(queue, 'LATE-DEMOTED');
+    const { app } = makeStubApp();
+    const sendAck = vi.fn(() => true);
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck,
+      responseTimeoutMs: 50,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
+    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    await worker.stop();
+
+    // A peer steals the lease. The server's response then finally arrives — but this
+    // row is now the new leader's to settle, not ours. applyServerResponse's write is
+    // refused with QueueLeaseError, so the late response is discarded rather than
+    // applied over a row a demoted process no longer owns.
+    queue.releaseLease('us');
+    expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
+
+    expect(worker.onServerResponse(makeResponse(r.callbackId, 200))).toBe(false);
+
+    // The row is left exactly as the timeout left it — no write leaked through the
+    // lease gate (state, error code, and the still-null server status all unchanged).
+    const row = queue.getById(r.id);
+    expect(row?.state).toBe(MessageState.FAILED);
+    expect(row?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    expect(row?.serverStatusCode).toBeNull();
+    expect(sendAck).not.toHaveBeenCalled();
+  });
+
+  test('late duplicate server response is discarded for an already-settled row', async () => {
+    const r = enqueueOne(queue, 'DUP');
+    const { app } = makeStubApp();
+    const sendAck = vi.fn(() => true);
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    await worker.stop();
+
+    // A second response for the same callback (e.g. a duplicate, or a NACK after
+    // the row already succeeded) must not re-apply over the settled outcome.
+    expect(worker.onServerResponse(makeResponse(r.callbackId, 422))).toBe(false);
+    expect(queue.getById(r.id)?.state).toBe(MessageState.PROCESSED);
+    expect(sendAck).toHaveBeenCalledTimes(1);
+  });
+
+  test('onServerResponse for an unknown callback returns false', () => {
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+    });
+    expect(
+      worker.onServerResponse({
+        type: 'agent:transmit:response',
+        channel: 'ch1',
+        remote: 'r',
+        callback: 'nope',
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: '',
+      })
+    ).toBe(false);
+  });
+
+  test('stop drains and prevents further claims', async () => {
+    const r = enqueueOne(queue, 'STOP1');
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+
+    await worker.stop();
+
+    // Enqueue more after stop — they should NOT be claimed since the loop exited.
+    enqueueOne(queue, 'STOP2');
+    // Give the loop a chance to wake (it won't — stop set the flag).
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(queue.countByState().queued).toBe(1);
+  });
+
+  test('rows stay queued while the WebSocket is not live, then drain on reconnect', async () => {
+    const r = enqueueOne(queue, 'OFFLINE1');
+    const { app, sent, setLive } = makeStubApp({ live: false });
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      responseTimeoutMs: 100,
+      idlePollMs: 10,
+    });
+    worker.start();
+
+    // Give the loop several ticks — nothing should be claimed or dispatched,
+    // and crucially nothing should time out into `errored`.
+    await sleepMs(100);
+    expect(queue.getById(r.id)?.state).toBe(MessageState.QUEUED);
+    expect(queue.getById(r.id)?.attemptCount).toBe(0);
+    expect(sent).toHaveLength(0);
+    expect(worker.hasInFlight()).toBe(false);
+
+    // Reconnect: the row dispatches and completes normally.
+    setLive(true);
+    worker.notify();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    await worker.stop();
+  });
+
+  test('disconnect with the transmit request still unsent requeues the row', async () => {
+    const r = enqueueOne(queue, 'REQUEUE1');
+    const { app, setLive } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      responseTimeoutMs: 100,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    // The stub App never sends, so markSent never fires — the row sits in `claimed`
+    // (worker owns it, request still buffered), exactly the state requeue targets.
+    expect(queue.getById(r.id)?.state).toBe(MessageState.CLAIMED);
+
+    // Connection drops before the request left the WS queue.
+    setLive(false);
+    worker.onWebSocketDisconnect();
+
+    expect(worker.hasInFlight()).toBe(false);
+    expect(queue.getById(r.id)?.state).toBe(MessageState.QUEUED);
+    // The dispatch never left the process, so it doesn't count as an attempt.
+    expect(queue.getById(r.id)?.attemptCount).toBe(0);
+
+    // Outlive the original response timeout — the row must NOT become errored.
+    await sleepMs(150);
+    expect(queue.getById(r.id)?.state).toBe(MessageState.QUEUED);
+
+    // Reconnect: the same row is re-claimed and completes.
+    setLive(true);
+    worker.notify();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    await worker.stop();
+  });
+
+  test('disconnect after the transmit request was sent leaves the row to the response timeout', async () => {
+    const r = enqueueOne(queue, 'SENT1');
+    const { app, sent, setLive } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      responseTimeoutMs: 50,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+
+    // Simulate the request having gone out on the wire: it's no longer in the
+    // WS queue, so removeUnsentTransmit can't find it.
+    sent.length = 0;
+    setLive(false);
+    worker.onWebSocketDisconnect();
+
+    // Ambiguous delivery — the worker must not requeue; the timeout fails it.
+    expect(worker.hasInFlight()).toBe(true);
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
+    expect(queue.getById(r.id)?.lastError).toContain('Timed out');
+    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    await worker.stop();
+  });
+
+  test('onWebSocketDisconnect with nothing in flight is a no-op', () => {
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+    });
+    expect(() => worker.onWebSocketDisconnect()).not.toThrow();
+  });
+});
+
+function lastCallback(worker: ChannelQueueWorker): string | undefined {
+  return (worker as unknown as { pending?: { row: InboundRow } }).pending?.row.callbackId;
+}
+
+async function sleepMs(ms: number): Promise<void> {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}

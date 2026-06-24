@@ -6,7 +6,13 @@ import { executeFissionBot } from '../cloud/fission/execute';
 import { recordHistogramValue } from '../otel/otel';
 import { AuditEventOutcome, createBotAuditEvent } from '../util/auditevent';
 import type { BotExecutionContext, BotExecutionRequest, BotExecutionResult } from './types';
-import { getBotAccessToken, getBotSecrets, isBotEnabled, writeBotInputToStorage } from './utils';
+import {
+  getBotAccessToken,
+  getBotSecrets,
+  isBotEnabled,
+  normalizeBotExecutionResult,
+  writeBotInputToStorage,
+} from './utils';
 import { runInVmContext } from './vmcontext';
 
 /**
@@ -50,6 +56,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   } else {
     result = { success: false, logResult: 'Bots not enabled' };
   }
+  result = normalizeBotExecutionResult(result);
   const executionTime = Number(process.hrtime.bigint() - execStart) / 1e9; // Report duration in seconds
 
   const attributes = { project: bot.meta?.project, bot: bot.id, outcome: result.success ? 'success' : 'failure' };
