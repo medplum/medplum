@@ -42,13 +42,8 @@ import {
   toTypedValue,
   validateResourceType,
 } from '@medplum/core';
-import type {
-  CreateResourceOptions,
-  ReadHistoryOptions,
-  RepositoryMode,
-  UpdateResourceOptions,
-} from '@medplum/fhir-router';
-import { FhirRepository } from '@medplum/fhir-router';
+import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
+import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
@@ -394,7 +389,7 @@ export class Repository extends FhirRepository implements Disposable {
 
   setMode(mode: RepositoryMode): void {
     this.assertUsable();
-    this.connection.mode = mode;
+    this.connection.setMode(mode);
   }
 
   async recordFhirQuota(points: number): Promise<void> {
@@ -876,6 +871,8 @@ export class Repository extends FhirRepository implements Disposable {
     create: boolean,
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
+    // Promote before pre-commit validation and existing-resource reads.
+    this.setMode(RepositoryMode.WRITER);
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
     let validatedResource = this.checkResourcePermissions(resource, interaction);
     this.validateBinarySecurityContext(validatedResource);

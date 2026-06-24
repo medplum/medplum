@@ -926,6 +926,8 @@ describe('FHIR Repo Transactions', () => {
         // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies mode promotion on the shared connection.
         expect(readerRepo.mode).toBe(RepositoryMode.WRITER);
         expect(txRepo.mode).toBe(RepositoryMode.WRITER);
+        expect(() => txRepo.setMode(RepositoryMode.READER)).toThrow('Cannot set repository mode to reader');
+        expect(txRepo.mode).toBe(RepositoryMode.WRITER);
         await txRepo.createResource<Patient>({ resourceType: 'Patient' });
       });
 
