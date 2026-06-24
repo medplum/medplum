@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { conflict, notFound, OperationOutcomeError, Operator, parseSearchRequest } from '@medplum/core';
+import { RepositoryMode } from '@medplum/fhir-router';
 import type { Patient } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
@@ -914,6 +915,22 @@ describe('FHIR Repo Transactions', () => {
       errorSpy.mockRestore();
     }
   });
+
+  test('withTransaction promotes reader mode to writer mode', () =>
+    withTestContext(async () => {
+      const readerRepo = repo.clone();
+      readerRepo.setMode(RepositoryMode.READER);
+      expect(readerRepo.mode).toBe(RepositoryMode.READER);
+
+      await readerRepo.withTransaction(async (txRepo) => {
+        // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies mode promotion on the shared connection.
+        expect(readerRepo.mode).toBe(RepositoryMode.WRITER);
+        expect(txRepo.mode).toBe(RepositoryMode.WRITER);
+        await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+      });
+
+      expect(readerRepo.mode).toBe(RepositoryMode.WRITER);
+    }));
 
   test('borrowed repository connections do not reacquire clients after forced release', async () => {
     const rollbackError = new Error('rollback failed');
