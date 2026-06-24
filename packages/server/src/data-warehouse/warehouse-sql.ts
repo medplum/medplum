@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Expression } from '../fhir/sql';
 import { Column, Condition, Disjunction, InsertQuery, IsNull, SelectQuery, SqlBuilder, Subquery } from '../fhir/sql';
+import { toResourcePostgresTableName } from './config';
 
 const DEFAULT_COMPRESSION_TYPE = 'zstd';
 const DEFAULT_FILE_FORMAT = 'PARQUET';
@@ -14,18 +15,6 @@ export const DEFAULT_ICEBERG_CATALOG_ALIAS = 'iceberg_catalog';
 
 /** DuckDB catalog alias for attached Postgres source tables. */
 export const POSTGRES_CATALOG = 'pg_db';
-
-/** the path to the project id in the content JSON */
-export const PROJECT_ID_JSON_PATH = '$.meta.project';
-
-/**
- * DuckDB expression that extracts project_id without casting empty tombstone content to JSON.
- *
- * @returns SQL fragment for the outer `project_id` projection column.
- */
-export function buildProjectIdProjectionSql(): string {
-  return `CASE WHEN NULLIF("src"."content", '') IS NULL THEN NULL ELSE json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}') END AS project_id`;
-}
 
 /** Iceberg / Parquet column names written for each resource history row (order matters for INSERT). */
 export const WAREHOUSE_HISTORY_COLUMN_NAMES = ['id', 'version_id', 'content', 'last_updated', 'project_id'] as const;
@@ -138,25 +127,36 @@ export function buildInsertIntoSelectQuery(
 }
 
 /**
- * Constructs a SQL `SELECT` query from a Medplum history Postgres table and extracts the project_id.
- * using the DuckDB's JSON functionality.  This minimizes the load on the source database.
+ * Constructs a SQL `SELECT` query from a Medplum history Postgres table and joins the live
+ * resource table on `id` to project `projectId` as `project_id`.
  *
  * @param sourceHistoryTable - Postgres table identifier exactly as stored (e.g. `Patient_History`).
  * @param sourcePredicate - Optional SQL boolean expression applied in the inner `WHERE` clause.
- * @returns `SELECT` with a subquery and outer `json_extract_string` projection.
+ * @returns `SELECT` with history columns and joined `project_id`.
  */
 export function buildSelectFromHistoryTableQuery(
   sourceHistoryTable: string,
   sourcePredicate?: Expression
 ): SelectQuery {
-  const table = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
-  const col = (name: string, alias?: string): Column => new Column(table, name, false, alias);
+  const historyTable = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
+  const resourceTable = buildQualifiedTableIdentifier(
+    `${POSTGRES_CATALOG}.${toResourcePostgresTableName(sourceHistoryTable)}`
+  );
+  const resourceAlias = 'resource';
+  const col = (name: string, alias?: string): Column => new Column(historyTable, name, false, alias);
 
-  const inner = new SelectQuery(table)
+  const inner = new SelectQuery(historyTable)
     .column('id')
     .column(col('versionId', 'version_id'))
     .column('content')
-    .column(col('lastUpdated', 'last_updated'));
+    .column(col('lastUpdated', 'last_updated'))
+    .column(new Column(resourceAlias, 'projectId', false, 'project_id'))
+    .join(
+      'LEFT JOIN',
+      resourceTable,
+      resourceAlias,
+      new Condition(new Column(historyTable, 'id'), '=', new Column(resourceAlias, 'id'))
+    );
   if (sourcePredicate) {
     inner.whereExpr(sourcePredicate);
   }
@@ -166,7 +166,7 @@ export function buildSelectFromHistoryTableQuery(
     .column('version_id')
     .column('content')
     .column('last_updated')
-    .raw(buildProjectIdProjectionSql())
+    .column('project_id')
     .orderBy('last_updated');
 }
 

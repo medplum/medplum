@@ -13,9 +13,11 @@ import { toIcebergTableName } from './config';
 import { LocalParquetWarehouseDestination } from './destination';
 import { syncData } from './sync';
 
-/** Isolated history table in medplum_test so we do not collide with real FHIR history tables. */
-const HISTORY_TABLE = 'DwSyncIntTest_history';
-const EMPTY_CONTENT_HISTORY_TABLE = 'DwSyncIntTest_empty_content_history';
+/** Isolated tables in medplum_test so we do not collide with real FHIR tables. */
+const RESOURCE_TABLE = 'DwSyncIntTestPatient';
+const HISTORY_TABLE = 'DwSyncIntTestPatient_History';
+const TOMBSTONE_RESOURCE_TABLE = 'DwSyncIntTestTombstone';
+const TOMBSTONE_HISTORY_TABLE = 'DwSyncIntTestTombstone_History';
 
 function assertParquetMagic(bytes: Buffer): void {
   expect(bytes.subarray(0, 4).toString('ascii')).toBe('PAR1');
@@ -59,6 +61,15 @@ describe('syncData local destination (integration)', () => {
 
     const pool = getDatabasePool(DatabaseMode.WRITER);
     await pool.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
+    await pool.query(`DROP TABLE IF EXISTS "${RESOURCE_TABLE}"`);
+    await pool.query(`
+      CREATE TABLE "${RESOURCE_TABLE}" (
+        id TEXT NOT NULL PRIMARY KEY,
+        "projectId" TEXT NOT NULL,
+        content TEXT NOT NULL,
+        "lastUpdated" TIMESTAMPTZ NOT NULL
+      );
+    `);
     await pool.query(`
       CREATE TABLE "${HISTORY_TABLE}" (
         id TEXT NOT NULL,
@@ -67,6 +78,19 @@ describe('syncData local destination (integration)', () => {
         "lastUpdated" TIMESTAMPTZ NOT NULL
       );
     `);
+    await pool.query(
+      `INSERT INTO "${RESOURCE_TABLE}" (id, "projectId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
+      [
+        'patient-int-1',
+        'project-from-resource',
+        JSON.stringify({
+          resourceType: 'Patient',
+          id: 'patient-int-1',
+          meta: { project: 'project-from-json' },
+        }),
+        '2024-06-01T12:00:00.000Z',
+      ]
+    );
     await pool.query(
       `INSERT INTO "${HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
       [
@@ -85,6 +109,7 @@ describe('syncData local destination (integration)', () => {
   afterAll(async () => {
     const pool = getDatabasePool(DatabaseMode.WRITER);
     await pool.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
+    await pool.query(`DROP TABLE IF EXISTS "${RESOURCE_TABLE}"`);
     await closeDatabase();
     if (outDir) {
       rmSync(outDir, { recursive: true, force: true });
@@ -125,14 +150,14 @@ describe('syncData local destination (integration)', () => {
     const parquetPath = result.tables[0]?.destination;
     assertParquetMagic(readFileSync(parquetPath));
 
-    // Then: projected row values are readable and match source content
+    // Then: projected row values are readable and match the joined resource table
     const instance = await DuckDBInstance.create(':memory:');
     const c = await instance.connect();
     try {
       const res = await c.runAndReadAll(buildReadParquetFirstRowProjectionQuery(parquetPath));
       const row = res.getRowObjectsJson()[0] as { id: string; project_id: string | null };
       expect(row.id).toBe('patient-int-1');
-      expect(row.project_id).toBe('project-from-json');
+      expect(row.project_id).toBe('project-from-resource');
     } finally {
       c.closeSync();
       instance.closeSync();
@@ -141,9 +166,18 @@ describe('syncData local destination (integration)', () => {
 
   test('exports history rows with empty content to Parquet (deleted resource tombstones)', async () => {
     const pool = getDatabasePool(DatabaseMode.WRITER);
-    await pool.query(`DROP TABLE IF EXISTS "${EMPTY_CONTENT_HISTORY_TABLE}"`);
+    await pool.query(`DROP TABLE IF EXISTS "${TOMBSTONE_HISTORY_TABLE}"`);
+    await pool.query(`DROP TABLE IF EXISTS "${TOMBSTONE_RESOURCE_TABLE}"`);
     await pool.query(`
-      CREATE TABLE "${EMPTY_CONTENT_HISTORY_TABLE}" (
+      CREATE TABLE "${TOMBSTONE_RESOURCE_TABLE}" (
+        id TEXT NOT NULL PRIMARY KEY,
+        "projectId" TEXT NOT NULL,
+        content TEXT NOT NULL,
+        "lastUpdated" TIMESTAMPTZ NOT NULL
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE "${TOMBSTONE_HISTORY_TABLE}" (
         id TEXT NOT NULL,
         "versionId" TEXT NOT NULL,
         content TEXT NOT NULL,
@@ -151,12 +185,16 @@ describe('syncData local destination (integration)', () => {
       );
     `);
     await pool.query(
-      `INSERT INTO "${EMPTY_CONTENT_HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO "${TOMBSTONE_RESOURCE_TABLE}" (id, "projectId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
+      ['patient-tombstone-1', 'tombstone-project', '', '2024-06-01T12:00:00.000Z']
+    );
+    await pool.query(
+      `INSERT INTO "${TOMBSTONE_HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
       ['patient-tombstone-1', '1', '', '2024-06-01T12:00:00.000Z']
     );
 
     try {
-      const warehouseSources = [EMPTY_CONTENT_HISTORY_TABLE].map((postgresTable) => ({
+      const warehouseSources = [TOMBSTONE_HISTORY_TABLE].map((postgresTable) => ({
         postgresTable,
         icebergTable: toIcebergTableName(postgresTable),
       }));
@@ -185,13 +223,14 @@ describe('syncData local destination (integration)', () => {
         };
         expect(row.id).toBe('patient-tombstone-1');
         expect(row.content).toBe('');
-        expect(row.project_id).toBeNull();
+        expect(row.project_id).toBe('tombstone-project');
       } finally {
         c.closeSync();
         instance.closeSync();
       }
     } finally {
-      await pool.query(`DROP TABLE IF EXISTS "${EMPTY_CONTENT_HISTORY_TABLE}"`);
+      await pool.query(`DROP TABLE IF EXISTS "${TOMBSTONE_HISTORY_TABLE}"`);
+      await pool.query(`DROP TABLE IF EXISTS "${TOMBSTONE_RESOURCE_TABLE}"`);
     }
   }, 30_000);
 });

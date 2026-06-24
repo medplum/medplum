@@ -6,23 +6,23 @@ import {
   buildCountFromHistoryTableQuery,
   buildInsertIntoSelectQuery,
   buildMaxLastUpdatedWatermarkPredicate,
-  buildProjectIdProjectionSql,
   buildProjectedSelectFromHistoryTable,
   buildSelectFromHistoryTableQuery,
   buildStartDatePredicate,
 } from './warehouse-sql';
 
 describe('warehouse SQL query builders', () => {
-  const projectIdProjection = buildProjectIdProjectionSql();
+  const historyResourceJoin =
+    'LEFT JOIN "pg_db"."Patient" AS "resource" ON "pg_db"."Patient_History"."id" = "resource"."id"';
 
-  test('buildProjectedSelectFromHistoryTableQueryWithSubquery keeps json_extract_string in outer DuckDB layer', () => {
+  test('buildProjectedSelectFromHistoryTableQueryWithSubquery joins resource table for project_id', () => {
     const sourcePredicate = new Constant(`"lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z'`);
     const query = buildSelectFromHistoryTableQuery('Patient_History', sourcePredicate);
     const sql = new SqlBuilder();
     sql.appendExpression(query);
 
     expect(sql.toString()).toBe(
-      `SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", ${projectIdProjection} FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated" FROM "pg_db"."Patient_History" WHERE "lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z') AS "src" ORDER BY "src"."last_updated"`
+      `SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", "src"."project_id" FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated", "resource"."projectId" AS "project_id" FROM "pg_db"."Patient_History" ${historyResourceJoin} WHERE "lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z') AS "src" ORDER BY "src"."last_updated"`
     );
     expect(sql.getValues()).toStrictEqual([]);
   });
@@ -31,14 +31,15 @@ describe('warehouse SQL query builders', () => {
     const projectedSelectQuery = buildSelectFromHistoryTableQuery('Patient_History');
     const insertQuery = buildInsertIntoSelectQuery('iceberg_catalog.default.patient_history', projectedSelectQuery);
     expect(insertQuery.toString()).toBe(
-      `INSERT INTO "iceberg_catalog"."default"."patient_history" ("id", "version_id", "content", "last_updated", "project_id") SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", ${projectIdProjection} FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated" FROM "pg_db"."Patient_History") AS "src" ORDER BY "src"."last_updated"`
+      `INSERT INTO "iceberg_catalog"."default"."patient_history" ("id", "version_id", "content", "last_updated", "project_id") SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", "src"."project_id" FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated", "resource"."projectId" AS "project_id" FROM "pg_db"."Patient_History" ${historyResourceJoin}) AS "src" ORDER BY "src"."last_updated"`
     );
     expect(insertQuery.getValues()).toStrictEqual([]);
   });
 
   test('buildProjectedSelectFromHistoryTable accepts source table strings directly', () => {
-    const projected = buildProjectedSelectFromHistoryTable('Patient-history');
-    expect(projected.toString()).toContain('FROM "pg_db"."Patient-history"');
+    const projected = buildProjectedSelectFromHistoryTable('CustomResource_History');
+    expect(projected.toString()).toContain('FROM "pg_db"."CustomResource_History"');
+    expect(projected.toString()).toContain('LEFT JOIN "pg_db"."CustomResource" AS "resource"');
     expect(projected.getValues()).toStrictEqual([]);
   });
 

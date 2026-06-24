@@ -28,14 +28,16 @@ import { processDataWarehouseSyncJob } from './data-warehouse-sync';
 
 /** Dedicated schema so test tables are not visible to public-schema migration introspection. */
 const TEST_SCHEMA = 'dw_worker_sync_int_test';
-const HISTORY_TABLE = 'history';
+const RESOURCE_TABLE = 'Patient';
+const HISTORY_TABLE = 'Patient_History';
+const QUALIFIED_RESOURCE_TABLE = `${TEST_SCHEMA}.${RESOURCE_TABLE}`;
 const QUALIFIED_HISTORY_TABLE = `${TEST_SCHEMA}.${HISTORY_TABLE}`;
 
 jest.mock('../data-warehouse/config', () => {
   const actual: typeof DataWarehouseConfigModule = jest.requireActual('../data-warehouse/config');
   return {
     ...actual,
-    getWarehouseSyncPostgresTableNames: jest.fn(() => ['dw_worker_sync_int_test.history']),
+    getWarehouseSyncPostgresTableNames: jest.fn(() => ['dw_worker_sync_int_test.Patient_History']),
   };
 });
 
@@ -75,7 +77,15 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
     await pool.query(`DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
     await pool.query(`CREATE SCHEMA ${TEST_SCHEMA}`);
     await pool.query(`
-      CREATE TABLE ${TEST_SCHEMA}.${HISTORY_TABLE} (
+      CREATE TABLE ${QUALIFIED_RESOURCE_TABLE} (
+        id TEXT NOT NULL PRIMARY KEY,
+        "projectId" TEXT NOT NULL,
+        content TEXT NOT NULL,
+        "lastUpdated" TIMESTAMPTZ NOT NULL
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE ${QUALIFIED_HISTORY_TABLE} (
         id TEXT NOT NULL,
         "versionId" TEXT NOT NULL,
         content TEXT NOT NULL,
@@ -83,7 +93,20 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
       );
     `);
     await pool.query(
-      `INSERT INTO ${TEST_SCHEMA}.${HISTORY_TABLE} (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO ${QUALIFIED_RESOURCE_TABLE} (id, "projectId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
+      [
+        'patient-worker-int-1',
+        'project-from-resource',
+        JSON.stringify({
+          resourceType: 'Patient',
+          id: 'patient-worker-int-1',
+          meta: { project: 'project-from-json' },
+        }),
+        '2024-06-01T12:00:00.000Z',
+      ]
+    );
+    await pool.query(
+      `INSERT INTO ${QUALIFIED_HISTORY_TABLE} (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
       [
         'patient-worker-int-1',
         '1',
@@ -146,7 +169,7 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
       const res = await c.runAndReadAll(buildReadParquetFirstRowProjectionQuery(expectedParquetPath));
       const row = res.getRowObjectsJson()[0] as { id: string; project_id: string | null };
       expect(row.id).toBe('patient-worker-int-1');
-      expect(row.project_id).toBe('project-from-json');
+      expect(row.project_id).toBe('project-from-resource');
     } finally {
       c.closeSync();
     }

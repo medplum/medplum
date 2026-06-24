@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/** Integration: Postgres history row → DuckDB INSERT with subquery-projected json_extract_string. */
+/** Integration: Postgres history row joined to resource table for project_id projection. */
 
 import { DuckDBInstance } from '@duckdb/node-api';
 import pg from 'pg';
@@ -16,7 +16,8 @@ import {
   runParameterizedWarehouseSqlReadAll,
 } from './warehouse-sql';
 
-const HISTORY_TABLE = 'DwWarehouseSqlIntTest_history';
+const RESOURCE_TABLE = 'DwWarehouseSqlIntTestPatient';
+const HISTORY_TABLE = 'DwWarehouseSqlIntTestPatient_History';
 const DEST_TABLE = 'wh_sql_int_dest';
 
 describe('warehouse SQL (integration)', () => {
@@ -39,6 +40,15 @@ describe('warehouse SQL (integration)', () => {
     await client.connect();
     try {
       await client.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
+      await client.query(`DROP TABLE IF EXISTS "${RESOURCE_TABLE}"`);
+      await client.query(`
+        CREATE TABLE "${RESOURCE_TABLE}" (
+          id TEXT NOT NULL PRIMARY KEY,
+          "projectId" TEXT NOT NULL,
+          content TEXT NOT NULL,
+          "lastUpdated" TIMESTAMPTZ NOT NULL
+        );
+      `);
       await client.query(`
         CREATE TABLE "${HISTORY_TABLE}" (
           id TEXT NOT NULL,
@@ -47,6 +57,19 @@ describe('warehouse SQL (integration)', () => {
           "lastUpdated" TIMESTAMPTZ NOT NULL
         );
       `);
+      await client.query(
+        `INSERT INTO "${RESOURCE_TABLE}" (id, "projectId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
+        [
+          'patient-wh-sql-1',
+          'project-from-resource',
+          JSON.stringify({
+            resourceType: 'Patient',
+            id: 'patient-wh-sql-1',
+            meta: { project: 'project-from-json' },
+          }),
+          '2024-06-01T12:00:00.000Z',
+        ]
+      );
       await client.query(
         `INSERT INTO "${HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
         [
@@ -70,12 +93,13 @@ describe('warehouse SQL (integration)', () => {
     await client.connect();
     try {
       await client.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
+      await client.query(`DROP TABLE IF EXISTS "${RESOURCE_TABLE}"`);
     } finally {
       await client.end();
     }
   }, 10_000);
 
-  test('INSERT INTO with subquery projection extracts project_id via DuckDB json_extract_string', async () => {
+  test('INSERT INTO with joined resource table projects project_id from projectId column', async () => {
     const connStr = buildPgConnectionURI({ host, port, dbname: database, username, password });
     const projectedSelect = buildSelectFromHistoryTableQuery(HISTORY_TABLE);
     const insertQuery = buildInsertIntoSelectQuery(`main.${DEST_TABLE}`, projectedSelect);
@@ -103,7 +127,7 @@ describe('warehouse SQL (integration)', () => {
       const readResult = await runParameterizedWarehouseSqlReadAll(connection, readSql);
       const row = readResult.getRowObjectsJson()[0] as { id: string; project_id: string };
       expect(row.id).toBe('patient-wh-sql-1');
-      expect(row.project_id).toBe('project-from-json');
+      expect(row.project_id).toBe('project-from-resource');
     } finally {
       connection.closeSync();
       instance.closeSync();

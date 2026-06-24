@@ -90,6 +90,24 @@ function toHistoryPostgresTableName(resourceType: string): string {
 }
 
 /**
+ * Derives the live resource Postgres table name from a `{ResourceType}_History` identifier.
+ *
+ * @param sourceHistoryTable - Postgres history table (optionally schema-qualified).
+ * @returns The corresponding resource table name in the same schema, if any.
+ */
+export function toResourcePostgresTableName(sourceHistoryTable: string): string {
+  const dotIndex = sourceHistoryTable.lastIndexOf('.');
+  const tablePart = dotIndex >= 0 ? sourceHistoryTable.slice(dotIndex + 1) : sourceHistoryTable;
+  const schemaPrefix = dotIndex >= 0 ? sourceHistoryTable.slice(0, dotIndex + 1) : '';
+
+  if (!tablePart.endsWith(HISTORY_TABLE_SUFFIX)) {
+    throw new Error(`Invalid history table name: ${sourceHistoryTable}`);
+  }
+
+  return `${schemaPrefix}${tablePart.slice(0, -HISTORY_TABLE_SUFFIX.length)}`;
+}
+
+/**
  * Postgres history table names for indexed repository resource types (`{ResourceType}_History`),
  * matching migrations (`resourceType + '_History'`).
  * Used by the scheduled data warehouse sync worker.
