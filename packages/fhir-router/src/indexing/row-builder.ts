@@ -19,8 +19,8 @@ import {
   toTypedValue,
 } from '@medplum/core';
 import type { Meta, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { periodToRangeString, truncateTextColumn } from '../sql/sql.js';
 import { getConfig } from './config.js';
-import type { ArrayColumnPaddingConfig } from './types.js';
 import { systemResourceProjectId } from './constants.js';
 import { getLogger } from './logger.js';
 import type { HumanNameResource } from './lookups/humanname';
@@ -28,8 +28,8 @@ import { getHumanNameSortValue } from './lookups/humanname';
 import { getStandardAndDerivedSearchParameters } from './lookups/util.js';
 import { buildRangeColumns } from './range-column.js';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter.js';
-import { periodToRangeString, truncateTextColumn } from '../sql/sql.js';
 import { buildTokenColumns } from './token-column.js';
+import type { ArrayColumnPaddingConfig } from './types.js';
 
 export type ColumnValue = boolean | number | string | undefined | null;
 

@@ -12,9 +12,9 @@ import {
   toTypedValue,
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { getLogger } from '../logger.js';
 import type { SqlConnection } from '../../sql/sql.js';
 import { InsertQuery, SelectQuery } from '../../sql/sql.js';
+import { getLogger } from '../logger.js';
 import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
 
@@ -201,7 +201,11 @@ export class ReferenceTable extends LookupTable {
    * @param resourceType - The resource type.
    * @param values - The values to insert.
    */
-  async batchInsertRows(client: SqlConnection, resourceType: ResourceType, values: Record<string, any>[]): Promise<void> {
+  async batchInsertRows(
+    client: SqlConnection,
+    resourceType: ResourceType,
+    values: Record<string, any>[]
+  ): Promise<void> {
     if (values.length === 0) {
       return;
     }

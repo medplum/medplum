@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { SqlDialect  } from '../sql/dialect.js';
-import type {SqlDialect as SqlDialectType} from '../sql/dialect.js';
+import type { SqlDialect as SqlDialectType } from '../sql/dialect.js';
+import { SqlDialect } from '../sql/dialect.js';
 
 /**
  * Converts a resource row from the indexing layer into dialect-specific storage values.

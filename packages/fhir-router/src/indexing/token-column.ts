@@ -10,13 +10,13 @@ import {
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { NIL, v5 } from 'uuid';
-import type { ArrayColumnPaddingConfig } from './types.js';
-import type { TokenColumnSearchParameterImplementation } from './searchparameter.js';
-import { getSearchParameterImplementation } from './searchparameter.js';
 import type { Expression, SelectQuery } from '../sql/sql.js';
 import { Column, Condition, Disjunction, Negation, truncateTextColumn, TypedCondition } from '../sql/sql.js';
+import type { TokenColumnSearchParameterImplementation } from './searchparameter.js';
+import { getSearchParameterImplementation } from './searchparameter.js';
 import type { Token } from './tokens.js';
 import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent } from './tokens.js';
+import type { ArrayColumnPaddingConfig } from './types.js';
 
 const DELIM = '\x01';
 const NULL_SYSTEM = '\x02';

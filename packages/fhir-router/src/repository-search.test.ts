@@ -85,11 +85,9 @@ describe.each(['memory', 'sqlite'] as const)('%s repository search', (kind) => {
       valueString: '1',
     });
 
-    const result = await repo.searchByReference<Observation>(
-      { resourceType: 'Observation', count: 10 },
-      'subject',
-      [getReferenceString(patient)]
-    );
+    const result = await repo.searchByReference<Observation>({ resourceType: 'Observation', count: 10 }, 'subject', [
+      getReferenceString(patient),
+    ]);
 
     expect(result[getReferenceString(patient)]).toHaveLength(1);
     expect(result[getReferenceString(patient)][0].id).toBe(observation.id);

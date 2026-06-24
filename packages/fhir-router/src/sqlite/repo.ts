@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SearchRequest, WithId ,
-  AccessPolicyInteraction} from '@medplum/core';
-import type { CreateResourceOptions, UpdateResourceOptions ,RepositoryMode} from '../repo.js';
+import type { AccessPolicyInteraction, SearchRequest, WithId } from '@medplum/core';
 import {
   badRequest,
   deepClone,
@@ -19,14 +17,15 @@ import { applyPatch } from 'rfc6902';
 import { buildResourceRow } from '../indexing/row-builder.js';
 import { serializeRowForDialect } from '../indexing/row-serializer.js';
 import { lookupTables } from '../indexing/searchparameter.js';
+import type { CreateResourceOptions, RepositoryMode, UpdateResourceOptions } from '../repo.js';
+import { FhirRepository } from '../repo.js';
+import type { SqlConnection } from '../sql/connection.js';
+import { SqliteConnection } from '../sql/connection.js';
 import { SqlDialect } from '../sql/dialect.js';
-import { SqliteConnection  } from '../sql/connection.js';
-import type {SqlConnection} from '../sql/connection.js';
 import { DeleteQuery, InsertQuery, SelectQuery, UpdateQuery } from '../sql/sql.js';
-import { FhirRepository  } from '../repo.js';
-import { searchByReferenceImpl, searchImpl } from './search.js';
-import type { SqliteSearchRepo } from './search-repo.js';
 import { SqliteSchema } from './schema.js';
+import type { SqliteSearchRepo } from './search-repo.js';
+import { searchByReferenceImpl, searchImpl } from './search.js';
 
 const RESOURCE_VERSION = 1;
 
@@ -250,9 +249,7 @@ export class SqliteRepository extends FhirRepository implements SqliteSearchRepo
   async readVersion<T extends Resource>(resourceType: string, id: string, versionId: string): Promise<T> {
     await this.readResource(resourceType, id);
     const row = this.db
-      .prepare(
-        `SELECT content FROM "ResourceHistory" WHERE "resourceType" = ? AND "id" = ? AND "versionId" = ?`
-      )
+      .prepare(`SELECT content FROM "ResourceHistory" WHERE "resourceType" = ? AND "id" = ? AND "versionId" = ?`)
       .get(resourceType, id, versionId) as { content: string } | undefined;
     if (!row) {
       throw new OperationOutcomeError(notFound);
@@ -321,9 +318,9 @@ export class SqliteRepository extends FhirRepository implements SqliteSearchRepo
 
   private readResourceSync<T extends Resource>(resourceType: string, id: string): WithId<T> | undefined {
     this.schema.ensureResourceTable(resourceType as ResourceType);
-    const row = this.db
-      .prepare(`SELECT content FROM "${resourceType}" WHERE id = ? AND deleted = 0`)
-      .get(id) as { content: string } | undefined;
+    const row = this.db.prepare(`SELECT content FROM "${resourceType}" WHERE id = ? AND deleted = 0`).get(id) as
+      | { content: string }
+      | undefined;
     return row ? (JSON.parse(row.content) as WithId<T>) : undefined;
   }
 

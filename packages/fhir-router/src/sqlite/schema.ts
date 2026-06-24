@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { DatabaseSync } from 'node:sqlite';
-import { getSearchParameterImplementation, SearchStrategies } from '../indexing/searchparameter.js';
 import { getStandardAndDerivedSearchParameters } from '../indexing/lookups/util.js';
+import { getSearchParameterImplementation, SearchStrategies } from '../indexing/searchparameter.js';
 const BASE_COLUMNS = ['id', 'content', 'lastUpdated', 'deleted', 'projectId', '__version'] as const;
 
 const LOOKUP_TABLES: Record<string, string[]> = {

@@ -46,11 +46,10 @@ import type {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { systemResourceProjectId } from '../indexing/constants.js';
-import { clamp , getFullUrl } from './utils.js';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from '../indexing/range-column.js';
-import type { SqliteSearchRepo } from './search-repo.js';
 import type { ColumnSearchParameterImplementation } from '../indexing/searchparameter.js';
 import { getSearchParameterImplementation, SearchStrategies } from '../indexing/searchparameter.js';
+import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from '../indexing/token-column.js';
 import type { Expression, Operator as SQL } from '../sql/sql.js';
 import {
   ArraySubquery,
@@ -68,7 +67,8 @@ import {
   Union,
   UnionAllBuilder,
 } from '../sql/sql.js';
-import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from '../indexing/token-column.js';
+import type { SqliteSearchRepo } from './search-repo.js';
+import { clamp, getFullUrl } from './utils.js';
 
 /**
  * Defines the maximum number of resources returned in a single search result.

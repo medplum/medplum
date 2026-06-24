@@ -11,15 +11,15 @@ import {
 } from '@medplum/core';
 import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
-import type { SqlConnection } from './connection.js';
-import { SqlDialect  } from './dialect.js';
-import type {SqlDialect as SqlDialectType} from './dialect.js';
 import type { ColumnSearchParameterImplementation } from '../indexing/searchparameter.js';
+import type { SqlConnection } from './connection.js';
+import type { SqlDialect as SqlDialectType } from './dialect.js';
+import { SqlDialect } from './dialect.js';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
 
-export type { SqlConnection } from './connection.js';
 export { SqliteConnection } from './connection.js';
+export type { SqlConnection } from './connection.js';
 export { SqlDialect } from './dialect.js';
 
 export function setSqlDebug(value: string | undefined): void {
@@ -172,7 +172,7 @@ export const Operator = {
     if (sql.getDialect() === SqlDialect.SQLITE) {
       sql.append('(');
       sql.appendColumn(column);
-      sql.append(" IS NOT NULL AND ");
+      sql.append(' IS NOT NULL AND ');
       sql.appendColumn(column);
       sql.append(" != '[]')");
       return;
@@ -318,7 +318,7 @@ function appendSqliteRangeOverlap(sql: SqlBuilder, column: Column, parameter: st
   const { start, end } = parseRangeEndpoints(parameter);
   sql.append('(');
   if (end !== undefined) {
-    sql.append("json_extract(");
+    sql.append('json_extract(');
     sql.appendColumn(column);
     sql.append(", '$.start') < ");
     sql.param(end);
@@ -327,7 +327,7 @@ function appendSqliteRangeOverlap(sql: SqlBuilder, column: Column, parameter: st
   }
   sql.append(' AND ');
   if (start !== undefined) {
-    sql.append("json_extract(");
+    sql.append('json_extract(');
     sql.appendColumn(column);
     sql.append(", '$.end') > ");
     sql.param(start);
@@ -339,7 +339,7 @@ function appendSqliteRangeOverlap(sql: SqlBuilder, column: Column, parameter: st
 
 function appendSqliteRangeStrictlyRightOf(sql: SqlBuilder, column: Column, parameter: string): void {
   const { start } = parseRangeEndpoints(parameter);
-  sql.append("json_extract(");
+  sql.append('json_extract(');
   sql.appendColumn(column);
   sql.append(", '$.start') >= ");
   sql.param(start ?? '');
@@ -347,7 +347,7 @@ function appendSqliteRangeStrictlyRightOf(sql: SqlBuilder, column: Column, param
 
 function appendSqliteRangeStrictlyLeftOf(sql: SqlBuilder, column: Column, parameter: string): void {
   const { end } = parseRangeEndpoints(parameter);
-  sql.append("json_extract(");
+  sql.append('json_extract(');
   sql.appendColumn(column);
   sql.append(", '$.end') <= ");
   sql.param(end ?? '');
@@ -1087,8 +1087,7 @@ export class SelectQuery extends BaseQuery {
     }
 
     for (const join of this.joins) {
-      const joinType =
-        sql.getDialect() === SqlDialect.SQLITE ? join.joinType.replace(' LATERAL', '') : join.joinType;
+      const joinType = sql.getDialect() === SqlDialect.SQLITE ? join.joinType.replace(' LATERAL', '') : join.joinType;
       sql.append(` ${joinType} `);
       if (join.joinItem instanceof SelectQuery) {
         sql.append('(');

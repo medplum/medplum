@@ -31,7 +31,11 @@ export class CodingTable extends LookupTable {
     throw new Error('CodingTable.extractValues not implemented');
   }
 
-  async batchIndexResources<T extends Resource>(_client: SqlConnection, _resources: WithId<T>[], _create: boolean): Promise<void> {
+  async batchIndexResources<T extends Resource>(
+    _client: SqlConnection,
+    _resources: WithId<T>[],
+    _create: boolean
+  ): Promise<void> {
     // CodeSystem import indexing is not required for the mock SQLite repository.
   }
 

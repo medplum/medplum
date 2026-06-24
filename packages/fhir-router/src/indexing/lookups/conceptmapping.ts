@@ -31,7 +31,11 @@ export class ConceptMappingTable extends LookupTable {
     throw new Error('ConceptMapping.extractValues not implemented');
   }
 
-  async batchIndexResources<T extends Resource>(_client: SqlConnection, _resources: WithId<T>[], _create: boolean): Promise<void> {
+  async batchIndexResources<T extends Resource>(
+    _client: SqlConnection,
+    _resources: WithId<T>[],
+    _create: boolean
+  ): Promise<void> {
     // ConceptMap import indexing is not required for the mock SQLite repository.
   }
 

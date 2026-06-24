@@ -8,8 +8,6 @@ import {
   splitSearchOnComma,
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { getLogger } from '../logger.js';
-import type { LookupTableSearchParameterImplementation } from '../searchparameter.js';
 import type { Expression, SqlConnection } from '../../sql/sql.js';
 import {
   Column,
@@ -24,6 +22,8 @@ import {
   SelectQuery,
   SqlFunction,
 } from '../../sql/sql.js';
+import { getLogger } from '../logger.js';
+import type { LookupTableSearchParameterImplementation } from '../searchparameter.js';
 
 const lookupTableBatchSize = 5_000;
 
