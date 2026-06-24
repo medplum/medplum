@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { Patient, Reference } from '@medplum/fhirtypes';
+
 export interface Message {
   role: 'user' | 'assistant' | 'system' | 'tool';
   content: string | null;
@@ -8,4 +10,5 @@ export interface Message {
   tool_call_id?: string;
   resources?: string[];
   componentCode?: string;
+  selectedPatients?: (Patient | Reference<Patient>)[];
 }
