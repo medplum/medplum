@@ -1,5 +1,3 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
-// SPDX-License-Identifier: Apache-2.0
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { DatabaseSync } from 'node:sqlite';
 import { getStandardAndDerivedSearchParameters } from '../indexing/lookups/util.js';

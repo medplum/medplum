@@ -1,5 +1,3 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
-// SPDX-License-Identifier: Apache-2.0
 import Translate from '@docusaurus/Translate';
 import Heading from '@theme/Heading';
 import type { Props } from '@theme/NotFound/Content';

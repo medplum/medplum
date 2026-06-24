@@ -1,5 +1,3 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
-// SPDX-License-Identifier: Apache-2.0
 import react from '@vitejs/plugin-react';
 import dns from 'dns';
 import { copyFileSync, existsSync } from 'fs';

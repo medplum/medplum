@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
-// SPDX-License-Identifier: Apache-2.0
-
 /**
  * The hardcoded ID used in `projectId` columns for system resources.
  */
