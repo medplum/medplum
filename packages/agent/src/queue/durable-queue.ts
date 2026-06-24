@@ -886,8 +886,11 @@ export class DurableQueue {
    * lost-leadership callback by design — loss surfaces as a {@link QueueLeaseError}
    * from the dispatch ops, which the worker catches to drain itself.
    *
-   * Idempotent: calling it again while the loop is already active is a no-op, so
-   * the App can call it on every heartbeat tick without restarting the loop.
+   * Idempotent: calling it again while the loop is already active is a no-op,
+   * regardless of whether this process is currently a retrying follower or the
+   * leader. A repeat call does not re-acquire, re-heartbeat, re-fire
+   * `onBecameLeader`, or replace the callback — so the App can call it on every
+   * heartbeat tick (and when already the leader) without restarting the loop.
    * @param onBecameLeader - Callback invoked when this process takes the lease.
    */
   startDispatchLease(onBecameLeader: () => void): void {
