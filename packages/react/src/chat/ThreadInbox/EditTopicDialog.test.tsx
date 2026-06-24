@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Notifications } from '@mantine/notifications';
 import type { Communication } from '@medplum/fhirtypes';
-import { DrAliceSmith, MockClient } from '@medplum/mock';
+import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
@@ -119,14 +119,9 @@ describe('EditTopicDialog', () => {
   });
 
   test('omits the patient field when the patient reference fails to resolve', async () => {
-    // The patient read rejects, but practitioner reads still succeed — the form renders
-    // without the patient field rather than blanking entirely.
-    vi.spyOn(medplum, 'readReference').mockImplementation(async (ref) => {
-      if (ref.reference?.startsWith('Patient/')) {
-        throw new Error('not found');
-      }
-      return DrAliceSmith;
-    });
+    // The patient read rejects; the form still renders (degrading to no patient field)
+    // rather than blanking entirely.
+    vi.spyOn(medplum, 'readReference').mockRejectedValue(new Error('not found'));
     setup();
 
     await waitFor(() => expect(screen.getByText('Practitioner')).toBeInTheDocument());
