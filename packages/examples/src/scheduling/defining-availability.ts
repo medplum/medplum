@@ -31,8 +31,9 @@ const schedulingParamsHealthcareService: Extension =
         valueDuration: { value: 0, unit: 'min', system: 'http://unitsofmeasure.org', code: 'min' },
       },
 
-      // Optional: Timezone for anchoring the alignment grid to local midnight
-      // Independent of `timezone`, which controls availability window interpretation
+      // Recommended: Timezone for anchoring the alignment grid to local midnight
+      // To book on multiple schedules at once, they must all match in this dimension.
+      // This parameter is Independent of `timezone`, which controls availability window interpretation
       {
         url: 'alignmentTimezone',
         valueCode: 'America/New_York',
@@ -119,19 +120,24 @@ const schedulingParamsSchedule: Extension =
       },
 
       // Time alignment interval (appointment start time boundaries)
+      // Recommended to be set on `HealthcareService` and inherited: to book multiple schedules at once,
+      // they must all match in this dimension.
       {
         url: 'alignmentInterval',
         valueDuration: { value: 15, unit: 'min', system: 'http://unitsofmeasure.org', code: 'min' },
       },
 
       // Time alignment offset (shift from interval boundaries)
+      // Recommended to be set on `HealthcareService` and inherited: to book multiple schedules at once,
+      // they must all match in this dimension.
       {
         url: 'alignmentOffset',
         valueDuration: { value: 0, unit: 'min', system: 'http://unitsofmeasure.org', code: 'min' },
       },
 
       // Timezone for anchoring the alignment grid to local midnight
-      // Independent of `timezone`, which controls availability window interpretation
+      // Recommended to be set on `HealthcareService` and inherited: to book multiple schedules at once,
+      // they must all match in this dimension.
       {
         url: 'alignmentTimezone',
         valueCode: 'America/New_York',
@@ -150,6 +156,7 @@ const scheduleResource: Schedule =
     comment: "Dr. Smith's Office Visit availability",
     // Practitioner or PractitionerRole; the actor must carry a timezone extension
     actor: [{ reference: 'Practitioner/dr-smith' }],
+    // `serviceType` links this schedule to the HealthcareService resources that it is permitted to use for scheduling
     serviceType: [
       {
         text: 'Office Visit',
@@ -166,6 +173,8 @@ const scheduleResource: Schedule =
       },
     ],
     extension: [
+      // This extension applies custom recurring availability when this schedule is
+      // used with the "Office Visit" service type.
       {
         url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
         extension: [
@@ -175,10 +184,6 @@ const scheduleResource: Schedule =
               reference: 'HealthcareService/23c3f1cc-4f55-4990-9775-511b02487e7e',
               display: 'Office Visit',
             },
-          },
-          {
-            url: 'duration',
-            valueDuration: { value: 1, unit: 'h' },
           },
           {
             url: 'availability',
@@ -955,8 +960,13 @@ const seedBundle: Bundle =
               ],
             },
           ],
+          identifier: [{ system: 'http://example.org/serviceTypes', value: 'surgical-procedure' }],
         },
-        request: { method: 'POST', url: 'HealthcareService' },
+        request: {
+          method: 'POST',
+          url: 'HealthcareService',
+          ifNoneExist: 'identifier=http://example.org/serviceTypes|surgical-procedure',
+        },
       },
       {
         fullUrl: 'urn:uuid:0000-loc-or1',
@@ -964,7 +974,6 @@ const seedBundle: Bundle =
           resourceType: 'Location',
           name: 'OR-1',
           mode: 'instance',
-          // the actor must carry a timezone extension
           extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Los_Angeles' }],
         },
         request: { method: 'POST', url: 'Location' },
@@ -974,7 +983,6 @@ const seedBundle: Bundle =
         resource: {
           resourceType: 'Practitioner',
           name: [{ given: ['Maria'], family: 'Martinez', prefix: ['Dr.'] }],
-          // the actor must carry a timezone extension
           extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Los_Angeles' }],
         },
         request: { method: 'POST', url: 'Practitioner' },

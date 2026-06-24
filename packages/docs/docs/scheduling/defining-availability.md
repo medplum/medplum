@@ -141,7 +141,13 @@ This approach avoids the need to pre-generate thousands of Slot resources for ev
 
 The [`Schedule`](/docs/api/fhir/resources/schedule) resource is the foundation for defining actor-level availability for a provider, location, or device.
 
-The Schedule resource should define the service types that it is capable of acting on in its `serviceType` attribute.
+The Schedule resource should define the service types that it is capable of acting on in its `serviceType` attribute. To use Medplum Scheduling APIs, this should include the extension `https://medplum.com/fhir/service-type-reference` holding a reference to the matching HealthcareService.
+
+Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource that defines availability for a [Practitioner](/docs/api/fhir/resources/practitioner).
+
+<MedplumCodeBlock language="ts" selectBlocks="scheduleResource">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 :::note[`Schedule` has no `name` element]
 
@@ -158,13 +164,6 @@ Instead, use `comment` — a free-text field that's a good place for a human-rea
 - Use **`Practitioner`** when availability is for the individual regardless of role or location.
 - Use **`PractitionerRole`** when availability is specific to a role, organization, or location binding (for example, when licensure varies by state — see [state-by-state licensure](/docs/scheduling/state-by-state-licensure)).
 
-In all cases the referenced actor (Practitioner, PractitionerRole, Location, or Device) must carry the FHIR timezone extension (`http://hl7.org/fhir/StructureDefinition/timezone`). Pick one convention per example and use it consistently for both the `actor` reference and any related text.
-
-Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource that defines availability for a [Practitioner](/docs/api/fhir/resources/practitioner).
-
-<MedplumCodeBlock language="ts" selectBlocks="scheduleResource">
-  {ExampleCode}
-</MedplumCodeBlock>
 
 ### `availability` Extension
 
@@ -270,8 +269,9 @@ There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/p
 
 **Timezone Resolution Order:**
 
-1. If `timezone` is specified in the `scheduling-parameters` extension, use that time zone
-2. Otherwise, fall back to the time zone defined on the Schedule's actor reference (Practitioner, Location, or Device)
+1. If `timezone` is specified in the `scheduling-parameters` extension of a `Schedule` resource, use that time zone
+2. If `timezone` is specified in the `scheduling-parameters` extension of a `HealthcareService` resource, use that time zone
+3. Otherwise, fall back to the time zone defined on the Schedule's actor reference (Practitioner, PractitionerRole, Location, or Device)
 
 **Important Notes:**
 
@@ -498,11 +498,11 @@ This is a complete, uploadable seed bundle for the common case of a single servi
 
 It demonstrates the patterns from [Common Pitfalls](#common-pitfalls):
 
-- **`type: transaction`** so a single bad entry rolls back the whole bundle (see [Seeding configuration](#4-seed-configuration-with-a-transaction-bundle-not-batch)).
+- **`type: transaction`** so a single bad entry rolls back the whole bundle (see [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests)).
 - **`urn:uuid` `fullUrl`s** so resources can cross-reference each other before they have server-assigned IDs.
 - **`comment`, not `name`,** on each `Schedule`.
 - **`Practitioner`/`Location` actors each carrying a timezone extension.**
-- **`ifNoneExist`** on the `Organization` so re-running the seed is idempotent.
+- **`ifNoneExist`** on the `Organization` and `HealthcareService` so re-running the seed is idempotent for those resources.
 
 Each `Schedule` sets only its own `availability` and inherits `duration`, buffers, and alignment from the `HealthcareService`. Add more practitioners or rooms by duplicating the Practitioner/Location + Schedule pair.
 
@@ -554,7 +554,7 @@ graph TD
     B3 --> C3[Schedule<br/>*OR-3 Schedule*]
 ```
 
-### Best Practices
+## Best Practices
 
 #### 1. Set Defaults on HealthcareService, Override Only What Differs on Schedule
 
@@ -569,35 +569,11 @@ Only create Slot resources for:
 
 Let `$find` calculate available windows dynamically.
 
-#### 3. Transaction Bundles for Multi-Resource Booking
-
-Always use [FHIR transaction bundles](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions) when booking appointments that require multiple resources to ensure atomicity.
-
-#### 4. Seed Configuration with a `transaction` Bundle, not `batch`
-
-Seed schedules with a [`transaction`](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions) bundle, not `batch`. In a `batch`, each entry commits independently: if one entry fails validation, the rest still commit and the failure may not be obvious, leaving a partially-built configuration (and potentially an orphaned `Slot` pointing at a `Schedule` that was never created). A `transaction` is atomic, so a single bad entry rolls back the whole bundle and surfaces the error.
-
-Use `ifNoneExist` on seed entries to make re-runs idempotent (conditional create), so seeding twice does not create duplicates:
-
-```json
-{
-  "request": {
-    "method": "POST",
-    "url": "Organization",
-    "ifNoneExist": "identifier=http://example.org/organizations|bayview-surgery-center"
-  }
-}
-```
-
-See [Example 4](#example-4-canonical-seed-bundle--one-service-multiple-practitioners-and-rooms) for a complete, validated seed bundle.
-
 ## Common Pitfalls
 
 A few constraints trip people up most often when configuring availability:
 
 - **`Schedule` has no `name` element** in FHIR R4. Use `comment` for a human-readable label — sending `name` fails validation with `Invalid additional property "name"`. See [The Schedule Resource](#the-schedule-resource).
-- **Seed configuration with a `transaction` bundle, not `batch`.** A `batch` commits good entries and silently drops bad ones with no rollback, which can leave a partially-built configuration and orphaned `Slot`s. See [Seeding configuration](#4-seed-configuration-with-a-transaction-bundle-not-batch).
-- **Every actor must carry a timezone extension** (`http://hl7.org/fhir/StructureDefinition/timezone`). See [Timezone Resolution](#timezone-resolution).
 - **A Schedule's parameters override, they don't merge.** Setting `availability` on a Schedule fully replaces the service's `availableTime` rather than narrowing it. See [Override Behavior](#override-behavior).
 - **To book across multiple schedules at once**, `duration`, `alignmentInterval`, `alignmentOffset`, and `alignmentTimezone` must match across them. Prefer setting these only on the `HealthcareService`.
 
