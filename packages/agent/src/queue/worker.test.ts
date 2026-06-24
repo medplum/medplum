@@ -430,6 +430,46 @@ describe('ChannelQueueWorker', () => {
     expect(settled?.errorCode).toBe(QueueErrorCode.ServerRejected);
   });
 
+  test('late server response is discarded when a peer took the lease (not ours to settle)', async () => {
+    // Hold the lease so the worker is the leader, then let a row time out into `failed`.
+    queue.setLeaseHolder('us');
+    expect(queue.tryAcquireLease('us', 60_000)).toBe(true);
+
+    const r = enqueueOne(queue, 'LATE-DEMOTED');
+    const { app } = makeStubApp();
+    const sendAck = vi.fn(() => true);
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck,
+      responseTimeoutMs: 50,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
+    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    await worker.stop();
+
+    // A peer steals the lease. The server's response then finally arrives — but this
+    // row is now the new leader's to settle, not ours. applyServerResponse's write is
+    // refused with QueueLeaseError, so the late response is discarded rather than
+    // applied over a row a demoted process no longer owns.
+    queue.releaseLease('us');
+    expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
+
+    expect(worker.onServerResponse(makeResponse(r.callbackId, 200))).toBe(false);
+
+    // The row is left exactly as the timeout left it — no write leaked through the
+    // lease gate (state, error code, and the still-null server status all unchanged).
+    const row = queue.getById(r.id);
+    expect(row?.state).toBe(MessageState.FAILED);
+    expect(row?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    expect(row?.serverStatusCode).toBeNull();
+    expect(sendAck).not.toHaveBeenCalled();
+  });
+
   test('late duplicate server response is discarded for an already-settled row', async () => {
     const r = enqueueOne(queue, 'DUP');
     const { app } = makeStubApp();
