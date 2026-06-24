@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { EventInput, EventSourceInput } from '@fullcalendar/react';
+import type { EventClickInfo, EventInput, EventSourceInput } from '@fullcalendar/react';
 import FullCalendar from '@fullcalendar/react';
 import '@fullcalendar/react/skeleton.css';
 import themePlugin from '@fullcalendar/react/themes/classic';
@@ -40,15 +40,17 @@ import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
+import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 import { useNotifyOnError } from '../../hooks/useNotifyOnError';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
+import { assertNever } from '../../utils/assert';
 import { showErrorNotification } from '../../utils/notifications';
 import { isSchedulableFor } from '../../utils/scheduling';
 import classes from './SchedulingPage.module.css';
 
-type ExtendedEvent = { type: 'appointment'; appointment: Appointment } | { type: 'slot'; slot: Slot };
+type ExtendedEvent = { type: 'appointment'; appointment: WithId<Appointment> } | { type: 'slot'; slot: Slot };
 
 type ColorTheme = {
   appointment: string;
@@ -83,7 +85,7 @@ function colorThemeForId(id: string): ColorTheme {
   return theme;
 }
 
-function appointmentToEvent(appointment: Appointment): EventInput {
+function appointmentToEvent(appointment: WithId<Appointment>): EventInput {
   // Find the patient among the participants to use as title
   const patientParticipant = appointment.participant.find((p) => p.actor?.reference?.startsWith('Patient/'));
   const name = patientParticipant ? patientParticipant.actor?.display : 'No Patient';
@@ -136,7 +138,7 @@ function ScheduleSlotsLoader({ scheduleRef, range, onResult }: ScheduleSlotsLoad
 type ActorAppointmentsLoaderProps = {
   actorRef: string;
   range: Range;
-  onResult: (actorRef: string, appointments: Appointment[], loading: boolean) => void;
+  onResult: (actorRef: string, appointments: WithId<Appointment>[], loading: boolean) => void;
 };
 
 function ActorAppointmentsLoader({ actorRef, range, onResult }: ActorAppointmentsLoaderProps): null {
@@ -226,6 +228,8 @@ export function SchedulingPage(): JSX.Element | null {
   const [range, setRange] = useState<Range | undefined>(undefined);
   const [healthcareService, setHealthcareService] = useState<WithId<HealthcareService>>();
   const [bookingDrawerOpened, bookingDrawerHandlers] = useDisclosure(false);
+  const [appointmentDetailsOpened, appointmentDetailsHandlers] = useDisclosure(false);
+  const [appointmentDetails, setAppointmentDetails] = useState<WithId<Appointment> | undefined>(undefined);
 
   // Q: should this use `{ _include: 'Schedule:actor' }`?
   const [allSchedules, allSchedulesLoading, allSchedulesOutcome] = useSearchResources<'Schedule'>('Schedule', {
@@ -272,21 +276,24 @@ export function SchedulingPage(): JSX.Element | null {
   }, []);
 
   // Appointments are fetched per-actor via ActorAppointmentsLoader components rendered below.
-  const [appointmentsMap, setAppointmentsMap] = useState<Map<string, Appointment[]>>(new Map());
+  const [appointmentsMap, setAppointmentsMap] = useState<Map<string, WithId<Appointment>[]>>(new Map());
   const [loadingActorRefs, setLoadingActorRefs] = useState<Set<string>>(new Set());
 
-  const handleAppointmentResult = useCallback((actorRef: string, appointments: Appointment[], loading: boolean) => {
-    setAppointmentsMap((prev) => new Map(prev).set(actorRef, appointments));
-    setLoadingActorRefs((prev) => {
-      const next = new Set(prev);
-      if (loading) {
-        next.add(actorRef);
-      } else {
-        next.delete(actorRef);
-      }
-      return next;
-    });
-  }, []);
+  const handleAppointmentResult = useCallback(
+    (actorRef: string, appointments: WithId<Appointment>[], loading: boolean) => {
+      setAppointmentsMap((prev) => new Map(prev).set(actorRef, appointments));
+      setLoadingActorRefs((prev) => {
+        const next = new Set(prev);
+        if (loading) {
+          next.add(actorRef);
+        } else {
+          next.delete(actorRef);
+        }
+        return next;
+      });
+    },
+    []
+  );
 
   // Q: SchedulePage.tsx merged overlapping slots on a single calendar into a
   // single display slot; is that desirable in the multi-calendar view?
@@ -419,6 +426,18 @@ export function SchedulingPage(): JSX.Element | null {
     [bookingDrawerHandlers, actors]
   );
 
+  const handleEventClick = (info: EventClickInfo): void => {
+    const ext = info.event.extendedProps as ExtendedEvent;
+    if (ext.type === 'appointment') {
+      setAppointmentDetails(ext.appointment);
+      appointmentDetailsHandlers.open();
+    } else if (ext.type === 'slot') {
+      // Slot clicks intentionally ignored for now; no detail view yet
+    } else {
+      assertNever(ext);
+    }
+  };
+
   return (
     <>
       {range &&
@@ -479,6 +498,7 @@ export function SchedulingPage(): JSX.Element | null {
               colorScheme={colorScheme}
               eventInnerClass={classes.eventInner}
               eventTitleClass={classes.eventTitle}
+              eventClick={handleEventClick}
             />
           </Grid.Col>
           {healthcareService && (
@@ -526,6 +546,20 @@ export function SchedulingPage(): JSX.Element | null {
             onSuccess={handleBookSuccess}
             healthcareService={healthcareService}
           />
+        )}
+      </Drawer>
+      <Drawer
+        opened={appointmentDetailsOpened}
+        onClose={appointmentDetailsHandlers.close}
+        title={
+          <Text size="lg" fw={700}>
+            Appointment Details
+          </Text>
+        }
+        position="right"
+      >
+        {appointmentDetails && (
+          <AppointmentDetails appointment={appointmentDetails} onAppointmentUpdate={() => {}} onSlotUpdate={() => {}} />
         )}
       </Drawer>
     </>
