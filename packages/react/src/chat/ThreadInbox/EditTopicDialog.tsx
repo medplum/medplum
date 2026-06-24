@@ -68,6 +68,8 @@ export const EditTopicDialog = (props: EditTopicDialogProps): JSX.Element => {
       : Promise.resolve(undefined);
     const practitionerPromises = initialPractitioners.map((ref) => medplum.readReference(ref));
 
+    // Neither input rejects (patient read is caught above, practitioner reads use allSettled),
+    // so this Promise.all always resolves — no outer catch needed.
     Promise.all([patientPromise, Promise.allSettled(practitionerPromises)])
       .then(([patient, settledPractitioners]) => {
         if (cancelled) {
@@ -80,11 +82,7 @@ export const EditTopicDialog = (props: EditTopicDialogProps): JSX.Element => {
           practitioners: settledPractitioners.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : [])),
         });
       })
-      .catch(() => {
-        if (!cancelled) {
-          setResolved({ practitioners: [] });
-        }
-      });
+      .catch(() => undefined);
 
     return () => {
       cancelled = true;

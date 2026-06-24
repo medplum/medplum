@@ -46,21 +46,8 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
   );
 
   const handleSubmit = async (): Promise<void> => {
-    if (!patient) {
-      showNotification({
-        title: 'Error',
-        message: 'Please select a patient',
-        color: 'red',
-      });
-      return;
-    }
-
-    if (practitioners.length === 0) {
-      showNotification({
-        title: 'Error',
-        message: 'Please select at least one practitioner',
-        color: 'red',
-      });
+    // The Next button is disabled until both are set; this guard also narrows `patient`.
+    if (!patient || practitioners.length === 0) {
       return;
     }
 

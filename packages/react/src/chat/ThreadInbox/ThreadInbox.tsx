@@ -287,6 +287,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                       <Group gap="xs">
                         <Tooltip label="Message Settings" position="bottom" openDelay={500}>
                           <ActionIcon
+                            aria-label="Message settings"
                             variant="transparent"
                             radius="xl"
                             size={32}

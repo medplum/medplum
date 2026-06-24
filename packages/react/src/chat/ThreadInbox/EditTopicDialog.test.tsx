@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Notifications } from '@mantine/notifications';
 import type { Communication } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
+import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
@@ -104,5 +104,32 @@ describe('EditTopicDialog', () => {
     const saved = updateSpy.mock.calls[0][0] as Communication;
     // Saving migrates the sender practitioner into the recipient list.
     expect(saved.recipient).toContainEqual({ reference: 'Practitioner/123' });
+  });
+
+  test('shows an error notification when saving fails', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'updateResource').mockRejectedValue(new Error('Save failed'));
+    setup();
+
+    await waitFor(() => expect(screen.getByText('Practitioner')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(screen.getByText(/Save failed/i)).toBeInTheDocument());
+    expect(mockOnClose).not.toHaveBeenCalled();
+  });
+
+  test('omits the patient field when the patient reference fails to resolve', async () => {
+    // The patient read rejects, but practitioner reads still succeed — the form renders
+    // without the patient field rather than blanking entirely.
+    vi.spyOn(medplum, 'readReference').mockImplementation(async (ref) => {
+      if (ref.reference?.startsWith('Patient/')) {
+        throw new Error('not found');
+      }
+      return DrAliceSmith;
+    });
+    setup();
+
+    await waitFor(() => expect(screen.getByText('Practitioner')).toBeInTheDocument());
+    expect(screen.queryByText('Patient')).not.toBeInTheDocument();
   });
 });
