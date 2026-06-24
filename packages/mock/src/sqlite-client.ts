@@ -8,7 +8,7 @@ export type CreateSqliteMockClientOptions = Omit<MockClientOptions, 'mockFetchOv
 
 /**
  * Creates a MockClient backed by SqliteRepository for Node.js tests.
- * Not exported from the main @medplum/mock entry; use for Node.js tests only.
+ * Not exported from the main medplum/mock entry; use for Node.js tests only.
  * @param clientOptions - Optional mock client configuration.
  * @returns A MockClient instance backed by SQLite storage.
  */
