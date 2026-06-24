@@ -918,6 +918,89 @@ describe('App', () => {
     expect(channel2.onBecameQueueLeader).toHaveBeenCalledTimes(1);
   });
 
+  test('forEachChannelWorker runs every worker even when one throws, then rethrows aggregate error', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+
+    // Build HL7 channels (instanceof must pass) with a stubbed worker. The middle
+    // worker throws on onWebSocketDisconnect.
+    const boom = new Error('worker-2 failed onWebSocketDisconnect');
+    function makeHl7ChannelWithWorker(impl: () => void): { channel: AgentHl7Channel; onWebSocketDisconnect: any } {
+      const channel = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+      const onWebSocketDisconnect = vi.fn(impl);
+      (channel as any).worker = { onWebSocketDisconnect };
+      return { channel, onWebSocketDisconnect };
+    }
+    const worker1 = makeHl7ChannelWithWorker(() => undefined);
+    const worker2 = makeHl7ChannelWithWorker(() => {
+      throw boom;
+    });
+    const worker3 = makeHl7ChannelWithWorker(() => undefined);
+
+    // An HL7 channel with no worker is skipped (loop guards on `channel.worker`).
+    const channelWithoutWorker = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    (channelWithoutWorker as any).worker = undefined;
+    // A non-HL7 channel is skipped entirely, worker or not.
+    const nonHl7Channel = { worker: { onWebSocketDisconnect: vi.fn() } };
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', worker1.channel],
+      ['hl7-2', worker2.channel],
+      ['hl7-no-worker', channelWithoutWorker],
+      ['non-hl7', nonHl7Channel],
+      ['hl7-3', worker3.channel],
+    ]);
+
+    let thrown: unknown;
+    try {
+      (app as any).forEachChannelWorker((worker: any) => worker.onWebSocketDisconnect());
+    } catch (err) {
+      thrown = err;
+    }
+
+    // We reached every worker despite worker2 throwing in the middle.
+    expect(worker1.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
+    expect(worker2.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
+    expect(worker3.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
+    // The non-HL7 channel's worker is never touched.
+    expect(nonHl7Channel.worker.onWebSocketDisconnect).not.toHaveBeenCalled();
+
+    // And we threw at the end with the collected errors as the cause.
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).cause).toEqual([boom]);
+  });
+
+  test('forEachChannelWorker does not throw when every worker callback succeeds', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+
+    const channel1 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    const notify1 = vi.fn();
+    (channel1 as any).worker = { notify: notify1 };
+    const channel2 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    const notify2 = vi.fn();
+    (channel2 as any).worker = { notify: notify2 };
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', channel1],
+      ['hl7-2', channel2],
+    ]);
+
+    expect(() => (app as any).forEachChannelWorker((worker: any) => worker.notify())).not.toThrow();
+    expect(notify1).toHaveBeenCalledTimes(1);
+    expect(notify2).toHaveBeenCalledTimes(1);
+  });
+
   test('Reload config', async () => {
     // Create agent with an HL7 channel
     const state = {

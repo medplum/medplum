@@ -351,12 +351,17 @@ export class App {
       binaryType: 'nodebuffer',
     });
 
-    this.webSocket.addEventListener('error', () => {
+    this.webSocket.addEventListener('error', (event) => {
       if (!this.shutdown) {
-        // This event is only fired when WebSocket closes due to some kind of error
-        // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
-        // The error event seems to never contain an actual error though
-        this.log.error('WebSocket closed due to an error');
+        // This event fires when the WebSocket closes due to some kind of error
+        // (https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event), but it ALSO
+        // fires when one of our own event handlers throws synchronously: Node rethrows that
+        // exception out of the listener, and `ReconnectingWebSocket` surfaces it here. The raw
+        // `error_event` from the underlying socket rarely carries a real error, but
+        // `ReconnectingWebSocket` normalizes the event so `error` is always a real `Error` — so
+        // log it rather than discarding it.
+        const error = event.error;
+        this.log.error('WebSocket closed due to an error', error);
       }
     });
 
@@ -1251,13 +1256,25 @@ export class App {
 
   /**
    * Invokes `fn` for every channel that currently has a durable-queue worker running.
+   *
+   * Collects any failures so one worker throwing can't stop `fn` from reaching the
+   * rest, then surfaces them together as an aggregate error with the collected
+   * errors as its `cause`.
    * @param fn - Callback applied to each running {@link ChannelQueueWorker}.
    */
   private forEachChannelWorker(fn: (worker: ChannelQueueWorker) => void): void {
+    const errors: Error[] = [];
     for (const channel of this.channels.values()) {
       if (channel instanceof AgentHl7Channel && channel.worker) {
-        fn(channel.worker);
+        try {
+          fn(channel.worker);
+        } catch (err) {
+          errors.push(err as Error);
+        }
       }
+    }
+    if (errors.length > 0) {
+      throw new Error(`Failed to run channel worker callback for ${errors.length} channel(s)`, { cause: errors });
     }
   }
 
