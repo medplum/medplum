@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { describe, expect, test, vi } from 'vitest';
-import { render, screen, userEvent } from '../test-utils/render';
+import { render, screen, userEvent, waitFor } from '../test-utils/render';
 import type { Range } from '../types/scheduling';
 import { Calendar } from './Calendar';
 
@@ -260,7 +260,7 @@ describe('Calendar', () => {
       expect(screen.getByText(/John Doe/)).toBeInTheDocument();
 
       await userEvent.click(screen.getByText(/John Doe/));
-      expect(onSelectAppointment).toHaveBeenCalledWith(appointment);
+      await waitFor(() => expect(onSelectAppointment).toHaveBeenCalledWith(appointment));
     });
 
     test('renders multiple appointments', async () => {
@@ -301,7 +301,7 @@ describe('Calendar', () => {
 
       expect(screen.getByText('Available')).toBeInTheDocument();
       await userEvent.click(screen.getByText('Available'));
-      expect(onSelectSlot).toHaveBeenCalledWith(slot);
+      await waitFor(() => expect(onSelectSlot).toHaveBeenCalledWith(slot));
       expect(onSelectAppointment).not.toHaveBeenCalled();
       expect(onSelectInterval).not.toHaveBeenCalled();
     });
@@ -332,7 +332,7 @@ describe('Calendar', () => {
       setup({ slots: [slot], onSelectSlot });
 
       await userEvent.click(screen.getByText('Available'));
-      expect(onSelectSlot).toHaveBeenCalledWith(slot);
+      await waitFor(() => expect(onSelectSlot).toHaveBeenCalledWith(slot));
     });
 
     test('filters out entered-in-error slots', async () => {
