@@ -714,11 +714,23 @@ export class App {
           `${recovered.failed} failed (ambiguous, in-flight).`
       );
     }
-    // Tell every HL7 channel to start its worker now that we're leader.
+    // Tell every HL7 channel to start its worker now that we're leader. Collect
+    // any failures so one bad channel can't stop the others from starting, then
+    // surface them together.
+    const errors: Error[] = [];
     for (const channel of this.channels.values()) {
       if (channel instanceof AgentHl7Channel) {
-        channel.onBecameQueueLeader();
+        try {
+          channel.onBecameQueueLeader();
+        } catch (err) {
+          errors.push(err as Error);
+        }
       }
+    }
+    if (errors.length > 0) {
+      throw new Error(`Failed to start ${errors.length} HL7 channel worker(s) after acquiring queue lease`, {
+        cause: errors,
+      });
     }
   }
 

@@ -38,7 +38,8 @@ import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
 import { AgentByteStreamChannel } from './bytestream';
 import type * as AgentConstants from './constants';
-import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
+import { AgentHl7Channel } from './hl7';
+import type { AgentHl7ChannelConnection } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
 import { createEndpointWithRandomPort, getFreePort, waitFor } from './test-utils';
@@ -828,6 +829,93 @@ describe('App', () => {
     await app.stop();
     mockServer.stop();
     rmSync(dir, { recursive: true, force: true });
+  });
+
+  test('onBecameQueueLeader starts every HL7 channel worker even when one throws, then rethrows', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+
+    // Stub the durable queue so onBecameQueueLeader gets past the early return and
+    // recovery sweep without touching a real DB.
+    (app as any).durableQueue = {
+      recoverOnStartup: vi.fn(() => ({ requeued: 0, failed: 0 })),
+      isLeader: () => true,
+    };
+
+    // Three HL7 channels where the middle one throws. instanceof must pass, so we
+    // build them off the real prototype and only stub onBecameQueueLeader.
+    const boom = new Error('channel-2 failed to start its worker');
+    function makeHl7Channel(impl: () => void): AgentHl7Channel {
+      const channel = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+      (channel as any).onBecameQueueLeader = vi.fn(impl);
+      return channel;
+    }
+    const channel1 = makeHl7Channel(() => undefined);
+    const channel2 = makeHl7Channel(() => {
+      throw boom;
+    });
+    const channel3 = makeHl7Channel(() => undefined);
+
+    // A non-HL7 channel must be skipped entirely.
+    const nonHl7Channel = { onBecameQueueLeader: vi.fn() };
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', channel1],
+      ['hl7-2', channel2],
+      ['non-hl7', nonHl7Channel],
+      ['hl7-3', channel3],
+    ]);
+
+    let thrown: unknown;
+    try {
+      (app as any).onBecameQueueLeader();
+    } catch (err) {
+      thrown = err;
+    }
+
+    // We made it through the entire array despite channel2 throwing in the middle.
+    expect(channel1.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    expect(channel2.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    expect(channel3.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    // The non-HL7 channel is never asked to start a worker.
+    expect(nonHl7Channel.onBecameQueueLeader).not.toHaveBeenCalled();
+
+    // And we threw at the end, carrying the collected errors as the cause.
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).cause).toEqual([boom]);
+  });
+
+  test('onBecameQueueLeader does not throw when all HL7 channel workers start cleanly', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    (app as any).durableQueue = {
+      recoverOnStartup: vi.fn(() => ({ requeued: 0, failed: 0 })),
+      isLeader: () => true,
+    };
+
+    const channel1 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    (channel1 as any).onBecameQueueLeader = vi.fn();
+    const channel2 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    (channel2 as any).onBecameQueueLeader = vi.fn();
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', channel1],
+      ['hl7-2', channel2],
+    ]);
+
+    expect(() => (app as any).onBecameQueueLeader()).not.toThrow();
+    expect(channel1.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    expect(channel2.onBecameQueueLeader).toHaveBeenCalledTimes(1);
   });
 
   test('Reload config', async () => {
