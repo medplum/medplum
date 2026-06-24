@@ -6,9 +6,6 @@ import { render, screen, userEvent } from '../test-utils/render';
 import type { Range } from '../types/scheduling';
 import { Calendar } from './Calendar';
 
-// Mock document.elementFromPoint for react-big-calendar Selection
-document.elementFromPoint = vi.fn(() => null);
-
 describe('Calendar', () => {
   // Use today's date to ensure appointments show in visible range
   const now = new Date();

@@ -9,7 +9,7 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { Button, Group, SegmentedControl, Title, useMantineColorScheme } from '@mantine/core';
+import { Button, Group, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
 import { EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
@@ -32,14 +32,14 @@ function appointmentsToEvents(appointments: Appointment[]): EventInput[] {
         ? ` (${appointment.status})`
         : '';
 
-      const name = patientParticipant ? patientParticipant.actor?.display : 'No Patient';
+      const name = patientParticipant?.actor?.display ?? 'No Patient';
 
       return {
         id: appointment.id,
         title: `${name} ${status}`,
         start: appointment.start,
         end: appointment.end,
-        extendedProps: { type: 'appointment' as const, appointment },
+        extendedProps: { type: 'appointment', appointment } satisfies ExtendedEvent,
         interactive: true,
         className: cx(classes.appointment, classes[appointment.status]),
       };
@@ -68,7 +68,7 @@ export function Calendar(props: {
   onRangeChange?: (range: Range) => void;
   className?: string;
 }): JSX.Element {
-  const { colorScheme } = useMantineColorScheme();
+  const colorScheme = useComputedColorScheme();
   const controller = useCalendarController();
   const { onSelectAppointment, onSelectSlot } = props;
 
@@ -163,7 +163,6 @@ export function Calendar(props: {
         slotMinHeight={38}
         eventClass={(evt) =>
           cx(classes.event, {
-            [classes.event]: true,
             [classes.interactiveEvent]: evt.isInteractive,
             [classes.shortEvent]: evt.isShort,
           })
