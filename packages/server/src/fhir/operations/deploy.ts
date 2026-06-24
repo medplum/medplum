@@ -96,15 +96,15 @@ export async function deployBot(
 
   const result: DeployResult = {};
   if (!bot.runAsUser) {
-    const project = bot.meta?.project;
-    if (!project) {
+    const botProject = bot.meta?.project;
+    if (!botProject) {
       result.warning = MISSING_PROJECT_WARNING;
       getLogger().warn(MISSING_PROJECT_WARNING, { botId: bot.id });
     } else {
-      const membership = await findProjectMembership(project, createReference(bot));
+      const membership = await findProjectMembership(botProject, createReference(bot));
       if (!membership) {
         result.warning = MISSING_MEMBERSHIP_WARNING;
-        getLogger().warn(MISSING_MEMBERSHIP_WARNING, { botId: bot.id, project });
+        getLogger().warn(MISSING_MEMBERSHIP_WARNING, { botId: bot.id, botProject });
       }
     }
   }
