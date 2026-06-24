@@ -40,17 +40,17 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const filename = req.body.filename ?? 'index.js';
 
   try {
-    const { warning } = await deployBot(ctx.repo, bot, code, filename);
-    if (warning) {
+    const { warnings } = await deployBot(ctx.repo, bot, code, filename);
+    if (warnings.length > 0) {
       const outcome: OperationOutcome = {
         ...allOk,
         issue: [
           ...allOk.issue,
-          {
-            severity: 'warning',
-            code: 'business-rule',
-            details: { text: warning },
-          },
+          ...warnings.map((text) => ({
+            severity: 'warning' as const,
+            code: 'business-rule' as const,
+            details: { text },
+          })),
         ],
       };
       return [outcome];
@@ -68,8 +68,8 @@ const MISSING_MEMBERSHIP_WARNING = 'Could not find ProjectMembership for Bot';
  * The result of deploying a bot.
  */
 export type DeployResult = {
-  /** A warning message surfaced to the caller, if any (e.g. a missing ProjectMembership). */
-  warning?: string;
+  /** Warnings surfaced to the caller, if any (e.g. a missing ProjectMembership). */
+  warnings: string[];
 };
 
 /**
@@ -94,16 +94,16 @@ export async function deployBot(
     throw new OperationOutcomeError(badRequest('Bots not enabled'));
   }
 
-  const result: DeployResult = {};
+  const result: DeployResult = { warnings: [] };
   if (!bot.runAsUser) {
     const botProject = bot.meta?.project;
     if (!botProject) {
-      result.warning = MISSING_PROJECT_WARNING;
+      result.warnings.push(MISSING_PROJECT_WARNING);
       getLogger().warn(MISSING_PROJECT_WARNING, { botId: bot.id });
     } else {
       const membership = await findProjectMembership(botProject, createReference(bot));
       if (!membership) {
-        result.warning = MISSING_MEMBERSHIP_WARNING;
+        result.warnings.push(MISSING_MEMBERSHIP_WARNING);
         getLogger().warn(MISSING_MEMBERSHIP_WARNING, { botId: bot.id, botProject });
       }
     }
