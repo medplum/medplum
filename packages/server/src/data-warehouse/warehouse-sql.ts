@@ -133,7 +133,7 @@ export function buildInsertIntoSelectQuery(
  * using the DuckDB's JSON functionality.  This minimizes the load on the source database.
  *
  * @param sourceHistoryTable - Postgres table identifier exactly as stored (e.g. `Patient_History`).
- * @param sourcePredicate - Optional SQL boolean expression (joined with `AND` after non-empty content filter).
+ * @param sourcePredicate - Optional SQL boolean expression applied in the inner `WHERE` clause.
  * @returns `SELECT` with a subquery and outer `json_extract_string` projection.
  */
 export function buildSelectFromHistoryTableQuery(
@@ -147,9 +147,7 @@ export function buildSelectFromHistoryTableQuery(
     .column('id')
     .column(col('versionId', 'version_id'))
     .column('content')
-    .column(col('lastUpdated', 'last_updated'))
-    .where('content', '!=', null)
-    .where('content', '!=', '');
+    .column(col('lastUpdated', 'last_updated'));
   if (sourcePredicate) {
     inner.whereExpr(sourcePredicate);
   }
@@ -174,7 +172,7 @@ export function buildProjectedSelectFromHistoryTable(
 
 export function buildCountFromHistoryTableQuery(sourceHistoryTable: string, sourcePredicate?: Expression): SqlBuilder {
   const table = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
-  const query = new SelectQuery(table).raw('COUNT(*) AS count').where('content', '!=', null).where('content', '!=', '');
+  const query = new SelectQuery(table).raw('COUNT(*) AS count');
   if (sourcePredicate) {
     query.whereExpr(sourcePredicate);
   }
