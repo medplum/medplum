@@ -58,7 +58,7 @@ describe('CLI Project', () => {
             accessToken: 'abc',
             refreshToken: 'xyz',
             profile: {
-              reference: 'Practitioner/123',
+              reference: 'Practitioner/124',
               display: 'Alice Smith',
             },
             project: {
@@ -81,7 +81,7 @@ describe('CLI Project', () => {
           accessToken: 'abc',
           refreshToken: 'xyz',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
             display: 'Alice Smith',
           },
           project: {
@@ -104,7 +104,7 @@ describe('CLI Project', () => {
             accessToken: 'abc',
             refreshToken: 'xyz',
             profile: {
-              reference: 'Practitioner/123',
+              reference: 'Practitioner/124',
               display: 'Alice Smith',
             },
             project: {
@@ -140,7 +140,7 @@ describe('CLI Project', () => {
             accessToken: 'abc',
             refreshToken: 'xyz',
             profile: {
-              reference: 'Practitioner/123',
+              reference: 'Practitioner/124',
               display: 'Alice Smith',
             },
             project: {
@@ -205,7 +205,7 @@ describe('CLI Project', () => {
           accessToken: 'abc',
           refreshToken: 'xyz',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
             display: 'Alice Smith',
           },
           project: {
@@ -242,7 +242,7 @@ describe('CLI Project', () => {
           accessToken: 'abc',
           refreshToken: 'xyz',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
             display: 'Alice Smith',
           },
           project: {
