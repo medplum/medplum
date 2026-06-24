@@ -1,5 +1,6 @@
-/* global process */
-/* global console */
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+/* global console, process */
 
 import esbuild from 'esbuild';
 import { writeFileSync } from 'fs';

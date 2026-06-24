@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import type {
   DocSearchHit,
   DocSearchModalProps,
@@ -23,7 +25,8 @@ import Translate from '@docusaurus/Translate';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import { IconSearch } from '@tabler/icons-react';
 import translations from '@theme/SearchTranslations';
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState  } from 'react';
+import type {ReactNode} from 'react';
 import { createPortal } from 'react-dom';
 import './styles.css';
 
@@ -48,7 +51,7 @@ interface DocSearchV4Props extends DocSearchProps {
 
 let DocSearchModal: typeof DocSearchModalType | null = null;
 
-function importDocSearchModalIfNeeded() {
+function importDocSearchModalIfNeeded(): Promise<void> {
   if (DocSearchModal) {
     return Promise.resolve();
   }
@@ -59,7 +62,9 @@ function importDocSearchModalIfNeeded() {
   );
 }
 
-function useNavigator({ externalUrlRegex }: Pick<DocSearchProps, 'externalUrlRegex'>) {
+function useNavigator({
+  externalUrlRegex,
+}: Pick<DocSearchProps, 'externalUrlRegex'>): DocSearchModalProps['navigator'] {
   const history = useHistory();
   const [navigator] = useState<DocSearchModalProps['navigator']>(() => {
     return {
@@ -90,7 +95,9 @@ function useTransformSearchClient(): DocSearchModalProps['transformSearchClient'
   );
 }
 
-function useTransformItems(props: Pick<DocSearchProps, 'transformItems'>) {
+function useTransformItems(
+  props: Pick<DocSearchProps, 'transformItems'>
+): DocSearchModalProps['transformItems'] {
   const processSearchResultUrl = useSearchResultUrlProcessor();
   const [transformItems] = useState<DocSearchModalProps['transformItems']>(() => {
     return (items: DocSearchHit[]) =>
@@ -118,7 +125,13 @@ function useResultsFooterComponent({
   );
 }
 
-function Hit({ hit, children }: { hit: InternalDocSearchHit | StoredDocSearchHit; children: ReactNode }) {
+function Hit({
+  hit,
+  children,
+}: {
+  hit: InternalDocSearchHit | StoredDocSearchHit;
+  children: ReactNode;
+}): ReactNode {
   return <Link to={hit.url}>{children}</Link>;
 }
 
@@ -127,7 +140,7 @@ type ResultsFooterProps = {
   onClose: () => void;
 };
 
-function ResultsFooter({ state, onClose }: ResultsFooterProps) {
+function ResultsFooter({ state, onClose }: ResultsFooterProps): ReactNode {
   const createSearchLink = useSearchLinkCreator();
 
   return (
@@ -157,7 +170,7 @@ function useSearchParameters({ contextualSearch, ...props }: DocSearchProps): Do
   };
 }
 
-function DocSearch({ externalUrlRegex, ...props }: DocSearchV4Props) {
+function DocSearch({ externalUrlRegex, ...props }: DocSearchV4Props): ReactNode {
   const navigator = useNavigator({ externalUrlRegex });
   const searchParameters = useSearchParameters({ ...props });
   const transformItems = useTransformItems(props);
@@ -180,7 +193,7 @@ function DocSearch({ externalUrlRegex, ...props }: DocSearchV4Props) {
 
   const openModal = useCallback(() => {
     prepareSearchContainer();
-    importDocSearchModalIfNeeded().then(() => setIsOpen(true));
+    void importDocSearchModalIfNeeded().then(() => setIsOpen(true));
   }, [prepareSearchContainer]);
 
   const closeModal = useCallback(() => {
@@ -218,7 +231,7 @@ function DocSearch({ externalUrlRegex, ...props }: DocSearchV4Props) {
     // TODO Docusaurus v4: cleanup after we drop support for DocSearch v3
     isAskAiActive: boolean;
     onAskAiToggle: (askAiToggle: boolean) => void;
-  } as UseDocSearchKeyboardEventsProps);
+  });
 
   return (
     <>

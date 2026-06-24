@@ -98,7 +98,7 @@ if (import.meta.main) {
     console.log('Usage: node markdown-to-mdx.mjs <sourceDir> <targetDir>');
     process.exit(1);
   }
-  const [_node, _script, source, target] = process.argv;
+  const [source, target] = process.argv.slice(2);
   try {
     copyDir(source, target);
   } catch (error) {

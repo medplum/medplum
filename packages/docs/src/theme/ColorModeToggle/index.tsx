@@ -1,15 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import type { ColorMode } from '@docusaurus/theme-common';
 import { translate } from '@docusaurus/Translate';
 import useIsBrowser from '@docusaurus/useIsBrowser';
 import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react';
 import type { Props } from '@theme/ColorModeToggle';
 import clsx from 'clsx';
-import React, { type ReactNode } from 'react';
+import React from 'react';
+import type {ReactNode} from 'react';
 
 import styles from './styles.module.css';
 
 // The order of color modes is defined here, and can be customized with swizzle
-function getNextColorMode(colorMode: ColorMode | null, respectPrefersColorScheme: boolean) {
+function getNextColorMode(colorMode: ColorMode | null, respectPrefersColorScheme: boolean): ColorMode | null {
   // 2-value transition
   if (!respectPrefersColorScheme) {
     return colorMode === 'dark' ? 'light' : 'dark';
@@ -53,7 +56,7 @@ function getColorModeLabel(colorMode: ColorMode | null): string {
   }
 }
 
-function getColorModeAriaLabel(colorMode: ColorMode | null) {
+function getColorModeAriaLabel(colorMode: ColorMode | null): string {
   return translate(
     {
       message: 'Switch between dark and light mode (currently {mode})',

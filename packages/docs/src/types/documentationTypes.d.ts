@@ -1,4 +1,6 @@
-import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
 
 type DocumentationLocation = 'resource' | 'datatype' | 'medplum';
 

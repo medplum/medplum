@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import Translate from '@docusaurus/Translate';
 import Heading from '@theme/Heading';
 import type { Props } from '@theme/NotFound/Content';
 import { clsx } from 'clsx';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect  } from 'react';
+import type {ReactNode} from 'react';
 
 export default function NotFoundContent({ className }: Props): ReactNode {
   useEffect(() => {

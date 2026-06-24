@@ -313,13 +313,19 @@ export const medplumEslintConfig = [
     },
   },
   /**
-   * vite.config.ts and vitest.config.ts are often outside package tsconfig include (e.g. rootDir src);
+   * vite.config and vitest.config files are often outside package tsconfig include (e.g. rootDir src);
    * skip type-aware parsing.
    *
-   * we don't need type checking for vite.config.ts or vitest.config.ts files
+   * we don't need type checking for vite.config or vitest.config files
    */
   {
-    files: ['**/vite.config.ts', '**/vitest.config.ts'],
+    files: ['eslint.config.mjs', '**/vite.config.ts', '**/vitest.config.ts', '**/vite.config.js', '**/vitest.config.js'],
+    rules: {
+      'import/no-unresolved': 'off',
+    },
+  },
+  {
+    files: ['**/vite.config.ts', '**/vitest.config.ts', '**/vite.config.js', '**/vitest.config.js'],
     extends: [tseslint.configs.disableTypeChecked],
   },
 ];

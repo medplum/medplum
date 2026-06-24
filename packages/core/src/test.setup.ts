@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type * as SubscriptionConstants from './subscriptions/constants';
 import { vi } from 'vitest';
 import { TextDecoder, TextEncoder } from 'node:util';
 import { MemoryStorage } from './storage';
 
 // Shorten GC and token-refresh intervals for subscription tests.
 vi.mock('./subscriptions/constants', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('./subscriptions/constants')>();
+  const mod = await importOriginal<typeof SubscriptionConstants>();
   return {
     ...mod,
     WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,

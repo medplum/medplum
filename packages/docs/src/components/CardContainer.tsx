@@ -1,4 +1,6 @@
-import { JSX, ReactNode } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { JSX, ReactNode } from 'react';
 import styles from './CardContainer.module.css';
 
 export interface CardContainerProps {

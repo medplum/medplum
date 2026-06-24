@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /* global console, process */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
@@ -57,7 +56,7 @@ const CACHE_CONTROL_IMMUTABLE = 'public, max-age=31536000, immutable';
 const CACHE_CONTROL_NO_CACHE = 'no-cache';
 
 async function main() {
-  const [_node, _script, sourcePath, destPath] = process.argv;
+  const [sourcePath, destPath] = process.argv.slice(2);
 
   if (!sourcePath) {
     console.error('Error: Source path is required as the first argument.');

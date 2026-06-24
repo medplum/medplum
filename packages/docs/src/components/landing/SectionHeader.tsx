@@ -1,4 +1,6 @@
-import { CSSProperties, JSX, ReactNode } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CSSProperties, JSX, ReactNode } from 'react';
 import styles from './SectionHeader.module.css';
 
 export interface SectionHeaderProps {

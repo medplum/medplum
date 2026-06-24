@@ -1,4 +1,7 @@
-import { JSX, useCallback, useState } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { JSX} from 'react';
+import { useCallback, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import './animations.css';
 
