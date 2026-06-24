@@ -158,6 +158,16 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     }
   }, [error]);
 
+  // Auto-select the first thread when none is selected (matching the Tasks/Faxes boards).
+  // Uses replace so the implicit selection doesn't add a back-button entry that would
+  // bounce straight back into this effect.
+  useEffect(() => {
+    if (loading || threadId !== undefined || threadMessages.length === 0) {
+      return;
+    }
+    navigate(getThreadUri(threadMessages[0][0]), { replace: true });
+  }, [loading, threadId, threadMessages, navigate, getThreadUri]);
+
   const handleTopicStatusChangeWithErrorHandling = async (newStatus: Communication['status']): Promise<void> => {
     handleThreadStatusChange(newStatus);
     try {
