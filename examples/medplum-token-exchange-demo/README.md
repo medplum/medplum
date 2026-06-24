@@ -34,7 +34,7 @@ You configure the external IdP in **one** of two places depending on your deploy
 ### Self-hosters: server config (`externalAuthProviders`)
 
 Add an `externalAuthProviders` entry to your Medplum server config. The `clientId` is the selector
-you pass to this script as `MEDPLUM_CLIENT_ID`. If you omit the top-level `clientId`, the server
+you pass to this script as `MEDPLUM_AUTH_PROVIDER_ID`. If you omit the top-level `clientId`, the server
 falls back to `identityProvider.clientId`.
 
 ```json
@@ -46,9 +46,7 @@ falls back to `identityProvider.clientId`.
       "identityProvider": {
         "authorizeUrl": "https://your-idp.example.com/oauth2/authorize",
         "tokenUrl": "https://your-idp.example.com/oauth2/token",
-        "userInfoUrl": "https://your-idp.example.com/oauth2/userinfo",
-        "clientId": "your-idp-client-id",
-        "clientSecret": "your-idp-client-secret"
+        "userInfoUrl": "https://your-idp.example.com/oauth2/userinfo"
       }
     }
   ]

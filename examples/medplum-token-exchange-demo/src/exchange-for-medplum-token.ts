@@ -17,9 +17,9 @@ interface ScriptConfig {
 }
 
 function getConfig(): ScriptConfig {
-  const clientId = process.env.MEDPLUM_CLIENT_ID;
+  const clientId = process.env.MEDPLUM_AUTH_PROVIDER_ID;
   if (!clientId) {
-    throw new Error('Missing MEDPLUM_CLIENT_ID. See README.md for setup instructions.');
+    throw new Error('Missing MEDPLUM_AUTH_PROVIDER_ID. See README.md for setup instructions.');
   }
 
   return {
