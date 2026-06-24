@@ -1375,8 +1375,8 @@ describe('MFA', () => {
       return getCodeFromEmail();
     }
 
-    const factors: Array<'totp' | 'email'> = ['email', 'totp'];
-    const allowedConfigs: Array<{ label: string; value?: string }> = [
+    const factors: ('totp' | 'email')[] = ['email', 'totp'];
+    const allowedConfigs: { label: string; value?: string }[] = [
       { label: 'allowedMfaMethods not configured' },
       { label: 'allowedMfaMethods configured with totp,email', value: 'totp,email' },
     ];
