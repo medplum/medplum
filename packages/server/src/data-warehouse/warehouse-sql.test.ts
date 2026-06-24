@@ -19,7 +19,7 @@ describe('warehouse SQL query builders', () => {
     sql.appendExpression(query);
 
     expect(sql.toString()).toBe(
-      `SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", json_extract_string("src"."content"::JSON, '$.meta.project') AS project_id FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated" FROM "pg_db"."Patient_History" WHERE ("lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z')) AS "src" ORDER BY "src"."last_updated"`
+      `SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", json_extract_string("src"."content"::JSON, '$.meta.project') AS project_id FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated" FROM "pg_db"."Patient_History" WHERE "lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z') AS "src" ORDER BY "src"."last_updated"`
     );
     expect(sql.getValues()).toStrictEqual([]);
   });
