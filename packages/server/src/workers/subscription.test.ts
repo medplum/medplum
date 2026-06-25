@@ -55,7 +55,13 @@ import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import type { SubscriptionJobData } from './subscription';
-import { addSubscriptionJobs, execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
+import {
+  addSubscriptionJobs,
+  execSubscriptionJob,
+  getSubscriptionQueue,
+  initSubscriptionWorker,
+  skipRestHookAccessPolicySystemSettingName,
+} from './subscription';
 import {
   clearSubscriptionFailures,
   getSubscriptionAutoDisableTriggers,
@@ -1300,16 +1306,17 @@ describe('Subscription Worker', () => {
 
   test('AuditEvent has Subscription account details', () =>
     withTestContext(async () => {
-      const project = (await createTestProject()).project.id;
+      // Create the Subscription as a project-admin test user (admin is required to set meta.account)
+      // rather than the system user, so the author has a ProjectMembership and AccessPolicy.
+      const { repo: testRepo } = await createTestProject({ withRepo: true, membership: { admin: true } });
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
 
-      const subscription = await systemRepo.createResource<Subscription>({
+      const subscription = await testRepo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         meta: {
-          project,
           account,
         },
         status: 'active',
@@ -1321,10 +1328,9 @@ describe('Subscription Worker', () => {
       });
       expect(subscription).toBeDefined();
 
-      const patient = await systemRepo.createResource<Patient>({
+      const patient = await testRepo.createResource<Patient>({
         resourceType: 'Patient',
         meta: {
-          project,
           account,
         },
         name: [{ given: ['Alice'], family: 'Smith' }],
@@ -1356,16 +1362,17 @@ describe('Subscription Worker', () => {
 
   test('AuditEvent outcome from custom codes', () =>
     withTestContext(async () => {
-      const project = (await createTestProject()).project.id;
+      // Create the Subscription as a project-admin test user (admin is required to set meta.account)
+      // rather than the system user, so the author has a ProjectMembership and AccessPolicy.
+      const { repo: testRepo } = await createTestProject({ withRepo: true, membership: { admin: true } });
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
 
-      const subscription = await systemRepo.createResource<Subscription>({
+      const subscription = await testRepo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         meta: {
-          project,
           account,
         },
         status: 'active',
@@ -1383,10 +1390,9 @@ describe('Subscription Worker', () => {
       });
       expect(subscription).toBeDefined();
 
-      const patient = await systemRepo.createResource<Patient>({
+      const patient = await testRepo.createResource<Patient>({
         resourceType: 'Patient',
         meta: {
-          project,
           account,
         },
         name: [{ given: ['Alice'], family: 'Smith' }],
@@ -1417,14 +1423,13 @@ describe('Subscription Worker', () => {
 
   test('Subscription AuditEvent destination - default behavior creates resource', () =>
     withTestContext(async () => {
-      const project = (await createTestProject()).project.id;
+      // Create the Subscription as a test user (not the system user) so the author has a
+      // ProjectMembership and AccessPolicy that grant read access to the triggering resource.
+      const { repo: testRepo } = await createTestProject({ withRepo: true });
 
-      const subscription = await systemRepo.createResource<Subscription>({
+      const subscription = await testRepo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
-        meta: {
-          project,
-        },
         status: 'active',
         criteria: 'Patient',
         channel: {
@@ -1433,11 +1438,8 @@ describe('Subscription Worker', () => {
         },
       });
 
-      const patient = await systemRepo.createResource<Patient>({
+      const patient = await testRepo.createResource<Patient>({
         resourceType: 'Patient',
-        meta: {
-          project,
-        },
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
@@ -1477,14 +1479,13 @@ describe('Subscription Worker', () => {
 
     test('log only', () =>
       withTestContext(async () => {
-        const project = (await createTestProject()).project.id;
+        // Create the Subscription as a test user (not the system user) so the author has a
+        // ProjectMembership and AccessPolicy that grant read access to the triggering resource.
+        const { repo: testRepo } = await createTestProject({ withRepo: true });
 
-        const subscription = await systemRepo.createResource<Subscription>({
+        const subscription = await testRepo.createResource<Subscription>({
           resourceType: 'Subscription',
           reason: 'test',
-          meta: {
-            project,
-          },
           status: 'active',
           criteria: 'Patient',
           channel: {
@@ -1499,11 +1500,8 @@ describe('Subscription Worker', () => {
           ],
         });
 
-        const patient = await systemRepo.createResource<Patient>({
+        const patient = await testRepo.createResource<Patient>({
           resourceType: 'Patient',
-          meta: {
-            project,
-          },
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
@@ -1540,14 +1538,13 @@ describe('Subscription Worker', () => {
 
     test('resource and log', () =>
       withTestContext(async () => {
-        const project = (await createTestProject()).project.id;
+        // Create the Subscription as a test user (not the system user) so the author has a
+        // ProjectMembership and AccessPolicy that grant read access to the triggering resource.
+        const { repo: testRepo } = await createTestProject({ withRepo: true });
 
-        const subscription = await systemRepo.createResource<Subscription>({
+        const subscription = await testRepo.createResource<Subscription>({
           resourceType: 'Subscription',
           reason: 'test',
-          meta: {
-            project,
-          },
           status: 'active',
           criteria: 'Patient',
           channel: {
@@ -1566,11 +1563,8 @@ describe('Subscription Worker', () => {
           ],
         });
 
-        const patient = await systemRepo.createResource<Patient>({
+        const patient = await testRepo.createResource<Patient>({
           resourceType: 'Patient',
-          meta: {
-            project,
-          },
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
@@ -1795,16 +1789,13 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
+      (fetch as unknown as jest.Mock).mockClear();
       (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
-      await findAndExecSubscriptionJob(patient2, 'update', subscription);
-      expect(fetch).toHaveBeenCalledWith(
-        url,
-        expect.objectContaining({
-          method: 'POST',
-          body: stringify(patient2),
-        })
-      );
+      // An unexpected throw inside satisfiesAccessPolicy() must be caught (no crash) and treated as
+      // not satisfied (fail-closed): the rest-hook is not delivered and the error is logged.
+      await expect(findAndExecSubscriptionJob(patient2, 'update', subscription)).rejects.toThrow('Job not found');
+      expect(fetch).not.toHaveBeenCalled();
 
       expect(writeSpy).toHaveBeenCalledWith(
         expect.stringMatching(/"level":"WARN".*Error occurred while checking access policy/)
@@ -1814,16 +1805,15 @@ describe('Subscription Worker', () => {
       writeSpy.mockRestore();
     }));
 
-  // TODO: Remove this test when enforcing AccessPolicy will not break things
-  test('Subscription -- Rest Hook Sub does not meet AccessPolicy', () =>
+  test('Subscription -- Rest Hook Sub that does not meet AccessPolicy is not delivered', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
       const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
       const url = 'https://example.com/subscription';
 
-      // Create an access policy in different project
-      // This should trigger an error when the subscription is executed
+      // Create an access policy that is deleted before the subscription fires.
+      // This triggers an error inside satisfiesAccessPolicy() -> not satisfied.
       const accessPolicy = await repo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
         resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
@@ -1833,7 +1823,7 @@ describe('Subscription Worker', () => {
         withClient: true,
         withRepo: true,
         project: {
-          name: 'AccessPolicy Not Met but Should Succeed Project',
+          name: 'AccessPolicy Not Met -- Enforced Project',
           features: [],
         },
         membership: {
@@ -1861,15 +1851,73 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      // Clear the queue
-
       await systemRepo.deleteResource('AccessPolicy', accessPolicy.id);
 
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
+      (fetch as unknown as jest.Mock).mockClear();
       (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
+      // The rest-hook must NOT fire -- the author's AccessPolicy was not satisfied.
+      await expect(findAndExecSubscriptionJob(patient2, 'update', subscription)).rejects.toThrow('Job not found');
+      expect(fetch).not.toHaveBeenCalled();
+
+      expect(writeSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/"level":"WARN".*Error occurred while checking access policy/)
+      );
+
+      globalLogger.level = LogLevel.NONE;
+      writeSpy.mockRestore();
+    }));
+
+  test('Subscription -- skipRestHookAccessPolicyCheck systemSetting restores legacy delivery', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      // Same denied-access scenario as above, but the project opts out of enforcement.
+      const accessPolicy = await repo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
+      });
+
+      const { repo: apTestRepo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: {
+          name: 'AccessPolicy Not Met -- Opt-out Project',
+          features: [],
+          systemSetting: [{ name: skipRestHookAccessPolicySystemSettingName, valueBoolean: true }],
+        },
+        membership: {
+          accessPolicy: createReference(accessPolicy),
+        },
+      });
+
+      const subscription = await apTestRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+
+      const patient = await apTestRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await systemRepo.deleteResource('AccessPolicy', accessPolicy.id);
+
+      const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
+
+      (fetch as unknown as jest.Mock).mockClear();
+      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+      // With the opt-out enabled, the legacy behavior is restored and the rest-hook fires.
       await findAndExecSubscriptionJob(patient2, 'update', subscription);
       expect(fetch).toHaveBeenCalledWith(
         url,
@@ -1879,12 +1927,7 @@ describe('Subscription Worker', () => {
         })
       );
 
-      expect(writeSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/"level":"WARN".*Error occurred while checking access policy/)
-      );
-
       globalLogger.level = LogLevel.NONE;
-      writeSpy.mockRestore();
     }));
 
   test('Subscription -- Access policy is evaluated once per author across multiple matching subscriptions', () =>
@@ -2356,10 +2399,11 @@ describe('Subscription Worker', () => {
 
     test('Access policy cache is keyed by channel type -- rest-hook result does not bleed into websocket eval', () =>
       withTestContext(async () => {
-        // satisfiesAccessPolicy() is hardcoded to return `true` for non-websocket channel types
-        // (rest-hook enforcement is not yet implemented).  If the per-author cache were shared
-        // across channel types, the cached `true` from the rest-hook subscription would incorrectly
-        // allow the websocket subscription to bypass the access-policy check.
+        // The rest-hook and websocket channels can produce different access-policy results for the
+        // same author: with the `skipRestHookAccessPolicyCheck` opt-out enabled, rest-hook resolves
+        // to `true` (legacy behavior) while websocket still enforces the policy (`false` here).  If
+        // the per-author cache were shared across channel types, the rest-hook's `true` would
+        // incorrectly bleed into the websocket eval and allow it to bypass the access-policy check.
         const url = 'https://example.com/subscription';
 
         // An access policy that restricts Patient to a specific ID that will never match our patient.
@@ -2373,7 +2417,8 @@ describe('Subscription Worker', () => {
 
         // Create a project whose membership carries the denying access policy.
         // The project must have 'websocket-subscriptions' enabled so that the websocket
-        // subscription is fetched and evaluated.
+        // subscription is fetched and evaluated, and opts out of rest-hook enforcement so the
+        // two channel types diverge.
         const {
           repo: testRepo,
           project: testProject,
@@ -2386,6 +2431,7 @@ describe('Subscription Worker', () => {
           project: {
             name: 'Access Policy Cache Channel Type Isolation Project',
             features: ['websocket-subscriptions'],
+            systemSetting: [{ name: skipRestHookAccessPolicySystemSettingName, valueBoolean: true }],
           },
           membership: {
             accessPolicy: createReference(accessPolicy),
@@ -2426,8 +2472,8 @@ describe('Subscription Worker', () => {
         // and the rest-hook's cached `true` must not have been reused for the websocket check.
         await assertPromise;
 
-        // The rest-hook subscription MUST still be enqueued -- satisfiesAccessPolicy()
-        // unconditionally returns `true` for non-websocket channel types.
+        // The rest-hook subscription MUST still be enqueued -- the project opted out of rest-hook
+        // enforcement via `skipRestHookAccessPolicyCheck`.
         await findAndExecSubscriptionJob(patient, 'create', restHookSub);
       }));
 
