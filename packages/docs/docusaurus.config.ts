@@ -117,9 +117,15 @@ const config: Config = {
         theme: {
           customCss: './src/css/custom.css',
         },
-        gtag: {
-          trackingID: 'G-SHW0ZNT27G',
-        },
+        // Only enable Google Analytics for production builds. In dev (`docusaurus start`)
+        // the gtag.js script is never injected, but the plugin's route-change hook still
+        // calls `window.gtag`, throwing "window.gtag is not a function" on navigation.
+        gtag:
+          process.env.NODE_ENV === 'production'
+            ? {
+                trackingID: 'G-SHW0ZNT27G',
+              }
+            : undefined,
       },
     ],
   ],

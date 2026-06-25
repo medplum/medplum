@@ -265,7 +265,7 @@ async function handler(params: {
  * Endpoints:
  *   [fhir base]/Appointment/$find
  *
- * @experimental - Scheduling Alpha API
+ * @experimental - Scheduling Beta API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */
