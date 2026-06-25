@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Patient } from '@medplum/fhirtypes';
+import type { CmsPatientMatchFields } from './cms-patient-match';
 import {
   cmsPatientMatch,
   compareCmsMatchFields,
@@ -14,7 +15,6 @@ import {
   normalizeLast4,
   normalizePhone,
 } from './cms-patient-match';
-import type { CmsPatientMatchFields } from './cms-patient-match';
 
 const SSN = 'http://hl7.org/fhir/sid/us-ssn';
 const ITIN = 'http://hl7.org/fhir/sid/us-itin';
@@ -47,20 +47,22 @@ describe('CMS Patient Match Utils', () => {
       ],
     };
 
-    expect(extractCmsMatchFields(patient)).toEqual(fields({
-      firstName: 'anamaria',
-      lastName: 'oconnor',
-      dob: '19700102',
-      streetLine: ['123mainst', 'apt4'],
-      phone: '6175550100',
-      email: 'anaexampleexamplecom',
-      ssnLast4: '6789',
-      itinLast4: '4321',
-      mbi: '1eg4te5mk73',
-      legalId: 'bene123',
-      cspUuid: 'cspabc',
-      empiId: 'empi999',
-    }));
+    expect(extractCmsMatchFields(patient)).toEqual(
+      fields({
+        firstName: 'anamaria',
+        lastName: 'oconnor',
+        dob: '19700102',
+        streetLine: ['123mainst', 'apt4'],
+        phone: '6175550100',
+        email: 'anaexampleexamplecom',
+        ssnLast4: '6789',
+        itinLast4: '4321',
+        mbi: '1eg4te5mk73',
+        legalId: 'bene123',
+        cspUuid: 'cspabc',
+        empiId: 'empi999',
+      })
+    );
   });
 
   test('normalization helpers handle edge cases', () => {
@@ -178,7 +180,13 @@ function patient(f: Fields): Patient {
     resourceType: 'Patient',
     name:
       f.firstName || f.lastName || f.suffix
-        ? [{ given: f.firstName ? [f.firstName] : undefined, family: f.lastName, suffix: f.suffix ? [f.suffix] : undefined }]
+        ? [
+            {
+              given: f.firstName ? [f.firstName] : undefined,
+              family: f.lastName,
+              suffix: f.suffix ? [f.suffix] : undefined,
+            },
+          ]
         : undefined,
     birthDate: f.dob,
     address: f.streetLine ? [{ line: [f.streetLine] }] : undefined,
