@@ -46,6 +46,8 @@ export interface ResourceBoardProps<T extends Resource = Resource> {
   readonly reloadKey?: unknown;
 
   // Sidebar header
+  /** Plain title shown at the left of the header when no `tabs` are provided. */
+  readonly headerText?: ReactNode;
   /** Sidebar header tabs. Selecting a tab navigates to its URI. */
   readonly tabs?: ResourceBoardTab[];
   /** Controlled active tab value; consumers derive it from the URL. */
@@ -99,6 +101,7 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
     loadItems,
     resolveSelected,
     reloadKey,
+    headerText,
     tabs,
     activeTab,
     headerActions,
@@ -165,6 +168,7 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
       emptyList={emptyList}
       skeleton={skeleton}
       listWidth={listWidth}
+      headerText={headerText}
       tabs={tabs}
       activeTab={activeTab}
       onTabChange={handleTabChange}

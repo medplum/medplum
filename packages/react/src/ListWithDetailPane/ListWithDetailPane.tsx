@@ -41,6 +41,8 @@ export interface ListWithDetailPaneProps<T extends { id: string } = WithId<Resou
   readonly listWidth?: number;
 
   // Header
+  /** Plain title shown at the left of the header when no `tabs` are provided. */
+  readonly headerText?: ReactNode;
   /** Sidebar header tabs. Selecting a tab fires `onTabChange`. */
   readonly tabs?: ListWithDetailPaneTab[];
   /** Controlled active tab value; consumers derive it from the URL. */
@@ -91,6 +93,7 @@ export function ListWithDetailPane<T extends { id: string } = WithId<Resource>>(
     emptyList,
     skeleton,
     listWidth = DEFAULT_LIST_WIDTH,
+    headerText,
     tabs,
     activeTab,
     onTabChange,
@@ -110,32 +113,32 @@ export function ListWithDetailPane<T extends { id: string } = WithId<Resource>>(
     }
   };
 
+  let headerLeft: ReactNode = <span />;
+  if (tabs) {
+    headerLeft = (
+      <Tabs value={activeTab ?? null} onChange={handleTabChange} variant="unstyled" className={classes.pillTabs}>
+        <Tabs.List>
+          {tabs.map((tab) => (
+            <Tabs.Tab key={tab.value} value={tab.value}>
+              <MedplumLink className={classes.tabLink} to={tab.uri}>
+                {tab.label}
+              </MedplumLink>
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+      </Tabs>
+    );
+  } else if (headerText !== undefined) {
+    headerLeft = <Text className={classes.headerText}>{headerText}</Text>;
+  }
+
   return (
     <Flex direction="row" h="100%" w="100%" className={classes.container}>
       <Flex direction="column" w={listWidth} h="100%" className={classes.shell}>
-        {(tabs || headerActions) && (
+        {(tabs || headerActions || headerText) && (
           <>
             <Flex h={HEADER_HEIGHT} align="center" justify="space-between" p="md">
-              {tabs ? (
-                <Tabs
-                  value={activeTab ?? null}
-                  onChange={handleTabChange}
-                  variant="unstyled"
-                  className={classes.pillTabs}
-                >
-                  <Tabs.List>
-                    {tabs.map((tab) => (
-                      <Tabs.Tab key={tab.value} value={tab.value}>
-                        <MedplumLink className={classes.tabLink} to={tab.uri}>
-                          {tab.label}
-                        </MedplumLink>
-                      </Tabs.Tab>
-                    ))}
-                  </Tabs.List>
-                </Tabs>
-              ) : (
-                <span />
-              )}
+              {headerLeft}
               {headerActions && <Group gap="xs">{headerActions}</Group>}
             </Flex>
             <Divider />
