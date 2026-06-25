@@ -1476,6 +1476,61 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(bundle3.entry?.[0]?.resource?.id).toStrictEqual(observation3.id);
     }));
 
+  test('Filter MeasureReport by measure-score', () =>
+    withTestContext(async () => {
+      if (!features) {
+        return; // measure-score is an array range column, only supported with the range-search feature
+      }
+      const measure = 'Measure/' + randomUUID();
+
+      const report1 = await repo.createResource<MeasureReport>({
+        resourceType: 'MeasureReport',
+        status: 'complete',
+        type: 'individual',
+        measure,
+        period: { start: '2024-01-01', end: '2024-12-31' },
+        group: [{ measureScore: { value: 0.25 } }],
+      });
+
+      const report2 = await repo.createResource<MeasureReport>({
+        resourceType: 'MeasureReport',
+        status: 'complete',
+        type: 'individual',
+        measure,
+        period: { start: '2024-01-01', end: '2024-12-31' },
+        group: [{ measureScore: { value: 0.9 } }],
+      });
+
+      const greaterThan = await repo.search<MeasureReport>({
+        resourceType: 'MeasureReport',
+        filters: [
+          { code: 'measure', operator: Operator.EQUALS, value: measure },
+          { code: 'measure-score', operator: Operator.GREATER_THAN, value: '0.5' },
+        ],
+      });
+      expect(greaterThan.entry?.length).toStrictEqual(1);
+      expect(greaterThan.entry?.[0]?.resource?.id).toStrictEqual(report2.id);
+
+      const lessThan = await repo.search<MeasureReport>({
+        resourceType: 'MeasureReport',
+        filters: [
+          { code: 'measure', operator: Operator.EQUALS, value: measure },
+          { code: 'measure-score', operator: Operator.LESS_THAN, value: '0.5' },
+        ],
+      });
+      expect(lessThan.entry?.length).toStrictEqual(1);
+      expect(lessThan.entry?.[0]?.resource?.id).toStrictEqual(report1.id);
+
+      const sorted = await repo.search<MeasureReport>({
+        resourceType: 'MeasureReport',
+        filters: [{ code: 'measure', operator: Operator.EQUALS, value: measure }],
+        sortRules: [{ code: 'measure-score', descending: true }],
+      });
+      expect(sorted.entry?.length).toStrictEqual(2);
+      expect(sorted.entry?.[0]?.resource?.id).toStrictEqual(report2.id);
+      expect(sorted.entry?.[1]?.resource?.id).toStrictEqual(report1.id);
+    }));
+
   test('ServiceRequest.orderDetail search', () =>
     withTestContext(async () => {
       const orderDetailText = randomUUID();

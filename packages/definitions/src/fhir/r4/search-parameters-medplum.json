@@ -1958,6 +1958,23 @@
         "type": "reference",
         "expression": "HealthcareService.offeredIn"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/MeasureReport-measure-score",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "MeasureReport-measure-score",
+        "url": "https://medplum.com/fhir/SearchParameter/MeasureReport-measure-score",
+        "version": "4.0.1",
+        "name": "measure-score",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The computed score for a group within a measure report",
+        "code": "measure-score",
+        "base": ["MeasureReport"],
+        "type": "quantity",
+        "expression": "MeasureReport.group.measureScore"
+      }
     }
   ]
 }
