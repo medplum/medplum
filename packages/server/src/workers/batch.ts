@@ -79,12 +79,13 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       await exec.failJob();
     });
     addVerboseQueueLogging<BatchJobData>(queue, worker, (job) => ({
-      asyncJob: 'AsyncJob/' + job.data.asyncJob.id,
-      project: job.data.authState.project.id,
-      profile: job.data.authState.profile?.id,
-      membership: job.data.authState.membership.id,
-      onBehalfOf: job.data.authState.onBehalfOf?.id,
-      onBehalfOfMembership: job.data.authState.onBehalfOfMembership?.id,
+      asyncJob: getReferenceString(job.data.asyncJob),
+      project: getReferenceString(job.data.authState.project),
+      profile: job.data.authState.profile && getReferenceString(job.data.authState.profile),
+      membership: getReferenceString(job.data.authState.membership),
+      onBehalfOf: job.data.authState.onBehalfOf && getReferenceString(job.data.authState.onBehalfOf),
+      onBehalfOfMembership:
+        job.data.authState.onBehalfOfMembership && getReferenceString(job.data.authState.onBehalfOfMembership),
     }));
   }
 
