@@ -1,7 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { evalFhirPathTyped, isString, toTypedValue } from '@medplum/core';
+import { evalFhirPathTyped, HTTP_HL7_ORG, isString, toTypedValue } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
+
+const SSN_IDENTIFIER_SYSTEM = `${HTTP_HL7_ORG}/fhir/sid/us-ssn`;
+const ITIN_IDENTIFIER_SYSTEM = `${HTTP_HL7_ORG}/fhir/sid/us-itin`;
+const MBI_IDENTIFIER_SYSTEM = 'https://bluebutton.cms.gov/resources/identifiers/mbi';
+const BENEFICIARY_ID_IDENTIFIER_SYSTEM = 'https://bluebutton.cms.gov/resources/identifiers/beneficiary-id';
+const CMS_IDENTIFIER_SYSTEMS = new Set([
+  SSN_IDENTIFIER_SYSTEM,
+  ITIN_IDENTIFIER_SYSTEM,
+  MBI_IDENTIFIER_SYSTEM,
+  BENEFICIARY_ID_IDENTIFIER_SYSTEM,
+]);
 
 export type FieldMatch = 'exact' | 'fuzzy' | 'none';
 
@@ -145,36 +156,21 @@ export function extractCmsMatchFields(patient: Patient): CmsPatientMatchFields {
     lastName: extractStrings(patient, 'Patient.name.family'),
     dob: extractStrings(patient, 'Patient.birthDate', normalizeFullDate),
     streetLine: extractStrings(patient, 'Patient.address.line'),
-    phone: extractStrings(patient, 'Patient.telecom.where(system = "phone").value', normalizePhone),
-    email: extractStrings(patient, 'Patient.telecom.where(system = "email").value'),
+    phone: extractStrings(patient, "Patient.telecom.where(system = 'phone').value", normalizePhone),
+    email: extractStrings(patient, "Patient.telecom.where(system = 'email').value", normalizeEmail),
     ssnLast4: extractStrings(
       patient,
-      'Patient.identifier.where(system = "http://hl7.org/fhir/sid/us-ssn").value',
+      `Patient.identifier.where(system = '${SSN_IDENTIFIER_SYSTEM}').value`,
       normalizeLast4
     ),
     itinLast4: extractStrings(
       patient,
-      'Patient.identifier.where(system = "http://hl7.org/fhir/sid/us-itin").value',
+      `Patient.identifier.where(system = '${ITIN_IDENTIFIER_SYSTEM}').value`,
       normalizeLast4
     ),
-    mbi: extractStrings(
-      patient,
-      'Patient.identifier.where(system = "https://bluebutton.cms.gov/resources/identifiers/mbi").value'
-    ),
-    legalId: extractStrings(
-      patient,
-      'Patient.identifier.where(system = "https://bluebutton.cms.gov/resources/identifiers/beneficiary-id").value'
-    ),
-    namespaceId: unionSets(
-      extractStrings(
-        patient,
-        'Patient.identifier.where(system != "http://hl7.org/fhir/sid/us-ssn" and system != "http://hl7.org/fhir/sid/us-itin" and system != "https://bluebutton.cms.gov/resources/identifiers/mbi" and system != "https://bluebutton.cms.gov/resources/identifiers/beneficiary-id" and system != "https://bluebutton.cms.gov/resources/identifiers/csp-uuid").value'
-      ),
-      extractStrings(
-        patient,
-        'Patient.identifier.where(system = "https://bluebutton.cms.gov/resources/identifiers/csp-uuid").value'
-      )
-    ),
+    mbi: extractStrings(patient, `Patient.identifier.where(system = '${MBI_IDENTIFIER_SYSTEM}').value`),
+    legalId: extractStrings(patient, `Patient.identifier.where(system = '${BENEFICIARY_ID_IDENTIFIER_SYSTEM}').value`),
+    namespaceId: extractNamespaceIdentifiers(patient),
   };
 }
 
@@ -208,8 +204,27 @@ export function normalizePhone(value: string): string {
   return digits;
 }
 
+export function normalizeEmail(value: string): string {
+  return value.trim().toLowerCase();
+}
+
 export function normalizeFullDate(value: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? foldString(value) : '';
+}
+
+function extractNamespaceIdentifiers(patient: Patient): Set<string> {
+  const result = new Set<string>();
+  for (const identifier of patient.identifier ?? []) {
+    const system = identifier.system?.trim();
+    if (!system || CMS_IDENTIFIER_SYSTEMS.has(system) || !identifier.value) {
+      continue;
+    }
+    const value = foldString(identifier.value);
+    if (value) {
+      result.add(`${system}|${value}`);
+    }
+  }
+  return result;
 }
 
 export function hasGenerationalSuffixConflict(p1: Patient, p2: Patient): boolean {
@@ -275,11 +290,7 @@ function setsIntersect(a: Set<string>, b: Set<string>): boolean {
   return false;
 }
 
-function unionSets<T>(...sets: Set<T>[]): Set<T> {
-  return new Set(sets.flatMap((s) => Array.from(s)));
-}
-
-export function matchField(a: Set<string>, b: Set<string>): FieldMatch {
+export function matchField(a: Set<string>, b: Set<string>, allowFuzzy = true): FieldMatch {
   if (a.size === 0 || b.size === 0) {
     return 'none';
   }
@@ -290,12 +301,14 @@ export function matchField(a: Set<string>, b: Set<string>): FieldMatch {
       }
     }
   }
-  for (const v1 of a) {
-    for (const v2 of b) {
-      if (v1.length >= MIN_FUZZY_LENGTH && v2.length >= MIN_FUZZY_LENGTH) {
-        const distance = damerauLevenshtein(v1, v2);
-        if (distance <= 1) {
-          return 'fuzzy';
+  if (allowFuzzy) {
+    for (const v1 of a) {
+      for (const v2 of b) {
+        if (v1.length >= MIN_FUZZY_LENGTH && v2.length >= MIN_FUZZY_LENGTH) {
+          const distance = damerauLevenshtein(v1, v2);
+          if (distance <= 1) {
+            return 'fuzzy';
+          }
         }
       }
     }
@@ -310,15 +323,15 @@ export function compareCmsMatchFields(
   return {
     firstName: matchField(p1.firstName, p2.firstName),
     lastName: matchField(p1.lastName, p2.lastName),
-    dob: matchField(p1.dob, p2.dob),
+    dob: matchField(p1.dob, p2.dob, false),
     streetLine: matchField(p1.streetLine, p2.streetLine),
-    phone: matchField(p1.phone, p2.phone),
-    email: matchField(p1.email, p2.email),
-    ssnLast4: matchField(p1.ssnLast4, p2.ssnLast4),
-    itinLast4: matchField(p1.itinLast4, p2.itinLast4),
-    mbi: matchField(p1.mbi, p2.mbi),
-    legalId: matchField(p1.legalId, p2.legalId),
-    namespaceId: matchField(p1.namespaceId, p2.namespaceId),
+    phone: matchField(p1.phone, p2.phone, false),
+    email: matchField(p1.email, p2.email, false),
+    ssnLast4: matchField(p1.ssnLast4, p2.ssnLast4, false),
+    itinLast4: matchField(p1.itinLast4, p2.itinLast4, false),
+    mbi: matchField(p1.mbi, p2.mbi, false),
+    legalId: matchField(p1.legalId, p2.legalId, false),
+    namespaceId: matchField(p1.namespaceId, p2.namespaceId, false),
   };
 }
 

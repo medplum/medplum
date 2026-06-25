@@ -11,6 +11,7 @@ import {
   foldString,
   hasGenerationalSuffixConflict,
   matchField,
+  normalizeEmail,
   normalizeFullDate,
   normalizeLast4,
   normalizePhone,
@@ -54,12 +55,12 @@ describe('CMS Patient Match Utils', () => {
         dob: '19700102',
         streetLine: ['123mainst', 'apt4'],
         phone: '6175550100',
-        email: 'anaexampleexamplecom',
+        email: 'ana.example@example.com',
         ssnLast4: '6789',
         itinLast4: '4321',
         mbi: '1eg4te5mk73',
         legalId: 'bene123',
-        namespaceId: ['cspabc', 'empi999'],
+        namespaceId: [`${CSP}|cspabc`, `${EMPI}|empi999`],
       })
     );
   });
@@ -69,6 +70,7 @@ describe('CMS Patient Match Utils', () => {
     expect(normalizeLast4('123-45-6789')).toBe('6789');
     expect(normalizePhone('+1 (617) 555-0100')).toBe('6175550100');
     expect(normalizePhone('+44 20 7946 0958')).toBe('442079460958');
+    expect(normalizeEmail(' Ana.Example@Example.COM ')).toBe('ana.example@example.com');
     expect(normalizeFullDate('1970-01-02')).toBe('19700102');
     expect(normalizeFullDate('1970-01')).toBe('');
     expect(extractStrings({ resourceType: 'Patient', name: [{ given: ['---'] }] }, 'Patient.name.given')).toEqual(
@@ -98,6 +100,33 @@ describe('CMS Patient Match Utils', () => {
     expect(damerauLevenshtein('robert', 'robret')).toBe(1);
     expect(damerauLevenshtein('smith', 'smyth')).toBe(1);
     expect(damerauLevenshtein('kitten', 'sitting')).toBe(3);
+  });
+
+  test('does not consume fuzzy matches for exact-only CMS fields', () => {
+    const result = compareCmsMatchFields(
+      fields({
+        firstName: 'robert',
+        dob: '19700101',
+        phone: '6175550100',
+        email: 'john.smith@example.com',
+        mbi: '1eg4te5mk73',
+      }),
+      fields({
+        firstName: 'robret',
+        dob: '19700102',
+        phone: '6175550101',
+        email: 'john.smith@example.net',
+        mbi: '1eg4te5mk74',
+      })
+    );
+
+    expect(result).toMatchObject({
+      firstName: 'fuzzy',
+      dob: 'none',
+      phone: 'none',
+      email: 'none',
+      mbi: 'none',
+    });
   });
 
   test.each([
@@ -142,6 +171,22 @@ describe('CMS Patient Match Utils', () => {
     expect(cmsPatientMatch(patient({ namespaceId: 'EMPI-999' }), patient({ namespaceId: 'EMPI-999' }))).toMatchObject({
       criteriaId: '26',
       matchType: 'exact',
+    });
+  });
+
+  test('does not match namespace identifiers with the same value from different systems', () => {
+    const input: Patient = {
+      resourceType: 'Patient',
+      identifier: [{ system: EMPI, value: '1001' }],
+    };
+    const candidate: Patient = {
+      resourceType: 'Patient',
+      identifier: [{ system: 'https://example.com/mrn', value: '1001' }],
+    };
+
+    expect(cmsPatientMatch(input, candidate)).toMatchObject({
+      criteriaId: undefined,
+      fieldMatches: { namespaceId: 'none' },
     });
   });
 
