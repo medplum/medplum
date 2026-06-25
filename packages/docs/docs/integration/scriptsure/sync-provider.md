@@ -17,7 +17,7 @@ Before a prescriber can use ScriptSure, they must have a ScriptSure user account
 
 Both bots will look up the `Practitioner` resource by id, and require the `Practitioner` to have at minimum: `name` (given + family), an `email` telecom, and an NPI identifier (`system: "http://hl7.org/fhir/sid/us-npi"`). DEA and state license are also read when present.
 
-Medplum also provides the `Medplum ScriptSure Practitioner` FHIR profile to ensure that the Practitioner resource includes the correct set of information. You can [apply the profile via API](/docs/fhir-datastore/profiles#profile-adoption), or edit it directly in using the Practitioner's Profiles tab in the UI.
+Medplum also provides the `Medplum ScriptSure Practitioner` FHIR profile to ensure that the Practitioner resource includes the correct set of information. The profile can [applied the profile via API](/docs/fhir-datastore/profiles#profile-adoption), or added using the Practitioner's Profiles tab in the UI.
 
 ![Scriptsure Practitioner Profile](./scriptsure-practitioner-profile.png)
 
