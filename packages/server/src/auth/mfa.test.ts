@@ -14,6 +14,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { rotateLoginRefreshSecret } from '../oauth/token';
 import { withTestContext } from '../test.setup';
 import { verifyConnectedFactor } from './mfa';
 import { registerNew } from './register';
@@ -499,6 +500,60 @@ describe('MFA', () => {
       .send({ method: 'email', token: code });
     expect(reuse.status).toBe(400);
     expect(reuse.body).toMatchObject(badRequest('Already enrolled'));
+  });
+
+  // Regression: the email-MFA challenge code is stored on `Login.emailMfa`, set
+  // by `/send-email-challenge` and read by `/enroll`. While the user reads the
+  // email and types the code, the client's access token can be refreshed, which
+  // rotates the login's refresh secret. A refresh whose read predated the
+  // challenge used to write back a stale `{ ...login }` and drop `emailMfa`,
+  // making the later `/enroll` fail with a spurious "Invalid token". The
+  // rotation must re-read the login so a concurrent challenge code survives.
+  test('Email MFA enrollment survives a concurrent refresh-secret rotation', async () => {
+    const email = `email-rotate${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { accessToken, project, login } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Email',
+        lastName: 'Rotate',
+        projectName: `Email Rotate Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+    await setAllowedMfaMethods(project, 'totp,email');
+
+    // `login` is the session login as it existed before any challenge — exactly
+    // the stale snapshot an in-flight token refresh would have read.
+    const staleLogin = login;
+
+    // User clicks "Add email-based MFA": the challenge code lands on the login.
+    const challengeRes = await request(app)
+      .post('/auth/mfa/send-email-challenge')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({});
+    expect(challengeRes.status).toBe(200);
+    const code = await getCodeFromEmail();
+
+    // ...meanwhile the access token refreshes, rotating the refresh secret from
+    // the stale snapshot. The rotation must not clobber the freshly-set code.
+    const rotated = await withTestContext(() =>
+      rotateLoginRefreshSecret(staleLogin, { remoteAddress: '5.5.5.5', userAgent: 'vitest' })
+    );
+    expect(rotated.refreshSecret).toBeDefined();
+    expect(rotated.refreshSecret).not.toBe(staleLogin.refreshSecret);
+    expect(rotated.emailMfa).toBeDefined();
+
+    // The user submits the emailed code and enrollment completes.
+    const enrollRes = await request(app)
+      .post('/auth/mfa/enroll')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ method: 'email', token: code });
+    expect(enrollRes.status).toBe(200);
+    expect(enrollRes.body).toMatchObject(allOk);
   });
 
   test('Verifying email code marks the user emailVerified', async () => {
