@@ -3,7 +3,7 @@
 import { Button, FileInput, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, isNotFound, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
-import type { Communication, Organization } from '@medplum/fhirtypes';
+import type { Communication, DocumentReference, Organization } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconFile, IconSend } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -56,11 +56,20 @@ export function SendFaxPage(): JSX.Element {
 
     setSending(true);
     try {
-      // Step 1: Upload the file as an attachment (creates Binary resource)
+      // Step 1: Upload the file and persist it as a DocumentReference (creates a Binary
+      // resource) so the faxed document is tracked in the chart rather than existing only
+      // as a loose attachment on the Communication.
       const attachment = await medplum.createAttachment({
         data: formData.file,
         contentType: formData.file.type,
         filename: formData.file.name,
+      });
+      await medplum.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        author: [createReference(profile)],
+        date: new Date().toISOString(),
+        content: [{ attachment }],
       });
 
       // Step 2: Create the recipient Organization

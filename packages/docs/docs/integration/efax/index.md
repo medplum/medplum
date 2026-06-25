@@ -92,23 +92,32 @@ Recipient fax numbers must be in **E.164** format: a leading `+` followed by the
 
 When sending a fax, you need to create multiple FHIR resources:
 1. **Binary**: The document to fax (PDF, image) - created via `medplum.createAttachment()`
-2. **Organization**: The recipient with fax number
-3. **Communication**: Links the document and recipient together
+2. **DocumentReference**: Tracks the uploaded document in the chart, wrapping the attachment
+3. **Organization**: The recipient with fax number
+4. **Communication**: Links the document and recipient together
 
 ### Example: Sending a Fax
 
 ```typescript
 import { createReference } from '@medplum/core';
-import type { Communication, Organization, Practitioner } from '@medplum/fhirtypes';
+import type { Communication, DocumentReference, Organization, Practitioner } from '@medplum/fhirtypes';
 
 // Assuming you have a MedplumClient instance and the sender's Practitioner profile
 const profile = await medplum.getProfile() as Practitioner;
 
-// Step 1: Upload the file as an attachment (creates Binary resource)
+// Step 1: Upload the file and persist it as a DocumentReference (creates a Binary resource)
+// so the faxed document is tracked in the chart, not just embedded on the Communication.
 const attachment = await medplum.createAttachment({
   data: file,  // File object from input
   contentType: file.type,
   filename: file.name,
+});
+await medplum.createResource<DocumentReference>({
+  resourceType: 'DocumentReference',
+  status: 'current',
+  author: [createReference(profile)],
+  date: new Date().toISOString(),
+  content: [{ attachment }],
 });
 
 // Step 2: Create the recipient Organization (fax value must be E.164: + and country code)
