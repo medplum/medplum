@@ -3,7 +3,12 @@
 import { Checkbox, Group, List, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { InviteRequest } from '@medplum/core';
-import { isOperationOutcome, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import {
+  isOperationOutcome,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  operationOutcomeToString,
+} from '@medplum/core';
 import type { AccessPolicy, OperationOutcome, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import {
   Form,
@@ -23,11 +28,13 @@ export function InvitePage(): JSX.Element {
   const [project, setProject] = useState(medplum.getProject());
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
+  const [error, setError] = useState<OperationOutcome>();
   const [emailSent, setEmailSent] = useState(false);
   const [result, setResult] = useState<ProjectMembership | undefined>(undefined);
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>): Promise<void> => {
+      setError(undefined);
       const body = {
         resourceType: formData.resourceType as 'Practitioner' | 'Patient' | 'RelatedPerson',
         firstName: formData.firstName,
@@ -54,8 +61,8 @@ export function InvitePage(): JSX.Element {
           showNotification({ color: 'green', message: 'Invite success' });
         })
         .catch((err) => {
-          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
-          setOutcome(normalizeOperationOutcome(err));
+          showNotification({ color: 'red', message: normalizeErrorString(err) });
+          setError(normalizeOperationOutcome(err));
         });
     },
     [medplum, project, accessPolicy]
@@ -66,8 +73,13 @@ export function InvitePage(): JSX.Element {
       {!result && !outcome && (
         <Stack>
           <Title>Invite new member</Title>
+          {error && (
+            <Text c="red" data-testid="invite-error">
+              {operationOutcomeToString(error)}
+            </Text>
+          )}
           {medplum.isSuperAdmin() && (
-            <FormSection title="Project" htmlFor="project" outcome={outcome}>
+            <FormSection title="Project" htmlFor="project" outcome={error}>
               <ResourceInput<Project>
                 resourceType="Project"
                 name="project"
@@ -81,24 +93,24 @@ export function InvitePage(): JSX.Element {
             label="Role"
             defaultValue="Practitioner"
             data={['Practitioner', 'Patient', 'RelatedPerson']}
-            error={getErrorsForInput(outcome, 'resourceType')}
+            error={getErrorsForInput(error, 'resourceType')}
           />
           <TextInput
             name="firstName"
             label="First Name"
             required={true}
             autoFocus={true}
-            error={getErrorsForInput(outcome, 'firstName')}
+            error={getErrorsForInput(error, 'firstName')}
           />
-          <TextInput name="lastName" label="Last Name" required={true} error={getErrorsForInput(outcome, 'lastName')} />
+          <TextInput name="lastName" label="Last Name" required={true} error={getErrorsForInput(error, 'lastName')} />
           <TextInput
             name="email"
             type="email"
             label="Email"
             required={true}
-            error={getErrorsForInput(outcome, 'email')}
+            error={getErrorsForInput(error, 'email')}
           />
-          <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
+          <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={error}>
             <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
           </FormSection>
           <Checkbox name="sendEmail" label="Send email" defaultChecked={true} />
@@ -111,9 +123,9 @@ export function InvitePage(): JSX.Element {
         </Stack>
       )}
       {outcome && (
-        <div data-testid="success">
+        <div data-testid="email-failure">
           <p>User created, email couldn't be sent</p>
-          <p>Could not send email. Make sure you have AWS SES set up.</p>
+          <p>{operationOutcomeToString(outcome)}</p>
           <p>
             Click <MedplumLink to="/admin/project">here</MedplumLink> to return to the project admin page.
           </p>

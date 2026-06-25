@@ -1,8 +1,8 @@
 # Appointment $confirm
 
-:::info[Alpha]
+:::info[Beta]
 
-The `$confirm` operation is currently in [alpha](/docs/compliance/alpha-beta).
+The `$confirm` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
@@ -109,7 +109,7 @@ Returns `200 OK` with a `Bundle` of all updated resources:
 
 ## Confirmation Logic
 
-`$confirm` performs the following steps atomically inside a database transaction:
+`$confirm` performs the following steps atomically inside a database transaction, ensuring safety when concurrent scheduling requests are received.
 
 1. Reads the Appointment identified by the URL `id`
 2. Validates that the Appointment's `status` is `pending` or `proposed`
@@ -117,8 +117,6 @@ Returns `200 OK` with a `Bundle` of all updated resources:
 4. Updates any `busy-tentative` Slots to `busy`
 5. Sets the Appointment's `status` to `booked` and saves it
 6. Returns the updated Appointment and Slots in a Bundle
-
-The transaction uses serializable isolation for safety when there are concurrent scheduling operations affecting the same appointment.
 
 ## Error Responses
 

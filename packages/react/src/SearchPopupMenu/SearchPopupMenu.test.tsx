@@ -353,7 +353,7 @@ describe('SearchPopupMenu', () => {
         {
           code: 'organization',
           operator: Operator.EQUALS,
-          value: 'Organization/123',
+          value: 'Organization/125',
         },
       ],
     };

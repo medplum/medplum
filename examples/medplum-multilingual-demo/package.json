@@ -1,6 +1,6 @@
 {
   "name": "medplum-multilingual-demo",
-  "version": "5.1.21",
+  "version": "5.1.22",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,10 +19,10 @@
     "@mantine/core": "8.3.18",
     "@mantine/hooks": "8.3.18",
     "@mantine/notifications": "8.3.18",
-    "@medplum/core": "5.1.21",
-    "@medplum/eslint-config": "5.1.21",
-    "@medplum/fhirtypes": "5.1.21",
-    "@medplum/react": "5.1.21",
+    "@medplum/core": "5.1.22",
+    "@medplum/eslint-config": "5.1.22",
+    "@medplum/fhirtypes": "5.1.22",
+    "@medplum/react": "5.1.22",
     "@tabler/icons-react": "3.44.0",
     "@types/node": "22.19.21",
     "@types/react": "19.2.17",
@@ -32,7 +32,7 @@
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "react-router": "7.17.0",
+    "react-router": "7.18.0",
     "typescript": "6.0.3",
     "vite": "8.0.16"
   },
