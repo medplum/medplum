@@ -9,6 +9,7 @@ import {
   getReferenceString,
   isCreated,
   isNotFound,
+  multipleMatches,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
@@ -266,11 +267,16 @@ async function upsertProfileResource(
       // created RelatedPerson), in which case no patient is required. Only
       // enforce the patient requirement when a new RelatedPerson would be created.
       if (resourceType === 'RelatedPerson' && !patient) {
-        const existing = await systemRepo.searchOne<RelatedPerson>({ resourceType, filters });
-        if (!existing) {
+        // Search for up to 2 matches so duplicates are detected deterministically
+        // rather than arbitrarily picking one (mirrors conditionalCreate).
+        const matches = await systemRepo.searchResources<RelatedPerson>({ resourceType, filters, count: 2 });
+        if (matches.length > 1) {
+          throw new OperationOutcomeError(multipleMatches);
+        }
+        if (matches.length === 0) {
           throw new OperationOutcomeError(badRequest('Patient is required to create a RelatedPerson'));
         }
-        return existing;
+        return matches[0];
       }
 
       const { resource: result, outcome } = await systemRepo.conditionalCreate(resource, {
