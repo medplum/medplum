@@ -140,6 +140,7 @@ export function SendFaxModal({
         documentReference = await medplum.createResource<DocumentReference>({
           resourceType: 'DocumentReference',
           status: 'current',
+          category: [{ coding: [{ system: 'http://medplum/fhir/CodeSystem/document-source', code: 'fax' }] }],
           description: subject.trim() || undefined,
           subject: patient,
           author: [createReference(profile)],

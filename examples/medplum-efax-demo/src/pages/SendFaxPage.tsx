@@ -67,6 +67,7 @@ export function SendFaxPage(): JSX.Element {
       await medplum.createResource<DocumentReference>({
         resourceType: 'DocumentReference',
         status: 'current',
+        category: [{ coding: [{ system: 'http://medplum/fhir/CodeSystem/document-source', code: 'fax' }] }],
         author: [createReference(profile)],
         date: new Date().toISOString(),
         content: [{ attachment }],
