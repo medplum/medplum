@@ -254,11 +254,7 @@ export function MfaPage(): JSX.Element | null {
             </Stack>
           )}
 
-          {mfaRequired ? (
-            <Text c="dimmed" size="sm" ta="center">
-              MFA is required for your account and can't be disabled.
-            </Text>
-          ) : (
+          {!mfaRequired && (
             <Group>
               <Button color="red" variant="outline" onClick={openDisable} fullWidth>
                 Disable MFA
