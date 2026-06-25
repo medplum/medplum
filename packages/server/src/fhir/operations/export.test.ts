@@ -4,6 +4,7 @@ import { ContentType } from '@medplum/core';
 import type { BulkDataExportOutput, Observation } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
@@ -128,6 +129,9 @@ describe('Export', () => {
 
   test('exportResourceType iterating through paginated search results', async () =>
     withTestContext(async () => {
+      // Scope export to observations created in this test so pagination stays fast.
+      const since = new Date().toISOString();
+
       await systemRepo.createResource<Observation>({
         resourceType: 'Observation',
         status: 'preliminary',
@@ -147,12 +151,12 @@ describe('Export', () => {
       });
 
       const exporter = new BulkExporter(systemRepo);
-      const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
+      const exportWriteResourceSpy = vi.spyOn(exporter, 'writeResource');
       await exporter.start('http://example.com');
 
       const { project } = await createTestProject();
       expect(project).toBeDefined();
-      await exportResourceType(exporter, 'Observation', 1);
+      await exportResourceType(exporter, 'Observation', 1, since);
       const bulkDataExport = await exporter.close(project);
       expect(bulkDataExport.status).toBe('completed');
       expect(exportWriteResourceSpy).toHaveBeenCalled();
@@ -214,7 +218,7 @@ describe('Export', () => {
       });
 
       const exporter = new BulkExporter(systemRepo);
-      const closeWriterSpy = jest.spyOn(exporter, 'closeWriter');
+      const closeWriterSpy = vi.spyOn(exporter, 'closeWriter');
 
       await exporter.start('http://example.com');
       const { project } = await createTestProject();

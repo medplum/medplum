@@ -1,3 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-export const DefaultAzureCredential = jest.fn().mockImplementation(() => ({}));
+import { vi } from 'vitest';
+
+export const DefaultAzureCredential = vi.fn(function DefaultAzureCredential() {});

@@ -1,18 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
-import {
-  ContentType,
-  createReference,
-  encodeBase64,
-  encodeBase64Url,
-  getReferenceString,
-  OAuthClientAssertionType,
-  OAuthGrantType,
-  OAuthTokenType,
-  parseJWTPayload,
-  parseSearchRequest,
-} from '@medplum/core';
+import * as MedplumCore from '@medplum/core';
 import type {
   AccessPolicy,
   ClientApplication,
@@ -23,9 +11,11 @@ import type {
   SmartAppLaunch,
 } from '@medplum/fhirtypes';
 import express from 'express';
+import type * as Jose from 'jose';
 import { decodeJwt, generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import { createHash, randomUUID, X509Certificate } from 'node:crypto';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
@@ -35,43 +25,75 @@ import type { MedplumServerConfig } from '../config/types';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
+import { mockFetchJson, mockFetchStatus, mockFetchText } from '../test.setup.fetch';
 import { validateClientCert } from './cert';
 import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './utils';
 
-jest.mock('jose', () => {
-  const core = jest.requireActual('@medplum/core');
-  const original = jest.requireActual('jose');
-  let count = 0;
+const {
+  ContentType,
+  createReference,
+  encodeBase64,
+  encodeBase64Url,
+  getReferenceString,
+  OAuthClientAssertionType,
+  OAuthGrantType,
+  OAuthTokenType,
+  parseJWTPayload,
+  parseSearchRequest,
+} = MedplumCore;
+
+type WithId<T> = MedplumCore.WithId<T>;
+
+const joseMockState = vi.hoisted(() => ({ count: 0 }));
+
+const MockJoseMultipleMatchingError = vi.hoisted(() => {
+  class JoseMultipleMatchingError extends Error {
+    code: string;
+    [Symbol.asyncIterator]: () => AsyncIterableIterator<any> = async function* () {
+      yield 'key1';
+      yield 'key2';
+    };
+    constructor(message: string, code: string) {
+      super(message);
+      this.name = 'CustomError';
+      this.code = code;
+    }
+  }
+  return JoseMultipleMatchingError;
+});
+
+vi.mock('jose', async () => {
+  const core = await vi.importActual<typeof MedplumCore>('@medplum/core');
+  const original = await vi.importActual<typeof Jose>('jose');
   return {
     ...original,
-    jwtVerify: jest.fn((credential: string) => {
+    jwtVerify: vi.fn(async (credential: string) => {
       const payload = core.parseJWTPayload(credential);
       if (payload.invalid) {
         throw new Error('Verification failed');
       }
       if (payload.multipleMatching) {
-        count = payload.successVerified ? count + 1 : 0;
-        let error: MockJoseMultipleMatchingError;
-        if (count <= 1) {
-          error = new MockJoseMultipleMatchingError(
+        joseMockState.count = payload.successVerified ? joseMockState.count + 1 : 0;
+        if (joseMockState.count <= 1) {
+          const error = new MockJoseMultipleMatchingError(
             'multiple matching keys found in the JSON Web Key Set',
             'ERR_JWKS_MULTIPLE_MATCHING_KEYS'
           );
-        } else if (count === 2) {
-          error = new MockJoseMultipleMatchingError('Verification fail', 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED');
-        } else {
-          return { payload };
+          throw error;
         }
-        throw error;
+        if (joseMockState.count === 2) {
+          const error = new MockJoseMultipleMatchingError('Verification fail', 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED');
+          throw error;
+        }
+        return { payload };
       }
       return { payload };
     }),
   };
 });
 
-const fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
-
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 describe('OAuth2 Token', () => {
   const app = express();
   const domain = randomUUID() + '.example.com';
@@ -223,7 +245,9 @@ describe('OAuth2 Token', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    joseMockState.count = 0;
+    vi.mocked(jwtVerify).mockClear();
+    fetchMock.mockClear();
   });
 
   afterAll(async () => {
@@ -1779,6 +1803,7 @@ describe('OAuth2 Token', () => {
     expect(jwt).toBeDefined();
 
     // Then use the JWT for a client credentials grant
+    vi.mocked(jwtVerify).mockClear();
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
       client_assertion_type: OAuthClientAssertionType.JwtBearer,
@@ -1999,11 +2024,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange JSON success', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      json: () => ({ email }),
-      headers: { get: () => ContentType.JSON },
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2016,11 +2037,9 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange JWT success', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      text: () => `header.${encodeBase64Url(JSON.stringify({ email }))}.signature`,
-      headers: { get: () => ContentType.JWT },
-    }));
+    fetchMock.mockImplementation(() =>
+      mockFetchText(`header.${encodeBase64Url(JSON.stringify({ email }))}.signature`, { contentType: ContentType.JWT })
+    );
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2033,11 +2052,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange GCIP success', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ users: [{ email, localId: 'firebase-user-id' }] }),
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ users: [{ email, localId: 'firebase-user-id' }] }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2047,7 +2062,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeTruthy();
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=test-api-key',
       expect.objectContaining({
         method: 'POST',
@@ -2058,7 +2073,18 @@ describe('OAuth2 Token', () => {
         body: JSON.stringify({ idToken: 'firebase-token' }),
       })
     );
-    expect(new URL(fetchMock.mock.calls[0][0]).searchParams.get('key')).toBe('test-api-key');
+    const fetchInput = fetchMock.mock.calls.at(-1)?.[0];
+    expect(fetchInput).toBeDefined();
+    const input = fetchInput as string | URL | Request;
+    let fetchUrl: string;
+    if (typeof input === 'string') {
+      fetchUrl = input;
+    } else if (input instanceof URL) {
+      fetchUrl = input.href;
+    } else {
+      fetchUrl = input.url;
+    }
+    expect(new URL(fetchUrl).searchParams.get('key')).toBe('test-api-key');
   });
 
   test('Token exchange GCIP subject success', async () => {
@@ -2071,11 +2097,7 @@ describe('OAuth2 Token', () => {
       lastName: 'User',
     });
 
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ users: [{ email: '', localId: externalId }] }),
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ users: [{ email: '', localId: externalId }] }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2088,11 +2110,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange GCIP invalid response', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ users: [] }),
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ users: [] }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2105,11 +2123,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token exchange GCIP missing localId', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.JSON },
-      json: () => ({ users: [{ email }] }),
-    }));
+    fetchMock.mockImplementation(() => mockFetchJson({ users: [{ email }] }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2130,14 +2144,11 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.error_description).toBe('Missing user info API key - check your identity provider configuration');
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   test('Token exchange unsupported content type', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 200,
-      headers: { get: () => ContentType.TEXT },
-    }));
+    fetchMock.mockImplementation(() => mockFetchText('', { contentType: ContentType.TEXT }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2151,10 +2162,7 @@ describe('OAuth2 Token', () => {
   });
 
   test('Too many requests', async () => {
-    fetchMock.mockImplementation(() => ({
-      status: 429,
-      headers: { get: () => ContentType.JSON },
-    }));
+    fetchMock.mockImplementation(() => mockFetchStatus(429));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2227,7 +2235,7 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid user info URL - check your identity provider configuration');
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   test('FHIRcast scopes added to client credentials flow', async () => {
@@ -2547,17 +2555,3 @@ describe('OAuth2 Token', () => {
     expect(res3.body.error_description).toBe('Token already granted');
   });
 });
-
-class MockJoseMultipleMatchingError extends Error {
-  code: string;
-  [Symbol.asyncIterator]!: () => AsyncIterableIterator<any>;
-  constructor(message: string, code: string) {
-    super(message);
-    this.name = 'CustomError';
-    this.code = code;
-    this[Symbol.asyncIterator] = async function* () {
-      yield 'key1';
-      yield 'key2';
-    };
-  }
-}
