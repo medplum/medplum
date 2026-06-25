@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Table } from '@mantine/core';
 import type { InternalSchemaElement, TypedValue } from '@medplum/core';
-import { arrayify, capitalize, evalFhirPathTyped, getSearchParameterDetails, toTypedValue } from '@medplum/core';
+import {
+  arrayify,
+  capitalize,
+  evalFhirPathTyped,
+  getSearchParameterDetails,
+  toTypedValue,
+  tryGetDataType,
+} from '@medplum/core';
 import type { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -143,6 +150,19 @@ function jsonPathToFhirPath(path: string): string {
 }
 
 function tryGetElementDefinition(resourceType: string, fhirPath: string): InternalSchemaElement | undefined {
+  // Extensions are not searchable, so they cannot be resolved via SearchParameter details.
+  // Look them up directly from the resource schema so the diff keeps the full extension array
+  // (rather than dropping all but the first) and renders it as an Extension.
+  const lastPart = fhirPath
+    .replace(/\[\d+\]/g, '')
+    .split('.')
+    .pop();
+  if (lastPart === 'extension' || lastPart === 'modifierExtension') {
+    const element = tryGetDataType(resourceType)?.elements[lastPart];
+    if (element) {
+      return element;
+    }
+  }
   try {
     const details = getSearchParameterDetails(resourceType, {
       resourceType: 'SearchParameter',

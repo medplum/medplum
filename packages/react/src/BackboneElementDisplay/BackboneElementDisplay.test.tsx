@@ -101,4 +101,40 @@ describe('BackboneElementDisplay', () => {
     });
     expect(screen.getByText('Foo not implemented')).toBeInTheDocument();
   });
+
+  test('Displays un-sliced extensions as labeled rows', async () => {
+    await setup({
+      path: 'Patient',
+      value: {
+        type: 'Patient',
+        value: {
+          resourceType: 'Patient',
+          extension: [{ url: 'http://example.com/eye-color', valueString: 'blue' }],
+        },
+      },
+    });
+    expect(await screen.findByText('Eye Color')).toBeInTheDocument();
+    expect(screen.getByText('blue')).toBeInTheDocument();
+  });
+
+  test('Hides ignored extension URLs', async () => {
+    await setup({
+      path: 'Patient',
+      value: {
+        type: 'Patient',
+        value: {
+          resourceType: 'Patient',
+          extension: [
+            { url: 'http://example.com/eye-color', valueString: 'blue' },
+            {
+              url: 'http://synthetichealth.github.io/synthea/disability-adjusted-life-years',
+              valueDecimal: 1.23,
+            },
+          ],
+        },
+      },
+    });
+    expect(await screen.findByText('Eye Color')).toBeInTheDocument();
+    expect(screen.queryByText('1.23')).not.toBeInTheDocument();
+  });
 });
