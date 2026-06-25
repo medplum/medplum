@@ -41,7 +41,7 @@ const CMS_MATCH_TYPE_EXTENSION_URL = 'https://medplum.com/fhir/StructureDefiniti
 const CANDIDATE_SEARCH_COUNT = 100;
 const PROBABLE_THRESHOLD = 0.65;
 const POSSIBLE_THRESHOLD = 0.2;
-const CMS_MATCH_FACTOR_COUNT = 12;
+const CMS_MATCH_FACTOR_COUNT = 11;
 
 export type MatchGrade = 'certain' | 'probable' | 'possible' | 'certainly-not';
 

@@ -201,7 +201,7 @@ describe('Patient $match Operation', () => {
     const bundle = matchRes.body as Bundle<Patient>;
     expect(bundle.total).toBeGreaterThan(0);
     const topEntry = bundle.entry?.[0];
-    expect(topEntry?.search?.score).toBeCloseTo(0.25);
+    expect(topEntry?.search?.score).toBeCloseTo(3 / 11);
     expect(topEntry?.search?.extension?.find((e) => e.url.endsWith('match-grade'))?.valueCode).toBe('possible');
     expect(topEntry?.search?.extension?.some((e) => e.url.endsWith('cms-match-combination'))).toBe(false);
   });

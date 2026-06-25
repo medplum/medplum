@@ -16,8 +16,7 @@ export interface CmsPatientMatchFields {
   readonly itinLast4: Set<string>;
   readonly mbi: Set<string>;
   readonly legalId: Set<string>;
-  readonly cspUuid: Set<string>;
-  readonly empiId: Set<string>;
+  readonly namespaceId: Set<string>;
 }
 
 export type CmsPatientFieldMatchResult = Readonly<Record<keyof CmsPatientMatchFields, FieldMatch>>;
@@ -51,7 +50,7 @@ export function cmsPatientMatch(p1: Patient, p2: Patient): CmsPatientMatchResult
     }
   }
 
-  const { firstName, lastName, dob, streetLine, phone, email, ssnLast4, itinLast4, mbi, legalId, cspUuid, empiId } =
+  const { firstName, lastName, dob, streetLine, phone, email, ssnLast4, itinLast4, mbi, legalId, namespaceId } =
     fieldMatches;
 
   // `ex` = field must match exactly
@@ -125,10 +124,8 @@ export function cmsPatientMatch(p1: Patient, p2: Patient): CmsPatientMatchResult
     setCriteria('24', email, legalId);
   } else if (ex(legalId) && ex(mbi)) {
     setCriteria('25', legalId, mbi);
-  } else if (ex(cspUuid)) {
-    setCriteria('26', cspUuid);
-  } else if (ex(empiId)) {
-    setCriteria('27', empiId);
+  } else if (ex(namespaceId)) {
+    setCriteria('26', namespaceId);
   }
 
   return {
@@ -168,13 +165,15 @@ export function extractCmsMatchFields(patient: Patient): CmsPatientMatchFields {
       patient,
       'Patient.identifier.where(system = "https://bluebutton.cms.gov/resources/identifiers/beneficiary-id").value'
     ),
-    cspUuid: extractStrings(
-      patient,
-      'Patient.identifier.where(system = "https://bluebutton.cms.gov/resources/identifiers/csp-uuid").value'
-    ),
-    empiId: extractStrings(
-      patient,
-      'Patient.identifier.where(system != "http://hl7.org/fhir/sid/us-ssn" and system != "http://hl7.org/fhir/sid/us-itin" and system != "https://bluebutton.cms.gov/resources/identifiers/mbi" and system != "https://bluebutton.cms.gov/resources/identifiers/beneficiary-id" and system != "https://bluebutton.cms.gov/resources/identifiers/csp-uuid").value'
+    namespaceId: unionSets(
+      extractStrings(
+        patient,
+        'Patient.identifier.where(system != "http://hl7.org/fhir/sid/us-ssn" and system != "http://hl7.org/fhir/sid/us-itin" and system != "https://bluebutton.cms.gov/resources/identifiers/mbi" and system != "https://bluebutton.cms.gov/resources/identifiers/beneficiary-id" and system != "https://bluebutton.cms.gov/resources/identifiers/csp-uuid").value'
+      ),
+      extractStrings(
+        patient,
+        'Patient.identifier.where(system = "https://bluebutton.cms.gov/resources/identifiers/csp-uuid").value'
+      )
     ),
   };
 }
@@ -276,6 +275,10 @@ function setsIntersect(a: Set<string>, b: Set<string>): boolean {
   return false;
 }
 
+function unionSets<T>(...sets: Set<T>[]): Set<T> {
+  return new Set(sets.flatMap((s) => Array.from(s)));
+}
+
 export function matchField(a: Set<string>, b: Set<string>): FieldMatch {
   if (a.size === 0 || b.size === 0) {
     return 'none';
@@ -315,8 +318,7 @@ export function compareCmsMatchFields(
     itinLast4: matchField(p1.itinLast4, p2.itinLast4),
     mbi: matchField(p1.mbi, p2.mbi),
     legalId: matchField(p1.legalId, p2.legalId),
-    cspUuid: matchField(p1.cspUuid, p2.cspUuid),
-    empiId: matchField(p1.empiId, p2.empiId),
+    namespaceId: matchField(p1.namespaceId, p2.namespaceId),
   };
 }
 

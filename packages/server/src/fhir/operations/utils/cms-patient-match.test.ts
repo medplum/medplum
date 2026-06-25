@@ -59,8 +59,7 @@ describe('CMS Patient Match Utils', () => {
         itinLast4: '4321',
         mbi: '1eg4te5mk73',
         legalId: 'bene123',
-        cspUuid: 'cspabc',
-        empiId: 'empi999',
+        namespaceId: ['cspabc', 'empi999'],
       })
     );
   });
@@ -127,8 +126,7 @@ describe('CMS Patient Match Utils', () => {
     ['23', { email: 'robert@example.com', mbi: '1EG4TE5MK73' }],
     ['24', { email: 'robert@example.com', legalId: 'BENE123' }],
     ['25', { legalId: 'BENE123', mbi: '1EG4TE5MK73' }],
-    ['26', { cspUuid: 'CSP-ABC' }],
-    ['27', { empiId: 'EMPI-999' }],
+    ['26', { namespaceId: 'CSP-ABC' }],
   ] satisfies [string, Fields][])('identifies CMS criteria %s', (criteriaId, input) => {
     const fuzzyLast = ['05', '07', '10', '15', '16'].includes(criteriaId);
     const fuzzyFirst = ['04', '06'].includes(criteriaId);
@@ -140,13 +138,20 @@ describe('CMS Patient Match Utils', () => {
     expect(result.matchType).toBe(fuzzyLast || fuzzyFirst ? 'fuzzy' : 'exact');
   });
 
+  test('identifies EMPI-style namespace identifiers as criteria 26', () => {
+    expect(cmsPatientMatch(patient({ namespaceId: 'EMPI-999' }), patient({ namespaceId: 'EMPI-999' }))).toMatchObject({
+      criteriaId: '26',
+      matchType: 'exact',
+    });
+  });
+
   test('counts matches and rejects excess fuzzy or suffix-conflicting matches', () => {
     expect(
       cmsPatientMatch(
         patient({ firstName: 'Robert', lastName: 'Smith', dob: '1970-01-01' }),
         patient({ firstName: 'Robret', lastName: 'Smith', dob: '1985-12-31' })
       )
-    ).toMatchObject({ exactCount: 1, fuzzyCount: 1, noneCount: 10, criteriaId: undefined });
+    ).toMatchObject({ exactCount: 1, fuzzyCount: 1, noneCount: 9, criteriaId: undefined });
     expect(
       cmsPatientMatch(
         patient({ firstName: 'Robert', lastName: 'Smith', dob: '1970-01-01', streetLine: '123 Main' }),
@@ -199,8 +204,7 @@ function patient(f: Fields): Patient {
       ...(f.itinLast4 ? [{ system: ITIN, value: f.itinLast4 }] : []),
       ...(f.mbi ? [{ system: MBI, value: f.mbi }] : []),
       ...(f.legalId ? [{ system: LEGAL, value: f.legalId }] : []),
-      ...(f.cspUuid ? [{ system: CSP, value: f.cspUuid }] : []),
-      ...(f.empiId ? [{ system: EMPI, value: f.empiId }] : []),
+      ...(f.namespaceId ? [{ system: f.namespaceId.startsWith('CSP') ? CSP : EMPI, value: f.namespaceId }] : []),
     ],
   };
 }
@@ -218,7 +222,6 @@ function fields(values: Partial<Record<Field, string | string[]>>): CmsPatientMa
     itinLast4: field('itinLast4'),
     mbi: field('mbi'),
     legalId: field('legalId'),
-    cspUuid: field('cspUuid'),
-    empiId: field('empiId'),
+    namespaceId: field('namespaceId'),
   };
 }

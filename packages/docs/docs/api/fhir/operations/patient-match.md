@@ -75,17 +75,17 @@ Candidates below the `possible` threshold, and candidates blocked by a generatio
 The `search.score` is intentionally **not** a probability — it is a simple, explainable ranking value:
 
 - **`1.0`** when an approved CMS combination is satisfied (`certain`).
-- In discovery mode only, otherwise **`min(x / 12, 0.9)`**, where `x` is the weighted count of the 12 identity factors that agree: an **exact** field counts as `1`, a **fuzzy** field as `0.5`. The `0.9` ceiling keeps any non-approved field set strictly below a real CMS match.
+- In discovery mode only, otherwise **`min(x / 11, 0.9)`**, where `x` is the weighted count of the 11 identity factors that agree: an **exact** field counts as `1`, a **fuzzy** field as `0.5`. The `0.9` ceiling keeps any non-approved field set strictly below a real CMS match.
 
 This non-CMS score is Medplum's FHIR `$match` discovery ranking aid; it is not part of the CMS Table 2 release rule. Within a single query the denominator is constant, so candidates sort correctly by score; grade carries the human-facing classification.
 
 ## Identity Factors
 
-Twelve factors are used (gender is **not** a matching factor):
+Eleven factors are used (gender is **not** a matching factor):
 
-First Name · Last Name · Date of Birth · Street Line · Phone Number · Email Address · SSN (last 4) · ITIN (last 4) · MBI · Legal ID · CSP UUID · EMPI / FHIR Patient Identifier
+First Name · Last Name · Date of Birth · Street Line · Phone Number · Email Address · SSN (last 4) · ITIN (last 4) · MBI · Legal ID · Namespace-bound Unique Identifier
 
-Identifier factors are matched by their `system` (issuing-authority namespace) and value. An identifier with a system outside the CMS-specific namespaces is treated as an **EMPI / FHIR Patient Identifier** (so matching by a project MRN works out of the box).
+Identifier factors are matched by their `system` (issuing-authority namespace) and value. An identifier with a system outside the CMS-specific namespaces is treated as a **namespace-bound unique identifier** (for example EMPI, FHIR Patient Identifier, CSP UUID, or project MRN).
 
 ## Approved CMS Matching Combinations
 
@@ -118,8 +118,7 @@ A candidate is a `certain` match when its agreeing factors form one of these app
 | 23  | Email + MBI                                      |
 | 24  | Email + Legal ID                                 |
 | 25  | Legal ID + MBI                                   |
-| 26  | CSP UUID                                         |
-| 27  | EMPI / FHIR Patient Identifier                   |
+| 26  | Namespace-bound Unique Identifier                |
 
 ## Normalization
 
