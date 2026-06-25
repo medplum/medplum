@@ -99,11 +99,7 @@ async function main(): Promise<void> {
   //   self-hosters, or a `ClientApplication` with an `identityProvider` for hosted Medplum).
   // - `membershipId` optionally targets a specific ProjectMembership, allowing the same external
   //   identity to authenticate into a project other than the client's own project.
-  const profile = await medplum.exchangeExternalAccessToken(
-    externalAccessToken,
-    config.clientId,
-    config.membershipId
-  );
+  const profile = await medplum.exchangeExternalAccessToken(externalAccessToken, config.clientId, config.membershipId);
 
   const login = medplum.getActiveLogin();
   const accessToken = medplum.getAccessToken();
