@@ -43,7 +43,7 @@ const PROBABLE_THRESHOLD = 0.65;
 const POSSIBLE_THRESHOLD = 0.2;
 const CMS_MATCH_FACTOR_COUNT = 12;
 
-export type MatchGrade = 'certain' | 'probable' | 'possible';
+export type MatchGrade = 'certain' | 'probable' | 'possible' | 'certainly-not';
 
 export interface PatientMatchParameters {
   resource: Patient;
@@ -51,9 +51,8 @@ export interface PatientMatchParameters {
   count?: number;
 }
 
-/** A gathered candidate scored for CMS disclosure or FHIR discovery. */
-interface PatientMatchCandidate {
-  candidate: WithId<Patient>;
+export interface ScoredPatient {
+  patient: WithId<Patient>;
   result: CmsPatientMatchResult;
   score: number;
   grade: MatchGrade;
@@ -63,12 +62,10 @@ interface PatientMatchCandidate {
 // https://hl7.org/fhir/R4/patient-operation-match.html
 
 /**
- * Handles a Patient $match request using the CMS Patient Matching criteria.
- *
- * Gathers candidate patients and returns those that satisfy an approved Table 2 combination.
- * With `onlyCertainMatches=true` (disclosure), a match is returned only when exactly one
- * candidate qualifies and the candidate search was complete; otherwise it is suppressed.
- * With `onlyCertainMatches=false` (discovery), every combination match is returned.
+ * Handles a Patient $match request.
+ * Accepts a (possibly partial) Patient resource and returns a Bundle of candidate
+ * matches ordered from most to least likely, each annotated with a search score
+ * and match-grade extension.
  * @param req - The FHIR request.
  * @returns The FHIR response containing a searchset Bundle.
  */
@@ -85,48 +82,52 @@ export async function patientMatchHandler(req: FhirRequest): Promise<FhirRespons
     );
   }
 
-  const input = params.resource;
-  const { candidates, truncated } = await gatherCmsCandidates(ctx.repo, input);
-
-  const matches: PatientMatchCandidate[] = [];
-  for (const candidate of candidates) {
-    const match = scorePatientMatch(candidate, input);
-    if (match) {
-      matches.push(match);
-    }
-  }
-
-  let released: PatientMatchCandidate[];
+  const result = await matchPatients(ctx.repo, params);
   if (params.onlyCertainMatches) {
-    // Disclosure: release only a unique match, and only if the gather was complete — a
-    // truncated search cannot prove uniqueness. Ambiguous and truncated results are suppressed.
-    const certainMatches = matches.filter((m) => m.grade === 'certain');
-    released = !truncated && certainMatches.length === 1 ? certainMatches : [];
-    logCmsAuditEvent(ctx, certainMatches, truncated);
-  } else {
-    // Discovery: return ranked CMS and lightweight FHIR $match candidates for review.
-    released = matches.sort((a, b) => b.score - a.score);
+    logCmsAuditEvent(ctx, result.certainMatches, result.truncated);
   }
 
-  const maxCount = params.count ?? DEFAULT_SEARCH_COUNT;
-  return [allOk, buildMatchBundle(released.slice(0, maxCount))];
+  return [allOk, result.bundle];
 }
 
 /**
- * Gathers CMS match candidates using selective, conjunctive searches anchored on the
- * query's exact identifiers, telecom, and name+birthdate. Returns the deduplicated set
- * along with a `truncated` flag: if any search hit the result cap, uniqueness cannot be
- * proven and the disclosure path suppresses the match.
- *
- * NOTE: recall is bounded by FHIR search semantics (e.g. unnormalized telecom/name values
- * may not match exactly). Full recall requires DB-level normalized search tokens, tracked
- * alongside the address-normalization work item.
- *
+ * Core Patient matching logic. Finds candidate patients from the repository using
+ * available demographics from the input patient, then scores and ranks them.
  * @param repo - The repository.
- * @param input - The input patient resource.
- * @returns The candidate set and a truncation flag.
+ * @param params - The parsed operation parameters.
+ * @returns A searchset Bundle of scored patient matches.
  */
-async function gatherCmsCandidates(
+export async function matchPatients(
+  repo: Repository,
+  params: PatientMatchParameters
+): Promise<{ bundle: Bundle<WithId<Patient>>; certainMatches: ScoredPatient[]; truncated: boolean }> {
+  const input = params.resource;
+  const maxCount = params.count ?? DEFAULT_SEARCH_COUNT;
+  const { candidates, truncated } = await gatherCandidates(repo, input);
+  const scored = candidates.map((candidate) => scoreCandidate(candidate, input));
+  const relevant = scored.filter((s) => s.grade !== 'certainly-not');
+  const certainMatches = relevant.filter((s) => s.grade === 'certain');
+  let filtered: ScoredPatient[];
+  if (params.onlyCertainMatches) {
+    filtered = !truncated && certainMatches.length === 1 ? certainMatches : [];
+  } else {
+    filtered = relevant;
+  }
+
+  filtered.sort((a, b) => b.score - a.score);
+  const limited = filtered.slice(0, maxCount);
+
+  return { bundle: buildMatchBundle(limited), certainMatches, truncated };
+}
+
+/**
+ * Collects candidate patients by running FHIR searches based on the available
+ * demographics in the input patient. Results are deduplicated by patient ID.
+ * @param repo - The repository.
+ * @param input - The input patient resource to match against.
+ * @returns Deduplicated array of candidate patients and whether any search was truncated.
+ */
+async function gatherCandidates(
   repo: Repository,
   input: Patient
 ): Promise<{ candidates: WithId<Patient>[]; truncated: boolean }> {
@@ -151,7 +152,7 @@ async function gatherCmsCandidates(
   };
 
   try {
-    // Exact identifiers (MBI, legal ID, EMPI, etc.) — highly selective token searches.
+    // Strategy 1: search by identifier (strongest signal)
     for (const id of input.identifier ?? EMPTY) {
       if (id.value) {
         const value = id.system ? `${id.system}|${id.value}` : id.value;
@@ -159,7 +160,7 @@ async function gatherCmsCandidates(
       }
     }
 
-    // Phone / email — selective token searches.
+    // Strategy 2: search by telecom (phone/email) when present.
     const telecomValues = new Set(
       (input.telecom ?? EMPTY)
         .filter((t) => (t.system === 'phone' || t.system === 'email') && t.value)
@@ -169,9 +170,7 @@ async function gatherCmsCandidates(
       await runSearch([{ code: 'telecom', operator: Operator.EQUALS, value }]);
     }
 
-    // Name + birthdate — anchors the demographic combinations (01-07, 11, 12). Searching
-    // both family+DOB and given+DOB covers the fuzzy-name cases, since at most one name
-    // field may be fuzzy so the other remains an exact anchor.
+    // Strategy 3: search by name + birthdate.
     if (input.birthDate) {
       const dobFilter = { code: 'birthdate', operator: Operator.EQUALS, value: input.birthDate };
       const family = getFamilyName(input);
@@ -191,42 +190,43 @@ async function gatherCmsCandidates(
 }
 
 /**
- * Scores a gathered candidate for either CMS disclosure or FHIR discovery.
- * @param candidate - The candidate patient from repository search.
+ * Scores a candidate patient against the input patient using the CMS criteria
+ * and lightweight FHIR discovery scoring.
+ * @param candidate - The candidate patient from the repository.
  * @param input - The input patient to match against.
- * @returns The scored match candidate, or undefined if it is below the discovery threshold.
+ * @returns A ScoredPatient with a numeric score and match grade.
  */
-function scorePatientMatch(candidate: WithId<Patient>, input: Patient): PatientMatchCandidate | undefined {
+export function scoreCandidate(candidate: WithId<Patient>, input: Patient): ScoredPatient {
   const result = cmsPatientMatch(input, candidate);
   if (result.criteriaId) {
-    return { candidate, result, score: 1, grade: 'certain' };
+    return { patient: candidate, result, score: 1, grade: 'certain' };
   }
   if (result.suffixConflict) {
-    return undefined;
+    return { patient: candidate, result, score: 0, grade: 'certainly-not' };
   }
 
   const score = Math.min((result.exactCount + result.fuzzyCount * 0.5) / CMS_MATCH_FACTOR_COUNT, 0.9);
-  const grade = classifyDiscoveryGrade(score);
-  return grade ? { candidate, result, score, grade } : undefined;
+  return { patient: candidate, result, score, grade: classifyMatchGrade(score) };
 }
 
-function classifyDiscoveryGrade(score: number): Exclude<MatchGrade, 'certain'> | undefined {
+function classifyMatchGrade(score: number): MatchGrade {
   if (score >= PROBABLE_THRESHOLD) {
     return 'probable';
   }
   if (score >= POSSIBLE_THRESHOLD) {
     return 'possible';
   }
-  return undefined;
+  return 'certainly-not';
 }
 
 /**
- * Builds a searchset Bundle from scored matches.
- * @param matches - The scored match candidates.
- * @returns The searchset Bundle.
+ * Builds a searchset Bundle from a list of scored patients.
+ * Each entry includes a search score and match-grade extension per the FHIR spec.
+ * @param scored - The scored and sorted patient matches.
+ * @returns A searchset Bundle.
  */
-function buildMatchBundle(matches: PatientMatchCandidate[]): Bundle<WithId<Patient>> {
-  const entry: BundleEntry<WithId<Patient>>[] = matches.map(({ candidate, result, score, grade }) => {
+function buildMatchBundle(scored: ScoredPatient[]): Bundle<WithId<Patient>> {
+  const entries: BundleEntry<WithId<Patient>>[] = scored.map(({ patient, result, score, grade }) => {
     const extension = [{ url: MATCH_GRADE_EXTENSION_URL, valueCode: grade }];
     if (result.criteriaId) {
       extension.push({ url: CMS_COMBINATION_EXTENSION_URL, valueString: result.criteriaId });
@@ -235,7 +235,7 @@ function buildMatchBundle(matches: PatientMatchCandidate[]): Bundle<WithId<Patie
       extension.push({ url: CMS_MATCH_TYPE_EXTENSION_URL, valueCode: result.matchType });
     }
     return {
-      resource: candidate,
+      resource: patient,
       search: {
         mode: 'match',
         score,
@@ -243,7 +243,7 @@ function buildMatchBundle(matches: PatientMatchCandidate[]): Bundle<WithId<Patie
       },
     };
   });
-  return { resourceType: 'Bundle', type: 'searchset', total: entry.length, entry };
+  return { resourceType: 'Bundle', type: 'searchset', total: entries.length, entry: entries };
 }
 
 /**
@@ -254,7 +254,7 @@ function buildMatchBundle(matches: PatientMatchCandidate[]): Bundle<WithId<Patie
  * @param matches - The candidates that satisfied a combination.
  * @param truncated - Whether the candidate gather was capped (uniqueness unprovable).
  */
-function logCmsAuditEvent(ctx: AuthenticatedRequestContext, matches: PatientMatchCandidate[], truncated: boolean): void {
+function logCmsAuditEvent(ctx: AuthenticatedRequestContext, matches: ScoredPatient[], truncated: boolean): void {
   const released = !truncated && matches.length === 1;
   let outcome: string;
   if (released) {
@@ -272,7 +272,7 @@ function logCmsAuditEvent(ctx: AuthenticatedRequestContext, matches: PatientMatc
     outcome,
     criteria: matches.map((m) => m.result.criteriaId),
     matchTypes: matches.map((m) => m.result.matchType),
-    matchedIds: matches.map((m) => m.candidate.id),
+    matchedIds: matches.map((m) => m.patient.id),
     uniqueness: getUniquenessResult(released, matches, truncated),
   });
 
@@ -285,7 +285,7 @@ function logCmsAuditEvent(ctx: AuthenticatedRequestContext, matches: PatientMatc
     outcome === 'released' || outcome === 'no-match' ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
     {
       description,
-      resource: released ? createReference(matches[0].candidate) : undefined,
+      resource: released ? createReference(matches[0].patient) : undefined,
     }
   );
   logAuditEvent(auditEvent);
@@ -293,7 +293,7 @@ function logCmsAuditEvent(ctx: AuthenticatedRequestContext, matches: PatientMatc
 
 function getUniquenessResult(
   released: boolean,
-  matches: PatientMatchCandidate[],
+  matches: ScoredPatient[],
   truncated: boolean
 ): 'unique' | 'ambiguous' | 'unproven' | 'none' {
   if (released) {

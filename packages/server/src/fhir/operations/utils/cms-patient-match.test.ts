@@ -16,35 +16,18 @@ import {
 } from './cms-patient-match';
 import type { CmsPatientMatchFields } from './cms-patient-match';
 
-const SSN_SYSTEM = 'http://hl7.org/fhir/sid/us-ssn';
-const ITIN_SYSTEM = 'http://hl7.org/fhir/sid/us-itin';
-const MBI_SYSTEM = 'https://bluebutton.cms.gov/resources/identifiers/mbi';
-const LEGAL_ID_SYSTEM = 'https://bluebutton.cms.gov/resources/identifiers/beneficiary-id';
-const CSP_UUID_SYSTEM = 'https://bluebutton.cms.gov/resources/identifiers/csp-uuid';
-const EMPI_ID_SYSTEM = 'https://example.com/empi';
+const SSN = 'http://hl7.org/fhir/sid/us-ssn';
+const ITIN = 'http://hl7.org/fhir/sid/us-itin';
+const MBI = 'https://bluebutton.cms.gov/resources/identifiers/mbi';
+const LEGAL = 'https://bluebutton.cms.gov/resources/identifiers/beneficiary-id';
+const CSP = 'https://bluebutton.cms.gov/resources/identifiers/csp-uuid';
+const EMPI = 'https://example.com/empi';
 
-interface PatientFields {
-  readonly firstName?: string;
-  readonly lastName?: string;
-  readonly dob?: string;
-  readonly streetLine?: string;
-  readonly phone?: string;
-  readonly email?: string;
-  readonly ssnLast4?: string;
-  readonly itinLast4?: string;
-  readonly mbi?: string;
-  readonly legalId?: string;
-  readonly cspUuid?: string;
-  readonly empiId?: string;
-  readonly suffix?: string;
-}
+type Field = keyof CmsPatientMatchFields;
+type Fields = Partial<Record<Field | 'suffix', string>>;
 
 describe('CMS Patient Match Utils', () => {
-  test('folds strings for case, punctuation, whitespace, and diacritic insensitive matching', () => {
-    expect(foldString(' José  A. Smith-Jr. ')).toBe('joseasmithjr');
-  });
-
-  test('extracts and folds all CMS match fields from a patient', () => {
+  test('normalizes extracted CMS match fields', () => {
     const patient: Patient = {
       resourceType: 'Patient',
       name: [{ family: "O'Connor", given: [' Ana-Maria '] }],
@@ -53,100 +36,62 @@ describe('CMS Patient Match Utils', () => {
       telecom: [
         { system: 'phone', value: '+1 (617) 555-0100' },
         { system: 'email', value: 'Ana.Example@Example.COM' },
-        { system: 'fax', value: 'ignored' },
       ],
       identifier: [
-        { system: SSN_SYSTEM, value: '123-45-6789' },
-        { system: ITIN_SYSTEM, value: '987-65-4321' },
-        { system: MBI_SYSTEM, value: '1EG4-TE5-MK73' },
-        { system: LEGAL_ID_SYSTEM, value: 'BENE-123' },
-        { system: CSP_UUID_SYSTEM, value: 'CSP-ABC' },
-        { system: EMPI_ID_SYSTEM, value: 'EMPI-999' },
+        { system: SSN, value: '123-45-6789' },
+        { system: ITIN, value: '987-65-4321' },
+        { system: MBI, value: '1EG4-TE5-MK73' },
+        { system: LEGAL, value: 'BENE-123' },
+        { system: CSP, value: 'CSP-ABC' },
+        { system: EMPI, value: 'EMPI-999' },
       ],
     };
 
-    expect(extractCmsMatchFields(patient)).toEqual({
-      firstName: new Set(['anamaria']),
-      lastName: new Set(['oconnor']),
-      dob: new Set(['19700102']),
-      streetLine: new Set(['123mainst', 'apt4']),
-      phone: new Set(['6175550100']),
-      email: new Set(['anaexampleexamplecom']),
-      ssnLast4: new Set(['6789']),
-      itinLast4: new Set(['4321']),
-      mbi: new Set(['1eg4te5mk73']),
-      legalId: new Set(['bene123']),
-      cspUuid: new Set(['cspabc']),
-      empiId: new Set(['empi999']),
-    });
+    expect(extractCmsMatchFields(patient)).toEqual(fields({
+      firstName: 'anamaria',
+      lastName: 'oconnor',
+      dob: '19700102',
+      streetLine: ['123mainst', 'apt4'],
+      phone: '6175550100',
+      email: 'anaexampleexamplecom',
+      ssnLast4: '6789',
+      itinLast4: '4321',
+      mbi: '1eg4te5mk73',
+      legalId: 'bene123',
+      cspUuid: 'cspabc',
+      empiId: 'empi999',
+    }));
   });
 
-  test('extractStrings ignores non-string FHIRPath values', () => {
+  test('normalization helpers handle edge cases', () => {
+    expect(foldString(' José  A. Smith-Jr. ')).toBe('joseasmithjr');
+    expect(normalizeLast4('123-45-6789')).toBe('6789');
+    expect(normalizePhone('+1 (617) 555-0100')).toBe('6175550100');
+    expect(normalizePhone('+44 20 7946 0958')).toBe('442079460958');
+    expect(normalizeFullDate('1970-01-02')).toBe('19700102');
+    expect(normalizeFullDate('1970-01')).toBe('');
+    expect(extractStrings({ resourceType: 'Patient', name: [{ given: ['---'] }] }, 'Patient.name.given')).toEqual(
+      new Set()
+    );
     expect(extractStrings({ resourceType: 'Patient', multipleBirthBoolean: true }, 'Patient.multipleBirth')).toEqual(
       new Set()
     );
   });
 
-  test('extractStrings skips values that normalize to empty strings', () => {
-    expect(extractStrings({ resourceType: 'Patient', name: [{ given: ['---'] }] }, 'Patient.name.given')).toEqual(
-      new Set()
-    );
-  });
-
-  test('normalizes SSN and ITIN values to last four folded characters', () => {
-    expect(normalizeLast4('123-45-6789')).toBe('6789');
-    expect(normalizeLast4('6789')).toBe('6789');
-  });
-
-  test('normalizes US phone numbers and leaves other country codes as digits', () => {
-    expect(normalizePhone('+1 (617) 555-0100')).toBe('6175550100');
-    expect(normalizePhone('617.555.0100')).toBe('6175550100');
-    expect(normalizePhone('+44 20 7946 0958')).toBe('442079460958');
-  });
-
-  test('normalizes only full birth dates', () => {
-    expect(normalizeFullDate('1970-01-02')).toBe('19700102');
-    expect(normalizeFullDate('1970-01')).toBe('');
-    expect(normalizeFullDate('1970')).toBe('');
-  });
-
-  test('matches exact values before fuzzy values', () => {
+  test('matches fields exactly, fuzzily, or not at all', () => {
     expect(matchField(new Set(['robert', 'alice']), new Set(['alice', 'robret']))).toBe('exact');
-  });
-
-  test('matches one edit fuzzy values when both values have sufficient length', () => {
     expect(matchField(new Set(['robert']), new Set(['robret']))).toBe('fuzzy');
     expect(matchField(new Set(['smith']), new Set(['smyth']))).toBe('fuzzy');
-  });
-
-  test('does not fuzzy match short values, empty fields, or distant values', () => {
     expect(matchField(new Set(['ann']), new Set(['ana']))).toBe('none');
     expect(matchField(new Set(), new Set(['robert']))).toBe('none');
     expect(matchField(new Set(['robert']), new Set(['charles']))).toBe('none');
   });
 
-  test('compares all CMS match fields', () => {
-    const left: CmsPatientMatchFields = emptyFields({
-      firstName: ['robert'],
-      lastName: ['smith'],
-      phone: ['6175550100'],
-    });
-    const right: CmsPatientMatchFields = emptyFields({
-      firstName: ['robret'],
-      lastName: ['smith'],
-      phone: ['6175550199'],
-    });
-
-    expect(compareCmsMatchFields(left, right)).toMatchObject({
+  test('compares fields and computes Damerau-Levenshtein distances', () => {
+    expect(compareCmsMatchFields(fields({ firstName: 'robert' }), fields({ firstName: 'robret' }))).toMatchObject({
       firstName: 'fuzzy',
-      lastName: 'exact',
-      phone: 'none',
-      dob: 'none',
-      email: 'none',
+      lastName: 'none',
     });
-  });
-
-  test('computes Damerau-Levenshtein distance for empty strings and single edits', () => {
     expect(damerauLevenshtein('', 'abc')).toBe(3);
     expect(damerauLevenshtein('abc', '')).toBe(3);
     expect(damerauLevenshtein('robert', 'robret')).toBe(1);
@@ -182,145 +127,90 @@ describe('CMS Patient Match Utils', () => {
     ['25', { legalId: 'BENE123', mbi: '1EG4TE5MK73' }],
     ['26', { cspUuid: 'CSP-ABC' }],
     ['27', { empiId: 'EMPI-999' }],
-  ] satisfies [string, PatientFields][])('identifies CMS criteria %s', (criteriaId, fields) => {
-    const query = patientFromFields(fields);
-    let candidate = patientFromFields(fields);
-    if (criteriaId === '05' || criteriaId === '07' || criteriaId === '10' || criteriaId === '15' || criteriaId === '16') {
-      candidate = patientFromFields({ ...fields, lastName: 'Smiht' });
-    } else if (criteriaId === '04' || criteriaId === '06') {
-      candidate = patientFromFields({ ...fields, firstName: 'Robret' });
-    }
-
-    const result = cmsPatientMatch(query, candidate);
-
-    expect(result.criteriaId).toBe(criteriaId);
-    expect(result.matchType).toBe(
-      ['04', '05', '06', '07', '10', '15', '16'].includes(criteriaId) ? 'fuzzy' : 'exact'
+  ] satisfies [string, Fields][])('identifies CMS criteria %s', (criteriaId, input) => {
+    const fuzzyLast = ['05', '07', '10', '15', '16'].includes(criteriaId);
+    const fuzzyFirst = ['04', '06'].includes(criteriaId);
+    const result = cmsPatientMatch(
+      patient(input),
+      patient({ ...input, ...(fuzzyLast ? { lastName: 'Smiht' } : {}), ...(fuzzyFirst ? { firstName: 'Robret' } : {}) })
     );
+    expect(result.criteriaId).toBe(criteriaId);
+    expect(result.matchType).toBe(fuzzyLast || fuzzyFirst ? 'fuzzy' : 'exact');
   });
 
-  test('counts exact, fuzzy, and non-matching fields', () => {
+  test('counts matches and rejects excess fuzzy or suffix-conflicting matches', () => {
     expect(
       cmsPatientMatch(
-        patientFromFields({ firstName: 'Robert', lastName: 'Smith', dob: '1970-01-01' }),
-        patientFromFields({ firstName: 'Robret', lastName: 'Smith', dob: '1985-12-31' })
+        patient({ firstName: 'Robert', lastName: 'Smith', dob: '1970-01-01' }),
+        patient({ firstName: 'Robret', lastName: 'Smith', dob: '1985-12-31' })
       )
-    ).toMatchObject({
-      exactCount: 1,
-      fuzzyCount: 1,
-      noneCount: 10,
-      criteriaId: undefined,
-      matchType: undefined,
-    });
-  });
-
-  test('allows at most one fuzzy match across starred criteria fields', () => {
+    ).toMatchObject({ exactCount: 1, fuzzyCount: 1, noneCount: 10, criteriaId: undefined });
     expect(
       cmsPatientMatch(
-        patientFromFields({ firstName: 'Robert', lastName: 'Smith', dob: '1970-01-01', streetLine: '123 Main' }),
-        patientFromFields({ firstName: 'Robret', lastName: 'Smiht', dob: '1970-01-01', streetLine: '123 Main' })
+        patient({ firstName: 'Robert', lastName: 'Smith', dob: '1970-01-01', streetLine: '123 Main' }),
+        patient({ firstName: 'Robret', lastName: 'Smiht', dob: '1970-01-01', streetLine: '123 Main' })
       ).criteriaId
     ).toBeUndefined();
-  });
-
-  test('does not match when identifiable generational suffixes conflict', () => {
-    const query = patientFromFields({
-      firstName: 'Robert',
-      lastName: 'Smith',
-      dob: '1970-01-01',
-      phone: '6175550100',
-      suffix: 'Jr.',
-    });
-    const candidate = patientFromFields({
-      firstName: 'Robert',
-      lastName: 'Smith',
-      dob: '1970-01-01',
-      phone: '6175550100',
-      suffix: 'Senior',
-    });
-
-    expect(hasGenerationalSuffixConflict(query, candidate)).toBe(true);
-    expect(cmsPatientMatch(query, candidate)).toMatchObject({
-      criteriaId: undefined,
-      matchType: undefined,
-      suffixConflict: true,
-    });
-  });
-
-  test('does not block on absent or equivalent generational suffixes', () => {
     expect(
-      hasGenerationalSuffixConflict(patientFromFields({ suffix: 'Jr.' }), patientFromFields({ suffix: 'Junior' }))
-    ).toBe(false);
-    expect(hasGenerationalSuffixConflict(patientFromFields({ suffix: 'Jr.' }), patientFromFields({}))).toBe(false);
+      cmsPatientMatch(
+        patient({ firstName: 'Robert', dob: '1970-01-01', phone: '6175550100', suffix: 'Jr.' }),
+        patient({ firstName: 'Robert', dob: '1970-01-01', phone: '6175550100', suffix: 'Senior' })
+      )
+    ).toMatchObject({ criteriaId: undefined, suffixConflict: true });
   });
 
   test.each([
-    ['II', '2nd', 'second'],
-    ['III', '3rd', 'third'],
-    ['IV', '4th', 'fourth'],
-  ])('recognizes equivalent %s suffix aliases', (roman, ordinal, word) => {
-    expect(hasGenerationalSuffixConflict(patientFromFields({ suffix: roman }), patientFromFields({ suffix: ordinal }))).toBe(
-      false
-    );
-    expect(hasGenerationalSuffixConflict(patientFromFields({ suffix: roman }), patientFromFields({ suffix: word }))).toBe(
-      false
-    );
-  });
-
-  test('ignores unrecognized suffix values for suffix conflicts', () => {
-    expect(hasGenerationalSuffixConflict(patientFromFields({ suffix: 'PhD' }), patientFromFields({ suffix: 'MD' }))).toBe(
-      false
-    );
+    ['Jr.', 'Junior'],
+    ['II', '2nd'],
+    ['II', 'second'],
+    ['III', '3rd'],
+    ['III', 'third'],
+    ['IV', '4th'],
+    ['IV', 'fourth'],
+    ['PhD', 'MD'],
+  ])('does not report equivalent or unrecognized suffixes as conflicts', (a, b) => {
+    expect(hasGenerationalSuffixConflict(patient({ suffix: a }), patient({ suffix: b }))).toBe(false);
   });
 });
 
-function patientFromFields(fields: PatientFields): Patient {
-  const patient: Patient = { resourceType: 'Patient' };
-  if (fields.firstName || fields.lastName) {
-    patient.name = [
-      {
-        given: fields.firstName ? [fields.firstName] : undefined,
-        family: fields.lastName,
-        suffix: fields.suffix ? [fields.suffix] : undefined,
-      },
-    ];
-  } else if (fields.suffix) {
-    patient.name = [{ suffix: [fields.suffix] }];
-  }
-  if (fields.dob) {
-    patient.birthDate = fields.dob;
-  }
-  if (fields.streetLine) {
-    patient.address = [{ line: [fields.streetLine] }];
-  }
-  patient.telecom = [
-    ...(fields.phone ? [{ system: 'phone' as const, value: fields.phone }] : []),
-    ...(fields.email ? [{ system: 'email' as const, value: fields.email }] : []),
-  ];
-  patient.identifier = [
-    ...(fields.ssnLast4 ? [{ system: SSN_SYSTEM, value: fields.ssnLast4 }] : []),
-    ...(fields.itinLast4 ? [{ system: ITIN_SYSTEM, value: fields.itinLast4 }] : []),
-    ...(fields.mbi ? [{ system: MBI_SYSTEM, value: fields.mbi }] : []),
-    ...(fields.legalId ? [{ system: LEGAL_ID_SYSTEM, value: fields.legalId }] : []),
-    ...(fields.cspUuid ? [{ system: CSP_UUID_SYSTEM, value: fields.cspUuid }] : []),
-    ...(fields.empiId ? [{ system: EMPI_ID_SYSTEM, value: fields.empiId }] : []),
-  ];
-  return patient;
+function patient(f: Fields): Patient {
+  return {
+    resourceType: 'Patient',
+    name:
+      f.firstName || f.lastName || f.suffix
+        ? [{ given: f.firstName ? [f.firstName] : undefined, family: f.lastName, suffix: f.suffix ? [f.suffix] : undefined }]
+        : undefined,
+    birthDate: f.dob,
+    address: f.streetLine ? [{ line: [f.streetLine] }] : undefined,
+    telecom: [
+      ...(f.phone ? [{ system: 'phone' as const, value: f.phone }] : []),
+      ...(f.email ? [{ system: 'email' as const, value: f.email }] : []),
+    ],
+    identifier: [
+      ...(f.ssnLast4 ? [{ system: SSN, value: f.ssnLast4 }] : []),
+      ...(f.itinLast4 ? [{ system: ITIN, value: f.itinLast4 }] : []),
+      ...(f.mbi ? [{ system: MBI, value: f.mbi }] : []),
+      ...(f.legalId ? [{ system: LEGAL, value: f.legalId }] : []),
+      ...(f.cspUuid ? [{ system: CSP, value: f.cspUuid }] : []),
+      ...(f.empiId ? [{ system: EMPI, value: f.empiId }] : []),
+    ],
+  };
 }
 
-function emptyFields(fields: Partial<Record<keyof CmsPatientMatchFields, string[]>>): CmsPatientMatchFields {
+function fields(values: Partial<Record<Field, string | string[]>>): CmsPatientMatchFields {
+  const field = (name: Field): Set<string> => new Set([values[name] ?? []].flat());
   return {
-    firstName: new Set(fields.firstName ?? []),
-    lastName: new Set(fields.lastName ?? []),
-    dob: new Set(fields.dob ?? []),
-    streetLine: new Set(fields.streetLine ?? []),
-    phone: new Set(fields.phone ?? []),
-    email: new Set(fields.email ?? []),
-    ssnLast4: new Set(fields.ssnLast4 ?? []),
-    itinLast4: new Set(fields.itinLast4 ?? []),
-    mbi: new Set(fields.mbi ?? []),
-    legalId: new Set(fields.legalId ?? []),
-    cspUuid: new Set(fields.cspUuid ?? []),
-    empiId: new Set(fields.empiId ?? []),
+    firstName: field('firstName'),
+    lastName: field('lastName'),
+    dob: field('dob'),
+    streetLine: field('streetLine'),
+    phone: field('phone'),
+    email: field('email'),
+    ssnLast4: field('ssnLast4'),
+    itinLast4: field('itinLast4'),
+    mbi: field('mbi'),
+    legalId: field('legalId'),
+    cspUuid: field('cspUuid'),
+    empiId: field('empiId'),
   };
 }

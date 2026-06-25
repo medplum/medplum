@@ -20,20 +20,7 @@ export interface CmsPatientMatchFields {
   readonly empiId: Set<string>;
 }
 
-export interface CmsPatientFieldMatchResult {
-  readonly firstName: FieldMatch;
-  readonly lastName: FieldMatch;
-  readonly dob: FieldMatch;
-  readonly streetLine: FieldMatch;
-  readonly phone: FieldMatch;
-  readonly email: FieldMatch;
-  readonly ssnLast4: FieldMatch;
-  readonly itinLast4: FieldMatch;
-  readonly mbi: FieldMatch;
-  readonly legalId: FieldMatch;
-  readonly cspUuid: FieldMatch;
-  readonly empiId: FieldMatch;
-}
+export type CmsPatientFieldMatchResult = Readonly<Record<keyof CmsPatientMatchFields, FieldMatch>>;
 
 export interface CmsPatientMatchResult {
   readonly fieldMatches: CmsPatientFieldMatchResult;
@@ -261,24 +248,24 @@ function extractGenerationalSuffixes(patient: Patient): Set<string> {
 }
 
 function normalizeGenerationalSuffix(value: string): string | undefined {
-  const folded = foldString(value);
-  if (folded === 'jr' || folded === 'junior') {
-    return 'jr';
-  }
-  if (folded === 'sr' || folded === 'senior') {
-    return 'sr';
-  }
-  if (folded === 'ii' || folded === '2nd' || folded === 'second') {
-    return 'ii';
-  }
-  if (folded === 'iii' || folded === '3rd' || folded === 'third') {
-    return 'iii';
-  }
-  if (folded === 'iv' || folded === '4th' || folded === 'fourth') {
-    return 'iv';
-  }
-  return undefined;
+  return GENERATIONAL_SUFFIXES[foldString(value)];
 }
+
+const GENERATIONAL_SUFFIXES: Record<string, string> = {
+  jr: 'jr',
+  junior: 'jr',
+  sr: 'sr',
+  senior: 'sr',
+  ii: 'ii',
+  '2nd': 'ii',
+  second: 'ii',
+  iii: 'iii',
+  '3rd': 'iii',
+  third: 'iii',
+  iv: 'iv',
+  '4th': 'iv',
+  fourth: 'iv',
+};
 
 function setsIntersect(a: Set<string>, b: Set<string>): boolean {
   for (const value of a) {
