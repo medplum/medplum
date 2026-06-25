@@ -8,8 +8,10 @@ The `$match` operation implements [Master Patient Index (MPI)](https://en.wikipe
 
 Medplum's matching is based on the **CMS Patient Matching framework**, an evidence-based model that defines a fixed set of identity-attribute combinations strong enough to identify a patient. Rather than an ad-hoc weighted heuristic, matching is grounded in these approved combinations, with consistent normalization and conservative, constrained fuzzy matching.
 
-:::note CMS guidelines are in draft
+:::note[CMS guidelines are in draft]
+
 The CMS Patient Matching framework is a draft proposal and is **subject to change as the guidelines evolve**. The criteria table and behavior described here reflect the current draft and may be updated in future releases.
+
 :::
 
 ## Use Cases
