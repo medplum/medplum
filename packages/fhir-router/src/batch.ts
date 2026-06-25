@@ -175,6 +175,16 @@ class BatchProcessor {
         );
         continue;
       }
+
+      // An invalid fullUrl is a structural error that makes the bundle's reference
+      // graph undefined — fail the entire bundle so we don't persist invalid pointers
+      const fullUrl = entry.fullUrl;
+      if (fullUrl && /^urn(?::|%3A)uuid/i.test(fullUrl) && !localBundleReference.test(fullUrl)) {
+        throw new OperationOutcomeError(
+          badRequest('Invalid fullUrl: must be a valid UUID URN', `Bundle.entry[${i}].fullUrl`)
+        );
+      }
+
       const outcome = await this.preprocessEntry(entry, i, seenIdentities);
       if (outcome) {
         if (!this.isTransaction()) {
