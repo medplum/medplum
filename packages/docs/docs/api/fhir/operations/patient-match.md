@@ -27,11 +27,11 @@ POST [base]/Patient/$match
 
 ## Input Parameters
 
-| Parameter            | Cardinality | Type      | Description                                                                                                                 |
-| -------------------- | ----------- | --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Parameter            | Cardinality | Type      | Description                                                                                                                   |
+| -------------------- | ----------- | --------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `resource`           | 1..1        | `Patient` | The patient to match against (may be partial). Must include at least one of: `identifier`, `name`, `birthDate`, or `telecom`. |
-| `onlyCertainMatches` | 0..1        | `boolean` | Selects the matching mode. See [Matching Modes](#matching-modes). Defaults to `false`.                                      |
-| `count`              | 0..1        | `integer` | Maximum number of results (discovery mode only). Defaults to the server's default search count.                             |
+| `onlyCertainMatches` | 0..1        | `boolean` | Selects the matching mode. See [Matching Modes](#matching-modes). Defaults to `false`.                                        |
+| `count`              | 0..1        | `integer` | Maximum number of results (discovery mode only). Defaults to the server's default search count.                               |
 
 ## Matching Modes
 
@@ -52,19 +52,19 @@ Returns a `Bundle` of type `searchset`. Each entry contains a matched `Patient` 
 - `entry.search.score` — A score from `0` to `1`. See [Scoring](#scoring).
 - `entry.search.extension` — A [`match-grade`](https://hl7.org/fhir/R4/extension-match-grade.html) extension, plus Medplum CMS extensions when an approved combination is satisfied:
 
-| Extension URL                                                        | Value    | Meaning                                                                   |
-| -------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------- |
-| `http://hl7.org/fhir/StructureDefinition/match-grade`                | `code`   | The match grade (see below).                                              |
-| `https://medplum.com/fhir/StructureDefinition/cms-match-combination` | `string` | The CMS combination ID that was satisfied (e.g. `"02"`).                  |
+| Extension URL                                                        | Value    | Meaning                                                                           |
+| -------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------- |
+| `http://hl7.org/fhir/StructureDefinition/match-grade`                | `code`   | The match grade (see below).                                                      |
+| `https://medplum.com/fhir/StructureDefinition/cms-match-combination` | `string` | The CMS combination ID that was satisfied (e.g. `"02"`).                          |
 | `https://medplum.com/fhir/StructureDefinition/cms-match-type`        | `code`   | `exact` or `fuzzy` — whether the satisfied CMS combination used fuzzy comparison. |
 
 ## Match Grades
 
 The `match-grade` separates strict CMS combination matches from lower-confidence discovery candidates:
 
-| Grade      | Meaning                                                                  |
-| ---------- | ------------------------------------------------------------------------ |
-| `certain`  | An approved CMS combination is fully satisfied.                          |
+| Grade      | Meaning                                                                   |
+| ---------- | ------------------------------------------------------------------------- |
+| `certain`  | An approved CMS combination is fully satisfied.                           |
 | `probable` | A non-CMS discovery candidate with a score greater than or equal to 0.65. |
 | `possible` | A non-CMS discovery candidate with a score greater than or equal to 0.20. |
 
@@ -150,7 +150,7 @@ Results are deduplicated by patient ID, then compared and scored in memory. Disc
 
 ## Example
 
-### Request (discovery mode)
+### Request
 
 ```http
 POST /fhir/R4/Patient/$match
@@ -163,7 +163,7 @@ Content-Type: application/fhir+json
       "name": "resource",
       "resource": {
         "resourceType": "Patient",
-        "name": [{ "family": "Smith", "given": ["Robert"] }],
+        "name": [{ "family": "Smith", "given": ["John"] }],
         "birthDate": "1970-03-15",
         "telecom": [{ "system": "phone", "value": "555-867-5309" }]
       }
@@ -185,9 +185,9 @@ Content-Type: application/fhir+json
       "resource": {
         "resourceType": "Patient",
         "id": "patient-abc",
-        "name": [{ "family": "Smith", "given": ["Robert"] }],
+        "name": [{ "family": "Smith", "given": ["John"] }],
         "birthDate": "1970-03-15",
-        "telecom": [{ "system": "phone", "value": "+15558675309" }]
+        "telecom": [{ "system": "phone", "value": "5558675309" }]
       },
       "search": {
         "mode": "match",
@@ -216,11 +216,11 @@ Here First Name + Last Name + DOB + Phone match after U.S. phone normalization, 
 
 ## Error Responses
 
-| Status Code       | Description                                                                             |
-| ----------------- | --------------------------------------------------------------------------------------- |
-| `400 Bad Request` | `resource` parameter is missing or is not a Patient                                     |
-| `400 Bad Request` | Input Patient has no matchable fields (identifier, name, birthDate, or telecom)         |
-| `403 Forbidden`   | Insufficient permissions to search Patient resources                                    |
+| Status Code       | Description                                                                     |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `400 Bad Request` | `resource` parameter is missing or is not a Patient                             |
+| `400 Bad Request` | Input Patient has no matchable fields (identifier, name, birthDate, or telecom) |
+| `403 Forbidden`   | Insufficient permissions to search Patient resources                            |
 
 ## Related Documentation
 
