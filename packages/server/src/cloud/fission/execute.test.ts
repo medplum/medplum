@@ -153,9 +153,7 @@ describe('Execute Fission bots', () => {
     };
     const outcome = badRequest('returned problem');
 
-    fetchMock.mockImplementationOnce(() =>
-      mockFetchText(JSON.stringify({ logResult: '', returnValue: outcome }))
-    );
+    fetchMock.mockImplementationOnce(() => mockFetchText(JSON.stringify({ logResult: '', returnValue: outcome })));
 
     await expect(
       executeFissionBot({
