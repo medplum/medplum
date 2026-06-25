@@ -26,6 +26,7 @@ import {
 import type { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
 import { cmsPatientMatch } from './utils/cms-patient-match';
+import type { CmsPatientMatchResult } from './utils/cms-patient-match';
 import { parseInputParameters } from './utils/parameters';
 
 const operation = getOperationDefinition('Patient', 'match');
@@ -35,8 +36,14 @@ const MATCH_GRADE_EXTENSION_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/matc
 
 // CMS Patient Match extension: the Table 2 combination (criteria id) the match satisfied.
 const CMS_COMBINATION_EXTENSION_URL = 'https://medplum.com/fhir/StructureDefinition/cms-match-combination';
+const CMS_MATCH_TYPE_EXTENSION_URL = 'https://medplum.com/fhir/StructureDefinition/cms-match-type';
 
 const CANDIDATE_SEARCH_COUNT = 100;
+const PROBABLE_THRESHOLD = 0.65;
+const POSSIBLE_THRESHOLD = 0.2;
+const CMS_MATCH_FACTOR_COUNT = 12;
+
+export type MatchGrade = 'certain' | 'probable' | 'possible';
 
 export interface PatientMatchParameters {
   resource: Patient;
@@ -44,10 +51,12 @@ export interface PatientMatchParameters {
   count?: number;
 }
 
-/** A candidate that satisfied a CMS Table 2 matching combination. */
-interface CmsMatch {
+/** A gathered candidate scored for CMS disclosure or FHIR discovery. */
+interface PatientMatchCandidate {
   candidate: WithId<Patient>;
-  criteriaId: string;
+  result: CmsPatientMatchResult;
+  score: number;
+  grade: MatchGrade;
 }
 
 // Patient $match operation.
@@ -72,30 +81,31 @@ export async function patientMatchHandler(req: FhirRequest): Promise<FhirRespons
   }
   if (!hasMatchableField(params.resource)) {
     throw new OperationOutcomeError(
-      badRequest('Input Patient must include at least one of: identifier, name, birthDate, telecom, or gender')
+      badRequest('Input Patient must include at least one of: identifier, name, birthDate, or telecom')
     );
   }
 
   const input = params.resource;
   const { candidates, truncated } = await gatherCmsCandidates(ctx.repo, input);
 
-  const matches: CmsMatch[] = [];
+  const matches: PatientMatchCandidate[] = [];
   for (const candidate of candidates) {
-    const { criteriaId } = cmsPatientMatch(input, candidate);
-    if (criteriaId) {
-      matches.push({ candidate, criteriaId });
+    const match = scorePatientMatch(candidate, input);
+    if (match) {
+      matches.push(match);
     }
   }
 
-  let released: CmsMatch[];
+  let released: PatientMatchCandidate[];
   if (params.onlyCertainMatches) {
     // Disclosure: release only a unique match, and only if the gather was complete — a
     // truncated search cannot prove uniqueness. Ambiguous and truncated results are suppressed.
-    released = !truncated && matches.length === 1 ? matches : [];
-    logCmsAuditEvent(ctx, matches, truncated);
+    const certainMatches = matches.filter((m) => m.grade === 'certain');
+    released = !truncated && certainMatches.length === 1 ? certainMatches : [];
+    logCmsAuditEvent(ctx, certainMatches, truncated);
   } else {
-    // Discovery: return every combination match.
-    released = matches;
+    // Discovery: return ranked CMS and lightweight FHIR $match candidates for review.
+    released = matches.sort((a, b) => b.score - a.score);
   }
 
   const maxCount = params.count ?? DEFAULT_SEARCH_COUNT;
@@ -181,23 +191,58 @@ async function gatherCmsCandidates(
 }
 
 /**
- * Builds a searchset Bundle from CMS matches. Each entry is a certain match (score 1) with
- * the matched Table 2 combination recorded as an extension.
- * @param matches - The matched candidates.
+ * Scores a gathered candidate for either CMS disclosure or FHIR discovery.
+ * @param candidate - The candidate patient from repository search.
+ * @param input - The input patient to match against.
+ * @returns The scored match candidate, or undefined if it is below the discovery threshold.
+ */
+function scorePatientMatch(candidate: WithId<Patient>, input: Patient): PatientMatchCandidate | undefined {
+  const result = cmsPatientMatch(input, candidate);
+  if (result.criteriaId) {
+    return { candidate, result, score: 1, grade: 'certain' };
+  }
+  if (result.suffixConflict) {
+    return undefined;
+  }
+
+  const score = Math.min((result.exactCount + result.fuzzyCount * 0.5) / CMS_MATCH_FACTOR_COUNT, 0.9);
+  const grade = classifyDiscoveryGrade(score);
+  return grade ? { candidate, result, score, grade } : undefined;
+}
+
+function classifyDiscoveryGrade(score: number): Exclude<MatchGrade, 'certain'> | undefined {
+  if (score >= PROBABLE_THRESHOLD) {
+    return 'probable';
+  }
+  if (score >= POSSIBLE_THRESHOLD) {
+    return 'possible';
+  }
+  return undefined;
+}
+
+/**
+ * Builds a searchset Bundle from scored matches.
+ * @param matches - The scored match candidates.
  * @returns The searchset Bundle.
  */
-function buildMatchBundle(matches: CmsMatch[]): Bundle<WithId<Patient>> {
-  const entry: BundleEntry<WithId<Patient>>[] = matches.map(({ candidate, criteriaId }) => ({
-    resource: candidate,
-    search: {
-      mode: 'match',
-      score: 1,
-      extension: [
-        { url: MATCH_GRADE_EXTENSION_URL, valueCode: 'certain' },
-        { url: CMS_COMBINATION_EXTENSION_URL, valueString: criteriaId },
-      ],
-    },
-  }));
+function buildMatchBundle(matches: PatientMatchCandidate[]): Bundle<WithId<Patient>> {
+  const entry: BundleEntry<WithId<Patient>>[] = matches.map(({ candidate, result, score, grade }) => {
+    const extension = [{ url: MATCH_GRADE_EXTENSION_URL, valueCode: grade }];
+    if (result.criteriaId) {
+      extension.push({ url: CMS_COMBINATION_EXTENSION_URL, valueString: result.criteriaId });
+    }
+    if (result.matchType) {
+      extension.push({ url: CMS_MATCH_TYPE_EXTENSION_URL, valueCode: result.matchType });
+    }
+    return {
+      resource: candidate,
+      search: {
+        mode: 'match',
+        score,
+        extension,
+      },
+    };
+  });
   return { resourceType: 'Bundle', type: 'searchset', total: entry.length, entry };
 }
 
@@ -209,7 +254,7 @@ function buildMatchBundle(matches: CmsMatch[]): Bundle<WithId<Patient>> {
  * @param matches - The candidates that satisfied a combination.
  * @param truncated - Whether the candidate gather was capped (uniqueness unprovable).
  */
-function logCmsAuditEvent(ctx: AuthenticatedRequestContext, matches: CmsMatch[], truncated: boolean): void {
+function logCmsAuditEvent(ctx: AuthenticatedRequestContext, matches: PatientMatchCandidate[], truncated: boolean): void {
   const released = !truncated && matches.length === 1;
   let outcome: string;
   if (released) {
@@ -225,8 +270,10 @@ function logCmsAuditEvent(ctx: AuthenticatedRequestContext, matches: CmsMatch[],
   const description = JSON.stringify({
     operation: 'Patient/$match',
     outcome,
-    criteria: matches.map((m) => m.criteriaId),
+    criteria: matches.map((m) => m.result.criteriaId),
+    matchTypes: matches.map((m) => m.result.matchType),
     matchedIds: matches.map((m) => m.candidate.id),
+    uniqueness: getUniquenessResult(released, matches, truncated),
   });
 
   const auditEvent = createAuditEvent(
@@ -244,6 +291,23 @@ function logCmsAuditEvent(ctx: AuthenticatedRequestContext, matches: CmsMatch[],
   logAuditEvent(auditEvent);
 }
 
+function getUniquenessResult(
+  released: boolean,
+  matches: PatientMatchCandidate[],
+  truncated: boolean
+): 'unique' | 'ambiguous' | 'unproven' | 'none' {
+  if (released) {
+    return 'unique';
+  }
+  if (truncated) {
+    return 'unproven';
+  }
+  if (matches.length > 1) {
+    return 'ambiguous';
+  }
+  return 'none';
+}
+
 function getFamilyName(patient: Patient): string | undefined {
   return patient.name?.find((n) => n.family)?.family;
 }
@@ -257,6 +321,5 @@ function hasMatchableField(patient: Patient): boolean {
   const hasName = !!patient.name?.some((n) => n.family || (n.given && n.given.length > 0));
   const hasBirthDate = !!patient.birthDate;
   const hasTelecom = !!patient.telecom?.some((t) => (t.system === 'phone' || t.system === 'email') && t.value);
-  const hasGender = !!patient.gender;
-  return hasIdentifier || hasName || hasBirthDate || hasTelecom || hasGender;
+  return hasIdentifier || hasName || hasBirthDate || hasTelecom;
 }

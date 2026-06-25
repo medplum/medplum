@@ -70,6 +70,26 @@ describe('Patient $match Operation', () => {
     expect(res.status).toBe(400);
   });
 
+  test('Returns 400 when Patient only has gender', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Patient/$match')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'resource',
+            resource: {
+              resourceType: 'Patient',
+              gender: 'female',
+            } satisfies Patient,
+          },
+        ],
+      });
+    expect(res.status).toBe(400);
+  });
+
   test('Returns empty bundle when no patients match', async () => {
     const res = await request(app)
       .post('/fhir/R4/Patient/$match')
@@ -146,14 +166,15 @@ describe('Patient $match Operation', () => {
     expect(gradeExt?.valueCode).toBe('certain');
   });
 
-  test('Does not match on name + birthdate alone (no approved CMS combination)', async () => {
+  test('Returns a possible discovery match on name + birthdate alone', async () => {
+    const family = `Namebirthtest${Date.now()}`;
     await request(app)
       .post('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
-        name: [{ family: 'Namebirthtest', given: ['Beta'] }],
+        name: [{ family, given: ['Beta'] }],
         birthDate: '1975-03-22',
         gender: 'male',
       } satisfies Patient);
@@ -169,16 +190,20 @@ describe('Patient $match Operation', () => {
             name: 'resource',
             resource: {
               resourceType: 'Patient',
-              name: [{ family: 'Namebirthtest', given: ['Beta'] }],
+              name: [{ family, given: ['Beta'] }],
               birthDate: '1975-03-22',
             } satisfies Patient,
           },
         ],
       });
 
-    // First + Last + DOB is not a Table 2 combination — it needs a fourth identifying field.
     expect(matchRes.status).toBe(200);
-    expect((matchRes.body as Bundle<Patient>).total).toBe(0);
+    const bundle = matchRes.body as Bundle<Patient>;
+    expect(bundle.total).toBeGreaterThan(0);
+    const topEntry = bundle.entry?.[0];
+    expect(topEntry?.search?.score).toBeCloseTo(0.25);
+    expect(topEntry?.search?.extension?.find((e) => e.url.endsWith('match-grade'))?.valueCode).toBe('possible');
+    expect(topEntry?.search?.extension?.some((e) => e.url.endsWith('cms-match-combination'))).toBe(false);
   });
 
   test('Matches via First + DOB + Phone (criteria 11)', async () => {
@@ -391,6 +416,79 @@ describe('Patient $match Operation', () => {
       const ext = entry?.search?.extension ?? [];
       expect(ext.find((e) => e.url.endsWith('match-grade'))?.valueCode).toBe('certain');
       expect(ext.find((e) => e.url.endsWith('cms-match-combination'))?.valueString).toBe('11');
+      expect(ext.find((e) => e.url.endsWith('cms-match-type'))?.valueCode).toBe('exact');
+    });
+
+    test('normalizes US phone values before applying CMS criteria', async () => {
+      const birthDate = '1971-04-15';
+      const created = await createPatient({
+        resourceType: 'Patient',
+        name: [{ family: `CmsPhoneNorm${Date.now()}`, given: ['Robert'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: '+1 (617) 555-0143' }],
+      });
+      expect(created.status).toBe(201);
+
+      const res = await cmsMatch({
+        resourceType: 'Patient',
+        name: [{ given: ['Robert'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: '617.555.0143' }],
+      });
+
+      expect(res.status).toBe(200);
+      const bundle = res.body as Bundle<Patient>;
+      expect(bundle.entry).toHaveLength(1);
+      expect(bundle.entry?.[0]?.resource?.id).toBe(created.body.id);
+      expect(bundle.entry?.[0]?.search?.extension?.find((e) => e.url.endsWith('cms-match-combination'))?.valueString).toBe(
+        '11'
+      );
+    });
+
+    test('matches full SSN records against last-four SSN queries', async () => {
+      const birthDate = '1971-05-15';
+      const created = await createPatient({
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://hl7.org/fhir/sid/us-ssn', value: '123-45-6789' }],
+        name: [{ family: `CmsSsn${Date.now()}`, given: ['Robert'] }],
+        birthDate,
+      });
+      expect(created.status).toBe(201);
+
+      const res = await cmsMatch({
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://hl7.org/fhir/sid/us-ssn', value: '6789' }],
+        name: [{ family: created.body.name[0].family, given: ['Robert'] }],
+        birthDate,
+      });
+
+      expect(res.status).toBe(200);
+      const bundle = res.body as Bundle<Patient>;
+      expect(bundle.entry).toHaveLength(1);
+      expect(bundle.entry?.[0]?.resource?.id).toBe(created.body.id);
+      expect(bundle.entry?.[0]?.search?.extension?.find((e) => e.url.endsWith('cms-match-combination'))?.valueString).toBe(
+        '04'
+      );
+    });
+
+    test('does not release a CMS match with conflicting generational suffixes', async () => {
+      const birthDate = '1971-06-15';
+      await createPatient({
+        resourceType: 'Patient',
+        name: [{ family: `CmsSuffix${Date.now()}`, given: ['Robert'], suffix: ['Jr.'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: '6175550144' }],
+      });
+
+      const res = await cmsMatch({
+        resourceType: 'Patient',
+        name: [{ given: ['Robert'], suffix: ['Sr.'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: '6175550144' }],
+      });
+
+      expect(res.status).toBe(200);
+      expect((res.body as Bundle<Patient>).entry ?? []).toHaveLength(0);
     });
 
     test('suppresses an ambiguous match (two qualifying candidates)', async () => {
@@ -424,6 +522,24 @@ describe('Patient $match Operation', () => {
 
     test('no match when only a single non-discriminating field agrees', async () => {
       const res = await cmsMatch({ resourceType: 'Patient', birthDate: '1973-09-25', name: [{ given: ['Solo'] }] });
+      expect(res.status).toBe(200);
+      expect((res.body as Bundle<Patient>).entry ?? []).toHaveLength(0);
+    });
+
+    test('does not release name + birthdate alone without an approved CMS combination', async () => {
+      const family = `CmsNameBirth${Date.now()}`;
+      await createPatient({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Beta'] }],
+        birthDate: '1975-03-22',
+      });
+
+      const res = await cmsMatch({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Beta'] }],
+        birthDate: '1975-03-22',
+      });
+
       expect(res.status).toBe(200);
       expect((res.body as Bundle<Patient>).entry ?? []).toHaveLength(0);
     });

@@ -8,7 +8,11 @@ import {
   extractCmsMatchFields,
   extractStrings,
   foldString,
+  hasGenerationalSuffixConflict,
   matchField,
+  normalizeFullDate,
+  normalizeLast4,
+  normalizePhone,
 } from './cms-patient-match';
 import type { CmsPatientMatchFields } from './cms-patient-match';
 
@@ -32,6 +36,7 @@ interface PatientFields {
   readonly legalId?: string;
   readonly cspUuid?: string;
   readonly empiId?: string;
+  readonly suffix?: string;
 }
 
 describe('CMS Patient Match Utils', () => {
@@ -65,10 +70,10 @@ describe('CMS Patient Match Utils', () => {
       lastName: new Set(['oconnor']),
       dob: new Set(['19700102']),
       streetLine: new Set(['123mainst', 'apt4']),
-      phone: new Set(['16175550100']),
+      phone: new Set(['6175550100']),
       email: new Set(['anaexampleexamplecom']),
-      ssnLast4: new Set(['123456789']),
-      itinLast4: new Set(['987654321']),
+      ssnLast4: new Set(['6789']),
+      itinLast4: new Set(['4321']),
       mbi: new Set(['1eg4te5mk73']),
       legalId: new Set(['bene123']),
       cspUuid: new Set(['cspabc']),
@@ -80,6 +85,29 @@ describe('CMS Patient Match Utils', () => {
     expect(extractStrings({ resourceType: 'Patient', multipleBirthBoolean: true }, 'Patient.multipleBirth')).toEqual(
       new Set()
     );
+  });
+
+  test('extractStrings skips values that normalize to empty strings', () => {
+    expect(extractStrings({ resourceType: 'Patient', name: [{ given: ['---'] }] }, 'Patient.name.given')).toEqual(
+      new Set()
+    );
+  });
+
+  test('normalizes SSN and ITIN values to last four folded characters', () => {
+    expect(normalizeLast4('123-45-6789')).toBe('6789');
+    expect(normalizeLast4('6789')).toBe('6789');
+  });
+
+  test('normalizes US phone numbers and leaves other country codes as digits', () => {
+    expect(normalizePhone('+1 (617) 555-0100')).toBe('6175550100');
+    expect(normalizePhone('617.555.0100')).toBe('6175550100');
+    expect(normalizePhone('+44 20 7946 0958')).toBe('442079460958');
+  });
+
+  test('normalizes only full birth dates', () => {
+    expect(normalizeFullDate('1970-01-02')).toBe('19700102');
+    expect(normalizeFullDate('1970-01')).toBe('');
+    expect(normalizeFullDate('1970')).toBe('');
   });
 
   test('matches exact values before fuzzy values', () => {
@@ -166,6 +194,9 @@ describe('CMS Patient Match Utils', () => {
     const result = cmsPatientMatch(query, candidate);
 
     expect(result.criteriaId).toBe(criteriaId);
+    expect(result.matchType).toBe(
+      ['04', '05', '06', '07', '10', '15', '16'].includes(criteriaId) ? 'fuzzy' : 'exact'
+    );
   });
 
   test('counts exact, fuzzy, and non-matching fields', () => {
@@ -179,6 +210,7 @@ describe('CMS Patient Match Utils', () => {
       fuzzyCount: 1,
       noneCount: 10,
       criteriaId: undefined,
+      matchType: undefined,
     });
   });
 
@@ -190,12 +222,70 @@ describe('CMS Patient Match Utils', () => {
       ).criteriaId
     ).toBeUndefined();
   });
+
+  test('does not match when identifiable generational suffixes conflict', () => {
+    const query = patientFromFields({
+      firstName: 'Robert',
+      lastName: 'Smith',
+      dob: '1970-01-01',
+      phone: '6175550100',
+      suffix: 'Jr.',
+    });
+    const candidate = patientFromFields({
+      firstName: 'Robert',
+      lastName: 'Smith',
+      dob: '1970-01-01',
+      phone: '6175550100',
+      suffix: 'Senior',
+    });
+
+    expect(hasGenerationalSuffixConflict(query, candidate)).toBe(true);
+    expect(cmsPatientMatch(query, candidate)).toMatchObject({
+      criteriaId: undefined,
+      matchType: undefined,
+      suffixConflict: true,
+    });
+  });
+
+  test('does not block on absent or equivalent generational suffixes', () => {
+    expect(
+      hasGenerationalSuffixConflict(patientFromFields({ suffix: 'Jr.' }), patientFromFields({ suffix: 'Junior' }))
+    ).toBe(false);
+    expect(hasGenerationalSuffixConflict(patientFromFields({ suffix: 'Jr.' }), patientFromFields({}))).toBe(false);
+  });
+
+  test.each([
+    ['II', '2nd', 'second'],
+    ['III', '3rd', 'third'],
+    ['IV', '4th', 'fourth'],
+  ])('recognizes equivalent %s suffix aliases', (roman, ordinal, word) => {
+    expect(hasGenerationalSuffixConflict(patientFromFields({ suffix: roman }), patientFromFields({ suffix: ordinal }))).toBe(
+      false
+    );
+    expect(hasGenerationalSuffixConflict(patientFromFields({ suffix: roman }), patientFromFields({ suffix: word }))).toBe(
+      false
+    );
+  });
+
+  test('ignores unrecognized suffix values for suffix conflicts', () => {
+    expect(hasGenerationalSuffixConflict(patientFromFields({ suffix: 'PhD' }), patientFromFields({ suffix: 'MD' }))).toBe(
+      false
+    );
+  });
 });
 
 function patientFromFields(fields: PatientFields): Patient {
   const patient: Patient = { resourceType: 'Patient' };
   if (fields.firstName || fields.lastName) {
-    patient.name = [{ given: fields.firstName ? [fields.firstName] : undefined, family: fields.lastName }];
+    patient.name = [
+      {
+        given: fields.firstName ? [fields.firstName] : undefined,
+        family: fields.lastName,
+        suffix: fields.suffix ? [fields.suffix] : undefined,
+      },
+    ];
+  } else if (fields.suffix) {
+    patient.name = [{ suffix: [fields.suffix] }];
   }
   if (fields.dob) {
     patient.birthDate = fields.dob;

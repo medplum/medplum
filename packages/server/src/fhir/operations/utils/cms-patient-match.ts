@@ -41,12 +41,15 @@ export interface CmsPatientMatchResult {
   readonly fuzzyCount: number;
   readonly noneCount: number;
   readonly criteriaId: string | undefined;
+  readonly matchType: 'exact' | 'fuzzy' | undefined;
+  readonly suffixConflict: boolean;
 }
 
 export function cmsPatientMatch(p1: Patient, p2: Patient): CmsPatientMatchResult {
   const fields1 = extractCmsMatchFields(p1);
   const fields2 = extractCmsMatchFields(p2);
   const fieldMatches = compareCmsMatchFields(fields1, fields2);
+  const suffixConflict = hasGenerationalSuffixConflict(p1, p2);
 
   let exactCount = 0;
   let fuzzyCount = 0;
@@ -73,62 +76,72 @@ export function cmsPatientMatch(p1: Patient, p2: Patient): CmsPatientMatchResult
   const starred = (...ms: FieldMatch[]): boolean =>
     ms.filter((m) => m === 'none').length === 0 && ms.filter((m) => m === 'fuzzy').length <= 1;
 
-  let criteriaId: string | undefined;
+  let criteria:
+    | {
+        id: string;
+        matchType: 'exact' | 'fuzzy';
+      }
+    | undefined;
+  const setCriteria = (id: string, ...ms: FieldMatch[]): void => {
+    criteria = { id, matchType: ms.some((m) => m === 'fuzzy') ? 'fuzzy' : 'exact' };
+  };
 
-  if (starred(firstName, lastName, streetLine) && ex(dob)) {
-    criteriaId = '01';
+  if (suffixConflict) {
+    // A disagreeing generational suffix is an explicit CMS blocker when both sides identify one.
+  } else if (starred(firstName, lastName, streetLine) && ex(dob)) {
+    setCriteria('01', firstName, lastName, streetLine, dob);
   } else if (ex(firstName) && starred(lastName) && ex(dob) && ex(phone)) {
-    criteriaId = '02';
+    setCriteria('02', firstName, lastName, dob, phone);
   } else if (starred(firstName, lastName) && ex(dob) && ex(email)) {
-    criteriaId = '03';
+    setCriteria('03', firstName, lastName, dob, email);
   } else if (starred(firstName) && ex(lastName) && ex(dob) && ex(ssnLast4)) {
-    criteriaId = '04';
+    setCriteria('04', firstName, lastName, dob, ssnLast4);
   } else if (ex(firstName) && starred(lastName) && ex(dob) && ex(ssnLast4)) {
-    criteriaId = '05';
+    setCriteria('05', firstName, lastName, dob, ssnLast4);
   } else if (starred(firstName) && ex(lastName) && ex(dob) && ex(itinLast4)) {
-    criteriaId = '06';
+    setCriteria('06', firstName, lastName, dob, itinLast4);
   } else if (ex(firstName) && starred(lastName) && ex(dob) && ex(itinLast4)) {
-    criteriaId = '07';
+    setCriteria('07', firstName, lastName, dob, itinLast4);
   } else if (ex(firstName) && ex(dob) && ex(mbi)) {
-    criteriaId = '08';
+    setCriteria('08', firstName, dob, mbi);
   } else if (ex(firstName) && ex(dob) && ex(legalId)) {
-    criteriaId = '09';
+    setCriteria('09', firstName, dob, legalId);
   } else if (starred(lastName) && ex(dob) && ex(legalId)) {
-    criteriaId = '10';
+    setCriteria('10', lastName, dob, legalId);
   } else if (ex(firstName) && ex(dob) && ex(phone)) {
-    criteriaId = '11';
+    setCriteria('11', firstName, dob, phone);
   } else if (ex(firstName) && ex(dob) && ex(email)) {
-    criteriaId = '12';
+    setCriteria('12', firstName, dob, email);
   } else if (ex(lastName) && ex(phone) && ex(ssnLast4)) {
-    criteriaId = '13';
+    setCriteria('13', lastName, phone, ssnLast4);
   } else if (ex(lastName) && ex(phone) && ex(itinLast4)) {
-    criteriaId = '14';
+    setCriteria('14', lastName, phone, itinLast4);
   } else if (starred(lastName) && ex(email) && ex(ssnLast4)) {
-    criteriaId = '15';
+    setCriteria('15', lastName, email, ssnLast4);
   } else if (starred(lastName) && ex(email) && ex(itinLast4)) {
-    criteriaId = '16';
+    setCriteria('16', lastName, email, itinLast4);
   } else if (ex(firstName) && ex(phone) && ex(ssnLast4)) {
-    criteriaId = '17';
+    setCriteria('17', firstName, phone, ssnLast4);
   } else if (ex(firstName) && ex(phone) && ex(itinLast4)) {
-    criteriaId = '18';
+    setCriteria('18', firstName, phone, itinLast4);
   } else if (ex(firstName) && ex(email) && ex(ssnLast4)) {
-    criteriaId = '19';
+    setCriteria('19', firstName, email, ssnLast4);
   } else if (ex(firstName) && ex(email) && ex(itinLast4)) {
-    criteriaId = '20';
+    setCriteria('20', firstName, email, itinLast4);
   } else if (ex(phone) && ex(mbi)) {
-    criteriaId = '21';
+    setCriteria('21', phone, mbi);
   } else if (ex(phone) && ex(legalId)) {
-    criteriaId = '22';
+    setCriteria('22', phone, legalId);
   } else if (ex(email) && ex(mbi)) {
-    criteriaId = '23';
+    setCriteria('23', email, mbi);
   } else if (ex(email) && ex(legalId)) {
-    criteriaId = '24';
+    setCriteria('24', email, legalId);
   } else if (ex(legalId) && ex(mbi)) {
-    criteriaId = '25';
+    setCriteria('25', legalId, mbi);
   } else if (ex(cspUuid)) {
-    criteriaId = '26';
+    setCriteria('26', cspUuid);
   } else if (ex(empiId)) {
-    criteriaId = '27';
+    setCriteria('27', empiId);
   }
 
   return {
@@ -136,7 +149,9 @@ export function cmsPatientMatch(p1: Patient, p2: Patient): CmsPatientMatchResult
     exactCount,
     fuzzyCount,
     noneCount,
-    criteriaId,
+    criteriaId: criteria?.id,
+    matchType: criteria?.matchType,
+    suffixConflict,
   };
 }
 
@@ -144,12 +159,20 @@ export function extractCmsMatchFields(patient: Patient): CmsPatientMatchFields {
   return {
     firstName: extractStrings(patient, 'Patient.name.given'),
     lastName: extractStrings(patient, 'Patient.name.family'),
-    dob: extractStrings(patient, 'Patient.birthDate'),
+    dob: extractStrings(patient, 'Patient.birthDate', normalizeFullDate),
     streetLine: extractStrings(patient, 'Patient.address.line'),
-    phone: extractStrings(patient, 'Patient.telecom.where(system = "phone").value'),
+    phone: extractStrings(patient, 'Patient.telecom.where(system = "phone").value', normalizePhone),
     email: extractStrings(patient, 'Patient.telecom.where(system = "email").value'),
-    ssnLast4: extractStrings(patient, 'Patient.identifier.where(system = "http://hl7.org/fhir/sid/us-ssn").value'),
-    itinLast4: extractStrings(patient, 'Patient.identifier.where(system = "http://hl7.org/fhir/sid/us-itin").value'),
+    ssnLast4: extractStrings(
+      patient,
+      'Patient.identifier.where(system = "http://hl7.org/fhir/sid/us-ssn").value',
+      normalizeLast4
+    ),
+    itinLast4: extractStrings(
+      patient,
+      'Patient.identifier.where(system = "http://hl7.org/fhir/sid/us-itin").value',
+      normalizeLast4
+    ),
     mbi: extractStrings(
       patient,
       'Patient.identifier.where(system = "https://bluebutton.cms.gov/resources/identifiers/mbi").value'
@@ -169,15 +192,44 @@ export function extractCmsMatchFields(patient: Patient): CmsPatientMatchFields {
   };
 }
 
-export function extractStrings(patient: Patient, expression: string): Set<string> {
+export function extractStrings(
+  patient: Patient,
+  expression: string,
+  normalize: (value: string) => string = foldString
+): Set<string> {
   const values = evalFhirPathTyped(expression, [toTypedValue(patient)]);
   const result = new Set<string>();
   for (const v of values) {
     if (isString(v.value)) {
-      result.add(foldString(v.value));
+      const normalized = normalize(v.value);
+      if (normalized) {
+        result.add(normalized);
+      }
     }
   }
   return result;
+}
+
+export function normalizeLast4(value: string): string {
+  return foldString(value).slice(-4);
+}
+
+export function normalizePhone(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return digits.slice(1);
+  }
+  return digits;
+}
+
+export function normalizeFullDate(value: string): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? foldString(value) : '';
+}
+
+export function hasGenerationalSuffixConflict(p1: Patient, p2: Patient): boolean {
+  const suffixes1 = extractGenerationalSuffixes(p1);
+  const suffixes2 = extractGenerationalSuffixes(p2);
+  return suffixes1.size > 0 && suffixes2.size > 0 && !setsIntersect(suffixes1, suffixes2);
 }
 
 /**
@@ -193,6 +245,48 @@ export function foldString(value: string): string {
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '');
+}
+
+function extractGenerationalSuffixes(patient: Patient): Set<string> {
+  const suffixes = new Set<string>();
+  for (const name of patient.name ?? []) {
+    for (const suffix of name.suffix ?? []) {
+      const normalized = normalizeGenerationalSuffix(suffix);
+      if (normalized) {
+        suffixes.add(normalized);
+      }
+    }
+  }
+  return suffixes;
+}
+
+function normalizeGenerationalSuffix(value: string): string | undefined {
+  const folded = foldString(value);
+  if (folded === 'jr' || folded === 'junior') {
+    return 'jr';
+  }
+  if (folded === 'sr' || folded === 'senior') {
+    return 'sr';
+  }
+  if (folded === 'ii' || folded === '2nd' || folded === 'second') {
+    return 'ii';
+  }
+  if (folded === 'iii' || folded === '3rd' || folded === 'third') {
+    return 'iii';
+  }
+  if (folded === 'iv' || folded === '4th' || folded === 'fourth') {
+    return 'iv';
+  }
+  return undefined;
+}
+
+function setsIntersect(a: Set<string>, b: Set<string>): boolean {
+  for (const value of a) {
+    if (b.has(value)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function matchField(a: Set<string>, b: Set<string>): FieldMatch {
