@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { badRequest } from '@medplum/core';
 import type { Bot, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -102,11 +103,74 @@ describe('Execute Fission bots', () => {
       })
     ).resolves.toMatchObject({
       success: false,
+      logResult: 'unhandled error',
+      returnValue: { result: 'unhandled error' },
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining(`bot-${bot.id}`),
       expect.objectContaining({ method: 'POST' })
     );
+  });
+
+  test('Legacy error response preserves OperationOutcome return value', async () => {
+    const bot: WithId<Bot> = {
+      resourceType: 'Bot',
+      id: randomUUID(),
+      name: 'Test Bot',
+      runtimeVersion: 'fission',
+    };
+    const outcome = badRequest('fission problem');
+
+    fetchMock.mockImplementationOnce(() =>
+      mockFetchText(JSON.stringify({ logResult: 'unhandled error', returnValue: outcome }), { status: 400 })
+    );
+
+    await expect(
+      executeFissionBot({
+        bot,
+        runAs: {} as WithId<ProjectMembership>,
+        accessToken,
+        input: 'test input',
+        contentType: 'text/plain',
+        secrets: {},
+        traceId: randomUUID(),
+        headers: {},
+      })
+    ).resolves.toMatchObject({
+      success: false,
+      logResult: 'unhandled error',
+      returnValue: outcome,
+    });
+  });
+
+  test('Returned non-OK OperationOutcome is preserved', async () => {
+    const bot: WithId<Bot> = {
+      resourceType: 'Bot',
+      id: randomUUID(),
+      name: 'Test Bot',
+      runtimeVersion: 'fission',
+    };
+    const outcome = badRequest('returned problem');
+
+    fetchMock.mockImplementationOnce(() =>
+      mockFetchText(JSON.stringify({ logResult: '', returnValue: outcome }))
+    );
+
+    await expect(
+      executeFissionBot({
+        bot,
+        runAs: {} as WithId<ProjectMembership>,
+        accessToken,
+        input: 'test input',
+        contentType: 'text/plain',
+        secrets: {},
+        traceId: randomUUID(),
+        headers: {},
+      })
+    ).resolves.toMatchObject({
+      success: true,
+      returnValue: outcome,
+    });
   });
 });

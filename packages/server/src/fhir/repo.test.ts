@@ -15,6 +15,7 @@ import {
   parseSearchRequest,
   preconditionFailed,
 } from '@medplum/core';
+import { RepositoryMode } from '@medplum/fhir-router';
 import type {
   Binary,
   BundleEntry,
@@ -33,12 +34,13 @@ import type {
   UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'node:crypto';
+import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { runInAuthenticatedContext } from '../context';
-import { DatabaseMode } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, spyOnQuery, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
@@ -69,6 +71,7 @@ describe('FHIR Repo', () => {
     testProjectRepo = new Repository({
       projects: [testProject],
       extendedMode: true,
+      strictMode: true,
       author: {
         reference: 'Practitioner/' + randomUUID(),
       },
@@ -92,6 +95,103 @@ describe('FHIR Repo', () => {
         userConfig: {} as UserConfiguration,
       })
     ).rejects.toThrow('Invalid reference');
+  });
+
+  describe('setMode routes reads to reader until writer promotion', () => {
+    type PoolQuerySpy = MockInstance<ReturnType<typeof getDatabasePool>['query']>;
+    let readerPoolQuerySpy: PoolQuerySpy;
+    let writerPoolQuerySpy: PoolQuerySpy;
+
+    function resetSpies(): void {
+      readerPoolQuerySpy.mockClear();
+      writerPoolQuerySpy.mockClear();
+    }
+
+    beforeAll(() => {
+      readerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      writerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    });
+
+    beforeEach(() => {
+      resetSpies();
+    });
+
+    afterAll(() => {
+      readerPoolQuerySpy.mockRestore();
+      writerPoolQuerySpy.mockRestore();
+    });
+
+    test('on creates', () =>
+      withTestContext(async () => {
+        const repo = testProjectRepo.clone();
+
+        repo.setMode(RepositoryMode.READER);
+        await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(repo.mode).toBe(RepositoryMode.READER);
+        resetSpies();
+
+        await repo.createResource<Patient>({ resourceType: 'Patient' });
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found'); // randomUUID to ensure cache miss
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        repo.setMode(RepositoryMode.READER);
+        await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(repo.mode).toBe(RepositoryMode.READER);
+      }));
+
+    test('on updates', () =>
+      withTestContext(async () => {
+        // AuditEvent since it does not get cached on writes
+        const auditEvent = await testProjectRepo
+          .clone()
+          .createResource(
+            createAuditEvent(
+              RestfulOperationType,
+              ReadInteraction,
+              randomUUID(),
+              { reference: 'Practitioner/user-123' },
+              undefined,
+              AuditEventOutcome.Success
+            )
+          );
+
+        const repo = testProjectRepo.clone();
+
+        repo.setMode(RepositoryMode.READER);
+        await expect(repo.readResource('AuditEvent', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        resetSpies();
+
+        await repo.updateResource({ ...auditEvent, outcomeDesc: 'updated' });
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1); // called to fetch existing resource; arguably incorrect and should be directed to writer
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        await expect(repo.readResource('AuditEvent', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        await repo.updateResource({ ...auditEvent, outcomeDesc: 'something new' });
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1); // called to fetch existing resource
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+      }));
   });
 
   test('Read resource with undefined id', async () => {
