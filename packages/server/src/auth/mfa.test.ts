@@ -4,6 +4,8 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
 import { allOk, badRequest } from '@medplum/core';
 import type { Login, Project, Reference, User } from '@medplum/fhirtypes';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { simpleParser } from 'mailparser';
@@ -17,9 +19,9 @@ import { verifyConnectedFactor } from './mfa';
 import { registerNew } from './register';
 import { getEnrolledMfaMethods } from './utils';
 
-jest.mock('@aws-sdk/client-sesv2');
-
 const app = express();
+
+let mockSESv2Client: AwsClientStub<SESv2Client>;
 
 /**
  * Sets the `allowedMfaMethods` project setting so email-based MFA enrollment is offered.
@@ -41,9 +43,9 @@ async function setAllowedMfaMethods(project: WithId<Project>, value: string): Pr
  * @returns The verification code emailed to the user.
  */
 async function getCodeFromEmail(): Promise<string> {
-  const calls = (SendEmailCommand as unknown as jest.Mock).mock.calls;
-  const args = calls[calls.length - 1][0];
-  const parsed = await simpleParser(args.Content.Raw.Data);
+  const calls = mockSESv2Client.commandCalls(SendEmailCommand);
+  const args = calls[calls.length - 1].args[0].input;
+  const parsed = await simpleParser(args.Content?.Raw?.Data as Uint8Array);
   const match = /\b(\d{6})\b/.exec(parsed.text as string);
   if (!match) {
     throw new Error('No verification code found in email: ' + parsed.text);
@@ -80,18 +82,22 @@ async function enrollEmailMfa(accessToken: string): Promise<void> {
 
 describe('MFA', () => {
   beforeAll(async () => {
+    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
+
     const config = await loadTestConfig();
     config.emailProvider = 'awsses';
     await initApp(app, config);
   });
 
   afterAll(async () => {
+    mockSESv2Client.restore();
     await shutdownApp();
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
+    mockSESv2Client.reset();
+    mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
   });
 
   test('Enroll end-to-end', async () => {
@@ -386,7 +392,7 @@ describe('MFA', () => {
     expect(status2.body.enrolledMethods).toEqual(['email']);
 
     // Logging in should require MFA and email a verification code automatically
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
+    mockSESv2Client.resetHistory();
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.login).toBeDefined();
@@ -394,7 +400,7 @@ describe('MFA', () => {
     expect(loginRes.body.mfaRequired).toBe(true);
     expect(loginRes.body.mfaMethods).toEqual(['email']);
     expect(loginRes.body.email).toBe(email);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const code = await getCodeFromEmail();
     expect(code).toMatch(/^\d{6}$/);
@@ -615,12 +621,12 @@ describe('MFA', () => {
     expect(status2.body.enrolledMethods).toEqual(expect.arrayContaining(['totp', 'email']));
 
     // Login should require MFA and report both methods, WITHOUT auto-sending an email
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
+    mockSESv2Client.resetHistory();
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.mfaRequired).toBe(true);
     expect(loginRes.body.mfaMethods).toEqual(expect.arrayContaining(['totp', 'email']));
-    expect(SendEmailCommand).not.toHaveBeenCalled();
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
 
     // The user can verify with their TOTP code
     const totpVerify = await request(app)
@@ -660,11 +666,11 @@ describe('MFA', () => {
     expect(loginRes.body.mfaRequired).toBe(true);
 
     // Request a verification code to use email instead of TOTP
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
+    mockSESv2Client.resetHistory();
     const sendRes = await request(app).post('/auth/mfa/send-email').type('json').send({ login: loginRes.body.login });
     expect(sendRes.status).toBe(200);
     expect(sendRes.body).toMatchObject(allOk);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const code = await getCodeFromEmail();
 
@@ -1225,7 +1231,7 @@ describe('MFA', () => {
     // because email becomes the only factor, the response requires MFA and a
     // verification code is emailed automatically, forcing email reverification
     // before the login can be granted.
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
+    mockSESv2Client.resetHistory();
     const enrollRes = await request(app)
       .post('/auth/mfa/login-enroll')
       .type('json')
@@ -1234,7 +1240,7 @@ describe('MFA', () => {
     expect(enrollRes.body.mfaRequired).toBe(true);
     expect(enrollRes.body.mfaMethods).toEqual(['email']);
     expect(enrollRes.body.code).not.toBeDefined();
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     // The user is enrolled in email MFA but the login is not yet granted
     const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
@@ -1734,13 +1740,13 @@ describe('MFA', () => {
       const { accessToken, user, email } = await registerLegacyAccount();
       await makeLegacyEnrolledTotpUser(accessToken, user);
 
-      (SendEmailCommand as unknown as jest.Mock).mockClear();
+      mockSESv2Client.resetHistory();
 
       const login = await startLogin(email);
       expect(login.mfaRequired).toBe(true);
       // The inferred method is TOTP only; the server must not auto-send a code.
       expect(login.mfaMethods).toEqual(['totp']);
-      expect(SendEmailCommand as unknown as jest.Mock).not.toHaveBeenCalled();
+      expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
     });
 
     // /enroll — legacy already-enrolled user, bare token, no method.
@@ -1905,13 +1911,13 @@ describe('MFA', () => {
       const { accessToken, user, email } = await registerLegacyAccount();
       const secret = await makeLegacyEnrolledTotpUser(accessToken, user);
 
-      (SendEmailCommand as unknown as jest.Mock).mockClear();
+      mockSESv2Client.resetHistory();
 
       // 1. Password login returns an MFA challenge (no email sent).
       const login = await startLogin(email);
       expect(login.mfaRequired).toBe(true);
       expect(login.code).toBeUndefined();
-      expect(SendEmailCommand as unknown as jest.Mock).not.toHaveBeenCalled();
+      expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
 
       // 2. Verify with a bare TOTP token completes the login.
       const verify = await request(app)
