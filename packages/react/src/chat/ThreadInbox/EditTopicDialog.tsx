@@ -125,11 +125,7 @@ export const EditTopicDialog = (props: EditTopicDialogProps): JSX.Element => {
     <Modal opened={opened} onClose={onClose} title="Message Settings" size="md" styles={MESSAGE_MODAL_STYLES}>
       {/* Hold the form until every reference is resolved so all fields appear together,
           rather than each input popping in as its own read completes. */}
-      {!resolved ? (
-        <Group justify="center" p="xl">
-          <Loader size="sm" />
-        </Group>
-      ) : (
+      {resolved ? (
         <Stack gap={0}>
           <Stack gap="lg" p="lg">
             {/* Only show the patient when the thread has a subject. The patient cannot be changed
@@ -175,6 +171,10 @@ export const EditTopicDialog = (props: EditTopicDialogProps): JSX.Element => {
             </Button>
           </Box>
         </Stack>
+      ) : (
+        <Group justify="center" p="xl">
+          <Loader size="sm" />
+        </Group>
       )}
     </Modal>
   );
