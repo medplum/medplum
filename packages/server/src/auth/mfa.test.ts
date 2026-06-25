@@ -46,7 +46,7 @@ async function setAllowedMfaMethods(project: WithId<Project>, value: string): Pr
 async function getCodeFromEmail(): Promise<string> {
   const calls = mockSESv2Client.commandCalls(SendEmailCommand);
   const args = calls[calls.length - 1].args[0].input;
-  const parsed = await simpleParser(args.Content?.Raw?.Data as Uint8Array);
+  const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
   const match = /\b(\d{6})\b/.exec(parsed.text as string);
   if (!match) {
     throw new Error('No verification code found in email: ' + parsed.text);
