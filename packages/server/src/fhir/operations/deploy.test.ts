@@ -12,7 +12,7 @@ import * as awsDeploy from '../../cloud/aws/deploy';
 import { loadTestConfig } from '../../config/loader';
 import * as storage from '../../storage/loader';
 import type { BinaryStorage } from '../../storage/types';
-import { initTestAuth, withTestContext } from '../../test.setup';
+import { createTestProject, withTestContext } from '../../test.setup';
 import * as streamUtils from '../../util/streams';
 
 const MOCK_PRESIGNED_URL = 'https://example.com/presigned';
@@ -33,12 +33,15 @@ class MockBinaryStorage {
 
 const app = express();
 let accessToken: string;
+let projectId: string;
 
 describe('Deploy', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    const result = await createTestProject({ withAccessToken: true, membership: { admin: true } });
+    accessToken = result.accessToken;
+    projectId = result.project.id;
   });
 
   beforeEach(() => {
@@ -87,22 +90,31 @@ describe('Deploy', () => {
 
     const binary = res1.body as Binary;
 
-    // Step 2: Create a bot
+    // Step 2: Create a bot via admin endpoint (auto-creates ProjectMembership)
     const res2 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
+      .post(`/admin/projects/${projectId}/bot`)
       .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
       .send({
-        resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'awslambda',
-        executableCode: { url: `Binary/${binary.id}` },
-      } satisfies Bot);
+      });
     expect(res2.status).toBe(201);
 
     const bot = res2.body as Bot;
 
-    // Step 3: Deploy the bot
+    // Step 3: Update bot to attach executableCode
+    const res2b = await request(app)
+      .put(`/fhir/R4/Bot/${bot.id}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        ...bot,
+        executableCode: { url: `Binary/${binary.id}` },
+      });
+    expect(res2b.status).toBe(200);
+
+    // Step 4: Deploy the bot
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -118,9 +130,10 @@ describe('Deploy', () => {
     expect(readStreamToStringSpy).toHaveBeenCalledWith(expect.any(Object));
     expect(deployLambdaSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        ...bot,
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
         executableCode: expect.objectContaining({ url: expect.any(String) }),
-        meta: expect.objectContaining({ ...bot.meta, lastUpdated: expect.any(String), versionId: expect.any(String) }),
       }),
       code
     );
@@ -136,16 +149,14 @@ describe('Deploy', () => {
       }
       `;
 
-    // Step 1: Create a bot
+    // Step 1: Create a bot via admin endpoint (auto-creates ProjectMembership)
     const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
+      .post(`/admin/projects/${projectId}/bot`)
       .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
       .send({
-        resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'awslambda',
-        code,
       });
     expect(res1.status).toBe(201);
 
@@ -162,9 +173,10 @@ describe('Deploy', () => {
     expect(res2.status).toBe(200);
     expect(deployLambdaSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        ...bot,
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
         executableCode: expect.objectContaining({ url: expect.any(String) }),
-        meta: expect.objectContaining({ ...bot.meta, lastUpdated: expect.any(String), versionId: expect.any(String) }),
       }),
       code
     );
@@ -199,6 +211,92 @@ describe('Deploy', () => {
       .send({ code: '' });
     expect(res2.status).toBe(400);
     expect(res2.body.issue[0].details.text).toStrictEqual('Bot missing executable code');
+  });
+
+  test('Deploy bot without ProjectMembership returns warning', async () => {
+    const deployLambdaSpy = jest.spyOn(awsDeploy, 'deployLambda').mockImplementation(jest.fn());
+
+    const code = `
+      export async function handler() {
+        console.log('input', input);
+        return input;
+      }
+      `;
+
+    // Step 1: Create a bot without a ProjectMembership
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code,
+      });
+    expect(res1.status).toBe(201);
+
+    const bot = res1.body as Bot;
+
+    // Step 2: Deploy the bot — should succeed but include a warning about missing ProjectMembership
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code });
+    expect(res2.status).toBe(200);
+    expect(deployLambdaSpy).toHaveBeenCalled();
+
+    // Verify the response includes both the OK status and the warning
+    expect(res2.body.issue).toHaveLength(2);
+    expect(res2.body.issue[0].severity).toBe('information');
+    expect(res2.body.issue[0].details.text).toBe('All OK');
+    expect(res2.body.issue[1].severity).toBe('warning');
+    expect(res2.body.issue[1].code).toBe('business-rule');
+    expect(res2.body.issue[1].details.text).toBe('Could not find ProjectMembership for Bot');
+  });
+
+  test('Deploy bot with runAsUser skips ProjectMembership check', async () => {
+    const deployLambdaSpy = jest.spyOn(awsDeploy, 'deployLambda').mockImplementation(jest.fn());
+
+    const code = `
+      export async function handler() {
+        console.log('input', input);
+        return input;
+      }
+      `;
+
+    // Step 1: Create a bot with runAsUser enabled (no ProjectMembership needed)
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        runAsUser: true,
+        code,
+      });
+    expect(res1.status).toBe(201);
+
+    const bot = res1.body as Bot;
+
+    // Step 2: Deploy the bot — should succeed without ProjectMembership since runAsUser is true
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code,
+      });
+    expect(res2.status).toBe(200);
+    expect(deployLambdaSpy).toHaveBeenCalled();
+
+    // Verify no warning is returned since runAsUser bypasses the ProjectMembership check
+    expect(res2.body.issue).toHaveLength(1);
+    expect(res2.body.issue[0].severity).toBe('information');
+    expect(res2.body.issue[0].details.text).toBe('All OK');
   });
 
   test('Bots not enabled', async () => {

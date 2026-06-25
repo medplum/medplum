@@ -60,6 +60,7 @@ module.exports = async function (context) {
     return {
       status: 200,
       body: JSON.stringify({
+        success: true,
         returnValue,
         logResult: logOutput.join('\\n'),
       }),
@@ -75,6 +76,7 @@ module.exports = async function (context) {
     return {
       status: 400,
       body: JSON.stringify({
+        success: false,
         returnValue: normalizeOperationOutcome(err),
         logResult: logOutput.join('\\n'),
       }),
