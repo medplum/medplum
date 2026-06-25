@@ -8,6 +8,7 @@ import type { ChainableCommander } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import request from 'superwstest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
@@ -236,7 +237,7 @@ describe('FHIRcast routes', () => {
     const mockFn = (() => {
       return mockCommander;
     }) as unknown as (commands?: unknown[][]) => ChainableCommander;
-    const redisMulti = jest.spyOn(redis, 'multi').mockImplementation(mockFn);
+    const redisMulti = vi.spyOn(redis, 'multi').mockImplementation(mockFn);
 
     mockCommander.setNextExecResult(null);
 
@@ -274,7 +275,7 @@ describe('FHIRcast routes', () => {
     const mockFn = (() => {
       return mockCommander;
     }) as unknown as (commands?: unknown[][]) => ChainableCommander;
-    const redisMulti = jest.spyOn(redis, 'multi').mockImplementation(mockFn);
+    const redisMulti = vi.spyOn(redis, 'multi').mockImplementation(mockFn);
 
     mockCommander.setNextExecResult([
       [null, 'OK'],

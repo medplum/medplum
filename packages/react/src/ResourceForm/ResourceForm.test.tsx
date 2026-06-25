@@ -80,7 +80,7 @@ describe('ResourceForm', () => {
 
     await setup({
       defaultValue: {
-        reference: 'Practitioner/123',
+        reference: 'Practitioner/124',
       },
       onSubmit,
     });

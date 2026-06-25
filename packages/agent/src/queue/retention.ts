@@ -3,6 +3,7 @@
 
 import type { ILogger } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
+import type { StatementSync } from 'node:sqlite';
 import type { DurableQueue } from './durable-queue';
 import { RETENTION_PHASE1_DELETE, RETENTION_PHASE2_DELETE, RETENTION_PHASE3_DELETE } from './queries';
 
@@ -48,8 +49,8 @@ export interface SweepResult {
  * Running periodically (not just on size pressure) keeps the DB tidy on agents
  * with low message volume, where size-driven sweeps would never fire.
  *
- * Fast WAL checkpointing between sweeps is NOT this class's job — the App runs
- * {@link DurableQueue.checkpointWalIfDirty} on every agent heartbeat tick.
+ * Fast WAL checkpointing between sweeps is NOT this class's job — the queue's own
+ * checkpoint loop runs {@link DurableQueue.checkpointWalIfDirty} periodically.
  */
 export class RetentionSweeper {
   private readonly queue: DurableQueue;
@@ -63,6 +64,12 @@ export class RetentionSweeper {
   private lastSweepAt: number | null = null;
   private lastResult: SweepResult | null = null;
 
+  // Prepared once at construction and reused on every sweep — re-preparing per
+  // sweep would leak GC-finalised statement objects proportional to sweep count.
+  private readonly phase1Stmt: StatementSync;
+  private readonly phase2Stmt: StatementSync;
+  private readonly phase3Stmt: StatementSync;
+
   constructor(options: RetentionSweeperOptions) {
     this.queue = options.queue;
     this.log = options.log;
@@ -70,6 +77,11 @@ export class RetentionSweeper {
     this.maxSizeBytes = (options.maxSizeMb ?? DEFAULT_MAX_SIZE_MB) * 1024 * 1024;
     this.erroredRetentionMs = (options.erroredRetentionDays ?? DEFAULT_ERRORED_RETENTION_DAYS) * 24 * 60 * 60 * 1000;
     this.intervalMs = (options.sweepIntervalSecs ?? DEFAULT_SWEEP_INTERVAL_SECS) * 1000;
+
+    const db = this.queue.getDb();
+    this.phase1Stmt = db.prepare(RETENTION_PHASE1_DELETE);
+    this.phase2Stmt = db.prepare(RETENTION_PHASE2_DELETE);
+    this.phase3Stmt = db.prepare(RETENTION_PHASE3_DELETE);
   }
 
   /** Starts the periodic sweep timer and runs one sweep right away. No-op if already started. */
@@ -125,8 +137,10 @@ export class RetentionSweeper {
       );
     }
     this.running = true;
+    // Wall-clock start for the sweep duration log. Independent of `now` (which
+    // may be a test-supplied retention cutoff, not real time).
+    const startedAt = Date.now();
     try {
-      const db = this.queue.getDb();
       const cutoffProcessed = now - this.retentionMs;
       const cutoffErrored = now - this.erroredRetentionMs;
 
@@ -135,7 +149,7 @@ export class RetentionSweeper {
       // fully done — it must survive long enough for the source to retransmit
       // (which replays the stored ACK) and is an operator signal — so it's
       // excluded here and protected by the errored floor in phase 3.
-      const phase1 = db.prepare(RETENTION_PHASE1_DELETE).run(cutoffProcessed);
+      const phase1 = this.phase1Stmt.run(cutoffProcessed);
 
       let deletedProcessed = Number(phase1.changes);
       let deletedErrored = 0;
@@ -143,9 +157,8 @@ export class RetentionSweeper {
       // Phase 2: size-driven purge of fully-done processed rows in oldest-first batches.
       const sizeBudget = this.maxSizeBytes;
       const batchSize = 1000;
-      const purgeOldestProcessed = db.prepare(RETENTION_PHASE2_DELETE);
       while (this.queue.getDbSizeBytes() > sizeBudget) {
-        const info = purgeOldestProcessed.run(batchSize);
+        const info = this.phase2Stmt.run(batchSize);
         if (info.changes === 0) {
           // No more fully-done processed rows to delete — fall through to phase 3.
           break;
@@ -161,9 +174,8 @@ export class RetentionSweeper {
       // retransmit against). Ordered by the terminal timestamp, which is
       // errored_at for failures and processed_at for undelivered rows.
       if (this.queue.getDbSizeBytes() > sizeBudget) {
-        const purgeOldestErrored = db.prepare(RETENTION_PHASE3_DELETE);
         while (this.queue.getDbSizeBytes() > sizeBudget) {
-          const info = purgeOldestErrored.run(cutoffErrored, batchSize);
+          const info = this.phase3Stmt.run(cutoffErrored, batchSize);
           if (info.changes === 0) {
             break;
           }
@@ -185,7 +197,7 @@ export class RetentionSweeper {
 
       if (deletedProcessed > 0 || deletedErrored > 0) {
         this.log.info(
-          `Retention sweep: deleted ${deletedProcessed} processed, ${deletedErrored} errored. DB ${result.dbSizeBytesAfter} bytes.`
+          `Retention sweep: deleted ${deletedProcessed} processed, ${deletedErrored} errored. DB ${result.dbSizeBytesAfter} bytes. Took ${Date.now() - startedAt} ms.`
         );
       }
       return result;

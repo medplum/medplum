@@ -104,7 +104,7 @@ test.each(TokenQueryOperators)('%s with empty value does not throw errors', asyn
     ],
   });
 
-  await expect(search).resolves;
+  await expect(search).resolves.toBeDefined();
 });
 
 test('Multiple identifiers', () =>

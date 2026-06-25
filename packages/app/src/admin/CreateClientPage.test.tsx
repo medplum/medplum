@@ -26,7 +26,7 @@ describe('CreateClientPage', () => {
       accessToken: '123',
       refreshToken: '456',
       profile: {
-        reference: 'Practitioner/123',
+        reference: 'Practitioner/124',
       },
       project: {
         reference: 'Project/123',

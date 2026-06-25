@@ -41,10 +41,15 @@ export const MIGRATIONS: readonly Migration[] = [
         finalized_message     BLOB    NOT NULL,
         encoding              TEXT,
         enhanced_mode         TEXT,
-        -- state tracks the Bot leg (queued/processing/processed/rejected/failed)
-        -- plus the intake-reject 'nacked'. The source-leg ACK-delivery outcome is
-        -- tracked independently in ack_outcome
-        -- (pending/delivered/undelivered/not_owed) so the two legs never conflate.
+        -- state tracks the Bot leg: queued → claimed (worker owns it, request not
+        -- yet on the wire) → inflight (request written to the socket, sent_at
+        -- stamped, awaiting response) → processed/rejected/failed, plus the
+        -- intake-reject 'nacked'. The claimed/inflight split is what lets crash
+        -- recovery tell a provably-unsent row (safe to requeue) from an ambiguous
+        -- in-flight one (must fail or, under guaranteed delivery, requeue). A
+        -- retryable failure returns to 'queued' with next_attempt_at set (see
+        -- §4.1). The source-leg ACK-delivery outcome is tracked independently in
+        -- ack_outcome (pending/delivered/undelivered/not_owed) so the legs never conflate.
         state                 TEXT    NOT NULL,
         attempt_count         INTEGER NOT NULL DEFAULT 0,
         callback_id           TEXT    NOT NULL,
@@ -60,11 +65,16 @@ export const MIGRATIONS: readonly Migration[] = [
         next_attempt_at       INTEGER,
         -- guaranteed_delivery snapshots the channel's guaranteedDelivery setting at
         -- intake, so recoverOnStartup (which runs before channel policies resolve)
-        -- knows whether to requeue (1) or fail (0) an interrupted row.
+        -- knows whether to requeue (1) or fail (0) an interrupted inflight row.
         guaranteed_delivery   INTEGER NOT NULL DEFAULT 0,
         seq_no                INTEGER,
         received_at           INTEGER NOT NULL,
+        -- processing_started_at is stamped when the worker claims the row (enters
+        -- the claimed state); sent_at is stamped when the request is written to the
+        -- socket (enters inflight). A NULL sent_at on a claimed row is the durable
+        -- discriminator crash recovery uses to know the request never left.
         processing_started_at INTEGER,
+        sent_at               INTEGER,
         processed_at          INTEGER,
         errored_at            INTEGER
       ) STRICT;
@@ -86,7 +96,7 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE UNIQUE INDEX IF NOT EXISTS uq_inbound_dup_active
         ON inbound_hl7_messages (channel_name, msg_control_id)
         WHERE msg_control_id IS NOT NULL
-          AND state IN ('queued', 'processing');
+          AND state IN ('queued', 'claimed', 'inflight');
 
       -- Intake dedup reads the most recent prior row for a (channel, control_id)
       -- across ALL non-nacked states (uq_inbound_dup_active only covers the

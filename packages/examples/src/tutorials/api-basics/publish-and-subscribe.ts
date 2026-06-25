@@ -4,7 +4,6 @@
 
 // start-block core-imports
 import { createReference, getReferenceString, MedplumClient, UCUM } from '@medplum/core';
-import fetch from 'node-fetch';
 
 // end-block core-imports
 
@@ -26,7 +25,6 @@ const MY_CLIENT_SECRET = 'MY_CLIENT_SECRET';
 // start-block create-client
 const medplum = new MedplumClient({
   baseUrl: 'https://api.medplum.com/',
-  fetch: fetch,
 });
 await medplum.startClientLogin(MY_CLIENT_ID, MY_CLIENT_SECRET);
 // end-block create-client

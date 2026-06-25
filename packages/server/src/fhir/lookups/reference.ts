@@ -12,8 +12,8 @@ import {
   toTypedValue,
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
 import { getLogger } from '../../logger';
+import type { PgQueryable } from '../sql';
 import { InsertQuery, SelectQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
@@ -49,7 +49,7 @@ export class ReferenceTable extends LookupTable {
   }
 
   async batchIndexResources<T extends Resource>(
-    client: PoolClient | Pool,
+    client: PgQueryable,
     resources: WithId<T>[],
     create: boolean,
     resourceBatchSize: number = 200
@@ -180,7 +180,7 @@ export class ReferenceTable extends LookupTable {
     getSearchReferences(result, resource);
   }
 
-  async getExistingRows<T extends Resource>(client: Pool | PoolClient, resources: T[]): Promise<ReferenceTableRow[]> {
+  async getExistingRows<T extends Resource>(client: PgQueryable, resources: T[]): Promise<ReferenceTableRow[]> {
     if (resources.length === 0) {
       return [];
     }
@@ -201,11 +201,7 @@ export class ReferenceTable extends LookupTable {
    * @param resourceType - The resource type.
    * @param values - The values to insert.
    */
-  async batchInsertRows(
-    client: Pool | PoolClient,
-    resourceType: ResourceType,
-    values: Record<string, any>[]
-  ): Promise<void> {
+  async batchInsertRows(client: PgQueryable, resourceType: ResourceType, values: Record<string, any>[]): Promise<void> {
     if (values.length === 0) {
       return;
     }

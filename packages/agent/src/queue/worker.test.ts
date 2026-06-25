@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { AgentMessage, AgentTransmitResponse } from '@medplum/core';
-import { ContentType } from '@medplum/core';
+import { ContentType, TypedEventTarget } from '@medplum/core';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { App } from '../app';
-import { createMockLogger } from '../test-utils';
+import { createMockLogger, waitFor } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
 import { AckOutcome, MessageState, QueueErrorCode } from './types';
@@ -37,6 +37,9 @@ function makeStubApp(options?: { live?: boolean }): {
   const stub = {
     agentId: 'agent-test',
     isLive: () => live,
+    // The worker ties its in-flight lease check to the App heartbeat; tests fire it
+    // by dispatching a 'heartbeat' event on this emitter.
+    heartbeatEmitter: new TypedEventTarget(),
     addToWebSocketQueue: (msg: AgentMessage) => {
       sent.push(msg);
     },
@@ -141,7 +144,80 @@ describe('ChannelQueueWorker', () => {
     await worker.stop();
   });
 
-  test('server 5xx with auto-retry opted out marks the row failed (transient) and proceeds to the next', async () => {
+  test('steps down on its own when a peer steals the lease (idle: next claim throws)', async () => {
+    // Bind the queue to "us" and take the lease so the worker is the leader.
+    queue.setLeaseHolder('us');
+    expect(queue.tryAcquireLease('us', 60_000)).toBe(true);
+
+    const r1 = enqueueOne(queue, 'LD1');
+    const { app, sent } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      idlePollMs: 10,
+    });
+    worker.start();
+
+    // Drains the first row normally while we hold the lease.
+    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
+    worker.onServerResponse(makeResponse(r1.callbackId, 200));
+    await waitFor(() => queue.getById(r1.id)?.state === MessageState.PROCESSED);
+
+    // A peer steals the lease. The idle worker's next claimNext throws
+    // QueueLeaseError and it steps down on its own — no lost-leadership callback.
+    queue.releaseLease('us');
+    expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
+    await waitFor(() => !worker.isRunning(), 1000);
+
+    // A row enqueued after the steal is never claimed by the demoted worker.
+    const r2 = enqueueOne(queue, 'LD2');
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(queue.getById(r2.id)?.state).toBe(MessageState.QUEUED);
+    expect(sent.some((m) => (m as { callback?: string }).callback === r2.callbackId)).toBe(false);
+
+    await worker.stop();
+  });
+
+  test('in-flight lease check (on heartbeat) cancels a wedged dispatch without settling the row', async () => {
+    queue.setLeaseHolder('us');
+    expect(queue.tryAcquireLease('us', 60_000)).toBe(true);
+
+    const r1 = enqueueOne(queue, 'WD1');
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      idlePollMs: 10,
+      responseTimeoutMs: 60_000, // long — the heartbeat check, not the timeout, must end the wait
+    });
+    worker.start();
+
+    // Worker dispatches r1 and wedges awaiting a response that never comes.
+    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
+
+    // Peer steals the lease. A heartbeat tick fires the in-flight lease check, which
+    // cancels the wedged dispatch — well before the 60s response timeout.
+    queue.releaseLease('us');
+    expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
+    app.heartbeatEmitter.dispatchEvent({ type: 'heartbeat' });
+    await waitFor(() => !worker.isRunning(), 1000);
+
+    // The demoted worker did NOT settle the row — it's left for the new owner's
+    // recoverOnStartup. (The stub app never calls markSent, so it's still `claimed`.)
+    expect(queue.getById(r1.id)?.state).toBe(MessageState.CLAIMED);
+
+    await worker.stop();
+  });
+
+  test('server 5xx marks the row failed (transient) and proceeds to the next', async () => {
     const r1 = enqueueOne(queue, 'E1');
     const r2 = enqueueOne(queue, 'E2');
     const { app } = makeStubApp();
@@ -153,7 +229,8 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck: () => true,
       idlePollMs: 10,
-      // Auto-retry defaults to ON; this test covers the explicit opt-out path.
+      // Auto-retry defaults to ON (guaranteed); opt out so the transient failure
+      // settles terminally as `failed` for this classification test.
       retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
     });
     worker.start();
@@ -174,7 +251,7 @@ describe('ChannelQueueWorker', () => {
     await worker.stop();
   });
 
-  test('server 4xx marks the row rejected (permanent), 429 is the transient exception', async () => {
+  test('server 4xx marks the row rejected (permanent) and proceeds to the next', async () => {
     const r1 = enqueueOne(queue, 'RJ1');
     const r2 = enqueueOne(queue, 'RJ2');
     const { app } = makeStubApp();
@@ -186,7 +263,7 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck: () => true,
       idlePollMs: 10,
-      // Auto-retry off so we observe the terminal classification directly: a
+      // Auto-retry off so the terminal classification is observed directly: a
       // transient 429 would otherwise be re-queued for retry, not left `failed`.
       retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
     });
@@ -289,13 +366,9 @@ describe('ChannelQueueWorker', () => {
     await worker.stop();
   });
 
-  test('under the default (guaranteed) policy, a response timeout is retried, not failed', async () => {
+  test('response timeout marks the row failed', async () => {
     const r = enqueueOne(queue, 'TIMEOUT');
     const { app } = makeStubApp();
-    // No retryPolicy → DEFAULT_RETRY_POLICY, which is guaranteedDelivery. An
-    // ambiguous response timeout is retried (returned to `queued`) rather than
-    // left `failed` — the at-least-once default. (Normal-mode opt-out, which DOES
-    // land such a timeout in `failed` for review, is covered separately below.)
     const worker = new ChannelQueueWorker({
       channelName: 'ch1',
       app,
@@ -304,13 +377,14 @@ describe('ChannelQueueWorker', () => {
       sendAck: () => true,
       responseTimeoutMs: 50,
       idlePollMs: 10,
+      // Auto-retry off so the ambiguous timeout lands terminally in `failed`.
+      // (Under the guaranteed default it would be retried — covered separately.)
+      retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
     });
     worker.start();
-    await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED, 2000);
-    const scheduled = queue.getById(r.id);
-    expect(scheduled?.lastError).toContain('Timed out');
-    expect(scheduled?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
-    expect(scheduled?.nextAttemptAt).toBeGreaterThan(0);
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
+    expect(queue.getById(r.id)?.lastError).toContain('Timed out');
+    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
     await worker.stop();
   });
 
@@ -370,6 +444,49 @@ describe('ChannelQueueWorker', () => {
     const settled = queue.getById(r.id);
     expect(settled?.state).toBe(MessageState.REJECTED);
     expect(settled?.errorCode).toBe(QueueErrorCode.ServerRejected);
+  });
+
+  test('late server response is discarded when a peer took the lease (not ours to settle)', async () => {
+    // Hold the lease so the worker is the leader, then let a row time out into `failed`.
+    queue.setLeaseHolder('us');
+    expect(queue.tryAcquireLease('us', 60_000)).toBe(true);
+
+    const r = enqueueOne(queue, 'LATE-DEMOTED');
+    const { app } = makeStubApp();
+    const sendAck = vi.fn(() => true);
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck,
+      responseTimeoutMs: 50,
+      idlePollMs: 10,
+      // Opt out of auto-retry so the ambiguous response timeout lands in `failed`
+      // for review — the precondition this late-response/lease test exercises.
+      retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
+    });
+    worker.start();
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
+    expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    await worker.stop();
+
+    // A peer steals the lease. The server's response then finally arrives — but this
+    // row is now the new leader's to settle, not ours. applyServerResponse's write is
+    // refused with QueueLeaseError, so the late response is discarded rather than
+    // applied over a row a demoted process no longer owns.
+    queue.releaseLease('us');
+    expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
+
+    expect(worker.onServerResponse(makeResponse(r.callbackId, 200))).toBe(false);
+
+    // The row is left exactly as the timeout left it — no write leaked through the
+    // lease gate (state, error code, and the still-null server status all unchanged).
+    const row = queue.getById(r.id);
+    expect(row?.state).toBe(MessageState.FAILED);
+    expect(row?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    expect(row?.serverStatusCode).toBeNull();
+    expect(sendAck).not.toHaveBeenCalled();
   });
 
   test('late duplicate server response is discarded for an already-settled row', async () => {
@@ -491,7 +608,9 @@ describe('ChannelQueueWorker', () => {
     });
     worker.start();
     await waitFor(() => worker.hasInFlight());
-    expect(queue.getById(r.id)?.state).toBe(MessageState.PROCESSING);
+    // The stub App never sends, so markSent never fires — the row sits in `claimed`
+    // (worker owns it, request still buffered), exactly the state requeue targets.
+    expect(queue.getById(r.id)?.state).toBe(MessageState.CLAIMED);
 
     // Connection drops before the request left the WS queue.
     setLive(false);
@@ -559,6 +678,31 @@ describe('ChannelQueueWorker', () => {
       sendAck: () => true,
     });
     expect(() => worker.onWebSocketDisconnect()).not.toThrow();
+  });
+
+  test('under the default (guaranteed) policy, a response timeout is retried, not failed', async () => {
+    const r = enqueueOne(queue, 'DEFAULT-TIMEOUT');
+    const { app } = makeStubApp();
+    // No retryPolicy → DEFAULT_RETRY_POLICY, which is guaranteedDelivery. An
+    // ambiguous response timeout is retried (returned to `queued`) rather than
+    // left `failed` — the at-least-once default. (Normal-mode opt-out, which DOES
+    // land such a timeout in `failed` for review, is covered separately above.)
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+      responseTimeoutMs: 50,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED, 2000);
+    const scheduled = queue.getById(r.id);
+    expect(scheduled?.lastError).toContain('Timed out');
+    expect(scheduled?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    expect(scheduled?.nextAttemptAt).toBeGreaterThan(0);
+    await worker.stop();
   });
 
   describe('auto-retry', () => {
@@ -645,7 +789,7 @@ describe('ChannelQueueWorker', () => {
       for (let attempt = 1; attempt <= 2; attempt++) {
         await waitFor(() => worker.hasInFlight(), 2000);
         worker.onServerResponse(makeResponse(r.callbackId, 503, 'still down'));
-        await waitFor(() => queue.getById(r.id)?.state !== MessageState.PROCESSING);
+        await waitFor(() => queue.getById(r.id)?.state !== MessageState.CLAIMED);
       }
 
       const final = queue.getById(r.id);
@@ -806,7 +950,7 @@ describe('ChannelQueueWorker', () => {
         for (let attempt = 1; attempt <= 2; attempt++) {
           await waitFor(() => worker.hasInFlight(), 2000);
           worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AE')));
-          await waitFor(() => queue.getById(r.id)?.state !== MessageState.PROCESSING);
+          await waitFor(() => queue.getById(r.id)?.state !== MessageState.CLAIMED);
         }
 
         const final = queue.getById(r.id);
@@ -867,25 +1011,6 @@ describe('computeRetryDelayMs', () => {
     expect(computeRetryDelayMs(fixed, 10)).toBe(1000);
   });
 });
-
-/**
- * Polls `predicate` until it returns true or `timeoutMs` elapses.
- * Throws a descriptive error on timeout so the test failure points at the assertion.
- * @param predicate - Condition to wait for.
- * @param timeoutMs - Total time to wait before throwing.
- */
-async function waitFor(predicate: () => boolean, timeoutMs: number = 1000): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    if (predicate()) {
-      return;
-    }
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 10);
-    });
-  }
-  throw new Error(`waitFor timed out after ${timeoutMs}ms`);
-}
 
 function lastCallback(worker: ChannelQueueWorker): string | undefined {
   return (worker as unknown as { pending?: { row: InboundRow } }).pending?.row.callbackId;

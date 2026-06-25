@@ -58,7 +58,7 @@ describe('Verify email handler', () => {
 
   test('Success', async () =>
     withTestContext(async () => {
-      const usr = await verifyEmail(user);
+      const usr = await verifyEmail(systemRepo, user);
 
       // Attempt verification with incorrect secret
       const res1 = await request(app)

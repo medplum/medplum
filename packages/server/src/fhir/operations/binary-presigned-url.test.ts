@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
-import { createTestProject, initTestAuth } from '../../test.setup';
+import { addTestUser, createTestProject, initTestAuth } from '../../test.setup';
 
 const app = express();
 
@@ -104,5 +104,70 @@ describe('Binary/$presigned-url', () => {
       .auth(accessToken, { type: 'bearer' })
       .send();
     expect(writeUrlRes.status).toBe(403);
+  });
+
+  test('Requires securityContext read access to generate presigned URL', async () => {
+    const testProject = await createTestProject({ withAccessToken: true });
+
+    const patientRes = await request(server)
+      .post('/fhir/R4/Patient')
+      .auth(testProject.accessToken, { type: 'bearer' })
+      .send({ resourceType: 'Patient' });
+    expect(patientRes.status).toBe(201);
+
+    const binaryRes = await request(server)
+      .post('/fhir/R4/Binary')
+      .auth(testProject.accessToken, { type: 'bearer' })
+      .set('Content-Type', 'text/plain')
+      .set('X-Security-Context', `Patient/${patientRes.body.id}`)
+      .send('sensitive binary');
+    expect(binaryRes.status).toBe(201);
+    const binary = binaryRes.body as WithId<Binary>;
+
+    // Restricted user: can read Binary, but not Patient (the securityContext target)
+    const restrictedUser = await addTestUser(testProject.project, {
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Binary', interaction: ['read'] }],
+      },
+    });
+
+    // Permitted user: can read Binary and Patient
+    const permittedUser = await addTestUser(testProject.project, {
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'Binary', interaction: ['read'] },
+          { resourceType: 'Patient', interaction: ['read'] },
+        ],
+      },
+    });
+
+    // Confirm the restricted user cannot read the Patient
+    const patientReadRes = await request(server)
+      .get(`/fhir/R4/Patient/${patientRes.body.id}`)
+      .auth(restrictedUser.accessToken, { type: 'bearer' });
+    expect(patientReadRes.status).toBe(403);
+
+    // Restricted user should be blocked from getting a presigned URL
+    const restrictedPresignRes = await request(server)
+      .get(`/fhir/R4/Binary/${binary.id}/$presigned-url`)
+      .auth(restrictedUser.accessToken, { type: 'bearer' })
+      .send();
+    expect(restrictedPresignRes.status).toBe(403);
+
+    // Permitted user with read access should succeed
+    const permittedPresignRes = await request(server)
+      .get(`/fhir/R4/Binary/${binary.id}/$presigned-url`)
+      .auth(permittedUser.accessToken, { type: 'bearer' })
+      .send();
+    expect(permittedPresignRes.status).toBe(200);
+
+    // Admin user with full access should succeed
+    const authorizedPresignRes = await request(server)
+      .get(`/fhir/R4/Binary/${binary.id}/$presigned-url`)
+      .auth(testProject.accessToken, { type: 'bearer' })
+      .send();
+    expect(authorizedPresignRes.status).toBe(200);
   });
 });

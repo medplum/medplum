@@ -11,22 +11,33 @@
  * Bot accepted but whose ACK we couldn't return is `processed` + `undelivered`,
  * NOT a Bot-leg failure. See DURABLE_QUEUE_ARCHITECTURE.md §4 for the transition diagram.
  *
- * - `queued`     — inserted, awaiting worker dispatch.
- * - `processing` — worker has claimed it and dispatched to the Medplum server.
+ * - `queued`     — inserted, awaiting worker dispatch; OR a retryable failure
+ *                  was scheduled for auto-retry (`next_attempt_at` set, see §4.1).
+ * - `claimed`    — a worker has claimed the row off the queue, but the
+ *                  `agent:transmit:request` has NOT yet been written to the
+ *                  WebSocket (it's still buffered in the in-memory send queue).
+ *                  A crash here is UNAMBIGUOUS — the server provably never saw
+ *                  it — so recovery returns it to `queued` (no duplicate risk).
+ * - `inflight`   — the request has been written to the socket (`sent_at` stamped)
+ *                  and the worker is awaiting the server's response. A crash here
+ *                  is AMBIGUOUS (the server may have processed it), so recovery
+ *                  marks it `failed` for operator review, never silently retries.
  * - `processed`  — the Bot accepted it (server 2xx). Says nothing about whether
  *                  the source ACK was delivered — see {@link AckOutcome}.
- * - `rejected`   — terminal: the Bot rejected the message itself (permanent 4xx,
- *                  or a definitive upstream HL7 reject in guaranteed-delivery
- *                  mode). Retrying can never help; the content must be triaged.
+ * - `rejected`   — terminal: the Bot rejected the message itself (permanent 4xx).
+ *                  Retrying can never help; the content must be triaged.
  * - `failed`     — terminal-for-now: a transient/ambiguous Bot-leg failure
  *                  (5xx, 429, response timeout, dispatch error, or "interrupted" —
- *                  a row found in `processing` on startup). The retry/operator-
- *                  review candidate; never confused with a `rejected` message.
+ *                  a row found `inflight` on startup). Default (guaranteed) mode
+ *                  retries all of these; normal mode retries only the transient
+ *                  codes and leaves the ambiguous ones here for review (see §4.1).
+ *                  Never confused with a `rejected` message.
  * - `nacked`     — rejected at intake; sender was told NACK and the row exists only for audit.
  */
 export const MessageState = {
   QUEUED: 'queued',
-  PROCESSING: 'processing',
+  CLAIMED: 'claimed',
+  INFLIGHT: 'inflight',
   PROCESSED: 'processed',
   REJECTED: 'rejected',
   FAILED: 'failed',
@@ -67,8 +78,8 @@ export type AckOutcome = (typeof AckOutcome)[keyof typeof AckOutcome];
  *
  * Codes are assigned at the failure site (the worker knows which path failed)
  * and stored in the `error_code` column alongside the human-readable
- * `last_error`, so the retry policy and operator tooling can reason about *why*
- * a row errored without parsing free-form error strings.
+ * `last_error`, so operators and tooling can reason about *why* a row errored
+ * without parsing free-form error strings.
  *
  * Most codes here describe a **Bot-leg** failure (they annotate a `rejected` or
  * `failed` row). The source-leg ACK-delivery outcome is NOT an error code — it
@@ -114,7 +125,7 @@ export const QueueErrorCode = {
   ServerRateLimited: 'server-rate-limited',
   /** Ambiguous (`failed`): timed out waiting for the server response; delivery unknown. Review-only in normal mode. */
   ResponseTimeout: 'response-timeout',
-  /** Ambiguous (`failed`): row was in `processing` when the agent restarted. Review-only in normal mode. */
+  /** Ambiguous (`failed`): row was in `inflight` when the agent restarted. Review-only in normal mode. */
   Interrupted: 'interrupted',
   /** Ambiguous (`failed`): in-flight dispatch was cancelled by worker shutdown. Review-only in normal mode. */
   WorkerStopped: 'worker-stopped',
@@ -174,9 +185,8 @@ export const PERMANENT_ERROR_CODES: ReadonlySet<QueueErrorCode> = new Set<QueueE
  *
  * Only `UpstreamRejected` (MSA-1 of AR/CR) qualifies: it is the one outcome that
  * says "this exact message will be rejected on every retransmit," so continuing
- * to retry is pointless. (The old `AckDeliveryFailed` terminal is gone: a Bot
- * accept whose source ACK failed is now `processed` + `undelivered` and never
- * reaches the retry path at all — see {@link AckOutcome}.)
+ * to retry is pointless. (A Bot accept whose source ACK failed is `processed` +
+ * `undelivered` and never reaches the retry path at all — see {@link AckOutcome}.)
  */
 export const GUARANTEED_TERMINAL_CODES: ReadonlySet<QueueErrorCode> = new Set<QueueErrorCode>([
   QueueErrorCode.UpstreamRejected,
@@ -189,6 +199,34 @@ export class QueueError extends Error {
   constructor(code: QueueErrorCode, message: string) {
     super(message);
     this.code = code;
+  }
+}
+
+/**
+ * Thrown by a gated dispatch operation when a peer holds the queue lease — i.e.
+ * this process has been demoted and must stop driving the queue.
+ *
+ * This is control flow, NOT a dispatch failure: the worker catches it to tear
+ * itself down cleanly and must never settle a row from it (the new leader's
+ * `recoverOnStartup` reconciles whatever was left mid-flight). The lease check
+ * lives in {@link DurableQueue} (see `setLeaseHolder` / `isLeaseHeldByPeer`), so
+ * loss is detected at the point of mutation rather than pushed down through a
+ * chain of leadership callbacks.
+ */
+export class QueueLeaseError extends Error {
+  /** The holder this process believes it is (the one bound via `setLeaseHolder`). */
+  readonly localHolder: string | undefined;
+  /** The holder that actually owns the lease now (the peer that took over). */
+  readonly currentHolder: string | undefined;
+
+  constructor(localHolder: string | undefined, currentHolder: string | undefined) {
+    super(
+      `Queue lease held by a peer; this process is no longer leader ` +
+        `(local holder=${localHolder ?? 'unset'}, current holder=${currentHolder ?? 'none'})`
+    );
+    this.name = 'QueueLeaseError';
+    this.localHolder = localHolder;
+    this.currentHolder = currentHolder;
   }
 }
 
@@ -222,6 +260,7 @@ export interface InboundRow {
   enhancedMode: EnhancedModeColumn;
   state: MessageState;
   attemptCount: number;
+  /** Snapshot of the channel's guaranteed-delivery setting at intake (drives crash recovery). */
   guaranteedDelivery: boolean;
   callbackId: string;
   serverResponseBody: Buffer | null;
@@ -234,7 +273,10 @@ export interface InboundRow {
   nextAttemptAt: number | null;
   seqNo: number | null;
   receivedAt: number;
+  /** When the worker claimed the row off the queue (entered `claimed`). */
   processingStartedAt: number | null;
+  /** When the transmit request was written to the WebSocket (entered `inflight`). Null until sent. */
+  sentAt: number | null;
   processedAt: number | null;
   erroredAt: number | null;
 }
@@ -258,7 +300,7 @@ export interface EnqueueInput {
    * Snapshot of the channel's guaranteed-delivery setting at intake time.
    * Stored on the row so `recoverOnStartup` (which runs before channel
    * policies are resolved) knows whether to requeue or fail an interrupted
-   * row. Defaults to false.
+   * in-flight row. Defaults to false.
    */
   guaranteedDelivery?: boolean;
 }
@@ -273,7 +315,7 @@ export interface EnqueueRejectedInput extends EnqueueInput {
 /**
  * Outcome of an intake attempt. `duplicate` means a prior row for the same
  * `(channel, msg_control_id)` already exists in a non-`nacked` state (queued,
- * processing, processed, rejected, or failed) — the caller compares bodies to
- * decide between replaying the prior ACK and rejecting the collision (§8).
+ * claimed, inflight, processed, rejected, or failed) — the caller compares
+ * bodies to decide between replaying the prior ACK and rejecting the collision (§8).
  */
 export type EnqueueResult = { kind: 'inserted'; row: InboundRow } | { kind: 'duplicate'; existing: InboundRow };

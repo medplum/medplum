@@ -125,16 +125,22 @@ export class AgentHl7Channel extends BaseChannel {
    * running — so it's safe to call from either entry point.
    */
   private maybeStartWorker(): void {
+    // Reap a worker that stepped down on lease loss (it self-terminates on a
+    // QueueLeaseError rather than via a callback), so a later re-acquisition can
+    // start a fresh one — maybeStartWorker no-ops while `this.worker` is set.
+    if (this.worker && !this.worker.isRunning()) {
+      this.worker = undefined;
+    }
     if (this.worker) {
       return;
     }
+    // Leader-gated, the cheap optimistic half: getDurableQueue() is undefined when
+    // the queue is off, and isLeader() is false until we hold the lease.
+    // `onBecameQueueLeader` calls back in once we acquire. The authoritative gate
+    // is implicit in the queue's dispatch ops, which throw QueueLeaseError if the
+    // lease moves out from under a running worker (the loop catches it and steps down).
     const queue = this.app.getDurableQueue();
-    if (!queue) {
-      return;
-    }
-    if (!this.app.isQueueLeader()) {
-      // Not leader yet — `onBecameQueueLeader` will start the worker when we
-      // acquire the lease.
+    if (!queue?.isLeader()) {
       return;
     }
     this.worker = new ChannelQueueWorker({
@@ -158,31 +164,6 @@ export class AgentHl7Channel extends BaseChannel {
    */
   onBecameQueueLeader(): void {
     this.maybeStartWorker();
-  }
-
-  /**
-   * Notification from the App that a peer stole the durable-queue lease. Stops
-   * this channel's worker so the demoted process stops claiming and dispatching
-   * rows from the now peer-owned queue, and clears it so a later
-   * {@link onBecameQueueLeader} (on re-acquisition) brings a fresh worker back
-   * up — `maybeStartWorker` no-ops while `this.worker` is set, so clearing it is
-   * required.
-   *
-   * `worker.stop()` is awaited fire-and-forget: it drains in the background while
-   * we return promptly to the lease loop. Any in-flight dispatch is rejected and
-   * its row marked failed; SQLite serializes that write with the new leader's,
-   * and the leader's `recoverOnStartup` reconciles interrupted rows, so this is
-   * consistent.
-   */
-  onLostQueueLeadership(): void {
-    const worker = this.worker;
-    if (!worker) {
-      return;
-    }
-    this.worker = undefined;
-    worker.stop().catch((err) => {
-      this.log.error(`Error stopping worker after lease loss: ${normalizeErrorString(err)}`);
-    });
   }
 
   shouldAssignSeqNo(): boolean {

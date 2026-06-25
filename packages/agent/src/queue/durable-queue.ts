@@ -3,15 +3,37 @@
 
 import type { ILogger } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
+import { randomUUID } from 'node:crypto';
 import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
 import {
+  CHANNEL_DEPTH,
+  CHECKPOINT_WAL,
   CLAIM_NEXT,
+  COMMIT_SEQ_NO,
+  COUNT_BY_STATE,
+  DB_SIZE_BYTES,
+  ENQUEUE,
+  ENQUEUE_REJECTED,
   FIND_BY_CALLBACK,
+  FIND_BY_ID,
   FIND_SEEN_BY_CONTROL_ID,
+  GET_LEASE,
+  HEARTBEAT_LEASE,
   LIST_QUEUED_IDS_FOR_CHANNEL,
-  RECOVER_PROCESSING,
-  RECOVER_PROCESSING_GUARANTEED,
+  MARK_BOT_FAILED,
+  MARK_PROCESSED,
+  MARK_SENT,
+  PEEK_LAST_SEQ_NO,
+  RECORD_SERVER_RESPONSE,
+  RECOVER_CLAIMED,
+  RECOVER_INFLIGHT,
+  RECOVER_INFLIGHT_GUARANTEED,
+  RELEASE_LEASE,
+  REQUEUE,
+  SCHEDULE_RETRY,
+  SET_ACK_OUTCOME,
+  TRY_ACQUIRE_LEASE,
 } from './queries';
 import { runMigrations } from './schema';
 import type {
@@ -23,13 +45,53 @@ import type {
   MessageState,
   QueueErrorCode,
 } from './types';
-import { AckOutcome as AckOutcomeValues, MessageState as MessageStateValues } from './types';
+import { AckOutcome as AckOutcomeValues, MessageState as MessageStateValues, QueueLeaseError } from './types';
+
+/**
+ * Default lease lifetime. Picked to be:
+ * - Long enough that ordinary GC pauses or slow disks don't cost us the lease
+ *   under load.
+ * - Short enough that, when an agent dies un-gracefully, a peer can take over
+ *   within tens of seconds rather than minutes.
+ */
+export const DEFAULT_LEASE_TTL_MS = 30_000;
+
+/**
+ * How often the leaseholder re-extends its lease. Must be comfortably less than
+ * {@link DEFAULT_LEASE_TTL_MS} so transient delays don't let the lease expire.
+ */
+export const DEFAULT_LEASE_HEARTBEAT_MS = 10_000;
+
+/**
+ * How often a non-leader retries acquisition. Shorter is fine — the underlying
+ * SQL is a single conditional UPSERT and is cheap.
+ */
+export const DEFAULT_LEASE_ACQUIRE_RETRY_MS = 2_000;
+
+/**
+ * How often the queue folds its WAL back into the main DB file. SQLite only
+ * checkpoints piggybacked on commits, so once traffic stops nothing else would
+ * drain the WAL until the next retention sweep or close(); this loop bounds how
+ * far the main DB file can lag behind the last write. Matches the agent
+ * heartbeat cadence — the loop's former home, before the queue took ownership.
+ */
+export const DEFAULT_CHECKPOINT_INTERVAL_MS = 10_000;
 
 export interface DurableQueueOptions {
   /** Filesystem path to the SQLite DB file. */
   path: string;
   /** Logger for migration / lifecycle messages. */
   log: ILogger;
+  /** Override the per-process dispatch-lease holder ID. Defaults to a fresh UUID. */
+  leaseHolder?: string;
+  /** Override the dispatch-lease TTL in ms. */
+  leaseTtlMs?: number;
+  /** Override the dispatch-lease heartbeat interval in ms. */
+  leaseHeartbeatMs?: number;
+  /** Override the dispatch-lease acquire retry interval in ms. */
+  leaseAcquireRetryMs?: number;
+  /** Override the WAL-checkpoint loop interval in ms. */
+  checkpointIntervalMs?: number;
 }
 
 /** Counts by lifecycle state — used by stats and the retention sweeper. */
@@ -38,7 +100,10 @@ export type StateCounts = Record<MessageState, number>;
 /** Per-channel queue depth snapshot returned by {@link DurableQueue.getChannelDepths}. */
 export interface ChannelDepth {
   queued: number;
-  processing: number;
+  /** Claimed by a worker but not yet written to the socket. */
+  claimed: number;
+  /** Written to the socket, awaiting the server response. */
+  inflight: number;
   oldestQueuedAgeMs: number | null;
 }
 
@@ -57,12 +122,52 @@ export class DurableQueue {
   private readonly log: ILogger;
   private readonly path: string;
   private closed = false;
+  // The dispatch-lease holder ID of THIS process, set when startDispatchLease()
+  // begins the acquire/heartbeat loop (or bound directly via setLeaseHolder in
+  // tests). Dispatch-class mutations are gated on the live lease still belonging
+  // to this holder; when a peer takes over, the gate throws QueueLeaseError so the
+  // demoted worker stops driving the queue. Undefined when the dispatch lease was
+  // never started (single-process use and most unit tests), in which case the gate
+  // is inert because no lease row exists.
+  private leaseHolderId: string | undefined;
+
+  // ── Dispatch-lease orchestration (formerly DispatchLeaseManager) ──
+  // Lightweight leader election for the DISPATCH path. The lease gates *dispatch
+  // only* — claiming rows and driving them to the server (the worker +
+  // recoverOnStartup). It deliberately does NOT gate intake (followers still
+  // persist inbound messages via enqueue), maintenance (WAL checkpoint, retention
+  // sweep), or diagnostics (stats): those are valid on any process with the queue
+  // file open. Exactly one process may dispatch at a time, which is the
+  // load-bearing primitive that makes zero-downtime upgrades safe: during the
+  // overlap window where the old and new agent processes both have the SQLite file
+  // open, only the leaseholder claims/sends rows; the non-leader keeps accepting
+  // and persisting inbound traffic but does not dispatch.
+  //
+  // There is deliberately NO lost-leadership callback: loss is enforced at the
+  // data layer instead — the dispatch ops throw QueueLeaseError once a peer holds
+  // the lease (see assertNotDemoted), so the worker self-detects and drains
+  // without pushing an event down a chain of callbacks.
+  private readonly leaseTtlMs: number;
+  private readonly leaseHeartbeatMs: number;
+  private readonly leaseAcquireRetryMs: number;
+  private leaseLeader = false;
+  private leaseLoopActive = false;
+  private leaseAcquireTimer: NodeJS.Timeout | undefined;
+  private leaseHeartbeatTimer: NodeJS.Timeout | undefined;
+  private onBecameLeader: (() => void) | undefined;
   // True when the WAL may contain frames not yet checkpointed into the main DB
   // file. SQLite only attempts checkpoints piggybacked on commits, so once
-  // traffic stops nothing would ever drain the WAL — the App polls this on every
-  // heartbeat tick via checkpointWalIfDirty(). Starts true because open() itself
-  // writes (pragmas, migrations, lease).
+  // traffic stops nothing would ever drain the WAL — the queue's own checkpoint
+  // loop (startCheckpointLoop) polls this via checkpointWalIfDirty(). Starts true
+  // because open() itself writes (pragmas, migrations, lease).
   private walDirty = true;
+
+  // WAL-checkpoint loop. Runs while the queue is open, INDEPENDENT of the
+  // dispatch lease: a follower still accepts intake writes (enqueue runs on any
+  // process with the file open), so WAL draining can't be gated on leadership the
+  // way the lease timers are. Started in open(), cleared in close().
+  private readonly checkpointIntervalMs: number;
+  private checkpointTimer: NodeJS.Timeout | undefined;
 
   // Prepared statements — created once at open(), reused for every call.
   // Names mirror the public methods that use them.
@@ -72,6 +177,7 @@ export class DurableQueue {
   private readonly commitSeqNoStmt: StatementSync;
   private readonly findSeenByControlIdStmt: StatementSync;
   private readonly claimNextStmt: StatementSync;
+  private readonly markSentStmt: StatementSync;
   private readonly findByCallbackStmt: StatementSync;
   private readonly findByIdStmt: StatementSync;
   private readonly recordServerResponseStmt: StatementSync;
@@ -80,8 +186,9 @@ export class DurableQueue {
   private readonly setAckOutcomeStmt: StatementSync;
   private readonly scheduleRetryStmt: StatementSync;
   private readonly requeueStmt: StatementSync;
-  private readonly recoverProcessingStmt: StatementSync;
-  private readonly recoverProcessingGuaranteedStmt: StatementSync;
+  private readonly recoverInflightStmt: StatementSync;
+  private readonly recoverInflightGuaranteedStmt: StatementSync;
+  private readonly recoverClaimedStmt: StatementSync;
   private readonly listQueuedIdsForChannelStmt: StatementSync;
   private readonly countByStateStmt: StatementSync;
   private readonly channelDepthStmt: StatementSync;
@@ -90,11 +197,17 @@ export class DurableQueue {
   private readonly releaseLeaseStmt: StatementSync;
   private readonly getLeaseStmt: StatementSync;
   private readonly checkpointStmt: StatementSync;
+  private readonly dbSizeBytesStmt: StatementSync;
 
   constructor(db: DatabaseSync, options: DurableQueueOptions) {
     this.db = db;
     this.log = options.log;
     this.path = options.path;
+    this.leaseHolderId = options.leaseHolder;
+    this.leaseTtlMs = options.leaseTtlMs ?? DEFAULT_LEASE_TTL_MS;
+    this.leaseHeartbeatMs = options.leaseHeartbeatMs ?? DEFAULT_LEASE_HEARTBEAT_MS;
+    this.leaseAcquireRetryMs = options.leaseAcquireRetryMs ?? DEFAULT_LEASE_ACQUIRE_RETRY_MS;
+    this.checkpointIntervalMs = options.checkpointIntervalMs ?? DEFAULT_CHECKPOINT_INTERVAL_MS;
 
     // Single-writer, durable-across-crash, WAL-friendly settings (§5).
     // Picked for HL7 inbound rates and the durability contract we owe the sender:
@@ -114,39 +227,14 @@ export class DurableQueue {
 
     runMigrations(this.db);
 
-    this.enqueueStmt = this.db.prepare(`
-      INSERT INTO inbound_hl7_messages (
-        channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
-        enhanced_mode, state, attempt_count, callback_id,
-        seq_no, received_at, guaranteed_delivery
-      ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?
-      )
-    `);
+    this.enqueueStmt = this.db.prepare(ENQUEUE);
 
-    this.enqueueRejectedStmt = this.db.prepare(`
-      INSERT INTO inbound_hl7_messages (
-        channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
-        enhanced_mode, state, attempt_count, callback_id,
-        ack_outcome, last_error, error_code, seq_no, received_at
-      ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 'not_owed', ?, ?, ?, ?
-      )
-    `);
+    this.enqueueRejectedStmt = this.db.prepare(ENQUEUE_REJECTED);
 
-    // Per-channel monotonic sequence counter (assignSeqNo). peek is a pure read
-    // of the last assigned value; commit advances it. They're split (rather than
-    // a single advance-and-return) so the caller can stamp a candidate sequence
-    // number and only commit it once the row is durably inserted — a failed
-    // insert never consumes a sequence number. Single-process + synchronous, so
-    // no locking is needed between peek and commit.
-    this.peekLastSeqNoStmt = this.db.prepare(`
-      SELECT last_seq_no FROM _channel_seq WHERE channel_name = ?
-    `);
-    this.commitSeqNoStmt = this.db.prepare(`
-      INSERT INTO _channel_seq (channel_name, last_seq_no) VALUES (?, ?)
-        ON CONFLICT(channel_name) DO UPDATE SET last_seq_no = excluded.last_seq_no
-    `);
+    // Per-channel monotonic sequence counter (assignSeqNo). Single-process +
+    // synchronous, so no locking is needed between peek and commit.
+    this.peekLastSeqNoStmt = this.db.prepare(PEEK_LAST_SEQ_NO);
+    this.commitSeqNoStmt = this.db.prepare(COMMIT_SEQ_NO);
 
     // Canonical prior row for a (channel, control_id): any state except `nacked`
     // (nacked rows are rejected-intake audit records and intentionally reuse
@@ -156,147 +244,73 @@ export class DurableQueue {
     this.findSeenByControlIdStmt = this.db.prepare(FIND_SEEN_BY_CONTROL_ID);
 
     // FIFO claim: take the lowest-id queued row for this channel, flip it to
-    // processing in the same statement so concurrent workers can't double-claim.
+    // `claimed` in the same statement so concurrent workers can't double-claim.
     // node:sqlite is synchronous and the agent is single-process, so RETURNING is
-    // enough — no advisory locking needed. The retry-backoff predicate lives on
-    // the OUTER update (see CLAIM_NEXT) so a head row waiting out its backoff
-    // blocks the channel rather than letting younger rows skip ahead — that
-    // head-of-line blocking is what preserves per-channel FIFO across retries.
+    // enough — no advisory locking needed.
     this.claimNextStmt = this.db.prepare(CLAIM_NEXT);
+
+    // Phase A → B: the App's send path calls this the moment the transmit request
+    // is written to the socket, flipping `claimed` → `inflight` and stamping sent_at.
+    this.markSentStmt = this.db.prepare(MARK_SENT);
 
     this.findByCallbackStmt = this.db.prepare(FIND_BY_CALLBACK);
 
-    this.findByIdStmt = this.db.prepare(`
-      SELECT * FROM inbound_hl7_messages WHERE id = ?
-    `);
+    this.findByIdStmt = this.db.prepare(FIND_BY_ID);
 
-    this.recordServerResponseStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET server_status_code = ?,
-             server_response_body = ?
-       WHERE id = ?
-    `);
+    this.recordServerResponseStmt = this.db.prepare(RECORD_SERVER_RESPONSE);
 
-    // Bot accepted (2xx). state → processed regardless of the source leg; the
-    // caller passes the ack_outcome (delivered / undelivered) separately so a
-    // failed return ACK is recorded on its own axis, never as a Bot-leg error.
-    this.markProcessedStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = 'processed',
-             ack_outcome = ?,
-             processed_at = ?
-       WHERE id = ?
-    `);
+    this.markProcessedStmt = this.db.prepare(MARK_PROCESSED);
 
-    // Bot-leg failure: state is the caller-supplied terminal (`rejected` for a
-    // permanent reject, `failed` for transient/ambiguous). No app-level ACK is
-    // owed in either case, so the source leg settles to not_owed.
-    this.markBotFailedStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = ?,
-             errored_at = ?,
-             last_error = ?,
-             error_code = ?,
-             ack_outcome = 'not_owed'
-       WHERE id = ?
-    `);
+    this.markBotFailedStmt = this.db.prepare(MARK_BOT_FAILED);
 
-    // Source leg only: used when a retransmit replays a previously-undelivered
-    // ACK and lands it, flipping the row's ack_outcome without touching state.
-    this.setAckOutcomeStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET ack_outcome = ?
-       WHERE id = ?
-    `);
+    this.setAckOutcomeStmt = this.db.prepare(SET_ACK_OUTCOME);
 
-    // Auto-retry transition: processing → queued with a future next_attempt_at.
-    // The row keeps its id, so it stays at the head of its channel's FIFO; the
-    // claim statement won't hand it out again until the backoff elapses. Note
-    // the row goes back to `queued`, NOT to a terminal `failed`/`rejected` — a
-    // scheduled retry is still in flight. attempt_count is NOT touched here —
-    // claimNext already counted the attempt.
-    this.scheduleRetryStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = 'queued',
-             processing_started_at = NULL,
-             last_error = ?,
-             error_code = ?,
-             next_attempt_at = ?
-       WHERE id = ? AND state = 'processing'
-    `);
+    // Auto-retry transition: a claimed/inflight row goes back to `queued` with a
+    // future next_attempt_at so the channel's FIFO head blocks (and the row is
+    // not re-claimed) until the backoff elapses. See SCHEDULE_RETRY.
+    this.scheduleRetryStmt = this.db.prepare(SCHEDULE_RETRY);
 
-    // Undo of claimNext for a dispatch that provably never left the process
-    // (the transmit request was still sitting in the in-memory WS queue when
-    // the connection dropped). The attempt_count decrement keeps the counter
-    // meaning "times the message could have reached the server".
-    this.requeueStmt = this.db.prepare(`
-      UPDATE inbound_hl7_messages
-         SET state = 'queued',
-             processing_started_at = NULL,
-             attempt_count = MAX(0, attempt_count - 1)
-       WHERE id = ? AND state = 'processing'
-    `);
+    this.requeueStmt = this.db.prepare(REQUEUE);
 
-    // Interrupted mid-flight: ambiguous (the server may or may not have processed
-    // it), so it lands in `failed` for operator review — never `rejected`. The
-    // source leg's ack_outcome is left as-is (`pending`): we genuinely don't know
-    // whether an ACK was owed. Non-guaranteed channels stop here: `interrupted`
-    // is an ambiguous code, so it is review-only, never silently auto-retried.
-    this.recoverProcessingStmt = this.db.prepare(RECOVER_PROCESSING);
-
-    // Guaranteed-delivery counterpart of the recovery sweep: the operator asked
-    // us to keep trying until upstream gives a definitive answer, so an
-    // interrupted row goes straight back to the head of its channel's FIFO
-    // (duplication risk accepted) instead of parking in `failed`. next_attempt_at
-    // is cleared so it is immediately claimable on restart.
-    this.recoverProcessingGuaranteedStmt = this.db.prepare(RECOVER_PROCESSING_GUARANTEED);
+    // Crash recovery splits three ways on whether the request reached the wire
+    // and the channel's guaranteed-delivery setting:
+    //   recoverClaimed — rows left `claimed` provably never reached the server,
+    //     so they always return to `queued` for a clean re-dispatch with no
+    //     duplicate risk (regardless of guaranteed delivery).
+    //   recoverInflight — rows left `inflight` on a NORMAL channel are ambiguous
+    //     (the server may or may not have processed them), so they land in
+    //     `failed` for operator review, never silently retried. The source leg's
+    //     ack_outcome is left as-is (`pending`): we don't know whether an ACK was owed.
+    //   recoverInflightGuaranteed — rows left `inflight` on a GUARANTEED channel
+    //     return to `queued` (duplication risk accepted) so the channel keeps
+    //     trying until upstream gives a definitive answer (§4.1).
+    this.recoverInflightStmt = this.db.prepare(RECOVER_INFLIGHT);
+    this.recoverInflightGuaranteedStmt = this.db.prepare(RECOVER_INFLIGHT_GUARANTEED);
+    this.recoverClaimedStmt = this.db.prepare(RECOVER_CLAIMED);
 
     this.listQueuedIdsForChannelStmt = this.db.prepare(LIST_QUEUED_IDS_FOR_CHANNEL);
 
-    this.countByStateStmt = this.db.prepare(`
-      SELECT state, COUNT(*) AS n FROM inbound_hl7_messages GROUP BY state
-    `);
+    this.countByStateStmt = this.db.prepare(COUNT_BY_STATE);
 
-    this.channelDepthStmt = this.db.prepare(`
-      SELECT
-        SUM(state = 'queued')                                            AS queued,
-        SUM(state = 'processing')                                        AS processing,
-        MIN(CASE WHEN state = 'queued' THEN received_at ELSE NULL END)   AS oldest_queued_at
-      FROM inbound_hl7_messages
-      WHERE channel_name = ?
-    `);
+    this.channelDepthStmt = this.db.prepare(CHANNEL_DEPTH);
 
-    // Lease acquire — upsert that succeeds only if no current lease, or if the
-    // current lease is held by us, or if it has expired. The WHERE clause on the
-    // ON CONFLICT branch is the gate: a foreign holder with a still-valid lease
-    // makes the UPDATE a no-op, and `changes()` returning 0 tells the caller they
-    // didn't get it. Bound parameters (in order): holder, now, expires_at, holder, now.
-    this.tryAcquireLeaseStmt = this.db.prepare(`
-      INSERT INTO _lease (id, holder, acquired_at, expires_at)
-      VALUES (1, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE
-         SET holder = excluded.holder,
-             acquired_at = excluded.acquired_at,
-             expires_at = excluded.expires_at
-       WHERE _lease.holder = ? OR _lease.expires_at <= ?
-    `);
+    this.tryAcquireLeaseStmt = this.db.prepare(TRY_ACQUIRE_LEASE);
 
-    // Heartbeat — extends our own lease. Fails (returns 0 changes) if the lease
-    // is now held by someone else, which is how a stale leader learns it lost.
-    this.heartbeatLeaseStmt = this.db.prepare(`
-      UPDATE _lease SET expires_at = ? WHERE id = 1 AND holder = ?
-    `);
+    this.heartbeatLeaseStmt = this.db.prepare(HEARTBEAT_LEASE);
 
-    this.releaseLeaseStmt = this.db.prepare(`
-      DELETE FROM _lease WHERE id = 1 AND holder = ?
-    `);
+    this.releaseLeaseStmt = this.db.prepare(RELEASE_LEASE);
 
-    this.getLeaseStmt = this.db.prepare(`SELECT holder, expires_at FROM _lease WHERE id = 1`);
+    this.getLeaseStmt = this.db.prepare(GET_LEASE);
 
     // Prepared once like every other statement — checkpointWal() runs on every
-    // heartbeat tick and every retention sweep, so re-compiling it per call would
-    // leak GC-finalised statement objects proportional to heartbeat frequency.
-    this.checkpointStmt = this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)');
+    // checkpoint-loop tick and every retention sweep, so re-compiling it per call
+    // would leak GC-finalised statement objects proportional to that frequency.
+    this.checkpointStmt = this.db.prepare(CHECKPOINT_WAL);
+
+    // Prepared once like the rest — the retention sweeper calls getDbSizeBytes()
+    // in a tight loop while purging under size pressure, so re-compiling it per
+    // call would leak GC-finalised statement objects proportional to sweep work.
+    this.dbSizeBytesStmt = this.db.prepare(DB_SIZE_BYTES);
   }
 
   /**
@@ -325,6 +339,10 @@ export class DurableQueue {
         // ignore
       }
     }
+    // Start the WAL-checkpoint loop here (not in the constructor) so a bare
+    // `new DurableQueue(db, opts)` — used by unit tests — stays timer-free; the
+    // production lifecycle is open() … close(), and close() clears it.
+    queue.startCheckpointLoop();
     return queue;
   }
 
@@ -334,6 +352,13 @@ export class DurableQueue {
       return;
     }
     this.closed = true;
+    // Stop the WAL-checkpoint loop — the final flush below covers shutdown, and a
+    // checkpointWalIfDirty() tick is a no-op once `closed` is set anyway.
+    this.stopCheckpointLoop();
+    // Release the lease BEFORE closing the DB so a waiting peer can take over
+    // immediately rather than waiting for our TTL to expire. Idempotent and a
+    // no-op when the dispatch lease was never started.
+    this.stopDispatchLease();
     // SQLite only checkpoints + deletes the WAL on close when this is the last
     // connection to the file. An upgrade-overlap peer or an operator's sqlite3
     // shell defeats that, so flush explicitly — a clean shutdown should always
@@ -369,9 +394,10 @@ export class DurableQueue {
 
   /**
    * Runs {@link DurableQueue.checkpointWal} only when writes have landed since
-   * the last completed checkpoint. Called by the App on every agent heartbeat
-   * tick so the WAL drains shortly after traffic stops instead of waiting for
-   * the next retention sweep or for close(). A no-op on an idle queue.
+   * the last completed checkpoint. Driven by the queue's own checkpoint loop
+   * (see {@link DurableQueue.startCheckpointLoop}) every `checkpointIntervalMs`,
+   * so the WAL drains shortly after traffic stops instead of waiting for the next
+   * retention sweep or for close(). A no-op on an idle queue.
    * @returns True when a checkpoint ran and fully completed.
    */
   checkpointWalIfDirty(): boolean {
@@ -379,6 +405,31 @@ export class DurableQueue {
       return false;
     }
     return this.checkpointWal();
+  }
+
+  /**
+   * Starts the periodic WAL-checkpoint loop. Idempotent. Called once by
+   * {@link DurableQueue.open}; runs regardless of dispatch leadership (see the
+   * `checkpointTimer` field) and is torn down by {@link DurableQueue.close}.
+   */
+  private startCheckpointLoop(): void {
+    if (this.checkpointTimer) {
+      return;
+    }
+    this.checkpointTimer = setInterval(() => this.checkpointWalIfDirty(), this.checkpointIntervalMs);
+    // Don't keep the event loop alive solely for housekeeping — same as the
+    // dispatch-lease timers.
+    if (typeof this.checkpointTimer.unref === 'function') {
+      this.checkpointTimer.unref();
+    }
+  }
+
+  /** Stops the WAL-checkpoint loop. Idempotent and a no-op when never started. */
+  private stopCheckpointLoop(): void {
+    if (this.checkpointTimer) {
+      clearInterval(this.checkpointTimer);
+      this.checkpointTimer = undefined;
+    }
   }
 
   /** @returns Filesystem path of the underlying SQLite file. */
@@ -392,15 +443,41 @@ export class DurableQueue {
   }
 
   /**
+   * Runs `fn` inside a single SQLite transaction, committing if it returns and
+   * rolling back if it throws. Used to make a row state transition atomic with an
+   * external side effect — e.g. flipping a row `claimed` → `inflight` only if the
+   * socket write that puts it on the wire also succeeds (see `App.sendToWebSocket`):
+   * if the write throws, the marker rolls back and the row stays `claimed`
+   * (provably unsent, safe to requeue) rather than a phantom `inflight`.
+   *
+   * `node:sqlite` is synchronous, so `fn` must be synchronous too — do any `await`
+   * (e.g. token refresh) before calling, not inside.
+   * @param fn - The work to run transactionally.
+   * @returns Whatever `fn` returns.
+   */
+  runInTransaction<T>(fn: () => T): T {
+    this.db.exec('BEGIN');
+    try {
+      const result = fn();
+      this.db.exec('COMMIT');
+      return result;
+    } catch (err) {
+      this.db.exec('ROLLBACK');
+      throw err;
+    }
+  }
+
+  /**
    * Inserts a new `queued` row.
    *
    * If any prior non-`nacked` row already owns this `(channel_name,
-   * msg_control_id)` — in `queued`, `processing`, `processed`, `rejected`, or
-   * `failed` — we don't insert; we surface a `duplicate` result carrying that row so the
-   * caller can compare bodies and decide between replaying the prior ACK and
-   * rejecting the collision (§8). This SELECT is the single dedup authority on the
-   * intake path: the partial unique index only covers `queued`/`processing`, so it
-   * can't recognize a retransmit of an already-`processed`/`rejected`/`failed` row —
+   * msg_control_id)` — in `queued`, `claimed`, `inflight`, `processed`,
+   * `rejected`, or `failed` — we don't insert; we surface a `duplicate` result
+   * carrying that row so the caller can compare bodies and decide between
+   * replaying the prior ACK and rejecting the collision (§8). This SELECT is the
+   * single dedup authority on the intake path: the partial unique index only
+   * covers the live `queued`/`claimed`/`inflight` window, so it can't recognize a
+   * retransmit of an already-`processed`/`rejected`/`failed` row —
    * it remains only as a last-resort guard against an active-window race (not
    * expected in the single-process agent).
    * @param input - Fields to persist on the new row.
@@ -522,12 +599,19 @@ export class DurableQueue {
 
   /**
    * Atomically claims the next `queued` row for `channelName`, flipping it to
-   * `processing` and bumping `attempt_count`.
+   * `claimed` and bumping `attempt_count`. The row stays `claimed` until
+   * {@link markSent} flips it to `inflight` once the request hits the socket.
+   * Honors a retry backoff: a `queued` row whose `next_attempt_at` is still in
+   * the future is not handed out, and because the FIFO head-of-line is preserved
+   * (the predicate is on the outer update, see {@link CLAIM_NEXT}) the whole
+   * channel waits behind it rather than skipping ahead.
    * @param channelName - The channel to claim from.
-   * @param now - Override the timestamp written to `processing_started_at` (for tests).
-   * @returns The claimed row, or `null` if the channel queue is empty.
+   * @param now - Override the timestamp written to `processing_started_at` and
+   *   compared against `next_attempt_at` (for tests).
+   * @returns The claimed row, or `null` if the channel queue is empty or its head is backing off.
    */
   claimNext(channelName: string, now: number = Date.now()): InboundRow | null {
+    this.assertNotDemoted();
     // Bind `now` twice: once for processing_started_at, once for the
     // next_attempt_at backoff predicate on the outer update.
     const raw = this.claimNextStmt.get(now, channelName, now) as Record<string, SQLInputValue> | undefined;
@@ -535,6 +619,27 @@ export class DurableQueue {
       this.walDirty = true;
     }
     return raw ? rowFromSql(raw) : null;
+  }
+
+  /**
+   * Phase A → B transition: records that the transmit request for `callbackId`
+   * was written to the WebSocket, flipping the row from `claimed` to `inflight`
+   * and stamping `sent_at`. Called from the App's send path the instant the
+   * request leaves the process — the durable marker that distinguishes a
+   * provably-unsent row (safe to requeue on crash) from an ambiguous in-flight
+   * one (failed for review). Guarded on `state = 'claimed'`, so it's a no-op for
+   * legacy (non-durable) sends and for any row already past `claimed`.
+   * @param callbackId - The callback ID of the transmit request just sent.
+   * @param now - Override for `sent_at` (for tests).
+   * @returns True if a `claimed` row was flipped to `inflight`.
+   */
+  markSent(callbackId: string, now: number = Date.now()): boolean {
+    const info = this.markSentStmt.run(now, callbackId);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -564,6 +669,7 @@ export class DurableQueue {
    * @param body - Response payload, or null when the server omitted one.
    */
   recordServerResponse(id: number, statusCode: number | null, body: Buffer | string | null): void {
+    this.assertNotDemoted();
     this.recordServerResponseStmt.run(statusCode, body === null ? null : toBlob(body), id);
     this.walDirty = true;
   }
@@ -580,6 +686,7 @@ export class DurableQueue {
    * @param now - Override for `processed_at` (for tests).
    */
   markProcessed(id: number, ackOutcome: AckOutcome, now: number = Date.now()): void {
+    this.assertNotDemoted();
     this.markProcessedStmt.run(ackOutcome, now, id);
     this.walDirty = true;
   }
@@ -593,6 +700,7 @@ export class DurableQueue {
    * @param now - Override for `errored_at` (for tests).
    */
   markRejected(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+    this.assertNotDemoted();
     this.markBotFailedStmt.run(MessageStateValues.REJECTED, now, error, errorCode, id);
     this.walDirty = true;
   }
@@ -600,17 +708,16 @@ export class DurableQueue {
   /**
    * Terminal-for-now Bot-leg transition: a **transient/ambiguous** failure
    * (5xx, 429, response timeout, dispatch error, interrupted). The retry/
-   * operator-review candidate — distinct from a `rejected` message so the retry
-   * policy can re-dispatch `failed` rows (via {@link scheduleRetry}) without ever
-   * touching `rejected` ones (or `processed` + `undelivered` ones, whose Bot leg
-   * already succeeded). Used only for failures the policy is NOT retrying — a
-   * retry routes through {@link scheduleRetry} instead, keeping the row `queued`.
+   * operator-review candidate — distinct from a `rejected` message so a future
+   * retry policy can re-dispatch `failed` rows without ever touching `rejected`
+   * ones (or `processed` + `undelivered` ones, whose Bot leg already succeeded).
    * @param id - Row primary key.
    * @param error - Human-readable error string, written to `last_error`.
    * @param errorCode - Machine-readable classification, written to `error_code`.
    * @param now - Override for `errored_at` (for tests).
    */
   markFailed(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+    this.assertNotDemoted();
     this.markBotFailedStmt.run(MessageStateValues.FAILED, now, error, errorCode, id);
     this.walDirty = true;
   }
@@ -629,23 +736,25 @@ export class DurableQueue {
   }
 
   /**
-   * Auto-retry transition: returns a `processing` row to `queued`, scheduled to
-   * become claimable at `nextAttemptAt`. Because the row keeps its id and claims
-   * are ordered by id, it sits at the head of its channel's FIFO and blocks
-   * younger rows until it either succeeds or exhausts its attempts — preserving
-   * per-channel ordering across retries.
+   * Auto-retry transition: returns a `claimed`/`inflight` row to `queued`,
+   * scheduled to become claimable at `nextAttemptAt`. Because the row keeps its
+   * id and claims are ordered by id, it sits at the head of its channel's FIFO
+   * and blocks younger rows until it either succeeds or exhausts its attempts —
+   * preserving per-channel ordering across retries.
    *
    * Distinct from {@link markFailed}: a retry stays `queued` (still in flight),
    * whereas `markFailed` is the terminal landing for a failure the policy is not
    * retrying. The worker decides which to call by gating the row's
-   * {@link QueueErrorCode} against the retry policy (see worker.ts).
+   * {@link QueueErrorCode} against the retry policy (see worker.ts). Gated by the
+   * dispatch lease like the other settle ops: a demoted process must not reschedule.
    * @param id - Row primary key.
    * @param error - Human-readable error string, written to `last_error`.
    * @param errorCode - Machine-readable classification, written to `error_code`.
    * @param nextAttemptAt - Earliest timestamp (ms) at which the row may be claimed again.
-   * @returns True if the row was rescheduled; false if it was not in `processing`.
+   * @returns True if the row was rescheduled; false if it was not in `claimed`/`inflight`.
    */
   scheduleRetry(id: number, error: string, errorCode: QueueErrorCode, nextAttemptAt: number): boolean {
+    this.assertNotDemoted();
     const info = this.scheduleRetryStmt.run(error, errorCode, nextAttemptAt, id);
     if (Number(info.changes) > 0) {
       this.walDirty = true;
@@ -655,15 +764,18 @@ export class DurableQueue {
   }
 
   /**
-   * Returns a `processing` row to `queued` — used when the WS connection drops
-   * before the in-flight transmit request was ever written to the socket, so
-   * retrying on reconnect carries no duplicate-delivery risk. Because the row
-   * keeps its original id and claims are ordered by id, the row goes back to
-   * the front of its channel's FIFO.
+   * Returns a `claimed` row to `queued` — used when the WS connection drops
+   * before the transmit request was ever written to the socket, so retrying on
+   * reconnect carries no duplicate-delivery risk. (A row that already reached the
+   * socket is `inflight`, not `claimed`, and this is a no-op for it — its outcome
+   * is ambiguous and owned by the response timeout.) Because the row keeps its
+   * original id and claims are ordered by id, it goes back to the front of its
+   * channel's FIFO.
    * @param id - Row primary key.
-   * @returns True if the row was requeued; false if it was not in `processing`.
+   * @returns True if the row was requeued; false if it was not in `claimed`.
    */
   requeue(id: number): boolean {
+    this.assertNotDemoted();
     const info = this.requeueStmt.run(id);
     if (Number(info.changes) > 0) {
       this.walDirty = true;
@@ -673,20 +785,26 @@ export class DurableQueue {
   }
 
   /**
-   * Startup sweep over rows interrupted mid-dispatch (still in `processing`).
-   *
-   * Non-guaranteed rows are promoted to `failed` with error code `interrupted`
-   * so they surface for operator review instead of being silently retried (§10)
-   * — `interrupted` is an ambiguous code (delivery unknown) and those channels
-   * haven't accepted duplication risk. Guaranteed-delivery rows are returned to
-   * `queued` so the channel keeps trying until upstream gives a definitive
-   * answer (§4.1).
+   * Recovers rows left mid-flight by a previous process, splitting on whether the
+   * request reached the wire and the channel's guaranteed-delivery setting. Runs
+   * once at startup, after acquiring the dispatch lease (§10):
+   * - `claimed` rows provably never left the process (`sent_at` is NULL) → always
+   *   returned to `queued` for a clean re-dispatch with no duplicate-delivery risk.
+   * - `inflight` rows on a NORMAL channel are ambiguous (the server may have
+   *   processed them) → `failed` with error code `interrupted`, surfaced for
+   *   operator review, never silently retried.
+   * - `inflight` rows on a GUARANTEED-delivery channel → returned to `queued`
+   *   (duplication risk accepted) so the channel keeps trying until upstream gives
+   *   a definitive answer (§4.1).
    * @param now - Override for `errored_at` (for tests).
-   * @returns Counts of rows promoted to `failed` and requeued, respectively.
+   * @returns Counts of rows promoted to `failed` and returned to `queued`, respectively.
    */
   recoverOnStartup(now: number = Date.now()): { failed: number; requeued: number } {
-    const failed = Number(this.recoverProcessingStmt.run(now).changes);
-    const requeued = Number(this.recoverProcessingGuaranteedStmt.run().changes);
+    const failed = Number(this.recoverInflightStmt.run(now).changes);
+    // Both legs return a row to `queued`: provably-unsent `claimed` rows (always
+    // safe) and guaranteed-delivery `inflight` rows (duplication risk accepted).
+    const requeued =
+      Number(this.recoverClaimedStmt.run().changes) + Number(this.recoverInflightGuaranteedStmt.run().changes);
     if (failed > 0 || requeued > 0) {
       this.walDirty = true;
     }
@@ -708,7 +826,8 @@ export class DurableQueue {
   countByState(): StateCounts {
     const counts: StateCounts = {
       queued: 0,
-      processing: 0,
+      claimed: 0,
+      inflight: 0,
       processed: 0,
       rejected: 0,
       failed: 0,
@@ -724,15 +843,16 @@ export class DurableQueue {
   /**
    * @param channelName - The channel to query.
    * @param now - Override for the "now" timestamp used in `oldestQueuedAgeMs`.
-   * @returns Depth snapshot for `channelName` (queued/processing counts + oldest queued age).
+   * @returns Depth snapshot for `channelName` (queued/claimed/inflight counts + oldest queued age).
    */
   getChannelDepth(channelName: string, now: number = Date.now()): ChannelDepth {
     const row = this.channelDepthStmt.get(channelName) as
-      | { queued: number | null; processing: number | null; oldest_queued_at: number | null }
+      | { queued: number | null; claimed: number | null; inflight: number | null; oldest_queued_at: number | null }
       | undefined;
     return {
       queued: row?.queued ?? 0,
-      processing: row?.processing ?? 0,
+      claimed: row?.claimed ?? 0,
+      inflight: row?.inflight ?? 0,
       oldestQueuedAgeMs: row?.oldest_queued_at ? now - row.oldest_queued_at : null,
     };
   }
@@ -802,13 +922,203 @@ export class DurableQueue {
   }
 
   /**
+   * Binds this queue to the lease holder ID of the local process, so the
+   * dispatch gate ({@link assertNotDemoted}) can tell "us" from a peer.
+   * {@link startDispatchLease} sets this automatically; call it directly only in
+   * tests that drive {@link tryAcquireLease}/{@link heartbeatLease} by hand.
+   * @param holderId - This process's lease holder ID.
+   */
+  setLeaseHolder(holderId: string): void {
+    this.leaseHolderId = holderId;
+  }
+
+  /**
+   * Begins the dispatch-lease acquire-and-heartbeat loop for this process.
+   *
+   * Tries to acquire the lease immediately. On success it fires `onBecameLeader`
+   * and begins heartbeating every `leaseHeartbeatMs`; on failure it retries every
+   * `leaseAcquireRetryMs` until the lease frees up. `onBecameLeader` fires every
+   * time this process transitions from follower to leader (typically once, but
+   * again if it loses the lease mid-run and reclaims it). There is no
+   * lost-leadership callback by design — loss surfaces as a {@link QueueLeaseError}
+   * from the dispatch ops, which the worker catches to drain itself.
+   *
+   * Idempotent: calling it again while the loop is already active is a no-op,
+   * regardless of whether this process is currently a retrying follower or the
+   * leader. A repeat call does not re-acquire, re-heartbeat, re-fire
+   * `onBecameLeader`, or replace the callback — so the App can call it on every
+   * heartbeat tick (and when already the leader) without restarting the loop.
+   * @param onBecameLeader - Callback invoked when this process takes the lease.
+   */
+  startDispatchLease(onBecameLeader: () => void): void {
+    if (this.leaseLoopActive) {
+      return;
+    }
+    this.onBecameLeader = onBecameLeader;
+    this.leaseLoopActive = true;
+    if (!this.leaseHolderId) {
+      this.leaseHolderId = randomUUID();
+    }
+    this.tryAcquireDispatchLease();
+  }
+
+  /**
+   * Stops the dispatch-lease loop and releases the lease if we hold it.
+   * Idempotent and a no-op when the loop was never started.
+   * @returns True if we were the leader when stopping (and released the lease).
+   */
+  stopDispatchLease(): boolean {
+    this.leaseLoopActive = false;
+    this.onBecameLeader = undefined;
+    this.clearLeaseAcquireTimer();
+    this.clearLeaseHeartbeatTimer();
+    const wasLeader = this.leaseLeader;
+    if (this.leaseLeader && this.leaseHolderId) {
+      try {
+        this.releaseLease(this.leaseHolderId);
+      } catch (err) {
+        this.log.warn(`Failed to release queue lease: ${normalizeErrorString(err)}`);
+      }
+      this.leaseLeader = false;
+    }
+    return wasLeader;
+  }
+
+  /** @returns True if this process currently holds the dispatch lease. */
+  isLeader(): boolean {
+    return this.leaseLeader;
+  }
+
+  /** @returns The dispatch-lease holder ID for this process (for diagnostics), or undefined if never started. */
+  getLeaseHolderId(): string | undefined {
+    return this.leaseHolderId;
+  }
+
+  private tryAcquireDispatchLease(): void {
+    if (!this.leaseLoopActive || this.closed || !this.leaseHolderId) {
+      return;
+    }
+    let acquired = false;
+    try {
+      acquired = this.tryAcquireLease(this.leaseHolderId, this.leaseTtlMs);
+    } catch (err) {
+      this.log.warn(`Queue lease acquire threw: ${normalizeErrorString(err)}`);
+    }
+
+    if (acquired) {
+      this.leaseLeader = true;
+      this.clearLeaseAcquireTimer();
+      this.log.info(`Acquired queue lease (holder=${this.leaseHolderId}).`);
+      this.scheduleLeaseHeartbeat();
+      // Fire callback last so any exception from it doesn't leave timers stopped.
+      try {
+        this.onBecameLeader?.();
+      } catch (err) {
+        this.log.error(`onBecameLeader callback threw: ${normalizeErrorString(err)}`);
+      }
+      return;
+    }
+
+    // Someone else holds the lease — try again in a bit.
+    this.scheduleLeaseAcquireRetry();
+  }
+
+  private scheduleLeaseAcquireRetry(): void {
+    if (!this.leaseLoopActive || this.leaseAcquireTimer) {
+      return;
+    }
+    this.leaseAcquireTimer = setTimeout(() => {
+      this.leaseAcquireTimer = undefined;
+      this.tryAcquireDispatchLease();
+    }, this.leaseAcquireRetryMs);
+    if (typeof this.leaseAcquireTimer.unref === 'function') {
+      this.leaseAcquireTimer.unref();
+    }
+  }
+
+  private scheduleLeaseHeartbeat(): void {
+    if (!this.leaseLoopActive || this.leaseHeartbeatTimer) {
+      return;
+    }
+    this.leaseHeartbeatTimer = setInterval(() => this.leaseHeartbeat(), this.leaseHeartbeatMs);
+    if (typeof this.leaseHeartbeatTimer.unref === 'function') {
+      this.leaseHeartbeatTimer.unref();
+    }
+  }
+
+  private leaseHeartbeat(): void {
+    if (!this.leaseLoopActive || !this.leaseLeader || !this.leaseHolderId) {
+      return;
+    }
+    let extended = false;
+    try {
+      extended = this.heartbeatLease(this.leaseHolderId, this.leaseTtlMs);
+    } catch (err) {
+      this.log.warn(`Queue lease heartbeat threw: ${normalizeErrorString(err)}`);
+      return;
+    }
+    if (!extended) {
+      // We lost the lease — a peer took over after our TTL elapsed. Drop back to
+      // follower mode and start trying to reclaim it. We do NOT push a drain
+      // event: the dispatch ops are bound to our holder and now throw
+      // QueueLeaseError (a peer owns the lease), so the worker self-detects and
+      // drains on its next claim/in-flight check — typically well before this
+      // heartbeat even runs. (A small overlap window is inherent to TTL leases:
+      // the peer could only acquire after our TTL expired.)
+      this.log.error(`Lost queue lease (holder=${this.leaseHolderId}); peer took over.`);
+      this.leaseLeader = false;
+      this.clearLeaseHeartbeatTimer();
+      this.scheduleLeaseAcquireRetry();
+    }
+  }
+
+  private clearLeaseAcquireTimer(): void {
+    if (this.leaseAcquireTimer) {
+      clearTimeout(this.leaseAcquireTimer);
+      this.leaseAcquireTimer = undefined;
+    }
+  }
+
+  private clearLeaseHeartbeatTimer(): void {
+    if (this.leaseHeartbeatTimer) {
+      clearInterval(this.leaseHeartbeatTimer);
+      this.leaseHeartbeatTimer = undefined;
+    }
+  }
+
+  /**
+   * @returns True when a lease row exists and a DIFFERENT holder owns it — i.e. a
+   * peer has taken over and this process has been demoted. False when no lease
+   * exists (no coordination in play) or the lease is ours. Note this intentionally
+   * does NOT consider expiry: a merely-expired-but-still-ours lease will be
+   * re-extended by our next heartbeat, so only a foreign holder means "demoted",
+   * which keeps this exactly aligned with {@link DurableQueue.isLeader}.
+   */
+  isLeaseHeldByPeer(): boolean {
+    const lease = this.getCurrentLease();
+    return lease !== null && lease.holder !== this.leaseHolderId;
+  }
+
+  /**
+   * Throws {@link QueueLeaseError} when a peer holds the lease. Called at the top
+   * of every dispatch-class mutation so a demoted process can't claim, dispatch,
+   * or settle rows the new leader now owns — the authoritative, data-layer half of
+   * leadership enforcement (the {@link DurableQueue.isLeader} flag is the
+   * cheap optimistic half). Intake, maintenance, diagnostics, and the physical
+   * `markSent` marker are deliberately NOT gated.
+   */
+  private assertNotDemoted(): void {
+    if (this.isLeaseHeldByPeer()) {
+      throw new QueueLeaseError(this.leaseHolderId, this.getCurrentLease()?.holder);
+    }
+  }
+
+  /**
    * @returns Size of the underlying database file in bytes, computed from
    * `page_count * page_size`. Used by the retention sweeper.
    */
   getDbSizeBytes(): number {
-    const row = this.db
-      .prepare('SELECT page_count * page_size AS bytes FROM pragma_page_count, pragma_page_size')
-      .get() as { bytes: number } | undefined;
+    const row = this.dbSizeBytesStmt.get() as { bytes: number } | undefined;
     return row?.bytes ?? 0;
   }
 
@@ -872,7 +1182,7 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     enhancedMode: (raw.enhanced_mode as 'standard' | 'aaMode' | null) ?? null,
     state: raw.state as MessageState,
     attemptCount: raw.attempt_count as number,
-    guaranteedDelivery: (raw.guaranteed_delivery as number) === 1,
+    guaranteedDelivery: Boolean(raw.guaranteed_delivery),
     callbackId: raw.callback_id as string,
     serverResponseBody:
       raw.server_response_body === null || raw.server_response_body === undefined
@@ -886,6 +1196,7 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     seqNo: (raw.seq_no as number | null) ?? null,
     receivedAt: raw.received_at as number,
     processingStartedAt: (raw.processing_started_at as number | null) ?? null,
+    sentAt: (raw.sent_at as number | null) ?? null,
     processedAt: (raw.processed_at as number | null) ?? null,
     erroredAt: (raw.errored_at as number | null) ?? null,
   };

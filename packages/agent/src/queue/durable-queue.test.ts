@@ -197,7 +197,7 @@ describe('DurableQueue', () => {
       throw new Error('expected inserted');
     }
     expect(first?.id).toBe(a.row.id);
-    expect(first?.state).toBe(MessageState.PROCESSING);
+    expect(first?.state).toBe(MessageState.CLAIMED);
     expect(first?.attemptCount).toBe(1);
     expect(second?.id).toBe(a2.row.id);
     expect(third).toBeNull();
@@ -207,7 +207,7 @@ describe('DurableQueue', () => {
     expect(queue.claimNext('nonexistent')).toBeNull();
   });
 
-  test('requeue returns a processing row to queued at the front of the FIFO', () => {
+  test('requeue returns a claimed row to queued at the front of the FIFO', () => {
     const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'A', msgControlId: 'RQ1' }));
     const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'A', msgControlId: 'RQ2' }));
     if (r1.kind !== 'inserted' || r2.kind !== 'inserted') {
@@ -227,18 +227,21 @@ describe('DurableQueue', () => {
     // Original id means original FIFO position: r1 is claimed again before r2.
     expect(queue.claimNext('A')?.id).toBe(r1.row.id);
 
-    // requeue only applies to processing rows.
+    // requeue only applies to claimed rows.
     expect(queue.requeue(r2.row.id)).toBe(false);
     expect(queue.getById(r2.row.id)?.state).toBe(MessageState.QUEUED);
   });
 
-  test('scheduleRetry returns a processing row to queued with next_attempt_at and error metadata', () => {
-    const r = queue.enqueue(makeEnqueueInput({ channelName: 'R', msgControlId: 'RTY1' }));
+  test('scheduleRetry returns a claimed/inflight row to queued with next_attempt_at and error metadata', () => {
+    const r = queue.enqueue(makeEnqueueInput({ channelName: 'R', msgControlId: 'RTY1', callbackId: 'cb-rty' }));
     if (r.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
     const claimed = queue.claimNext('R');
     expect(claimed?.attemptCount).toBe(1);
+    // The request reached the wire before it failed — the common retry case.
+    queue.markSent('cb-rty');
+    expect(queue.getById(r.row.id)?.state).toBe(MessageState.INFLIGHT);
 
     const nextAttemptAt = Date.now() + 60_000;
     expect(queue.scheduleRetry(r.row.id, 'Server returned 503', QueueErrorCode.ServerError, nextAttemptAt)).toBe(true);
@@ -249,10 +252,12 @@ describe('DurableQueue', () => {
     expect(rescheduled?.errorCode).toBe(QueueErrorCode.ServerError);
     expect(rescheduled?.nextAttemptAt).toBe(nextAttemptAt);
     expect(rescheduled?.processingStartedAt).toBeNull();
+    // sent_at is cleared so the row reads as a clean re-queued entry.
+    expect(rescheduled?.sentAt).toBeNull();
     // Unlike requeue, the attempt still counts — it reached the server.
     expect(rescheduled?.attemptCount).toBe(1);
 
-    // scheduleRetry only applies to processing rows.
+    // scheduleRetry only applies to claimed/inflight rows; a queued row is a no-op.
     expect(queue.scheduleRetry(r.row.id, 'again', QueueErrorCode.ServerError, nextAttemptAt)).toBe(false);
   });
 
@@ -281,6 +286,63 @@ describe('DurableQueue', () => {
     // And the channel resumes normal FIFO behind it.
     queue.markProcessed(r1.row.id, AckOutcome.DELIVERED);
     expect(queue.claimNext('R', now + 5000)?.id).toBe(r2.row.id);
+  });
+
+  test('markSent flips a claimed row to inflight and stamps sent_at', () => {
+    const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'SENT1', callbackId: 'cb-sent' }));
+    if (r.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    // Not yet claimed → no-op (only `claimed` rows transition).
+    expect(queue.markSent('cb-sent')).toBe(false);
+
+    queue.claimNext(r.row.channelName);
+    expect(queue.getById(r.row.id)?.state).toBe(MessageState.CLAIMED);
+    expect(queue.getById(r.row.id)?.sentAt).toBeNull();
+
+    expect(queue.markSent('cb-sent', 1700000000000)).toBe(true);
+    const sent = queue.getById(r.row.id);
+    expect(sent?.state).toBe(MessageState.INFLIGHT);
+    expect(sent?.sentAt).toBe(1700000000000);
+
+    // Idempotent: a second send (or a stray callback) doesn't re-transition.
+    expect(queue.markSent('cb-sent')).toBe(false);
+    // Unknown callback (e.g. a legacy non-durable send) is a no-op.
+    expect(queue.markSent('cb-unknown')).toBe(false);
+  });
+
+  test('runInTransaction rolls back markSent when the send fails, leaving the row claimed', () => {
+    // Mirrors App.sendToWebSocket: flip claimed→inflight and write the socket in
+    // one transaction. If the socket write throws, the marker must roll back so
+    // the row stays `claimed` (provably unsent, safe to requeue) instead of a
+    // phantom `inflight` that no bytes ever backed.
+    const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'TXN1', callbackId: 'cb-txn' }));
+    if (r.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    queue.claimNext(r.row.channelName);
+    expect(queue.getById(r.row.id)?.state).toBe(MessageState.CLAIMED);
+
+    const sendError = new Error('WebSocket send failed');
+    expect(() =>
+      queue.runInTransaction(() => {
+        queue.markSent('cb-txn');
+        throw sendError; // simulate the socket write throwing after the marker ran
+      })
+    ).toThrow(sendError);
+
+    // The markSent inside the transaction was rolled back: still `claimed`, sent_at null.
+    const after = queue.getById(r.row.id);
+    expect(after?.state).toBe(MessageState.CLAIMED);
+    expect(after?.sentAt).toBeNull();
+
+    // And the committed path still transitions normally afterwards.
+    queue.runInTransaction(() => {
+      queue.markSent('cb-txn', 1700000000000);
+    });
+    const committed = queue.getById(r.row.id);
+    expect(committed?.state).toBe(MessageState.INFLIGHT);
+    expect(committed?.sentAt).toBe(1700000000000);
   });
 
   test('markProcessed records the source-leg ack outcome and processed timestamp', () => {
@@ -355,7 +417,7 @@ describe('DurableQueue', () => {
     const reread = queue.getById(r.row.id);
     expect(reread?.serverStatusCode).toBe(201);
     expect(reread?.serverResponseBody?.toString()).toBe('response-body');
-    expect(reread?.state).toBe(MessageState.PROCESSING);
+    expect(reread?.state).toBe(MessageState.CLAIMED);
   });
 
   test('findByCallback locates the row by callback_id', () => {
@@ -368,54 +430,74 @@ describe('DurableQueue', () => {
     expect(queue.findByCallback('nope')).toBeNull();
   });
 
-  test('recoverOnStartup promotes processing rows to failed and leaves queued alone', () => {
-    // Different channels so the claim picks the row we expect.
+  test('recoverOnStartup fails inflight rows, requeues claimed rows, leaves queued alone', () => {
+    // Different channels so each claim picks the row we expect.
     const qrow = queue.enqueue(makeEnqueueInput({ channelName: 'Q', msgControlId: 'Q1' }));
-    const prow = queue.enqueue(makeEnqueueInput({ channelName: 'P', msgControlId: 'P1' }));
-    if (prow.kind !== 'inserted') {
+    const inflightRow = queue.enqueue(
+      makeEnqueueInput({ channelName: 'I', msgControlId: 'I1', callbackId: 'cb-inflight' })
+    );
+    const claimedRow = queue.enqueue(makeEnqueueInput({ channelName: 'C', msgControlId: 'C1' }));
+    if (qrow.kind !== 'inserted' || inflightRow.kind !== 'inserted' || claimedRow.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.claimNext('P'); // P → processing
+    // I1 reached the wire (claimed → inflight); C1 was only claimed (never sent).
+    queue.claimNext('I');
+    queue.markSent('cb-inflight');
+    queue.claimNext('C');
 
-    const result = queue.recoverOnStartup(1700000000000);
-    expect(result).toEqual({ failed: 1, requeued: 0 });
-    expect(queue.getById(prow.row.id)?.state).toBe(MessageState.FAILED);
-    expect(queue.getById(prow.row.id)?.lastError).toContain('interrupted');
-    expect(queue.getById(prow.row.id)?.errorCode).toBe(QueueErrorCode.Interrupted);
+    const recovered = queue.recoverOnStartup(1700000000000);
+    expect(recovered).toEqual({ requeued: 1, failed: 1 });
+
+    // Inflight is ambiguous → failed for operator review.
+    expect(queue.getById(inflightRow.row.id)?.state).toBe(MessageState.FAILED);
+    expect(queue.getById(inflightRow.row.id)?.lastError).toContain('interrupted');
+    expect(queue.getById(inflightRow.row.id)?.errorCode).toBe(QueueErrorCode.Interrupted);
     // The source leg is genuinely unknown for an interrupted row — left pending.
-    expect(queue.getById(prow.row.id)?.ackOutcome).toBe(AckOutcome.PENDING);
-    if (qrow.kind !== 'inserted') {
-      throw new Error('expected inserted');
-    }
+    expect(queue.getById(inflightRow.row.id)?.ackOutcome).toBe(AckOutcome.PENDING);
+
+    // Claimed-but-unsent provably never left → requeued (attempt decremented, ready to re-dispatch).
+    expect(queue.getById(claimedRow.row.id)?.state).toBe(MessageState.QUEUED);
+    expect(queue.getById(claimedRow.row.id)?.attemptCount).toBe(0);
+    expect(queue.getById(claimedRow.row.id)?.processingStartedAt).toBeNull();
+
+    // The untouched queued row stays queued.
     expect(queue.getById(qrow.row.id)?.state).toBe(MessageState.QUEUED);
 
-    // Re-running is a no-op now that no rows are in processing.
-    expect(queue.recoverOnStartup()).toEqual({ failed: 0, requeued: 0 });
+    // Re-running is a no-op now that nothing is claimed/inflight.
+    expect(queue.recoverOnStartup()).toEqual({ requeued: 0, failed: 0 });
   });
 
-  test('recoverOnStartup requeues guaranteed-delivery rows instead of erroring them', () => {
+  test('recoverOnStartup requeues a guaranteed-delivery inflight row instead of failing it', () => {
+    // A guaranteed-delivery channel accepted the duplication risk: an interrupted
+    // inflight row goes back to `queued` (keep trying) rather than parking in
+    // `failed` for review the way a normal channel's would. A merely-`claimed`
+    // (provably-unsent) row requeues regardless of the setting, so both rows are
+    // driven to `inflight` here to exercise the guaranteed/normal split.
     const guaranteed = queue.enqueue(
-      makeEnqueueInput({ channelName: 'G', msgControlId: 'GD1', guaranteedDelivery: true })
+      makeEnqueueInput({ channelName: 'G', msgControlId: 'GD1', callbackId: 'cb-g', guaranteedDelivery: true })
     );
-    const normal = queue.enqueue(makeEnqueueInput({ channelName: 'N', msgControlId: 'NORM1' }));
+    const normal = queue.enqueue(makeEnqueueInput({ channelName: 'N', msgControlId: 'NORM1', callbackId: 'cb-n' }));
     if (guaranteed.kind !== 'inserted' || normal.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
     expect(guaranteed.row.guaranteedDelivery).toBe(true);
     expect(normal.row.guaranteedDelivery).toBe(false);
     queue.claimNext('G');
+    queue.markSent('cb-g');
     queue.claimNext('N');
+    queue.markSent('cb-n');
 
     expect(queue.recoverOnStartup()).toEqual({ failed: 1, requeued: 1 });
 
     const recovered = queue.getById(guaranteed.row.id);
     expect(recovered?.state).toBe(MessageState.QUEUED);
     expect(recovered?.errorCode).toBe(QueueErrorCode.Interrupted);
+    expect(recovered?.sentAt).toBeNull();
     expect(recovered?.nextAttemptAt).toBeNull();
     // Immediately claimable again — the guarantee survives the restart.
     expect(queue.claimNext('G')?.id).toBe(guaranteed.row.id);
 
-    // The non-guaranteed row is ambiguous (interrupted) → review-only `failed`.
+    // The non-guaranteed inflight row is ambiguous (interrupted) → review-only `failed`.
     expect(queue.getById(normal.row.id)?.state).toBe(MessageState.FAILED);
   });
 
@@ -456,9 +538,9 @@ describe('DurableQueue', () => {
     if (a.kind !== 'inserted' || b.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.claimNext(a.row.channelName); // a → processing
+    queue.claimNext(a.row.channelName); // a → claimed
     queue.markProcessed(a.row.id, AckOutcome.DELIVERED);
-    queue.claimNext(b.row.channelName); // b → processing
+    queue.claimNext(b.row.channelName); // b → claimed
     queue.markFailed(b.row.id, 'x', QueueErrorCode.DispatchFailed);
     queue.enqueueRejected({
       ...makeEnqueueInput({ msgControlId: 'CB-N' }),
@@ -468,7 +550,8 @@ describe('DurableQueue', () => {
 
     expect(queue.countByState()).toEqual({
       queued: 0,
-      processing: 0,
+      claimed: 0,
+      inflight: 0,
       processed: 1,
       rejected: 0,
       failed: 1,
@@ -476,20 +559,32 @@ describe('DurableQueue', () => {
     });
   });
 
-  test('getChannelDepth reports queued/processing/oldest age', () => {
+  test('getChannelDepth reports queued/claimed/inflight/oldest age', () => {
     const t0 = Date.now();
-    queue.enqueue(makeEnqueueInput({ channelName: 'D', msgControlId: 'D1', receivedAt: t0 - 5000 }));
+    queue.enqueue(
+      makeEnqueueInput({ channelName: 'D', msgControlId: 'D1', receivedAt: t0 - 5000, callbackId: 'cb-d1' })
+    );
     queue.enqueue(makeEnqueueInput({ channelName: 'D', msgControlId: 'D2', receivedAt: t0 - 1000 }));
 
     const depth = queue.getChannelDepth('D', t0);
     expect(depth.queued).toBe(2);
-    expect(depth.processing).toBe(0);
+    expect(depth.claimed).toBe(0);
+    expect(depth.inflight).toBe(0);
     expect(depth.oldestQueuedAgeMs).toBe(5000);
 
+    // Claim D1 → claimed (worker owns it, not yet on the wire).
     queue.claimNext('D');
     const depth2 = queue.getChannelDepth('D', t0);
     expect(depth2.queued).toBe(1);
-    expect(depth2.processing).toBe(1);
+    expect(depth2.claimed).toBe(1);
+    expect(depth2.inflight).toBe(0);
+
+    // Send D1 → inflight (on the wire, awaiting response).
+    queue.markSent('cb-d1');
+    const depth3 = queue.getChannelDepth('D', t0);
+    expect(depth3.queued).toBe(1);
+    expect(depth3.claimed).toBe(0);
+    expect(depth3.inflight).toBe(1);
   });
 
   test('listQueuedIdsForChannel returns FIFO ordered IDs', () => {
@@ -593,6 +688,43 @@ describe('DurableQueue', () => {
     queue.enqueue(makeEnqueueInput());
     expect(queue.checkpointWalIfDirty()).toBe(true);
     expect(statSync(walPath).size).toBe(0);
+  });
+
+  test('open() starts a recurring WAL-checkpoint loop and close() stops it', () => {
+    // The loop is deliberately NOT gated on the dispatch lease: this queue never
+    // acquires a lease (it stays a "follower"), yet its WAL still drains on the
+    // interval — which is the whole reason the loop can't ride on the lease timers.
+    vi.useFakeTimers();
+    const loopDir = mkdtempSync(join(tmpdir(), 'dq-ckpt-loop-'));
+    const loopPath = join(loopDir, 'queue.sqlite');
+    const walPath = `${loopPath}-wal`;
+    const loopQueue = DurableQueue.open({ path: loopPath, log: createMockLogger(), checkpointIntervalMs: 50 });
+    try {
+      // open()'s startup writes were already flushed; a fresh row re-dirties the WAL.
+      loopQueue.enqueue(makeEnqueueInput());
+      expect(statSync(walPath).size).toBeGreaterThan(0);
+
+      // The interval fires → the dirty WAL is folded back into the main DB file.
+      vi.advanceTimersByTime(50);
+      expect(statSync(walPath).size).toBe(0);
+
+      // It recurs — a later write drains on the next tick, not just the first one.
+      loopQueue.enqueue(makeEnqueueInput());
+      expect(statSync(walPath).size).toBeGreaterThan(0);
+      vi.advanceTimersByTime(50);
+      expect(statSync(walPath).size).toBe(0);
+
+      // close() must stop the loop: no further checkpoint tick fires afterward.
+      // (close() flushes via checkpointWal() directly, not checkpointWalIfDirty.)
+      const ckptSpy = vi.spyOn(loopQueue, 'checkpointWalIfDirty');
+      loopQueue.close();
+      vi.advanceTimersByTime(500);
+      expect(ckptSpy).not.toHaveBeenCalled();
+    } finally {
+      loopQueue.close();
+      vi.useRealTimers();
+      rmSync(loopDir, { recursive: true, force: true });
+    }
   });
 
   test('checkpointWal reuses a prepared statement instead of re-compiling on every call', () => {

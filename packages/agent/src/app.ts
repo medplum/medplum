@@ -59,7 +59,6 @@ import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { DurableQueue } from './queue/durable-queue';
-import { QueueLeaseManager } from './queue/lease-manager';
 import { RetentionSweeper } from './queue/retention';
 import type { ChannelQueueWorker, RetryPolicy } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
@@ -150,8 +149,6 @@ export class App {
   // DEFAULT_RETRY_POLICY when channels resolve their per-channel policy.
   private channelRetrySettings: Partial<RetryPolicy> = {};
   private retentionSweeper: RetentionSweeper | undefined;
-  private leaseManager: QueueLeaseManager | undefined;
-  private queueCheckpointListener: (() => void) | undefined;
   // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
   // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
   // the PID before start()). An upgrading agent stays non-primary until it wins the PID from the
@@ -357,12 +354,17 @@ export class App {
       binaryType: 'nodebuffer',
     });
 
-    this.webSocket.addEventListener('error', () => {
+    this.webSocket.addEventListener('error', (event) => {
       if (!this.shutdown) {
-        // This event is only fired when WebSocket closes due to some kind of error
-        // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
-        // The error event seems to never contain an actual error though
-        this.log.error('WebSocket closed due to an error');
+        // This event fires when the WebSocket closes due to some kind of error
+        // (https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event), but it ALSO
+        // fires when one of our own event handlers throws synchronously: Node rethrows that
+        // exception out of the listener, and `ReconnectingWebSocket` surfaces it here. The raw
+        // `error_event` from the underlying socket rarely carries a real error, but
+        // `ReconnectingWebSocket` normalizes the event so `error` is always a real `Error` — so
+        // log it rather than discarding it.
+        const error = event.error;
+        this.log.error('WebSocket closed due to an error', error);
       }
     });
 
@@ -660,11 +662,10 @@ export class App {
     if (!args.durableQueueOn) {
       if (this.durableQueue) {
         this.log.info('durableQueue disabled — closing queue.');
-        this.removeQueueCheckpointListener();
-        this.leaseManager?.stop();
-        this.leaseManager = undefined;
         this.retentionSweeper?.stop();
         this.retentionSweeper = undefined;
+        // close() stops the dispatch-lease loop and releases the lease before
+        // tearing down the DB handle.
         this.durableQueue.close();
         this.durableQueue = undefined;
       }
@@ -683,27 +684,16 @@ export class App {
       }
     }
 
-    // Flush the WAL on every heartbeat tick (same idiom as ChannelStatsTracker /
-    // Hl7ClientPool GC). SQLite only attempts checkpoints piggybacked on commits,
-    // so once traffic stops nothing else would drain the WAL until the hourly
-    // sweep or close(). checkpointWalIfDirty() is a no-op on an idle queue.
-    if (!this.queueCheckpointListener) {
-      const queue = this.durableQueue;
-      this.queueCheckpointListener = () => queue.checkpointWalIfDirty();
-      this.heartbeatEmitter.addEventListener('heartbeat', this.queueCheckpointListener);
-    }
+    // (The WAL-checkpoint loop is owned by the queue itself — DurableQueue.open()
+    // starts it and close() tears it down. See DurableQueue.startCheckpointLoop.)
 
-    // Start the lease manager — it'll attempt acquisition immediately and, on
-    // success, the callback runs recoverOnStartup() + brings up channel workers.
-    // If a peer (e.g. an old agent in the upgrade overlap) holds the lease, we
-    // sit as a follower until the lease is free, then take over.
-    if (!this.leaseManager) {
-      this.leaseManager = new QueueLeaseManager({ queue: this.durableQueue, log: this.log });
-      this.leaseManager.start(
-        () => this.onBecameQueueLeader(),
-        () => this.onLostQueueLeadership()
-      );
-    }
+    // Start the dispatch-lease loop — it'll attempt acquisition immediately and,
+    // on success, the callback runs recoverOnStartup() + brings up channel
+    // workers. If a peer (e.g. an old agent in the upgrade overlap) holds the
+    // lease, we sit as a follower until the lease is free, then take over.
+    // startDispatchLease is idempotent, so calling it on every heartbeat tick is
+    // safe — it won't restart an already-running loop.
+    this.durableQueue.startDispatchLease(() => this.onBecameQueueLeader());
 
     // (Re)start the retention sweeper with the latest settings. The sweeper runs
     // regardless of leadership because its only writes are DELETEs of terminal
@@ -722,23 +712,15 @@ export class App {
     this.retentionSweeper.start();
   }
 
-  /** Unsubscribes the WAL-checkpoint heartbeat listener, if registered. Idempotent. */
-  private removeQueueCheckpointListener(): void {
-    if (this.queueCheckpointListener) {
-      this.heartbeatEmitter.removeEventListener('heartbeat', this.queueCheckpointListener);
-      this.queueCheckpointListener = undefined;
-    }
-  }
-
   /**
-   * Called by the {@link QueueLeaseManager} the first time we take the lease.
+   * Called by the {@link DurableQueue} dispatch-lease loop the first time we take the lease.
    *
    * This is the single point that runs `recoverOnStartup` and spins up the
    * channel workers. Both depend on us being the only writer — running them at
    * raw queue-open time would race with any peer that still holds the lease.
    *
    * Re-entrancy: if we lose and regain the lease later, this fires again. The
-   * recovery sweep is idempotent (no `processing` rows means no work), and
+   * recovery sweep is idempotent (no `claimed`/`inflight` rows means no work), and
    * `maybeStartWorker` is a no-op if the worker is already running.
    */
   private onBecameQueueLeader(): void {
@@ -746,38 +728,36 @@ export class App {
     if (!queue) {
       return;
     }
-    const { failed, requeued } = queue.recoverOnStartup();
-    if (failed > 0 || requeued > 0) {
+    const recovered = queue.recoverOnStartup();
+    if (recovered.requeued > 0 || recovered.failed > 0) {
       this.log.info(
-        `Acquired queue lease — promoted ${failed} interrupted row(s) to failed, requeued ${requeued} guaranteed-delivery row(s).`
+        `Acquired queue lease — recovered interrupted rows: ${recovered.requeued} requeued (unsent), ` +
+          `${recovered.failed} failed (ambiguous, in-flight).`
       );
     }
-    // Tell every HL7 channel to start its worker now that we're leader.
+    // Tell every HL7 channel to start its worker now that we're leader. Collect
+    // any failures so one bad channel can't stop the others from starting, then
+    // surface them together.
+    const errors: Error[] = [];
     for (const channel of this.channels.values()) {
       if (channel instanceof AgentHl7Channel) {
-        channel.onBecameQueueLeader();
+        try {
+          channel.onBecameQueueLeader();
+        } catch (err) {
+          errors.push(err as Error);
+        }
       }
     }
-  }
-
-  /**
-   * Called by the {@link QueueLeaseManager} when a heartbeat discovers a peer
-   * stole the lease. Stops every channel worker so the demoted process stops
-   * claiming and dispatching rows from the now peer-owned queue. A later
-   * re-acquisition fires {@link onBecameQueueLeader} again, which restarts the
-   * workers.
-   */
-  private onLostQueueLeadership(): void {
-    for (const channel of this.channels.values()) {
-      if (channel instanceof AgentHl7Channel) {
-        channel.onLostQueueLeadership();
-      }
+    if (errors.length > 0) {
+      throw new Error(`Failed to start ${errors.length} HL7 channel worker(s) after acquiring queue lease`, {
+        cause: errors,
+      });
     }
   }
 
   /** @returns True when this agent currently holds the durable-queue lease. */
   isQueueLeader(): boolean {
-    return this.leaseManager?.isLeader() ?? false;
+    return this.durableQueue?.isLeader() ?? false;
   }
 
   /**
@@ -797,7 +777,14 @@ export class App {
     return `${baseDir}${sep}medplum-agent-queue.sqlite`;
   }
 
-  /** @returns The opened {@link DurableQueue}, or undefined when the queue setting is off. */
+  /**
+   * @returns The opened {@link DurableQueue}, or undefined when the queue setting
+   * is off. This is the OPEN handle, valid regardless of leadership — for intake,
+   * maintenance (WAL checkpoint, retention sweep), and diagnostics. For the
+   * dispatch path, gate worker startup on {@link DurableQueue.isLeader} (the cheap
+   * optimistic check); the authoritative gate is implicit in the dispatch ops
+   * themselves, which throw `QueueLeaseError` once a peer holds the lease.
+   */
   getDurableQueue(): DurableQueue | undefined {
     return this.durableQueue;
   }
@@ -863,7 +850,8 @@ export class App {
         const d = queue.getChannelDepth(channel.getDefinition().name);
         channelDepth[channel.getDefinition().name] = {
           queued: d.queued,
-          processing: d.processing,
+          claimed: d.claimed,
+          inflight: d.inflight,
           // -1 means "no queued rows" (a zero-aged-row would be 0).
           oldestQueuedAgeMs: d.oldestQueuedAgeMs ?? -1,
         };
@@ -1177,17 +1165,12 @@ export class App {
 
     // Channels drain their own workers in stop() above, so by the time we get
     // here no worker is touching the DB and it's safe to tear down.
-    this.removeQueueCheckpointListener();
     if (this.retentionSweeper) {
       this.retentionSweeper.stop();
       this.retentionSweeper = undefined;
     }
-    // Release the lease BEFORE closing the DB so a waiting peer can take over
-    // immediately rather than waiting for our TTL to expire.
-    if (this.leaseManager) {
-      this.leaseManager.stop();
-      this.leaseManager = undefined;
-    }
+    // close() releases the dispatch lease BEFORE tearing down the DB handle, so a
+    // waiting peer can take over immediately rather than waiting for our TTL to expire.
     if (this.durableQueue) {
       this.durableQueue.close();
       this.durableQueue = undefined;
@@ -1294,13 +1277,25 @@ export class App {
 
   /**
    * Invokes `fn` for every channel that currently has a durable-queue worker running.
+   *
+   * Collects any failures so one worker throwing can't stop `fn` from reaching the
+   * rest, then surfaces them together as an aggregate error with the collected
+   * errors as its `cause`.
    * @param fn - Callback applied to each running {@link ChannelQueueWorker}.
    */
   private forEachChannelWorker(fn: (worker: ChannelQueueWorker) => void): void {
+    const errors: Error[] = [];
     for (const channel of this.channels.values()) {
       if (channel instanceof AgentHl7Channel && channel.worker) {
-        fn(channel.worker);
+        try {
+          fn(channel.worker);
+        } catch (err) {
+          errors.push(err as Error);
+        }
       }
+    }
+    if (errors.length > 0) {
+      throw new Error(`Failed to run channel worker callback for ${errors.length} channel(s)`, { cause: errors });
     }
   }
 
@@ -1665,7 +1660,8 @@ export class App {
   }
 
   private async sendToWebSocket(message: AgentMessage): Promise<void> {
-    if (!this.webSocket) {
+    const ws = this.webSocket;
+    if (!ws) {
       throw new Error('WebSocket not connected');
     }
     if ('accessToken' in message) {
@@ -1674,7 +1670,28 @@ export class App {
       await this.medplum.refreshIfExpired();
       message.accessToken = this.medplum.getAccessToken();
     }
-    this.webSocket.send(JSON.stringify(message));
+    const payload = JSON.stringify(message);
+
+    // For a durable-queue dispatch, putting the request on the wire is the
+    // Phase A → B transition: flip its row from `claimed` to `inflight` and stamp
+    // sent_at, so crash recovery can tell a provably-unsent row (safe to requeue)
+    // from an ambiguous in-flight one. We do the marker first and the socket write
+    // inside the SAME transaction: if the write throws (e.g. socket not OPEN), the
+    // marker rolls back and the row stays `claimed` instead of a phantom `inflight`
+    // that no bytes ever backed. This also closes the converse window — a failed
+    // marker can never leave bytes on the wire recorded as `claimed`, since we
+    // never reach the send. Keyed by callback; a no-op for legacy (non-durable)
+    // sends and for any non-transmit frame, which just send.
+    const callback = message.type === 'agent:transmit:request' ? message.callback : undefined;
+    if (callback && this.durableQueue) {
+      const durableQueue = this.durableQueue;
+      durableQueue.runInTransaction(() => {
+        durableQueue.markSent(callback);
+        ws.send(payload);
+      });
+    } else {
+      ws.send(payload);
+    }
   }
 
   private sendAgentDisabledError(command: AgentTransmitRequest | AgentTransmitResponse): void {

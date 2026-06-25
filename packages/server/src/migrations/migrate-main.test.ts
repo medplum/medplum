@@ -1,16 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import fs from 'node:fs';
-import { join } from 'node:path';
-import * as loggerModule from '../logger';
-import * as migrate from './migrate';
-import { addDataMigrationToManifest, DATA_DIR, runFromCli } from './migrate-main';
+import type * as NodeFs from 'node:fs';
+import { vi } from 'vitest';
 
-const originalReadFileSync = fs.readFileSync;
-
-describe('addDataMigrationToManifest', () => {
+const manifestState = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { join, resolve } = require('node:path');
+  const DATA_DIR = resolve('./src/migrations/data');
   const manifestPath = join(DATA_DIR, 'data-version-manifest.json');
-
   const manifestFixture =
     JSON.stringify(
       {
@@ -21,38 +18,51 @@ describe('addDataMigrationToManifest', () => {
       2
     ) + '\n';
 
-  let updatedManifest: string | undefined = undefined;
+  return {
+    DATA_DIR,
+    manifestPath,
+    manifestFixture,
+    updatedManifest: undefined as string | undefined,
+  };
+});
 
-  beforeAll(() => {
-    updatedManifest = undefined;
-    jest.spyOn(fs, 'readFileSync').mockImplementation((path, options) => {
-      if (path === manifestPath) {
-        return manifestFixture;
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof NodeFs>();
+  return {
+    ...actual,
+    readFileSync: vi.fn((path, options) => {
+      if (path === manifestState.manifestPath) {
+        return manifestState.manifestFixture;
       }
-      // Jest seems to rely on readFileSync in some situations - defer to the original
-      // function for paths other than the manifest
-      return originalReadFileSync(path, options);
-    });
-    jest.spyOn(fs, 'writeFileSync').mockImplementation((path, data) => {
-      if (path !== manifestPath) {
+      return actual.readFileSync(path, options);
+    }),
+    writeFileSync: vi.fn((path, data) => {
+      if (path !== manifestState.manifestPath) {
         throw new Error(`Tried to write to unexpected file ${path}`);
       }
       if (typeof data === 'string') {
-        updatedManifest = data.toString();
+        manifestState.updatedManifest = data;
       } else {
         throw new Error(`Data type ${typeof data} not yet handled in writeFileSync test stub`);
       }
-    });
-  });
+    }),
+  };
+});
 
-  afterAll(() => {
-    jest.restoreAllMocks();
+import * as loggerModule from '../logger';
+import * as migrate from './migrate';
+import { addDataMigrationToManifest, runFromCli } from './migrate-main';
+
+describe('addDataMigrationToManifest', () => {
+  beforeEach(() => {
+    manifestState.updatedManifest = undefined;
   });
 
   test('adds new entry with incremented patch version', () => {
     const testVersion = 'v9999';
 
     addDataMigrationToManifest(testVersion);
+    const updatedManifest = manifestState.updatedManifest;
     if (typeof updatedManifest !== 'string') {
       throw new Error('Manifest was not updated');
     }
@@ -69,10 +79,11 @@ describe('addDataMigrationToManifest', () => {
   });
 
   test('preserves existing manifest entries', () => {
-    const originalParsed = JSON.parse(manifestFixture);
+    const originalParsed = JSON.parse(manifestState.manifestFixture);
     const existingKeys = Object.keys(originalParsed);
 
     addDataMigrationToManifest('v9999');
+    const updatedManifest = manifestState.updatedManifest;
     if (typeof updatedManifest !== 'string') {
       throw new Error('Manifest was not updated');
     }
@@ -86,6 +97,7 @@ describe('addDataMigrationToManifest', () => {
 
   test('writes file with proper JSON formatting and trailing newline', () => {
     addDataMigrationToManifest('v9999');
+    const updatedManifest = manifestState.updatedManifest;
     if (typeof updatedManifest !== 'string') {
       throw new Error('Manifest was not updated');
     }
@@ -99,6 +111,7 @@ describe('addDataMigrationToManifest', () => {
 
   test('appends new entry at end of manifest object', () => {
     addDataMigrationToManifest('v9999');
+    const updatedManifest = manifestState.updatedManifest;
     if (typeof updatedManifest !== 'string') {
       throw new Error('Manifest was not updated');
     }
@@ -116,9 +129,9 @@ describe('addDataMigrationToManifest', () => {
 
 describe('runFromCli', () => {
   test('logs and exits via exitAfterStdoutDrain when main rejects', async () => {
-    const exitDrainSpy = jest.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
-    const errorSpy = jest.spyOn(loggerModule.globalLogger, 'error').mockImplementation(() => undefined);
-    const indexSpy = jest.spyOn(migrate, 'indexStructureDefinitionsAndSearchParameters').mockImplementation(() => {
+    const exitDrainSpy = vi.spyOn(loggerModule, 'exitAfterStdoutDrain').mockResolvedValue();
+    const errorSpy = vi.spyOn(loggerModule.globalLogger, 'error').mockImplementation(() => undefined);
+    const indexSpy = vi.spyOn(migrate, 'indexStructureDefinitionsAndSearchParameters').mockImplementation(() => {
       throw new Error('boom');
     });
 

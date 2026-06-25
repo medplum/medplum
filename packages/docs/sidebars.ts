@@ -465,6 +465,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'self-hosting/install-on-gcp' },
         { type: 'doc', id: 'self-hosting/install-on-azure' },
         { type: 'doc', id: 'self-hosting/install-on-digital-ocean' },
+        { type: 'doc', id: 'self-hosting/install-on-kubernetes' },
         { type: 'doc', id: 'self-hosting/install-on-ubuntu' },
         { type: 'doc', id: 'self-hosting/install-from-scratch' },
         { type: 'doc', id: 'self-hosting/running-medplum-docker-container' },
@@ -581,6 +582,7 @@ const sidebars: SidebarsConfig = {
 
                 { type: 'html', value: '<strong class="menu__link">Patient Operations</strong>' },
                 { type: 'doc', id: 'api/fhir/operations/patient-everything' },
+                { type: 'doc', id: 'api/fhir/operations/patient-match' },
                 { type: 'doc', id: 'api/fhir/operations/patient-summary' },
 
                 { type: 'html', value: '<strong class="menu__link">Bot Operations</strong>' },
