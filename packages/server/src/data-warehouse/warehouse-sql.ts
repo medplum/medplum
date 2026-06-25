@@ -218,10 +218,7 @@ export function buildCountFromHistoryTableQuery(sourceHistoryTable: string, sour
  * @param sourceHistoryTable - Postgres history table identifier exactly as stored (e.g. `Patient_History`).
  * @returns SQL boolean expression for use in WHERE clauses to filter records for incremental sync based on lastUpdated.
  */
-export function buildMaxLastUpdatedWatermarkPredicate(
-  qualifiedTable: string,
-  sourceHistoryTable: string
-): Expression {
+export function buildMaxLastUpdatedWatermarkPredicate(qualifiedTable: string, sourceHistoryTable: string): Expression {
   const safeQualifiedTableName = buildQualifiedTableIdentifier(qualifiedTable, 2);
   const maxLastUpdatedSubquery = new SelectQuery(safeQualifiedTableName).raw('MAX(last_updated)');
 
