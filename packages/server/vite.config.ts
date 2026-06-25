@@ -60,9 +60,6 @@ export default defineConfig({
     // long-running seed.test.ts beforeAll (migrations, index config, vacuum).
     testTimeout: 30_000,
     hookTimeout: 400_000,
-    fileParallelism: false,
-    pool: 'forks',
-    maxWorkers: 1,
     sequence: {
       sequencer: CustomSequencer,
     },

@@ -66,9 +66,17 @@ import {
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
 import * as workerUtils from './utils';
 
+const wsSubscriptionTestChannels = vi.hoisted(() => {
+  const suffix = process.env.VITEST_WORKER_ID ?? process.env.VITEST_POOL_ID ?? `pid-${process.pid}`;
+  return {
+    worker: `medplum:subscriptions:r4:websockets:test:worker:${suffix}`,
+    ws: `medplum:subscriptions:r4:websockets:test:ws:${suffix}`,
+  };
+});
+
 vi.mock('../constants', async (importOriginal) => ({
   ...(await importOriginal<typeof Constants>()),
-  WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:worker',
+  WEBSOCKET_SUB_PUBLISH_CHANNEL: wsSubscriptionTestChannels.worker,
 }));
 const mockBullmq = vi.mocked(bullmqModule);
 const fetchMock = vi.spyOn(globalThis, 'fetch');
@@ -1987,7 +1995,7 @@ describe('Subscription Worker', () => {
     type WsSubMessage = { resource: Resource; events: [string, SubEventsOptions][] };
 
     // ws/subscriptions.test.ts loads workers/subscription.ts first with its own mocked channel.
-    const WS_SUBSCRIPTIONS_TEST_CHANNEL = 'medplum:subscriptions:r4:websockets:test:ws';
+    const WS_SUBSCRIPTIONS_TEST_CHANNEL = wsSubscriptionTestChannels.ws;
 
     let subscriber: ReturnType<typeof getPubSubRedisSubscriber>;
     let resolveExpected: ((args: EventNotificationArgs<Resource>) => void) | undefined;
