@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType } from '@medplum/core';
-import type { Bundle, Parameters, Patient } from '@medplum/fhirtypes';
+import type { Bundle, Parameters, Patient, SmartHealthLink } from '@medplum/fhirtypes';
 import express from 'express';
 import type { KeyLike } from 'jose';
 import { CompactSign, exportJWK, generateKeyPair } from 'jose';
@@ -214,6 +214,20 @@ describe('SMART Health operations', () => {
     expect(shlink).toMatch(/^shlink:\//);
 
     const manifestUrl = new URL(getStringParameter(generateResponse.body, 'manifestUrl'));
+    expect(manifestUrl.pathname).toMatch(/^\/shl\/[^/]+\/manifest$/);
+    expect(getStringParameter(generateResponse.body, 'url')).toBe(manifestUrl.toString());
+    const smartHealthLink = await readGeneratedSmartHealthLink(manifestUrl.pathname);
+    expect(smartHealthLink).toMatchObject({
+      resourceType: 'SmartHealthLink',
+      status: 'active',
+      mode: 'manifest',
+      subject: { reference: `Patient/${patient.id}` },
+      url: manifestUrl.toString(),
+      label: 'Test Link',
+      flag: 'P',
+    });
+    expect(smartHealthLink.file).toHaveLength(1);
+    expect(smartHealthLink.file[0].attachment.url).toMatch(/^Binary\//);
     const manifestResponse = await request(app)
       .post(manifestUrl.pathname)
       .set('Content-Type', ContentType.JSON)
@@ -274,7 +288,7 @@ describe('SMART Health operations', () => {
     expect(getStringParameter(wrongPasscodeResolveResponse.body, 'error')).toContain('passcode');
 
     const missingManifestResponse = await request(app)
-      .post('/fhir/R4/.well-known/smart-health-links/not-found/manifest.json')
+      .post('/shl/not-found/manifest')
       .set('Content-Type', ContentType.JSON)
       .send({});
     expect(missingManifestResponse.status).toBe(404);
@@ -328,7 +342,7 @@ describe('SMART Health operations', () => {
       .set('Content-Type', ContentType.JSON)
       .send({
         shlink: encodeShlinkPayload({
-          url: 'https://example.com/fhir/R4/.well-known/smart-health-links/not-found/manifest.json',
+          url: 'https://example.com/shl/not-found/manifest',
           key: '0000000000000000000000000000000000000000000',
           v: 1,
         }),
@@ -344,6 +358,107 @@ describe('SMART Health operations', () => {
       .send({});
     expect(missingPatientResponse.status).toBe(404);
   });
+
+  test('Generate direct SMART Health Link and resolve payload', async () => {
+    const patient = await createPatient();
+
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        mode: 'direct',
+        exp: Math.floor(Date.now() / 1000) + 300,
+        label: 'Test CMS Link',
+        includeQrCode: true,
+      });
+    expect(generateResponse.status).toBe(200);
+
+    const shlink = getStringParameter(generateResponse.body, 'shlink');
+    expect(shlink).toMatch(/^shlink:\//);
+    expect(getStringParameter(generateResponse.body, 'qrCodeDataUrl')).toMatch(/^data:image\/png;base64,/);
+
+    const directUrl = new URL(getStringParameter(generateResponse.body, 'url'));
+    expect(directUrl.pathname).toMatch(/^\/shl\/[^/]+\/payload$/);
+    expect(generateResponse.body.parameter?.some((p: { name?: string }) => p.name === 'manifestUrl')).toBe(false);
+    const smartHealthLink = await readGeneratedSmartHealthLink(directUrl.pathname);
+    expect(smartHealthLink).toMatchObject({
+      resourceType: 'SmartHealthLink',
+      status: 'active',
+      mode: 'direct',
+      subject: { reference: `Patient/${patient.id}` },
+      url: directUrl.toString(),
+      label: 'Test CMS Link',
+      flag: 'U',
+    });
+    expect(smartHealthLink.file).toHaveLength(1);
+    expect(smartHealthLink.file[0].attachment.url).toMatch(/^Binary\//);
+
+    const payload = decodeShlinkPayload(shlink);
+    expect(payload.flag).toBe('U');
+    expect(payload.exp).toBeDefined();
+    expect(payload.label).toBe('Test CMS Link');
+    expect(payload.url).not.toContain('/manifest');
+    expect(payload.key).toBeDefined();
+    expect(payload.v).toBe(1);
+
+    const payloadResponse = await request(app).get(directUrl.pathname).query({ recipient: 'Test Recipient' });
+    expect(payloadResponse.status).toBe(200);
+    expect(payloadResponse.get('Content-Type')).toContain('application/jose');
+    expect(payloadResponse.text.split('.')).toHaveLength(5);
+
+    const missingRecipientResponse = await request(app).get(directUrl.pathname);
+    expect(missingRecipientResponse.status).toBe(400);
+    expect(missingRecipientResponse.body.error).toContain('recipient');
+
+    const resolveResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ shlink, recipient: 'Test Recipient' });
+    expect(resolveResponse.status).toBe(200);
+    expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(true);
+
+    const fhirResources = JSON.parse(getStringParameter(resolveResponse.body, 'fhirResources')) as Bundle[];
+    expect(fhirResources[0]?.resourceType).toBe('Bundle');
+    expect(fhirResources[0]?.type).toBe('collection');
+  });
+
+  test('Rejects invalid direct SMART Health Links', async () => {
+    const patient = await createPatient();
+
+    const passcodeResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        mode: 'direct',
+        exp: Math.floor(Date.now() / 1000) + 300,
+        passcode: '123456',
+      });
+    expect(passcodeResponse.status).toBe(400);
+    expect(JSON.stringify(passcodeResponse.body)).toContain('Passcode is not supported');
+
+    const missingExpResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ mode: 'direct' });
+    expect(missingExpResponse.status).toBe(400);
+    expect(JSON.stringify(missingExpResponse.body)).toContain('Expected exp');
+
+    const expiredResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ mode: 'direct', exp: Math.floor(Date.now() / 1000) - 60 });
+    expect(expiredResponse.status).toBe(200);
+
+    const directUrl = new URL(getStringParameter(expiredResponse.body, 'url'));
+    const payloadResponse = await request(app).get(directUrl.pathname).query({ recipient: 'Test Recipient' });
+    expect(payloadResponse.status).toBe(400);
+    expect(payloadResponse.body.error).toContain('expired');
+  });
 });
 
 async function createPatient(): Promise<Patient> {
@@ -354,6 +469,13 @@ async function createPatient(): Promise<Patient> {
     .send({ resourceType: 'Patient', name: [{ given: ['Alice'], family: 'Smith' }] });
   expect(response.status).toBe(201);
   return response.body as Patient;
+}
+
+async function readGeneratedSmartHealthLink(pathname: string): Promise<SmartHealthLink> {
+  const id = pathname.match(/^\/shl\/([^/]+)\//)?.[1];
+  expect(id).toBeDefined();
+  const { getGlobalSystemRepo } = await import('../repo');
+  return getGlobalSystemRepo().readResource<SmartHealthLink>('SmartHealthLink', id as string);
 }
 
 function getStringParameter(parameters: Parameters, name: string): string {
@@ -370,6 +492,10 @@ function getBooleanParameter(parameters: Parameters, name: string): boolean {
 
 function encodeShlinkPayload(payload: object): string {
   return `shlink:/${Buffer.from(JSON.stringify(payload)).toString('base64url')}`;
+}
+
+function decodeShlinkPayload(shlink: string): any {
+  return JSON.parse(Buffer.from(shlink.substring('shlink:/'.length), 'base64url').toString('utf8'));
 }
 
 async function createSmartHealthCardCredential(options: {
