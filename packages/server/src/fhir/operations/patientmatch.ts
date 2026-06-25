@@ -13,7 +13,7 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, BundleEntry, Patient } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, Extension, Patient } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
 import { getAuthenticatedContext } from '../../context';
 import {
@@ -25,8 +25,8 @@ import {
 } from '../../util/auditevent';
 import type { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
-import { cmsPatientMatch } from './utils/cms-patient-match';
 import type { CmsPatientMatchResult } from './utils/cms-patient-match';
+import { cmsPatientMatch } from './utils/cms-patient-match';
 import { parseInputParameters } from './utils/parameters';
 
 const operation = getOperationDefinition('Patient', 'match');
@@ -227,7 +227,7 @@ function classifyMatchGrade(score: number): MatchGrade {
  */
 function buildMatchBundle(scored: ScoredPatient[]): Bundle<WithId<Patient>> {
   const entries: BundleEntry<WithId<Patient>>[] = scored.map(({ patient, result, score, grade }) => {
-    const extension = [{ url: MATCH_GRADE_EXTENSION_URL, valueCode: grade }];
+    const extension: Extension[] = [{ url: MATCH_GRADE_EXTENSION_URL, valueCode: grade }];
     if (result.criteriaId) {
       extension.push({ url: CMS_COMBINATION_EXTENSION_URL, valueString: result.criteriaId });
     }
