@@ -9,9 +9,11 @@ import { getLogger } from '../../logger';
 export type RepositoryAccessLayer = 'sql' | 'cache';
 export type RepositoryAccessOperation = 'read' | 'write' | 'transaction' | 'configuration';
 
+export type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
+
 export interface RepositoryAccessOptions {
-  readonly resourceTypes: Iterable<ResourceType>;
-  readonly source: string;
+  readonly resourceTypes: ResourceTypeInput;
+  readonly source?: string;
 }
 
 export interface ExecuteSqlOptions extends RepositoryAccessOptions {
@@ -106,8 +108,8 @@ export class RepositoryAccessTracker {
   recordResourceAccess(
     layer: RepositoryAccessLayer,
     operation: RepositoryAccessOperation,
-    resourceTypes: Iterable<ResourceType>,
-    source: string
+    resourceTypes: ResourceTypeInput,
+    source: string | undefined
   ): void {
     const access = partitionResourceTypes(resourceTypes);
     if (access.all.size === 0) {
@@ -138,7 +140,7 @@ function updateTransactionAccessFrame(
   frame: TransactionAccessFrame,
   layer: RepositoryAccessLayer,
   operation: RepositoryAccessOperation,
-  source: string,
+  source: string | undefined,
   access: ResourceTypePartition
 ): void {
   if (operation === 'read') {
@@ -166,7 +168,9 @@ function updateTransactionAccessFrame(
   for (const resourceType of access.other) {
     frame.otherResourceTypes.add(resourceType);
   }
-  frame.sources.add(source);
+  if (source) {
+    frame.sources.add(source);
+  }
 }
 
 function createTransactionAccessFrame(): TransactionAccessFrame {
@@ -189,7 +193,8 @@ type ResourceTypePartition = {
   readonly other: Set<ResourceType>;
 };
 
-function partitionResourceTypes(resourceTypes: Iterable<ResourceType>): ResourceTypePartition {
+function partitionResourceTypes(resourceTypes: ResourceTypeInput): ResourceTypePartition {
+  resourceTypes = normalizeResourceTypes(resourceTypes);
   const all = new Set<ResourceType>();
   const special = new Set<ResourceType>();
   const other = new Set<ResourceType>();
@@ -223,4 +228,34 @@ function mergeTransactionAccessFrame(target: TransactionAccessFrame, source: Tra
   for (const sourceName of source.sources) {
     target.sources.add(sourceName);
   }
+}
+
+// export const access = {
+//   sqlRead: (
+//     resourceTypes: ResourceType | Iterable<ResourceType>,
+//     options?: { mode?: DatabaseMode; source?: string }
+//   ): ExecuteSqlOptions => {
+//     return {
+//       mode: options?.mode ?? DatabaseMode.READER,
+//       operation: 'read',
+//       resourceTypes,
+//       source: options?.source ?? 'sqlRead',
+//     };
+//   },
+
+//   sqlWrite: (
+//     resourceTypes: ResourceType | Iterable<ResourceType>,
+//     options?: { source?: string }
+//   ): ExecuteSqlOptions => {
+//     return {
+//       mode: DatabaseMode.WRITER,
+//       operation: 'write',
+//       resourceTypes,
+//       source: options?.source ?? 'sqlWrite',
+//     };
+//   },
+// };
+
+function normalizeResourceTypes(input: ResourceTypeInput): ReadonlySet<ResourceType> {
+  return typeof input === 'string' ? new Set([input]) : new Set(input);
 }

@@ -3,7 +3,6 @@
 import type { OperationOutcomeError } from '@medplum/core';
 import { normalizeErrorString, sleep } from '@medplum/core';
 import { RepositoryMode } from '@medplum/fhir-router';
-import type { ResourceType } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import type { PoolClient } from 'pg';
 import { getConfig } from '../../config/loader';
@@ -15,6 +14,7 @@ import type {
   ExecuteSqlOptions,
   RepositoryAccessLayer,
   RepositoryAccessOperation,
+  ResourceTypeInput,
   TransactionSqlOptions,
 } from './access-tracker';
 import { RepositoryAccessTracker } from './access-tracker';
@@ -225,8 +225,8 @@ export class RepositoryConnection implements Disposable {
   recordResourceAccess(
     layer: RepositoryAccessLayer,
     operation: RepositoryAccessOperation,
-    resourceTypes: Iterable<ResourceType>,
-    source: string
+    resourceTypes: ResourceTypeInput,
+    source: string | undefined
   ): void {
     this.accessTracker.recordResourceAccess(layer, operation, resourceTypes, source);
   }

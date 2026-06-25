@@ -11,7 +11,6 @@ import {
   deepClone,
   evalFhirPath,
   generateId,
-  getSearchResourceTypes,
   globalSchema,
   matchesSearchRequest,
   multipleMatches,
@@ -37,8 +36,10 @@ export type ReadHistoryOptions = {
   limit?: number;
 };
 
+type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
+
 export interface TransactionOptions {
-  readonly resourceTypes: Iterable<ResourceType>;
+  readonly resourceTypes: ResourceTypeInput;
   readonly serializable?: boolean;
 }
 
@@ -675,3 +676,7 @@ const sortComparator = <T extends Resource>(a: T, b: T, sortRule: SortRule): num
   const bStr = JSON.stringify(evalFhirPath(expression, b));
   return aStr.localeCompare(bStr) * (sortRule.descending ? -1 : 1);
 };
+
+function getSearchResourceTypes(searchRequest: SearchRequest): ResourceTypeInput {
+  return searchRequest.types ?? [searchRequest.resourceType];
+}
