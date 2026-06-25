@@ -56,7 +56,7 @@ export function buildWarehouseSourcePredicate(
     return destinationPredicate;
   }
 
-  const startDatePredicate = buildStartDatePredicate(options.startDate);
+  const startDatePredicate = buildStartDatePredicate(options.startDate, tableSpec.postgresTable);
   return destinationPredicate ? new Conjunction([destinationPredicate, startDatePredicate]) : startDatePredicate;
 }
 

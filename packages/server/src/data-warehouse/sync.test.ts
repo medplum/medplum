@@ -47,7 +47,7 @@ describe('buildWarehouseSourcePredicate', () => {
 
     assertDefined(predicate);
     expect(appendPredicateSql(predicate)).toStrictEqual({
-      sql: appendPredicateSql(buildStartDatePredicate(startDate)).sql,
+      sql: appendPredicateSql(buildStartDatePredicate(startDate, tableSpec.postgresTable)).sql,
       values: [startDate],
     });
   });
@@ -58,7 +58,10 @@ describe('buildWarehouseSourcePredicate', () => {
       'arn:aws:s3tables:us-east-1:123456789012:bucket/test'
     );
     const predicate = buildWarehouseSourcePredicate(makeSyncOptions({ destination }), tableSpec, namespace);
-    const expected = buildMaxLastUpdatedWatermarkPredicate('iceberg_catalog.default.patient_history');
+    const expected = buildMaxLastUpdatedWatermarkPredicate(
+      'iceberg_catalog.default.patient_history',
+      tableSpec.postgresTable
+    );
 
     assertDefined(predicate);
     expect(appendPredicateSql(predicate)).toStrictEqual(appendPredicateSql(expected));
@@ -74,7 +77,7 @@ describe('buildWarehouseSourcePredicate', () => {
 
     assertDefined(predicate);
     expect(appendPredicateSql(predicate)).toStrictEqual({
-      sql: `(((SELECT MAX(last_updated) FROM "iceberg_catalog"."default"."patient_history") IS NULL OR "lastUpdated" > (SELECT MAX(last_updated) FROM "iceberg_catalog"."default"."patient_history")) AND "lastUpdated" >= $1)`,
+      sql: `(((SELECT MAX(last_updated) FROM "iceberg_catalog"."default"."patient_history") IS NULL OR "pg_db"."Patient_History"."lastUpdated" > (SELECT MAX(last_updated) FROM "iceberg_catalog"."default"."patient_history")) AND "pg_db"."Patient_History"."lastUpdated" >= $1)`,
       values: [startDate],
     });
   });

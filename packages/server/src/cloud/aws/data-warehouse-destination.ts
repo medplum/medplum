@@ -55,7 +55,7 @@ export class S3TablesWarehouseDestination implements DataWarehouseDestination {
     // Incremental sync: only Postgres rows newer than the latest row already in Iceberg.
     // When the Iceberg table is empty (or MAX is NULL), `lastUpdated > NULL` would be unknown for every row,
     // so we treat a NULL watermark as "no high-water mark" and include all source rows instead of a sentinel timestamp.
-    return buildMaxLastUpdatedWatermarkPredicate(qualifiedIceberg);
+    return buildMaxLastUpdatedWatermarkPredicate(qualifiedIceberg, tableSpec.postgresTable);
   }
 
   async writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<number> {

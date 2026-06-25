@@ -51,14 +51,20 @@ function buildSqlBuilder(buildFn: (sql: SqlBuilder) => void): SqlBuilder {
   return sql;
 }
 
+function buildHistoryLastUpdatedColumn(sourceHistoryTable: string): Column {
+  const historyTable = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
+  return new Column(historyTable, 'lastUpdated');
+}
+
 /**
  * Lower bound on Postgres history `lastUpdated` for warehouse export.
  *
  * @param startDate - Lower bound on history `lastUpdated` (validated by config before sync runs).
+ * @param sourceHistoryTable - Postgres history table identifier exactly as stored (e.g. `Patient_History`).
  * @returns A SQL boolean expression for the lower bound on Postgres history `lastUpdated` for warehouse export.
  */
-export function buildStartDatePredicate(startDate: string): Expression {
-  return new Condition('lastUpdated', '>=', startDate);
+export function buildStartDatePredicate(startDate: string, sourceHistoryTable: string): Expression {
+  return new Condition(buildHistoryLastUpdatedColumn(sourceHistoryTable), '>=', startDate);
 }
 
 export async function runParameterizedWarehouseSql(
@@ -209,15 +215,19 @@ export function buildCountFromHistoryTableQuery(sourceHistoryTable: string, sour
  *    includes all data.
  *
  * @param qualifiedTable - Fully qualified table name (may include schema, etc.)
+ * @param sourceHistoryTable - Postgres history table identifier exactly as stored (e.g. `Patient_History`).
  * @returns SQL boolean expression for use in WHERE clauses to filter records for incremental sync based on lastUpdated.
  */
-export function buildMaxLastUpdatedWatermarkPredicate(qualifiedTable: string): Expression {
+export function buildMaxLastUpdatedWatermarkPredicate(
+  qualifiedTable: string,
+  sourceHistoryTable: string
+): Expression {
   const safeQualifiedTableName = buildQualifiedTableIdentifier(qualifiedTable, 2);
   const maxLastUpdatedSubquery = new SelectQuery(safeQualifiedTableName).raw('MAX(last_updated)');
 
   return new Disjunction([
     new IsNull(new Subquery(maxLastUpdatedSubquery)),
-    new Condition('lastUpdated', '>', new Subquery(maxLastUpdatedSubquery)),
+    new Condition(buildHistoryLastUpdatedColumn(sourceHistoryTable), '>', new Subquery(maxLastUpdatedSubquery)),
   ]);
 }
 

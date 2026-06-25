@@ -16,13 +16,15 @@ describe('warehouse SQL query builders', () => {
     'LEFT JOIN "pg_db"."Patient" AS "resource" ON "pg_db"."Patient_History"."id" = "resource"."id"';
 
   test('buildProjectedSelectFromHistoryTableQueryWithSubquery joins resource table for project_id', () => {
-    const sourcePredicate = new Constant(`"lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z'`);
+    const sourcePredicate = new Constant(
+      `"pg_db"."Patient_History"."lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z'`
+    );
     const query = buildSelectFromHistoryTableQuery('Patient_History', sourcePredicate);
     const sql = new SqlBuilder();
     sql.appendExpression(query);
 
     expect(sql.toString()).toBe(
-      `SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", "src"."project_id" FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated", "resource"."projectId" AS "project_id" FROM "pg_db"."Patient_History" ${historyResourceJoin} WHERE "lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z') AS "src" ORDER BY "src"."last_updated"`
+      `SELECT "src"."id", "src"."version_id", "src"."content", "src"."last_updated", "src"."project_id" FROM (SELECT "pg_db"."Patient_History"."id", "pg_db"."Patient_History"."versionId" AS "version_id", "pg_db"."Patient_History"."content", "pg_db"."Patient_History"."lastUpdated" AS "last_updated", "resource"."projectId" AS "project_id" FROM "pg_db"."Patient_History" ${historyResourceJoin} WHERE "pg_db"."Patient_History"."lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z') AS "src" ORDER BY "src"."last_updated"`
     );
     expect(sql.getValues()).toStrictEqual([]);
   });
@@ -51,14 +53,16 @@ describe('warehouse SQL query builders', () => {
 
   test('buildMaxLastUpdatedWatermarkPredicate builds predicate from ORM subquery', () => {
     const watermarkSql = new SqlBuilder();
-    watermarkSql.appendExpression(buildMaxLastUpdatedWatermarkPredicate('s3_tables_db.default.patient_history'));
+    watermarkSql.appendExpression(
+      buildMaxLastUpdatedWatermarkPredicate('s3_tables_db.default.patient_history', 'Patient_History')
+    );
     expect(watermarkSql.toString()).toBe(
-      `((SELECT MAX(last_updated) FROM "s3_tables_db"."default"."patient_history") IS NULL OR "lastUpdated" > (SELECT MAX(last_updated) FROM "s3_tables_db"."default"."patient_history"))`
+      `((SELECT MAX(last_updated) FROM "s3_tables_db"."default"."patient_history") IS NULL OR "pg_db"."Patient_History"."lastUpdated" > (SELECT MAX(last_updated) FROM "s3_tables_db"."default"."patient_history"))`
     );
   });
 
   test('buildMaxLastUpdatedWatermarkPredicate rejects invalid qualified table identifiers', () => {
-    expect(() => buildMaxLastUpdatedWatermarkPredicate('patient_history')).toThrow(
+    expect(() => buildMaxLastUpdatedWatermarkPredicate('patient_history', 'Patient_History')).toThrow(
       'Invalid qualified table identifier: patient_history'
     );
   });
@@ -66,8 +70,8 @@ describe('warehouse SQL query builders', () => {
   test('buildStartDatePredicate filters history rows at or after the bound', () => {
     const startDate = '2024-01-01T00:00:00.000Z';
     const startDateSql = new SqlBuilder();
-    startDateSql.appendExpression(buildStartDatePredicate(startDate));
-    expect(startDateSql.toString()).toBe(`"lastUpdated" >= $1`);
+    startDateSql.appendExpression(buildStartDatePredicate(startDate, 'Patient_History'));
+    expect(startDateSql.toString()).toBe(`"pg_db"."Patient_History"."lastUpdated" >= $1`);
     expect(startDateSql.getValues()).toStrictEqual([startDate]);
   });
 
@@ -76,12 +80,12 @@ describe('warehouse SQL query builders', () => {
     const combinedSql = new SqlBuilder();
     combinedSql.appendExpression(
       new Conjunction([
-        buildMaxLastUpdatedWatermarkPredicate('iceberg_catalog.default.patient_history'),
-        buildStartDatePredicate(startDate),
+        buildMaxLastUpdatedWatermarkPredicate('iceberg_catalog.default.patient_history', 'Patient_History'),
+        buildStartDatePredicate(startDate, 'Patient_History'),
       ])
     );
     expect(combinedSql.toString()).toBe(
-      `(((SELECT MAX(last_updated) FROM "iceberg_catalog"."default"."patient_history") IS NULL OR "lastUpdated" > (SELECT MAX(last_updated) FROM "iceberg_catalog"."default"."patient_history")) AND "lastUpdated" >= $1)`
+      `(((SELECT MAX(last_updated) FROM "iceberg_catalog"."default"."patient_history") IS NULL OR "pg_db"."Patient_History"."lastUpdated" > (SELECT MAX(last_updated) FROM "iceberg_catalog"."default"."patient_history")) AND "pg_db"."Patient_History"."lastUpdated" >= $1)`
     );
     expect(combinedSql.getValues()).toStrictEqual([startDate]);
   });
