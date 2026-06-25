@@ -19,7 +19,7 @@ which posts to `/oauth2/token` with:
 ```
 grant_type=urn:ietf:params:oauth:grant-type:token-exchange
 subject_token_type=urn:ietf:params:oauth:token-type:access_token
-client_id=<MEDPLUM_CLIENT_ID>
+client_id=<MEDPLUM_AUTH_PROVIDER_ID>
 subject_token=<external access token>
 membership_id=<optional ProjectMembership id>
 ```
@@ -67,7 +67,7 @@ A minimal provider with only a `userInfoUrl` is also supported:
 }
 ```
 
-Restart the server after updating the config. Then set `MEDPLUM_CLIENT_ID` to the provider's
+Restart the server after updating the config. Then set `MEDPLUM_AUTH_PROVIDER_ID` to the provider's
 `clientId` (or its `identityProvider.clientId`).
 
 > Because the provider is defined at the server level, you can pass any `membership_id` and the
@@ -82,7 +82,7 @@ in your project:
 2. Create a `ClientApplication` (Project Admin → Clients).
 3. Add an **Identity Provider** to that client with your IdP's Authorize URL, Token URL,
    UserInfo URL, Client ID, and Client Secret.
-4. Use the `ClientApplication`'s **ID** as `MEDPLUM_CLIENT_ID`.
+4. Use the `ClientApplication`'s **ID** as `MEDPLUM_AUTH_PROVIDER_ID`.
 
 See [Token Exchange](https://www.medplum.com/docs/auth/methods/token-exchange) and
 [External Identity Providers](https://www.medplum.com/docs/auth/methods/external-identity-providers)
@@ -102,7 +102,7 @@ npm run exchange-for-medplum-token
 | Variable                 | Required | Description                                                                                         |
 | ------------------------ | -------- | --------------------------------------------------------------------------------------------------- |
 | `MEDPLUM_BASE_URL`       | No       | Medplum server URL. Defaults to `http://localhost:8103/`.                                           |
-| `MEDPLUM_CLIENT_ID`      | Yes      | External auth provider selector (server `externalAuthProviders` clientId, or ClientApplication id). |
+| `MEDPLUM_AUTH_PROVIDER_ID` | Yes | External auth provider selector (server `externalAuthProviders` clientId, or ClientApplication id). |
 | `MEDPLUM_MEMBERSHIP_ID`  | No       | A specific `ProjectMembership` id to authenticate into.                                             |
 | `EXTERNAL_ACCESS_TOKEN`  | Maybe    | Access token from your external IdP. Provide this **or** the `EXTERNAL_*` fetch fields below.       |
 | `EXTERNAL_TOKEN_URL`     | Maybe    | External IdP token endpoint, used to fetch a token via `client_credentials`.                        |
