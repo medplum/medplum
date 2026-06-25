@@ -163,8 +163,7 @@ function addValueTokens(
     return sortColumnValue;
   }
 
-  const nextSortValue =
-    sortColumnValue && sortColumnValue.localeCompare(value) <= 0 ? sortColumnValue : value;
+  const nextSortValue = sortColumnValue && sortColumnValue.localeCompare(value) <= 0 ? sortColumnValue : value;
 
   // [parameter]=[code]
   addHashedToken(tokens, prefix + DELIM + value);
