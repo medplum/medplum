@@ -294,7 +294,7 @@ describe('Operation Input/Output Parameters', () => {
       ],
     ])('Throws error on incorrect argument counts: %j', (body, errorMsg) => {
       const req: Request = { body } as unknown as Request;
-      expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
+      expect(() => parseInputParameters(opDef, req)).toThrow(errorMsg);
     });
 
     test.each<[Parameters, string]>([
@@ -311,7 +311,7 @@ describe('Operation Input/Output Parameters', () => {
       ],
     ])('Throws error on invalid Parameters: %j', (parameters, errorMsg) => {
       const req: Request = { body: parameters } as unknown as Request;
-      expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
+      expect(() => parseInputParameters(opDef, req)).toThrow(errorMsg);
     });
 
     test('Parses query string parameters as correct type', () => {
@@ -340,13 +340,13 @@ describe('Operation Input/Output Parameters', () => {
       ['requiredIn=1', `Invalid value '1' provided for boolean parameter 'requiredIn'`],
     ])('Throws on invalid query string parameters: %s', (query, errorMsg) => {
       const req: Request = { method: 'GET', query: parse(query) } as unknown as Request;
-      expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));
+      expect(() => parseInputParameters(opDef, req)).toThrow(errorMsg);
     });
   });
 
   describe('Send Operation output Parameters', () => {
     beforeEach(() => {
-      jest.resetAllMocks();
+      vi.resetAllMocks();
     });
 
     test('Single required parameter', async () => {

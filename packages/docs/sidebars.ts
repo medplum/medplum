@@ -582,6 +582,7 @@ const sidebars: SidebarsConfig = {
 
                 { type: 'html', value: '<strong class="menu__link">Patient Operations</strong>' },
                 { type: 'doc', id: 'api/fhir/operations/patient-everything' },
+                { type: 'doc', id: 'api/fhir/operations/patient-match' },
                 { type: 'doc', id: 'api/fhir/operations/patient-summary' },
 
                 { type: 'html', value: '<strong class="menu__link">Bot Operations</strong>' },

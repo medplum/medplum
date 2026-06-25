@@ -30,7 +30,7 @@ describe('Keys', () => {
     delete (config as any).issuer;
     try {
       await initKeys(config);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect((err as Error).message).toStrictEqual('Missing issuer');
     }
