@@ -7,6 +7,7 @@ import type { KeyLike } from 'jose';
 import { CompactSign, exportJWK, generateKeyPair } from 'jose';
 import { deflateRawSync } from 'node:zlib';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
@@ -136,7 +137,7 @@ describe('SMART Health operations', () => {
       bundle: { resourceType: 'Bundle', type: 'collection' },
     });
 
-    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({ keys: [publicJwk] }),
     } as Response);
@@ -175,7 +176,7 @@ describe('SMART Health operations', () => {
 
   test('Rejects SMART Health Card issuer hosts with private IPv6 addresses', async () => {
     const { privateKey } = await generateKeyPair('ES256');
-    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Unexpected fetch'));
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Unexpected fetch'));
 
     for (const issuer of ['https://[fd12:3456::1]', 'https://[fc00::1]']) {
       const credential = await createSmartHealthCardCredential({

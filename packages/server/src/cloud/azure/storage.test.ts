@@ -21,8 +21,8 @@ describe('AzureBlobStorage', () => {
   });
 
   afterEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
   });
 
   const testBinary: Binary = {

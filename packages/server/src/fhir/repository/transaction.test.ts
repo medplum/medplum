@@ -7,6 +7,8 @@ import type { Patient } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
+import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
@@ -85,8 +87,8 @@ describe('FHIR Repo Transactions', () => {
     }));
 
   test('withTransaction rejects concurrent calls', async () => {
-    const cb1 = jest.fn().mockReturnValue('first success');
-    const cb2 = jest.fn().mockReturnValue('second success');
+    const cb1 = vi.fn().mockReturnValue('first success');
+    const cb2 = vi.fn().mockReturnValue('second success');
     const promise1 = repo.withTransaction(cb1);
     const promise2 = repo.withTransaction(cb2);
 
@@ -233,7 +235,7 @@ describe('FHIR Repo Transactions', () => {
     { name: 'rollback', shouldRollback: true },
   ])('Post-commit callback on $name', ({ shouldRollback }) =>
     withTestContext(async () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       const txn = repo.withTransaction(async (txRepo) => {
         await txRepo.postCommit(callback);
         expect(callback).not.toHaveBeenCalled();
@@ -254,8 +256,8 @@ describe('FHIR Repo Transactions', () => {
 
   test('Nested transaction post-commit', () =>
     withTestContext(async () => {
-      const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
-      const postCommitCb = jest.fn();
+      const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
+      const postCommitCb = vi.fn();
       try {
         await repo.withTransaction(async (txRepo) => {
           await txRepo.postCommit(() => postCommitCb('first'));
@@ -351,7 +353,7 @@ describe('FHIR Repo Transactions', () => {
     }));
 
   test('Retry executes post-commit hook once from outer transaction', async () => {
-    const postCommit = jest.fn();
+    const postCommit = vi.fn();
     let shouldError = true;
 
     await repo.withTransaction(async (txRepo) => {
@@ -370,7 +372,7 @@ describe('FHIR Repo Transactions', () => {
   });
 
   test('Retry should not execute post-commit hook from rollback', async () => {
-    const postCommit = jest.fn();
+    const postCommit = vi.fn();
 
     await repo.withTransaction(async (txRepo) => {
       try {
@@ -388,7 +390,7 @@ describe('FHIR Repo Transactions', () => {
 
   test('getSystemRepo() shares parent post-commit state', () =>
     withTestContext(async () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       let callsBeforeCommit: number | undefined;
 
       await repo.withTransaction(async (txRepo) => {
@@ -440,7 +442,7 @@ describe('FHIR Repo Transactions', () => {
 
   test('clone() does NOT share parent transaction state', () =>
     withTestContext(async () => {
-      const callbackFn = jest.fn();
+      const callbackFn = vi.fn();
       let patient: WithId<Patient> | undefined;
       await expect(
         repo.withTransaction(async (txRepo) => {
@@ -466,7 +468,7 @@ describe('FHIR Repo Transactions', () => {
       const tx2SnapshotTaken = Promise.withResolvers<undefined>();
 
       const events: string[] = [];
-      const log = jest.fn().mockImplementation((msg: string) => {
+      const log = vi.fn().mockImplementation((msg: string) => {
         events.push(msg);
       });
 
@@ -552,10 +554,10 @@ describe('FHIR Repo Transactions', () => {
       const allowTx1Commit = Promise.withResolvers<undefined>();
       const allowTx2Commit = Promise.withResolvers<undefined>();
 
-      const search1 = jest.fn();
-      const create1 = jest.fn();
-      const search2 = jest.fn();
-      const create2 = jest.fn();
+      const search1 = vi.fn();
+      const create1 = vi.fn();
+      const search2 = vi.fn();
+      const create2 = vi.fn();
 
       // 1. tx1 begins a transaction, searches for and creates the missing patient.
       // 2. tx1 held open
@@ -632,7 +634,7 @@ describe('FHIR Repo Transactions', () => {
       const allowTx1Update = Promise.withResolvers<undefined>();
 
       const events: string[] = [];
-      const log = jest.fn().mockImplementation((msg: string) => {
+      const log = vi.fn().mockImplementation((msg: string) => {
         events.push(msg);
       });
 
@@ -700,7 +702,7 @@ describe('FHIR Repo Transactions', () => {
   ])('$name', ({ createError, succeedsOnRetry, expectedCalls, expectedError, expectedResult }) =>
     withTestContext(async () => {
       let shouldReturn = false;
-      const txFn = jest.fn(async (): Promise<boolean> => {
+      const txFn = vi.fn(async (): Promise<boolean> => {
         if (succeedsOnRetry && shouldReturn) {
           return true;
         }
@@ -748,14 +750,14 @@ describe('FHIR Repo Transactions', () => {
       withTestContext(async () => {
         const outerRepos: Repository[] = [];
         let shouldReturn = false;
-        const txFn = jest.fn(async (): Promise<boolean> => {
+        const txFn = vi.fn(async (): Promise<boolean> => {
           if (succeedsOnRetry && shouldReturn) {
             return true;
           }
           shouldReturn = true;
           throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
         });
-        const outerTx = jest.fn(async (txRepo): Promise<boolean> => {
+        const outerTx = vi.fn(async (txRepo): Promise<boolean> => {
           outerRepos.push(txRepo);
           if (!catchNestedError) {
             return txRepo.withTransaction(txFn);
@@ -782,7 +784,7 @@ describe('FHIR Repo Transactions', () => {
 
   test('Retry after create should not execute post-commit hooks from rollback', () =>
     withTestContext(async () => {
-      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs');
+      const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs');
       const patients: WithId<Patient>[] = [];
       let shouldError = true;
 
@@ -842,9 +844,9 @@ describe('FHIR Repo Transactions', () => {
     }));
 
   test('withTransaction releases connection when rollback fails on a dead backend', async () => {
-    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
-    let querySpy: jest.SpyInstance | undefined;
+    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    let querySpy: MockInstance | undefined;
 
     await expect(
       repo.withTransaction(async (txRepo) => {
@@ -901,7 +903,7 @@ describe('FHIR Repo Transactions', () => {
   });
 
   test('withStatementTimeout prevents writer operations on a pinned reader connection', async () => {
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
     let reachedEnd = false;
     try {
       await repo.withStatementTimeout({ timeoutMs: 0, mode: DatabaseMode.READER }, async () => {
@@ -935,17 +937,17 @@ describe('FHIR Repo Transactions', () => {
   test('borrowed repository connections do not reacquire clients after forced release', async () => {
     const rollbackError = new Error('rollback failed');
     const client = {
-      query: jest.fn(async (query: string) => {
+      query: vi.fn(async (query: string) => {
         if (query === 'ROLLBACK') {
           throw rollbackError;
         }
         return { rows: [] };
       }),
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const borrowedClientRepo = createBorrowedRepo(client);
-    const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
     try {
       await expect(
@@ -970,12 +972,12 @@ describe('FHIR Repo Transactions', () => {
   test('withTransaction does not publish transaction state when BEGIN fails', async () => {
     const beginError = new Error('begin failed');
     const client = {
-      query: jest.fn(async () => Promise.reject(beginError)),
-      release: jest.fn(),
+      query: vi.fn(async () => Promise.reject(beginError)),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const borrowedClientRepo = createBorrowedRepo(client);
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
-    const txnCallback = jest.fn();
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const txnCallback = vi.fn();
 
     try {
       await expect(borrowedClientRepo.withTransaction(txnCallback)).rejects.toThrow('begin failed');
@@ -995,10 +997,10 @@ describe('FHIR Repo Transactions', () => {
   });
 
   test('withTransaction rejects nested isolation upgrades', async () => {
-    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const query = vi.fn(async (_sql: string) => ({ rows: [] }));
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const borrowedClientRepo = createBorrowedRepo(client);
     await borrowedClientRepo.withTransaction(
@@ -1014,10 +1016,10 @@ describe('FHIR Repo Transactions', () => {
   });
 
   test('withTransaction allows nested calls at a weaker isolation level', async () => {
-    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const query = vi.fn(async (_sql: string) => ({ rows: [] }));
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const borrowedClientRepo = createBorrowedRepo(client);
     await borrowedClientRepo.withTransaction(
@@ -1082,10 +1084,10 @@ describe('FHIR Repo Transactions', () => {
   test('withTransaction rejects a writer client that is not a PoolClient', async () => {
     // Borrow a connection whose writer client is Pool-like: it answers queries but has no
     // release(), so each transaction statement could run on a different physical connection.
-    const query = jest.fn(async (_sql: string) => ({ rows: [] }));
+    const query = vi.fn(async (_sql: string) => ({ rows: [] }));
     const poolLikeClient = { query } as unknown as PoolClient;
     const borrowedClientRepo = createBorrowedRepo(poolLikeClient);
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
     try {
       await expect(borrowedClientRepo.withTransaction(async () => undefined)).rejects.toThrow(
@@ -1102,7 +1104,7 @@ describe('FHIR Repo Transactions', () => {
     const allowSavepoint = Promise.withResolvers<undefined>();
     const finishFirstNestedTransaction = Promise.withResolvers<undefined>();
     const queries: string[] = [];
-    const query = jest.fn(async (sql: string) => {
+    const query = vi.fn(async (sql: string) => {
       queries.push(sql);
       if (sql.startsWith('SAVEPOINT')) {
         // Pause the first nested begin inside its SAVEPOINT query, while it still holds
@@ -1114,15 +1116,15 @@ describe('FHIR Repo Transactions', () => {
     });
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const borrowedClientRepo = createBorrowedRepo(client);
-    const errorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
     try {
       await borrowedClientRepo.withTransaction(async (txRepo) => {
         const txRepo2 = txRepo.getSystemRepo();
-        const nestedCallback2 = jest.fn();
+        const nestedCallback2 = vi.fn();
 
         const tx1 = txRepo.withTransaction(async () => {
           await finishFirstNestedTransaction.promise;
@@ -1156,15 +1158,15 @@ describe('FHIR Repo Transactions', () => {
 
   test('processing pre-commit callbacks does not deadlock a transaction', async () => {
     const queries: string[] = [];
-    const query = jest.fn(async (sql: string) => {
+    const query = vi.fn(async (sql: string) => {
       queries.push(sql);
       return { rows: [] };
     });
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
-    const precommit = jest.fn();
+    const precommit = vi.fn();
     const repo = createBorrowedRepo(client);
 
     const result = await Promise.race([
@@ -1210,13 +1212,13 @@ describe('FHIR Repo Transactions', () => {
 
   test('parent repository cannot start a transaction during scoped pre-commit', async () => {
     const queries: string[] = [];
-    const query = jest.fn(async (sql: string) => {
+    const query = vi.fn(async (sql: string) => {
       queries.push(sql);
       return { rows: [] };
     });
     const client = {
       query,
-      release: jest.fn(),
+      release: vi.fn(),
     } as unknown as PoolClient;
     const repo = createBorrowedRepo(client);
     let parentTransactionError: unknown;
@@ -1254,8 +1256,8 @@ describe('FHIR Repo Transactions', () => {
 
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = systemRepo;
-    const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
-    const finalPostCommit = jest.fn();
+    const loggerErrorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
+    const finalPostCommit = vi.fn();
 
     const error = new Error('Post-commit hook failed');
     const promise = repo.withTransaction(async (txRepo) => {

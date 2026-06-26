@@ -4,6 +4,7 @@ import type { Subscription } from '@medplum/fhirtypes';
 import type { Job, Worker } from 'bullmq';
 import { Queue } from 'bullmq';
 import EventEmitter from 'node:events';
+import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
@@ -30,7 +31,7 @@ describe('worker utils', () => {
       expect(isJobSuccessful(subscription, 200)).toBe(true);
     });
 
-    test('Successful job with invalid custom codes', () => {
+    test('Successful job with invalid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -47,10 +48,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
     });
 
-    test('Unsuccessful job with invalid custom codes', () => {
+    test('Unsuccessful job with invalid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -67,10 +68,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(false));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(false));
     });
 
-    test('Successful job with valid custom codes', () => {
+    test('Successful job with valid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -87,10 +88,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(true));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(true));
     });
 
-    test('Unsuccessful job with valid custom codes', () => {
+    test('Unsuccessful job with valid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -107,10 +108,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(false));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(false));
     });
 
-    test('Successful job with valid custom codes comma separated', () => {
+    test('Successful job with valid custom codes comma separated', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -127,7 +128,7 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
     });
   });
 
@@ -145,7 +146,7 @@ describe('worker utils', () => {
         this.name = name;
       }
 
-      close = jest.fn();
+      close = vi.fn();
     }
 
     beforeEach(() => {
@@ -245,7 +246,7 @@ describe('worker utils', () => {
       const queue = { name: queueName } as Queue;
       const worker = new EventEmitter() as unknown as Worker;
 
-      const loggerInfoSpy = jest.spyOn(globalLogger, 'info').mockImplementation();
+      const loggerInfoSpy = vi.spyOn(globalLogger, 'info').mockImplementation(() => undefined);
 
       addVerboseQueueLogging<any>(queue, worker, (job) => ({ asyncJob: 'AsyncJob/' + job.data.asyncJobId }));
 
