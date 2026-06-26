@@ -7,7 +7,6 @@
  */
 
 import {
-  AccessPolicyInteraction,
   ContentType,
   deepClone,
   EMPTY,
@@ -243,14 +242,12 @@ function mergeAccessPolicyWithScope(
     result.criteria = result.criteria.replace('*', scope.resourceType);
   }
 
-  const interactions = intersectInteractions(getPolicyInteractions(policy), getScopeInteractions(scope));
-  if (interactions.length === 0) {
-    return undefined;
-  }
-  result.interaction = interactions;
-
   if (readOnlyScope.exec(scope.scope)) {
     result.readonly = true;
+    result.interaction = result.interaction?.filter((interaction) => readInteractions.includes(interaction));
+    if (result.interaction?.length === 0) {
+      return undefined;
+    }
   }
   if (scope.criteria) {
     appendCriteria(result, scope.criteria);
@@ -261,53 +258,6 @@ function mergeAccessPolicyWithScope(
     }
   }
   return result;
-}
-
-const allInteractions = [
-  AccessPolicyInteraction.CREATE,
-  AccessPolicyInteraction.READ,
-  AccessPolicyInteraction.VREAD,
-  AccessPolicyInteraction.UPDATE,
-  AccessPolicyInteraction.DELETE,
-  AccessPolicyInteraction.HISTORY,
-  AccessPolicyInteraction.SEARCH,
-];
-
-function getPolicyInteractions(policy: AccessPolicyResource): AccessPolicyInteraction[] {
-  if (policy.interaction) {
-    return policy.interaction;
-  }
-  if (policy.readonly) {
-    return readInteractions;
-  }
-  return allInteractions;
-}
-
-function getScopeInteractions(scope: SmartScope): AccessPolicyInteraction[] {
-  const interactions: AccessPolicyInteraction[] = [];
-  if (scope.scope.includes('c')) {
-    interactions.push(AccessPolicyInteraction.CREATE);
-  }
-  if (scope.scope.includes('r')) {
-    interactions.push(AccessPolicyInteraction.READ, AccessPolicyInteraction.VREAD, AccessPolicyInteraction.HISTORY);
-  }
-  if (scope.scope.includes('u')) {
-    interactions.push(AccessPolicyInteraction.UPDATE);
-  }
-  if (scope.scope.includes('d')) {
-    interactions.push(AccessPolicyInteraction.DELETE);
-  }
-  if (scope.scope.includes('s')) {
-    interactions.push(AccessPolicyInteraction.SEARCH);
-  }
-  return interactions;
-}
-
-function intersectInteractions(
-  policyInteractions: AccessPolicyInteraction[],
-  scopeInteractions: AccessPolicyInteraction[]
-): AccessPolicyInteraction[] {
-  return policyInteractions.filter((interaction) => scopeInteractions.includes(interaction));
 }
 
 function appendCriteria(policy: AccessPolicyResource, criteria: string): void {

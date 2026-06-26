@@ -186,17 +186,14 @@ describe('SMART on FHIR', () => {
           {
             resourceType: 'Observation',
             readonly: true,
-            interaction: ['read', 'vread', 'history', 'search'],
           },
           {
             resourceType: 'Patient',
             readonly: true,
-            interaction: ['read', 'vread', 'history', 'search'],
           },
           {
             resourceType: 'VisionPrescription',
             readonly: true,
-            interaction: ['read', 'vread', 'history', 'search'],
           },
         ],
       });
@@ -233,35 +230,29 @@ describe('SMART on FHIR', () => {
         {
           resourceType: 'Observation',
           readonly: true,
-          interaction: ['read', 'vread', 'history', 'search'],
           criteria: `Observation?_compartment=Patient/${patientId}`,
         },
         {
           resourceType: 'Observation',
           readonly: true,
-          interaction: ['read', 'vread', 'history', 'search'],
         },
         {
           resourceType: 'Patient',
           readonly: true,
-          interaction: ['read', 'vread', 'history', 'search'],
           criteria: `Patient?_compartment=Patient/${patientId}`,
         },
         {
           resourceType: 'Patient',
           readonly: true,
-          interaction: ['read', 'vread', 'history', 'search'],
         },
         {
           resourceType: 'VisionPrescription',
           readonly: true,
-          interaction: ['read', 'vread', 'history', 'search'],
           criteria: `VisionPrescription?_compartment=Patient/${patientId}`,
         },
         {
           resourceType: 'VisionPrescription',
           readonly: true,
-          interaction: ['read', 'vread', 'history', 'search'],
         },
       ]);
       expect(result.resource.filter((r) => r.resourceType === 'Observation' && !r.criteria)).toHaveLength(1);
