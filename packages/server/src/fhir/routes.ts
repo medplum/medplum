@@ -70,6 +70,7 @@ import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectRateLimitsHandler } from './operations/project-rate-limits';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { rebuildBaseDefinitionsOperation } from './operations/rebuild-base-definitions';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
 import { userRescopeOperation } from './operations/rescope';
 import { resourceGraphHandler } from './operations/resourcegraph';
@@ -233,6 +234,9 @@ function initInternalFhirRouter(): FhirRouter {
   const router = new FhirRouter({
     introspectionEnabled: getConfig().introspectionEnabled,
   });
+
+  // Rebuild base definitions
+  router.add('POST', '/$rebuild-base-definitions', rebuildBaseDefinitionsOperation);
 
   // Project $export
   router.add('GET', '/$export', bulkExportHandler);
