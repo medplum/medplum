@@ -574,6 +574,48 @@
             }
           },
           {
+            "id": "Project.defaultAccessPolicies",
+            "path": "Project.defaultAccessPolicies",
+            "definition": "Default access policies to apply to project members by role when no explicit policy is provided.",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "BackboneElement"}],
+            "base": {
+              "path": "Project.defaultAccessPolicies",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Project.defaultAccessPolicies.profileType",
+            "path": "Project.defaultAccessPolicies.profileType",
+            "definition": "The member role this policy applies to.",
+            "min": 1,
+            "max": "1",
+            "type": [{"code": "code"}],
+            "base": {
+              "path": "Project.defaultAccessPolicies.profileType",
+              "min": 1,
+              "max": "1"
+            }
+          },
+          {
+            "id": "Project.defaultAccessPolicies.accessPolicy",
+            "path": "Project.defaultAccessPolicies.accessPolicy",
+            "definition": "The access policy to apply to members of this role.",
+            "min": 1,
+            "max": "1",
+            "type": [{
+              "code": "Reference",
+              "targetProfile": ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+            }],
+            "base": {
+              "path": "Project.defaultAccessPolicies.accessPolicy",
+              "min": 1,
+              "max": "1"
+            }
+          },
+          {
             "id": "Project.exportedResourceType",
             "path": "Project.exportedResourceType",
             "definition": "The resource types exported by the project when linked",

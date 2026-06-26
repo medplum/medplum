@@ -144,6 +144,7 @@ export interface Project {
 
   /**
    * The default access policy for patients using open registration.
+   * @deprecated Use defaultAccessPolicies instead.
    */
   defaultPatientAccessPolicy?: Reference<AccessPolicy>;
 
@@ -191,6 +192,27 @@ export interface Project {
    * The resource types exported by the project when linked
    */
   exportedResourceType?: ResourceType[];
+
+  /**
+   * Default access policies to apply to project members by role when no explicit policy is provided.
+   */
+  defaultAccessPolicies?: ProjectDefaultAccessPolicy[];
+}
+
+/**
+ * Default access policy to apply to project members of a given role.
+ */
+export interface ProjectDefaultAccessPolicy {
+
+  /**
+   * The member role this policy applies to.
+   */
+  profileType: 'Patient' | 'Practitioner' | 'RelatedPerson' | 'Admin';
+
+  /**
+   * The access policy to apply to members of this role.
+   */
+  accessPolicy: Reference<AccessPolicy>;
 }
 
 /**
