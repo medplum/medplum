@@ -11,11 +11,11 @@ import { loadTestConfig } from '../../config/loader';
 import { r4ProjectId } from '../../constants';
 import { createTestProject } from '../../test.setup';
 
-jest.mock('@medplum/definitions', () => {
-  const orig = jest.requireActual('@medplum/definitions');
+vi.mock('@medplum/definitions', async () => {
+  const orig = await vi.importActual('@medplum/definitions');
   return {
     ...orig,
-    readJsonAsync: jest.fn().mockResolvedValue(orig.readJsonAsync),
+    readJsonAsync: vi.fn().mockResolvedValue(orig.readJsonAsync),
   };
 });
 
@@ -28,7 +28,7 @@ describe('$rebuild-base-definitions', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterAll(async () => {
@@ -51,7 +51,7 @@ describe('$rebuild-base-definitions', () => {
     const originalTimestamp = new Date(originalParam?.meta?.lastUpdated as string).getTime();
     expect(originalParam?.meta?.project).toStrictEqual(r4ProjectId);
 
-    jest.mocked(defs).readJsonAsync.mockResolvedValueOnce({
+    vi.mocked(defs).readJsonAsync.mockResolvedValueOnce({
       resourceType: 'Bundle',
       type: 'collection',
       entry: [
@@ -105,6 +105,6 @@ describe('$rebuild-base-definitions', () => {
         parameter: [{ name: 'resourceType', valueCode: 'StructureDefinition' }],
       } satisfies Parameters);
     expect(res.status).toBe(403);
-    expect(jest.mocked(defs).readJsonAsync).toHaveBeenCalledTimes(0);
+    expect(vi.mocked(defs).readJsonAsync).toHaveBeenCalledTimes(0);
   });
 });
