@@ -7,12 +7,14 @@
  */
 
 import {
+  AccessPolicyInteraction,
   ContentType,
   deepClone,
   EMPTY,
   OAuthGrantType,
   OAuthSigningAlgorithm,
   OAuthTokenAuthMethod,
+  readInteractions,
   splitN,
 } from '@medplum/core';
 import type { AccessPolicy, AccessPolicyResource, Patient, Reference } from '@medplum/fhirtypes';
@@ -210,15 +212,20 @@ function intersectSmartScopes(
 ): PopulatedAccessPolicy {
   const result: PopulatedAccessPolicy = { ...accessPolicy, resource: [] };
   for (const policy of accessPolicy.resource ?? EMPTY) {
-    const scope = getScopeForResourceType(smartScope, policy.resourceType);
-    if (scope) {
-      const merged = mergeAccessPolicyWithScope(policy, scope, context);
-      result.resource.push(merged);
-    } else if (policy.resourceType === '*') {
+    if (policy.resourceType === '*') {
       for (const scope of smartScope) {
         const merged = mergeAccessPolicyWithScope(policy, scope, context);
-        merged.resourceType = scope.resourceType;
-        result.resource.push(merged);
+        if (merged) {
+          merged.resourceType = scope.resourceType;
+          result.resource.push(merged);
+        }
+      }
+    } else {
+      for (const scope of getScopesForResourceType(smartScope, policy.resourceType)) {
+        const merged = mergeAccessPolicyWithScope(policy, scope, context);
+        if (merged) {
+          result.resource.push(merged);
+        }
       }
     }
   }
@@ -230,11 +237,17 @@ function mergeAccessPolicyWithScope(
   policy: AccessPolicyResource,
   scope: SmartScope,
   context?: Reference<Patient>
-): AccessPolicyResource {
+): AccessPolicyResource | undefined {
   const result = deepClone(policy);
   if (result.criteria?.startsWith('*') && scope.resourceType !== '*') {
     result.criteria = result.criteria.replace('*', scope.resourceType);
   }
+
+  const interactions = intersectInteractions(getPolicyInteractions(policy), getScopeInteractions(scope));
+  if (interactions.length === 0) {
+    return undefined;
+  }
+  result.interaction = interactions;
 
   if (readOnlyScope.exec(scope.scope)) {
     result.readonly = true;
@@ -250,6 +263,53 @@ function mergeAccessPolicyWithScope(
   return result;
 }
 
+const allInteractions = [
+  AccessPolicyInteraction.CREATE,
+  AccessPolicyInteraction.READ,
+  AccessPolicyInteraction.VREAD,
+  AccessPolicyInteraction.UPDATE,
+  AccessPolicyInteraction.DELETE,
+  AccessPolicyInteraction.HISTORY,
+  AccessPolicyInteraction.SEARCH,
+];
+
+function getPolicyInteractions(policy: AccessPolicyResource): AccessPolicyInteraction[] {
+  if (policy.interaction) {
+    return policy.interaction;
+  }
+  if (policy.readonly) {
+    return readInteractions;
+  }
+  return allInteractions;
+}
+
+function getScopeInteractions(scope: SmartScope): AccessPolicyInteraction[] {
+  const interactions: AccessPolicyInteraction[] = [];
+  if (scope.scope.includes('c')) {
+    interactions.push(AccessPolicyInteraction.CREATE);
+  }
+  if (scope.scope.includes('r')) {
+    interactions.push(AccessPolicyInteraction.READ, AccessPolicyInteraction.VREAD, AccessPolicyInteraction.HISTORY);
+  }
+  if (scope.scope.includes('u')) {
+    interactions.push(AccessPolicyInteraction.UPDATE);
+  }
+  if (scope.scope.includes('d')) {
+    interactions.push(AccessPolicyInteraction.DELETE);
+  }
+  if (scope.scope.includes('s')) {
+    interactions.push(AccessPolicyInteraction.SEARCH);
+  }
+  return interactions;
+}
+
+function intersectInteractions(
+  policyInteractions: AccessPolicyInteraction[],
+  scopeInteractions: AccessPolicyInteraction[]
+): AccessPolicyInteraction[] {
+  return policyInteractions.filter((interaction) => scopeInteractions.includes(interaction));
+}
+
 function appendCriteria(policy: AccessPolicyResource, criteria: string): void {
   if (!policy.criteria) {
     policy.criteria = `${policy.resourceType}?${criteria}`;
@@ -260,6 +320,6 @@ function appendCriteria(policy: AccessPolicyResource, criteria: string): void {
   }
 }
 
-function getScopeForResourceType(scopes: SmartScope[], resourceType: string): SmartScope | undefined {
-  return scopes.find((s) => s.resourceType === resourceType) ?? scopes.find((s) => s.resourceType === '*');
+function getScopesForResourceType(scopes: SmartScope[], resourceType: string): SmartScope[] {
+  return scopes.filter((s) => s.resourceType === resourceType || s.resourceType === '*');
 }
