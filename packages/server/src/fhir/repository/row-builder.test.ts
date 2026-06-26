@@ -11,7 +11,7 @@ import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject, withTestContext } from '../../test.setup';
 import { getProjectSystemRepo, Repository } from '../repo';
 import type { ColumnValue } from './row-builder';
-import { buildResourceRow, compareColumnValues } from './row-builder';
+import { buildResourceRow, calculateHistoryHttpMethod, compareColumnValues } from './row-builder';
 
 describe('Repository Row Builder', () => {
   let testProject: WithId<Project>;
@@ -392,5 +392,12 @@ describe('compareColumnValues', () => {
     ])('compareColumnValues(%p, %p) matches localeCompare', (a, b) => {
       expect(compareColumnValues(a, b)).toBe(String(a).localeCompare(String(b)));
     });
+  });
+
+  test('getHistoryBundleRequestMethod', () => {
+    expect(calculateHistoryHttpMethod(true, false)).toBe('DELETE');
+    expect(calculateHistoryHttpMethod(true, true)).toBe('DELETE');
+    expect(calculateHistoryHttpMethod(false, true)).toBe('POST');
+    expect(calculateHistoryHttpMethod(false, false)).toBe('PUT');
   });
 });

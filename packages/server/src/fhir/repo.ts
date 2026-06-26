@@ -119,7 +119,7 @@ import {
   getResourceCacheEntry,
   setResourceCacheEntry,
 } from './repository/resource-cache';
-import { buildDeletedResourceRow, buildResourceRow } from './repository/row-builder';
+import { buildDeletedResourceRow, buildResourceRow, calculateHistoryHttpMethod } from './repository/row-builder';
 import { validateRepositoryResource } from './repository/validation';
 import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
@@ -704,6 +704,7 @@ export class Repository extends FhirRepository implements Disposable {
         }
       }
 
+      const offset = Math.max(0, options?.offset ?? 0);
       const rows = await new SelectQuery(resourceType + '_History')
         .column('versionId')
         .column('id')
@@ -712,7 +713,7 @@ export class Repository extends FhirRepository implements Disposable {
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
         .limit(clamp(0, options?.limit ?? 100, DEFAULT_MAX_SEARCH_COUNT))
-        .offset(Math.max(0, options?.offset ?? 0))
+        .offset(offset)
         .execute(this.getDatabaseClient(DatabaseMode.READER));
 
       const countRows = await new SelectQuery(resourceType + '_History')
@@ -722,10 +723,11 @@ export class Repository extends FhirRepository implements Disposable {
 
       const totalCount = countRows[0].count as number;
 
-      const entries: BundleEntry<T>[] = [];
-
-      for (const row of rows) {
+      const entries: BundleEntry<T>[] = rows.map((row, i) => {
+        const isDeleted = !row.content;
+        const isCreate = offset + i === totalCount - 1;
         const resource = row.content ? this.removeHiddenFields(JSON.parse(row.content as string)) : undefined;
+        const method = calculateHistoryHttpMethod(isDeleted, isCreate);
         const outcome: OperationOutcome = row.content
           ? allOk
           : {
@@ -741,19 +743,19 @@ export class Repository extends FhirRepository implements Disposable {
                 },
               ],
             };
-        entries.push({
+        return {
           fullUrl: getFullUrl(resourceType, row.id),
           request: {
-            method: 'GET',
-            url: `${resourceType}/${row.id}/_history/${row.versionId}`,
+            method,
+            url: isCreate ? resourceType : `${resourceType}/${row.id}`,
           },
           response: {
             status: getStatus(outcome).toString(),
             outcome,
           },
           resource,
-        });
-      }
+        };
+      });
 
       const durationMs = Date.now() - startTime;
       this.logEvent(HistoryInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });

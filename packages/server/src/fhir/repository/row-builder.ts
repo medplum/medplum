@@ -34,6 +34,25 @@ import { buildTokenColumns } from '../token-column';
 
 export type ColumnValue = boolean | number | string | undefined | null;
 
+/**
+ * Returns the HTTP method for a history bundle entry's `request.method`.
+ * In a history bundle, this field indicates the action that originally occurred
+ * (POST for create, PUT for update, DELETE for delete), not the read used to fetch history.
+ * PATCH is not represented because patch vs full update is not persisted in history today.
+ * @param isDeleted - Whether this history version is a delete tombstone.
+ * @param isCreate - Whether this history version is the resource's initial create.
+ * @returns The HTTP method for the history bundle entry request.
+ */
+export function calculateHistoryHttpMethod(isDeleted: boolean, isCreate: boolean): 'DELETE' | 'POST' | 'PUT' {
+  if (isDeleted) {
+    return 'DELETE';
+  } else if (isCreate) {
+    return 'POST';
+  } else {
+    return 'PUT';
+  }
+}
+
 export function buildDeletedResourceRow(
   resourceType: ResourceType,
   id: string,
