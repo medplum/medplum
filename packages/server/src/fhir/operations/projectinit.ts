@@ -205,7 +205,7 @@ async function createPatientCompartmentAccessPolicy(
       { resourceType: 'Observation', criteria: 'Observation?_compartment=%patient' },
       { resourceType: 'Procedure', criteria: 'Procedure?_compartment=%patient' },
       { resourceType: 'QuestionnaireResponse', criteria: 'QuestionnaireResponse?_compartment=%patient' },
-      { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?patient=%patient' },
+      { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?_compartment=%patient' },
       { resourceType: 'ServiceRequest', criteria: 'ServiceRequest?_compartment=%patient' },
       { resourceType: 'Task', criteria: 'Task?_compartment=%patient' },
     ],

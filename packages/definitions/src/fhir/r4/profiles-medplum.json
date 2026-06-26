@@ -290,7 +290,7 @@
           {
             "id" : "Project.defaultPatientAccessPolicy",
             "path" : "Project.defaultPatientAccessPolicy",
-            "definition" : "The default access policy for patients using open registration.",
+            "definition" : "@deprecated Use defaultAccessPolicies instead. The default access policy for patients using open registration.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -597,6 +597,10 @@
               "path": "Project.defaultAccessPolicies.profileType",
               "min": 1,
               "max": "1"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "https://medplum.com/fhir/ValueSet/project-membership-profile-type"
             }
           },
           {

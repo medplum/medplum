@@ -143,8 +143,8 @@ export interface Project {
       'validate-terminology' | 'range-search' | 'log-streaming')[];
 
   /**
-   * The default access policy for patients using open registration.
-   * @deprecated Use defaultAccessPolicies instead.
+   * @deprecated Use defaultAccessPolicies instead. The default access policy
+   * for patients using open registration.
    */
   defaultPatientAccessPolicy?: Reference<AccessPolicy>;
 
