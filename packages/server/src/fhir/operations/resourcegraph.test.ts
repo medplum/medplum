@@ -2,19 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, normalizeErrorString } from '@medplum/core';
 import type {
-  ActivityDefinition,
   Bundle,
-  DiagnosticReport,
   GraphDefinition,
   GraphDefinitionLink,
   Observation,
   ObservationDefinition,
-  Organization,
-  Patient,
   PlanDefinition,
-  Questionnaire,
   Resource,
-  ServiceRequest,
   SpecimenDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -54,13 +48,13 @@ describe('Resource $graph', () => {
       name: graphName,
       start: 'ServiceRequest',
       link: [{ path: 'ServiceRequest.subject', target: [{ type: 'Patient' }] }],
-    } as GraphDefinition);
+    });
 
     // 2. Create a Patient
     const patient = await createResource({
       resourceType: 'Patient',
       name: [{ given: ['Graph'], family: 'Demo' }],
-    } as Patient);
+    });
 
     // 3. Create a Service Request
     const serviceRequest = await createResource({
@@ -68,7 +62,7 @@ describe('Resource $graph', () => {
       status: 'active',
       intent: 'order',
       subject: createReference(patient),
-    } as ServiceRequest);
+    });
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const bundle = await getResourceGraph(serviceRequest, graphName);
@@ -85,7 +79,7 @@ describe('Resource $graph', () => {
       const patient = await createResource({
         resourceType: 'Patient',
         name: [{ given: ['Graph'], family: 'Demo' }],
-      } as Patient);
+      });
 
       await getResourceGraph(patient, graphName, 400);
     });
@@ -95,7 +89,7 @@ describe('Resource $graph', () => {
       const patient = await createResource({
         resourceType: 'Patient',
         name: [{ given: ['Graph'], family: 'Demo' }],
-      } as Patient);
+      });
 
       await getResourceGraph(patient, graphName, 404);
     });
@@ -118,7 +112,7 @@ describe('Resource $graph', () => {
       const patient = await createResource({
         resourceType: 'Patient',
         name: [{ given: ['Graph'], family: 'Demo' }],
-      } as Patient);
+      });
 
       await createResource<GraphDefinition>({
         resourceType: 'GraphDefinition',
@@ -142,7 +136,7 @@ describe('Resource $graph', () => {
       const patient = await createResource({
         resourceType: 'Patient',
         name: [{ given: ['Graph'], family: 'Demo' }],
-      } as Patient);
+      });
 
       await createResource<GraphDefinition>({
         resourceType: 'GraphDefinition',
@@ -165,7 +159,7 @@ describe('Resource $graph', () => {
       const patient = await createResource({
         resourceType: 'Patient',
         name: [{ given: ['Graph'], family: 'Demo' }],
-      } as Patient);
+      });
 
       await createResource({
         resourceType: 'GraphDefinition',
@@ -188,7 +182,7 @@ describe('Resource $graph', () => {
       const patient = await createResource({
         resourceType: 'Patient',
         name: [{ given: ['Graph'], family: 'Demo' }],
-      } as Patient);
+      });
 
       await createResource<GraphDefinition>({
         resourceType: 'GraphDefinition',
@@ -232,7 +226,7 @@ describe('Resource $graph', () => {
       name: graphName,
       start: 'PlanDefinition',
       link: [{ path: 'PlanDefinition.action.definition', target: [{ type: 'Questionnaire' }] }],
-    } as GraphDefinition);
+    });
 
     const q1 = await createResource({
       resourceType: 'Questionnaire',
@@ -240,7 +234,7 @@ describe('Resource $graph', () => {
       name: 'Patient Registration',
       title: 'Patient Registration',
       url: 'http://example.com/PatientRegistration',
-    } as Questionnaire);
+    });
 
     const q2 = await createResource({
       resourceType: 'Questionnaire',
@@ -248,7 +242,7 @@ describe('Resource $graph', () => {
       name: 'Medical History',
       title: 'Medical History',
       url: 'http://example.com/MedicalHistory',
-    } as Questionnaire);
+    });
 
     const q3 = await createResource({
       resourceType: 'Questionnaire',
@@ -256,7 +250,7 @@ describe('Resource $graph', () => {
       name: 'Medical History',
       title: 'Medical History',
       url: 'http://example.com/MedicalHistory',
-    } as Questionnaire);
+    });
 
     // 3. Create a PlanDefinition
     const planDefinition = await createResource({
@@ -268,7 +262,7 @@ describe('Resource $graph', () => {
         { definitionCanonical: 'http://example.com/MedicalHistory' },
         { definitionCanonical: 'http://example.com/MedicalHistory' },
       ],
-    } as PlanDefinition);
+    });
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const bundle = await getResourceGraph(planDefinition, graphName);
@@ -304,7 +298,7 @@ describe('Resource $graph', () => {
           ],
         },
       ],
-    } as GraphDefinition);
+    });
 
     const obsDefs = await Promise.all(
       ['ACT', 'BUN', 'HEM'].map((code) =>
@@ -319,7 +313,7 @@ describe('Resource $graph', () => {
       title: 'ACT Test',
       url: 'http://example.com/ActTest',
       observationResultRequirement: [createReference(obsDefs[0])],
-    } as ActivityDefinition);
+    });
 
     const a2 = await createResource({
       resourceType: 'ActivityDefinition',
@@ -328,7 +322,7 @@ describe('Resource $graph', () => {
       title: 'BUN Panel',
       url: 'http://example.com/BunPanel',
       observationResultRequirement: [createReference(obsDefs[1]), createReference(obsDefs[2])],
-    } as ActivityDefinition);
+    });
 
     // 3. Create a PlanDefinition
     const planDefinition = await createResource({
@@ -338,7 +332,7 @@ describe('Resource $graph', () => {
         { definitionCanonical: 'http://example.com/ActTest' },
         { definitionCanonical: 'http://example.com/BunPanel' },
       ],
-    } as PlanDefinition);
+    });
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const bundle = await getResourceGraph(planDefinition, graphName);
@@ -377,7 +371,7 @@ describe('Resource $graph', () => {
           ],
         },
       ],
-    } as GraphDefinition);
+    });
 
     const obsDefs = await Promise.all(
       ['ACT', 'BUN', 'HEM'].map((code) =>
@@ -404,7 +398,7 @@ describe('Resource $graph', () => {
       url: 'http://example.com/ActTest-Parallel',
       observationResultRequirement: [createReference(obsDefs[0])],
       specimenRequirement: [createReference(specDefs[0])],
-    } as ActivityDefinition);
+    });
 
     const a2 = await createResource({
       resourceType: 'ActivityDefinition',
@@ -414,14 +408,14 @@ describe('Resource $graph', () => {
       url: 'http://example.com/BunPanel-Parallel',
       observationResultRequirement: [createReference(obsDefs[1]), createReference(obsDefs[2])],
       specimenRequirement: [createReference(specDefs[1])],
-    } as ActivityDefinition);
+    });
 
     // 3. Create a PlanDefinition
     const planDefinition = await createResource({
       resourceType: 'PlanDefinition',
       status: 'active',
       action: [{ definitionCanonical: a1.url }, { definitionCanonical: a2.url }],
-    } as PlanDefinition);
+    });
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const bundle = await getResourceGraph(planDefinition, graphName);
@@ -444,19 +438,19 @@ describe('Resource $graph', () => {
       name: graphName,
       start: 'ServiceRequest',
       link: [{ target: [{ type: 'DiagnosticReport', params: 'based-on={ref}' }], max: '*' }],
-    } as GraphDefinition);
+    });
 
     const patient = await createResource({
       resourceType: 'Patient',
       name: [{ given: ['Graph'], family: 'Demo' }],
-    } as Patient);
+    });
 
     const serviceRequest = await createResource({
       resourceType: 'ServiceRequest',
       status: 'active',
       intent: 'order',
       subject: createReference(patient),
-    } as ServiceRequest);
+    });
 
     // 2. Create a DiagnosticReport
     const report = await createResource({
@@ -464,7 +458,7 @@ describe('Resource $graph', () => {
       status: 'final',
       code: { text: 'foo' },
       basedOn: [createReference(serviceRequest)],
-    } as DiagnosticReport);
+    });
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const bundle = await getResourceGraph(serviceRequest, graphName);
@@ -494,24 +488,24 @@ describe('Resource $graph', () => {
           ],
         },
       ],
-    } as GraphDefinition);
+    });
 
     const patient = await createResource({
       resourceType: 'Patient',
       name: [{ given: ['Graph'], family: 'Demo' }],
-    } as Patient);
+    });
 
     const serviceRequest = await createResource({
       resourceType: 'ServiceRequest',
       status: 'active',
       intent: 'order',
       subject: createReference(patient),
-    } as ServiceRequest);
+    });
 
     const performer = await createResource({
       resourceType: 'Organization',
       name: 'Foo Medical',
-    } as Organization);
+    });
 
     const observations = await Promise.all(
       ['AAA', 'BBB', 'CCC'].map((code) =>

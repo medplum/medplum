@@ -872,7 +872,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Who/what is the subject of the document\r",
-      "expression": "DocumentReference.subject.where(resolve() is Patient)"
+      "expression": "DocumentReference.subject.where((resolve() is Patient))"
     },
     {
       "name": "type",

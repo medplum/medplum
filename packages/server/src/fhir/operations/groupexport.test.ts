@@ -4,6 +4,7 @@ import { ContentType } from '@medplum/core';
 import type { BulkDataExportOutput, Group, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
@@ -108,22 +109,48 @@ describe('Group Export', () => {
     expect(res6.status).toBe(202);
     expect(res6.headers['content-location']).toBeDefined();
 
-    // Check the export status
-    const contentLocation = new URL(res6.headers['content-location']);
-    await waitForAsyncJob(res6.headers['content-location'], app, accessToken);
+    const exportResult = await waitForAsyncJob(res6.headers['content-location'], app, accessToken);
 
-    const contentLocationRes = await request(app)
-      .get(contentLocation.pathname)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(contentLocationRes.status).toBe(200);
-
-    const output = contentLocationRes.body.output as BulkDataExportOutput[];
+    const output = exportResult.output as unknown as BulkDataExportOutput[];
     expect(output).toHaveLength(4);
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Device')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).toBeTruthy();
     expect(output.some((o) => o.type === 'Group')).toBeTruthy();
     expect(output[0].url.startsWith(getConfig().storageBaseUrl)).toBeTruthy();
+  });
+
+  test('Export Group Accepted with POST', async () => {
+    const patientRes = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+    expect(patientRes.status).toBe(201);
+
+    const groupRes = await request(app)
+      .post(`/fhir/R4/Group`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Group',
+        type: 'person',
+        actual: true,
+        member: [{ entity: { reference: `Patient/${patientRes.body.id}` } }],
+      });
+    expect(groupRes.status).toBe(201);
+
+    const exportRes = await request(app)
+      .post(`/fhir/R4/Group/${groupRes.body.id}/$export`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(exportRes.status).toBe(202);
+    expect(exportRes.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(exportRes.headers['content-location'], app, accessToken);
   });
 
   test('Since filter', async () => {
@@ -200,16 +227,9 @@ describe('Group Export', () => {
     expect(res5.status).toBe(202);
     expect(res5.headers['content-location']).toBeDefined();
 
-    // Check the export status
-    const contentLocation = new URL(res5.headers['content-location']);
-    await waitForAsyncJob(res5.headers['content-location'], app, accessToken);
+    const exportResult = await waitForAsyncJob(res5.headers['content-location'], app, accessToken);
 
-    const contentLocationRes = await request(app)
-      .get(contentLocation.pathname)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(contentLocationRes.status).toBe(200);
-
-    const output = contentLocationRes.body.output as BulkDataExportOutput[];
+    const output = exportResult.output as unknown as BulkDataExportOutput[];
     expect(output).toHaveLength(3);
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).toBeTruthy();
@@ -277,16 +297,9 @@ describe('Group Export', () => {
     expect(res4.status).toBe(202);
     expect(res4.headers['content-location']).toBeDefined();
 
-    // Check the export status
-    const contentLocation = new URL(res4.headers['content-location']);
-    await waitForAsyncJob(res4.headers['content-location'], app, accessToken);
+    const exportResult = await waitForAsyncJob(res4.headers['content-location'], app, accessToken);
 
-    const contentLocationRes = await request(app)
-      .get(contentLocation.pathname)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(contentLocationRes.status).toBe(200);
-
-    const output = contentLocationRes.body.output as BulkDataExportOutput[];
+    const output = exportResult.output as unknown as BulkDataExportOutput[];
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).not.toBeTruthy();
   });
@@ -316,7 +329,7 @@ describe('Group Export', () => {
     const { project } = await createTestProject();
     expect(project).toBeDefined();
     const exporter = new BulkExporter(systemRepo);
-    const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
+    const exportWriteResourceSpy = vi.spyOn(exporter, 'writeResource');
 
     const group: Group = await systemRepo.createResource<Group>({
       resourceType: 'Group',

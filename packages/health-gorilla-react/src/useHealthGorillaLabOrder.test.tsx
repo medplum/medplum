@@ -11,7 +11,6 @@ import {
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type {
   Bundle,
-  Coverage,
   Location,
   Organization,
   Patient,
@@ -212,7 +211,7 @@ describe('useHealthGorilla', () => {
       billingInformation: { billTo: 'customer-account' },
       diagnoses: [DIAGNOSES[1]],
       specimenCollectedDateTime,
-    } as HealthGorillaLabOrderState);
+    });
 
     expect(result.current.validateOrder).not.toThrow();
     const order = await result.current.createOrderBundle();
@@ -221,8 +220,8 @@ describe('useHealthGorilla', () => {
 
   test('patient and requester as references', async () => {
     setup({
-      patient: createReference(patient) as Reference<Patient> & { reference: string },
-      requester: createReference(requester) as Reference<Practitioner> & { reference: string },
+      patient: createReference(patient),
+      requester: createReference(requester),
     });
   });
 
@@ -296,7 +295,7 @@ describe('useHealthGorilla', () => {
         status: 'active',
         payor: [{ reference: getReferenceString(patient) }],
         beneficiary: { reference: getReferenceString(patient) },
-      } as Coverage);
+      });
     }
 
     coverage = await result.current.getActivePatientCoverages();
@@ -360,14 +359,12 @@ describe('useHealthGorilla', () => {
     });
 
     // Mock the case of returning a Bundle with a non-2XX status code
-    medplum.executeBatch = vi.fn(
-      async () =>
-        ({
-          resourceType: 'Bundle',
-          type: 'transaction-response',
-          entry: [{ response: { status: '400' } }],
-        }) as Bundle
-    );
+    const non2xxResponse: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction-response',
+      entry: [{ response: { status: '400' } }],
+    };
+    medplum.executeBatch = vi.fn(async () => non2xxResponse);
 
     await expect(() => result.current.createOrderBundle()).rejects.toThrow(
       'Error creating lab order: Non-2XX status code in response entry'
@@ -385,14 +382,12 @@ describe('useHealthGorilla', () => {
     });
 
     // Mock the case of returning a Bundle without a ServiceRequest
-    medplum.executeBatch = vi.fn(
-      async () =>
-        ({
-          resourceType: 'Bundle',
-          type: 'transaction-response',
-          entry: [],
-        }) as Bundle
-    );
+    const emptyResponse: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction-response',
+      entry: [],
+    };
+    medplum.executeBatch = vi.fn(async () => emptyResponse);
 
     await expect(() => result.current.createOrderBundle()).rejects.toThrow(
       'Error creating lab order: Lab Order Service Request not found in response entries'

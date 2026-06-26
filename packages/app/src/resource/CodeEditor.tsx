@@ -28,7 +28,7 @@ export function CodeEditor(props: CodeEditorProps): JSX.Element {
       ref={props.iframeRef}
       data-testid={props.testId}
       onLoad={(e) => {
-        sendCommand(e.currentTarget as HTMLIFrameElement, { command: 'setValue', value: code }).catch(console.error);
+        sendCommand(e.currentTarget, { command: 'setValue', value: code }).catch(console.error);
       }}
     />
   );

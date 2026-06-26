@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { MockInstance } from 'vitest';
 
 import type { LogLevelNames } from '@medplum/core';
 import { LogLevel, parseLogLevel, sleep } from '@medplum/core';
@@ -311,17 +312,17 @@ describe('Agent Logger', () => {
   describe('WinstonWrapperLogger', () => {
     let logger: WinstonWrapperLogger;
     let consoleSpy: {
-      log: jest.SpyInstance;
-      warn: jest.SpyInstance;
-      error: jest.SpyInstance;
+      log: MockInstance<typeof console.log>;
+      warn: MockInstance<typeof console.warn>;
+      error: MockInstance<typeof console.error>;
     };
 
     beforeEach(() => {
       // Spy on console methods that winston uses
       consoleSpy = {
-        log: jest.spyOn(console, 'log').mockImplementation(() => {}),
-        warn: jest.spyOn(console, 'warn').mockImplementation(() => {}),
-        error: jest.spyOn(console, 'error').mockImplementation(() => {}),
+        log: vi.spyOn(console, 'log').mockImplementation(() => {}),
+        warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
+        error: vi.spyOn(console, 'error').mockImplementation(() => {}),
       };
 
       // Create a logger with a custom config
@@ -556,7 +557,7 @@ describe('Agent Logger', () => {
     let originalNodeEnv: string | undefined;
 
     beforeAll(() => {
-      console.log = jest.fn();
+      console.log = vi.fn();
     });
 
     beforeEach(async () => {

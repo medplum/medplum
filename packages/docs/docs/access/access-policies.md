@@ -375,6 +375,104 @@ See this [video demo](https://www.youtube.com/watch?v=IDhsWiIxK3o) for an illust
 
 See [this Github Discussion](https://github.com/medplum/medplum/discussions/1453) for more examples of access scenarios that can be created using these policies.
 
+Parameterized policies are also the recommended pattern for temporary operational access, such as emergency patient access or temporary tenant access.
+
+### Emergency Access
+
+Emergency access, sometimes called Break Glass access, is a controlled workflow for granting temporary access to protected health information when normal access paths are not sufficient. This pattern supports ONC criterion [d6 Emergency Access](/docs/compliance/onc#criteria-certified).
+
+When implementing emergency access, keep the grant narrow, time-bound, and auditable:
+
+- Require an explicit reason before access is granted.
+- Scope access to the smallest useful resource set, such as one patient or one tenant.
+- Prefer short-lived sessions or a temporary `ProjectMembership` entry instead of standing broad access.
+- Record who requested access, who approved it, the reason, the patient or tenant scope, and the revocation time.
+- Review `AuditEvent` records after the access window closes.
+
+For patient-specific escalation, one pattern is to add the support user or clinician's `Practitioner` profile to the patient's `generalPractitioner` list, then use an access policy scoped to that relationship:
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Emergency Patient Access",
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "criteria": "Patient?general-practitioner=%profile"
+    }
+  ]
+}
+```
+
+After the emergency window, remove the temporary `generalPractitioner` reference and confirm that the user can no longer read the patient record.
+
+### Temporary tenant access
+
+For support workflows, use a parameterized policy to grant access to one tenant for a limited operational window. Add a temporary `ProjectMembership.access` entry with the tenant reference as the parameter value, capture the reason and approval in your support system, and remove the entry when the work is complete.
+
+```json
+{
+  "resourceType": "ProjectMembership",
+  "access": [
+    {
+      "policy": { "reference": "AccessPolicy/tenant-support-readonly" },
+      "parameter": [
+        {
+          "name": "organization",
+          "valueReference": { "reference": "Organization/clinic-a" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Migrating from top-level compartments
+
+Older access policies may use the top-level `compartment` element to describe a broad compartment rule. For new policies, prefer resource-level `criteria` with parameterized values. This keeps each resource rule explicit and lets the same policy template be reused with different `ProjectMembership.access.parameter` values.
+
+For example, instead of relying on a top-level compartment rule, define the tenant filter on each resource that should be visible:
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Organization Tenant Access",
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "criteria": "Patient?_compartment=%organization"
+    },
+    {
+      "resourceType": "Observation",
+      "criteria": "Observation?_compartment=%organization"
+    },
+    {
+      "resourceType": "DiagnosticReport",
+      "criteria": "DiagnosticReport?_compartment=%organization"
+    }
+  ]
+}
+```
+
+Then set the concrete tenant value on each membership:
+
+```json
+{
+  "resourceType": "ProjectMembership",
+  "access": [
+    {
+      "policy": { "reference": "AccessPolicy/organization-tenant-access" },
+      "parameter": [
+        {
+          "name": "organization",
+          "valueReference": { "reference": "Organization/clinic-a" }
+        }
+      ]
+    }
+  ]
+}
+```
+
 ## Example Access Policies
 
 ### Healthcare Partnerships
@@ -518,6 +616,10 @@ Binary resources cannot use compartment-based access controls. They require expl
       "criteria": "Subscription?type=websocket&author=%profile"
     },
     {
+      "resourceType": "HealthcareService",
+      "readonly": true
+    },
+    {
       "resourceType": "Organization",
       "readonly": true
     },
@@ -544,13 +646,13 @@ Binary resources cannot use compartment-based access controls. They require expl
     },
     {
       "resourceType": "Slot",
-      "interaction": ["create", "read", "search"],
+      "interaction": ["create", "read", "search"]
     }
   ]
 }
 ```
 
-:::caution Binary Security Context
+:::caution[Binary Security Context]
 
 `Binary` resources cannot use compartment-based access controls. Access is restricted by matching the `securityContext` field to the patient. When creating a `Binary` in a patient context, always set `securityContext` to the patient reference — otherwise the patient will not be able to access it:
 

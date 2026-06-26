@@ -16,7 +16,7 @@ export function asyncBatchHandler(
   config: MedplumServerConfig
 ): (req: Request, res: Response, next: NextFunction) => Promise<any> {
   return async function (req: Request, res: Response, next: NextFunction): Promise<any> {
-    const { repo, project, profile } = getAuthenticatedContext();
+    const { repo, project } = getAuthenticatedContext();
     if (req.get('prefer') !== 'respond-async') {
       next();
       return;
@@ -34,10 +34,8 @@ export function asyncBatchHandler(
       );
     }
 
-    const exec = new AsyncJobExecutor(repo.getSystemRepo());
-    await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`, {
-      meta: { project: project.id, author: profile },
-    });
+    const exec = new AsyncJobExecutor(repo);
+    await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     await exec.run(async (asyncJob) => {
       await queueBatchProcessing(bundle, asyncJob);
     });

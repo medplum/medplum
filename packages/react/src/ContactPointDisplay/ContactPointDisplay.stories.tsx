@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ContactPoint } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -13,6 +12,6 @@ export default {
 
 export const Basic = (): JSX.Element => (
   <Document>
-    <ContactPointDisplay value={{ use: 'home', system: 'email', value: 'homer@example.com' } as ContactPoint} />
+    <ContactPointDisplay value={{ use: 'home', system: 'email', value: 'homer@example.com' }} />
   </Document>
 );

@@ -20,7 +20,7 @@ describe('Base64', () => {
     // Mock browser environment
     mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
     mockEnvironment.isNodeEnvironment.mockReturnValue(false);
-    mockEnvironment.getWindow.mockReturnValue(window as any);
+    mockEnvironment.getWindow.mockReturnValue(window);
 
     const encoded = encodeBase64('Hello world');
     expect(encoded).toBe('SGVsbG8gd29ybGQ=');
@@ -39,7 +39,7 @@ describe('Base64', () => {
     // Mock Node.js environment
     mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
     mockEnvironment.isNodeEnvironment.mockReturnValue(true);
-    mockEnvironment.getBuffer.mockReturnValue(Buffer as any);
+    mockEnvironment.getBuffer.mockReturnValue(Buffer);
 
     const encoded = encodeBase64('Hello world');
     expect(encoded).toBe('SGVsbG8gd29ybGQ=');
@@ -55,9 +55,9 @@ describe('Base64', () => {
   });
 
   test('Error', () => {
-    // Mock environment with neither browser nor Node.js
+    // Mock environment with neither browser nor Node.js (base64.ts uses getBuffer, not isNodeEnvironment)
     mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
-    mockEnvironment.isNodeEnvironment.mockReturnValue(false);
+    mockEnvironment.getBuffer.mockReturnValue(undefined);
 
     expect(() => encodeBase64('Hello world')).toThrow('Unable to encode base64');
     expect(() => decodeBase64('SGVsbG8gd29ybGQ=')).toThrow('Unable to decode base64');
@@ -78,7 +78,7 @@ describe('Base64URL', () => {
     // Mock browser environment
     mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
     mockEnvironment.isNodeEnvironment.mockReturnValue(false);
-    mockEnvironment.getWindow.mockReturnValue(window as any);
+    mockEnvironment.getWindow.mockReturnValue(window);
 
     // Test encoding
     expect(encodeBase64Url(paddingString)).toBe(paddingStringBase64Url);
@@ -93,7 +93,7 @@ describe('Base64URL', () => {
     // Mock Node.js environment
     mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
     mockEnvironment.isNodeEnvironment.mockReturnValue(true);
-    mockEnvironment.getBuffer.mockReturnValue(Buffer as any);
+    mockEnvironment.getBuffer.mockReturnValue(Buffer);
 
     // Test encoding
     expect(encodeBase64Url(paddingString)).toBe(paddingStringBase64Url);

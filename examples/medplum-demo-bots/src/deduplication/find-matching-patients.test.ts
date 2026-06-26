@@ -10,7 +10,7 @@ import {
 } from '@medplum/core';
 import type { MedplumClient } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import type { Bundle, List, Patient, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, List, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { handler } from './find-matching-patients';
 // start-block importPatientData
@@ -47,7 +47,7 @@ describe('Link Patient', async () => {
 
     await handler(medplum, {
       bot: { reference: 'Bot/123' },
-      input: patients?.[0] as Patient,
+      input: patients?.[0],
       contentType: ContentType.FHIR_JSON,
       secrets: {},
     });

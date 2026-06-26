@@ -4,7 +4,7 @@ import type cors from 'cors';
 import type { Request } from 'express';
 import { getConfig } from './config/loader';
 
-const exposedHeaders = ['Content-Location', 'ETag', 'Last-Modified', 'Location'];
+const exposedHeaders = ['Content-Location', 'ETag', 'Last-Modified', 'Location', 'RateLimit'];
 
 /**
  * CORS configuration.
@@ -15,7 +15,7 @@ export const corsOptions: cors.CorsOptionsDelegate<Request> = (req, callback) =>
   const origin = req.header('Origin');
   const allow = isOriginAllowed(origin) && isPathAllowed(req.path);
   if (allow) {
-    callback(null, { origin, credentials: true, exposedHeaders });
+    callback(null, { origin, credentials: true, exposedHeaders, maxAge: 600 });
   } else {
     callback(null, { origin: false });
   }

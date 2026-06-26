@@ -25,5 +25,5 @@ Therefore, for now, we keep node-fetch pinned at the latest version in the versi
 In the future, there are 3 possibilities:
 
 - As the ESM ecosystem matures, we eventually support an ESM-only dependency.
-- Move to built-in `fetch` which requires Node.js 20 ([#1563](https://github.com/medplum/medplum/issues/1563))
+- Move to built-in `fetch` (available in supported Node.js LTS releases) ([#1563](https://github.com/medplum/medplum/issues/1563))
 - For completely unrelated reasons (i.e., upload progress monitoring), we may move to [Axios](https://www.npmjs.com/package/axios), which would eliminate this exception entirely.

@@ -385,10 +385,11 @@ describe('ConditionList', () => {
       });
     }
 
-    // Find Status input
+    // After selecting the ICD-10 code with maxValues={1}, the ICD-10 searchbox is
+    // removed and only the Status searchbox remains.
     await waitFor(() => {
       const inputs = screen.getAllByRole('searchbox');
-      expect(inputs.length).toBeGreaterThan(1);
+      expect(inputs.length).toBeGreaterThan(0);
     });
 
     const statusInputs = screen.getAllByRole('searchbox');
@@ -397,9 +398,9 @@ describe('ConditionList', () => {
       return label?.textContent?.includes('Status');
     });
 
-    // Fallback to second input if label search doesn't work
-    if (!statusInput && statusInputs.length > 1) {
-      statusInput = statusInputs[1];
+    // Fallback to first remaining input if label search doesn't work
+    if (!statusInput && statusInputs.length > 0) {
+      statusInput = statusInputs[0];
     }
 
     expect(statusInput).toBeDefined();

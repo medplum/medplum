@@ -5,17 +5,17 @@ import type { OperationOutcome, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
-
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('New user', () => {
@@ -28,6 +28,7 @@ describe('New user', () => {
 
   beforeEach(() => {
     getConfig().registerEnabled = undefined;
+    getConfig().requireVerifiedEmailForProjectCreation = undefined;
   });
 
   afterAll(async () => {
@@ -35,10 +36,10 @@ describe('New user', () => {
   });
 
   beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    fetchMock.mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(true);
     getConfig().recaptchaSecretKey = prevRecaptchaSecretKey;
   });
 
@@ -58,6 +59,7 @@ describe('New user', () => {
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
+    expect(res.body.emailVerificationRequired).toStrictEqual(false);
   });
 
   test('Register disabled', async () => {
@@ -93,7 +95,7 @@ describe('New user', () => {
   });
 
   test('Incorrect recaptcha', async () => {
-    setupRecaptchaMock(fetch as unknown as jest.Mock, false);
+    setupRecaptchaMock(false);
 
     const res = await request(app)
       .post('/auth/newuser')
@@ -157,7 +159,7 @@ describe('New user', () => {
 
   test('Breached password', async () => {
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 1);
 
     const res = await request(app)
       .post('/auth/newuser')
@@ -312,10 +314,12 @@ describe('New user', () => {
         password,
       });
       // As a super admin, set the recaptcha site key
-      // but *not* the access policy
+      // but *not* the access policy (remove the default patient access policy
+      // that is automatically provisioned on project creation)
       const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
+        defaultPatientAccessPolicy: undefined,
         site: [
           {
             name: 'Test Site',
@@ -625,5 +629,25 @@ describe('New user', () => {
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
+  });
+
+  test('Require email verification for new project', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        projectId: 'new',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.code).toBeUndefined();
+    expect(res.body.emailVerificationRequired).toBe(true);
   });
 });

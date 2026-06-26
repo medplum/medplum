@@ -6,7 +6,6 @@ import type {
   Bot,
   Bundle,
   Condition,
-  Observation,
   OperationOutcome,
   Patient,
   Specimen,
@@ -31,14 +30,14 @@ describe('ResourceForm', () => {
   });
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   async function setup(props: ResourceFormProps, medplumClient?: MockClient): Promise<void> {
@@ -52,7 +51,7 @@ describe('ResourceForm', () => {
   }
 
   test('Error on missing resource type', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {},
@@ -61,7 +60,7 @@ describe('ResourceForm', () => {
   });
 
   test('Renders empty Practitioner form', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {
@@ -77,11 +76,11 @@ describe('ResourceForm', () => {
   });
 
   test('Renders Practitioner resource', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {
-        reference: 'Practitioner/123',
+        reference: 'Practitioner/124',
       },
       onSubmit,
     });
@@ -93,7 +92,7 @@ describe('ResourceForm', () => {
   });
 
   test('Submit Practitioner', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {
@@ -112,12 +111,12 @@ describe('ResourceForm', () => {
   });
 
   test('Renders empty Observation form', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {
         resourceType: 'Observation',
-      } as Observation,
+      },
       onSubmit,
     });
 
@@ -128,7 +127,7 @@ describe('ResourceForm', () => {
   });
 
   test('Renders Observation resource', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: createReference(HomerObservation1),
@@ -144,7 +143,7 @@ describe('ResourceForm', () => {
   test('Submit Observation', async () => {
     await medplum.requestSchema('Observation');
 
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {
@@ -153,7 +152,7 @@ describe('ResourceForm', () => {
           value: 1,
           unit: 'kg',
         },
-      } as Observation,
+      },
       onSubmit,
     });
 
@@ -185,8 +184,8 @@ describe('ResourceForm', () => {
   });
 
   test('Patch', async () => {
-    const onSubmit = jest.fn();
-    const onPatch = jest.fn();
+    const onSubmit = vi.fn();
+    const onPatch = vi.fn();
 
     await setup({
       defaultValue: {
@@ -214,8 +213,8 @@ describe('ResourceForm', () => {
   });
 
   test('Delete', async () => {
-    const onSubmit = jest.fn();
-    const onDelete = jest.fn();
+    const onSubmit = vi.fn();
+    const onDelete = vi.fn();
 
     await setup({
       defaultValue: {
@@ -247,7 +246,7 @@ describe('ResourceForm', () => {
     date.setMilliseconds(0); // datetime-local does not support milliseconds
     const localString = convertIsoToLocal(date.toISOString());
     const isoString = convertLocalToIso(localString);
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({ defaultValue: { resourceType: 'Specimen' }, onSubmit });
 
@@ -270,7 +269,7 @@ describe('ResourceForm', () => {
   });
 
   test('Change boolean', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({ defaultValue: { resourceType: 'Patient' }, onSubmit });
 
@@ -292,7 +291,7 @@ describe('ResourceForm', () => {
   });
 
   test('Clear choice-of-type string', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: { resourceType: 'Bot', id: '123', cronString: '0 0 0 0 0 0' },
@@ -318,7 +317,7 @@ describe('ResourceForm', () => {
   });
 
   test('Remove CodeableConcept', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {
@@ -357,15 +356,15 @@ describe('ResourceForm', () => {
     for (const url of profilesToLoad) {
       const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
       if (!sd) {
-        fail(`could not find structure definition for ${url}`);
+        expect.fail(`could not find structure definition for ${url}`);
       }
       loadDataType(sd);
     }
 
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     const mockedMedplum = new MockClient();
-    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
+    const fakeRequestProfileSchema = vi.fn(async (_profileUrl: string) => {});
     mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
     await setup({ defaultValue: { resourceType: 'Device' }, profileUrl, onSubmit }, mockedMedplum);
 
@@ -383,19 +382,19 @@ describe('ResourceForm', () => {
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`,
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`,
     ];
-    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
+    const fakeRequestProfileSchema = vi.fn(async (_profileUrl: string) => {});
     beforeAll(() => {
       for (const url of profileUrls) {
         const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
         if (!sd) {
-          fail(`could not find structure definition for ${url}`);
+          expect.fail(`could not find structure definition for ${url}`);
         }
         loadDataType(sd);
       }
     });
 
     test('add extensions', async () => {
-      const onSubmit = jest.fn();
+      const onSubmit = vi.fn();
       const mockedMedplum = new MockClient();
       mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
 
@@ -486,7 +485,7 @@ describe('ResourceForm', () => {
     });
 
     test('Array-aware error messages on primitive field', async () => {
-      const onSubmit = jest.fn();
+      const onSubmit = vi.fn();
       const mockedMedplum = new MockClient();
       mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
       const defaultValue: Patient = {
@@ -528,14 +527,14 @@ describe('ResourceForm', () => {
       // Patient.link[0].type has error
       const typeLabel1 = typeInputs[0];
       if (typeLabel1.parentElement === null) {
-        fail('typeLabel1.parentElement is null');
+        expect.fail('typeLabel1.parentElement is null');
       }
       expect(within(typeLabel1.parentElement).queryByText('Missing required property')).toBeInTheDocument();
 
       // Patient.link[1].type has NO error
       const typeLabel2 = typeInputs[1];
       if (typeLabel2.parentElement === null) {
-        fail('typeLabel2.parentElement is null');
+        expect.fail('typeLabel2.parentElement is null');
       }
       expect(within(typeLabel2.parentElement).queryByText('Missing required property')).not.toBeInTheDocument();
     });

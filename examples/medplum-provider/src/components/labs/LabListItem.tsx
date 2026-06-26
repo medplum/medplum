@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
-import type { HumanName, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
+import type { Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import { MedplumLink, useResource } from '@medplum/react';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -122,7 +122,7 @@ const getSubText = (item: ServiceRequest, requester: Practitioner | undefined): 
   // Use authoredOn if available, otherwise fall back to meta.lastUpdated
   const date = formatDate(item.authoredOn || item.meta?.lastUpdated);
   if (requester?.resourceType === 'Practitioner') {
-    return `Ordered ${date} by ${formatHumanName(requester.name?.[0] as HumanName)}`;
+    return `Ordered ${date} by ${formatHumanName(requester.name?.[0])}`;
   }
   return `Ordered ${date}`;
 };

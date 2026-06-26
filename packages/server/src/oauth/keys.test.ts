@@ -30,7 +30,7 @@ describe('Keys', () => {
     delete (config as any).issuer;
     try {
       await initKeys(config);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect((err as Error).message).toStrictEqual('Missing issuer');
     }
@@ -216,6 +216,15 @@ describe('Keys', () => {
   test('Generate secret', () => {
     expect(generateSecret(16)).toHaveLength(32);
     expect(generateSecret(32)).toHaveLength(64);
+  });
+
+  test('Get signing key by algorithm', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    expect(getSigningKey()).toBeDefined();
+    expect(getSigningKey('ES256')).toBeDefined();
+    expect(() => getSigningKey('none')).toThrow('Signing key not found for alg: none');
   });
 
   test('Generate access token with email', async () => {

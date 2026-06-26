@@ -1,13 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type {
-  Bundle,
-  Communication,
-  Parameters,
-  Subscription,
-  SubscriptionChannel,
-  SubscriptionStatus,
-} from '@medplum/fhirtypes';
+import type { Bundle, Communication, Parameters, Subscription, SubscriptionChannel } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
 import { WS } from 'vitest-websocket-mock';
 import type { CriteriaState, SubscriptionEventMap } from '.';
@@ -139,7 +132,7 @@ describe('ReconnectingWebSocket', () => {
     await wsServer.connected;
     const receivedEvent = await new Promise<CloseEvent>((resolve) => {
       reconnectingWebSocket.addEventListener('close', (event) => {
-        resolve(event as CloseEvent);
+        resolve(event);
       });
       wsServer.close();
     });
@@ -246,7 +239,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
     });
 
@@ -284,7 +277,7 @@ describe('SubscriptionManager', () => {
               type: 'event-notification',
               subscription: { reference: `Subscription/${subscriptionId}` },
               notificationEvent: [{ eventNumber: '0', timestamp, focus: createReference(resource) }],
-            } as SubscriptionStatus,
+            },
           },
           {
             resource,
@@ -303,6 +296,25 @@ describe('SubscriptionManager', () => {
         wsServer.send(sentBundle);
       });
       expect(receivedBundle).toStrictEqual(sentBundle);
+    });
+
+    test('should not bind or create resources while unauthenticated', async () => {
+      await wsServer.connected;
+
+      const getProfileSpy = vi.spyOn(medplum, 'getProfile').mockReturnValue(undefined);
+      const createSpy = vi.spyOn(medplum, 'createResource');
+
+      const emitter = defaultManager.addCriteria('Communication');
+      expect(emitter).toBeInstanceOf(SubscriptionEmitter);
+
+      // Give any async rebind a chance to run — it should be skipped while unauthenticated
+      await sleep(50);
+
+      // No Subscription resource is created and no $get-ws-binding-token call is made
+      expect(createSpy).not.toHaveBeenCalled();
+
+      getProfileSpy.mockRestore();
+      createSpy.mockRestore();
     });
 
     test('should emit `error` when token or url missing from `Subscription/$get-ws-binding-token` operation', async () => {
@@ -325,7 +337,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       const criteriaEmitter1 = manager1.addCriteria('Communication');
@@ -368,7 +380,7 @@ describe('SubscriptionManager', () => {
               valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
             },
           ],
-        } as Parameters;
+        };
       });
 
       const manager2 = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
@@ -431,7 +443,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       medplum.router.addRoute('GET', `fhir/R4/Subscription/${SECOND_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
@@ -451,7 +463,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       defaultManager.addCriteria('Communication');
@@ -511,7 +523,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
@@ -621,7 +633,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       wsServer = new WS('wss://example.com/ws/subscriptions-r4');
@@ -819,7 +831,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       medplum.router.addRoute('GET', `fhir/R4/Subscription/${SECOND_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
@@ -839,7 +851,7 @@ describe('SubscriptionManager', () => {
               valueUrl: 'wss://example.com/ws/subscriptions-r4',
             },
           ],
-        } as Parameters;
+        };
       });
 
       defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
@@ -874,7 +886,7 @@ describe('SubscriptionManager', () => {
               type: 'event-notification',
               subscription: { reference: `Subscription/${MOCK_SUBSCRIPTION_ID}` },
               notificationEvent: [{ eventNumber: '0', timestamp, focus: createReference(resource) }],
-            } as SubscriptionStatus,
+            },
           },
           {
             resource,
@@ -904,7 +916,7 @@ describe('SubscriptionManager', () => {
               status: 'active',
               type: 'heartbeat',
               subscription: { reference: `Subscription/${MOCK_SUBSCRIPTION_ID}` },
-            } as SubscriptionStatus,
+            },
           },
         ],
       } as Bundle;
@@ -1350,6 +1362,83 @@ describe('SubscriptionManager', () => {
       expect(receivedEvent7.type).toStrictEqual('message');
     });
 
+    test('should recreate the Subscription rather than reuse a dropped subscriptionId after reconnect', async () => {
+      // Regression: the server drops the Subscription bound to a connection when it
+      // closes, so on reconnect refreshAllSubscriptions clears subscriptionId and
+      // rebindCriteriaEntry creates a fresh Subscription on the new connection. Reusing
+      // the old id would fail $get-ws-binding-token ("Not found") on every reconnect, and
+      // the criteria would stop delivering until a full page reload.
+      const createResourceSpy = vi.spyOn(medplum, 'createResource');
+
+      await wsServer.connected;
+
+      const firstConnect = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        const handler = (event: SubscriptionEventMap['connect']): void => {
+          defaultManager.getMasterEmitter().removeEventListener('connect', handler);
+          resolve(event);
+        };
+        defaultManager.getMasterEmitter().addEventListener('connect', handler);
+      });
+
+      const emitter = defaultManager.addCriteria('Communication');
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+
+      expect((await firstConnect).payload.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
+      expect(createResourceSpy).toHaveBeenCalledTimes(1);
+
+      // Drop the connection — the server discards the Subscription bound to it.
+      const closed = new Promise<SubscriptionEventMap['close']>((resolve) => {
+        const handler = (event: SubscriptionEventMap['close']): void => {
+          emitter.removeEventListener('close', handler);
+          resolve(event);
+        };
+        emitter.addEventListener('close', handler);
+      });
+      wsServer.close();
+      await closed;
+      await wsServer.closed;
+      WS.clean();
+
+      // The recreated Subscription is assigned a new id on reconnect.
+      medplum.addNextResourceId(SECOND_SUBSCRIPTION_ID);
+
+      const reopened = new Promise<SubscriptionEventMap['open']>((resolve) => {
+        const handler = (event: SubscriptionEventMap['open']): void => {
+          emitter.removeEventListener('open', handler);
+          resolve(event);
+        };
+        emitter.addEventListener('open', handler);
+      });
+
+      const secondConnect = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        const handler = (event: SubscriptionEventMap['connect']): void => {
+          defaultManager.getMasterEmitter().removeEventListener('connect', handler);
+          resolve(event);
+        };
+        defaultManager.getMasterEmitter().addEventListener('connect', handler);
+      });
+
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+      await reopened;
+      await wsServer.connected;
+
+      // Wait for the recreated subscription to bind on the new connection. An unbind for
+      // the old token may precede it depending on close timing, so assert on the bind
+      // rather than the exact message sequence.
+      await vi.waitFor(
+        () => {
+          expect(wsServer.messages).toContainEqual({ type: 'bind-with-token', payload: { token: 'token-123' } });
+        },
+        { timeout: 5000 }
+      );
+      sendHandshakeBundle(wsServer, SECOND_SUBSCRIPTION_ID);
+
+      // A fresh Subscription was created and bound, not the dropped id reused.
+      expect((await secondConnect).payload.subscriptionId).toStrictEqual(SECOND_SUBSCRIPTION_ID);
+      expect(createResourceSpy).toHaveBeenCalledTimes(2);
+    }, 30000);
+
     test('should rebind subscription when token is about to expire', async () => {
       console.warn = vi.fn();
 
@@ -1374,7 +1463,7 @@ describe('SubscriptionManager', () => {
             },
             { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
           ],
-        } as Parameters;
+        };
       });
 
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
@@ -1425,7 +1514,7 @@ describe('SubscriptionManager', () => {
             },
             { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
           ],
-        } as Parameters;
+        };
       });
 
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
@@ -1546,7 +1635,7 @@ describe('SubscriptionManager', () => {
             },
             { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
           ],
-        } as Parameters;
+        };
       });
 
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
@@ -1573,7 +1662,7 @@ describe('SubscriptionManager', () => {
       const getSpy = vi.spyOn(medplum, 'get').mockImplementationOnce(
         () =>
           new Promise((resolve) => {
-            resolveRefreshGet = resolve as (value: Parameters) => void;
+            resolveRefreshGet = resolve;
           }) as any
       );
 
@@ -1595,7 +1684,7 @@ describe('SubscriptionManager', () => {
           { name: 'expiration', valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString() },
           { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
         ],
-      } as Parameters);
+      });
       await sleep(0);
 
       // Entry fully removed, nothing left in the lookup
@@ -1761,7 +1850,7 @@ describe('resourceMatchesSubscriptionCriteria', () => {
   );
 
   describe('Account matching logic', () => {
-    const ORGANIZATION_ONE = { reference: 'Organization/123' };
+    const ORGANIZATION_ONE = { reference: 'Organization/125' };
     const ORGANIZATION_TWO = { reference: 'Organization/456' };
     const ORGANIZATION_THREE = { reference: 'Organization/789' };
     const ORGANIZATION_FOUR = { reference: 'Organization/999' };

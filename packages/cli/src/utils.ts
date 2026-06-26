@@ -115,8 +115,8 @@ export async function createBot(
     dist: distFile,
   };
 
-  await saveBot(medplum, botConfig as MedplumBotConfig, bot);
-  await deployBot(medplum, botConfig as MedplumBotConfig, bot);
+  await saveBot(medplum, botConfig, bot);
+  await deployBot(medplum, botConfig, bot);
   console.log(`Success! Bot created: ${bot.id}`);
 
   if (writeConfig) {

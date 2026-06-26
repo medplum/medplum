@@ -9,7 +9,7 @@ import { PropertyType } from '../types';
 import type { TypedValueWithPath } from '../typeschema/crawler';
 import {
   AndAtom,
-  ArithemticOperatorAtom,
+  ArithmeticOperatorAtom,
   AsAtom,
   ConcatAtom,
   ContainsAtom,
@@ -154,28 +154,28 @@ export function initFhirPathParserBuilder(): ParserBuilder {
     .prefix(
       '-',
       OperatorPrecedence.UnarySubtract,
-      (_, right) => new ArithemticOperatorAtom('-', right, right, (_, y) => -y)
+      (_, right) => new ArithmeticOperatorAtom('-', right, right, (_, y) => -y)
     )
     .infixLeft('.', OperatorPrecedence.Dot, (left, _, right) => new DotAtom(left, right))
     .infixLeft(
       '/',
       OperatorPrecedence.Divide,
-      (left, _, right) => new ArithemticOperatorAtom('/', left, right, (x, y) => x / y)
+      (left, _, right) => new ArithmeticOperatorAtom('/', left, right, (x, y) => x / y)
     )
     .infixLeft(
       '*',
       OperatorPrecedence.Multiply,
-      (left, _, right) => new ArithemticOperatorAtom('*', left, right, (x, y) => x * y)
+      (left, _, right) => new ArithmeticOperatorAtom('*', left, right, (x, y) => x * y)
     )
     .infixLeft(
       '+',
       OperatorPrecedence.Add,
-      (left, _, right) => new ArithemticOperatorAtom('+', left, right, (x, y) => x + y)
+      (left, _, right) => new ArithmeticOperatorAtom('+', left, right, (x, y) => x + y)
     )
     .infixLeft(
       '-',
       OperatorPrecedence.Subtract,
-      (left, _, right) => new ArithemticOperatorAtom('-', left, right, (x, y) => x - y)
+      (left, _, right) => new ArithmeticOperatorAtom('-', left, right, (x, y) => x - y)
     )
     .infixLeft('|', OperatorPrecedence.Union, (left, _, right) => new UnionAtom(left, right))
     .infixLeft('=', OperatorPrecedence.Equals, (left, _, right) => new EqualsAtom(left, right))
@@ -185,22 +185,22 @@ export function initFhirPathParserBuilder(): ParserBuilder {
     .infixLeft(
       '<',
       OperatorPrecedence.LessThan,
-      (left, _, right) => new ArithemticOperatorAtom('<', left, right, (x, y) => x < y)
+      (left, _, right) => new ArithmeticOperatorAtom('<', left, right, (x, y) => x < y)
     )
     .infixLeft(
       '<=',
       OperatorPrecedence.LessThanOrEquals,
-      (left, _, right) => new ArithemticOperatorAtom('<=', left, right, (x, y) => x <= y)
+      (left, _, right) => new ArithmeticOperatorAtom('<=', left, right, (x, y) => x <= y)
     )
     .infixLeft(
       '>',
       OperatorPrecedence.GreaterThan,
-      (left, _, right) => new ArithemticOperatorAtom('>', left, right, (x, y) => x > y)
+      (left, _, right) => new ArithmeticOperatorAtom('>', left, right, (x, y) => x > y)
     )
     .infixLeft(
       '>=',
       OperatorPrecedence.GreaterThanOrEquals,
-      (left, _, right) => new ArithemticOperatorAtom('>=', left, right, (x, y) => x >= y)
+      (left, _, right) => new ArithmeticOperatorAtom('>=', left, right, (x, y) => x >= y)
     )
     .infixLeft('&', OperatorPrecedence.Ampersand, (left, _, right) => new ConcatAtom(left, right))
     .infixLeft('and', OperatorPrecedence.And, (left, _, right) => new AndAtom(left, right))
@@ -209,14 +209,14 @@ export function initFhirPathParserBuilder(): ParserBuilder {
     .infixLeft(
       'div',
       OperatorPrecedence.Divide,
-      (left, _, right) => new ArithemticOperatorAtom('div', left, right, (x, y) => Math.trunc(x / y))
+      (left, _, right) => new ArithmeticOperatorAtom('div', left, right, (x, y) => Math.trunc(x / y))
     )
     .infixLeft('in', OperatorPrecedence.In, (left, _, right) => new InAtom(left, right))
     .infixLeft('is', OperatorPrecedence.Is, (left, _, right) => new IsAtom(left, right))
     .infixLeft(
       'mod',
       OperatorPrecedence.Modulo,
-      (left, _, right) => new ArithemticOperatorAtom('mod', left, right, (x, y) => x % y)
+      (left, _, right) => new ArithmeticOperatorAtom('mod', left, right, (x, y) => x % y)
     )
     .infixLeft('or', OperatorPrecedence.Or, (left, _, right) => new OrAtom(left, right))
     .infixLeft('xor', OperatorPrecedence.Xor, (left, _, right) => new XorAtom(left, right))

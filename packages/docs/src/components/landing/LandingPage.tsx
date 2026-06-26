@@ -221,7 +221,7 @@ export function LandingPage(): JSX.Element {
               <TestimonialHeader
                 name="Stuart Parmenter"
                 title="Former CTO, One Medical"
-                imgSrc="/img/avatars/stuart.png"
+                imgSrc="/img/avatars/stuart.webp"
               />
               <p>
                 I've built healthcare at scale—the hard way. Skip the hidden complexity and start on Medplum's

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { buildElementsContext } from '@medplum/core';
-import type { Range } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -19,15 +18,13 @@ export const Basic = (): JSX.Element => (
     <RangeInput
       path=""
       name="range"
-      defaultValue={
-        {
-          low: {
-            comparator: '>',
-            value: 10,
-            unit: 'mg',
-          },
-        } as Range
-      }
+      defaultValue={{
+        low: {
+          comparator: '>',
+          value: 10,
+          unit: 'mg',
+        },
+      }}
     />
   </Document>
 );
@@ -38,15 +35,13 @@ export const Disabled = (): JSX.Element => (
       disabled
       path=""
       name="range"
-      defaultValue={
-        {
-          low: {
-            comparator: '>',
-            value: 10,
-            unit: 'mg',
-          },
-        } as Range
-      }
+      defaultValue={{
+        low: {
+          comparator: '>',
+          value: 10,
+          unit: 'mg',
+        },
+      }}
     />
   </Document>
 );
@@ -72,15 +67,13 @@ export const PartiallyDisabled = (): JSX.Element => {
       <RangeInput
         path="SpecimenDefinition.handling.temperatureRange"
         name="range"
-        defaultValue={
-          {
-            low: {
-              comparator: '>',
-              value: 10,
-              unit: 'mg',
-            },
-          } as Range
-        }
+        defaultValue={{
+          low: {
+            comparator: '>',
+            value: 10,
+            unit: 'mg',
+          },
+        }}
       />
     </Document>
   );

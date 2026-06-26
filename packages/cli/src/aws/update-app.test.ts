@@ -26,39 +26,49 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { AwsStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import fastGlob from 'fast-glob';
-import fetch from 'node-fetch';
 import fs from 'node:fs';
-import { Readable, Writable } from 'node:stream';
+import { Writable } from 'node:stream';
 import * as tar from 'tar';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
 
-jest.mock('fast-glob', () => ({
-  sync: jest.fn(() => []),
+vi.mock('fast-glob', () => {
+  const mock = { sync: vi.fn(() => []) };
+  return { default: mock, ...mock };
+});
+
+vi.mock('node:fs', () => {
+  const mock = {
+    createReadStream: vi.fn(),
+    existsSync: vi.fn(),
+    mkdtempSync: vi.fn(() => '/tmp/'),
+    readdirSync: vi.fn(() => []),
+    readFileSync: vi.fn(),
+    rmSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    constants: {
+      O_CREAT: 0,
+    },
+    promises: {
+      readFile: vi.fn(async () => '{}'),
+    },
+  };
+  return { default: mock, ...mock };
+});
+
+vi.mock('tar', () => ({
+  extract: vi.fn(),
 }));
 
-jest.mock('node:fs', () => ({
-  createReadStream: jest.fn(),
-  existsSync: jest.fn(),
-  mkdtempSync: jest.fn(() => '/tmp/'),
-  readdirSync: jest.fn(() => []),
-  readFileSync: jest.fn(),
-  rmSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  constants: {
-    O_CREAT: 0,
-  },
-  promises: {
-    readFile: jest.fn(async () => '{}'),
-  },
-}));
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 
-jest.mock('node-fetch', () => jest.fn());
-
-jest.mock('tar', () => ({
-  extract: jest.fn(),
-}));
-
-const { Response: NodeFetchResponse } = jest.requireActual('node-fetch');
+function emptyResponse(): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      controller.close();
+    },
+  });
+}
 
 let cfMock: AwsStub<
   CloudFormationServiceInputTypes,
@@ -69,17 +79,19 @@ let s3Mock: AwsStub<S3ServiceInputTypes, S3ServiceOutputTypes, S3ClientResolvedC
 let cloudFrontMock: AwsStub<CloudFrontServiceInputTypes, CloudFrontServiceOutputTypes, CloudFrontClientResolvedConfig>;
 
 describe('update-app command', () => {
-  let processError: jest.SpyInstance;
+  let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
-    }) as unknown as typeof process.exit;
-    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+    });
+    processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    (fs.existsSync as Mock).mockReset();
+    (fs.readFileSync as Mock).mockReset();
     cfMock = mockClient(CloudFormationClient);
 
     cfMock.on(ListStacksCommand).resolves({
@@ -164,15 +176,15 @@ describe('update-app command', () => {
   });
 
   afterEach(() => {
-    (fetch as jest.MockedFunction<typeof fetch>).mockReset();
+    fetchMock.mockReset();
   });
 
   test('Update app command', async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     // Mock the config file
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce(
+    (fs.existsSync as Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as Mock).mockReturnValueOnce(
       JSON.stringify({
         baseUrl: 'https://api.staging.medplum.com/',
         clientId: '',
@@ -183,25 +195,14 @@ describe('update-app command', () => {
     );
 
     // Mock the 2 fetch requests
-    (fetch as jest.MockedFunction<typeof fetch>)
+    fetchMock
       // First request is for the package metadata
-      .mockResolvedValueOnce(
-        new NodeFetchResponse('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 })
-      )
+      .mockResolvedValueOnce(new Response('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 }))
       // Second request is for the tarball
-      .mockResolvedValueOnce(
-        new NodeFetchResponse(
-          new Readable({
-            read() {
-              this.push(null); // Signal the end of the stream
-            },
-          }),
-          { status: 200 }
-        )
-      );
+      .mockResolvedValueOnce(new Response(emptyResponse(), { status: 200 }));
 
     // Mock the tar extract
-    (tar.extract as unknown as jest.Mock).mockReturnValueOnce(
+    (tar.extract as unknown as Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
@@ -210,7 +211,7 @@ describe('update-app command', () => {
     );
 
     // Mock the readdirSync to list files to replace variables
-    (fs.readdirSync as jest.Mock).mockImplementation((folderName) => {
+    (fs.readdirSync as Mock).mockImplementation((folderName: string) => {
       if (folderName.endsWith('dist')) {
         return [{ name: 'js', isDirectory: () => true, isFile: () => false }];
       }
@@ -221,26 +222,26 @@ describe('update-app command', () => {
     });
 
     // Mock the readFileSync to read the file to replace variables
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce('console.log("Hello, world!");');
+    (fs.readFileSync as Mock).mockReturnValueOnce('console.log("Hello, world!");');
 
     // Mock the glob search for files to upload
-    (fastGlob.sync as jest.Mock).mockReturnValueOnce(['index.html']);
+    (fastGlob.sync as Mock).mockReturnValueOnce(['index.html']);
 
     await main(['node', 'index.js', 'aws', 'update-app', 'dev']);
 
-    expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
-    expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
+    expect(fetchMock).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
     expect(console.log).toHaveBeenCalledWith('Done');
     expect(s3Mock.calls()).toHaveLength(1);
     expect(cloudFrontMock.calls()).toHaveLength(1);
   });
 
   test('Update app dryrun', async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     // Mock the config file
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce(
+    (fs.existsSync as Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as Mock).mockReturnValueOnce(
       JSON.stringify({
         baseUrl: 'https://api.staging.medplum.com/',
         clientId: '',
@@ -251,25 +252,14 @@ describe('update-app command', () => {
     );
 
     // Mock the 2 fetch requests
-    (fetch as jest.MockedFunction<typeof fetch>)
+    fetchMock
       // First request is for the package metadata
-      .mockResolvedValueOnce(
-        new NodeFetchResponse('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 })
-      )
+      .mockResolvedValueOnce(new Response('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 }))
       // Second request is for the tarball
-      .mockResolvedValueOnce(
-        new NodeFetchResponse(
-          new Readable({
-            read() {
-              this.push(null); // Signal the end of the stream
-            },
-          }),
-          { status: 200 }
-        )
-      );
+      .mockResolvedValueOnce(new Response(emptyResponse(), { status: 200 }));
 
     // Mock the tar extract
-    (tar.extract as unknown as jest.Mock).mockReturnValueOnce(
+    (tar.extract as unknown as Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
@@ -278,7 +268,7 @@ describe('update-app command', () => {
     );
 
     // Mock the readdirSync to list files to replace variables
-    (fs.readdirSync as jest.Mock).mockImplementation((folderName) => {
+    (fs.readdirSync as Mock).mockImplementation((folderName: string) => {
       if (folderName.endsWith('dist')) {
         return [{ name: 'js', isDirectory: () => true, isFile: () => false }];
       }
@@ -289,51 +279,40 @@ describe('update-app command', () => {
     });
 
     // Mock the readFileSync to read the file to replace variables
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce('console.log("Hello, world!");');
+    (fs.readFileSync as Mock).mockReturnValueOnce('console.log("Hello, world!");');
 
     // Mock the glob search for files to upload
-    (fastGlob.sync as jest.Mock).mockReturnValueOnce(['index.html']);
+    (fastGlob.sync as Mock).mockReturnValueOnce(['index.html']);
 
     await main(['node', 'index.js', 'aws', 'update-app', 'dev', '--dryrun']);
 
-    expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
-    expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
+    expect(fetchMock).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
     expect(console.log).toHaveBeenCalledWith('Done');
     expect(s3Mock.calls()).toHaveLength(0);
     expect(cloudFrontMock.calls()).toHaveLength(0);
   });
 
   test('Update app command without optional configs', async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     // Mock the config file
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce(
+    (fs.existsSync as Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as Mock).mockReturnValueOnce(
       JSON.stringify({
         baseUrl: 'https://api.staging.medplum.com/',
       })
     );
 
     // Mock the 2 fetch requests
-    (fetch as jest.MockedFunction<typeof fetch>)
+    fetchMock
       // First request is for the package metadata
-      .mockResolvedValueOnce(
-        new NodeFetchResponse('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 })
-      )
+      .mockResolvedValueOnce(new Response('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 }))
       // Second request is for the tarball
-      .mockResolvedValueOnce(
-        new NodeFetchResponse(
-          new Readable({
-            read() {
-              this.push(null); // Signal the end of the stream
-            },
-          }),
-          { status: 200 }
-        )
-      );
+      .mockResolvedValueOnce(new Response(emptyResponse(), { status: 200 }));
 
     // Mock the tar extract
-    (tar.extract as unknown as jest.Mock).mockReturnValueOnce(
+    (tar.extract as unknown as Mock).mockReturnValueOnce(
       new Writable({
         write(_chunk, _encoding, callback) {
           callback();
@@ -342,7 +321,7 @@ describe('update-app command', () => {
     );
 
     // Mock the readdirSync to list files to replace variables
-    (fs.readdirSync as jest.Mock).mockImplementation((folderName) => {
+    (fs.readdirSync as Mock).mockImplementation((folderName: string) => {
       if (folderName.endsWith('dist')) {
         return [{ name: 'js', isDirectory: () => true, isFile: () => false }];
       }
@@ -350,10 +329,10 @@ describe('update-app command', () => {
     });
 
     // Mock the readFileSync to read the file to replace variables
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce('console.log("Hello, world!");');
+    (fs.readFileSync as Mock).mockReturnValueOnce('console.log("Hello, world!");');
 
     // Mock the glob search for files to upload
-    (fastGlob.sync as jest.Mock).mockReturnValueOnce(['index.html']);
+    (fastGlob.sync as Mock).mockReturnValueOnce(['index.html']);
 
     await main(['node', 'index.js', 'aws', 'update-app', 'dev']);
 
@@ -361,9 +340,9 @@ describe('update-app command', () => {
   });
 
   test('Update app config not found', async () => {
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
+    (fs.existsSync as Mock).mockReturnValueOnce(false);
 
-    console.log = jest.fn();
+    console.log = vi.fn();
     await expect(main(['node', 'index.js', 'aws', 'update-app', 'not-found'])).rejects.toThrow(
       'Process exited with exit code 1'
     );
@@ -372,9 +351,9 @@ describe('update-app command', () => {
   });
 
   test('Update app config custom filename not found', async () => {
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
+    (fs.existsSync as Mock).mockReturnValueOnce(false);
 
-    console.log = jest.fn();
+    console.log = vi.fn();
     await expect(main(['node', 'index.js', 'aws', 'update-app', 'not-found', '--file', 'foo.json'])).rejects.toThrow(
       'Process exited with exit code 1'
     );
@@ -384,10 +363,10 @@ describe('update-app command', () => {
 
   test('Update app stack not found', async () => {
     // Mock the config file
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
+    (fs.existsSync as Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as Mock).mockReturnValueOnce('{}');
 
-    console.log = jest.fn();
+    console.log = vi.fn();
     await expect(main(['node', 'index.js', 'aws', 'update-app', 'not-found'])).rejects.toThrow(
       'Process exited with exit code 1'
     );
@@ -397,10 +376,10 @@ describe('update-app command', () => {
 
   test('Update app stack incomplete', async () => {
     // Mock the config file
-    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
-    (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
+    (fs.existsSync as Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as Mock).mockReturnValueOnce('{}');
 
-    console.log = jest.fn();
+    console.log = vi.fn();
     await expect(main(['node', 'index.js', 'aws', 'update-app', 'incomplete'])).rejects.toThrow(
       'Process exited with exit code 1'
     );

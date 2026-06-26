@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import type { BundleEntry, Condition, Observation, Patient } from '@medplum/fhirtypes';
+import type { BundleEntry } from '@medplum/fhirtypes';
 
 const LOINC = 'http://loinc.org';
 const UCUM = 'http://unitsofmeasure.org';
@@ -65,7 +65,7 @@ function buildPatientEntry(id: string, p: (typeof DEMO_PATIENTS)[number]): Bundl
       name: [{ given: [p.given], family: p.family }],
       birthDate: p.birthDate,
       gender: p.gender,
-    } as Patient,
+    },
   };
 }
 
@@ -92,7 +92,7 @@ function buildBpEntry(patientUrn: string, daysAgo: number, systolic: number, dia
           valueQuantity: { value: diastolic, unit: 'mmHg', system: UCUM, code: 'mm[Hg]' },
         },
       ],
-    } as Observation,
+    },
   };
 }
 
@@ -108,7 +108,7 @@ function buildWeightEntry(patientUrn: string, weightKg: number): BundleEntry {
       subject: { reference: patientUrn },
       effectiveDateTime: isoDate(0),
       valueQuantity: { value: weightKg, unit: 'kg', system: UCUM, code: 'kg' },
-    } as Observation,
+    },
   };
 }
 
@@ -124,7 +124,7 @@ function buildBmiEntry(patientUrn: string, bmi: number): BundleEntry {
       subject: { reference: patientUrn },
       effectiveDateTime: isoDate(0),
       valueQuantity: { value: bmi, unit: 'kg/m2', system: UCUM, code: 'kg/m2' },
-    } as Observation,
+    },
   };
 }
 
@@ -145,7 +145,7 @@ function buildConditionEntry(patientUrn: string, factor: { code: string; display
       ],
       code: { coding: [{ system: SNOMED, code: factor.code, display: factor.display }], text: factor.display },
       subject: { reference: patientUrn },
-    } as Condition,
+    },
   };
 }
 

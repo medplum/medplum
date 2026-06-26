@@ -13,11 +13,11 @@ import type {
   ValueSetComposeIncludeFilter,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
-import type { Pool, PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 import type { Repository } from '../repo';
+import type { PgQueryable } from '../sql';
 import {
   Column,
   Condition,
@@ -296,10 +296,7 @@ export function addExpansionItems(
  * @param db - Database connection
  * @param codeSystem - CodeSystem resource to hydrate
  */
-export async function hydrateCodeSystemProperties(
-  db: Pool | PoolClient,
-  codeSystem: WithId<CodeSystem>
-): Promise<void> {
+export async function hydrateCodeSystemProperties(db: PgQueryable, codeSystem: WithId<CodeSystem>): Promise<void> {
   const propertyIds = await new SelectQuery('CodeSystem_Property')
     .column('id')
     .column('code')
@@ -367,6 +364,7 @@ function applyValueSetFilters(
         break;
       }
 
+      case 'exists':
       case '=':
       case 'in': {
         const property = codeSystem.property?.find((p) => p.code === condition.property);

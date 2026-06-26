@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "module": "esnext",
-    "types": ["jest", "vite/client", "node"],
+    "types": ["node", "vitest/globals", "vite/client"],
     "lib": ["esnext", "dom"],
     "rootDir": "src",
     "outDir": "dist/types",

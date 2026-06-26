@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { arrayify } from '../array';
 import type { GetTypedPropertyValueOptions } from '../fhirpath/utils';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import type { TypedValue } from '../types';
 import { isResource } from '../types';
-import { arrayify } from '../utils';
 import type { InternalTypeSchema } from './types';
 import { getDataType } from './types';
 import { isPrimitiveType } from './validation';
@@ -306,7 +306,12 @@ export function pathToJSONPointer(path: string): string {
   // eslint-disable-next-line @typescript-eslint/prefer-string-starts-ends-with
   if (path[0] === path[0].toUpperCase()) {
     // Path starts with resource type, which should be removed from JSON Pointer
-    path = path.slice(path.indexOf('.') + 1);
+    const delimiter = path.indexOf('.');
+    if (delimiter === -1) {
+      // Root path
+      return '';
+    }
+    path = path.slice(delimiter + 1);
   }
   return `.${path}` // Prepend a delimiter to match RFC6902
     .replaceAll('.', '/') // convert dot delimiters to slash delimiters

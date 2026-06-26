@@ -143,7 +143,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       } else {
         const parentRef = communication.partOf[0].reference;
         if (parentRef) {
-          const parent = await medplum.readReference({ reference: parentRef } as any);
+          const parent = await medplum.readReference({ reference: parentRef });
           setSelectedThread(parent as Communication);
         }
       }

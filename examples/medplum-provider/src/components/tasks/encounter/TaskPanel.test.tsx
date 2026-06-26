@@ -97,6 +97,9 @@ describe('TaskPanel', () => {
       resourceType: 'ServiceRequest',
       id: '1234',
       status: 'active',
+      category: [
+        { coding: [{ system: 'http://snomed.info/sct', code: '108252007', display: 'Laboratory procedure' }] },
+      ],
       code: { text: 'Test Service Request' },
       intent: 'order',
       subject: { reference: 'Patient/123' },

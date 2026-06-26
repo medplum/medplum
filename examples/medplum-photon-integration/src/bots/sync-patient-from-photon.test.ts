@@ -123,7 +123,7 @@ describe('Sync patients from Photon', async () => {
         resourceType: 'Patient',
       });
 
-      const photonPatient = { externalId: patient.id as string } as PhotonPatient;
+      const photonPatient = { externalId: patient.id } as PhotonPatient;
       const result = await getExistingPatient(photonPatient, medplum);
       expect(result).toStrictEqual(patient);
     });

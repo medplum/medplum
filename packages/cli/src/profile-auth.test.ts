@@ -3,30 +3,37 @@
 import type { FetchLike } from '@medplum/core';
 import { getStatus, isOperationOutcome, MedplumClient } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
+import type * as NodeFs from 'node:fs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { sep } from 'node:path';
+import type { Mock } from 'vitest';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-jest.mock('node:os');
-jest.mock('fast-glob', () => ({
-  sync: jest.fn(() => []),
-}));
-jest.mock('./util/client');
-jest.mock('node:fs', () => ({
-  ...jest.requireActual('node:fs'),
-  writeFile: jest.fn((path, data, callback) => {
-    callback();
-  }),
-  readFileSync: jest.fn((filePath) => {
-    if (filePath.endsWith('testPrivateKey.pem')) {
-      return testPrivateKey;
-    }
-    return jest.requireActual('node:fs').readFileSync(filePath);
-  }),
-}));
+vi.mock('node:os');
+vi.mock('fast-glob', () => {
+  const mock = { sync: vi.fn(() => []) };
+  return { default: mock, ...mock };
+});
+vi.mock('./util/client');
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof NodeFs>('node:fs');
+  const mock = {
+    ...actual,
+    writeFile: vi.fn((path, data, callback) => {
+      callback();
+    }),
+    readFileSync: vi.fn((filePath: string) => {
+      if (filePath.endsWith('testPrivateKey.pem')) {
+        return testPrivateKey;
+      }
+      return actual.readFileSync(filePath);
+    }),
+  };
+  return { default: mock, ...mock };
+});
 
 const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
 
@@ -34,12 +41,12 @@ const originalWindow = globalThis.window;
 
 describe('Profiles Auth', () => {
   beforeEach(async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
   });
 
   beforeAll(async () => {
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
-    (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
+    (os.homedir as unknown as Mock).mockReturnValue(testHomeDir);
   });
 
   afterAll(async () => {
@@ -63,7 +70,7 @@ describe('Profiles Auth', () => {
     const profile = new FileSystemStorage(profileName);
 
     const medplum = new MedplumClient({ fetch, storage: profile });
-    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+    (createMedplumClient as unknown as Mock).mockImplementation(async () => medplum);
 
     await main([
       'node',
@@ -127,7 +134,7 @@ describe('Profiles Auth', () => {
 
     const profile = new FileSystemStorage(profileName);
     const medplum = new MedplumClient({ fetch, storage: profile });
-    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+    (createMedplumClient as unknown as Mock).mockImplementation(async () => medplum);
 
     await main([
       'node',
@@ -176,9 +183,9 @@ function mockFetch(
   status: number,
   body: OperationOutcome | Record<string, unknown> | ((url: string, options?: any) => any),
   contentType = 'application/fhir+json'
-): FetchLike & jest.Mock {
+): FetchLike & Mock {
   const bodyFn = typeof body === 'function' ? body : () => body;
-  return jest.fn((url: string, options?: any) => {
+  return vi.fn((url: string, options?: any) => {
     const response = bodyFn(url, options);
     const responseStatus = isOperationOutcome(response) ? getStatus(response) : status;
     return Promise.resolve({

@@ -47,7 +47,7 @@ function mockFetch(url: string, options: any): Promise<any> {
           {
             id: '100',
             profile: {
-              reference: 'Practitioner/123',
+              reference: 'Practitioner/124',
               display: 'Alice Smith',
             },
             project: {
@@ -142,7 +142,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       login: '1',
       code: '1',
     };
-  } else if (options.method === 'GET' && url.endsWith('Practitioner/123')) {
+  } else if (options.method === 'GET' && url.endsWith('Practitioner/124')) {
     status = 200;
     result = {
       resourceType: 'Practitioner',
@@ -159,7 +159,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       token_type: 'Bearer',
       scope: 'openid',
       project: { reference: 'Project/123' },
-      profile: { reference: 'Practitioner/123' },
+      profile: { reference: 'Practitioner/124' },
     };
   } else if (options.method === 'GET' && url.endsWith('auth/me')) {
     status = 200;
@@ -204,7 +204,7 @@ async function setup(args?: SignInFormProps): Promise<void> {
   await medplum.signOut();
 
   const props = {
-    onSuccess: jest.fn(),
+    onSuccess: vi.fn(),
     ...args,
   };
 
@@ -411,7 +411,7 @@ describe('SignInForm', () => {
   });
 
   test('Choose scope', async () => {
-    const successFn = jest.fn();
+    const successFn = vi.fn();
 
     await setup({
       chooseScopes: true,
@@ -547,8 +547,8 @@ describe('SignInForm', () => {
 
   test('Forgot password', async () => {
     const props = {
-      onForgotPassword: jest.fn(),
-      onSuccess: jest.fn(),
+      onForgotPassword: vi.fn(),
+      onSuccess: vi.fn(),
     };
 
     await setup(props);
@@ -572,8 +572,8 @@ describe('SignInForm', () => {
 
   test('Register', async () => {
     const props = {
-      onRegister: jest.fn(),
-      onSuccess: jest.fn(),
+      onRegister: vi.fn(),
+      onSuccess: vi.fn(),
     };
 
     await setup(props);
@@ -586,7 +586,7 @@ describe('SignInForm', () => {
   });
 
   test('Disable Email', async () => {
-    const onSuccess = jest.fn();
+    const onSuccess = vi.fn();
 
     await act(async () => {
       await setup({
@@ -605,15 +605,15 @@ describe('SignInForm', () => {
     const google = {
       accounts: {
         id: {
-          initialize: jest.fn(),
-          renderButton: jest.fn(),
+          initialize: vi.fn(),
+          renderButton: vi.fn(),
         },
       },
     };
 
     (window as any).google = google;
 
-    const onSuccess = jest.fn();
+    const onSuccess = vi.fn();
 
     await act(async () => {
       await setup({
@@ -636,16 +636,16 @@ describe('SignInForm', () => {
     const google = {
       accounts: {
         id: {
-          initialize: jest.fn((args: any) => {
+          initialize: vi.fn((args: any) => {
             callback = args.callback;
           }),
-          renderButton: jest.fn((parent: HTMLElement) => {
+          renderButton: vi.fn((parent: HTMLElement) => {
             const button = document.createElement('div');
             button.innerHTML = 'Sign in with Google';
             button.addEventListener('click', () => google.accounts.id.prompt());
             parent.appendChild(button);
           }),
-          prompt: jest.fn(() => {
+          prompt: vi.fn(() => {
             if (callback) {
               callback({
                 clientId,
@@ -659,7 +659,7 @@ describe('SignInForm', () => {
 
     (window as any).google = google;
 
-    const onSuccess = jest.fn();
+    const onSuccess = vi.fn();
 
     await act(async () => {
       await setup({
@@ -688,16 +688,16 @@ describe('SignInForm', () => {
     const google = {
       accounts: {
         id: {
-          initialize: jest.fn((args: any) => {
+          initialize: vi.fn((args: any) => {
             callback = args.callback;
           }),
-          renderButton: jest.fn((parent: HTMLElement) => {
+          renderButton: vi.fn((parent: HTMLElement) => {
             const button = document.createElement('div');
             button.innerHTML = 'Sign in with Google';
             button.addEventListener('click', () => google.accounts.id.prompt());
             parent.appendChild(button);
           }),
-          prompt: jest.fn(() => {
+          prompt: vi.fn(() => {
             if (callback) {
               callback({
                 clientId,
@@ -711,7 +711,7 @@ describe('SignInForm', () => {
 
     (window as any).google = google;
 
-    const onSuccess = jest.fn();
+    const onSuccess = vi.fn();
 
     await act(async () => {
       await setup({
@@ -734,7 +734,7 @@ describe('SignInForm', () => {
   });
 
   test('Redirect to external auth', async () => {
-    const assignSpy = jest.spyOn(locationUtils, 'assign').mockImplementation(() => {});
+    const assignSpy = vi.spyOn(locationUtils, 'assign').mockImplementation(() => {});
 
     await setup({});
 

@@ -71,6 +71,7 @@ import type {
 import type { AuthenticatedRequestContext } from '../../context';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
+import { makeOperationDefinition } from './definitions';
 import type { PatientEverythingParameters } from './patienteverything';
 import { getPatientEverything } from './patienteverything';
 import { parseInputParameters } from './utils/parameters';
@@ -83,30 +84,27 @@ export const OBSERVATION_CATEGORY_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSyst
 // Patient summary operation
 // https://build.fhir.org/ig/HL7/fhir-ips/OperationDefinition-summary.html
 
-export const operation = {
-  resourceType: 'OperationDefinition',
-  id: 'summary',
-  name: 'IpsSummary',
-  title: 'IPS Summary',
-  status: 'active',
-  kind: 'operation',
-  affectsState: false,
-  code: 'summary',
-  resource: ['Patient'],
-  system: false,
-  type: true,
-  instance: true,
-  parameter: [
-    ['author', 'in', 0, 1, 'Reference'],
-    ['authoredOn', 'in', 0, 1, 'instant'],
-    ['start', 'in', 0, 1, 'date'],
-    ['end', 'in', 0, 1, 'date'],
-    ['_since', 'in', 0, 1, 'instant'],
-    ['identifier', 'in', 0, 1, 'string'],
-    ['profile', 'in', 0, 1, 'canonical'],
-    ['return', 'out', 0, 1, 'Bundle'],
-  ].map(([name, use, min, max, type]) => ({ name, use, min, max, type }) as OperationDefinitionParameter),
-} satisfies OperationDefinition;
+export const patientSummaryOperation = makeOperationDefinition(
+  { scope: 'type-and-instance', resource: 'Patient' },
+  {
+    id: 'summary',
+    name: 'IpsSummary',
+    title: 'IPS Summary',
+    affectsState: false,
+    code: 'summary',
+    parameter: [
+      ['author', 'in', 0, 1, 'Reference'],
+      ['authoredOn', 'in', 0, 1, 'instant'],
+      ['start', 'in', 0, 1, 'date'],
+      ['end', 'in', 0, 1, 'date'],
+      ['_since', 'in', 0, 1, 'instant'],
+      ['identifier', 'in', 0, 1, 'string'],
+      ['profile', 'in', 0, 1, 'canonical'],
+      ['return', 'out', 0, 1, 'Bundle'],
+    ].map(([name, use, min, max, type]) => ({ name, use, min, max, type }) as OperationDefinitionParameter),
+  }
+  // cast since this op gets imported elsewhere where its useful to know it definitely has parameters
+) as OperationDefinition & { parameter: OperationDefinitionParameter[] };
 
 const resourceTypes: ResourceType[] = [
   'Account',
@@ -143,7 +141,7 @@ export interface PatientSummaryParameters extends PatientEverythingParameters {
 export async function patientSummaryHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
-  const params = parseInputParameters<PatientSummaryParameters>(operation, req);
+  const params = parseInputParameters<PatientSummaryParameters>(patientSummaryOperation, req);
   const bundle = await getPatientSummary(ctx, { reference: `Patient/${id}` }, params);
   return [allOk, bundle];
 }

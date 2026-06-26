@@ -31,7 +31,7 @@ describe('useQuestionnaireForm', () => {
         },
       ],
     } as const;
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     const { result } = renderHook(() => useQuestionnaireForm({ questionnaire, onChange }), { wrapper });
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(result.current).toMatchObject({
@@ -315,7 +315,7 @@ describe('useQuestionnaireForm', () => {
     });
 
     await act(async () => {
-      formState2.onAddAnswer([], questionnaire.item[0] as QuestionnaireItem);
+      formState2.onAddAnswer([], questionnaire.item[0]);
     });
 
     const updatedState = result.current as QuestionnaireFormLoadedState;

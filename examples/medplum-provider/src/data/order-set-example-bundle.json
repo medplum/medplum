@@ -1,0 +1,292 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "identifier": {
+    "system": "https://medplum.com/demo-export",
+    "value": "orderset/geriatric-t2dm-starter/1.0.1"
+  },
+  "timestamp": "2026-05-22T17:05:00.000Z",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:ad-metformin-500",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://medplum.com/ActivityDefinition/metformin-500-mg-tablet",
+        "version": "1.0.1",
+        "status": "active",
+        "kind": "MedicationRequest",
+        "intent": "order",
+        "priority": "routine",
+        "title": "Metformin 500 mg tablet",
+        "productCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "861007",
+              "display": "metformin hydrochloride 500 MG Oral Tablet"
+            },
+            {
+              "system": "http://hl7.org/fhir/sid/ndc",
+              "code": "60760097360",
+              "display": "metformin 500 mg tablet"
+            }
+          ],
+          "text": "Metformin 500 mg tablet"
+        },
+        "quantity": {
+          "value": 60,
+          "unit": "Tablet"
+        },
+        "dosage": [
+          {
+            "text": "Take 1 tablet by mouth twice daily with meals. Confirm eGFR before starting; avoid if eGFR is below 30 mL/min/1.73 m².",
+            "route": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "26643006",
+                  "display": "Oral route"
+                }
+              ]
+            },
+            "method": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "419652001",
+                  "display": "Take"
+                }
+              ]
+            },
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 1,
+                  "unit": "Tablet",
+                  "code": "C48542"
+                }
+              }
+            ],
+            "timing": {
+              "repeat": {
+                "frequency": 2,
+                "period": 1,
+                "periodUnit": "d"
+              }
+            },
+            "patientInstruction": "Take with meals to reduce GI upset."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:ad-empagliflozin-10",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://medplum.com/ActivityDefinition/empagliflozin-10-mg-tablet",
+        "version": "1.0.0",
+        "status": "active",
+        "kind": "MedicationRequest",
+        "intent": "order",
+        "priority": "routine",
+        "title": "Empagliflozin 10 mg tablet",
+        "productCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1545667",
+              "display": "empagliflozin 10 MG Oral Tablet"
+            },
+            {
+              "system": "http://hl7.org/fhir/sid/ndc",
+              "code": "00597015230",
+              "display": "Jardiance 10 mg tablet"
+            }
+          ],
+          "text": "Empagliflozin 10 mg tablet"
+        },
+        "quantity": {
+          "value": 30,
+          "unit": "Tablet"
+        },
+        "dosage": [
+          {
+            "text": "Take 1 tablet by mouth every morning. Monitor volume status; consider 10 mg in adults 75 years and older when higher dose is not needed.",
+            "route": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "26643006",
+                  "display": "Oral route"
+                }
+              ]
+            },
+            "method": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "419652001",
+                  "display": "Take"
+                }
+              ]
+            },
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 1,
+                  "unit": "Tablet",
+                  "code": "C48542"
+                }
+              }
+            ],
+            "timing": {
+              "repeat": {
+                "frequency": 1,
+                "period": 1,
+                "periodUnit": "d"
+              },
+              "code": {
+                "coding": [
+                  {
+                    "system": "http://snomed.info/sct",
+                    "code": "307472001",
+                    "display": "Every morning"
+                  }
+                ],
+                "text": "Every morning"
+              }
+            },
+            "patientInstruction": "Take in the morning; stay well hydrated."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:ad-sitagliptin-25",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://medplum.com/ActivityDefinition/sitagliptin-25-mg-tablet",
+        "version": "1.0.0",
+        "status": "active",
+        "kind": "MedicationRequest",
+        "intent": "order",
+        "priority": "routine",
+        "title": "Sitagliptin 25 mg tablet",
+        "productCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "597653",
+              "display": "sitagliptin 25 MG Oral Tablet [Januvia]"
+            },
+            {
+              "system": "http://hl7.org/fhir/sid/ndc",
+              "code": "00006011231",
+              "display": "Januvia 25 mg tablet"
+            }
+          ],
+          "text": "Sitagliptin 25 mg tablet"
+        },
+        "quantity": {
+          "value": 30,
+          "unit": "Tablet"
+        },
+        "dosage": [
+          {
+            "text": "Take 1 tablet by mouth once daily. DPP-4 inhibitor; generally well tolerated in older adults when eGFR is 30 mL/min/1.73 m² or greater.",
+            "route": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "26643006",
+                  "display": "Oral route"
+                }
+              ]
+            },
+            "method": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "419652001",
+                  "display": "Take"
+                }
+              ]
+            },
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "value": 1,
+                  "unit": "Tablet",
+                  "code": "C48542"
+                }
+              }
+            ],
+            "timing": {
+              "repeat": {
+                "frequency": 1,
+                "period": 1,
+                "periodUnit": "d"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:pd-geriatric-t2dm-starter",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "url": "https://medplum.com/PlanDefinition/geriatric-t2dm-starter",
+        "version": "1.0.1",
+        "name": "GeriatricT2dmStarter",
+        "title": "Geriatric Type 2 Diabetes Starter Pack v1.0.1",
+        "status": "active",
+        "experimental": true,
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type",
+              "code": "order-set",
+              "display": "Order Set"
+            }
+          ]
+        },
+        "useContext": [
+          {
+            "code": {
+              "system": "http://terminology.hl7.org/CodeSystem/usage-context-type",
+              "code": "user"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://medplum.com/CodeSystem/order-set-scope",
+                  "code": "shared",
+                  "display": "Shared (practice-wide)"
+                }
+              ]
+            }
+          }
+        ],
+        "description": "Sample **shared** order set for type 2 diabetes in older adults.\n\n- Metformin 500 mg BID with meals (renal gate).\n- Empagliflozin 10 mg each morning (lower SGLT2 dose for age ≥75).\n- Sitagliptin 25 mg daily (DPP-4; low hypoglycemia risk).",
+        "action": [
+          {
+            "title": "Metformin 500 mg tablet",
+            "definitionCanonical": "https://medplum.com/ActivityDefinition/metformin-500-mg-tablet|1.0.1",
+            "selectionBehavior": "all"
+          },
+          {
+            "title": "Empagliflozin 10 mg tablet",
+            "definitionCanonical": "https://medplum.com/ActivityDefinition/empagliflozin-10-mg-tablet|1.0.0",
+            "selectionBehavior": "all"
+          },
+          {
+            "title": "Sitagliptin 25 mg tablet",
+            "definitionCanonical": "https://medplum.com/ActivityDefinition/sitagliptin-25-mg-tablet|1.0.0",
+            "selectionBehavior": "all"
+          }
+        ]
+      }
+    }
+  ]
+}

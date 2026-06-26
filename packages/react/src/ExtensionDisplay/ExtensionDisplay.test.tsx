@@ -48,14 +48,14 @@ describe('ExtensionDisplay', () => {
     for (const url of profilesToLoad) {
       const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
       if (!sd) {
-        fail(`could not find structure definition for ${url}`);
+        expect.fail(`could not find structure definition for ${url}`);
       }
       loadDataType(sd);
     }
     const schema = tryGetProfile(profileUrl);
     const slice = schema?.elements['extension'].slicing?.slices.find((slice) => slice.name === 'race');
     if (!slice) {
-      fail('Expected to find race slice');
+      expect.fail('Expected to find race slice');
     }
 
     const value = {

@@ -168,7 +168,7 @@ describe('SearchParameterDetails', () => {
     expect(details.type).toStrictEqual(SearchParameterType.DATETIME);
     expect(details.elementDefinitions).toBeDefined();
     expect(details.parsedExpression.toString()).toStrictEqual(
-      '((Observation.value as dateTime) | (Observation.value as Period))'
+      '(Observation.value.ofType(dateTime) | Observation.value.ofType(Period))'
     );
   });
 
@@ -180,7 +180,7 @@ describe('SearchParameterDetails', () => {
     expect(details.type).toStrictEqual(SearchParameterType.QUANTITY);
     expect(details.elementDefinitions).toBeDefined();
     expect(details.parsedExpression.toString()).toStrictEqual(
-      '((Observation.value as Quantity) | (Observation.value as SampledData))'
+      '(Observation.value.ofType(Quantity) | Observation.value.ofType(SampledData))'
     );
   });
 

@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Identifier } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -14,12 +13,10 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <IdentifierDisplay
-      value={
-        {
-          system: 'http://hl7.org/fhir/sid/us-ssn',
-          value: '011-11-1234',
-        } as Identifier
-      }
+      value={{
+        system: 'http://hl7.org/fhir/sid/us-ssn',
+        value: '011-11-1234',
+      }}
     />
   </Document>
 );

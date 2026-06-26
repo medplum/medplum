@@ -133,7 +133,7 @@ CPOE should account for the logistics workflow a provider organization wants to 
 
 Medplum is provider-agnostic and supports connecting to lab and imaging orders of all types when an integration is in place. Common integrations can be found in the [Integrations](/docs/integration) section.
 
-For lab ordering specifically, the [Health Gorilla](/docs/integration/health-gorilla) integration provides end-to-end support including [sending orders](/docs/integration/health-gorilla/sending-orders) and [receiving results](/docs/integration/health-gorilla/receiving-results), with React components and bot-based automation. Quest, Labcorp, and regional labs are commonly connected through Health Gorilla.
+For lab ordering specifically, the [Health Gorilla](/docs/integration/health-gorilla) integration provides end-to-end support including [sending orders](/docs/integration/health-gorilla/sending-orders), [receiving results](/docs/integration/health-gorilla/receiving-results), and [manual result backfill](/docs/integration/health-gorilla/sync-resources-from-health-gorilla), with React components and bot-based automation. Quest, Labcorp, and regional labs are commonly connected through Health Gorilla.
 
 Organizations that connect directly to a performing lab (e.g. via HL7v2 or a proprietary API) follow the same FHIR resource patterns described here. The [HL7 Interface](/docs/integration/hl7-interfacing) and [On-Prem Agent](/docs/agent) docs cover connectivity options.
 

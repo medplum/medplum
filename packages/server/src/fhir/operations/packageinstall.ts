@@ -39,7 +39,7 @@ export async function packageInstallHandler(
   const { id } = req.params;
   const packageRelease = await repo.readResource<PackageRelease>('PackageRelease', id);
   const binary = await repo.readReference<Binary>({
-    reference: packageRelease.content.url as string,
+    reference: packageRelease.content.url,
   });
   const installation = await systemRepo.createResource({
     resourceType: 'PackageInstallation',

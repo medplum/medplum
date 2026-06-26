@@ -172,7 +172,7 @@ describe('ResourceArrayInput', () => {
   });
 
   test('Change value', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -190,7 +190,7 @@ describe('ResourceArrayInput', () => {
   });
 
   test('With slices and no default values', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -232,7 +232,7 @@ describe('ResourceArrayInput', () => {
   });
 
   test('With slices and values in each slice and non-slice values', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     const defaultValue = [
       { url: 'chocolateVariety', valueString: 'Milk Chocolate' },
@@ -283,7 +283,7 @@ describe('ResourceArrayInput', () => {
   });
 
   test('Hiding non-sliced values', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     const nonSliceValue = { url: 'greenVariety', valueString: 'Pistachio' };
     const defaultValue = [

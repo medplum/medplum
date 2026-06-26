@@ -31,7 +31,7 @@ A real-time automation uses a [Subscription](/docs/subscriptions) on `Communicat
 
 When a message arrives for a provider who is currently out of office, a Bot can automatically reroute the [Task](/docs/api/fhir/resources/task) back to the provider pool so another team member can pick it up.
 
-The Bot uses the Medplum [scheduling model](/docs/scheduling) to determine availability. It looks up the assigned provider's [Schedule](/docs/api/fhir/resources/schedule) and calls [`$find`](/docs/scheduling/schedule-find) for the current time window. If no free slots are returned — whether because of explicit time blocks (vacation, holidays) or because the provider has no [availability](/docs/scheduling/defining-availability) defined for the current day — the Task is rerouted to the pool.
+The Bot uses the Medplum [scheduling model](/docs/scheduling) to determine availability. It looks up the assigned provider's [Schedule](/docs/api/fhir/resources/schedule) and calls [`$find`](/docs/scheduling/appointment-find) for the current time window. If no free slots are returned — whether because of explicit time blocks (vacation, holidays) or because the provider has no [availability](/docs/scheduling/defining-availability) defined for the current day — the Task is rerouted to the pool.
 
 ```mermaid
 flowchart LR
@@ -110,7 +110,7 @@ To surface urgency in your UI without building SLA infrastructure, use `Task.pri
 
 - [Messaging Data Model](/docs/communications/messaging-data-model) — thread headers, `partOf`, and how messages relate
 - [Defining Availability](/docs/scheduling/defining-availability) — how to configure provider schedules and time blocks
-- [Schedule $find](/docs/scheduling/schedule-find) — checking provider availability
+- [Appointment $find](/docs/scheduling/appointment-find) — checking provider availability
 - [Bots](/docs/bots/bot-basics) and [Subscriptions](/docs/subscriptions)
 - [Cron Jobs for Bots](/docs/bots/bot-cron-job) — scheduling Bots on a timer
 - [Task](/docs/api/fhir/resources/task) and [Communication](/docs/api/fhir/resources/communication) FHIR resource API

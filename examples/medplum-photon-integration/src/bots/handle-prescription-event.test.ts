@@ -111,7 +111,7 @@ describe('Prescription webhooks', async () => {
       ...depletedEvent,
     };
 
-    prescriptionDepletedEvent.data.externalId = existingRequest.id as string;
+    prescriptionDepletedEvent.data.externalId = existingRequest.id;
 
     const updatedPrescription = await handler(medplum, {
       bot,
@@ -138,7 +138,7 @@ describe('Prescription webhooks', async () => {
       ...expiredEvent,
     };
 
-    prescriptionExpiredEvent.data.externalId = existingRequest.id as string;
+    prescriptionExpiredEvent.data.externalId = existingRequest.id;
 
     const updatedPrescription = await handler(medplum, {
       bot,
@@ -397,7 +397,7 @@ describe('Prescription webhooks', async () => {
       source: 'org:org_KzSVZBQixLRkqj5d',
       data: {
         id: 'rx_01G8AGBC91W1042CDRB19545EC',
-        externalId: existingPrescription.id as string,
+        externalId: existingPrescription.id,
         patient: {
           id: 'pat_ieUv67viS0lG18JN',
           externalId: '1234',

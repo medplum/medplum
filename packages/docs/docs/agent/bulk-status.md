@@ -177,6 +177,14 @@ Some useful search parameters are:
 - `status`
 - `_count` and `_offset`
 
+:::note[Default page size]
+
+When `_count` is omitted, the operation queries the status of at most the **default page of 20 agents** — it does _not_ automatically run against every matching agent. The maximum allowed `_count` is `100`. To cover more agents than fit on one page, use `_count` and `_offset` to page through the results (see the paging recipe below).
+
+:::
+
+> For more recipes and details on selecting operation targets, see [Using Agent search parameters in bulk operations](./using-search-parameters.md).
+
 ### Recipes
 
 Getting the status for one agent by name:
@@ -185,7 +193,7 @@ Getting the status for one agent by name:
 medplum get 'Agent/$bulk-status?name=Test+Agent+1'
 ```
 
-Getting the status of all active agents:
+Getting the status of active agents (using the `status=active` search parameter to select the operation targets; without a `_count`, this acts on at most the default page of 20 agents):
 
 ```bash
 medplum get 'Agent/$bulk-status?status=active'

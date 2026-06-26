@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
 import { OperationOutcomeError, unauthorized } from '@medplum/core';
-import type { Bot, ClientApplication, Login, Project, ProjectMembership, UserConfiguration } from '@medplum/fhirtypes';
+import type {
+  Bot,
+  ClientApplication,
+  Login,
+  Project,
+  ProjectMembership,
+  SmartAppLaunch,
+  UserConfiguration,
+} from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import type { IncomingMessage } from 'node:http';
 import { getConfig } from '../config/loader';
@@ -17,6 +25,7 @@ export type AuthState = {
   profile?: WithId<ProfileResource | Bot | ClientApplication>;
   userConfig: UserConfiguration;
   accessToken?: string;
+  smartAppLaunch?: WithId<SmartAppLaunch>;
 
   onBehalfOf?: WithId<ProfileResource>;
   onBehalfOfMembership?: WithId<ProjectMembership>;
@@ -34,9 +43,9 @@ export function authenticateRequest(req: Request, res: Response, next: NextFunct
   if (ctx instanceof AuthenticatedRequestContext) {
     next();
   } else {
-    if (res.req.query[PROMPT_BASIC_AUTH_PARAM]) {
-      res.set('WWW-Authenticate', `Basic realm="${getConfig().baseUrl}"`);
-    }
+    const requestAuthScheme = req.headers.authorization?.split(' ')[0] ?? 'Bearer';
+    const responseAuthScheme = res.req.query[PROMPT_BASIC_AUTH_PARAM] ? 'Basic' : requestAuthScheme;
+    res.set('WWW-Authenticate', `${responseAuthScheme} realm="${getConfig().baseUrl}"`);
     next(new OperationOutcomeError(unauthorized));
   }
 }

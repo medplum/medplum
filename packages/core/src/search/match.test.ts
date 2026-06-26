@@ -156,6 +156,15 @@ describe('Search matching', () => {
 
     search.filters[0].value = 'Patient/456';
     expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(true);
+
+    // ID-only special case does not work with `subject` because it has multiple target types
+    search.filters[0].operator = Operator.EQUALS;
+    search.filters[0].value = '123';
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(false);
+
+    // ID-only special case does work with `patient` because it has only one target type
+    search.filters[0].code = 'patient';
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(true);
   });
 
   test('Empty reference filter', () => {
@@ -900,7 +909,7 @@ describe('Search matching', () => {
   test('Compartments', () => {
     const resource1: Patient = {
       resourceType: 'Patient',
-      meta: { compartment: [{ reference: 'Organization/123' }] },
+      meta: { compartment: [{ reference: 'Organization/125' }] },
     };
 
     const resource2: Patient = {
@@ -910,7 +919,7 @@ describe('Search matching', () => {
 
     const search1: SearchRequest = {
       resourceType: 'Patient',
-      filters: [{ code: '_compartment', operator: Operator.EQUALS, value: 'Organization/123' }],
+      filters: [{ code: '_compartment', operator: Operator.EQUALS, value: 'Organization/125' }],
     };
 
     const search2: SearchRequest = {
@@ -922,7 +931,7 @@ describe('Search matching', () => {
     // Support matching values without the resourceType prefix
     const search3: SearchRequest = {
       resourceType: 'Patient',
-      filters: [{ code: '_compartment', operator: Operator.EQUALS, value: '123' }],
+      filters: [{ code: '_compartment', operator: Operator.EQUALS, value: '125' }],
     };
 
     expect(matchesSearchRequest(resource1, search1)).toBe(true);

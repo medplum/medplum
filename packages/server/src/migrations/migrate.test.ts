@@ -2,14 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { FileBuilder, loadDataType } from '@medplum/core';
 import { escapeIdentifier } from 'pg';
+import type { Mock, MockInstance } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { globalLogger } from '../logger';
 import {
   buildCreateTables,
   buildSchema,
   columnDefinitionsEqual,
   combine,
   executeMigrationActions,
+  generateConstraintsActions,
   generateMigrationActions,
   getCreateTableQueries,
   indexStructureDefinitionsAndSearchParameters,
@@ -28,13 +31,13 @@ import type {
 } from './types';
 
 describe('Generator', () => {
-  let consoleLogSpy: jest.SpyInstance;
+  let consoleLogSpy: MockInstance;
   beforeAll(async () => {
     indexStructureDefinitionsAndSearchParameters();
 
     const config = await loadTestConfig();
     await initDatabase(config);
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterAll(async () => {
@@ -52,13 +55,13 @@ describe('Generator', () => {
 
   describe('generateMigrationActions', () => {
     test('generates migration without errors', async () => {
-      await expect(() =>
+      await expect(
         generateMigrationActions({
           dbClient: getDatabasePool(DatabaseMode.WRITER),
           dropUnmatchedIndexes: false,
           analyzeResourceTables: true,
         })
-      ).resolves.not.toThrow();
+      ).resolves.toBeDefined();
     });
 
     test('returns PhasalMigration with preDeploy and postDeploy arrays', async () => {
@@ -330,6 +333,22 @@ describe('Generator', () => {
 
           return expectedCols;
         }),
+        {
+          name: '__birthdate',
+          type: 'DATERANGE',
+        },
+        {
+          name: '__birthdateSort',
+          type: 'DATE',
+        },
+        {
+          name: '__deathDate',
+          type: 'TSTZRANGE',
+        },
+        {
+          name: '__deathDateSort',
+          type: 'TIMESTAMPTZ',
+        },
       ];
 
       const sortFn = (a: { name: string }, b: { name: string }): number => a.name.localeCompare(b.name);
@@ -393,6 +412,33 @@ describe('Generator', () => {
     });
   });
 
+  describe('generateConstraintsActions', () => {
+    test('logs when start has an unmatched constraint', () => {
+      const loggerSpy = vi.spyOn(globalLogger, 'info').mockImplementation(() => {});
+
+      const startTable: TableDefinition = {
+        name: 'TestTable',
+        columns: [{ name: 'id', type: 'UUID', primaryKey: true, notNull: true }],
+        indexes: [],
+        constraints: [{ type: 'check', name: 'leftover_check', expression: 'id IS NOT NULL' }],
+      };
+      const targetTable: TableDefinition = {
+        name: 'TestTable',
+        columns: [{ name: 'id', type: 'UUID', primaryKey: true, notNull: true }],
+        indexes: [],
+        constraints: [],
+      };
+
+      const result = generateConstraintsActions(startTable, targetTable);
+
+      expect(result.preDeploy).toEqual([]);
+      expect(result.postDeploy).toEqual([]);
+      expect(loggerSpy).toHaveBeenCalledWith('[TestTable] Existing constraint should not exist: id IS NOT NULL');
+
+      loggerSpy.mockRestore();
+    });
+  });
+
   describe('parseIndexName', () => {
     test('parse index name with quotes', () => {
       const indexdef = 'CREATE INDEX "Account_Token_code_idx" ON "Account_Token" USING btree (code)';
@@ -429,12 +475,12 @@ type MigrationActionTestCase = {
   action: MigrationAction;
   builderExpected: string | string[];
   executionCheck: (mocks: {
-    mockQuery: jest.SpyInstance;
-    mockAnalyzeTable: jest.SpyInstance;
-    mockIdempotentCreateIndex: jest.SpyInstance;
-    mockNonBlockingAlterColumnNotNull: jest.SpyInstance;
-    mockNonBlockingAddCheckConstraint: jest.SpyInstance;
-    mockClient: { query: jest.Mock };
+    mockQuery: MockInstance;
+    mockAnalyzeTable: MockInstance;
+    mockIdempotentCreateIndex: MockInstance;
+    mockNonBlockingAlterColumnNotNull: MockInstance;
+    mockNonBlockingAddCheckConstraint: MockInstance;
+    mockClient: { query: Mock };
     results: MigrationActionResult[];
   }) => void;
 };
@@ -626,24 +672,24 @@ const migrationActionTestCases: MigrationActionTestCase[] = [
 ];
 
 describe('writeActionsToBuilder and executeMigrationActions', () => {
-  let mockClient: { query: jest.Mock };
-  let mockQuery: jest.SpyInstance;
-  let mockAnalyzeTable: jest.SpyInstance;
-  let mockIdempotentCreateIndex: jest.SpyInstance;
-  let mockNonBlockingAlterColumnNotNull: jest.SpyInstance;
-  let mockNonBlockingAddCheckConstraint: jest.SpyInstance;
+  let mockClient: { query: Mock };
+  let mockQuery: MockInstance;
+  let mockAnalyzeTable: MockInstance;
+  let mockIdempotentCreateIndex: MockInstance;
+  let mockNonBlockingAlterColumnNotNull: MockInstance;
+  let mockNonBlockingAddCheckConstraint: MockInstance;
 
   beforeEach(() => {
-    mockClient = { query: jest.fn() };
-    mockQuery = jest.spyOn(fns, 'query').mockResolvedValue({ rows: [], rowCount: 0 } as any);
-    mockAnalyzeTable = jest.spyOn(fns, 'analyzeTable').mockResolvedValue(undefined);
-    mockIdempotentCreateIndex = jest.spyOn(fns, 'idempotentCreateIndex').mockResolvedValue(undefined);
-    mockNonBlockingAlterColumnNotNull = jest.spyOn(fns, 'nonBlockingAlterColumnNotNull').mockResolvedValue(undefined);
-    mockNonBlockingAddCheckConstraint = jest.spyOn(fns, 'nonBlockingAddCheckConstraint').mockResolvedValue(undefined);
+    mockClient = { query: vi.fn() };
+    mockQuery = vi.spyOn(fns, 'query').mockResolvedValue({ rows: [], rowCount: 0 } as any);
+    mockAnalyzeTable = vi.spyOn(fns, 'analyzeTable').mockResolvedValue(undefined);
+    mockIdempotentCreateIndex = vi.spyOn(fns, 'idempotentCreateIndex').mockResolvedValue(undefined);
+    mockNonBlockingAlterColumnNotNull = vi.spyOn(fns, 'nonBlockingAlterColumnNotNull').mockResolvedValue(undefined);
+    mockNonBlockingAddCheckConstraint = vi.spyOn(fns, 'nonBlockingAddCheckConstraint').mockResolvedValue(undefined);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('writePreDeployActionsToBuilder generates boilerplate', () => {

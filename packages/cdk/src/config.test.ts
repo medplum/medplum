@@ -5,7 +5,6 @@ import type { ExternalSecret, MedplumInfraConfig, MedplumSourceInfraConfig } fro
 import { OperationOutcomeError } from '@medplum/core';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import {
   InfraConfigNormalizer,
   assertValidExternalSecret,

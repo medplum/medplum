@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, Button, Stack, Text, Title } from '@mantine/core';
-import { Document, Loading, useMedplum } from '@medplum/react';
+import { Document, Loading, SignInForm, useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
-import { MEDPLUM_CLIENT_ID } from '../config';
 import { DEMO_TAG, createDemoPatients } from '../data/demoData';
 
 type SetupStatus = 'init' | 'creating' | 'done' | 'error';
@@ -41,33 +40,36 @@ export function SetupPage(): JSX.Element {
   }, [medplum]);
 
   useEffect(() => {
-    if (hasRun.current) {
-      return;
+    if (medplum.isAuthenticated() && !hasRun.current) {
+      hasRun.current = true;
+      runSetup().catch(console.error);
     }
-    hasRun.current = true;
-
-    if (medplum.isAuthenticated()) {
-      queueMicrotask(() => {
-        runSetup().catch(console.error);
-      });
-      return;
-    }
-
-    // Redirect to Medplum for auth, or process the ?code= on return
-    medplum
-      .signInWithRedirect({ clientId: MEDPLUM_CLIENT_ID, redirectUri: window.location.origin + '/setup' })
-      .then((profile) => {
-        if (profile) {
-          // Returned from OAuth redirect with code processed — run setup
-          runSetup().catch(console.error);
-        }
-        // else: page is redirecting to Medplum auth
-      })
-      .catch((err) => {
-        setMessage(err instanceof Error ? err.message : 'Unknown error');
-        setStatus('error');
-      });
   }, [medplum, runSetup]);
+
+  if (!medplum.isAuthenticated() && status === 'init') {
+    return (
+      <Document width={400} px="xl" py="xl" bdrs="md">
+        <SignInForm
+          chooseScopes
+          onSuccess={() => runSetup().catch(console.error)}
+          chooseScopeFormProps={{
+            logo: <img src="/medplum-logo.svg" height={32} alt="" />,
+            title: 'Grant Demo Setup Access',
+            submitLabel: 'Connect',
+            children: (
+              <Text size="sm" c="dimmed" ta="center" mb="sm">
+                This app needs access to your Medplum project to generate demo patient data.
+              </Text>
+            ),
+          }}
+        >
+          <Text size="sm" c="dimmed" ta="center" mb="sm">
+            Sign in to your Medplum project to set up demo data.
+          </Text>
+        </SignInForm>
+      </Document>
+    );
+  }
 
   if (status === 'init' || status === 'creating') {
     return <Loading />;

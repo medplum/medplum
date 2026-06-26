@@ -4,11 +4,13 @@ import { badRequest } from '@medplum/core';
 import type { Login, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
+import { getConfig } from '../config/loader';
 import { createProject } from '../fhir/operations/projectinit';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { sendLoginResult } from './utils';
 
 export interface NewProjectRequest {
   readonly loginId: string;
@@ -36,13 +38,15 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const projectName = req.body.projectName;
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+
+  if (getConfig().requireVerifiedEmailForProjectCreation && !user.emailVerified) {
+    sendOutcome(res, badRequest('Email verification is required to create a project'));
+    return;
+  }
+
+  const projectName = req.body.projectName;
   const { membership } = await createProject(projectName, user);
   const updatedLogin = await setLoginMembership(login, membership);
-
-  res.status(200).json({
-    login: updatedLogin.id,
-    code: updatedLogin.code,
-  });
+  await sendLoginResult(res, updatedLogin);
 }

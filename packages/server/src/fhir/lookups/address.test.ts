@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { Operator } from '@medplum/core';
-import type { Address, InsurancePlan, Location, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Address, InsurancePlan, Location, Patient, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import type { PoolClient } from 'pg';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
 import { withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
+import type { PgQueryable } from '../sql';
 import type { AddressTableRow } from './address';
 import { AddressTable } from './address';
 
@@ -129,7 +130,7 @@ describe('Address Lookup Table', () => {
 
   test.each([
     [
-      'Patient' as ResourceType,
+      'Patient' as const,
       (address: string): Patient => ({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
@@ -137,7 +138,7 @@ describe('Address Lookup Table', () => {
       }),
     ],
     [
-      'InsurancePlan' as ResourceType,
+      'InsurancePlan' as const,
       (address: string): InsurancePlan => ({
         resourceType: 'InsurancePlan',
         name: 'Test Insurance Plan',
@@ -145,7 +146,7 @@ describe('Address Lookup Table', () => {
       }),
     ],
     [
-      'Location' as ResourceType,
+      'Location' as const,
       (address: string): Location => ({
         resourceType: 'Location',
         address: { use: 'home', line: [address] },
@@ -216,7 +217,7 @@ describe('Address Lookup Table', () => {
   );
 
   test('Purges related resource type', async () => {
-    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+    const db = { query: vi.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PgQueryable;
 
     const table = new AddressTable();
     await table.purgeValuesBefore(db, 'Patient', '2024-01-01T00:00:00Z');
@@ -225,7 +226,7 @@ describe('Address Lookup Table', () => {
   });
 
   test('Does not purge unrelated resource type', async () => {
-    const db = { query: jest.fn() } as unknown as PoolClient;
+    const db = { query: vi.fn() } as unknown as PgQueryable;
 
     const table = new AddressTable();
     await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');
@@ -379,7 +380,7 @@ describe('Address Lookup Table', () => {
           state: 'CA',
           postalCode: '94109',
         },
-      ] as unknown as Address[],
+      ],
     };
 
     const result: AddressTableRow[] = [];
@@ -409,7 +410,7 @@ describe('Address Lookup Table', () => {
   });
 
   test('Errors logged and rethrown', async () => {
-    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+    const db = { query: vi.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PgQueryable;
     const table = new AddressTable();
     const r1: WithId<Patient> = {
       resourceType: 'Patient',
@@ -422,15 +423,15 @@ describe('Address Lookup Table', () => {
           state: 'CA',
           postalCode: '94109',
         },
-      ] as unknown as Address[],
+      ],
     };
 
-    const extractValuesSpy = jest.spyOn(table, 'extractValues').mockImplementation(() => {
+    const extractValuesSpy = vi.spyOn(table, 'extractValues').mockImplementation(() => {
       throw new Error('test error');
     });
 
     const logger = getLogger();
-    const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
 
     await expect(async () => table.batchIndexResources(db, [r1], false)).rejects.toThrow('test error');
     expect(extractValuesSpy).toHaveBeenCalledTimes(1);

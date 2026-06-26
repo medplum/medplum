@@ -72,7 +72,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
         onChange={(e) =>
           setSystem(e.currentTarget.value as 'url' | 'phone' | 'fax' | 'email' | 'pager' | 'sms' | 'other')
         }
-        data={['', 'email', 'phone', 'fax', 'pager', 'sms', 'other']}
+        data={['', 'email', 'phone', 'fax', 'pager', 'sms', 'url', 'other']}
         error={getErrorsForInput(outcome, errorPath + '.system')}
       />
       <NativeSelect

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { buildElementsContext } from '@medplum/core';
-import type { ContactDetail } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -17,18 +16,16 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <ContactDetailInput
-      defaultValue={
-        {
-          name: 'Foo',
-          telecom: [
-            {
-              use: 'home',
-              system: 'email',
-              value: 'abc@example.com',
-            },
-          ],
-        } as ContactDetail
-      }
+      defaultValue={{
+        name: 'Foo',
+        telecom: [
+          {
+            use: 'home',
+            system: 'email',
+            value: 'abc@example.com',
+          },
+        ],
+      }}
       onChange={console.log}
       name="contact"
       path="Patient.contact"
@@ -41,18 +38,16 @@ export const Disabled = (): JSX.Element => (
   <Document>
     <ContactDetailInput
       disabled
-      defaultValue={
-        {
-          name: 'Foo',
-          telecom: [
-            {
-              use: 'home',
-              system: 'email',
-              value: 'abc@example.com',
-            },
-          ],
-        } as ContactDetail
-      }
+      defaultValue={{
+        name: 'Foo',
+        telecom: [
+          {
+            use: 'home',
+            system: 'email',
+            value: 'abc@example.com',
+          },
+        ],
+      }}
       onChange={console.log}
       name="contact"
       path="Patient.contact"
@@ -80,18 +75,16 @@ export const PartiallyDisabled = (): JSX.Element => {
     context,
     <Document>
       <ContactDetailInput
-        defaultValue={
-          {
-            name: 'Foo',
-            telecom: [
-              {
-                use: 'home',
-                system: 'email',
-                value: 'abc@example.com',
-              },
-            ],
-          } as ContactDetail
-        }
+        defaultValue={{
+          name: 'Foo',
+          telecom: [
+            {
+              use: 'home',
+              system: 'email',
+              value: 'abc@example.com',
+            },
+          ],
+        }}
         onChange={console.log}
         name="contact"
         path="Patient.contact"

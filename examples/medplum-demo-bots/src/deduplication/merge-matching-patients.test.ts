@@ -213,20 +213,20 @@ describe('Deduplication', () => {
         resourceType: 'Patient',
         id: 'src',
         active: true,
-      } as Patient;
+      };
       context.target = {
         resourceType: 'Patient',
         id: 'target',
         name: [{ given: ['Lisa'], family: 'Simpson' }],
         link: [{ other: createReference(context.master), type: 'replaced-by' }],
-      } as Patient;
+      };
 
       context.source = {
         resourceType: 'Patient',
         id: 'target',
         name: [{ given: ['Lisa', 'L'], family: 'Simpson' }],
         link: [{ other: createReference(context.master), type: 'replaced-by' }],
-      } as Patient;
+      };
 
       context.master.link = [
         { type: 'replaces', other: createReference(context.source) },

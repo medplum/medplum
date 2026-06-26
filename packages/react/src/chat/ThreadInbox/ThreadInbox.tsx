@@ -103,7 +103,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
       f.value
         .split(',')
         .filter(Boolean)
-        .map((ref) => ({ reference: ref }) as Reference<Patient | Practitioner>)
+        .map((ref) => ({ reference: ref }))
     );
   }, [currentSearch]);
 

@@ -1227,6 +1227,41 @@ export const EnableWhen = (): JSX.Element => (
   </Document>
 );
 
+export const EnableWhenOnSubmit = (): JSX.Element => (
+  <Document>
+    <p>
+      Select "Yes" on Q1, answer Q2, then switch Q1 to "No" and submit. The submitted response logged to the console
+      will not contain Q2's answer because Q2 is disabled.
+    </p>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'enable-when-strip',
+        status: 'active',
+        title: 'Enable When (strip disabled on submit)',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Q1 — Enable Q2 when "Yes"',
+            type: 'choice',
+            answerOption: [{ valueString: 'Yes' }, { valueString: 'No' }],
+          },
+          {
+            linkId: 'q2',
+            text: 'Q2 — only visible when Q1 is "Yes"',
+            type: 'choice',
+            enableWhen: [{ question: 'q1', operator: '=', answerString: 'Yes' }],
+            answerOption: [{ valueString: 'Yes' }, { valueString: 'No' }],
+          },
+        ],
+      }}
+      onSubmit={(response) => {
+        console.log('submit', response);
+      }}
+    />
+  </Document>
+);
+
 export const EnableWhenWithQuestionnaireResponse = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
@@ -1653,7 +1688,7 @@ export const KitchenSink = (): JSX.Element => (
               },
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },
@@ -1832,7 +1867,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
               },
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },
@@ -1840,7 +1875,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
             initial: [
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },
@@ -1869,7 +1904,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
             initial: [
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                 },
               },
             ],
@@ -2006,7 +2041,7 @@ export const KitchenSinkWithQuestionnaireResponse = (): JSX.Element => (
               },
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },

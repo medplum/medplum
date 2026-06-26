@@ -2,26 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { AgentLogsResponse, WithId } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Agent, OperationDefinition } from '@medplum/fhirtypes';
+import type { Agent } from '@medplum/fhirtypes';
+import { makeOperationDefinition } from './definitions';
 import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
 import { parseInputParameters } from './utils/parameters';
 
-export const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'agent-fetch-logs',
-  status: 'active',
-  kind: 'operation',
-  code: 'fetch-logs',
-  experimental: true,
-  resource: ['Agent'],
-  system: false,
-  type: true,
-  instance: true,
-  parameter: [
-    { use: 'in', name: 'limit', type: 'integer', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'Parameters', min: 1, max: '1' },
-  ],
-};
+export const operation = makeOperationDefinition(
+  { scope: 'type-and-instance', resource: 'Agent' },
+  {
+    name: 'agent-fetch-logs',
+    code: 'fetch-logs',
+    parameter: [
+      { use: 'in', name: 'limit', type: 'integer', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Parameters', min: 1, max: '1' },
+    ],
+  }
+);
 
 /**
  * Handles HTTP requests for the Agent $fetch-logs operation.

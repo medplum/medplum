@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { notifications } from '@mantine/notifications';
 import { MedplumClient } from '@medplum/core';
-import type { AsyncJob, BundleEntry } from '@medplum/fhirtypes';
+import type { BundleEntry } from '@medplum/fhirtypes';
 import { act, fireEvent, renderAppRoutes, screen, waitFor } from '../test-utils/render';
 
 const MIGRATION_INFO_URL = 'admin/super/migrations';
@@ -114,12 +114,12 @@ describe('SuperAdminAsyncJobPage', () => {
     isSuperAdminVal = true;
     asyncJobBundleEntry = PENDING_BUNDLE_ENTRY;
     medplum = new MedplumClient({ fetch: mockFetch, baseUrl: BASE_URL });
-    jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => isSuperAdminVal);
+    vi.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => isSuperAdminVal);
   });
 
   afterEach(async () => {
     await act(async () => notifications.clean());
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('Renders page title', async () => {
@@ -156,7 +156,7 @@ describe('SuperAdminAsyncJobPage', () => {
   });
 
   test('Renders migrations table and start migration', async () => {
-    const startAsyncJobSpy = jest.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce({} as AsyncJob);
+    const startAsyncJobSpy = vi.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce({});
     await setup(medplum);
 
     await waitFor(() => screen.getByText('Refresh'));

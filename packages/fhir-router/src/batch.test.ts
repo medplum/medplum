@@ -56,7 +56,7 @@ describe('Batch', () => {
   test('Process batch with missing bundle type', async () => {
     try {
       await processBatch(req, repo, router, { resourceType: 'Bundle' } as Bundle);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -67,7 +67,7 @@ describe('Batch', () => {
   test('Process batch with invalid bundle type', async () => {
     try {
       await processBatch(req, repo, router, { resourceType: 'Bundle', type: 'xyz' as unknown as 'batch' });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -78,7 +78,7 @@ describe('Batch', () => {
   test('Process batch with missing entries', async () => {
     try {
       await processBatch(req, repo, router, { resourceType: 'Bundle', type: 'batch' });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -162,12 +162,12 @@ describe('Batch', () => {
     expect(results[4].response?.status).toStrictEqual('404');
 
     const patient = await repo.readReference({
-      reference: results[0].response?.location as string,
+      reference: results[0].response?.location,
     });
     expect(patient).toBeDefined();
 
     const observation = await repo.readReference({
-      reference: results[1].response?.location as string,
+      reference: results[1].response?.location,
     });
     expect(observation).toBeDefined();
     expect((observation as Observation).subject?.reference).toStrictEqual('Patient/' + patient.id);
@@ -295,7 +295,7 @@ describe('Batch', () => {
     expect(results[0].response?.status).toStrictEqual('201');
 
     const readResult = await repo.readReference({
-      reference: results[0].response?.location as string,
+      reference: results[0].response?.location,
     });
     expect(readResult).toBeDefined();
     expect((readResult as Patient).identifier?.[0]?.value).toStrictEqual(id);
@@ -1125,7 +1125,7 @@ describe('Batch', () => {
       expect(results[1].response?.status).toStrictEqual('201');
 
       const subscription = await repo.readReference<Subscription>({
-        reference: results[1].response?.location as string,
+        reference: results[1].response?.location,
       });
       expect(subscription.criteria).toMatch(
         /QuestionnaireResponse\?questionnaire=Questionnaire\/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/
@@ -1187,7 +1187,7 @@ describe('Batch', () => {
       expect(results[1].response?.status).toStrictEqual('201');
 
       const subscription = await repo.readReference<Subscription>({
-        reference: results[1].response?.location as string,
+        reference: results[1].response?.location,
       });
       expect(subscription.criteria).toMatch(
         /QuestionnaireResponse\?questionnaire=Questionnaire\/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/

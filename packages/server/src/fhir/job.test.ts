@@ -5,6 +5,7 @@ import type { AsyncJob } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
@@ -53,7 +54,7 @@ describe('Job status', () => {
   test('completed', () =>
     withTestContext(async () => {
       const job = await asyncJobManager.init('http://example.com');
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       asyncJobManager.start(async () => {
         callback();
@@ -117,12 +118,23 @@ describe('Job status', () => {
         requestTime: job.requestTime,
         request: 'http://example.com',
       });
+
+      // Verify the status polling endpoint returns 200 (not 202) for cancelled jobs
+      // so that the client stops polling (fixes #5575)
+      const res4 = await request(app)
+        .get(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      expect(res4.status).toBe(200);
+      expect(res4.body).toStrictEqual(
+        expect.objectContaining({ id: job.id, request: job.request, status: 'cancelled' })
+      );
     }));
 
   test('Cancel -- error (job already completed)', () =>
     withTestContext(async () => {
       const job = await asyncJobManager.init('http://example.com');
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       asyncJobManager.start(async () => {
         callback();

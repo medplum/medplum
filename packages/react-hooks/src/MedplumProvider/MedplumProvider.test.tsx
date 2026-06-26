@@ -7,6 +7,7 @@ import { MockClient, MockFetchClient, createFakeJwt } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import type { MockInstance } from 'vitest';
 import { MedplumProvider } from './MedplumProvider';
 import { useMedplum, useMedplumContext, useMedplumNavigate, useMedplumProfile } from './MedplumProvider.context';
 
@@ -103,7 +104,7 @@ describe('MedplumProvider', () => {
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
           refreshToken: '456',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
           },
           project: {
             reference: 'Project/123',
@@ -114,7 +115,7 @@ describe('MedplumProvider', () => {
         });
       });
 
-      const getSpy = jest.spyOn(medplum, 'get');
+      const getSpy = vi.spyOn(medplum, 'get');
 
       expect(medplum.isLoading()).toEqual(true);
 
@@ -163,7 +164,7 @@ describe('MedplumProvider', () => {
       const router = new FhirRouter();
       const repo = new MemoryRepository();
       const client = new MockFetchClient(router, repo, baseUrl);
-      const mockFetchSpy = jest.spyOn(client, 'mockFetch');
+      const mockFetchSpy = vi.spyOn(client, 'mockFetch');
 
       act(() => {
         medplum = new MockClient();
@@ -195,7 +196,7 @@ describe('MedplumProvider', () => {
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
         refreshToken: '456',
         profile: {
-          reference: 'Practitioner/123',
+          reference: 'Practitioner/124',
         },
         project: {
           reference: 'Project/123',
@@ -206,7 +207,7 @@ describe('MedplumProvider', () => {
       const router = new FhirRouter();
       const repo = new MemoryRepository();
       const client = new MockFetchClient(router, repo, baseUrl);
-      const mockFetchSpy = jest.spyOn(client, 'mockFetch');
+      const mockFetchSpy = vi.spyOn(client, 'mockFetch');
 
       act(() => {
         medplum = new MockClient({
@@ -243,7 +244,7 @@ describe('MedplumProvider', () => {
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
         refreshToken: '456',
         profile: {
-          reference: 'Practitioner/123',
+          reference: 'Practitioner/124',
         },
         project: {
           reference: 'Project/123',
@@ -254,15 +255,15 @@ describe('MedplumProvider', () => {
       const router = new FhirRouter();
       const repo = new MemoryRepository();
       const client = new MockFetchClient(router, repo, baseUrl);
-      const mockFetchSpy = jest.spyOn(client, 'mockFetch');
-      let dispatchEventSpy!: jest.SpyInstance;
+      const mockFetchSpy = vi.spyOn(client, 'mockFetch');
+      let dispatchEventSpy!: MockInstance;
 
       act(() => {
         medplum = new MockClient({
           storage,
           mockFetchOverride: { router, repo, client },
         });
-        dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
+        dispatchEventSpy = vi.spyOn(medplum, 'dispatchEvent');
       });
 
       expect(medplum.isLoading()).toEqual(true);
@@ -302,7 +303,7 @@ describe('MedplumProvider', () => {
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyLCJsb2dpbl9pZCI6InRlc3RpbmcxMjMifQ.lJGCbp2taTarRbamxaKFsTR_VRVgzvttKMmI5uFQSM0',
           refreshToken: '456',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
           },
           project: {
             reference: 'Project/123',
@@ -363,7 +364,7 @@ describe('MedplumProvider', () => {
         }),
         refreshToken: createFakeJwt({ client_id: '123' }),
         profile: {
-          reference: 'Practitioner/123',
+          reference: 'Practitioner/124',
         },
         project: {
           reference: 'Project/123',
@@ -374,15 +375,15 @@ describe('MedplumProvider', () => {
       const router = new FhirRouter();
       const repo = new MemoryRepository();
       const client = new MockFetchClient(router, repo, baseUrl);
-      const mockFetchSpy = jest.spyOn(client, 'mockFetch');
-      let dispatchEventSpy!: jest.SpyInstance;
+      const mockFetchSpy = vi.spyOn(client, 'mockFetch');
+      let dispatchEventSpy!: MockInstance;
 
       act(() => {
         medplum = new MockClient({
           storage,
           mockFetchOverride: { router, repo, client },
         });
-        dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
+        dispatchEventSpy = vi.spyOn(medplum, 'dispatchEvent');
       });
 
       expect(medplum.isLoading()).toEqual(true);
@@ -436,7 +437,7 @@ describe('MedplumProvider', () => {
 
     test('Async ClientStorage.getInitPromise throws', async () => {
       const originalConsoleError = console.error;
-      console.error = jest.fn();
+      console.error = vi.fn();
 
       class TestAsyncStorage extends MockAsyncClientStorage {
         private promise: Promise<void>;
@@ -459,13 +460,13 @@ describe('MedplumProvider', () => {
 
       const storage = new TestAsyncStorage();
       let medplum!: MockClient;
-      let dispatchEventSpy!: jest.SpyInstance;
+      let dispatchEventSpy!: MockInstance;
 
       act(() => {
         medplum = new MockClient({
           storage,
         });
-        dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
+        dispatchEventSpy = vi.spyOn(medplum, 'dispatchEvent');
       });
 
       expect(medplum.isLoading()).toEqual(true);

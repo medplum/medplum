@@ -14,7 +14,7 @@ export function SmartSearchPage(): JSX.Element | null {
   const [fields, setFields] = useState<FhirPathTableField[]>();
 
   useEffect(() => {
-    const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries()) as Record<string, string>;
+    const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries());
     setResourceType(queryParams.resourceType);
     setQuery(queryParams.query);
     setFields(JSON.parse(queryParams.fields));

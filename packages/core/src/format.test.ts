@@ -497,6 +497,6 @@ test('Format Observation value', () => {
           },
         },
       ],
-    } as Observation)
+    })
   ).toBe('36.7 C / Oral');
 });

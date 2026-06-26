@@ -17,9 +17,9 @@ import type {
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import request from 'supertest';
+import type { Mock } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
@@ -33,8 +33,8 @@ import {
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { createProject } from './projectinit';
 
-jest.mock('node-fetch');
-jest.mock('hibp');
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 
 describe('Project clone', () => {
   const app = express();
@@ -42,10 +42,10 @@ describe('Project clone', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    fetchMock.mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(true);
   });
 
   afterAll(async () => {
@@ -381,7 +381,7 @@ describe('Project clone', () => {
       expect(newBot?.sourceCode?.url).not.toStrictEqual(bot.sourceCode?.url);
 
       // Get the binary content
-      const newBinary = await systemRepo.readReference<Binary>({ reference: newBot?.sourceCode?.url as string });
+      const newBinary = await systemRepo.readReference<Binary>({ reference: newBot?.sourceCode?.url });
       const newBinaryContent = await getBinaryStorage().readBinary(newBinary);
       const newBinaryStr = (await streamToBuffer(newBinaryContent)).toString('utf8');
       expect(newBinaryStr).toStrictEqual('console.log("Hello world");');

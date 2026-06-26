@@ -269,8 +269,8 @@ describe('Get WebSocket binding token', () => {
     // subscription with empty criteria directly — testing the defensive `!subscription.criteria` branch.
     const { accessToken: projectAccessToken, repo } = await createTestProject({
       withAccessToken: true,
-      withRepo: { strictMode: false },
-      project: { features: ['websocket-subscriptions'] },
+      withRepo: true,
+      project: { features: ['websocket-subscriptions'], strictMode: false },
     });
 
     const createdSub = await repo.createResource({

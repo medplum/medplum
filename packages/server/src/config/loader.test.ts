@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import fs from 'fs';
+import { vi } from 'vitest';
+import * as awsConfigModule from '../cloud/aws/config';
+import * as azureConfigModule from '../cloud/azure/config';
+import * as gcpConfigModule from '../cloud/gcp/config';
 import { getConfig, loadConfig, loadTestConfig } from './loader';
 
 describe('Config', () => {
@@ -20,10 +23,9 @@ describe('Config', () => {
 
   test('getConfig before loading', async () => {
     // Use isolateModules to get a fresh module where cachedConfig is undefined
-    await jest.isolateModulesAsync(async () => {
-      const { getConfig: freshGetConfig } = await import('./loader');
-      expect(() => freshGetConfig()).toThrow('Config not loaded');
-    });
+    vi.resetModules();
+    const { getConfig: freshGetConfig } = await import('./loader');
+    expect(() => freshGetConfig()).toThrow('Config not loaded');
   });
 
   test('Unrecognized config', async () => {
@@ -31,11 +33,8 @@ describe('Config', () => {
   });
 
   test('Load config file', async () => {
-    const readFileSyncSpy = jest.spyOn(fs, 'readFileSync');
-
     const config = await loadConfig('file:medplum.config.json');
 
-    expect(readFileSyncSpy).toHaveBeenCalled();
     expect(config).toBeDefined();
     expect(config.baseUrl).toBeDefined();
     expect(getConfig()).toBe(config);
@@ -75,6 +74,40 @@ describe('Config', () => {
     expect(getConfig()).toBe(config);
   });
 
+  test('Load database SSL env config', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATABASE_SSL_REQUIRE', 'true');
+    setEnv('MEDPLUM_DATABASE_SSL_REJECT_UNAUTHORIZED', 'true');
+    setEnv('MEDPLUM_DATABASE_SSL_CA', 'DatabaseSslCa');
+
+    const config = await loadConfig('env');
+    expect(config.database.ssl).toStrictEqual({
+      require: true,
+      rejectUnauthorized: true,
+      ca: 'DatabaseSslCa',
+    });
+  });
+
+  test('Load readonly database env config', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_READONLY_DATABASE_HOST', 'readonly.example.com');
+    setEnv('MEDPLUM_READONLY_DATABASE_PORT', '5432');
+    setEnv('MEDPLUM_READONLY_DATABASE_MAX_CONNECTIONS', '5');
+    setEnv('MEDPLUM_READONLY_DATABASE_SSL_REQUIRE', 'true');
+    setEnv('MEDPLUM_READONLY_DATABASE_SSL_REJECT_UNAUTHORIZED', 'false');
+
+    const config = await loadConfig('env');
+    expect(config.readonlyDatabase).toStrictEqual({
+      host: 'readonly.example.com',
+      port: 5432,
+      maxConnections: 5,
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    });
+  });
+
   test('Env config ignores non-MEDPLUM_ variables', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('NOT_MEDPLUM_SOMETHING', 'ignored');
@@ -100,11 +133,13 @@ describe('Config', () => {
     setEnv('MEDPLUM_REGISTER_ENABLED', 'true');
     setEnv('MEDPLUM_LOG_REQUESTS', 'false');
     setEnv('MEDPLUM_BOT_CUSTOM_FUNCTIONS_ENABLED', 'true');
+    setEnv('MEDPLUM_RATE_LIMITS_ENABLED', 'false');
 
     const config = await loadConfig('env');
     expect(config.registerEnabled).toBe(true);
     expect(config.logRequests).toBe(false);
     expect(config.botCustomFunctionsEnabled).toBe(true);
+    expect(config.rateLimitsEnabled).toBe(false);
   });
 
   test('Env config externalAuthProviders as JSON array', async () => {
@@ -290,41 +325,26 @@ describe('Config', () => {
 
   test('Load AWS config', async () => {
     const mockConfig = { baseUrl: 'http://aws.example.com', database: {}, redis: {} };
-    jest.mock('../cloud/aws/config', () => ({
-      loadAwsConfig: jest.fn().mockResolvedValue(mockConfig),
-    }));
-
-    await jest.isolateModulesAsync(async () => {
-      const { loadConfig: freshLoadConfig } = await import('./loader');
-      const config = await freshLoadConfig('aws:my-ssm-path');
-      expect(config.baseUrl).toStrictEqual('http://aws.example.com');
-    });
+    const loadAwsConfigSpy = vi.spyOn(awsConfigModule, 'loadAwsConfig').mockResolvedValue(mockConfig as never);
+    const config = await loadConfig('aws:my-ssm-path');
+    expect(config.baseUrl).toStrictEqual('http://aws.example.com');
+    loadAwsConfigSpy.mockRestore();
   });
 
   test('Load GCP config', async () => {
     const mockConfig = { baseUrl: 'http://gcp.example.com', database: {}, redis: {} };
-    jest.mock('../cloud/gcp/config', () => ({
-      loadGcpConfig: jest.fn().mockResolvedValue(mockConfig),
-    }));
-
-    await jest.isolateModulesAsync(async () => {
-      const { loadConfig: freshLoadConfig } = await import('./loader');
-      const config = await freshLoadConfig('gcp:my-project');
-      expect(config.baseUrl).toStrictEqual('http://gcp.example.com');
-    });
+    const loadGcpConfigSpy = vi.spyOn(gcpConfigModule, 'loadGcpConfig').mockResolvedValue(mockConfig as never);
+    const config = await loadConfig('gcp:my-project');
+    expect(config.baseUrl).toStrictEqual('http://gcp.example.com');
+    loadGcpConfigSpy.mockRestore();
   });
 
   test('Load Azure config', async () => {
     const mockConfig = { baseUrl: 'http://azure.example.com', database: {}, redis: {} };
-    jest.mock('../cloud/azure/config', () => ({
-      loadAzureConfig: jest.fn().mockResolvedValue(mockConfig),
-    }));
-
-    await jest.isolateModulesAsync(async () => {
-      const { loadConfig: freshLoadConfig } = await import('./loader');
-      const config = await freshLoadConfig('azure:my-vault');
-      expect(config.baseUrl).toStrictEqual('http://azure.example.com');
-    });
+    const loadAzureConfigSpy = vi.spyOn(azureConfigModule, 'loadAzureConfig').mockResolvedValue(mockConfig as never);
+    const config = await loadConfig('azure:my-vault');
+    expect(config.baseUrl).toStrictEqual('http://azure.example.com');
+    loadAzureConfigSpy.mockRestore();
   });
 
   test('Env config workers prefix', async () => {
@@ -343,6 +363,80 @@ describe('Config', () => {
     const config = await loadConfig('env');
     expect(config.workers).toBeDefined();
     expect(config.workers?.bullmq).toStrictEqual({ subscription: { concurrency: 50 } });
+  });
+
+  test('Env config dataWarehouse prefix', async () => {
+    // given
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
+    setEnv('MEDPLUM_AWS_REGION', 'us-west-2');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_AWS_S3_TABLE_ARN', 'arn:aws:s3tables:us-east-1:123456789012:bucket/test');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_DESTINATION', 's3tables');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_NAMESPACE', 'test');
+
+    // when
+    const config = await loadConfig('env');
+
+    // then
+    expect(config.dataWarehouse).toBeDefined();
+    expect(config.dataWarehouse?.enabled).toBe(true);
+    expect(config.dataWarehouse?.cron).toStrictEqual('0 * * * *');
+    expect(config.awsRegion).toStrictEqual('us-west-2');
+    expect(config.dataWarehouse?.awsS3TableArn).toStrictEqual('arn:aws:s3tables:us-east-1:123456789012:bucket/test');
+    expect(config.dataWarehouse?.destination).toStrictEqual('s3tables');
+    expect(config.dataWarehouse?.namespace).toStrictEqual('test');
+  });
+
+  test('loadConfig succeeds when dataWarehouse is enabled but configuration is incomplete', async () => {
+    // given
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_DESTINATION', 's3tables');
+
+    // when
+    const config = await loadConfig('env');
+
+    // then
+    expect(config.dataWarehouse?.enabled).toBe(true);
+    expect(config.dataWarehouse?.destination).toStrictEqual('s3tables');
+    expect(config.dataWarehouse?.awsS3TableArn).toBeUndefined();
+  });
+
+  test('Env config dataWarehouse local destination fields', async () => {
+    // given
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_ENABLED', 'true');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_CRON', '0 * * * *');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_DESTINATION', 'local');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_LOCAL_BASE_PATH', '/tmp/warehouse');
+
+    // when
+    const config = await loadConfig('env');
+
+    // then
+    expect(config.dataWarehouse).toBeDefined();
+    expect(config.dataWarehouse?.destination).toStrictEqual('local');
+    expect(config.dataWarehouse?.localBasePath).toStrictEqual('/tmp/warehouse');
+  });
+
+  test('Env config dataWarehouse includeResourceTypes', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_INCLUDE_RESOURCE_TYPES', 'Patient,Observation');
+
+    const config = await loadConfig('env');
+
+    expect(config.dataWarehouse?.includeResourceTypes).toStrictEqual(['Patient', 'Observation']);
+  });
+
+  test('Env config dataWarehouse excludeResourceTypes', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_DATA_WAREHOUSE_EXCLUDE_RESOURCE_TYPES', 'Binary');
+
+    const config = await loadConfig('env');
+
+    expect(config.dataWarehouse?.excludeResourceTypes).toStrictEqual(['Binary']);
   });
 
   test('Multi-source: file then env overlay', async () => {
@@ -395,8 +489,11 @@ describe('Config', () => {
     expect(config.approvedSenderEmails).toStrictEqual('no-reply@example.com');
     expect(config.emailProvider).toStrictEqual('none');
     expect(config.logLevel).toStrictEqual('error');
+    expect(config.rateLimitsEnabled).toBe(true);
     expect(config.defaultRateLimit).toStrictEqual(-1);
     expect(config.defaultSuperAdminClientId).toBeDefined();
     expect(config.defaultSuperAdminClientSecret).toBeDefined();
+    expect(config.dataWarehouse?.enabled).not.toBe(true);
+    expect(config.dataWarehouse?.cron).toBeUndefined();
   });
 });

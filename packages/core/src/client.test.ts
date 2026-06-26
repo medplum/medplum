@@ -218,13 +218,9 @@ describe('Client', () => {
     vi.resetAllMocks();
     // Default to browser environment for most tests
     mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
-    mockEnvironment.getWindow.mockReturnValue(window as any);
+    mockEnvironment.getWindow.mockReturnValue(window);
     mockEnvironment.isNodeEnvironment.mockReturnValue(false);
     mockEnvironment.getBuffer.mockReturnValue(undefined);
-  });
-
-  afterAll(() => {
-    Object.defineProperty(globalThis.window, 'sessionStorage', { value: undefined });
   });
 
   test('Constructor', () => {
@@ -462,10 +458,45 @@ describe('Client', () => {
     expect(client.isProjectAdmin()).toBe(true);
   });
 
+  test('syncStoredLoginProject updates stale project name after refresh', async () => {
+    // Stored login captured the project name at login time; it has since been renamed.
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
+        refreshToken: '456',
+        project: { reference: 'Project/123', display: 'Old Project Name' },
+        profile: { reference: 'Practitioner/123' },
+      })
+    );
+
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('auth/me')) {
+        return {
+          project: { resourceType: 'Project', id: '123', name: 'New Project Name' },
+          membership: { resourceType: 'ProjectMembership', id: '123' },
+          profile: { resourceType: 'Practitioner', id: '123' },
+          config: { resourceType: 'UserConfiguration', id: '123' },
+          accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ baseUrl: 'https://x/', fetch });
+    expect(client.getActiveLogin()?.project.display).toBe('Old Project Name');
+
+    // refreshProfile() resolves auth/me and then syncs the live project name back to storage.
+    await client.getProfileAsync();
+
+    expect(client.getActiveLogin()?.project.display).toBe('New Project Name');
+    const updatedLogin = client.getLogins().find((login) => login.profile.reference === 'Practitioner/123');
+    expect(updatedLogin?.project.display).toBe('New Project Name');
+  });
+
   test('Clear', () => {
     const client = new MedplumClient({ fetch: mockFetch(200, {}) });
     expect(() => client.clear()).not.toThrow();
-    expect(sessionStorage.length).toStrictEqual(0);
   });
 
   test('SignOut', async () => {
@@ -735,7 +766,7 @@ describe('Client', () => {
       );
       expect(result).toMatch(/https:\/\/auth\.example\.com\/authorize\?.+scope=/);
 
-      const codeVerifier = sessionStorage.getItem('codeVerifier');
+      const codeVerifier = localStorage.getItem('codeVerifier');
       expect(codeVerifier).toHaveLength(128);
 
       const { searchParams } = new URL(result);
@@ -1004,7 +1035,7 @@ describe('Client', () => {
   test('Basic auth in browser', async () => {
     // Mock browser environment (already set in beforeEach, but explicit for clarity)
     mockEnvironment.isBrowserEnvironment.mockReturnValue(true);
-    mockEnvironment.getWindow.mockReturnValue(window as any);
+    mockEnvironment.getWindow.mockReturnValue(window);
     mockEnvironment.isNodeEnvironment.mockReturnValue(false);
     mockEnvironment.getBuffer.mockReturnValue(undefined);
 
@@ -1036,7 +1067,7 @@ describe('Client', () => {
     mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
     mockEnvironment.getWindow.mockReturnValue(undefined);
     mockEnvironment.isNodeEnvironment.mockReturnValue(true);
-    mockEnvironment.getBuffer.mockReturnValue(Buffer as any);
+    mockEnvironment.getBuffer.mockReturnValue(Buffer);
 
     const fetch = mockFetch(200, () => {
       return { resourceType: 'Patient', id: '123' };
@@ -2109,7 +2140,7 @@ describe('Client', () => {
     // vi.spyOn(window, 'XMLHttpRequest').mockImplementation(() => xhrMock as XMLHttpRequest);
     vi.spyOn(window, 'XMLHttpRequest').mockImplementation(function () {
       return xhrMock as XMLHttpRequest;
-    } as any);
+    });
 
     const onProgress = vi.fn();
 
@@ -3034,7 +3065,7 @@ describe('Client', () => {
         accessToken: '6789',
         refreshToken: 'fghi',
       } satisfies LoginState),
-    } as StorageEvent);
+    });
     expect(mockReload).not.toHaveBeenCalled();
     expect(client.getAccessToken()).toBe('6789');
 
@@ -3048,7 +3079,7 @@ describe('Client', () => {
       newValue: JSON.stringify({
         profile: { reference: `Practitioner/${practitioner2}` } satisfies Reference<Practitioner>,
       }),
-    } as StorageEvent);
+    });
     expect(mockReload).toHaveBeenCalled();
 
     // Should refresh when going from no profile to a new profile
@@ -3059,7 +3090,7 @@ describe('Client', () => {
       newValue: JSON.stringify({
         profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
       }),
-    } as StorageEvent);
+    });
     expect(mockReload).toHaveBeenCalled();
 
     // Should refresh when going from a profile to no profile (logged out)
@@ -3070,7 +3101,7 @@ describe('Client', () => {
         profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
       }),
       newValue: null,
-    } as StorageEvent);
+    });
     expect(mockReload).toHaveBeenCalled();
 
     // Should refresh when storage is cleared
@@ -3096,7 +3127,7 @@ describe('Client', () => {
         accessToken: '6789',
         refreshToken: 'fghi',
       } satisfies LoginState),
-    } as StorageEvent);
+    });
     expect(mockReload).toHaveBeenCalled();
 
     // Should NOT refresh if sessionDetails.profile.id IS the same as the ID of the profile in the newEvent
@@ -3117,7 +3148,7 @@ describe('Client', () => {
         accessToken: '6789',
         refreshToken: 'fghi',
       } satisfies LoginState),
-    } as StorageEvent);
+    });
     expect(mockReload).not.toHaveBeenCalled();
   });
 

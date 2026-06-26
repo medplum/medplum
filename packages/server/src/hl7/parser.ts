@@ -15,6 +15,10 @@ export interface HL7BodyParserOptions {
 export function hl7BodyParser(options: HL7BodyParserOptions): RequestHandler {
   return function hl7Parser(req: Request, _res: Response, next: NextFunction) {
     if (req.is(options.type)) {
+      if (typeof req.body !== 'string') {
+        next(new Error('HL7 body must be a string'));
+        return;
+      }
       req.body = Hl7Message.parse(req.body);
     }
     next();

@@ -44,7 +44,7 @@ describe('OAuth Authorize', () => {
     });
 
     // Set the test user password
-    await setPassword(user, password);
+    await setPassword(systemRepo, user, password);
   });
 
   afterAll(async () => {

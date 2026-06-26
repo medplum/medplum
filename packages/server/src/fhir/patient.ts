@@ -81,7 +81,7 @@ export function getPatients(resource: Resource): (Reference<Patient> & { referen
  */
 function getPatientFromUnknownValue(value: unknown): string | undefined {
   if (value && typeof value === 'object') {
-    return getPatientIdFromReference(value as Reference);
+    return getPatientIdFromReference(value);
   }
   return undefined;
 }

@@ -1,20 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AgentTransmitResponse, ILogger } from '@medplum/core';
+import type { AckCode, AgentTransmitResponse, ILogger } from '@medplum/core';
 import { ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
 import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
-import type {
-  EnhancedMode,
-  Hl7Connection,
-  Hl7EnhancedAckSentEvent,
-  Hl7ErrorEvent,
-  Hl7MessageEvent,
-} from '@medplum/hl7';
-import { Hl7Server } from '@medplum/hl7';
+import type { EnhancedMode, Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from '@medplum/hl7';
+import { Hl7EnhancedAckSentEvent, Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import type { App } from './app';
 import { BaseChannel } from './channel';
 import { ChannelStatsTracker } from './channel-stats-tracker';
+import type { DurableQueue } from './queue/durable-queue';
+import type { EnqueueResult, InboundRow } from './queue/types';
+import { AckOutcome, DuplicateBehavior, QueueErrorCode } from './queue/types';
+import { ChannelQueueWorker } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 
 /**
@@ -34,6 +32,20 @@ export interface ShouldSendAppLevelAckOptions {
   enhancedMode: EnhancedMode;
 }
 
+/**
+ * Negative commit-ACK code the durable path sends via {@link AgentHl7ChannelConnection.sendCommitNack}.
+ *
+ * By HL7 convention the *error* codes invite a retransmit (the peer may retry and
+ * could succeed) while the *reject* codes are terminal (retransmitting the same
+ * message fails identically, so the peer must not retry):
+ *
+ * - `CE` — Commit Error (standard enhanced): e.g. a transient storage failure.
+ * - `AE` — Application Error (aaMode).
+ * - `CR` — Commit Reject (standard enhanced): e.g. a rejected duplicate.
+ * - `AR` — Application Reject (aaMode).
+ */
+export type NackCommitCode = 'CR' | 'CE' | 'AR' | 'AE';
+
 export class AgentHl7Channel extends BaseChannel {
   readonly server: Hl7Server;
   private started = false;
@@ -41,10 +53,18 @@ export class AgentHl7Channel extends BaseChannel {
   readonly log: ILogger;
   readonly channelLog: ILogger;
   private prefix: string;
-  stats?: ChannelStatsTracker;
+  stats: ChannelStatsTracker;
   private appLevelAckMode: AppLevelAckMode = 'AL'; // Default app level ack mode is AL (Always)
   private assignSeqNo: boolean = false;
   private lastSeqNo = -1;
+  private duplicateBehavior: DuplicateBehavior = DuplicateBehavior.IDEMPOTENT;
+  // The channel's own copy of the enhanced mode, parsed from the endpoint URL.
+  // In durable mode this is intentionally NOT pushed onto the Hl7Connection (so
+  // the connection's synchronous auto-ACK stays off and the agent can defer the
+  // commit ACK until after the DB write); the connection therefore can't be the
+  // source of truth, so we track it here and the durable path reads it directly.
+  private enhancedMode: EnhancedMode = undefined;
+  worker: ChannelQueueWorker | undefined;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -56,6 +76,7 @@ export class AgentHl7Channel extends BaseChannel {
     this.prefix = `[HL7:${definition.name}] `;
     this.log = app.log.clone({ options: { prefix: this.prefix } });
     this.channelLog = app.channelLog.clone({ options: { prefix: this.prefix } });
+    this.stats = new ChannelStatsTracker({ heartbeatEmitter: app.heartbeatEmitter, log: this.log });
   }
 
   async start(): Promise<void> {
@@ -66,8 +87,9 @@ export class AgentHl7Channel extends BaseChannel {
 
     const address = new URL(this.getEndpoint().address);
     this.log.info(`Channel starting on ${address}...`);
-    this.configureStatsTracker();
+    this.stats = new ChannelStatsTracker({ heartbeatEmitter: this.app.heartbeatEmitter, log: this.log });
     this.configureHl7ServerAndConnections();
+    this.maybeStartWorker();
     await this.server.start(Number.parseInt(address.port, 10));
     this.log.info('Channel started successfully');
   }
@@ -77,54 +99,133 @@ export class AgentHl7Channel extends BaseChannel {
       return;
     }
     this.log.info('Channel stopping...');
+    if (this.worker) {
+      await this.worker.stop();
+      this.worker = undefined;
+    }
     await Promise.allSettled(Array.from(this.connections.values()).map((connection) => connection.close()));
     await this.server.stop();
-    this.stats?.cleanup();
+    this.stats.cleanup();
     this.started = false;
     this.log.info('Channel stopped successfully');
+  }
+
+  /**
+   * Starts a {@link ChannelQueueWorker} bound to this channel and the app's
+   * durable queue, but only if we currently hold the queue lease.
+   *
+   * Called both from `start()` (when leadership may already be established by
+   * the time the channel comes up) and from `onBecameQueueLeader()` (when
+   * leadership arrives later, e.g. after waiting out a peer's lease during a
+   * zero-downtime upgrade overlap).
+   *
+   * No-op when the queue is off, we're not leader, or the worker is already
+   * running — so it's safe to call from either entry point.
+   */
+  private maybeStartWorker(): void {
+    // Reap a worker that stepped down on lease loss (it self-terminates on a
+    // QueueLeaseError rather than via a callback), so a later re-acquisition can
+    // start a fresh one — maybeStartWorker no-ops while `this.worker` is set.
+    if (this.worker && !this.worker.isRunning()) {
+      this.worker = undefined;
+    }
+    if (this.worker) {
+      return;
+    }
+    // Leader-gated, the cheap optimistic half: getDurableQueue() is undefined when
+    // the queue is off, and isLeader() is false until we hold the lease.
+    // `onBecameQueueLeader` calls back in once we acquire. The authoritative gate
+    // is implicit in the queue's dispatch ops, which throw QueueLeaseError if the
+    // lease moves out from under a running worker (the loop catches it and steps down).
+    const queue = this.app.getDurableQueue();
+    if (!queue?.isLeader()) {
+      return;
+    }
+    this.worker = new ChannelQueueWorker({
+      channelName: this.getDefinition().name,
+      app: this.app,
+      queue,
+      log: this.log,
+      sendAck: (response) => this.sendToRemote(response),
+    });
+    this.worker.start();
+    // Wake the worker so any rows that landed in queue but were never dispatched
+    // (e.g. left over from a prior process or inserted while the worker was off)
+    // start moving without waiting for the idle poll.
+    this.worker.notify();
+  }
+
+  /**
+   * Notification from the App that we've taken the durable-queue lease.
+   * Triggers worker bring-up for this channel if it isn't already running.
+   */
+  onBecameQueueLeader(): void {
+    this.maybeStartWorker();
   }
 
   shouldAssignSeqNo(): boolean {
     return this.assignSeqNo;
   }
 
+  /**
+   * Returns the next MSH.13 sequence number from the in-memory counter (resets
+   * on restart). Used only by the legacy (non-durable) path; the durable path
+   * peeks/commits a persisted per-channel counter via the queue so a failed
+   * intake doesn't consume a number. See {@link DurableQueue.peekNextSeqNo}.
+   * @returns The next sequence number to assign.
+   */
   takeNextSeqNo(): number {
     return ++this.lastSeqNo;
   }
 
-  sendToRemote(msg: AgentTransmitResponse): void {
+  sendToRemote(msg: AgentTransmitResponse): boolean {
     const connection = this.connections.get(msg.remote);
-    if (connection) {
-      const hl7Message = Hl7Message.parse(msg.body);
-      const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
-      const ackCode = hl7Message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
-
-      if (
-        ackCode &&
-        isAppLevelAckCode(ackCode) &&
-        !shouldSendAppLevelAck({
-          mode: this.appLevelAckMode,
-          ackCode,
-          enhancedMode: this.server.getEnhancedMode(),
-        })
-      ) {
-        this.channelLog.debug(
-          `[Skipping ACK -- Mode: ${this.appLevelAckMode} -- ID: ${msgControlId ?? 'not provided'} -- ACK: ${
-            ackCode ?? 'unknown'
-          }]`
-        );
-        return;
-      }
-
-      this.channelLog.info(`[Sending ACK -- ID: ${msgControlId}]: ${hl7Message.toString().replaceAll('\r', '\n')}`);
-      connection.hl7Connection.send(Hl7Message.parse(msg.body));
-
-      if (msgControlId) {
-        this.stats?.recordAckReceived(msgControlId);
-      }
-    } else {
+    if (!connection) {
       this.log.warn(`Attempted to send message to disconnected remote: ${msg.remote}`);
+      return false;
     }
+
+    const hl7Message = Hl7Message.parse(msg.body);
+    const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
+    const ackCode = hl7Message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
+
+    if (
+      ackCode &&
+      isAppLevelAckCode(ackCode) &&
+      !shouldSendAppLevelAck({
+        mode: this.appLevelAckMode,
+        ackCode,
+        enhancedMode: this.enhancedMode,
+      })
+    ) {
+      this.channelLog.debug(
+        `[Skipping ACK -- Mode: ${this.appLevelAckMode} -- ID: ${msgControlId ?? 'not provided'} -- ACK: ${
+          ackCode ?? 'unknown'
+        }]`
+      );
+      // Suppressed by app-level ACK policy — this is a successful outcome from
+      // the worker's perspective: no error occurred, we just chose not to forward.
+      // Still clear the pending RTT entry: in aaMode the app-level ACK is the
+      // response we were waiting on, so not recording it here would leave every
+      // message pending until it timed out. (regression guard for #9443)
+      if (msgControlId) {
+        this.stats.recordAckReceived(msgControlId);
+      }
+      return true;
+    }
+
+    this.channelLog.info(`[Sending ACK -- ID: ${msgControlId}]: ${hl7Message.toString().replaceAll('\r', '\n')}`);
+    try {
+      connection.hl7Connection.send(Hl7Message.parse(msg.body));
+    } catch (err) {
+      this.channelLog.error(`Failed to send ACK to ${msg.remote}: ${normalizeErrorString(err)}`);
+      return false;
+    }
+
+    if (msgControlId) {
+      this.stats.recordAckReceived(msgControlId);
+    }
+    return true;
   }
 
   async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
@@ -134,8 +235,6 @@ export class AgentHl7Channel extends BaseChannel {
     this.prefix = `[HL7:${definition.name}] `;
 
     this.log.info('Reloading config... Evaluating if channel needs to change address...');
-
-    this.configureStatsTracker();
 
     if (this.needToRebindToPort(previousEndpoint, endpoint)) {
       await this.stop();
@@ -161,18 +260,6 @@ export class AgentHl7Channel extends BaseChannel {
     return true;
   }
 
-  private configureStatsTracker(): void {
-    const logStatsFreqSecs =
-      this.app.getAgentConfig()?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger ?? -1;
-
-    if (logStatsFreqSecs > 0 && !this.stats) {
-      this.stats = new ChannelStatsTracker({ heartbeatEmitter: this.app.heartbeatEmitter, log: this.log });
-    } else if (logStatsFreqSecs <= 0 && this.stats) {
-      this.stats.cleanup();
-      this.stats = undefined;
-    }
-  }
-
   private configureHl7ServerAndConnections(): void {
     const address = new URL(this.getEndpoint().address);
     const encoding = address.searchParams.get('encoding') ?? undefined;
@@ -180,6 +267,7 @@ export class AgentHl7Channel extends BaseChannel {
     const assignSeqNo = address.searchParams.get('assignSeqNo')?.toLowerCase() === 'true';
     const messagesPerMinRaw = address.searchParams.get('messagesPerMin') ?? undefined;
     const appLevelAckRaw = address.searchParams.get('appLevelAck') ?? undefined;
+    const duplicateBehaviorRaw = address.searchParams.get('duplicateBehavior') ?? undefined;
     let messagesPerMin = messagesPerMinRaw ? Number.parseInt(messagesPerMinRaw, 10) : undefined;
 
     if (messagesPerMin !== undefined && !Number.isInteger(messagesPerMin)) {
@@ -191,23 +279,52 @@ export class AgentHl7Channel extends BaseChannel {
 
     this.appLevelAckMode = parseAppLevelAckMode(appLevelAckRaw, this.log);
     this.assignSeqNo = assignSeqNo;
+    this.duplicateBehavior = parseDuplicateBehavior(duplicateBehaviorRaw, this.log);
 
     // If assignSeqNo is false or not set, set lastSeqNo to -1
     if (!assignSeqNo) {
       this.lastSeqNo = -1;
     }
 
+    this.enhancedMode = enhancedMode;
+
+    // In durable mode the agent owns the commit ACK: it must fire CA/AA only after
+    // the message is durably on disk. We achieve that without any deferred-ACK hook
+    // in @medplum/hl7 by simply NOT giving the connection an enhancedMode — the
+    // connection's synchronous auto-ACK only runs when enhancedMode is set, so an
+    // unset mode keeps it silent and the agent sends the ACK itself post-commit.
+    // The legacy (non-durable) path keeps the passthrough, so the connection
+    // auto-ACKs exactly as before.
+    const queueOn = this.app.getDurableQueue() !== undefined;
+    const connectionEnhancedMode = queueOn ? undefined : enhancedMode;
+
     this.server.setEncoding(encoding);
-    this.server.setEnhancedMode(enhancedMode);
+    this.server.setEnhancedMode(connectionEnhancedMode);
     this.server.setMessagesPerMin(messagesPerMin);
     for (const connection of this.connections.values()) {
       connection.hl7Connection.setEncoding(encoding);
-      connection.hl7Connection.setEnhancedMode(enhancedMode);
+      connection.hl7Connection.setEnhancedMode(connectionEnhancedMode);
       connection.hl7Connection.setMessagesPerMin(messagesPerMin);
     }
   }
 
+  getDuplicateBehavior(): DuplicateBehavior {
+    return this.duplicateBehavior;
+  }
+
+  /**
+   * @returns The channel's enhanced mode, as parsed from the endpoint URL. This is
+   * the agent's source of truth in durable mode, where enhancedMode is deliberately
+   * kept off the underlying {@link Hl7Connection} (see {@link enhancedMode}).
+   */
+  getEnhancedMode(): EnhancedMode {
+    return this.enhancedMode;
+  }
+
   private handleNewConnection(connection: Hl7Connection): void {
+    // Newly-accepted sockets inherit the Hl7Server's enhancedMode at construction
+    // (see Hl7Server). In durable mode that mode is left unset, so the connection
+    // never auto-ACKs and the agent sends the commit ACK itself after the DB write.
     const c = new AgentHl7ChannelConnection(this, connection);
     updateStat('hl7ConnectionsOpen', getCurrentStats().hl7ConnectionsOpen + 1);
     c.hl7Connection.addEventListener('close', () => {
@@ -245,30 +362,367 @@ export class AgentHl7ChannelConnection {
         `[Received -- ID: ${msgControlId ?? 'not provided'}]: ${event.message.toString().replaceAll('\r', '\n')}`
       );
 
-      // Check if we should assign sequence no. If so, take the next one and set it in MSH.13
-      if (this.channel.shouldAssignSeqNo()) {
-        const seqNo = this.channel.takeNextSeqNo();
-        event.message.getSegment('MSH')?.setField(13, seqNo.toString());
-        this.channel.channelLog.info(`Setting sequence number for message control ID '${msgControlId}': ${seqNo}`);
+      // Snapshot the message exactly as received, before any transformation
+      // (e.g. assignSeqNo rewriting MSH.13), so the durable path can persist it
+      // for the intake duplicate-content comparison.
+      //
+      // `event.message.toString()` is already the *decoded* HL7 text (the
+      // connection used iconv to decode the wire bytes per the channel encoding),
+      // so we store/forward it as UTF-8 — exactly the body the legacy path sends.
+      // Re-encoding through the channel's iconv name would throw for encodings
+      // Node's Buffer doesn't natively know (e.g. iso-8859-1), dropping the message.
+      const originalMessage = Buffer.from(event.message.toString(), 'utf8');
+
+      // Record the message up front so a synchronous response below (a duplicate
+      // replay or reject) can balance it via recordAckReceived instead of leaving
+      // a pending RTT entry to be GC'd.
+      if (msgControlId) {
+        this.channel.stats.recordMessageSent(msgControlId);
       }
 
-      this.channel.app.addToWebSocketQueue({
-        type: 'agent:transmit:request',
-        accessToken: 'placeholder',
-        channel: this.channel.getDefinition().name,
-        remote: this.remote,
-        contentType: ContentType.HL7_V2,
-        body: event.message.toString(),
-        callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
-      });
-
-      // Log stats
-      if (msgControlId) {
-        this.channel.stats?.recordMessageSent(msgControlId);
+      // NOTE: sequence-number assignment (assignSeqNo) is intentionally NOT done
+      // here. The durable path defers it until after the duplicate check so a
+      // retransmit doesn't burn a sequence number; the legacy path assigns it
+      // itself. See maybeAssignSeqNo.
+      const queue = this.channel.app.getDurableQueue();
+      if (queue) {
+        await this.handleMessageDurable(queue, event, msgControlId, originalMessage);
+      } else {
+        this.handleMessageLegacy(event, msgControlId);
       }
     } catch (err) {
       this.channel.log.error(`HL7 error occurred - check channel logs`);
       this.channel.channelLog.error(`HL7 error: ${normalizeErrorString(err)}`);
+    }
+  }
+
+  /**
+   * Legacy non-durable inbound path: push directly to the in-memory WS queue.
+   * Behavior unchanged from the pre-durable-queue agent — used when the
+   * `durableQueue` setting is off.
+   * @param event - The incoming HL7 message event from the underlying connection.
+   * @param msgControlId - MSH.10 of the inbound message.
+   */
+  private handleMessageLegacy(event: Hl7MessageEvent, msgControlId: string | undefined): void {
+    // No durable dedup on this path, so assign the sequence number immediately.
+    this.maybeAssignSeqNo(event, msgControlId);
+    this.channel.app.addToWebSocketQueue({
+      type: 'agent:transmit:request',
+      accessToken: 'placeholder',
+      channel: this.channel.getDefinition().name,
+      remote: this.remote,
+      contentType: ContentType.HL7_V2,
+      body: event.message.toString(),
+      callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
+    });
+  }
+
+  /**
+   * Assigns the next channel sequence number into MSH.13 when assignSeqNo is on.
+   * The durable path calls this only after the duplicate check, so retransmits
+   * don't consume a sequence number; the legacy path calls it on every message.
+   * @param event - The inbound message event whose MSH.13 to set.
+   * @param msgControlId - MSH.10, for logging only.
+   */
+  private maybeAssignSeqNo(event: Hl7MessageEvent, msgControlId: string | undefined): void {
+    if (!this.channel.shouldAssignSeqNo()) {
+      return;
+    }
+    const seqNo = this.channel.takeNextSeqNo();
+    event.message.getSegment('MSH')?.setField(13, seqNo.toString());
+    this.channel.channelLog.info(`Setting sequence number for message control ID '${msgControlId ?? 'n/a'}': ${seqNo}`);
+  }
+
+  /**
+   * Parses MSH.13 as a non-negative integer sequence number.
+   * @param event - The inbound message event.
+   * @returns The parsed sequence number, or null when MSH.13 is absent/non-numeric.
+   */
+  private parseSeqNo(event: Hl7MessageEvent): number | null {
+    const seqNoField = event.message.getSegment('MSH')?.getField(13)?.toString();
+    return seqNoField && /^\d+$/.test(seqNoField) ? Number.parseInt(seqNoField, 10) : null;
+  }
+
+  /**
+   * Durable inbound path (§8 of DURABLE_QUEUE_ARCHITECTURE.md):
+   *
+   *  1. INSERT a `queued` row.
+   *  2. On success, send CA/AA via the deferred-ack API — only now is the
+   *     sender allowed to drop their retransmit buffer.
+   *  3. Notify the channel worker so it picks the row up immediately.
+   *
+   * Duplicate handling — a prior non-`nacked` row already owns this MSH.10
+   * (in any state: queued/processing/processed/errored — see {@link handleDuplicate}):
+   *  - `idempotent`: if the re-sent body matches the prior copy byte-for-byte,
+   *    replay the prior server response ACK (or, if none yet, the commit ACK);
+   *    if it differs, send AR — a different message reused a committed control ID.
+   *  - `reject`: send CR (or AR in aaMode); insert a `nacked` audit row.
+   *
+   * Storage failure: send CR with the underlying error in MSA.3; best-effort
+   * insert a `nacked` audit row (which may itself fail if the DB is unwritable —
+   * intentional, not retried).
+   * @param queue - The app-owned durable queue handle.
+   * @param event - The incoming HL7 message event from the underlying connection.
+   * @param msgControlId - MSH.10 of the inbound message (may be undefined for malformed messages).
+   * @param originalMessage - The message exactly as received, before any transformation (for dedup comparison).
+   */
+  private async handleMessageDurable(
+    queue: DurableQueue,
+    event: Hl7MessageEvent,
+    msgControlId: string | undefined,
+    originalMessage: Buffer
+  ): Promise<void> {
+    const conn = this.hl7Connection;
+    const enhancedMode = this.channel.getEnhancedMode();
+    const enhancedModeColumn = enhancedMode ?? null;
+    const channelName = this.channel.getDefinition().name;
+    const msgType = event.message.getSegment('MSH')?.getField(9)?.toString() ?? null;
+    const callbackId = `Agent/${this.channel.app.agentId}-${randomUUID()}`;
+    const receivedAt = Date.now();
+
+    // Sequence-number assignment is delegated to enqueue so it runs behind the
+    // single duplicate check (a retransmit never burns a number) and only on a
+    // durable insert. The callback stamps MSH.13 with the peeked candidate and
+    // returns the finalized bytes; we mirror them into `finalizedMessage`/`seqNo`
+    // so the storage-error audit row below reflects what was actually assigned. On
+    // a duplicate the callback never fires, leaving the as-received bytes and the
+    // inbound MSH.13 — exactly what the dedup comparison and audit row want.
+    const assigning = this.channel.shouldAssignSeqNo();
+    let finalizedMessage = originalMessage;
+    let seqNo = this.parseSeqNo(event);
+    let result: EnqueueResult;
+    try {
+      result = queue.enqueue(
+        {
+          channelName,
+          remote: this.remote,
+          msgControlId: msgControlId ?? null,
+          msgType,
+          originalMessage,
+          finalizedMessage,
+          encoding: conn.getEncoding() ?? null,
+          enhancedMode: enhancedModeColumn,
+          callbackId,
+          seqNo,
+          receivedAt,
+        },
+        assigning
+          ? {
+              assignSeqNo: (candidate: number): Buffer => {
+                event.message.getSegment('MSH')?.setField(13, candidate.toString());
+                this.channel.channelLog.info(
+                  `Setting sequence number for message control ID '${msgControlId ?? 'n/a'}': ${candidate}`
+                );
+                finalizedMessage = Buffer.from(event.message.toString(), 'utf8');
+                seqNo = candidate;
+                return finalizedMessage;
+              },
+            }
+          : undefined
+      );
+    } catch (err) {
+      const reason = `storage error: ${normalizeErrorString(err)}`;
+      this.channel.channelLog.error(`Durable enqueue failed for ${msgControlId ?? 'no-id'}: ${reason}`);
+      // A storage error is transient (disk full, DB locked, ...), so answer with
+      // the retryable *error* code — CE (standard) / AE (aaMode) — not a terminal
+      // reject. The peer may retransmit, and because we write only a `nacked`
+      // audit row (never a committed one) the resend is accepted as fresh.
+      this.sendCommitNack(event.message, enhancedMode === 'aaMode' ? 'AE' : 'CE', 'storage error');
+      this.recordImmediateAck(msgControlId);
+      // Best-effort audit row. If this also fails, we've already told the sender
+      // NACK so they will retry — the failure log above is sufficient. No
+      // commitSeqNo happened, so the failed message consumed no sequence number.
+      queue.enqueueRejected({
+        channelName,
+        remote: this.remote,
+        msgControlId: msgControlId ?? null,
+        msgType,
+        originalMessage,
+        finalizedMessage,
+        encoding: conn.getEncoding() ?? null,
+        enhancedMode: enhancedModeColumn,
+        callbackId,
+        seqNo,
+        receivedAt,
+        lastError: reason,
+        errorCode: QueueErrorCode.StorageError,
+      });
+      return;
+    }
+
+    if (result.kind === 'duplicate') {
+      // The single dedup authority lives in enqueue; on a hit the assignSeqNo
+      // callback never ran, so no number was peeked/stamped/committed and the
+      // audit fields still hold the as-received bytes + inbound MSH.13.
+      this.handleDuplicate(queue, event, result.existing, msgControlId, {
+        callbackId,
+        msgType,
+        originalMessage,
+        finalizedMessage,
+        enhancedModeColumn,
+        seqNo,
+        receivedAt,
+      });
+      return;
+    }
+
+    // Durably inserted (and the sequence counter advanced in the same
+    // transaction) — now tell the sender CA/AA. The ack is a no-op outside
+    // enhanced mode.
+    this.sendCommitAck(event.message);
+    // Balance the RTT entry recorded at intake (handleMessage). The commit ACK is
+    // the source-facing response in durable mode, so it settles the round trip —
+    // exactly as the storage-error and duplicate paths do. Without this, an aaMode
+    // message would never balance: the worker suppresses the Bot's app-level AA
+    // (applyServerResponse), so sendToRemote (the only other balancer) never runs,
+    // and every message lingers in the pending map until the 5-min GC warns.
+    this.recordImmediateAck(msgControlId);
+    this.channel.worker?.notify();
+  }
+
+  /**
+   * Handles an inbound message whose `(channel, MSH.10)` already belongs to a
+   * prior non-`nacked` row (`existing`), per the channel's `duplicateBehavior`:
+   *
+   * - `reject`: reject every collision (CR, or AR in aaMode) and write a
+   *   `nacked` audit row — unchanged, now spanning all prior states.
+   * - `idempotent` (default): treat a byte-for-byte re-send as a benign
+   *   retransmit and replay the acknowledgment the sender missed —
+   *   {@link AgentHl7Channel.sendToRemote the prior server response ACK} if the
+   *   message was already dispatched, otherwise the commit ACK (CA/AA). A body
+   *   that differs is a *different* message reusing a committed control ID, so
+   *   we reject it with AR (and a `nacked` audit row) the same way `reject`
+   *   handles any duplicate.
+   *
+   * The replayed ACKs go through {@link sendCommitAck}/{@link sendCommitNack} just
+   * like a fresh message — a retransmit means the sender never saw the original
+   * ACK and must be re-told, and the durable row is the dedup authority.
+   * @param queue - The app-owned durable queue handle.
+   * @param event - The duplicate inbound message event.
+   * @param existing - The prior row that owns this MSH.10.
+   * @param msgControlId - MSH.10 of the inbound message.
+   * @param audit - Decoded fields of the inbound message, for any `nacked` audit row.
+   * @param audit.callbackId - Callback ID minted for this inbound message.
+   * @param audit.msgType - MSH.9 message type.
+   * @param audit.originalMessage - Bytes as received (compared against the prior row's original_message).
+   * @param audit.finalizedMessage - Bytes as transformed for dispatch (persisted on any audit row).
+   * @param audit.enhancedModeColumn - Enhanced-mode column value to persist.
+   * @param audit.seqNo - Sequence number (MSH.13), if any.
+   * @param audit.receivedAt - Intake timestamp (ms).
+   */
+  private handleDuplicate(
+    queue: DurableQueue,
+    event: Hl7MessageEvent,
+    existing: InboundRow,
+    msgControlId: string | undefined,
+    audit: {
+      callbackId: string;
+      msgType: string | null;
+      originalMessage: Buffer;
+      finalizedMessage: Buffer;
+      enhancedModeColumn: 'standard' | 'aaMode' | null;
+      seqNo: number | null;
+      receivedAt: number;
+    }
+  ): void {
+    const conn = this.hl7Connection;
+    const enhancedMode = this.channel.getEnhancedMode();
+    const idLabel = msgControlId ?? 'n/a';
+    const behavior = this.channel.getDuplicateBehavior();
+
+    // Compare the message as received (original_message), so a channel that
+    // rewrites the message on intake (e.g. assignSeqNo bumping MSH.13) still
+    // recognizes a genuine retransmit despite the differing finalized bytes.
+    if (behavior === DuplicateBehavior.IDEMPOTENT && existing.originalMessage.equals(audit.originalMessage)) {
+      // Exact retransmit: replay the ACK the sender missed, then balance stats.
+      if (existing.serverResponseBody && existing.serverResponseBody.length > 0 && this.replayServerAck(existing)) {
+        // If the original delivery failed (processed + undelivered), this
+        // retransmit is what finally lands the ACK — close the source leg so the
+        // row no longer reads as awaiting delivery.
+        if (existing.ackOutcome === AckOutcome.UNDELIVERED) {
+          queue.setAckOutcome(existing.id, AckOutcome.DELIVERED);
+        }
+        this.channel.channelLog.info(
+          `[Duplicate idempotent -- ID: ${idLabel}] replayed prior server response ACK from row id=${existing.id}`
+        );
+        // replayServerAck → sendToRemote already recorded the ack in stats.
+        return;
+      }
+      // No (replayable) server response yet — replay the commit ACK (CA/AA).
+      this.channel.channelLog.info(
+        `[Duplicate idempotent -- ID: ${idLabel}] replayed commit ACK for prior row id=${existing.id}`
+      );
+      this.sendCommitAck(event.message);
+      this.recordImmediateAck(msgControlId);
+      return;
+    }
+
+    // We're here in idempotent mode only when the content differs: a *different*
+    // message reused a committed control ID. In `reject` mode we reject every
+    // collision. Either way the code is terminal (CR, or AR in aaMode): the peer
+    // must not retry, since a retransmit will fail identically.
+    const contentMismatch = behavior === DuplicateBehavior.IDEMPOTENT;
+    const reason = contentMismatch
+      ? `duplicate control id ${idLabel}: a message with this control ID was already committed with different content`
+      : 'duplicate control id';
+    this.channel.channelLog.warn(`[Duplicate rejected -- ID: ${idLabel}] prior row id=${existing.id}: ${reason}`);
+    this.sendCommitNack(event.message, enhancedMode === 'aaMode' ? 'AR' : 'CR', reason);
+    this.recordImmediateAck(msgControlId);
+    queue.enqueueRejected({
+      channelName: this.channel.getDefinition().name,
+      remote: this.remote,
+      msgControlId: msgControlId ?? null,
+      msgType: audit.msgType,
+      originalMessage: audit.originalMessage,
+      finalizedMessage: audit.finalizedMessage,
+      encoding: conn.getEncoding() ?? null,
+      enhancedMode: audit.enhancedModeColumn,
+      callbackId: audit.callbackId,
+      seqNo: audit.seqNo,
+      receivedAt: audit.receivedAt,
+      lastError: reason,
+      errorCode: QueueErrorCode.DuplicateRejected,
+    });
+  }
+
+  /**
+   * Balances {@link ChannelStatsTracker} for a message we answered synchronously
+   * at intake (duplicate replay / reject / storage-error NACK). `handleMessage`
+   * already called `recordMessageSent`; without this the control ID would linger
+   * in the pending map until the 5-minute GC, skewing pendingCount and RTT.
+   * @param msgControlId - MSH.10 of the message just answered, if present.
+   */
+  private recordImmediateAck(msgControlId: string | undefined): void {
+    if (msgControlId) {
+      this.channel.stats.recordAckReceived(msgControlId);
+    }
+  }
+
+  /**
+   * Replays the stored server response ACK for an already-dispatched duplicate,
+   * routing it through {@link AgentHl7Channel.sendToRemote} so the same
+   * app-level ACK policy and encoding apply as on the original delivery.
+   * @param existing - The prior row whose `serverResponseBody` to replay.
+   * @returns True if the response ACK was delivered; false if it couldn't be parsed/sent.
+   */
+  private replayServerAck(existing: InboundRow): boolean {
+    if (!existing.serverResponseBody) {
+      return false;
+    }
+    try {
+      return this.channel.sendToRemote({
+        type: 'agent:transmit:response',
+        channel: this.channel.getDefinition().name,
+        remote: this.remote,
+        contentType: ContentType.HL7_V2,
+        body: existing.serverResponseBody.toString('utf8'),
+        callback: existing.callbackId,
+      });
+    } catch (err) {
+      this.channel.channelLog.warn(
+        `[Duplicate idempotent] failed to replay server response ACK for row id=${existing.id}: ${normalizeErrorString(err)}`
+      );
+      return false;
     }
   }
 
@@ -277,18 +731,93 @@ export class AgentHl7ChannelConnection {
     this.channel.channelLog.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
   }
 
+  /**
+   * Sends the commit ACK (CA in `standard` enhanced mode, AA in `aaMode`) for an
+   * inbound message that has been durably committed. No-op outside enhanced mode.
+   *
+   * This is the durable path's replacement for the connection's synchronous
+   * auto-ACK: in durable mode the connection carries no enhancedMode (so it never
+   * auto-ACKs), and the agent calls this only after the DB write succeeds — so the
+   * CA/AA is a real promise that the message is on disk. Idempotency is not enforced
+   * here; the on-disk row (channel + MSH.10) is the dedup authority, and a genuine
+   * retransmit must be re-ACKed because the sender never saw the original.
+   * @param message - The original inbound message to ACK.
+   */
+  private sendCommitAck(message: Hl7Message): void {
+    const enhancedMode = this.channel.getEnhancedMode();
+    if (!enhancedMode) {
+      return;
+    }
+    const ackCode: AckCode = enhancedMode === 'standard' ? 'CA' : 'AA';
+    const response = message.buildAck({ ackCode });
+    this.hl7Connection.send(response);
+    // Reuse the existing 'enhancedAckSent' listener for logging (handleEnhancedAckSent).
+    this.hl7Connection.dispatchEvent(new Hl7EnhancedAckSentEvent(this.hl7Connection, response));
+  }
+
+  /**
+   * Sends a negative commit ACK for an inbound message. The wire code is CE/CR in
+   * `standard` enhanced mode and AE/AR in `aaMode` (error = retryable, reject =
+   * terminal); the caller picks which best describes the failure. An optional
+   * `reason` is written to MSA.3 for the sender's logs. No-op outside enhanced mode.
+   * @param message - The original inbound message to NACK.
+   * @param code - The negative ACK code to send.
+   * @param reason - Optional human-readable explanation placed in MSA.3.
+   */
+  private sendCommitNack(message: Hl7Message, code: NackCommitCode, reason?: string): void {
+    const enhancedMode = this.channel.getEnhancedMode();
+    if (!enhancedMode) {
+      return;
+    }
+    const response = message.buildAck({ ackCode: code });
+    if (reason) {
+      // Overwrite the default MSA.3 text (e.g. "Commit Reject") with the supplied reason.
+      response.getSegment('MSA')?.setField(3, reason);
+    }
+    this.hl7Connection.send(response);
+    this.hl7Connection.dispatchEvent(new Hl7EnhancedAckSentEvent(this.hl7Connection, response));
+  }
+
   private handleEnhancedAckSent(event: Hl7EnhancedAckSentEvent): void {
     const hl7Message = event.message;
     const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
     const ackCode = hl7Message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
 
     this.channel.channelLog.info(
-      `[Sent ${ackCode === 'CA' ? 'Commit ACK (CA)' : 'Immediate ACK (AA)'} -- ID: ${msgControlId ?? 'not provided'}]: ${hl7Message.toString().replaceAll('\r', '\n')}`
+      `[Sent ${describeAckCode(ackCode)} -- ID: ${msgControlId ?? 'not provided'}]: ${hl7Message.toString().replaceAll('\r', '\n')}`
     );
   }
 
   close(): Promise<void> {
     return this.hl7Connection.close();
+  }
+}
+
+/**
+ * Maps an MSA.1 acknowledgment code to a human-readable label for logging.
+ * Covers the positive commit/app ACKs (CA/AA) and the NACK codes dispatched by
+ * {@link AgentHl7Channel.sendCommitNack} (CE/CR/AE/AR) — without this, every
+ * NACK would mislabel itself as "Immediate ACK (AA)".
+ *
+ * @param code - The MSA.1 acknowledgment code (already upper-cased), if present.
+ * @returns A descriptive label, falling back to `ACK (<code>)` for anything unrecognized.
+ */
+export function describeAckCode(code: string | undefined): string {
+  switch (code) {
+    case 'CA':
+      return 'Commit ACK (CA)';
+    case 'AA':
+      return 'App ACK (AA)';
+    case 'CE':
+      return 'Commit Error (CE)';
+    case 'CR':
+      return 'Commit Reject (CR)';
+    case 'AE':
+      return 'App Error (AE)';
+    case 'AR':
+      return 'App Reject (AR)';
+    default:
+      return `ACK (${code ?? 'unknown'})`;
   }
 }
 
@@ -362,6 +891,28 @@ export function isAppLevelAckCode(code: string): code is AppLevelAckCode {
  */
 export function isAppLevelAckMode(candidate: string): candidate is AppLevelAckMode {
   return (APP_LEVEL_ACK_MODES as readonly string[]).includes(candidate);
+}
+
+/**
+ * Parses the `duplicateBehavior` URL query param controlling how the durable queue
+ * handles same-(channel, MSH.10) collisions while a prior row is still in-flight.
+ *
+ * Invalid values fall back to `idempotent` (the safer default — replay the prior ACK
+ * rather than reject and risk losing the message).
+ * @param rawValue - Raw query-param value (typically from the endpoint URL).
+ * @param logger - Logger used to emit a warning on invalid values.
+ * @returns The resolved {@link DuplicateBehavior}.
+ */
+export function parseDuplicateBehavior(rawValue: string | undefined, logger: ILogger): DuplicateBehavior {
+  if (!rawValue) {
+    return DuplicateBehavior.IDEMPOTENT;
+  }
+  const normalized = rawValue.toLowerCase();
+  if (normalized === DuplicateBehavior.REJECT || normalized === DuplicateBehavior.IDEMPOTENT) {
+    return normalized;
+  }
+  logger.warn(`Invalid duplicateBehavior value '${rawValue}'; expected 'reject' or 'idempotent'. Using idempotent.`);
+  return DuplicateBehavior.IDEMPOTENT;
 }
 
 /**

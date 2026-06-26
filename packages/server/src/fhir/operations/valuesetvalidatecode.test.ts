@@ -75,7 +75,7 @@ describe('ValueSet validate-code', () => {
           { name: 'url', valueUri: valueSet.url },
           { name: 'coding', valueCoding: { system, code: 'WARD' } },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -108,7 +108,7 @@ describe('ValueSet validate-code', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'url', valueUri: valueSet.url }, ...params],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -127,7 +127,7 @@ describe('ValueSet validate-code', () => {
           { name: 'url', valueUri: valueSet.url },
           { name: 'coding', valueCoding: { system, code: 'RETIREE' } },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -146,7 +146,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system, code: 'AUNT' } },
           { name: 'display', valueString: 'ant' },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -165,7 +165,7 @@ describe('ValueSet validate-code', () => {
           { name: 'url', valueUri: valueSet.url },
           { name: 'coding', valueCoding: { system: 'http://example.com/other', code: 'foo' } },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -184,7 +184,7 @@ describe('ValueSet validate-code', () => {
           { name: 'url', valueUri: valueSet.url },
           { name: 'code', valueCode: 'RETIREE' },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(400);
     expect(res2.body.resourceType).toStrictEqual('OperationOutcome');
   });
@@ -200,7 +200,7 @@ describe('ValueSet validate-code', () => {
           { name: 'url', valueUri: valueSet.url },
           { name: 'coding', valueCoding: { system, code: 'NOK' } },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -219,7 +219,7 @@ describe('ValueSet validate-code', () => {
           { name: 'url', valueUri: valueSet.url },
           { name: 'coding', valueCoding: { system, code: 'PEDC' } },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -238,7 +238,7 @@ describe('ValueSet validate-code', () => {
           { name: 'url', valueUri: 'http://hl7.org/fhir/ValueSet/observation-codes' },
           { name: 'coding', valueCoding: { system: 'http://loinc.org', code: '10727-6' } },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -258,7 +258,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system: 'http://loinc.org', code: '10727-6' } },
           { name: 'display', valueString: 'Cat parasites' },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -298,7 +298,7 @@ describe('ValueSet validate-code', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system, code: 'WARD' } }],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
@@ -331,7 +331,7 @@ describe('ValueSet validate-code', () => {
           { name: 'url', valueUri: vs.url },
           { name: 'coding', valueCoding: { system, code: randomUUID() } },
         ],
-      } as Parameters);
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;

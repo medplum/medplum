@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 export * from './access';
 export * from './agent';
+export * from './array';
 export * from './base-schema-utils';
 export * from './base64';
 export * from './bundle';
@@ -25,6 +26,7 @@ export * from './fhirmapper/parse';
 export * from './fhirmapper/transform';
 export * from './fhirpath/atoms';
 export * from './fhirpath/parse';
+export * from './fhirpath/patch';
 export * from './fhirpath/utils';
 export * from './filebuilder';
 export * from './filter/parse';
@@ -34,6 +36,7 @@ export * from './hl7';
 export * from './jwt';
 export * from './keyvalue';
 export * from './logger';
+export * from './medication-order-utils';
 export * from './outcomes';
 export * from './pharmacy-utils';
 export * from './readablepromise';

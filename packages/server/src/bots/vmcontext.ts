@@ -8,7 +8,7 @@ import {
   normalizeErrorString,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import type { Binary, Reference } from '@medplum/fhirtypes';
+import type { Binary } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
@@ -18,6 +18,31 @@ import { getBinaryStorage } from '../storage/loader';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
 import type { BotExecutionContext, BotExecutionResult } from './types';
+
+/*
+ * SECURITY NOTE: VMContext Bots execute administrator-provided JavaScript inside
+ * a Node.js VM context. This is intentionally powerful and must be treated as
+ * unsafe for untrusted code.
+ *
+ * This execution mode is intended for:
+ *
+ * 1. Local development and testing, where the developer already controls the
+ * server process and could run arbitrary Node.js code directly.
+ *
+ * 2. Highly restricted production deployments where only trusted system
+ * administrators can create or update Bot executable code, and where the
+ * server is configured accordingly.
+ *
+ * This feature is disabled unless explicitly enabled by server configuration
+ * (`vmContextBotsEnabled`). It is not intended to be a sandbox boundary for
+ * hostile users, multi-tenant user-submitted code, or arbitrary third-party
+ * JavaScript execution.
+ *
+ * Security reports about this file should take that threat model into account.
+ * If untrusted users are able to install or modify Bots in a production system,
+ * that is a deployment/access-control issue and VMContext Bots should not be
+ * enabled in that environment.
+ */
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 
@@ -43,7 +68,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   }
 
   const systemRepo = await getProjectSystemRepo(runAs.project);
-  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
+  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl });
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
   const botConsole = new MockConsole();

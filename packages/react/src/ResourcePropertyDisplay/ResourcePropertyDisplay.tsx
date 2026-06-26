@@ -2,7 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, CopyButton, Flex, Tooltip } from '@mantine/core';
 import type { InternalSchemaElement } from '@medplum/core';
-import { PropertyType, formatDateTime, formatPeriod, formatTiming, formatWallTime, isEmpty } from '@medplum/core';
+import {
+  formatDateTime,
+  formatPeriod,
+  formatTiming,
+  formatWallTime,
+  isEmpty,
+  isObject,
+  isString,
+  PropertyType,
+} from '@medplum/core';
 import type { ElementDefinitionType } from '@medplum/fhirtypes';
 import { IconCheck, IconCopy, IconEye, IconEyeOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -114,7 +123,15 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.uri:
     case PropertyType.url:
     case PropertyType.xhtml:
-      return <>{value}</>;
+      if (isObject(value) && !isString(value)) {
+        console.warn('Non-standard FHIR data or missing primitive value with extension', {
+          path: props.path,
+          propertyType,
+          value,
+        });
+        return null;
+      }
+      return <>{value?.toString()}</>;
     case PropertyType.canonical:
       return <ReferenceDisplay value={{ reference: value }} link={props.link} />;
     case PropertyType.dateTime:

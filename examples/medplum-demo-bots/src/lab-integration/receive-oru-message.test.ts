@@ -8,16 +8,9 @@ import {
   indexStructureDefinitionBundle,
   UCUM,
 } from '@medplum/core';
-import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type {
-  Bundle,
-  QuestionnaireResponse,
-  Reference,
-  SearchParameter,
-  ServiceRequest,
-  Specimen,
-} from '@medplum/fhirtypes';
+import type { Bundle, Reference, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';
 import type { ReadStream } from 'ssh2';
@@ -130,7 +123,7 @@ describe('Read from Partner Lab', () => {
       input: { resourceType: 'QuestionnaireResponse', status: 'completed' },
       contentType: 'string',
       secrets: { ...CONNECTION_DETAILS },
-    } as BotEvent<QuestionnaireResponse>);
+    });
   }, 10000);
 
   test('Parse Input', async (ctx: any) => {
@@ -384,7 +377,7 @@ describe('Read from Partner Lab', () => {
       input: { resourceType: 'QuestionnaireResponse', status: 'completed' },
       contentType: 'string',
       secrets: { ...CONNECTION_DETAILS },
-    } as BotEvent<QuestionnaireResponse>);
+    });
   });
 });
 

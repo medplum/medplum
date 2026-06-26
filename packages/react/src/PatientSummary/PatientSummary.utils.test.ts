@@ -15,7 +15,7 @@ import {
 
 describe('Patient Utilities', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('getGenderIdentity', () => {

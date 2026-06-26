@@ -46,6 +46,7 @@ export const executeHandler = async (req: Request, res: Response): Promise<void>
   } else {
     const result = await executeOperation(req, res);
 
+    // If a response has already started (e.g. SSE streaming), we do not control the response, clean up and return.
     if (res.headersSent) {
       if (!res.writableEnded) {
         res.end();

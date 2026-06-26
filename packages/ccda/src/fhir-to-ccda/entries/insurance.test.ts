@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import type { Account, Bundle, Composition, Coverage, Organization, Patient, RelatedPerson } from '@medplum/fhirtypes';
+import type { Account, Bundle, Coverage, Organization, Patient, RelatedPerson } from '@medplum/fhirtypes';
 import { FhirToCcdaConverter } from '../convert';
 import { createInsuranceEntry } from './insurance';
 
@@ -34,7 +34,7 @@ describe('createInsuranceEntry', () => {
             title: 'test',
             subject: createReference(patient),
             section: [],
-          } as Composition,
+          },
         },
       ],
     };

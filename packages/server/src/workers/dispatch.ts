@@ -1,9 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { ResourceNotFoundException } from '@aws-sdk/client-lambda';
 import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@medplum/core';
 import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
-import type { Job, QueueBaseOptions } from 'bullmq';
+import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
+import { deleteLambda, getLambdaNameForBot } from '../cloud/aws/deploy';
+import { getBotManagementLambdaClient } from '../cloud/aws/lambda';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
@@ -12,7 +15,7 @@ import { addCronJobs } from './cron';
 import { addDownloadJobs } from './download';
 import { addSubscriptionJobs } from './subscription';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 /*
  * The dispatch worker dispatches resource changes to other async jobs.
@@ -37,19 +40,9 @@ const queueName = 'DispatchQueue';
 const jobName = 'DispatchJobData';
 
 export const initDispatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<DispatchJobData>(queueName, {
     ...defaultOptions,
-    defaultJobOptions: {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
-      },
-    },
   });
 
   let worker: Worker<DispatchJobData> | undefined;
@@ -130,6 +123,26 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
   const project = projectId ? await systemRepo.readResource<Project>('Project', projectId) : undefined;
   const interaction = job.data.interaction;
   const context = { interaction, project, systemRepo } as BackgroundJobContext;
+
+  // Check if this resource was a Bot deployed to Lambda, if it was and this was a delete operation, we should remove the corresponding Lambda
+  if (resource.resourceType === 'Bot' && resource.runtimeVersion === 'awslambda' && interaction === 'delete') {
+    const name = getLambdaNameForBot(resource);
+    try {
+      const client = getBotManagementLambdaClient();
+      await deleteLambda(client, name);
+      getLogger().info('Lambda for Bot deleted', { botId: resource.id, lambdaName: name });
+    } catch (err) {
+      if (err instanceof ResourceNotFoundException) {
+        getLogger().info('Lambda for Bot does not exist. Skipping delete', { botId: resource.id, lambdaName: name });
+        return;
+      }
+      getLogger().error('Error deleting Lambda for Bot', {
+        botId: resource.id,
+        lambdaName: name,
+        err,
+      });
+    }
+  }
 
   try {
     await addSubscriptionJobs(resource, previousVersion, context);

@@ -8,7 +8,7 @@ import { MemberTable } from './MembersTable';
 export function ClientsPage(): JSX.Element {
   return (
     <>
-      <Title>Client Applications</Title>
+      <Title>ProjectMemberships by ClientApplication</Title>
       <MemberTable
         profileTypeOptions={[{ label: 'ClientApplication', value: 'ClientApplication' }]}
         fields={['user', 'profile', 'accessPolicy', 'userConfiguration', 'active', 'admin']}

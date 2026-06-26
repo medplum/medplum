@@ -2,28 +2,45 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import type { BundleEntry, Practitioner, ProjectMembership, User } from '@medplum/fhirtypes';
+import type {
+  AccessPolicy,
+  BundleEntry,
+  Patient,
+  Practitioner,
+  ProjectMembership,
+  Reference,
+  RelatedPerson,
+  User,
+} from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
-import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { Readable } from 'stream';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
-import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import {
+  addTestUser,
+  createTestProject,
+  initTestAuth,
+  setupPwnedPasswordMock,
+  setupRecaptchaMock,
+  withTestContext,
+} from '../test.setup';
+import { inviteUser } from './invite';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
-
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('Admin Invite', () => {
@@ -43,10 +60,10 @@ describe('Admin Invite', () => {
     mockSESv2Client = mockClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
 
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    fetchMock.mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(true);
   });
 
   afterEach(() => {
@@ -84,7 +101,7 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.invitedBy).toMatchObject(createReference(aliceUser));
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -139,7 +156,7 @@ describe('Admin Invite', () => {
 
     expect(res3.status).toBe(200);
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -288,7 +305,7 @@ describe('Admin Invite', () => {
 
     expect(res3.status).toBe(403);
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Input validation', async () => {
@@ -319,7 +336,7 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Do not send email', async () => {
@@ -349,7 +366,7 @@ describe('Admin Invite', () => {
 
     expect(res2.status).toBe(200);
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Invite by externalId', async () => {
@@ -383,7 +400,7 @@ describe('Admin Invite', () => {
     expect(res2.body.profile.reference).toContain('Patient/');
     expect(res2.body.admin).toBe(undefined);
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
 
     const rows = await new SelectQuery('User')
       .column('projectId')
@@ -568,7 +585,7 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.admin).toBe(true);
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const rows = await new SelectQuery('User')
       .column('projectId')
@@ -604,7 +621,7 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.admin).toBe(false);
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
   });
 
   test('Email sending error due to SES not being set up', async () => {
@@ -693,7 +710,7 @@ describe('Admin Invite', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.user.display).toBe(lowerBobEmail);
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -1120,7 +1137,7 @@ describe('Admin Invite', () => {
 
     expect(res1.status).toBe(200);
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
     expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(bobEmail);
@@ -1428,4 +1445,451 @@ describe('Admin Invite', () => {
     expect(normalizeErrorString(res.body)).toContain('Access policy');
     expect(normalizeErrorString(res.body)).toContain('does not exist');
   });
+
+  test('Invite Patient with scope: server creates server-scoped user', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        scope: 'server',
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('ProjectMembership');
+
+    // Server-scoped user should NOT be visible from the project context
+    const res2 = await request(app)
+      .get('/fhir/R4/User?email=' + bobEmail)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toBe('Bundle');
+    expect(res2.body.entry).toBeUndefined();
+  });
+
+  test('Invite Patient without scope defaults to project-scoped', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(200);
+
+    // Project-scoped user should be visible from the project context
+    const res2 = await request(app)
+      .get('/fhir/R4/User?email=' + bobEmail)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    const user = res2.body.entry[0].resource;
+    expect(user.resourceType).toBe('User');
+    expect(user.project?.reference).toBe(getReferenceString(project));
+  });
+
+  test('Invite Patient with scope: server - conflict with existing project-scoped Patient', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const bobEmail = `bob${randomUUID()}@example.com`;
+
+    // Invite Bob first as project-scoped Patient
+    const res1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
+      });
+    expect(res1.status).toBe(200);
+
+    // Invite Bob again as server-scoped Patient - should fail (different scope, same project)
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        scope: 'server',
+        sendEmail: false,
+      });
+    expect(res2.status).toBe(409);
+    expect(normalizeErrorString(res2.body)).toStrictEqual('User is already a member of this project');
+  });
+
+  test('Invite Patient applies defaultPatientAccessPolicy when no explicit policy', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Patient Policy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const projectWithDefault = await systemRepo.updateResource({
+        ...project,
+        defaultPatientAccessPolicy: createReference(defaultAccessPolicy),
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithDefault,
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+      });
+
+      expect(membership.accessPolicy?.reference).toBe(getReferenceString(defaultAccessPolicy));
+    }));
+
+  test('Invite Patient uses explicit access policy over defaultPatientAccessPolicy', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Patient Policy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const explicitAccessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Explicit Patient Policy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const projectWithDefault = await systemRepo.updateResource({
+        ...project,
+        defaultPatientAccessPolicy: createReference(defaultAccessPolicy),
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithDefault,
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        accessPolicy: createReference(explicitAccessPolicy),
+        sendEmail: false,
+      });
+
+      expect(membership.accessPolicy?.reference).toBe(getReferenceString(explicitAccessPolicy));
+    }));
+
+  test('Invite Patient without explicit policy and no defaultPatientAccessPolicy', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+
+      const { membership } = await inviteUser({
+        project,
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+      });
+
+      expect(membership.accessPolicy).toBeUndefined();
+    }));
+
+  test('Invite Practitioner does not apply defaultPatientAccessPolicy', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Patient Policy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const projectWithDefault = await systemRepo.updateResource({
+        ...project,
+        defaultPatientAccessPolicy: createReference(defaultAccessPolicy),
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithDefault,
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+      });
+
+      expect(membership.accessPolicy).toBeUndefined();
+    }));
+
+  test('Invite RelatedPerson does not apply defaultPatientAccessPolicy', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Patient Policy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      const relatedPerson = await systemRepo.createResource<RelatedPerson>({
+        resourceType: 'RelatedPerson',
+        meta: { project: project.id },
+        patient: createReference(patient),
+        name: [{ given: ['Bob'], family: 'Jones' }],
+      });
+      const projectWithDefault = await systemRepo.updateResource({
+        ...project,
+        defaultPatientAccessPolicy: createReference(defaultAccessPolicy),
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithDefault,
+        resourceType: 'RelatedPerson',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+        membership: {
+          profile: createReference(relatedPerson),
+        },
+      });
+
+      expect(membership.accessPolicy).toBeUndefined();
+    }));
+
+  test('Invite RelatedPerson provisions profile with patient', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const { profile } = await inviteUser({
+        project,
+        resourceType: 'RelatedPerson',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+        patient: createReference(patient),
+      });
+
+      expect(profile.resourceType).toStrictEqual('RelatedPerson');
+      expect((profile as RelatedPerson).patient).toMatchObject(createReference(patient));
+    }));
+
+  test('Invite RelatedPerson without patient throws', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+
+      await expect(
+        inviteUser({
+          project,
+          resourceType: 'RelatedPerson',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          externalId: randomUUID(),
+          sendEmail: false,
+        })
+      ).rejects.toThrow('Patient is required to create a RelatedPerson');
+    }));
+
+  test('Invite RelatedPerson with non-existent patient throws badRequest', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const patientReference = { reference: `Patient/${randomUUID()}` } as Reference<Patient>;
+
+      await expect(
+        inviteUser({
+          project,
+          resourceType: 'RelatedPerson',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          externalId: randomUUID(),
+          sendEmail: false,
+          patient: patientReference,
+        })
+      ).rejects.toThrow(`Patient ${patientReference.reference} does not exist`);
+    }));
+
+  test('Invite existing RelatedPerson by email does not require patient', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const bobEmail = `bob${randomUUID()}@example.com`;
+
+    // Pre-create a Patient and a RelatedPerson with a matching email in the project.
+    const relatedPerson = await withTestContext(async () => {
+      const systemRepo = await getProjectSystemRepo(project);
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Carol'], family: 'Patient' }],
+      });
+      return systemRepo.createResource<RelatedPerson>({
+        resourceType: 'RelatedPerson',
+        meta: { project: project.id },
+        patient: createReference(patient),
+        name: [{ given: ['Bob'], family: 'Jones' }],
+        telecom: [{ system: 'email', use: 'work', value: bobEmail }],
+      });
+    });
+
+    // Invite by email with NO patient param. The existing RelatedPerson matches
+    // by project + email, so it should be reused rather than requiring a patient.
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'RelatedPerson',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.profile).toMatchObject(createReference(relatedPerson));
+  });
+
+  test('Invite RelatedPerson by email with duplicate matches throws', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const bobEmail = `bob${randomUUID()}@example.com`;
+
+    // Pre-create two RelatedPersons sharing the same email in the project.
+    await withTestContext(async () => {
+      const systemRepo = await getProjectSystemRepo(project);
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Carol'], family: 'Patient' }],
+      });
+      for (let i = 0; i < 2; i++) {
+        await systemRepo.createResource<RelatedPerson>({
+          resourceType: 'RelatedPerson',
+          meta: { project: project.id },
+          patient: createReference(patient),
+          name: [{ given: ['Bob'], family: 'Jones' }],
+          telecom: [{ system: 'email', use: 'work', value: bobEmail }],
+        });
+      }
+    });
+
+    // Inviting by email with no patient must fail deterministically rather than
+    // arbitrarily picking one of the duplicate RelatedPersons.
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'RelatedPerson',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
+      });
+
+    expect(res.status).toBe(412);
+    expect(res.body.issue?.[0]?.code).toStrictEqual('multiple-matches');
+  });
+
+  test('Invite RelatedPerson with patient from another project throws', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const { project: otherProject } = await createTestProject();
+      const otherSystemRepo = await getProjectSystemRepo(otherProject);
+      const otherPatient = await otherSystemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: otherProject.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await expect(
+        inviteUser({
+          project,
+          resourceType: 'RelatedPerson',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          externalId: randomUUID(),
+          sendEmail: false,
+          patient: createReference(otherPatient),
+        })
+      ).rejects.toThrow('Patient does not belong to project');
+    }));
+
+  test('Invite Practitioner without patient does not error', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+
+      const { profile } = await inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Carol',
+        lastName: 'Davis',
+        externalId: randomUUID(),
+        sendEmail: false,
+      });
+
+      expect(profile.resourceType).toStrictEqual('Practitioner');
+    }));
 });

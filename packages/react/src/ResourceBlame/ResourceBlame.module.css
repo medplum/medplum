@@ -31,6 +31,12 @@
   line-height: 10px;
 }
 
+.onBehalfOf {
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-xs);
+  line-height: 10px;
+}
+
 .dateTime {
   border-right: 0.1px solid var(--mantine-color-gray-3);
   line-height: 10px;

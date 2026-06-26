@@ -854,7 +854,7 @@ export function getHumanName(
 ): HumanName | undefined {
   const patientName: HumanName = {};
 
-  const givenName = [];
+  const givenName: string[] = [];
   if (answers[`${prefix}first-name`]?.valueString) {
     givenName.push(answers[`${prefix}first-name`].valueString as string);
   }

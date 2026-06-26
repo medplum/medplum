@@ -39,6 +39,9 @@ window.ResizeObserver = ResizeObserver;
 // See: https://github.com/jsdom/jsdom/issues/1695#issuecomment-449931788
 Element.prototype.scrollIntoView = vi.fn();
 
+// jsdom does not implement scrollTo
+Element.prototype.scrollTo = vi.fn();
+
 // jsdom does not implement elementFromPoint (used by react-big-calendar)
 document.elementFromPoint = vi.fn().mockReturnValue(null);
 

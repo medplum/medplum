@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Menu } from '@mantine/core';
-import type { Filter, SearchRequest } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
 import { Operator, globalSchema } from '@medplum/core';
 import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -20,9 +20,9 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      onPrompt: jest.fn(),
-      onChange: jest.fn(),
-      onClose: jest.fn(),
+      onPrompt: vi.fn(),
+      onChange: vi.fn(),
+      onClose: vi.fn(),
       ...partialProps,
     } as SearchPopupMenuProps;
 
@@ -88,7 +88,7 @@ describe('SearchPopupMenu', () => {
 
   test('Date submenu prompt', async () => {
     const searchParam = globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter;
-    const onPrompt = jest.fn();
+    const onPrompt = vi.fn();
 
     await setup({
       search: {
@@ -118,7 +118,7 @@ describe('SearchPopupMenu', () => {
         code: 'birthdate',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -252,7 +252,7 @@ describe('SearchPopupMenu', () => {
 
   test('Quantity submenu prompt', async () => {
     const searchParam = globalSchema.types['Observation'].searchParams?.['value-quantity'] as SearchParameter;
-    const onPrompt = jest.fn();
+    const onPrompt = vi.fn();
 
     await setup({
       search: {
@@ -283,7 +283,7 @@ describe('SearchPopupMenu', () => {
         code: 'value-quantity',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -353,7 +353,7 @@ describe('SearchPopupMenu', () => {
         {
           code: 'organization',
           operator: Operator.EQUALS,
-          value: 'Organization/123',
+          value: 'Organization/125',
         },
       ],
     };
@@ -374,7 +374,7 @@ describe('SearchPopupMenu', () => {
 
   test('Reference submenu prompt', async () => {
     const searchParam = globalSchema.types['Patient'].searchParams?.['organization'] as SearchParameter;
-    const onPrompt = jest.fn();
+    const onPrompt = vi.fn();
 
     await setup({
       search: {
@@ -401,7 +401,7 @@ describe('SearchPopupMenu', () => {
         code: 'organization',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -496,7 +496,7 @@ describe('SearchPopupMenu', () => {
 
   test('Text submenu prompt', async () => {
     const searchParam = globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter;
-    const onPrompt = jest.fn();
+    const onPrompt = vi.fn();
 
     await setup({
       search: {
@@ -525,7 +525,7 @@ describe('SearchPopupMenu', () => {
         code: 'name',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
@@ -562,7 +562,7 @@ describe('SearchPopupMenu', () => {
 
   test('Token submenu prompt', async () => {
     const searchParam = globalSchema.types['MedicationRequest'].searchParams?.['code'] as SearchParameter;
-    const onPrompt = jest.fn();
+    const onPrompt = vi.fn();
 
     await setup({
       search: {
@@ -590,13 +590,13 @@ describe('SearchPopupMenu', () => {
         code: 'code',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 
   test('URI submenu prompt', async () => {
     const searchParam = globalSchema.types['Device'].searchParams?.['url'] as SearchParameter;
-    const onPrompt = jest.fn();
+    const onPrompt = vi.fn();
 
     await setup({
       search: {
@@ -623,7 +623,7 @@ describe('SearchPopupMenu', () => {
         code: 'url',
         operator: option.operator,
         value: '',
-      } as Filter);
+      });
     }
   });
 

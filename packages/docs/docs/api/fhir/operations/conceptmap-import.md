@@ -36,7 +36,7 @@ This operation requires **admin privileges**. You must be a project admin (`Proj
 | `url`     | `uri`     | The canonical URL of the ConceptMap to import into        | No<sup>*</sup>      |
 | `mapping` | `complex` | One or more mappings to import (see structure below)      | Yes      |
 
-::: note
+:::note
 <sup>*</sup> Either the instance ID in the URL or the `url` parameter must be provided.
 :::
 

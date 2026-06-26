@@ -5,8 +5,9 @@ import type { ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import type { RegisterResponse } from '../auth/register';
 import { registerNew } from '../auth/register';
@@ -15,9 +16,8 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
-
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 // create testProjectAdmin to use for set password
@@ -45,10 +45,10 @@ describe('Project Admin routes', () => {
   });
 
   beforeEach(() => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    fetchMock.mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(true);
   });
 
   test('Get project and promote admin', async () => {
@@ -157,7 +157,9 @@ describe('Project Admin routes', () => {
       })
     );
 
-    const bobRegistration = await addTestUser(aliceRegistration.project, { resourceType: 'AccessPolicy' });
+    const bobRegistration = await addTestUser(aliceRegistration.project, {
+      accessPolicy: { resourceType: 'AccessPolicy' },
+    });
 
     // Try to access Alice's project using Alices's access token
     // Should succeed
@@ -289,6 +291,21 @@ describe('Project Admin routes', () => {
       ]);
 
     expect(res14.status).toBe(403);
+
+    // Try to update settings using Bob's access token
+    // Should fail
+    const res15 = await request(app)
+      .post('/admin/projects/' + aliceRegistration.project.id + '/settings')
+      .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
+      .type('json')
+      .send([
+        {
+          name: 'test_setting',
+          valueString: 'test_value',
+        },
+      ]);
+
+    expect(res15.status).toBe(403);
   });
 
   test('Delete membership', async () => {
@@ -577,10 +594,48 @@ describe('Project Admin routes', () => {
     expect(res3.body.project.site[0].name).toStrictEqual('test_site');
   });
 
+  test('Save project settings', async () => {
+    // Register and create a project
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'John',
+        lastName: 'Adams',
+        projectName: 'Adams Project',
+        email: `john${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Add a setting
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/settings')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send([
+        {
+          name: 'aiModels',
+          valueString: JSON.stringify([{ value: 'gpt-5.5', label: 'GPT-5.5' }]),
+        },
+      ]);
+    expect(res2.status).toBe(200);
+
+    // Verify the setting was added
+    const res3 = await request(app)
+      .get('/admin/projects/' + project.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.body.project.setting).toHaveLength(1);
+    expect(res3.body.project.setting[0].name).toStrictEqual('aiModels');
+    expect(res3.body.project.setting[0].valueString).toStrictEqual(
+      JSON.stringify([{ value: 'gpt-5.5', label: 'GPT-5.5' }])
+    );
+  });
+
   test('Set password access denied', async () => {
     // Create test user in project
     const testProjectUser = await addTestUser(testProjectAdmin.project, {
-      resourceType: 'AccessPolicy',
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+      },
     });
 
     // Try to set password using user's access token

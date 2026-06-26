@@ -22,10 +22,10 @@ If you have any questions, please [contact us](mailto:hello@medplum.com) or [joi
 
 To deploy Medplum in GCP, the process is divided into two parts:
 
-- Static Infrastructure (using terraform)
-- Medplum App (helm chart)
+- Static Infrastructure (using Terraform)
+- Medplum App (Helm chart)
 
-This division allows a fully customizable deployment, for example: if a customer wants to use an existing GKE cluster, they can just deploy the helm chart to it.
+This division allows a fully customizable deployment, for example: if a customer wants to use an existing GKE cluster, they can just deploy the Helm chart to it.
 
 The Medplum application is configured using a secret in GCP Secrets Manager.
 See [Generate Configuration Secret](#generate-configuration-secret)
@@ -38,12 +38,12 @@ See [Generate Configuration Secret](#generate-configuration-secret)
 
 - The Medplum backend (API) container runs in GKE.
   - The API is exposed using Ingress, which creates a GCP Load Balancer
-  - The Load balancer has a WAF (Cloud Armor)
+  - The load balancer has a WAF (Cloud Armor)
   - Google-managed certificates are used
 - We use managed Redis (Memorystore) and Cloud SQL for cache and PostgreSQL
 - All outbound connections go through a Cloud NAT (fixed IP)
-- There bottom Load Balancer is deployed using terraform, and it is used to expose the frontend (app) and storage buckets, using Google CDN
-  - The Load balancer has a WAF (Cloud Armor)
+- The external load balancer is deployed using Terraform, and it is used to expose the frontend (app) and storage buckets, using Google CDN
+  - The load balancer has a WAF (Cloud Armor)
   - Google-managed certificates are used
 
 ### High-level deployment process {/* #high-level-deployment-process */}
@@ -51,7 +51,7 @@ See [Generate Configuration Secret](#generate-configuration-secret)
 1. Deploy static infrastructure (GKE, CloudSQL, Redis, Storage Buckets, LB)
 2. With the values from Step 1, create the Medplum app configuration
 3. With the values from Step 1, point the DNS records
-4. Deploy the backend application using the helm chart
+4. Deploy the backend application using the Helm chart
 5. Copy the frontend files to the CDN bucket
 
 ## GCP Deployment {/* #gcp-deployment */}
@@ -124,7 +124,7 @@ terraform apply
 
 ### Generate configuration secret {/* #generate-configuration-secret */}
 
-The configuration secret holds the Medplum application configuration and it contains the connection strings to the rest of the infrastructure that we deployed before, using terraform.
+The configuration secret holds the Medplum application configuration and it contains the connection strings to the rest of the infrastructure that we deployed before, using Terraform.
 
 **1\. Create the Secret in Secret Manager:**
 
@@ -157,9 +157,6 @@ cat <<EOF > secret_data.json
   "googleClientSecret": "",
   "recaptchaSiteKey": "6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq",
   "recaptchaSecretKey": "6LfHdsYdAAAAAH9dN154jbJ3zpQife3xaiTvPChL",
-  "adminClientId": "2a4b77f2-4d4e-43c6-9b01-330eb5ca772f",
-  "maxJsonSize": "1mb",
-  "maxBatchSize": "50mb",
   "botLambdaRoleArn": "",
   "botLambdaLayerName": "medplum-bot-layer",
   "vmContextBotsEnabled": true,
@@ -189,7 +186,7 @@ EOF
 
 - Replace **YOUR_DB_HOST** and **YOUR_REDIS_HOST** with the actual hostnames or IP addresses of your database and Redis instances.
 - Ensure the JSON content is correctly formatted and that any variables or placeholders are replaced with actual values.
-- See [/docs/self-hosting/presigned-urls] to setup presigned URLs
+- See [Set up presigned URLs](/docs/self-hosting/presigned-urls) to set up presigned URLs
 
 **3\. Add a New Secret Version with the Secret Data:**
 
@@ -219,11 +216,9 @@ Note the IP address associated with medplum-elb.
 
 This ensures that traffic to these domains is routed through the CDN-enabled load balancer, which serves content from your backend buckets configured in Terraform.
 
-### Deploy APP Using Helm {/* #deploy-app-using-helm */}
+### Deploy the Backend API Using Helm {/* #deploy-the-backend-api-using-helm */}
 
-The Helm chart is a package that contains `yaml` templates that represents Kubernetes Objects.
-
-The helm chart can be found in the `helm` directory.
+The Medplum Helm chart is a package containing `yaml` templates representing Kubernetes objects.
 
 **It will deploy:**
 
@@ -234,17 +229,15 @@ The helm chart can be found in the `helm` directory.
   - The ingress is optional. Users can choose to expose the API with other methods
 - Service Account
 
-#### Deploy your backend API to the GKE cluster using Helm:
-
 #### Configure kubectl {/* #configure-kubectl */}
 
 Get credentials for your GKE cluster:
 
 ```bash
-gcloud container clusters get-credentials medplum-gke --region your-region --project your-project-id
+gcloud container clusters get-credentials medplum-gke --region [MY_REGION] --project [MY_PROJECT_ID]
 ```
 
-Replace your-region and your-project-id with your actual values.
+Replace `[MY_REGION]` and `[MY_PROJECT_ID]` with your actual values.
 
 **Note:** Ensure your local machine’s public IP address is included in the master_authorized_networks in your Terraform GKE configuration to allow access to the cluster. To find your public IP address:
 
@@ -269,38 +262,47 @@ Reapply the Terraform configuration if you make changes:
 terraform apply
 ```
 
-#### Navigate to Your Helm Chart Directory {/* #navigate-to-your-helm-chart-directory */}
+#### Set up the Helm Repository {/* #set-up-the-helm-repository */}
+
+Add the Medplum Helm repository:
 
 ```bash
-cd medplum/helm
+helm repo add medplum https://charts.medplum.com
+helm repo update
+```
+
+Generate a local `values.yaml` file:
+
+```bash
+helm show values medplum/medplum > values.yaml
 ```
 
 #### Edit the values.yaml File {/* #edit-the-values.yaml-file */}
 
-Edit the values.yaml file to override default values, specifying your cloud provider, project_id and config_sicret_id:
+Edit the `values.yaml` file to override default values, specifying your cloud provider and configuration source:
 
 ```yaml
 global:
-  cloudProvider: gcp # Supported values: gcp. # roadmap: aws, azure
-  gcp:
-    projectId: [MY_PROJECT_ID] # Your Google Cloud Platform project ID
-    secretId: [MY_CONFIG_SECRET_ID] # The secret ID for configuration in Google Cloud Platform
+  cloudProvider: gcp
+  configSource:
+    type: "gcp:[MY_PROJECT_ID]:[MY_CONFIG_SECRET_ID]"
 ```
 
-Replace `[MY_PROJECT_ID]` with your actual GCP project id.
-Replace [`[MY_CONFIG_SECRET_ID]`](#generate-configuration-secret) with the secret name created the step before.
+Replace `[MY_PROJECT_ID]` with your actual GCP project ID.
+
+Replace `[MY_CONFIG_SECRET_ID]` with the secret name created in the [Generate configuration secret](#generate-configuration-secret) step.
 
 #### Edit service account values {/* #edit-service-account-values */}
 
 ```yaml
 serviceAccount:
   annotations:
-    iam.gke.io/gcp-service-account: [MY_GCP_SERVICE_ACCOUNT] # Your Google Cloud Platform service account e.i: medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com
+    iam.gke.io/gcp-service-account: [MY_GCP_SERVICE_ACCOUNT] # Your Google Cloud Platform service account e.g.: medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com
 ```
 
-    Replace `[MY_GCP_SERVICE_ACCOUNT]` with your actual GCP service account which was created by terraform and its name is `medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com`
+Replace `[MY_GCP_SERVICE_ACCOUNT]` with your actual GCP service account, which was created by Terraform and is named `medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com`.
 
-**Edit ingress values:**
+#### Edit ingress values {/* #edit-ingress-values */}
 
 (ingress is optional, customers can choose to use whatever method they like to expose the app)
 
@@ -310,30 +312,37 @@ ingress:
   domain: api.yourdomain.com
 ```
 
-    Replace `api.yourdomain.com` with your actual domain.
+Replace `api.yourdomain.com` with your actual domain.
 
-**Install the Application:**
+#### Install the Application {/* #install-the-application */}
 
 ```bash
-helm install medplum-server . -n medplum --create-namespace -f values.yaml
+helm install medplum medplum/medplum \
+  --namespace medplum \
+  --create-namespace \
+  -f values.yaml
 ```
-
-Note: “.” is the `./path-to-your-helm-chart.` The `values.yam`l is in the same directory as helm chart
 
 - **Update DNS Records:**
 
 Obtain the IP address of the Ingress:
 
 ```bash
-kubectl get ingress medplum-server --namespace medplum
+kubectl get ingress medplum --namespace medplum
 
-NAME             CLASS    HOSTS                     ADDRESS        PORTS   AGE
-medplum-server   <none>   api.yourdomain.com        34.8.101.254   80      18h
+NAME      CLASS    HOSTS                     ADDRESS        PORTS   AGE
+medplum   <none>   api.yourdomain.com        34.8.101.254   80      18h
 ```
 
 Update your DNS records to point api.yourdomain.com to the Ingress IP address.
 
 This is the backend API endpoint.
+
+### Upgrade the backend application {/* #upgrade-the-backend-application */}
+
+Backend upgrades use the standard Medplum Helm upgrade process. See [Install on Kubernetes: Upgrade to a new version](/docs/self-hosting/install-on-kubernetes#upgrade-to-a-new-version).
+
+The GCP-specific settings in `values.yaml`, such as the configuration source, service account annotations, and ingress settings, continue to apply during the upgrade. This upgrades the Kubernetes backend only; frontend static assets are built and uploaded separately in the next section.
 
 ## Deploy the frontend (App) {/* #deploy-the-frontend-(app) */}
 

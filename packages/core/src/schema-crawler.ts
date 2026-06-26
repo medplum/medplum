@@ -110,7 +110,7 @@ export class SchemaCrawler {
     if (schema.type === undefined) {
       throw new Error('schema must include a type');
     }
-    this.rootSchema = schema as InternalTypeSchema & { type: string };
+    this.rootSchema = schema;
 
     const rootContext = buildElementsContext({
       parentContext: undefined,

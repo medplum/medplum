@@ -2,24 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, OperationDefinition } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getStatusForAgents } from './agentstatus';
+import { makeOperationDefinition } from './definitions';
 import { getAgentsForRequest, makeResultWrapperEntry } from './utils/agentutils';
 
-export const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  name: 'agent-bulk-status',
-  status: 'active',
-  kind: 'operation',
-  code: 'bulk-status',
-  experimental: true,
-  resource: ['Agent'],
-  system: false,
-  type: true,
-  instance: false,
-  parameter: [{ use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' }],
-};
+export const operation = makeOperationDefinition(
+  { scope: 'type', resource: 'Agent' },
+  {
+    name: 'agent-bulk-status',
+    code: 'bulk-status',
+    parameter: [{ use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' }],
+  }
+);
 
 /**
  * Handles HTTP requests for the Agent $status operation.

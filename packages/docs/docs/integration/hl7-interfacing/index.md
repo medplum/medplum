@@ -31,7 +31,7 @@ There are infinitely many use cases for consuming and publishing HL7 messages fr
 
 | Use case               | HL7 Message Type | Description                                                                      |
 |------------------------|------------------|----------------------------------------------------------------------------------|
-| Identity management    | ADT              | When a new message is received - check to see if the [patient demographic](/docs/charting/patient-demographics) exists and if not create a new record.                                                 |
+| Identity management    | ADT              | When a new message is received - check to see if the [patient demographic](/docs/charting/chart-data-model#patient-demographics) exists and if not create a new record.                                                 |
 | Diagnostics results    | ORU              | When a new lab test result is completed, store the result in the datastore.      |
 | Schedule-driven workflow | SIU            | When a new appointment is scheduled, prompt the patient to complete their onboarding. |
 

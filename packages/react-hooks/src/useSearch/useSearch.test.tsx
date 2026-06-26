@@ -21,7 +21,7 @@ function TestComponent(): JSX.Element {
 
 describe('useSearch hooks', () => {
   beforeAll(() => {
-    console.error = jest.fn();
+    console.error = vi.fn();
   });
 
   async function setup(children: ReactNode): Promise<void> {
@@ -49,7 +49,7 @@ describe('useSearch hooks', () => {
 
   test('Debounced search', async () => {
     const medplum = new MockClient();
-    const medplumSearch = jest.spyOn(medplum, 'search');
+    const medplumSearch = vi.spyOn(medplum, 'search');
 
     const { result, rerender } = renderHook(
       (props) => useSearch('Patient', { name: props.name }, { debounceMs: 150 }),
@@ -89,7 +89,7 @@ describe('useSearch hooks', () => {
 
   test('enabled: false prevents fetch', async () => {
     const medplum = new MockClient();
-    const medplumSearch = jest.spyOn(medplum, 'search');
+    const medplumSearch = vi.spyOn(medplum, 'search');
 
     const { result } = renderHook(() => useSearch('Patient', { name: 'homer' }, { enabled: false }), {
       wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
@@ -104,7 +104,7 @@ describe('useSearch hooks', () => {
 
   test('enabled changing from false to true triggers fetch', async () => {
     const medplum = new MockClient();
-    const medplumSearch = jest.spyOn(medplum, 'search');
+    const medplumSearch = vi.spyOn(medplum, 'search');
 
     const { result, rerender } = renderHook(
       (props) => useSearch('Patient', { name: 'homer' }, { enabled: props.enabled }),
@@ -143,8 +143,7 @@ describe('useSearch hooks', () => {
       resolveSecond = resolve;
     });
 
-    jest
-      .spyOn(medplum, 'search')
+    vi.spyOn(medplum, 'search')
       .mockReturnValueOnce(firstPromise as ReturnType<typeof medplum.search>)
       .mockReturnValueOnce(secondPromise as ReturnType<typeof medplum.search>);
 

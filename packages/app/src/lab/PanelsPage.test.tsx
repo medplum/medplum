@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { ActivityDefinition, ObservationDefinition } from '@medplum/fhirtypes';
+import type { ActivityDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
@@ -28,13 +28,13 @@ describe('PanelsPage', () => {
       resourceType: 'ObservationDefinition',
       id: '1',
       code: { coding: [{ display: 'Assay 1' }] },
-    } as ObservationDefinition);
+    });
 
     const assay2 = await medplum.createResource({
       resourceType: 'ObservationDefinition',
       id: '2',
       code: { coding: [{ display: 'Assay 2' }] },
-    } as ObservationDefinition);
+    });
 
     await medplum.createResource({
       resourceType: 'ActivityDefinition',

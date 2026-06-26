@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ILogger } from '@medplum/core';
+import type { AgentChannelStats, ILogger } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import { DEFAULT_ENCODING } from '@medplum/hl7';
-import type { ChannelStats } from './channel-stats-tracker';
 import { calculateRttStats } from './channel-stats-tracker';
 import { CLIENT_RELEASE_COUNTDOWN_MS } from './constants';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
@@ -40,7 +39,6 @@ export class Hl7ClientPool {
   private nextClientIdx: number = 0;
   private readonly heartbeatEmitter: HeartbeatEmitter;
   readonly messageTracker: Hl7MessageTracker;
-  private trackingStats = false;
   private gcListener: (() => void) | undefined;
 
   constructor(options: Hl7ClientPoolOptions) {
@@ -247,15 +245,12 @@ export class Hl7ClientPool {
       keepAlive: this.keepAlive,
       log: this.log,
       messageTracker: this.messageTracker,
+      heartbeatEmitter: this.heartbeatEmitter,
     });
 
     // If GC is running, we should add the current timestamp as last used for this client
     if (this.gcListener) {
       this.lastUsedTimestamps.set(client, Date.now());
-    }
-
-    if (this.trackingStats) {
-      client.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter });
     }
 
     this.clients.push(client);
@@ -294,32 +289,11 @@ export class Hl7ClientPool {
     return this.maxClients;
   }
 
-  startTrackingStats(): void {
-    this.trackingStats = true;
-    for (const client of this.clients) {
-      client.startTrackingStats({ heartbeatEmitter: this.heartbeatEmitter });
-    }
-  }
-
-  stopTrackingStats(): void {
-    this.trackingStats = false;
-    for (const client of this.clients) {
-      client.stopTrackingStats();
-    }
-  }
-
-  isTrackingStats(): boolean {
-    return this.trackingStats;
-  }
-
-  getPoolStats(): ChannelStats | undefined {
-    if (!this.trackingStats) {
-      return undefined;
-    }
-    const allRttSamples = this.clients.flatMap((client) => client.stats?.getRttSamples() ?? []);
+  getPoolStats(): AgentChannelStats {
+    const allRttSamples = this.clients.flatMap((client) => client.stats.getRttSamples());
     let totalPendingCount = 0;
     for (const client of this.clients) {
-      totalPendingCount += client.stats?.getPendingCount() ?? 0;
+      totalPendingCount += client.stats.getPendingCount();
     }
     return { rtt: calculateRttStats(allRttSamples, totalPendingCount) };
   }

@@ -22,8 +22,8 @@ export function clearReleaseCache(): void {
  */
 export function assertReleaseManifest(candidate: unknown): asserts candidate is ReleaseManifest {
   const manifest = candidate as ReleaseManifest;
-  if (!manifest.tag_name) {
-    throw new Error('Manifest missing tag_name');
+  if (!manifest.tag_name?.startsWith('v')) {
+    throw new Error("Manifest missing valid tag_name starting with a 'v' (eg. v5.1.15)");
   }
   const assets = manifest.assets;
   if (!assets?.length) {
@@ -51,7 +51,9 @@ export async function fetchVersionManifest(
   version?: string,
   params?: Record<string, string>
 ): Promise<ReleaseManifest> {
-  let manifest = releaseManifests.get(version ?? 'latest');
+  // When fetching `latest`, never serve from or persist to the cache. `latest` is a moving
+  // target, so a cached entry would otherwise go stale until the process restarts.
+  let manifest = version ? releaseManifests.get(version) : undefined;
   if (!manifest) {
     const versionTag = version ? `v${version}` : 'latest';
     const url = new URL(`${MEDPLUM_RELEASES_URL}/${versionTag}.json`);
@@ -77,10 +79,10 @@ export async function fetchVersionManifest(
     const response = (await res.json()) as ReleaseManifest;
     assertReleaseManifest(response);
     manifest = response;
-    releaseManifests.set(version ?? 'latest', manifest);
-    if (!version) {
-      releaseManifests.set(manifest.tag_name.slice(1), manifest);
-    }
+    // `tag_name` is always `v${version}`, so this key matches the `version` lookup above for
+    // explicit versions, and stores the resolved concrete version (immutable) for `latest` —
+    // never the `latest` alias itself, which is a moving target.
+    releaseManifests.set(manifest.tag_name.slice(1), manifest);
   }
   return manifest;
 }

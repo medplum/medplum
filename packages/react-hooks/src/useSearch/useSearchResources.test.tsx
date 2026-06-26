@@ -22,7 +22,7 @@ function TestComponent(): JSX.Element {
 
 describe('useSearch hooks', () => {
   beforeAll(() => {
-    console.error = jest.fn();
+    console.error = vi.fn();
   });
 
   async function setup(children: ReactNode): Promise<void> {
@@ -50,7 +50,7 @@ describe('useSearch hooks', () => {
 
   test('Debounced search', async () => {
     const medplum = new MockClient();
-    const medplumSearchResources = jest.spyOn(medplum, 'searchResources');
+    const medplumSearchResources = vi.spyOn(medplum, 'searchResources');
 
     const { result, rerender } = renderHook(
       (props) => useSearchResources('Patient', { name: props.name }, { debounceMs: 150 }),

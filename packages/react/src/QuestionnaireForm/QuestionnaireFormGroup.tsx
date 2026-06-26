@@ -18,7 +18,7 @@ export function QuestionnaireFormGroup(props: QuestionnaireFormGroupProps): JSX.
   return (
     <div key={props.item.linkId}>
       {props.item.text && (
-        <Title order={3} mb="md">
+        <Title order={4} mb="md">
           {props.item.text}
         </Title>
       )}

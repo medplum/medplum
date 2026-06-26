@@ -3,7 +3,7 @@
 import type { Location, Observation, Procedure, Reference } from '@medplum/fhirtypes';
 import { OID_ENCOUNTER_LOCATION, OID_PROCEDURE_ACTIVITY_ACT, OID_PROCEDURE_ACTIVITY_PROCEDURE } from '../../oids';
 import { mapCodeableConceptToCcdaCode } from '../../systems';
-import type { CcdaCode, CcdaEntry, CcdaId, CcdaParticipant } from '../../types';
+import type { CcdaCode, CcdaEntry, CcdaParticipant } from '../../types';
 import type { FhirToCcdaConverter } from '../convert';
 import {
   createTextFromExtensions,
@@ -52,7 +52,7 @@ export function createHistoryOfProceduresEntry(
               { '@_root': OID_PROCEDURE_ACTIVITY_ACT },
               { '@_root': OID_PROCEDURE_ACTIVITY_ACT, '@_extension': '2014-06-09' },
             ],
-            id: mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
+            id: mapIdentifiers(resource.id, resource.identifier),
             code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
             statusCode: { '@_code': 'completed' },
             effectiveTime: mapEffectiveTime(resource.performedDateTime, resource.performedPeriod),
@@ -70,12 +70,12 @@ export function createHistoryOfProceduresEntry(
             { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE },
             { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
           ],
-          id: mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
+          id: mapIdentifiers(resource.id, resource.identifier),
           code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
           statusCode: { '@_code': 'completed' },
           effectiveTime: mapEffectiveTime(resource.performedDateTime, resource.performedPeriod),
           text: createTextFromExtensions(resource.extension),
-          targetSiteCode: mapCodeableConceptToCcdaCode(resource.bodySite?.[0]) as CcdaCode,
+          targetSiteCode: mapCodeableConceptToCcdaCode(resource.bodySite?.[0]),
           participant: [mapLocationToParticipant(converter, resource.location)].filter(Boolean) as CcdaParticipant[],
         },
       ],
@@ -89,8 +89,8 @@ export function createHistoryOfProceduresEntry(
           '@_classCode': 'OBS',
           '@_moodCode': 'EVN',
           templateId: mapObservationTemplateId(resource),
-          id: mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
-          code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+          id: mapIdentifiers(resource.id, resource.identifier),
+          code: mapCodeableConceptToCcdaCode(resource.code),
           value: mapObservationValue(resource),
           statusCode: { '@_code': 'completed' },
           effectiveTime: mapEffectiveTime(resource.effectiveDateTime, resource.effectivePeriod),

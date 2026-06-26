@@ -3,33 +3,37 @@
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
 import fs from 'node:fs';
+import type { Mock } from 'vitest';
 import { printConfigNotFound, printStackNotFound } from './utils';
 
-jest.mock('node:fs', () => ({
-  createReadStream: jest.fn(),
-  existsSync: jest.fn(),
-  mkdtempSync: jest.fn(() => '/tmp/'),
-  readdirSync: jest.fn(() => []),
-  readFileSync: jest.fn(),
-  rmSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  constants: {
-    O_CREAT: 0,
-  },
-  promises: {
-    readFile: jest.fn(async () => '{}'),
-  },
-}));
+vi.mock('node:fs', () => {
+  const mock = {
+    createReadStream: vi.fn(),
+    existsSync: vi.fn(),
+    mkdtempSync: vi.fn(() => '/tmp/'),
+    readdirSync: vi.fn(() => []),
+    readFileSync: vi.fn(),
+    rmSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    constants: {
+      O_CREAT: 0,
+    },
+    promises: {
+      readFile: vi.fn(async () => '{}'),
+    },
+  };
+  return { default: mock, ...mock };
+});
 
 describe('Utils', () => {
   test('printConfigNotFound no configs found', async () => {
-    (fs.readdirSync as jest.Mock).mockImplementation(() => [
+    (fs.readdirSync as Mock).mockImplementation(() => [
       { name: 'js', isDirectory: () => true, isFile: () => false },
       { name: 'main.js', isDirectory: () => false, isFile: () => true },
       { name: 'nonejsfile', isDirectory: () => false, isFile: () => true },
     ]);
 
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     await printConfigNotFound('dev');
 
@@ -38,13 +42,13 @@ describe('Utils', () => {
   });
 
   test('printConfigNotFound configs found', async () => {
-    (fs.readdirSync as jest.Mock).mockImplementation(() => [
+    (fs.readdirSync as Mock).mockImplementation(() => [
       { name: 'medplum.x.config.json', isDirectory: () => false, isFile: () => true },
       { name: 'medplum.y.config.json', isDirectory: () => false, isFile: () => true },
       { name: 'medplum.z.config.json', isDirectory: () => false, isFile: () => true },
     ]);
 
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     await printConfigNotFound('dev');
 
@@ -61,7 +65,7 @@ describe('Utils', () => {
       UserId: '222222222222',
     });
 
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     await printStackNotFound('dev');
 
@@ -76,7 +80,7 @@ describe('Utils', () => {
 
     stsClient.on(GetCallerIdentityCommand).rejects(new Error('Not authorized'));
 
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     await printStackNotFound('dev');
 

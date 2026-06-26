@@ -30,7 +30,7 @@ const elementsContext: ElementsContextType = {
   getExtendedProps: () => undefined,
 };
 
-const onChange = jest.fn();
+const onChange = vi.fn();
 describe('ElementsInput', () => {
   test('Renders', () => {
     render(

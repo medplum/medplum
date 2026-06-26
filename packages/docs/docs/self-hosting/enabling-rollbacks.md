@@ -25,7 +25,7 @@ Since the `4.x` series, Medplum has structured its release process so that each 
 
 This means that if you deploy a new minor version but **do not run its post-deploy migrations**, you can still safely roll back to the latest patch of the **previous** minor version.
 
-:::info The rollback window
+:::info[The rollback window]
 You can safely rollback to the **latest patch of the previous minor version** — and only the previous minor — as long as no post-deploy migrations for the new minor version have been applied.
 :::
 
@@ -34,8 +34,8 @@ You can safely rollback to the **latest patch of the previous minor version** �
 Suppose your cluster is running `v4.2.6` and you want to upgrade to `v4.3.x`:
 
 ```
-v4.2.6 (latest patch of previous minor) ─┐
-                                         │  ← safe rollback window
+v4.2.6 (latest patch of previous minor) ──┐
+                                          │  ← safe rollback window
 v4.3.15 deployed, post-deploy deferred ───┘
 ```
 
@@ -113,7 +113,7 @@ curl -X POST \
 
 Monitor the resulting `AsyncJob` resource until all pending migrations report a completed status. See [Monitoring Migration Progress](/docs/self-hosting/upgrading-server#monitoring-migration-progress) for details.
 
-:::warning Rollback window closes here
+:::warning[Rollback window closes here]
 Once post-deploy migrations for the new minor version begin to run, **the rollback window is closed**. You cannot safely roll back after this point.
 :::
 

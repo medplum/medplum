@@ -275,7 +275,7 @@ describe('EncounterCoverageEligibilityModal', () => {
     beforeEach(() => {
       mockSearchResources(medplum, { coverages: [mockCoverage] });
       mockSearchOne(medplum, { bot: ExampleBot, practitionerRole: mockPractitionerRole });
-      vi.spyOn(medplum, 'createResource').mockResolvedValue(mockEligibilityRequest as any);
+      vi.spyOn(medplum, 'createResource').mockResolvedValue(mockEligibilityRequest);
       vi.spyOn(medplum, 'executeBot').mockResolvedValue({} as any);
     });
 
@@ -347,6 +347,40 @@ describe('EncounterCoverageEligibilityModal', () => {
       await setup();
       await waitFor(() => {
         expect(screen.getByText('Secondary')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('self-pay filtering', () => {
+    const selfPayCoverage: WithId<Coverage> = {
+      resourceType: 'Coverage',
+      id: 'coverage-selfpay',
+      status: 'active',
+      payor: [{ display: 'Self' }],
+      beneficiary: { reference: `Patient/${HomerSimpson.id}` },
+      type: {
+        coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'SELFPAY', display: 'Self Pay' }],
+        text: 'Self Pay',
+      },
+    };
+
+    test('filters out self-pay coverages', async () => {
+      mockSearchResources(medplum, { coverages: [selfPayCoverage, mockCoverage] });
+      mockSearchOne(medplum);
+      await setup();
+      await waitFor(() => {
+        expect(screen.getByText('Aetna')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Self')).not.toBeInTheDocument();
+      expect(document.querySelector('.mantine-Select-root')).not.toBeInTheDocument();
+    });
+
+    test('shows no coverage message when only self-pay coverage exists', async () => {
+      mockSearchResources(medplum, { coverages: [selfPayCoverage] });
+      mockSearchOne(medplum);
+      await setup();
+      await waitFor(() => {
+        expect(screen.getByText('No active coverage found for this patient.')).toBeInTheDocument();
       });
     });
   });

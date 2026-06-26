@@ -19,6 +19,7 @@ import type {
   DocumentReference,
   Observation,
   Patient,
+  Practitioner,
   Project,
   ProjectMembership,
   Resource,
@@ -27,21 +28,22 @@ import type {
 } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import type { Job, Worker } from 'bullmq';
+import type { Job } from 'bullmq';
 import * as bullmqModule from 'bullmq';
-import type { Redis } from 'ioredis';
-import fetch from 'node-fetch';
+import { UnrecoverableError } from 'bullmq';
 import { createHmac, randomUUID } from 'node:crypto';
-import { initAppServices, shutdownApp } from '../app';
+import type { Mock, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import type * as Constants from '../constants';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
+import { setResourceCacheEntry } from '../fhir/repository/resource-cache';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
-import * as otelModule from '../otel/otel';
 import {
   addUserActiveWebSocketSubscription,
   getActiveSubscriptions,
@@ -50,7 +52,8 @@ import {
 } from '../pubsub';
 import * as redisModule from '../redis';
 import { getPubSubRedisSubscriber } from '../redis';
-import { createTestProject, withTestContext } from '../test.setup';
+import { createTestProject, waitForPubSubRedisSubscriberReady, withTestContext } from '../test.setup';
+import { mockFetchStatus } from '../test.setup.fetch';
 import { AuditEventOutcome } from '../util/auditevent';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import type { SubscriptionJobData } from './subscription';
@@ -63,12 +66,20 @@ import {
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
 import * as workerUtils from './utils';
 
-jest.mock('node-fetch');
-jest.mock('../constants', () => ({
-  ...jest.requireActual('../constants'),
-  WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:worker',
+const wsSubscriptionTestChannels = vi.hoisted(() => {
+  const suffix = process.env.VITEST_WORKER_ID ?? process.env.VITEST_POOL_ID ?? `pid-${process.pid}`;
+  return {
+    worker: `medplum:subscriptions:r4:websockets:test:worker:${suffix}`,
+    ws: `medplum:subscriptions:r4:websockets:test:ws:${suffix}`,
+  };
+});
+
+vi.mock('../constants', async (importOriginal) => ({
+  ...(await importOriginal<typeof Constants>()),
+  WEBSOCKET_SUB_PUBLISH_CHANNEL: wsSubscriptionTestChannels.worker,
 }));
-const mockBullmq = jest.mocked(bullmqModule);
+const mockBullmq = vi.mocked(bullmqModule);
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 
 describe('Subscription Worker', () => {
   let systemRepo: SystemRepository;
@@ -79,15 +90,17 @@ describe('Subscription Worker', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    const { initAppServices } = await import('../app');
     await initAppServices(config);
   });
 
   afterAll(async () => {
+    const { shutdownApp } = await import('../app');
     await shutdownApp();
   });
 
   beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
+    fetchMock.mockClear();
 
     // Create one simple project with no advanced features enabled
     const { client, repo: _repo } = await withTestContext(() =>
@@ -154,7 +167,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -199,7 +212,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 201 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(201));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -236,7 +249,7 @@ describe('Subscription Worker', () => {
         });
         expect(patient).toBeDefined();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
 
         await findAndExecSubscriptionJob(patient, 'create');
 
@@ -288,7 +301,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -410,7 +423,7 @@ describe('Subscription Worker', () => {
         });
         expect(patient).toBeDefined();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
 
         const body = stringify(patient);
         const signature = createHmac('sha256', secret).update(body).digest('hex');
@@ -466,7 +479,7 @@ describe('Subscription Worker', () => {
         });
         expect(patient).toBeDefined();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
 
         const body = stringify(patient);
         const signature = createHmac('sha256', secret).update(body).digest('hex');
@@ -533,6 +546,71 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
       await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
+    }));
+
+  test('Reject insecure rest-hook URLs by default', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'http://example.com/subscription',
+        },
+      });
+      expect(subscription).toBeDefined();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('HTTPS is required');
+      expect(fetch).not.toHaveBeenCalled();
+    }));
+
+  test('Allow insecure rest-hook URLs when configured', () =>
+    withTestContext(async () => {
+      const url = 'http://example.com/subscription';
+      const savedConfig = getConfig().allowInsecureRestHookUrl;
+      getConfig().allowInsecureRestHookUrl = true;
+
+      try {
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'rest-hook',
+            endpoint: url,
+          },
+        });
+        expect(subscription).toBeDefined();
+
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+        await findAndExecSubscriptionJob(patient, 'create');
+
+        expect(fetch).toHaveBeenCalledWith(
+          url,
+          expect.objectContaining({
+            method: 'POST',
+            body: stringify(patient),
+          })
+        );
+      } finally {
+        getConfig().allowInsecureRestHookUrl = savedConfig;
+      }
     }));
 
   // Skip test
@@ -719,7 +797,7 @@ describe('Subscription Worker', () => {
       expect(patient).toBeDefined();
 
       // causes an error to be thrown
-      const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockImplementation(() => {
+      const getLoggerSpy = vi.spyOn(loggerModule, 'getLogger').mockImplementation(() => {
         throw new Error('Logger not available for some weird reason');
       });
 
@@ -762,10 +840,10 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock)
-        .mockImplementationOnce(() => ({ status: 429 }))
-        .mockImplementationOnce(() => ({ status: 429 }))
-        .mockImplementation(() => ({ status: 200 }));
+      (fetch as unknown as Mock)
+        .mockImplementationOnce(() => mockFetchStatus(429))
+        .mockImplementationOnce(() => mockFetchStatus(429))
+        .mockImplementation(() => mockFetchStatus(200));
 
       // If the job throws, then the QueueScheduler will retry
       const jobs = await findAndExecSubscriptionJob(patient, 'create');
@@ -803,11 +881,11 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock)
+      (fetch as unknown as Mock)
         .mockImplementationOnce(() => {
           throw new Error('foo');
         })
-        .mockImplementation(() => ({ status: 200 }));
+        .mockImplementation(() => mockFetchStatus(200));
 
       // If the job throws, then the QueueScheduler will retry
       const jobs = await findAndExecSubscriptionJob(patient, 'create');
@@ -843,15 +921,12 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => {
+      fetchMock.mockImplementation(() => {
         throw new Error();
       });
 
       // Job shouldn't throw after max attempts, which will cause it to not retry
-      const jobs = await findAndExecSubscriptionJob(patient, 'create');
-      expect(jobs.length).toStrictEqual(2);
-      expect(jobs[0].changePriority).toHaveBeenCalledWith({ priority: 1 });
-      expect(jobs[1].changePriority).not.toHaveBeenCalled();
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
     }));
 
   test('Ignore bots if feature not enabled', () =>
@@ -885,7 +960,7 @@ describe('Subscription Worker', () => {
         criteria: 'Patient',
         channel: {
           type: 'rest-hook',
-          endpoint: getReferenceString(bot as Bot),
+          endpoint: getReferenceString(bot),
         },
       });
 
@@ -894,7 +969,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -944,7 +1019,7 @@ describe('Subscription Worker', () => {
         criteria: 'Patient',
         channel: {
           type: 'rest-hook',
-          endpoint: getReferenceString(bot as Bot),
+          endpoint: getReferenceString(bot),
         },
       });
 
@@ -954,7 +1029,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
       expect(fetch).not.toHaveBeenCalled();
@@ -1002,7 +1077,7 @@ describe('Subscription Worker', () => {
         criteria: 'Patient',
         channel: {
           type: 'rest-hook',
-          endpoint: getReferenceString(bot as Bot),
+          endpoint: getReferenceString(bot),
         },
       });
 
@@ -1012,7 +1087,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
       expect(fetch).not.toHaveBeenCalled();
@@ -1054,7 +1129,7 @@ describe('Subscription Worker', () => {
         criteria: 'Patient',
         channel: {
           type: 'rest-hook',
-          endpoint: getReferenceString(bot as Bot),
+          endpoint: getReferenceString(bot),
         },
       });
       const subscriptionEvents: SearchRequest<AuditEvent> = {
@@ -1068,7 +1143,7 @@ describe('Subscription Worker', () => {
         ],
       };
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       // Attempt to trigger the Subscription
       const patient = await repo.createResource<Patient>({
@@ -1268,7 +1343,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1330,7 +1405,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 515 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(515));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1378,7 +1453,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1398,17 +1473,16 @@ describe('Subscription Worker', () => {
     }));
 
   describe('Subscription AuditEvent destination with logging', () => {
-    let originalConsoleLog: typeof console.log;
+    let writeSpy: MockInstance;
 
     beforeEach(async () => {
       const config = await loadTestConfig();
       config.logAuditEvents = true;
-      originalConsoleLog = console.log;
-      console.log = jest.fn();
+      writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
     });
 
     afterEach(async () => {
-      console.log = originalConsoleLog;
+      writeSpy.mockRestore();
       const config = await loadTestConfig();
       config.logAuditEvents = false;
     });
@@ -1445,7 +1519,7 @@ describe('Subscription Worker', () => {
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
 
         await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1463,11 +1537,11 @@ describe('Subscription Worker', () => {
         // Should NOT create AuditEvent resource in DB
         expect(bundle.entry?.length).toStrictEqual(0);
 
-        // Should log AuditEvent to console
-        expect(console.log).toHaveBeenCalled();
-        const loggedCall = (console.log as jest.Mock).mock.calls.find((call) => {
+        // Should log AuditEvent via globalLogger
+        expect(writeSpy).toHaveBeenCalled();
+        const loggedCall = writeSpy.mock.calls.find((call: unknown[]) => {
           try {
-            const parsed = JSON.parse(call[0]);
+            const parsed = JSON.parse(call[0] as string);
             return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
           } catch {
             return false;
@@ -1512,7 +1586,7 @@ describe('Subscription Worker', () => {
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
 
         await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1530,11 +1604,11 @@ describe('Subscription Worker', () => {
         // Should create AuditEvent resource in DB
         expect(bundle.entry?.length).toStrictEqual(1);
 
-        // Should also log AuditEvent to console
-        expect(console.log).toHaveBeenCalled();
-        const loggedCall = (console.log as jest.Mock).mock.calls.find((call) => {
+        // Should also log AuditEvent via globalLogger
+        expect(writeSpy).toHaveBeenCalled();
+        const loggedCall = writeSpy.mock.calls.find((call: unknown[]) => {
           try {
-            const parsed = JSON.parse(call[0]);
+            const parsed = JSON.parse(call[0] as string);
             return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
           } catch {
             return false;
@@ -1576,7 +1650,7 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await repo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient2, 'update');
       expect(fetch).toHaveBeenCalledWith(
@@ -1676,7 +1750,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await expect(findAndExecSubscriptionJob(patient, 'update', subscription1)).rejects.toThrow('Job not found');
       await findAndExecSubscriptionJob(patient, 'update', subscription2);
@@ -1685,8 +1759,7 @@ describe('Subscription Worker', () => {
   test('Subscription -- Unexpected throw inside of satisfiesAccessPolicy (regression in #3978, see #4003)', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
-      const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
       const url = 'https://example.com/subscription';
 
@@ -1694,7 +1767,7 @@ describe('Subscription Worker', () => {
       // This should trigger an error when the subscription is executed
       const accessPolicy = await repo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
-        resource: [{ resourceType: 'Patient', readonly: false }],
+        resource: [{ resourceType: 'Patient', readonly: false }, { resourceType: 'Subscription' }],
       });
 
       const { repo: apTestRepo } = await createTestProject({
@@ -1734,7 +1807,7 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient2, 'update', subscription);
       expect(fetch).toHaveBeenCalledWith(
@@ -1745,18 +1818,19 @@ describe('Subscription Worker', () => {
         })
       );
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Error occurred while checking access policy'));
+      expect(writeSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/"level":"WARN".*Error occurred while checking access policy/)
+      );
 
       globalLogger.level = LogLevel.NONE;
-      console.log = originalConsoleLog;
+      writeSpy.mockRestore();
     }));
 
   // TODO: Remove this test when enforcing AccessPolicy will not break things
   test('Subscription -- Rest Hook Sub does not meet AccessPolicy', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
-      const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
       const url = 'https://example.com/subscription';
 
@@ -1764,7 +1838,7 @@ describe('Subscription Worker', () => {
       // This should trigger an error when the subscription is executed
       const accessPolicy = await repo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
-        resource: [{ resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` }],
+        resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
       });
 
       const { repo: apTestRepo } = await createTestProject({
@@ -1806,7 +1880,7 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient2, 'update', subscription);
       expect(fetch).toHaveBeenCalledWith(
@@ -1817,10 +1891,12 @@ describe('Subscription Worker', () => {
         })
       );
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Error occurred while checking access policy'));
+      expect(writeSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/"level":"WARN".*Error occurred while checking access policy/)
+      );
 
       globalLogger.level = LogLevel.NONE;
-      console.log = originalConsoleLog;
+      writeSpy.mockRestore();
     }));
 
   test('Subscription -- Access policy is evaluated once per author across multiple matching subscriptions', () =>
@@ -1852,7 +1928,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      const spy = jest.spyOn(workerUtils, 'findProjectMembership');
+      const spy = vi.spyOn(workerUtils, 'findProjectMembership');
 
       await addSubscriptionJobs(patient, undefined, { project, interaction: 'create' });
 
@@ -1901,7 +1977,7 @@ describe('Subscription Worker', () => {
       });
       expect(documentRef).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(documentRef, 'create', subscription);
 
@@ -1918,7 +1994,10 @@ describe('Subscription Worker', () => {
     type EventNotificationArgs<T extends Resource> = [T, string, SubEventsOptions];
     type WsSubMessage = { resource: Resource; events: [string, SubEventsOptions][] };
 
-    let subscriber: Redis;
+    // ws/subscriptions.test.ts loads workers/subscription.ts first with its own mocked channel.
+    const WS_SUBSCRIPTIONS_TEST_CHANNEL = wsSubscriptionTestChannels.ws;
+
+    let subscriber: ReturnType<typeof getPubSubRedisSubscriber>;
     let resolveExpected: ((args: EventNotificationArgs<Resource>) => void) | undefined;
     let rejectNotExpected: ((err: Error) => void) | undefined;
     let resolveExpectedFullMessage: ((message: WsSubMessage) => void) | undefined;
@@ -1940,11 +2019,26 @@ describe('Subscription Worker', () => {
           rejectNotExpected = undefined;
         }
       });
-      await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
+      // Vitest applies per-file mocks after setupFiles, so subscription.ts may bind the
+      // production channel before this test file's mock is registered. Listen on both.
+      const actualConstants = await vi.importActual<typeof Constants>('../constants');
+      const channels = new Set([
+        WEBSOCKET_SUB_PUBLISH_CHANNEL,
+        WS_SUBSCRIPTIONS_TEST_CHANNEL,
+        actualConstants.WEBSOCKET_SUB_PUBLISH_CHANNEL,
+      ]);
+      // ioredis runs an INFO "ready check" during connect. If SUBSCRIBE completes first, the
+      // connection enters subscriber mode and that check fails with ERR Can't execute 'info'.
+      // Production code on main does not need this helper, but under Vitest's full-suite order
+      // other tests may leave subscribers in flight, so wait for ready before subscribing here.
+      await waitForPubSubRedisSubscriberReady(subscriber);
+      for (const channel of channels) {
+        await subscriber.subscribe(channel);
+      }
     });
 
     afterAll(async () => {
-      await subscriber.quit();
+      subscriber.disconnect();
     });
 
     async function assertNoWsNotifications(timeoutMs?: number): Promise<void> {
@@ -2014,30 +2108,50 @@ describe('Subscription Worker', () => {
      * that the subscription worker can find the entry when evaluating criteria.
      * @param subscription - The Subscription to simulate binding to.
      * @param projectId - The project ID the Subscription belongs to.
+     * @param loginId - The login ID for the author of the Subscription.
+     * @param membershipId - The membership ID for the author of the Subscription.
      * @returns A Promise that resolves to the reference string of the author.
      */
-    async function bindSubscription(subscription: WithId<Subscription>, projectId: string): Promise<string> {
-      const authorRef = subscription.meta?.author?.reference ?? 'Practitioner/test-author';
+    async function bindSubscription(
+      subscription: WithId<Subscription>,
+      projectId: string,
+      loginId: string,
+      membershipId: string
+    ): Promise<string> {
+      /* @ts-expect-error We access context directly in these tests to get what would normally be populated in the async storage authenticated context */
+      const ctx = repo.context;
+      const authorRef = ctx.author.reference ?? 'Practitioner/test-author';
       const criteria = subscription.criteria ?? '*';
       const criteriaResourceType = criteria.split('?')[0] as ResourceType;
       const subRef = `Subscription/${subscription.id}`;
       const expiration = Math.floor(Date.now() / 1000) + 3600;
+      await setResourceCacheEntry({
+        ...subscription,
+        meta: { ...subscription.meta, project: projectId },
+      });
       await addUserActiveWebSocketSubscription(authorRef, subRef);
       await setActiveSubscription(projectId, criteriaResourceType, subRef, {
         criteria,
         expiration,
         author: authorRef,
-        loginId: randomUUID(),
-        membershipId: randomUUID(),
+        loginId,
+        membershipId,
       });
       return authorRef;
     }
 
     test('Enabled', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          membership,
+          login,
+        } = await createTestProject({
           project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         const subscription = await wsSubRepo.createResource<Subscription>({
@@ -2052,7 +2166,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await bindSubscription(subscription, wsProject.id);
+        await bindSubscription(subscription, wsProject.id, login.id, membership.id);
 
         let nextArgsPromise = waitForNextSubNotification<Patient>();
         const patient = await wsSubRepo.createResource<Patient>({
@@ -2166,11 +2280,17 @@ describe('Subscription Worker', () => {
     test('Feature Flag Not Enabled', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.DEBUG;
-        const originalConsoleLog = console.log;
-        console.log = jest.fn();
+        const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
-        const { repo: noWsSubRepo, project } = await createTestProject({
+        const {
+          repo: noWsSubRepo,
+          project,
+          login,
+          membership,
+        } = await createTestProject({
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
           project: { name: 'No WebSocket Subs Project' },
         });
 
@@ -2185,7 +2305,7 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
-        await bindSubscription(subscription, project.id);
+        await bindSubscription(subscription, project.id, login.id, membership.id);
 
         const assertPromise = assertNoWsNotifications();
 
@@ -2198,30 +2318,35 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
 
-        expect(console.log).toHaveBeenLastCalledWith(expect.stringMatching(/WebSocket Subscriptions/));
+        expect(writeSpy).toHaveBeenLastCalledWith(expect.stringMatching(/"level":"DEBUG".*WebSocket Subscriptions/));
 
-        console.log = originalConsoleLog;
+        writeSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 
     test('Access Policy Not Satisfied', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const originalConsoleLog = console.log;
-        console.log = jest.fn();
+        const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
         // Create an access policy in different project
         // This should trigger an error when the subscription is executed
         const accessPolicy = await repo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` }],
+          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
         });
 
         // Create an access policy in different project
         // This should trigger an error when the subscription is executed
-        const { repo: wsRepo, project } = await createTestProject({
+        const {
+          repo: wsRepo,
+          project,
+          login,
+          membership,
+        } = await createTestProject({
           withClient: true,
           withRepo: true,
+          withAccessToken: true,
           project: {
             name: 'WebSockets AccessPolicy Denied Project',
             features: ['websocket-subscriptions'],
@@ -2244,7 +2369,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await bindSubscription(subscription, project.id);
+        await bindSubscription(subscription, project.id, login.id, membership.id);
 
         const assertPromise = assertNoWsNotifications();
 
@@ -2256,10 +2381,10 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
 
-        expect(console.log).not.toHaveBeenCalledWith(
-          expect.stringContaining('[Subscription Access Policy]: Access Policy not satisfied on')
+        expect(writeSpy).not.toHaveBeenCalledWith(
+          expect.stringMatching(/"level":"WARN".*\[Subscription Access Policy\]: Access Policy not satisfied on/)
         );
-        console.log = originalConsoleLog;
+        writeSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 
@@ -2274,15 +2399,24 @@ describe('Subscription Worker', () => {
         // An access policy that restricts Patient to a specific ID that will never match our patient.
         const accessPolicy = await repo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` }],
+          resource: [
+            { resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` },
+            { resourceType: 'Subscription' },
+          ],
         });
 
         // Create a project whose membership carries the denying access policy.
         // The project must have 'websocket-subscriptions' enabled so that the websocket
         // subscription is fetched and evaluated.
-        const { repo: testRepo, project: testProject } = await createTestProject({
+        const {
+          repo: testRepo,
+          project: testProject,
+          login: testLogin,
+          membership: testMembership,
+        } = await createTestProject({
           withClient: true,
           withRepo: true,
+          withAccessToken: true,
           project: {
             name: 'Access Policy Cache Channel Type Isolation Project',
             features: ['websocket-subscriptions'],
@@ -2310,14 +2444,15 @@ describe('Subscription Worker', () => {
           channel: { type: 'websocket' },
         });
         expect(wsSub.id).toBeDefined();
-        await bindSubscription(wsSub, testProject.id);
+        await bindSubscription(wsSub, testProject.id, testLogin.id, testMembership.id);
 
         // Register the no-notification assertion before creating the patient so that
         // any spurious WebSocket publish is caught immediately.
         const assertPromise = assertNoWsNotifications();
 
-        const patient = await testRepo.createResource<Patient>({
+        const patient = await superAdminRepo.createResource<Patient>({
           resourceType: 'Patient',
+          meta: { project: testProject.id },
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
@@ -2327,27 +2462,171 @@ describe('Subscription Worker', () => {
 
         // The rest-hook subscription MUST still be enqueued -- satisfiesAccessPolicy()
         // unconditionally returns `true` for non-websocket channel types.
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
         await findAndExecSubscriptionJob(patient, 'create', restHookSub);
       }));
 
-    test('Subscription Author Has No Membership', () =>
+    test('Uses correct AccessPolicy when author has multiple ProjectMemberships', () =>
+      withTestContext(async () => {
+        // A Practitioner may hold multiple ProjectMemberships in the same Project, each
+        // backed by a different AccessPolicy.  The active-subscription entry records the
+        // specific membership the WebSocket client bound with, and the subscription worker
+        // must evaluate the notification against that membership -- NOT whichever
+        // membership happens to come back first from `findProjectMembership`.
+        const allowedOrgId = randomUUID();
+        const deniedOrgId = randomUUID();
+        const allowedOrg = 'Organization/' + allowedOrgId;
+        const deniedOrg = 'Organization/' + deniedOrgId;
+
+        const {
+          repo: wsRepo,
+          project: wsProject,
+          client,
+        } = await createTestProject({
+          project: {
+            name: 'WS Multiple Memberships Project',
+            features: ['websocket-subscriptions'],
+          },
+          withRepo: true,
+          withClient: true,
+        });
+
+        const practitioner = await superAdminRepo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+          meta: { project: wsProject.id },
+          name: [{ given: ['Dr.'], family: 'Multi' }],
+        });
+        const practitionerRef = getReferenceString(practitioner);
+
+        // The denying policy only grants access to Patients in `deniedOrg`'s compartment.
+        const noAccessPolicy = await superAdminRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          meta: { project: wsProject.id },
+          compartment: { reference: deniedOrg },
+          resource: [{ resourceType: 'Patient', criteria: `Patient?_compartment=${deniedOrgId}` }],
+        });
+
+        // The allowing policy grants access to Patients in `allowedOrg`'s compartment.
+        const hasAccessPolicy = await superAdminRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          meta: { project: wsProject.id },
+          compartment: { reference: allowedOrg },
+          resource: [{ resourceType: 'Patient', criteria: `Patient?_compartment=${allowedOrgId}` }],
+        });
+
+        // Create the "no access" membership FIRST so that `findProjectMembership` returns
+        // it ahead of the "has access" membership -- this is what makes the
+        // `authorMembershipId` plumbing necessary in the first place.
+        const noAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(client),
+          profile: createReference(practitioner),
+          project: createReference(wsProject),
+          accessPolicy: createReference(noAccessPolicy),
+        });
+
+        const hasAccessMembership = await superAdminRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(client),
+          profile: createReference(practitioner),
+          project: createReference(wsProject),
+          accessPolicy: createReference(hasAccessPolicy),
+        });
+
+        // Sanity check: the unordered membership lookup returns the denying membership
+        // first.  If this ever changes, the rest of the test stops exercising what it
+        // intends to exercise.
+        const firstFound = await workerUtils.findProjectMembership(wsProject.id, createReference(practitioner));
+        expect(firstFound?.id).toStrictEqual(noAccessMembership.id);
+
+        // Two WebSocket subscriptions, one bound with each membership.
+        const noAccessSub = await wsRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'websocket' },
+        });
+
+        const hasAccessSub = await wsRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'websocket' },
+        });
+
+        const expiration = Math.floor(Date.now() / 1000) + 3600;
+        const noAccessSubRef = `Subscription/${noAccessSub.id}`;
+        const hasAccessSubRef = `Subscription/${hasAccessSub.id}`;
+
+        await addUserActiveWebSocketSubscription(practitionerRef, noAccessSubRef);
+        await setActiveSubscription(wsProject.id, 'Patient', noAccessSubRef, {
+          criteria: 'Patient',
+          expiration,
+          author: practitionerRef,
+          loginId: randomUUID(),
+          membershipId: noAccessMembership.id,
+        });
+
+        await addUserActiveWebSocketSubscription(practitionerRef, hasAccessSubRef);
+        await setActiveSubscription(wsProject.id, 'Patient', hasAccessSubRef, {
+          criteria: 'Patient',
+          expiration,
+          author: practitionerRef,
+          loginId: randomUUID(),
+          membershipId: hasAccessMembership.id,
+        });
+
+        // Create a Patient that lives in the `allowedOrg` compartment.  Only the
+        // hasAccessMembership's policy should permit this.
+        const patient = await superAdminRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: {
+            project: wsProject.id,
+            account: { reference: allowedOrg },
+          },
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient.meta?.compartment).toContainEqual({ reference: allowedOrg });
+
+        // The hasAccessSub must receive exactly one notification; the noAccessSub must
+        // NOT fire.  If the worker picked the first-found (denying) membership for both
+        // subscriptions, neither would fire -- or if it picked the allowing membership
+        // for both, we would see two notifications.
+        const nextArgsPromise = waitForNextSubNotification<Patient>();
+        await findAndExecDispatchJob(patient, 'create');
+
+        const notificationArgs = await nextArgsPromise;
+        expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
+          expect.objectContaining({ id: patient.id }),
+          hasAccessSub.id,
+          { includeResource: true },
+        ]);
+
+        // No other notification should arrive.
+        await assertNoWsNotifications();
+      }));
+
+    test('Subscription Author Access Policy Removed', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const originalConsoleLog = console.log;
-        console.log = jest.fn();
+        const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
         const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient', readonly: true }, { resourceType: 'Subscription' }],
+          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
         });
 
         const {
           repo: wsRepo,
           project,
           membership,
+          login,
         } = await createTestProject({
           withClient: true,
           withRepo: true,
+          withAccessToken: true,
           project: {
             name: 'WebSockets AccessPolicy No Membership Project',
             features: ['websocket-subscriptions'],
@@ -2372,7 +2651,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await bindSubscription(subscription, project.id);
+        await bindSubscription(subscription, project.id, login.id, membership.id);
 
         await superAdminRepo.deleteResource('ProjectMembership', membership.id);
 
@@ -2387,31 +2666,35 @@ describe('Subscription Worker', () => {
         await findAndExecDispatchJob(patient, 'create');
         await assertPromise;
 
-        expect(console.log).toHaveBeenCalledWith(
-          expect.stringContaining('[Subscription Access Policy]: No membership for subscription author')
+        expect(writeSpy).toHaveBeenCalledWith(
+          expect.stringMatching(
+            /"level":"WARN".*\[Subscription Access Policy\]: Error occurred while checking access policy for resource/
+          )
         );
-        console.log = originalConsoleLog;
+        expect(writeSpy.mock.calls.some((call) => JSON.stringify(call).includes('Gone'))).toBe(true);
+        writeSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 
     test('Error Occurred During Check', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const originalConsoleLog = console.log;
-        console.log = jest.fn();
+        const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
         const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient', readonly: true }, { resourceType: 'Subscription' }],
+          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
         });
 
         const {
           repo: wsRepo,
           membership,
           project,
+          login,
         } = await createTestProject({
           withClient: true,
           withRepo: true,
+          withAccessToken: true,
           project: {
             name: 'WebSockets AccessPolicy Error Project',
             features: ['websocket-subscriptions'],
@@ -2436,7 +2719,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await bindSubscription(subscription, project.id);
+        await bindSubscription(subscription, project.id, login.id, membership.id);
 
         await superAdminRepo.deleteResource('AccessPolicy', accessPolicy.id);
 
@@ -2451,20 +2734,27 @@ describe('Subscription Worker', () => {
         await findAndExecDispatchJob(patient, 'create');
         await assertPromise;
 
-        expect(console.log).toHaveBeenCalledWith(
-          expect.stringContaining(
-            '[Subscription Access Policy]: Error occurred while checking access policy for resource'
+        expect(writeSpy).toHaveBeenCalledWith(
+          expect.stringMatching(
+            /"level":"WARN".*\[Subscription Access Policy\]: Error occurred while checking access policy for resource/
           )
         );
-        console.log = originalConsoleLog;
+        writeSpy.mockRestore();
         globalLogger.level = LogLevel.NONE;
       }));
 
     test('Criteria stored in Redis hash alongside subscription reference', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WebSocket Subs Redis Hash Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         const subscription = await wsSubRepo.createResource<Subscription>({
@@ -2482,7 +2772,7 @@ describe('Subscription Worker', () => {
         const preBindSubs = await getActiveSubscriptions(wsProject.id, 'Patient');
         expect(preBindSubs[`Subscription/${subscription.id}`]).toBeUndefined();
 
-        await bindSubscription(subscription, wsProject.id);
+        await bindSubscription(subscription, wsProject.id, login.id, membership.id);
 
         const activeSubs = await getActiveSubscriptions(wsProject.id, 'Patient');
         expect(activeSubs[`Subscription/${subscription.id}`]).toMatchObject({
@@ -2516,9 +2806,16 @@ describe('Subscription Worker', () => {
 
     test('Resource type filtering - only matching subscriptions fetched from Redis', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WebSocket Subs Filtering Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         // Create a subscription watching Observation
@@ -2532,7 +2829,7 @@ describe('Subscription Worker', () => {
           },
         });
         expect(observationSub).toBeDefined();
-        await bindSubscription(observationSub, wsProject.id);
+        await bindSubscription(observationSub, wsProject.id, login.id, membership.id);
 
         // Create a subscription watching Patient
         const patientSub = await wsSubRepo.createResource<Subscription>({
@@ -2545,7 +2842,7 @@ describe('Subscription Worker', () => {
           },
         });
         expect(patientSub).toBeDefined();
-        await bindSubscription(patientSub, wsProject.id);
+        await bindSubscription(patientSub, wsProject.id, login.id, membership.id);
 
         // Creating a Patient should only trigger the Patient subscription, not the Observation one
         const nextArgsPromise = waitForNextSubNotification<Patient>();
@@ -2597,9 +2894,15 @@ describe('Subscription Worker', () => {
 
     test('Supported Interaction Extension', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           withClient: true,
           withRepo: true,
+          withAccessToken: true,
           project: {
             name: 'WebSocket Subs Project',
             features: ['websocket-subscriptions'],
@@ -2624,7 +2927,7 @@ describe('Subscription Worker', () => {
 
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
-        await bindSubscription(subscription, wsProject.id);
+        await bindSubscription(subscription, wsProject.id, login.id, membership.id);
 
         const nextArgsPromise = waitForNextSubNotification<Patient>();
         const patient = await wsSubRepo.createResource<Patient>({
@@ -2657,9 +2960,16 @@ describe('Subscription Worker', () => {
 
     test('Cached criteria - multiple subscriptions with same matching criteria all receive notification', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WS Cached Criteria Match Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         const criteria = 'Patient?name=Alice';
@@ -2671,7 +2981,7 @@ describe('Subscription Worker', () => {
           criteria,
           channel: { type: 'websocket' },
         });
-        await bindSubscription(sub1, wsProject.id);
+        await bindSubscription(sub1, wsProject.id, login.id, membership.id);
 
         const sub2 = await wsSubRepo.createResource<Subscription>({
           resourceType: 'Subscription',
@@ -2680,7 +2990,7 @@ describe('Subscription Worker', () => {
           criteria,
           channel: { type: 'websocket' },
         });
-        await bindSubscription(sub2, wsProject.id);
+        await bindSubscription(sub2, wsProject.id, login.id, membership.id);
 
         const sub3 = await wsSubRepo.createResource<Subscription>({
           resourceType: 'Subscription',
@@ -2689,7 +2999,7 @@ describe('Subscription Worker', () => {
           criteria,
           channel: { type: 'websocket' },
         });
-        await bindSubscription(sub3, wsProject.id);
+        await bindSubscription(sub3, wsProject.id, login.id, membership.id);
 
         const nextMessagePromise = waitForNextSubMessage();
         const patient = await wsSubRepo.createResource<Patient>({
@@ -2750,9 +3060,16 @@ describe('Subscription Worker', () => {
 
     test('Cached criteria - subscriptions with different criteria are evaluated independently', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WS Cached Criteria Mixed Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         // Two subscriptions with criteria that will match
@@ -2763,7 +3080,7 @@ describe('Subscription Worker', () => {
           criteria: 'Patient?name=Alice',
           channel: { type: 'websocket' },
         });
-        await bindSubscription(aliceSub1, wsProject.id);
+        await bindSubscription(aliceSub1, wsProject.id, login.id, membership.id);
 
         const aliceSub2 = await wsSubRepo.createResource<Subscription>({
           resourceType: 'Subscription',
@@ -2772,7 +3089,7 @@ describe('Subscription Worker', () => {
           criteria: 'Patient?name=Alice',
           channel: { type: 'websocket' },
         });
-        await bindSubscription(aliceSub2, wsProject.id);
+        await bindSubscription(aliceSub2, wsProject.id, login.id, membership.id);
 
         // Two subscriptions with criteria that will NOT match
         const bobSub1 = await wsSubRepo.createResource<Subscription>({
@@ -2782,7 +3099,7 @@ describe('Subscription Worker', () => {
           criteria: 'Patient?name=Bob',
           channel: { type: 'websocket' },
         });
-        await bindSubscription(bobSub1, wsProject.id);
+        await bindSubscription(bobSub1, wsProject.id, login.id, membership.id);
 
         const bobSub2 = await wsSubRepo.createResource<Subscription>({
           resourceType: 'Subscription',
@@ -2791,7 +3108,7 @@ describe('Subscription Worker', () => {
           criteria: 'Patient?name=Bob',
           channel: { type: 'websocket' },
         });
-        await bindSubscription(bobSub2, wsProject.id);
+        await bindSubscription(bobSub2, wsProject.id, login.id, membership.id);
 
         const nextMessagePromise = waitForNextSubMessage();
         const patient = await wsSubRepo.createResource<Patient>({
@@ -2811,9 +3128,16 @@ describe('Subscription Worker', () => {
 
     test('Logs WS subscription eval info after evaluating criteria', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WS Sub Eval Log Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withClient: true,
+          withAccessToken: true,
         });
 
         const subscription = await wsSubRepo.createResource<Subscription>({
@@ -2825,14 +3149,14 @@ describe('Subscription Worker', () => {
         });
 
         expect(subscription).toBeDefined();
-        await bindSubscription(subscription, wsProject.id);
+        await bindSubscription(subscription, wsProject.id, login.id, membership.id);
 
-        const mockInfo = jest.fn();
-        const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockReturnValue({
+        const mockInfo = vi.fn();
+        const getLoggerSpy = vi.spyOn(loggerModule, 'getLogger').mockReturnValue({
           info: mockInfo,
-          warn: jest.fn(),
-          debug: jest.fn(),
-          error: jest.fn(),
+          warn: vi.fn(),
+          debug: vi.fn(),
+          error: vi.fn(),
         } as any);
 
         const patient = await wsSubRepo.createResource<Patient>({
@@ -2857,9 +3181,16 @@ describe('Subscription Worker', () => {
 
     test('Expired entries are removed from active subscriptions hash', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          membership,
+          login,
+        } = await createTestProject({
           project: { name: 'WS Expiry Cleanup Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withAccessToken: true,
+          withClient: true,
         });
 
         const authorRef = `Practitioner/${randomUUID()}`;
@@ -2892,8 +3223,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: futureExpiry,
           author: authorRef,
-          loginId: randomUUID(),
-          membershipId: randomUUID(),
+          loginId: login.id,
+          membershipId: membership.id,
         });
 
         await addUserActiveWebSocketSubscription(authorRef, expiredSubRef);
@@ -2901,8 +3232,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: pastExpiry,
           author: authorRef,
-          loginId: randomUUID(),
-          membershipId: randomUUID(),
+          loginId: login.id,
+          membershipId: membership.id,
         });
 
         // Both entries should be in the hash before the worker runs
@@ -2928,9 +3259,16 @@ describe('Subscription Worker', () => {
 
     test('Expired entries are removed from the user active set', () =>
       withTestContext(async () => {
-        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          login,
+          membership,
+        } = await createTestProject({
           project: { name: 'WS Expiry User Set Cleanup Project', features: ['websocket-subscriptions'] },
           withRepo: true,
+          withAccessToken: true,
+          withClient: true,
         });
 
         const authorRef = `Practitioner/${randomUUID()}`;
@@ -2961,8 +3299,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: futureExpiry,
           author: authorRef,
-          loginId: randomUUID(),
-          membershipId: randomUUID(),
+          loginId: login.id,
+          membershipId: membership.id,
         });
 
         await addUserActiveWebSocketSubscription(authorRef, expiredSubRef);
@@ -2970,8 +3308,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: pastExpiry,
           author: authorRef,
-          loginId: randomUUID(),
-          membershipId: randomUUID(),
+          loginId: login.id,
+          membershipId: membership.id,
         });
 
         const countBefore = await getUserActiveWebSocketSubscriptionCount(authorRef);
@@ -3083,14 +3421,14 @@ describe('Subscription Worker', () => {
       getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
       const projectId = randomUUID();
       const mockedSystemRepo = {
-        readResource: jest.fn().mockResolvedValue({
+        readResource: vi.fn().mockResolvedValue({
           resourceType: 'Project',
           id: projectId,
           systemSetting: [{ name: 'subscriptionAutoDisable' }],
         }),
       } as unknown as SystemRepository;
 
-      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(globalLogger, 'warn').mockImplementation(() => {});
       try {
         await expect(getSubscriptionAutoDisableTriggers(mockedSystemRepo, projectId)).resolves.toStrictEqual(
           getConfig().subscriptionAutoDisable
@@ -3107,14 +3445,14 @@ describe('Subscription Worker', () => {
       getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
       const projectId = randomUUID();
       const mockedSystemRepo = {
-        readResource: jest.fn().mockResolvedValue({
+        readResource: vi.fn().mockResolvedValue({
           resourceType: 'Project',
           id: projectId,
           systemSetting: [{ name: 'subscriptionAutoDisable', valueString: '[{"maxConsecutiveFailures":"bad"}]' }],
         }),
       } as unknown as SystemRepository;
 
-      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(globalLogger, 'warn').mockImplementation(() => {});
       try {
         await expect(getSubscriptionAutoDisableTriggers(mockedSystemRepo, projectId)).resolves.toStrictEqual(
           getConfig().subscriptionAutoDisable
@@ -3132,10 +3470,10 @@ describe('Subscription Worker', () => {
       getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
       const projectId = randomUUID();
       const mockedSystemRepo = {
-        readResource: jest.fn().mockRejectedValue(new Error('Project lookup failed')),
+        readResource: vi.fn().mockRejectedValue(new Error('Project lookup failed')),
       } as unknown as SystemRepository;
 
-      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(globalLogger, 'warn').mockImplementation(() => {});
       try {
         await expect(getSubscriptionAutoDisableTriggers(mockedSystemRepo, projectId)).resolves.toStrictEqual(
           getConfig().subscriptionAutoDisable
@@ -3152,19 +3490,19 @@ describe('Subscription Worker', () => {
 
     test('Subscription failure tracker ignores Redis zcount errors', async () => {
       const pipeline = {
-        zremrangebyscore: jest.fn().mockReturnThis(),
-        zadd: jest.fn().mockReturnThis(),
-        zcount: jest.fn().mockReturnThis(),
-        expire: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue([
+        zremrangebyscore: vi.fn().mockReturnThis(),
+        zadd: vi.fn().mockReturnThis(),
+        zcount: vi.fn().mockReturnThis(),
+        expire: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue([
           [null, 0],
           [null, 1],
           [new Error('zcount failed'), null],
         ]),
       };
 
-      const redisSpy = jest.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
-        pipeline: jest.fn().mockReturnValue(pipeline),
+      const redisSpy = vi.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
+        pipeline: vi.fn().mockReturnValue(pipeline),
       } as any);
 
       try {
@@ -3200,17 +3538,13 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
-
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 3; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `AutoDisable${i}` }],
           });
-          expect(patient).toBeDefined();
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         // Verify subscription was disabled
@@ -3254,16 +3588,13 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
-
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 3; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ExistingError${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         // Verify subscription was disabled and error was overwritten
@@ -3297,19 +3628,17 @@ describe('Subscription Worker', () => {
         queue.add.mockClear();
 
         // Fail twice
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `Reset${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         // Succeed once - should reset counter
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        (fetch as unknown as Mock).mockResolvedValue({ status: 200 });
         const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
           name: [{ given: ['Test'], family: 'ResetSuccess' }],
@@ -3317,15 +3646,13 @@ describe('Subscription Worker', () => {
         await findAndExecSubscriptionJob(patient, 'create');
 
         // Fail twice more (should not trigger auto-disable since counter was reset)
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ResetAgain${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         // Subscription should still be active
@@ -3360,16 +3687,13 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
-
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ProjectOverride${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
@@ -3402,16 +3726,13 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
-
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ProjectDisableOverride${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
@@ -3443,16 +3764,13 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
-          throw new Error('Connection refused');
-        });
-
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `ProjectInvalidOverride${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(UnrecoverableError);
         }
 
         const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
@@ -3485,7 +3803,7 @@ describe('Subscription Worker', () => {
         queue.add.mockClear();
 
         let callCount = 0;
-        (fetch as unknown as jest.Mock).mockImplementation(async () => {
+        fetchMock.mockImplementation(async () => {
           callCount++;
           if (callCount === 3) {
             // Simulate a concurrent process disabling the subscription after execSubscriptionJob
@@ -3505,7 +3823,11 @@ describe('Subscription Worker', () => {
             resourceType: 'Patient',
             name: [{ given: ['Test'], family: `PatchTest${i}` }],
           });
-          await findAndExecSubscriptionJob(patient, 'create');
+          try {
+            await findAndExecSubscriptionJob(patient, 'create');
+          } catch {
+            // Catch errors thrown by failed job
+          }
         }
 
         // The subscription was disabled during the second resource's first attempt,
@@ -3527,8 +3849,8 @@ describe('Subscription Worker', () => {
 
 describe('Subscription Worker Event Handling', () => {
   afterEach(() => {
-    jest.restoreAllMocks();
-    jest.resetModules();
+    vi.restoreAllMocks();
+    vi.resetModules();
   });
 
   test('Worker event handlers work correctly', async () => {
@@ -3536,7 +3858,7 @@ describe('Subscription Worker Event Handling', () => {
     const handlers = new Map<string, ((job?: Job, error?: Error) => void)[] | undefined>();
     const mockWorker = {
       name: 'MockSubscriptionWorker',
-      on: jest.fn().mockImplementation((event: string, handler: () => void) => {
+      on: vi.fn().mockImplementation((event: string, handler: () => void) => {
         const handlerList = handlers.get(event);
         if (handlerList) {
           handlerList.push(handler);
@@ -3546,13 +3868,16 @@ describe('Subscription Worker Event Handling', () => {
         return mockWorker;
       }),
     };
-    mockBullmq.Worker.mockReturnValue(mockWorker as unknown as Worker);
+    (mockBullmq.Worker as unknown as Mock).mockImplementation(function MockWorker() {
+      return mockWorker;
+    });
     // Now import the subscription worker init function
 
-    jest.spyOn(globalLogger, 'info').mockImplementation(() => {});
+    vi.spyOn(globalLogger, 'info').mockImplementation(() => {});
 
     // Mock the logger and metrics functions
-    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation();
+    const otelModule = await import('../otel/otel');
+    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     // Initialize the subscription worker with mock config
     initSubscriptionWorker({} as MedplumServerConfig);

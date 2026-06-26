@@ -88,12 +88,7 @@ export function MfaPage(): JSX.Element | null {
 
   return (
     <Document width={400}>
-      <MfaForm
-        title="Multi Factor Auth Setup"
-        buttonText="Enroll"
-        qrCodeUrl={qrCodeUrl as string}
-        onSubmit={enableMfa}
-      />
+      <MfaForm title="Multi Factor Auth Setup" buttonText="Enroll" qrCodeUrl={qrCodeUrl} onSubmit={enableMfa} />
     </Document>
   );
 }

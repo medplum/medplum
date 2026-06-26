@@ -49,7 +49,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
               {action.description && <div>{action.description}</div>}
               <div>
                 Last edited by&nbsp;
-                <ResourceName value={task?.meta?.author as Reference} />
+                <ResourceName value={task?.meta?.author} />
                 &nbsp;on&nbsp;
                 {formatDateTime(task?.meta?.lastUpdated)}
               </div>

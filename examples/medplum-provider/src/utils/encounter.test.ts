@@ -83,7 +83,7 @@ describe('encounter utils', () => {
       const start = new Date('2025-01-01T10:00:00Z');
       const end = new Date('2025-01-01T10:30:00Z');
 
-      await createAppointment(medplum, start, end, patient, practitioner, schedule);
+      const appointment = await createAppointment(medplum, start, end, patient, practitioner, schedule);
 
       const slotCreations = createdResources.filter((r) => r.resourceType === 'Slot');
       expect(slotCreations).toHaveLength(1);
@@ -94,6 +94,9 @@ describe('encounter utils', () => {
         end: end.toISOString(),
         schedule: { reference: 'Schedule/sched-1' },
       });
+
+      // appointment.slot holds a reference to the created slot
+      expect(appointment.slot).toMatchObject([{ reference: `Slot/${slotCreations[0].id}` }]);
     });
 
     test('does not create a Slot when schedule is not provided', async () => {
@@ -104,14 +107,14 @@ describe('encounter utils', () => {
         return result;
       });
 
-      await createAppointment(
+      const appointment = await createAppointment(
         medplum,
         new Date('2025-01-01T10:00:00Z'),
         new Date('2025-01-01T10:30:00Z'),
         patient,
         practitioner
       );
-
+      expect(appointment.slot).toBeUndefined();
       expect(createdResources.filter((r) => r.resourceType === 'Slot')).toHaveLength(0);
     });
   });

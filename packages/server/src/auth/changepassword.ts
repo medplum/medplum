@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { pwnedPassword } from 'hibp';
 import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
 import { makeValidationMiddleware } from '../util/validator';
-import { bcryptHashPassword } from './utils';
+import { setPassword } from './setpassword';
 
 export const changePasswordValidator = makeValidationMiddleware([
   body('oldPassword').notEmpty().withMessage('Missing oldPassword'),
@@ -32,7 +32,7 @@ export async function changePasswordHandler(req: Request, res: Response): Promis
 }
 
 export interface ChangePasswordRequest {
-  user: User;
+  user: WithId<User>;
   oldPassword: string;
   newPassword: string;
 }
@@ -48,14 +48,5 @@ async function changePassword(systemRepo: SystemRepository, request: ChangePassw
     throw new OperationOutcomeError(badRequest('Incorrect password', 'oldPassword'));
   }
 
-  const numPwns = await pwnedPassword(request.newPassword);
-  if (numPwns > 0) {
-    throw new OperationOutcomeError(badRequest('Password found in breach database', 'newPassword'));
-  }
-
-  const newPasswordHash = await bcryptHashPassword(request.newPassword);
-  await systemRepo.updateResource<User>({
-    ...request.user,
-    passwordHash: newPasswordHash,
-  });
+  await setPassword(systemRepo, request.user, request.newPassword);
 }

@@ -1,135 +1,43 @@
 ---
 sidebar_position: 0
+keywords:
+  - charting
+  - EHR
+tags:
+  - charting
 ---
 
 # Charting
 
-Building out a charting experience requires composing multiple FHIR resources into an experience that meets the requirements of practitioners. There are three primary interactions that developers should consider when building out a custom charting experience:
+Charting is where clinicians produce the durable record of care – the patient summary read at every visit, the encounter notes captured during one, and the orders and follow-up that come out of it. Medplum is headless: your app owns the screens, while the underlying FHIR data model keeps the record interoperable, queryable, and reusable.
 
-- **Summarizing patient history** and status
-- **Capturing clinical notes**
-- **Placing orders** for medications, labs, imaging, etc.
+## Where to Start
 
-## Patient History
+1. [Designing Charting](/docs/charting/designing-charting) – discovery questions (visit types, parsing, signing, template ownership).
+2. [Visit Templates and the SOAP Approach](/docs/charting/visit-templates) – [`PlanDefinition`](/docs/api/fhir/resources/plandefinition), SOAP mapped to structured S/O/P plus narrative assessment, [`$apply`](/docs/api/fhir/operations/plandefinition-apply), signing.
+3. [Chart Data Model](/docs/charting/chart-data-model) – Patient, Observation, Condition, allergies, devices, vitals, and queries for the chart UI.
 
-Here is a **sample** of what a charting experience might look like - to be clear, charting can look however you want it to. A sample charting application built off of Medplum [React components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) and be found on [medplum-provider github](https://github.com/medplum/medplum/tree/main/examples/medplum-provider).
+Supporting guides:
+
+- [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses) – `$extract` versus Bots for questionnaire responses.
+- [Provider Visits](/docs/provider/visits) – Care Templates and Provider app setup (UI-specific).
+- [Authoring Clinical Protocols](/docs/careplans/protocols) – advanced PlanDefinition composition.
+
+## Sample Application
+
+Charting can look however you want. A reference UI built from Medplum [React components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) lives in [medplum-provider](https://github.com/medplum/medplum/tree/main/examples/medplum-provider).
 
 ![Chart sample](charting-screenshot.png)
 
-When summarizing patient history, gathering demographic data from the [Patient](/docs/api/fhir/resources/patient.mdx) resource is a basic first step. You can also query all resources related to a given patient from the [Patient `$everything`](/docs/api/fhir/operations/patient-everything) endpoint.
+## Orders and Billing
 
-Depending on your use case, `$everything` may be verbose to summarize in a chart, so queries for specific resources like active [CarePlans](/docs/api/fhir/resources/careplan.mdx), [MedicationRequests](/docs/api/fhir/resources/medicationrequest.mdx), [Conditions](/docs/api/fhir/resources/condition.mdx) may be more appropriate. [Search](/docs/search/) is useful to construct the specific queries that will give the context needed for a chart.
+Orders are usually [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) and [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) resources, optionally spawned from ActivityDefinitions in visit templates. See [Labs and Imaging](/docs/labs-imaging), [Medications](/docs/medications/representing-prescriptions-and-medication-orders), and [Provider visits](/docs/provider/visits) for billing-oriented ChargeItem flows.
 
-React components are available to aid in building a quick charting experience. [PatientTimeline](https://storybook.medplum.com/?path=/docs/medplum-patienttimeline--patient), [Timeline](https://storybook.medplum.com/?path=/docs/medplum-timeline--basic), [Search control](https://storybook.medplum.com/?path=/docs/medplum-searchcontrol--checkboxes), [ResourceAvatar](https://storybook.medplum.com/?path=/docs/medplum-resourceavatar--image), [FhirPathDisplay](https://storybook.medplum.com/?path=/docs/medplum-fhirpathdisplay--id) and Tabs are potential components that can speed development of the summarized history.
+## See Also
 
-```mermaid
-
-flowchart BT
-    homer[<table><thead><tr><th>Patient</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr></tbody></table>]
-    obsA[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>Heart Rate: 150 bpm</td></tr></tbody></table>]
-    obsB[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>Pregnancy Status: 26 weeks</td></tr></tbody></table>]
-    condition[<table><thead><tr><th>Condition</th></tr></thead><tbody><tr><td>Type II Diabetes</td></tr></tbody></table>]
-    allergy[<table><thead><tr><th>AllergyIntolerance</th></tr></thead><tbody><tr><td>Penicillin G</td></tr><tr><td><em>critical</em></td></tr></tbody></table>]
-    medication[<table><thead><tr><th>MedicationRequest</th></tr></thead><tbody><tr><td>Tylenol</td></tr></tbody></table>]
-    immunization[<table><thead><tr><th>Immunization</th></tr></thead><tbody><tr><td>Fluvax</td></tr></tbody></table>]
-    risk[<table><thead><tr><th>RiskAssessment</th></tr></thead><tbody><tr><td>Heart Attack: 10%</td></tr></tbody></table>]
-
-obsA -->|subject| homer
-obsB -->|subject| homer
-condition -->|subject| homer
-allergy -->|patient| homer
-medication -->|subject| homer
-immunization -->|patient| homer
-risk -->|subject| homer
-
-
-```
-
-### Key Resources
-
-| **Resource**                                                                    | **Description**                                                                                                                                       |
-| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`Observation`](/docs/api/fhir/resources/observation)                           | A structured representation of **point-in-time clinical measurements.**                                                                               |
-| [`Condition`](/docs/api/fhir/resources/condition)                               | A record of a **long-term diagnosis** for a patient.                                                                                                  |
-| [`RiskAssessment`](/docs/api/fhir/resources/riskassessment)                     | A specialized form of an [`Observation`](/docs/api/fhir/resources/observation) used to model **propensity for an adverse outcome.**                   |
-| [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance)             | Used for a specific type of risk: **adverse reaction to a drug or substance.**                                                                        |
-| [`Immunization`](/docs/api/fhir/resources/immunization)                         | A summary statement of vaccination records.                                                                                                           |
-| [`Medication`](/docs/api/fhir/resources/medication)                             | A representation of an instance of a given drug. The [`Medication`](/docs/api/fhir/resources/medication) lifecycle also includes the below resources. |
-| [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest)               | An order or prescription.                                                                                                                             |
-| [`MedicationAdministration`](/docs/api/fhir/resources/medicationadministration) | A lifecycle resource representing when the [`Patient`](/docs/api/fhir/resources/patient) ingests the drug.                                            |
-| [`MedicationStatement`](/docs/api/fhir/resources/medicationstatement)           | A summary statement of the drug.                                                                                                                      |
-
-### Key Code Systems
-
-| **Code System**                                                             | **Description**                                                                                                                                                                                                            |
-| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [LOINC](/docs/careplans/loinc)                       | Used in [`Observation`](/docs/api/fhir/resources/observation) and [`RiskAssessment`](/docs/api/fhir/resources/riskassessment) resources for compliance, billing, and reporting.                                            |
-| [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm)              | Used in [`Condition`](/docs/api/fhir/resources/condition) resources for interoperability and billing.                                                                                                                      |
-| [RXNORM](/docs/medications/medication-codes#rxnorm)  | Used in [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) resources to track drug intolerances and [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) resources to track requested drugs. |
-| [SNOMED](https://www.snomed.org/)                                           | Used in [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) resources to track substance intolerances.                                                                                                     |
-| [CVX](https://www2a.cdc.gov/vaccines/iis/iisstandards/vaccines.asp?rpt=cvx) | Used in [`Immunization`](/docs/api/fhir/resources/immunization) resources to track vaccine types.                                                                                                                          |
-
-## Encounter & Charting {/* #encounter-charting */}
-
-### Capturing Notes
-
-A wide variety of notes experiences are possible, and customizability is one of the key reasons to use a headless system. From a technical perspective, after a practitioner/patient interaction is complete, a set of appropriate FHIR resources should be created.
-
-Some implementations have a simple text box and allow the practitioner to enter text free form, then construct [Encounter](/docs/api/fhir/resources/encounter.mdx) and/or [ClinicalImpression](/docs/api/fhir/resources/clinicalimpression.mdx) resources.
-
-Some implementations have a library of [Questionnaires](/docs/questionnaires/) that practitioners fill out and use [Bots](/docs/bots/) to drive workflow and create resources in a specific way.
-
-```mermaid
-
-flowchart BT
-
- app1[<table><thead><tr><th>Appointment</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr><tr><td>Fall Assessment</td><tr></tbody></table>]
- encounter[<table><thead><tr><th>Encounter</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr><tr><td>Fall Assessment Encounter</td><tr></tbody></table>]
- patient[<table><thead><tr><th>Patient</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr></tbody></table>]
- condition[<table><thead><tr><th>Condition</th></tr></thead><tbody><tr><td>Arthritis</td></tr></tbody></table>]
-
- subgraph Results
-   note[<table><thead><tr><th>Clinical Impression</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr><tr><td>Fall Assessment Note</td><tr></tbody></table>]
-   obs1[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>Heart Rate: 150 bpm</td></tr></tbody></table>]
-   ra1[<table><thead><tr><th>RiskAssessment</th></tr></thead><tbody><tr><td>Fall Risk: 80%</td></tr></tbody></table>]
- end
-
-
- encounter -->|appointment| app1
- encounter -->|subject| patient
- encounter -->|reasonReference| condition
- note -->|encounter| encounter
- obs1 -->|encounter| encounter
- ra1 -->|encounter| encounter
-
-```
-
-### Key Resources
-
-| **Resource**                                                        | **Description**                                                                                                                                                                                                                                                                                                                                                |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`Encounter`](/docs/api/fhir/resources/encounter)                   | Primary tracking resource for a visit (either in-person or virtual).                                                                                                                                                                                                                                                                                           |
-| [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression) | Medplum-advised resource for recording unstructured notes.                                                                                                                                                                                                                                                                                                     |
-| [`Condition`](/docs/api/fhir/resources/condition)                   | A record of a **long-term diagnosis** for a [`Patient`](/docs/api/fhir/resources/patient). The outcome of an [`Encounter`](/docs/api/fhir/resources/encounter) can be a [`Condition`](/docs/api/fhir/resources/condition) with a type of 'encounter diagnosis'. For more details see the [Representing Diagnoses docs](/docs/charting/representing-diagnoses). |
-| [`Observation`](/docs/api/fhir/resources/observation)               | A structured representation of **point-in-time clinical measurements.**                                                                                                                                                                                                                                                                                        |
-| [`RiskAssessment`](/docs/api/fhir/resources/riskassessment)         | A specialized form of an [`Observation`](/docs/api/fhir/resources/observation) that is used to model **propensity for an adverse outcome.**                                                                                                                                                                                                                    |
-
-### Key Code Systems
-
-| **Code System**                                                                        | **Description**                                                                           |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| [CPT](https://www.ama-assn.org/practice-management/cpt/cpt-overview-and-code-approval) | Used to annotate [`Encounter`](/docs/api/fhir/resources/encounter) resources for billing. |
-| [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm)                         | Used to annotate [`Encounter`](/docs/api/fhir/resources/encounter) resources for billing. |
-
-- [CPT](https://www.ama-assn.org/practice-management/cpt/cpt-overview-and-code-approval): Used to annotate [`Encounter`](/docs/api/fhir/resources/encounter) resources for billing.
-- [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm): Used to annotate [`Encounter`](/docs/api/fhir/resources/encounter) resources for billing.
-
-## Placing Orders
-
-Placing orders requires constructing the right resources, which can be created directly or via [`Questionnaires`](/docs/api/fhir/resources/questionnaire) and [`Bots`](/docs/api/fhir/medplum/bot). Refer to our section on [Labs and Imaging](/docs/labs-imaging) or [Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders) for more details.
-
-## Reference
-
-- [Charting Demo Video](https://youtu.be/PHZr9q20tbM) on Youtube (3 min)
-- [Medical condition/diagnosis 1CD-9](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=sharing) sample ValueSet bundle
-- [Charting Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acharting) on Github
+- [Chart Data Model](/docs/charting/chart-data-model)
+- [Visit Templates and the SOAP Approach](/docs/charting/visit-templates)
+- [Questionnaires](/docs/questionnaires/)
+- [Charting Demo Video](https://youtu.be/PHZr9q20tbM) on YouTube (3 min)
+- [Sample ICD-9 ValueSet Bundle](https://drive.google.com/file/d/1cFHGBud9IlGH86yilxe-KkDxGUbGr2Mn/view?usp=sharing)
+- [Charting Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acharting) on GitHub

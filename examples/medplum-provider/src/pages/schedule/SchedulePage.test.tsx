@@ -310,35 +310,31 @@ describe('SchedulePage', () => {
   });
 
   describe('Settings gear icon', () => {
-    test('gear icon is hidden when the schedule lacks SchedulingParameters', async () => {
+    test('when the scheduling feature is disabled the gear icon is hidden', async () => {
       await act(async () => setup());
       await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
       expect(screen.queryByRole('button', { name: 'Schedule settings' })).not.toBeInTheDocument();
     });
 
-    test('gear icon is visible when the schedule has SchedulingParameters', async () => {
-      const scheduleWithParams = {
-        ...mockSchedule,
-        extension: [{ url: SchedulingParametersURI }],
-      };
-      await medplum.updateResource(scheduleWithParams);
-      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithParams);
-
+    test('when the scheduling feature is enabled the gear icon is visible', async () => {
+      medplum.getProject = vi.fn().mockReturnValue({
+        resourceType: 'Project',
+        id: 'project-123',
+        features: ['scheduling'],
+      });
       await act(async () => setup());
       await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
-
       expect(screen.getByRole('button', { name: 'Schedule settings' })).toBeInTheDocument();
     });
 
     test('clicking the gear icon navigates to the schedule settings page', async () => {
       const user = userEvent.setup();
-      const scheduleWithParams = {
-        ...mockSchedule,
-        extension: [{ url: SchedulingParametersURI }],
-      };
-      await medplum.updateResource(scheduleWithParams);
-      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithParams);
 
+      medplum.getProject = vi.fn().mockReturnValue({
+        resourceType: 'Project',
+        id: 'project-123',
+        features: ['scheduling'],
+      });
       await act(async () => setup());
       await user.click(screen.getByRole('button', { name: 'Schedule settings' }));
       await waitFor(() => expect(screen.getByText('Settings Page')).toBeInTheDocument());
@@ -423,14 +419,14 @@ describe('$find/$book component integration tests', () => {
 
     // Mock $find operation
     const originalGet = medplum.get.bind(medplum);
-    const mockFindSlots: Slot[] = [
+    const mockFindAppointments: Appointment[] = [
       {
-        resourceType: 'Slot',
-        id: 'find-slot-1',
-        schedule: createReference(DrAliceSmithSchedule),
-        status: 'free',
+        resourceType: 'Appointment',
+        id: 'find-appointment-1',
+        status: 'proposed',
         start: slotStart,
         end: slotEnd,
+        participant: [],
       },
     ];
     vi.spyOn(medplum, 'get').mockImplementation((url, options) => {
@@ -439,8 +435,8 @@ describe('$find/$book component integration tests', () => {
           Promise.resolve({
             resourceType: 'Bundle',
             type: 'searchset',
-            entry: mockFindSlots.map((slot) => ({ resource: slot })),
-          } satisfies Bundle<Slot>)
+            entry: mockFindAppointments.map((appointment) => ({ resource: appointment })),
+          } satisfies Bundle<Appointment>)
         );
       }
       return originalGet(url, options);
@@ -458,6 +454,7 @@ describe('$find/$book component integration tests', () => {
             status: 'booked',
             start: slotStart,
             end: slotEnd,
+            slot: [{ reference: 'Slot/slot-123' }, { reference: 'Slot/slot-124' }],
             participant: [
               { actor: { reference: 'Practitioner/practitioner-1' }, status: 'tentative' },
               { actor: createReference(HomerSimpson), status: 'accepted' },
@@ -497,7 +494,7 @@ describe('$find/$book component integration tests', () => {
     // Pane header shows selected service type
     expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
 
-    // Click on a slot button from the find pane
+    // Click on an appointment button from the find pane
     const slotButtons = screen.getAllByText(/1\/16\/2024/);
     expect(slotButtons.length).toEqual(1);
     await user.click(slotButtons[0]);
@@ -519,5 +516,93 @@ describe('$find/$book component integration tests', () => {
 
     // Buffer-after unavailable slot should be in the big calendar
     expect(screen.getByText('Blocked')).toBeInTheDocument();
+  });
+});
+
+describe('Cancel Visit integration', () => {
+  let medplum: MockClient;
+
+  beforeEach(async () => {
+    medplum = new MockClient({ profile: DrAliceSmith });
+    vi.clearAllMocks();
+
+    Object.defineProperty(window, 'innerHeight', {
+      writable: true,
+      configurable: true,
+      value: 800,
+    });
+  });
+
+  const setup = (initialPath = '/Calendar/Schedule/alice-smith-schedule'): ReturnType<typeof render> => {
+    return render(
+      <MemoryRouter initialEntries={[initialPath]}>
+        <MedplumProvider medplum={medplum}>
+          <MantineProvider>
+            <Notifications />
+            <Routes>
+              <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
+            </Routes>
+          </MantineProvider>
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+  };
+
+  test('Using the "Cancel Visit" button in the appointment details drawer', async () => {
+    vi.setSystemTime('2024-01-15');
+
+    const bookedAppointment = {
+      resourceType: 'Appointment',
+      id: 'appointment-to-cancel',
+      status: 'booked',
+      start: '2024-01-16T10:00:00Z',
+      end: '2024-01-16T10:30:00Z',
+      participant: [{ actor: { reference: 'Patient/patient-1', display: 'Jane Doe' }, status: 'accepted' }],
+    } satisfies Appointment;
+    const cancelledAppointment = { ...bookedAppointment, status: 'cancelled' } satisfies Appointment;
+
+    medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
+      if (resourceType === 'Appointment') {
+        return Promise.resolve([bookedAppointment]);
+      }
+      return Promise.resolve([]);
+    });
+
+    medplum.searchOne = vi.fn().mockImplementation((resourceType: string) => {
+      if (resourceType === 'Schedule') {
+        return Promise.resolve(DrAliceSmithSchedule);
+      }
+      return Promise.resolve(undefined); // no Encounter
+    });
+
+    const postMock = vi.fn().mockResolvedValue(cancelledAppointment);
+    medplum.post = postMock;
+
+    const user = userEvent.setup();
+
+    await act(async () => setup());
+    await waitFor(() => expect(screen.getByText('Jane Doe')).toBeInTheDocument());
+
+    await user.click(screen.getByText('Jane Doe'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Appointment Details')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Cancel Visit/i })).toBeInTheDocument();
+    });
+
+    // Clicking "Cancel Visit" calls $cancel endpoint
+    await user.click(screen.getByRole('button', { name: /Cancel Visit/i }));
+    await waitFor(() => {
+      const postUrl = postMock.mock.calls[0][0];
+      expect(postUrl.toString()).toContain('Appointment/appointment-to-cancel/$cancel');
+    });
+
+    // Drawer should close after cancellation completes
+    await waitFor(() => {
+      expect(screen.queryByText('Appointment Details')).not.toBeInTheDocument();
+    });
+
+    // Cancelled appointment is no longer visible in the calendar view
+    await waitFor(() => expect(screen.queryByText('Jane Doe')).not.toBeInTheDocument());
   });
 });

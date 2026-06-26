@@ -34,6 +34,7 @@ import {
 } from '@medplum/react';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { RescopeUserWidget } from './RescopeUserWidget';
 import { startAsyncJob } from './SuperAdminStartAsyncJob';
 import { WsSubStatsWidget } from './WsSubStatsWidget';
 
@@ -335,6 +336,8 @@ export function SuperAdminPage(): JSX.Element {
       <Modal opened={opened} onClose={close} title={modalTitle} centered size="auto">
         {modalContent}
       </Modal>
+      <Divider my="lg" />
+      <RescopeUserWidget />
     </Document>
   );
 }

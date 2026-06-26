@@ -6,6 +6,7 @@ import { useMedplumProfile } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
 import {
   Icon2fa,
+  IconAlertTriangle,
   IconBellRinging,
   IconClipboardCheck,
   IconDatabaseImport,
@@ -177,6 +178,61 @@ export function NotificationIcons(): JSX.Element {
             />
           </>
         }
+      >
+        Your application here
+      </AppShell>
+    </div>
+  );
+}
+
+export function DismissibleAnnouncement(): JSX.Element {
+  return (
+    <div className={classes.root}>
+      <AppShell
+        logo={<Logo size={24} />}
+        version="your.version"
+        menus={[
+          {
+            title: 'My Menu',
+            links: [{ href: '/notifications', label: 'Notifications', icon: <IconBellRinging /> }],
+          },
+        ]}
+        announcements={[
+          {
+            id: 'maintenance-window',
+            message: 'Expected system maintenance today from 8:00 PM to 8:30 PM Pacific.',
+            color: 'blue',
+            dismissible: true,
+          },
+        ]}
+      >
+        Your application here
+      </AppShell>
+    </div>
+  );
+}
+
+export function PersistentAnnouncement(): JSX.Element {
+  return (
+    <div className={classes.root}>
+      <AppShell
+        logo={<Logo size={24} />}
+        version="your.version"
+        layoutVersion="v2"
+        menus={[
+          {
+            title: 'My Menu',
+            links: [{ href: '/notifications', label: 'Notifications', icon: <IconBellRinging /> }],
+          },
+        ]}
+        announcements={[
+          {
+            message: 'Warning: logged in as super admin.',
+            color: 'red',
+            icon: <IconAlertTriangle size={16} />,
+            role: 'alert',
+          },
+        ]}
       >
         Your application here
       </AppShell>

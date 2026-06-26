@@ -2,15 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createReference } from '@medplum/core';
-import type {
-  Bundle,
-  Composition,
-  Immunization,
-  Organization,
-  Patient,
-  Practitioner,
-  PractitionerRole,
-} from '@medplum/fhirtypes';
+import type { Bundle, Immunization, Organization, Patient, Practitioner, PractitionerRole } from '@medplum/fhirtypes';
 import { OID_IMMUNIZATION_ACTIVITY } from '../../oids';
 import type { CcdaText } from '../../types';
 import { FhirToCcdaConverter } from '../convert';
@@ -44,7 +36,7 @@ describe('immunization entry functions', () => {
             title: 'test',
             subject: createReference(patient),
             section: [],
-          } as Composition,
+          },
         },
       ],
     };

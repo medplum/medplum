@@ -545,7 +545,6 @@ describe('LabOrderDetails', () => {
 
       await waitFor(
         () => {
-          expect(screen.getByText('Report Status')).toBeInTheDocument();
           const finalStatuses = screen.getAllByText('final');
           expect(finalStatuses.length).toBeGreaterThan(0);
         },
@@ -561,7 +560,7 @@ describe('LabOrderDetails', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Issue Date')).toBeInTheDocument();
+        expect(screen.getByText('Issued')).toBeInTheDocument();
       });
     });
 

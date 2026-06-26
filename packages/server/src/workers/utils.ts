@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { getExtension, Operator } from '@medplum/core';
 import type { AsyncJob, Parameters, ProjectMembership, Reference, Subscription } from '@medplum/fhirtypes';
-import type { ConnectionOptions, Job, Queue, Worker } from 'bullmq';
+import type { ConnectionOptions, Job, Queue, QueueOptions, Worker } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumBullmqConfig, MedplumServerConfig, WorkerName } from '../config/types';
@@ -13,6 +13,13 @@ import { getLogger, globalLogger } from '../logger';
 import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
 
+/**
+ *
+ * @param projectId - The ID of the project to search in.
+ * @param profile - The profile to find a project membership for.
+ * @throws An error whenever there are multiple project memberships for the given user.
+ * @returns A promise that resolves to a `ProjectMembership` or `undefined` if no `ProjectMembership` found.
+ */
 export function findProjectMembership(
   projectId: string,
   profile: Reference
@@ -118,7 +125,7 @@ export interface WorkerInitializerOptions {
 export type WorkerInitializer = (
   config: MedplumServerConfig,
   options?: WorkerInitializerOptions
-) => { queue: Queue; worker: Worker | undefined; name: string };
+) => { queue: Queue | undefined; worker: Worker | undefined; name: string };
 
 export interface QueueRegistry {
   add(name: string, queue: Queue, worker: Worker | undefined): void;
@@ -207,7 +214,7 @@ function getFinishedJobFieldsForLogging(job: Job): Record<string, string | numbe
 export function addVerboseQueueLogging<TDataType>(
   queue: Queue,
   worker: Worker,
-  getJobDataLoggingFields?: (job: Job<TDataType>) => Record<string, string | number | undefined>
+  getJobDataLoggingFields?: (job: Job<TDataType>) => Record<string, string | number | boolean | undefined>
 ): void {
   worker.on('active', (job, prev) => {
     globalLogger.info(`${queue.name} worker: active`, {
@@ -287,4 +294,17 @@ export function getWorkerBullmqConfig(
 
 export function getBullmqRedisConnectionOptions(config: MedplumServerConfig): ConnectionOptions {
   return { ...(config.backgroundJobsRedis ?? config.redis), reconnectOnError };
+}
+
+export function defaultQueueOptions(config: MedplumServerConfig): QueueOptions {
+  return {
+    connection: getBullmqRedisConnectionOptions(config),
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 1000,
+      },
+    },
+  };
 }

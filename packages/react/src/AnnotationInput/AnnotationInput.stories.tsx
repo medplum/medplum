@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { Annotation } from '@medplum/fhirtypes';
 import { DrAliceSmith } from '@medplum/mock';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
@@ -16,12 +15,10 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <AnnotationInput
-      defaultValue={
-        {
-          authorReference: createReference(DrAliceSmith),
-          text: 'This is an annotation',
-        } as Annotation
-      }
+      defaultValue={{
+        authorReference: createReference(DrAliceSmith),
+        text: 'This is an annotation',
+      }}
       onChange={console.log}
       name="annotation"
       path="Extension.value[x]"
@@ -33,12 +30,10 @@ export const Disabled = (): JSX.Element => (
   <Document>
     <AnnotationInput
       disabled={true}
-      defaultValue={
-        {
-          authorReference: createReference(DrAliceSmith),
-          text: 'This is an annotation',
-        } as Annotation
-      }
+      defaultValue={{
+        authorReference: createReference(DrAliceSmith),
+        text: 'This is an annotation',
+      }}
       onChange={console.log}
       name="annotation"
       path="Extension.value[x]"

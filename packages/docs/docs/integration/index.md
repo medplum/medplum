@@ -297,6 +297,12 @@ Medplum provides building blocks for custom integrations. Some examples are belo
       <td>Prescribe and check medications</td>
       <td><a href="https://drive.google.com/drive/folders/1tkkKREaeCj8UOZErTHm28_y7jPfYn4Tb">Medication related integration</a></td>
     </tr>
+    <tr>
+      <td><a href="https://npiregistry.cms.hhs.gov/api-page">NPPES NPI Registry</a></td>
+      <td>Bot API</td>
+      <td>Look up National Provider Identifier (NPI) records from the public CMS registry</td>
+      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/nppes-lookup.ts">NPPES Lookup Bot</a></td>
+    </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Documents and Forms (Bot PDF)</strong></td>
     </tr>

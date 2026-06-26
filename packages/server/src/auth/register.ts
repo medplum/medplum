@@ -38,6 +38,7 @@ export interface RegisterResponse {
 
 /**
  * Registers a new user and/or new project.
+ * This method is now only used in tests! Do not use this method in production code!
  * @param request - The register request.
  * @returns The registration response.
  */
@@ -60,7 +61,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
 
   const login = await tryLogin({
     authMethod: 'password',
-    scope: request.scope ?? 'openid offline',
+    scope: request.scope ?? 'openid offline_access',
     nonce: randomUUID(),
     email: email,
     password: password,

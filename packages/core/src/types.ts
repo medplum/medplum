@@ -174,7 +174,7 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
   if (!typeSchema) {
     typeSchema = {
       searchParamsDetails: {},
-    } as TypeInfo;
+    };
     globalSchema.types[resourceType] = typeSchema;
   }
 
@@ -222,6 +222,12 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
         code: '_tag',
         type: 'token',
         expression: resourceType + '.meta.tag',
+      } as SearchParameter,
+      _project: {
+        base: [resourceType],
+        code: '_project',
+        type: 'token', // Intentionally use `token`, similar to `_id`
+        expression: resourceType + '.meta.project',
       } as SearchParameter,
     };
   }
@@ -424,6 +430,42 @@ export function getElementDefinitionFromElements(
 
   // Otherwise, no matches.
   return undefined;
+}
+
+export function getElementDefinitionForPath(
+  typeName: string,
+  path: string,
+  profileUrl?: string
+): InternalSchemaElement | undefined {
+  const pathParts = path.split(/[.[\]]/g);
+  const baseSchema = tryGetDataType(typeName, profileUrl);
+  if (!baseSchema) {
+    return undefined;
+  }
+
+  let currentType = baseSchema;
+  let currentElement: InternalSchemaElement | undefined;
+  for (const segment of pathParts) {
+    let next: InternalTypeSchema | undefined;
+    if (segment.match(/^[a-z]/)) {
+      const element = getElementDefinitionFromElements(currentType.elements, segment);
+      if (!element) {
+        return undefined;
+      }
+      if (element.type.length > 1) {
+        throw new Error('Multiple matching types in path ' + path);
+      }
+
+      next = tryGetDataType(element.type[0].code);
+      currentElement = element;
+    }
+
+    if (next) {
+      currentType = next;
+    }
+  }
+
+  return currentElement;
 }
 
 /**

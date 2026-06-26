@@ -3,7 +3,7 @@
 import { Checkbox, Flex, Group, Stack, Title } from '@mantine/core';
 import type { LoginAuthenticationResponse } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { Fragment } from 'react/jsx-runtime';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
@@ -13,6 +13,10 @@ export interface ChooseScopeFormProps {
   readonly login: string;
   readonly scope: string | undefined;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly title?: string;
+  readonly submitLabel?: string;
+  readonly logo?: ReactNode;
+  readonly children?: ReactNode;
 }
 
 const openConditionScope = /^patient\/Condition\.(?:\*|c?r?u?d?s?)$/;
@@ -44,10 +48,11 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
     >
       <Stack>
         <Flex direction="column" align="center" justify="center">
-          <Logo size={32} />
+          {props.logo ?? <Logo size={32} />}
           <Title order={3} py="lg">
-            Choose scope
+            {props.title ?? 'Choose scope'}
           </Title>
+          {props.children}
         </Flex>
         <Stack>
           {(props.scope ?? 'openid').split(' ').map((scopeName: string) => {
@@ -79,7 +84,7 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
           })}
         </Stack>
         <Group justify="flex-end" mt="xl">
-          <SubmitButton fullWidth>Set Scope</SubmitButton>
+          <SubmitButton fullWidth>{props.submitLabel ?? 'Set Scope'}</SubmitButton>
         </Group>
       </Stack>
     </Form>

@@ -304,7 +304,7 @@ async function getAccountId(region: string): Promise<string | undefined> {
     const client = new STSClient({ region });
     const command = new GetCallerIdentityCommand({});
     const response = await client.send(command);
-    return response.Account as string;
+    return response.Account;
   } catch (err) {
     console.log('Warning: Unable to get AWS account ID', (err as Error).message);
     return undefined;

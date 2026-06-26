@@ -608,7 +608,7 @@ type QueryCostRuleOptions = {
 const QueryCostRule =
   (router: FhirRouter, options?: QueryCostRuleOptions) =>
   (context: ValidationContext): ASTVisitor =>
-    new QueryCostVisitor(context, router, options) as ASTVisitor;
+    new QueryCostVisitor(context, router, options);
 
 class QueryCostVisitor {
   private readonly context: ValidationContext;

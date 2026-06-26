@@ -1104,7 +1104,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Who the study is about\r",
-      "expression": "ImagingStudy.subject.where(resolve() is Patient)"
+      "expression": "ImagingStudy.subject.where((resolve() is Patient))"
     },
     {
       "name": "basedon",

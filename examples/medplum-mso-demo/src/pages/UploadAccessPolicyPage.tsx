@@ -32,7 +32,7 @@ export function UploadAccessPolicyPage(): JSX.Element {
         });
 
         if (searchResult.entry?.[0]?.resource) {
-          setExistingPolicy(searchResult.entry[0].resource as AccessPolicy);
+          setExistingPolicy(searchResult.entry[0].resource);
         }
       } catch (error) {
         console.error('Error checking policy:', normalizeErrorString(error));

@@ -4,7 +4,7 @@ import { EMPTY } from '@medplum/core';
 import type { DiagnosticReport } from '@medplum/fhirtypes';
 import { OID_RESULT_ORGANIZER } from '../../oids';
 import { mapCodeableConceptToCcdaCode } from '../../systems';
-import type { CcdaCode, CcdaEntry, CcdaId, CcdaOrganizerComponent } from '../../types';
+import type { CcdaEntry, CcdaId, CcdaOrganizerComponent } from '../../types';
 import type { FhirToCcdaConverter } from '../convert';
 import { mapIdentifiers } from '../utils';
 import { createCcdaObservation } from './observation';
@@ -37,7 +37,7 @@ export function createDiagnosticReportEntry(converter: FhirToCcdaConverter, reso
           { '@_root': OID_RESULT_ORGANIZER, '@_extension': '2015-08-01' },
         ],
         id: mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
-        code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+        code: mapCodeableConceptToCcdaCode(resource.code),
         statusCode: { '@_code': 'completed' },
         component: components,
       },

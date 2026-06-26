@@ -3,8 +3,9 @@
 import { MEDPLUM_VERSION } from '@medplum/core';
 import type { UserConfiguration } from '@medplum/fhirtypes';
 import type { NavbarMenu } from '@medplum/react';
-import { AppShell, Loading, Logo, useMedplum } from '@medplum/react';
+import { AppShell, Loading, Logo, ScrollToTop, useMedplum } from '@medplum/react';
 import {
+  IconAlertTriangle,
   IconBrandAsana,
   IconBuilding,
   IconDatabase,
@@ -22,7 +23,7 @@ import {
 } from '@tabler/icons-react';
 import type { FunctionComponent, JSX } from 'react';
 import { Suspense } from 'react';
-import { useLocation, useSearchParams } from 'react-router';
+import { Link, useLocation, useSearchParams } from 'react-router';
 import { AppRoutes } from './AppRoutes';
 
 import './App.css';
@@ -30,6 +31,7 @@ import './App.css';
 export function App(): JSX.Element {
   const medplum = useMedplum();
   const config = medplum.getUserConfiguration();
+  const project = medplum.getProject();
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
@@ -45,7 +47,25 @@ export function App(): JSX.Element {
       version={MEDPLUM_VERSION}
       menus={userConfigToMenu(config)}
       displayAddBookmark={!!config?.id}
+      announcements={
+        project?.superAdmin
+          ? [
+              {
+                message: (
+                  <>
+                    Warning: logged in as{' '}
+                    <Link to="https://www.medplum.com/docs/self-hosting/super-admin-guide">Medplum Super Admin</Link>.
+                  </>
+                ),
+                color: 'red',
+                icon: <IconAlertTriangle size={16} />,
+                role: 'alert',
+              },
+            ]
+          : undefined
+      }
     >
+      <ScrollToTop />
       <Suspense fallback={<Loading />}>
         <AppRoutes />
       </Suspense>

@@ -6,6 +6,7 @@ import {
   allOk,
   badRequest,
   created,
+  isResource,
   normalizeOperationOutcome,
   notFound,
   parseSearchRequest,
@@ -15,6 +16,7 @@ import type {
   CapabilityStatementRestInteraction,
   CapabilityStatementRestResourceInteraction,
   OperationOutcome,
+  Parameters,
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
@@ -106,7 +108,7 @@ async function searchMultipleTypes(
 ): Promise<FhirResponse> {
   setSearchRepositoryMode(req, repo, options);
 
-  const searchRequest = parseSearchRequest('MultipleTypes' as ResourceType, req.query);
+  const searchRequest = parseSearchRequest('MultipleTypes', req.query);
   if (!searchRequest.types || searchRequest.types.length === 0) {
     return [badRequest('No types specified')];
   }
@@ -187,7 +189,7 @@ export async function createResourceImpl<T extends Resource>(
 // Read resource by ID
 async function readResourceById(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
-  const resource = await repo.readResource(resourceType as ResourceType, id);
+  const resource = await repo.readResource(resourceType, id);
   return [allOk, resource];
 }
 
@@ -196,14 +198,14 @@ async function readHistory(req: FhirRequest, repo: FhirRepository): Promise<Fhir
   const { resourceType, id } = req.params;
   const offset = parseIntegerQueryParam(req.query, '_offset');
   const limit = parseIntegerQueryParam(req.query, '_count');
-  const bundle = await repo.readHistory(resourceType as ResourceType, id, { offset, limit });
+  const bundle = await repo.readHistory(resourceType, id, { offset, limit });
   return [allOk, bundle];
 }
 
 // Read resource version by version ID
 async function readVersion(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id, vid } = req.params;
-  const resource = await repo.readVersion(resourceType as ResourceType, id, vid);
+  const resource = await repo.readVersion(resourceType, id, vid);
   return [allOk, resource];
 }
 
@@ -267,12 +269,12 @@ async function conditionalDelete(req: FhirRequest, repo: FhirRepository): Promis
 // Patch resource
 async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
-  const patch = req.body as Operation[];
+  const patch = req.body as Operation[] | Parameters;
   if (!patch) {
     return [badRequest('Empty patch body')];
   }
-  if (!Array.isArray(patch)) {
-    return [badRequest('Patch body must be an array')];
+  if (!Array.isArray(patch) && !isResource(patch, 'Parameters')) {
+    return [badRequest('Invalid patch body')];
   }
   const resource = await repo.patchResource(resourceType as ResourceType, id, patch);
   return [allOk, resource];

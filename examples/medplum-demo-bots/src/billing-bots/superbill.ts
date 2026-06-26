@@ -205,7 +205,7 @@ function getEmailAddress(patient: Patient): string | undefined {
   if (!emailAddresses) {
     return undefined;
   }
-  return emailAddresses[0] as string;
+  return emailAddresses[0];
 }
 
 function getAge(dob: string): number {

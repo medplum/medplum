@@ -1,17 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { badRequest, Operator } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
-
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('New project', () => {
@@ -25,10 +27,11 @@ describe('New project', () => {
   });
 
   beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    getConfig().requireVerifiedEmailForProjectCreation = undefined;
+    fetchMock.mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(true);
   });
 
   test('Success', async () => {
@@ -292,5 +295,58 @@ describe('New project', () => {
     expect(res5.body.data).toBeDefined();
     expect(res5.body.data.PatientList).toBeDefined();
     expect(res5.body.data.PatientList.length).toStrictEqual(0);
+  });
+
+  test('Require verified email - rejected', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+
+    const res1 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+    expect(res1.status).toBe(200);
+
+    const res2 = await request(app).post('/auth/newproject').type('json').send({
+      login: res1.body.login,
+      projectName: 'Hamilton Project',
+    });
+    expect(res2.status).toBe(400);
+    expect(res2.body).toMatchObject(badRequest('Email verification is required to create a project'));
+  });
+
+  test('Require verified email - allowed', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+
+    const email = `alex${randomUUID()}@example.com`;
+    const res1 = await request(app).post('/auth/newuser').type('json').send({
+      firstName: 'Alexander',
+      lastName: 'Hamilton',
+      email,
+      password: 'password!@#',
+      recaptchaToken: 'xyz',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res1.status).toBe(200);
+
+    const systemRepo = getGlobalSystemRepo();
+    await systemRepo.conditionalPatch(
+      { resourceType: 'User', filters: [{ code: 'email', operator: Operator.EXACT, value: email }] },
+      [{ op: 'add', path: '/emailVerified', value: true }]
+    );
+
+    const res2 = await request(app).post('/auth/newproject').type('json').send({
+      login: res1.body.login,
+      projectName: 'Hamilton Project',
+    });
+    expect(res2.status).toBe(200);
   });
 });

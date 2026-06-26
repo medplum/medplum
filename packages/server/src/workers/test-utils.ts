@@ -4,6 +4,9 @@ import type { BackgroundJobInteraction } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import type { Resource, Subscription } from '@medplum/fhirtypes';
 import type { Job, Queue } from 'bullmq';
+import { UnrecoverableError } from 'bullmq';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { execDispatchJob, getDispatchQueue } from './dispatch';
 import { execDownloadJob, getDownloadQueue } from './download';
 import { execSubscriptionJob, getSubscriptionQueue } from './subscription';
@@ -93,7 +96,7 @@ async function findAndExecJob(
     throw new Error('Queue not initialized');
   }
 
-  const jobData = (queue.add as jest.Mock).mock.calls.find(([_jobName, data]) => matchJob(data))?.[1];
+  const jobData = (queue.add as Mock).mock.calls.find(([_jobName, data]) => matchJob(data))?.[1];
   if (!jobData) {
     throw new Error('Job not found');
   }
@@ -106,14 +109,14 @@ async function findAndExecJob(
       id: 1 + attempt,
       data: jobData,
       attemptsMade: attempt,
-      changePriority: jest.fn(),
+      changePriority: vi.fn(),
     } as unknown as Job;
     result.push(job);
     try {
       await execJob(job);
       break; // Exit loop if successful
     } catch (err) {
-      if (attempt === maxRetries - 1) {
+      if (attempt === maxRetries - 1 || err instanceof UnrecoverableError) {
         throw err;
       }
     }
@@ -131,19 +134,12 @@ async function findAndExecJob(
  * @returns The mock Response object with the given status, body, and headers.
  */
 export function mockFetchResponse(status: number, body: any, headers: Record<string, string> = {}): Response {
-  return {
+  return new Response(body, {
     status,
     headers: {
-      get(name: string): string | null {
-        return (
-          {
-            'content-disposition': 'attachment; filename=download-1',
-            'content-type': ContentType.TEXT,
-            ...headers,
-          }[name] ?? null
-        );
-      },
-    } as Headers,
-    body,
-  } as Response;
+      'content-disposition': 'attachment; filename=download-1',
+      'content-type': ContentType.TEXT,
+      ...headers,
+    },
+  });
 }
