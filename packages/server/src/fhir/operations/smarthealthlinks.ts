@@ -236,7 +236,10 @@ export async function smartHealthLinkManifestHandler(req: Request, res: Response
     res.status(400).json({ error: outcome });
     return;
   }
-  res.status(200).contentType(ContentType.JSON).json(await buildSmartHealthLinkManifest(smartHealthLink));
+  res
+    .status(200)
+    .contentType(ContentType.JSON)
+    .json(await buildSmartHealthLinkManifest(smartHealthLink));
 }
 
 export async function smartHealthLinkPayloadHandler(req: Request, res: Response): Promise<void> {
@@ -386,7 +389,10 @@ async function readSmartHealthLinkEncryptedFile(
   if (!binaryReference?.startsWith('Binary/')) {
     return undefined;
   }
-  const binary = await getGlobalSystemRepo().readResource<Binary>('Binary', binaryReference.substring('Binary/'.length));
+  const binary = await getGlobalSystemRepo().readResource<Binary>(
+    'Binary',
+    binaryReference.substring('Binary/'.length)
+  );
   const stream = await getBinaryStorage().readBinary(binary);
   return readStreamToString(stream);
 }
