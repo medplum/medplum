@@ -3914,6 +3914,28 @@
           ]
         }
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/base-definition-types",
+      "resource": {
+        "resourceType": "ValueSet",
+        "url": "https://medplum.com/fhir/ValueSet/base-definition-types",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "http://hl7.org/fhir/ValueSet/resource-types",
+              "concept": [
+                { "code": "StructureDefinition" },
+                { "code": "SearchParameter" },
+                { "code": "ValueSet" },
+                { "code": "CodeSystem" },
+                { "code": "OperationDefinition" }
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }

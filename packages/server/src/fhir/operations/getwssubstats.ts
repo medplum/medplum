@@ -3,8 +3,7 @@
 import { allOk, isResourceType } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Project, ResourceType } from '@medplum/fhirtypes';
-import { requireSuperAdmin } from '../../admin/super';
-import { getAuthenticatedContext } from '../../context';
+import { getAuthenticatedContext, requireSuperAdmin } from '../../context';
 import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
 import { makeOperationDefinition } from './definitions';
