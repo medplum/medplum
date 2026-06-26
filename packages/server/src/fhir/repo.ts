@@ -120,7 +120,7 @@ import {
   getResourceCacheEntry,
   setResourceCacheEntry,
 } from './repository/resource-cache';
-import { buildDeletedResourceRow, buildResourceRow } from './repository/row-builder';
+import { buildDeleteHistoryContent, buildDeletedResourceRow, buildResourceRow, isDeleteTombstone } from './repository/row-builder';
 import { validateRepositoryResource } from './repository/validation';
 import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
@@ -726,8 +726,9 @@ export class Repository extends FhirRepository implements Disposable {
       const entries: BundleEntry<T>[] = [];
 
       for (const row of rows) {
-        const resource = row.content ? this.removeHiddenFields(JSON.parse(row.content as string)) : undefined;
-        const outcome: OperationOutcome = row.content
+        const isDeleted = isDeleteTombstone(row.content as string);
+        const resource = !isDeleted ? this.removeHiddenFields(JSON.parse(row.content as string)) : undefined;
+        const outcome: OperationOutcome = !isDeleted
           ? allOk
           : {
               resourceType: 'OperationOutcome',
@@ -745,8 +746,8 @@ export class Repository extends FhirRepository implements Disposable {
         entries.push({
           fullUrl: getFullUrl(resourceType, row.id),
           request: {
-            method: 'GET',
-            url: `${resourceType}/${row.id}/_history/${row.versionId}`,
+            method: isDeleted ? 'DELETE' : 'GET',
+            url: isDeleted ? `${resourceType}/${row.id}` : `${resourceType}/${row.id}/_history/${row.versionId}`,
           },
           response: {
             status: getStatus(outcome).toString(),
@@ -802,6 +803,10 @@ export class Repository extends FhirRepository implements Disposable {
 
       if (rows.length === 0) {
         throw new OperationOutcomeError(notFound);
+      }
+
+      if (isDeleteTombstone(rows[0].content as string)) {
+        throw new OperationOutcomeError(gone);
       }
 
       const result = await this.authorizeBinarySecurityContext(
@@ -1266,7 +1271,14 @@ export class Repository extends FhirRepository implements Disposable {
 
       if (!this.isCacheOnly(resource)) {
         await this.ensureInTransaction(async (txRepo) => {
-          const columns = buildDeletedResourceRow(resourceType, id, resource.meta?.project);
+          const versionId = txRepo.generateId();
+          const lastUpdated = new Date();
+          const columns = buildDeletedResourceRow(resource, lastUpdated);
+          const historyContent = buildDeleteHistoryContent(resource, {
+            versionId,
+            lastUpdated,
+            author: txRepo.getAuthor(),
+          });
 
           const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
           await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
@@ -1274,13 +1286,14 @@ export class Repository extends FhirRepository implements Disposable {
           await new InsertQuery(resourceType + '_History', [
             {
               id,
-              versionId: txRepo.generateId(),
+              versionId,
               lastUpdated: columns.lastUpdated,
-              content: columns.content,
+              content: historyContent,
             },
           ]).execute(client);
 
           await txRepo.deleteFromLookupTables(client, resource);
+
           const durationMs = Date.now() - startTime;
 
           await txRepo.postCommit(async () => {

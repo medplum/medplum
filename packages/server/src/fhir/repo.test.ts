@@ -7,6 +7,7 @@ import {
   created,
   createReference,
   getReferenceString,
+  isGone,
   isOk,
   normalizeErrorString,
   notFound,
@@ -47,6 +48,11 @@ import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationT
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
+import {
+  buildRestoredResource,
+  getLatestNonDeletedHistoryResource,
+  isResourceCurrentlyDeleted,
+} from './restore';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
@@ -971,6 +977,35 @@ describe('FHIR Repo', () => {
 
       const history2 = await systemRepo.readHistory('Patient', patient.id);
       expect(history2.entry?.length).toBe(2);
+      expect(history2.entry?.[0]?.request?.method).toStrictEqual('DELETE');
+      expect(history2.entry?.[0]?.request?.url).toStrictEqual(`Patient/${patient.id}`);
+
+      const tombstoneRows = await new SelectQuery('Patient_History')
+        .column('versionId')
+        .column('content')
+        .where('id', '=', patient.id)
+        .orderBy('lastUpdated', true)
+        .limit(1)
+        .execute(systemRepo.getDatabaseClient(DatabaseMode.READER));
+      expect(tombstoneRows).toHaveLength(1);
+      const deleteVersionId = tombstoneRows[0].versionId as string;
+      const tombstone = JSON.parse(tombstoneRows[0].content as string);
+      expect(tombstone).toMatchObject({
+        resourceType: 'Patient',
+        id: patient.id,
+        meta: {
+          versionId: deleteVersionId,
+          deleted: true,
+        },
+      });
+      expect(tombstone.meta?.author?.reference).toBeDefined();
+
+      try {
+        await systemRepo.readVersion('Patient', patient.id, deleteVersionId);
+        expect.fail('Expected error');
+      } catch (err) {
+        expect(isGone((err as OperationOutcomeError).outcome)).toBe(true);
+      }
 
       // Restore the patient
       await systemRepo.updateResource({ ...patient, meta: undefined });
@@ -981,11 +1016,49 @@ describe('FHIR Repo', () => {
       const entries = history3.entry as BundleEntry[];
       expect(entries[0].response?.status).toStrictEqual('200');
       expect(entries[0].resource).toBeDefined();
+      expect(entries[1].request?.method).toStrictEqual('DELETE');
+      expect(entries[1].request?.url).toStrictEqual(`Patient/${patient.id}`);
       expect(entries[1].response?.status).toStrictEqual('410');
       expect((entries[1].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toMatch(/Deleted on /);
       expect(entries[1].resource).toBeUndefined();
       expect(entries[2].response?.status).toStrictEqual('200');
       expect(entries[2].resource).toBeDefined();
+    }));
+
+  test('Restore deleted resource', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await systemRepo.deleteResource('Patient', patient.id);
+
+      const history = await systemRepo.readHistory<Patient>('Patient', patient.id);
+      expect(isResourceCurrentlyDeleted(history)).toBe(true);
+
+      const latestVersion = getLatestNonDeletedHistoryResource(history);
+      expect(latestVersion).toBeDefined();
+      if (!latestVersion) {
+        throw new Error('Expected latest version');
+      }
+
+      const restored = await systemRepo.updateResource(buildRestoredResource(latestVersion));
+
+      expect(restored.name?.[0]?.family).toStrictEqual('Smith');
+      expect(restored.meta?.deleted).toBeUndefined();
+
+      const readResult = await systemRepo.readResource('Patient', patient.id);
+      expect(readResult.id).toStrictEqual(patient.id);
+
+      const searchResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
+      });
+      expect(searchResult.entry?.length).toBe(1);
+
+      const historyAfterRestore = await systemRepo.readHistory('Patient', patient.id);
+      expect(historyAfterRestore.entry?.length).toBe(3);
     }));
 
   test('Delete Binary', () =>
