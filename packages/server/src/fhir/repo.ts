@@ -124,7 +124,7 @@ import {
   buildDeletedResourceRow,
   buildDeleteHistoryContent,
   buildResourceRow,
-  isDeleteTombstone,
+  parseHistoryContent,
 } from './repository/row-builder';
 import { validateRepositoryResource } from './repository/validation';
 import type { ResourceCap } from './resource-cap';
@@ -731,8 +731,9 @@ export class Repository extends FhirRepository implements Disposable {
       const entries: BundleEntry<T>[] = [];
 
       for (const row of rows) {
-        const isDeleted = isDeleteTombstone(row.content as string);
-        const resource = !isDeleted ? this.removeHiddenFields(JSON.parse(row.content as string)) : undefined;
+        const parsed = parseHistoryContent(row.content as string);
+        const isDeleted = parsed.tombstone;
+        const resource = !isDeleted ? this.removeHiddenFields(parsed.resource) : undefined;
         const outcome: OperationOutcome = !isDeleted
           ? allOk
           : {
@@ -810,13 +811,12 @@ export class Repository extends FhirRepository implements Disposable {
         throw new OperationOutcomeError(notFound);
       }
 
-      if (isDeleteTombstone(rows[0].content as string)) {
+      const parsed = parseHistoryContent(rows[0].content as string);
+      if (parsed.tombstone) {
         throw new OperationOutcomeError(gone);
       }
 
-      const result = await this.authorizeBinarySecurityContext(
-        this.removeHiddenFields(JSON.parse(rows[0].content as string))
-      );
+      const result = await this.authorizeBinarySecurityContext(this.removeHiddenFields(parsed.resource));
       const durationMs = Date.now() - startTime;
       this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });
       return result;

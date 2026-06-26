@@ -51,7 +51,7 @@ import { DatabaseMode } from '../database';
 import { clamp } from './operations/utils/parameters';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
-import { isDeleteTombstone } from './repository/row-builder';
+import { parseHistoryContent } from './repository/row-builder';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
@@ -349,8 +349,9 @@ async function getSearchEntries<T extends Resource>(
   const resources = [];
   for (let i = 0; i < rowCount; i++) {
     const row = rows[i];
-    if (row.content && !isDeleteTombstone(row.content as string)) {
-      resources.push(JSON.parse(row.content));
+    const parsed = parseHistoryContent(row.content as string);
+    if (!parsed.tombstone) {
+      resources.push(parsed.resource);
     } else {
       // Handle missing or tombstone content for soft-deleted resources.
       resources.push({
