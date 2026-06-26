@@ -3,16 +3,19 @@
 
 import type { TransactionOptions } from '@medplum/fhir-router';
 import type { ResourceType } from '@medplum/fhirtypes';
-import type { DatabaseMode } from '../../database';
+import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 
 export type RepositoryAccessLayer = 'sql' | 'cache';
 export type RepositoryAccessOperation = 'read' | 'write' | 'transaction' | 'configuration';
 
-export type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
+export type NormalizedResourceTypes = ReadonlySet<ResourceType>;
+export type ResourceTypeInput = ResourceType | readonly ResourceType[] | NormalizedResourceTypes;
 
 export interface RepositoryAccessOptions {
+  /** The resource types involved in the operation */
   readonly resourceTypes: ResourceTypeInput;
+  /** Short label identifying the call site (e.g. `repo.readResourceFromDatabase`) */
   readonly source?: string;
 }
 
@@ -108,7 +111,7 @@ export class RepositoryAccessTracker {
   recordResourceAccess(
     layer: RepositoryAccessLayer,
     operation: RepositoryAccessOperation,
-    resourceTypes: ResourceTypeInput,
+    resourceTypes: ReadonlySet<ResourceType>,
     source: string | undefined
   ): void {
     const access = partitionResourceTypes(resourceTypes);
@@ -133,6 +136,10 @@ export class RepositoryAccessTracker {
     if (frame) {
       updateTransactionAccessFrame(frame, layer, operation, source, access);
     }
+  }
+
+  static normalizeResourceTypes(input: ResourceTypeInput): ReadonlySet<ResourceType> {
+    return typeof input === 'string' ? new Set([input]) : new Set(input);
   }
 }
 
@@ -193,8 +200,7 @@ type ResourceTypePartition = {
   readonly other: Set<ResourceType>;
 };
 
-function partitionResourceTypes(resourceTypes: ResourceTypeInput): ResourceTypePartition {
-  resourceTypes = normalizeResourceTypes(resourceTypes);
+function partitionResourceTypes(resourceTypes: ReadonlySet<ResourceType>): ResourceTypePartition {
   const all = new Set<ResourceType>();
   const special = new Set<ResourceType>();
   const other = new Set<ResourceType>();
@@ -230,32 +236,82 @@ function mergeTransactionAccessFrame(target: TransactionAccessFrame, source: Tra
   }
 }
 
-// export const access = {
-//   sqlRead: (
-//     resourceTypes: ResourceType | Iterable<ResourceType>,
-//     options?: { mode?: DatabaseMode; source?: string }
-//   ): ExecuteSqlOptions => {
-//     return {
-//       mode: options?.mode ?? DatabaseMode.READER,
-//       operation: 'read',
-//       resourceTypes,
-//       source: options?.source ?? 'sqlRead',
-//     };
-//   },
+/**
+ * Factory helpers for the {@link ExecuteSqlOptions} passed to `Repository.getDatabaseClient` /
+ * `Repository.executeSql`. Each helper records the resource types and intent of an access so the
+ * shard-boundary tracking sees it.
+ */
+export const repoAccess = {
+  /**
+   * Use when reading resources (read-by-id, history, search, count, etc.).
+   * Pass the resource type(s) the query selects from so the access is attributed correctly.
+   * Defaults to DatabaseMode.READER which can be overridden as needed, which should be rare.
+   * @param resourceTypes - The resource type(s) the query reads.
+   * @param options - Optional overrides.
+   * @param options.mode - The database mode to use (default: DatabaseMode.READER).
+   * @param options.source - Short label identifying the call site (e.g. `repo.readResource`).
+   * @returns Options describing the read access.
+   */
+  sqlRead: (
+    resourceTypes: ResourceTypeInput,
+    options?: { mode?: DatabaseMode; source?: string }
+  ): ExecuteSqlOptions => {
+    return {
+      mode: options?.mode ?? DatabaseMode.READER,
+      operation: 'read',
+      resourceTypes,
+      source: options?.source,
+    };
+  },
 
-//   sqlWrite: (
-//     resourceTypes: ResourceType | Iterable<ResourceType>,
-//     options?: { source?: string }
-//   ): ExecuteSqlOptions => {
-//     return {
-//       mode: DatabaseMode.WRITER,
-//       operation: 'write',
-//       resourceTypes,
-//       source: options?.source ?? 'sqlWrite',
-//     };
-//   },
-// };
+  /**
+   * Use when writing resources (INSERT/UPDATE/DELETE on a resource and its
+   * history/lookup tables). Always uses DatabaseMode.WRITER.
+   * @param resourceTypes - The resource type(s) the query writes.
+   * @param options - Optional overrides.
+   * @param options.source - Short label identifying the call site (e.g. `repo.updateResource`).
+   * @returns Options describing the write access.
+   */
+  sqlWrite: (resourceTypes: ResourceTypeInput, options?: { source?: string }): ExecuteSqlOptions => {
+    return {
+      mode: DatabaseMode.WRITER,
+      operation: 'write',
+      resourceTypes,
+      source: options?.source,
+    };
+  },
 
-function normalizeResourceTypes(input: ResourceTypeInput): ReadonlySet<ResourceType> {
-  return typeof input === 'string' ? new Set([input]) : new Set(input);
-}
+  /**
+   * Use when acquiring a READER client only to issue session/transaction configuration — e.g.
+   * `SET statement_timeout = 2000` — rather than to read resource data. No resources should be read.
+   * @param options - Optional overrides.
+   * @param options.source - Short label identifying the call site.
+   * @returns Options describing the reader configuration access.
+   */
+  sqlReadConfig: (options?: { source?: string }): ExecuteSqlOptions => {
+    return {
+      mode: DatabaseMode.READER,
+      operation: 'configuration',
+      resourceTypes: new Set(),
+      source: options?.source,
+    };
+  },
+
+  /**
+   * Use when acquiring the WRITER client only to issue configuration statements — e.g.
+   * `set_config('statement_timeout', ..., true)` inside a transaction — rather than to read or
+   * write resource data. Like {@link repoAccess.sqlReadConfig} but on the writer (the connection a
+   * transaction is pinned to). Carries no resource types, so nothing is recorded against tracking.
+   * @param options - Optional overrides.
+   * @param options.source - Short label identifying the call site.
+   * @returns Options describing the writer configuration access.
+   */
+  sqlWriteConfig: (options?: { source?: string }): ExecuteSqlOptions => {
+    return {
+      mode: DatabaseMode.WRITER,
+      operation: 'configuration',
+      resourceTypes: new Set(),
+      source: options?.source,
+    };
+  },
+};

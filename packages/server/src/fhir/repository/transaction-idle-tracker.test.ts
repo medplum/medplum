@@ -8,6 +8,7 @@ import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 import * as otelModule from '../../otel/otel';
 import { getShardSystemRepo } from '../repo';
+import { repoAccess } from './access-tracker';
 import { RepositoryConnection } from './repository-connection';
 import { TransactionIdleTracker } from './transaction-idle-tracker';
 
@@ -48,15 +49,10 @@ describe('TransactionIdleTracker', () => {
       try {
         await repo.withTransaction(
           async (txRepo) => {
-            const client = txRepo.getDatabaseClient({
-              mode: DatabaseMode.WRITER,
-              operation: 'write',
-              resourceTypes: [],
-              source: 'test.transactionIdleTracker.getDatabaseClient',
-            });
+            const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
             await client.query('SELECT 1');
           },
-          { resourceTypes: [], source: 'test.transactionIdleTracker.noMetrics' }
+          { resourceTypes: [] }
         );
 
         expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
@@ -101,17 +97,12 @@ describe('TransactionIdleTracker', () => {
     try {
       await repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: [],
-            source: 'test.transactionIdleTracker.getDatabaseClient',
-          });
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
           await new Promise<void>((resolve, reject) => {
             client.query('SELECT 1', (err) => (err ? reject(err) : resolve()));
           });
         },
-        { resourceTypes: [], source: 'test.transactionIdleTracker.callbackStyle' }
+        { resourceTypes: [] }
       );
 
       expect(client.query).toBe(query);
@@ -148,7 +139,7 @@ describe('TransactionIdleTracker', () => {
             now += 10;
             throw new Error('work failed');
           },
-          { resourceTypes: [], source: 'test.transactionIdleTracker.rolledBack' }
+          { resourceTypes: [] }
         )
       ).rejects.toThrow('work failed');
 
@@ -206,19 +197,14 @@ describe('TransactionIdleTracker', () => {
           await txRepo.withTransaction(
             async (nestedTxRepo) => {
               now += 20;
-              const client = nestedTxRepo.getDatabaseClient({
-                mode: DatabaseMode.WRITER,
-                operation: 'write',
-                resourceTypes: [],
-                source: 'test.transactionIdleTracker.getDatabaseClient',
-              });
+              const client = nestedTxRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
               await client.query('SELECT 1');
             },
-            { resourceTypes: [], source: 'test.transactionIdleTracker.nestedIdle' }
+            { resourceTypes: [] }
           );
           now += 10;
         },
-        { resourceTypes: [], source: 'test.transactionIdleTracker.nestedIdle' }
+        { resourceTypes: [] }
       );
 
       expect(recordHistogramValueSpy).not.toHaveBeenCalled();
@@ -232,20 +218,15 @@ describe('TransactionIdleTracker', () => {
           now += 20;
           await txRepo.withTransaction(
             async (nestedTxRepo) => {
-              const client = nestedTxRepo.getDatabaseClient({
-                mode: DatabaseMode.WRITER,
-                operation: 'write',
-                resourceTypes: [],
-                source: 'test.transactionIdleTracker.getDatabaseClient',
-              });
+              const client = nestedTxRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
               now += 5;
               await client.query('SELECT 1');
             },
-            { resourceTypes: [], source: 'test.transactionIdleTracker.nestedIdle' }
+            { resourceTypes: [] }
           );
           now += 50;
         },
-        { resourceTypes: [], source: 'test.transactionIdleTracker.nestedIdle' }
+        { resourceTypes: [] }
       );
 
       expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([

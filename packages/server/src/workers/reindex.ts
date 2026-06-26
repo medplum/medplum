@@ -19,6 +19,7 @@ import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../da
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
+import { repoAccess } from '../fhir/repository/access-tracker';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
@@ -323,21 +324,24 @@ export class ReindexJob {
         ORDER BY "Task"."lastUpdated" LIMIT 501
         ```
         */
-          const conn = txRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'configuration',
-            resourceTypes: [],
-            source: 'ReindexJobExecutor.processIteration',
-          });
+          const sqlOpts = repoAccess.sqlWriteConfig({ source: 'ReindexJobExecutor.processIteration' });
           let bundle: Bundle<WithId<Resource>>;
           try {
-            await conn.query(`SELECT set_config('statement_timeout', $1, true)`, [String(searchStatementTimeout)]);
+            await txRepo.executeRawSql(
+              `SELECT set_config('statement_timeout', $1, true)`,
+              [String(searchStatementTimeout)],
+              sqlOpts
+            );
             bundle = await txRepo.search(searchRequest, { maxResourceVersion });
           } finally {
             if (upsertStatementTimeout === 'DEFAULT') {
-              await conn.query(`RESET statement_timeout`);
+              await txRepo.executeRawSql(`RESET statement_timeout`, undefined, sqlOpts);
             } else {
-              await conn.query(`SELECT set_config('statement_timeout', $1, true)`, [String(upsertStatementTimeout)]);
+              await txRepo.executeRawSql(
+                `SELECT set_config('statement_timeout', $1, true)`,
+                [String(upsertStatementTimeout)],
+                sqlOpts
+              );
             }
           }
           if (bundle.entry?.length) {

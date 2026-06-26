@@ -5,7 +5,7 @@ import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperation
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinitionParameter } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { DatabaseMode } from '../../database';
+import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
 import { Condition, InsertQuery, SelectQuery } from '../sql';
 import { makeOperationDefinition } from './definitions';
@@ -107,12 +107,9 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
     await repo.withTransaction(
       async (txRepo) => {
         // `importCodeSystem` operates only on CodeSystem derivative tables
-        const db = txRepo.getDatabaseClient({
-          mode: DatabaseMode.WRITER,
-          operation: 'write',
-          resourceTypes: ['CodeSystem'],
-          source: 'codeSystemImportHandler.client',
-        });
+        const db = txRepo.getDatabaseClient(
+          repoAccess.sqlWrite('CodeSystem', { source: 'codeSystemImportHandler.client' })
+        );
         await importCodeSystem(db, codeSystem, params.concept, params.property, params.designation);
       },
       {

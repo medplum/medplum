@@ -102,6 +102,7 @@ import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { getResourceTypesFromReferences, replaceConditionalReferences, validateResourceReferences } from './references';
 import type { ExecuteSqlOptions, ResourceTypeInput, TransactionSqlOptions } from './repository/access-tracker';
+import { repoAccess } from './repository/access-tracker';
 import { removeField } from './repository/field-utils';
 import { removeCachedProfile } from './repository/profile-cache';
 import type { ConnectionScope, StatementTimeoutOptions } from './repository/repository-connection';
@@ -444,7 +445,7 @@ export class Repository extends FhirRepository implements Disposable {
     return query.execute(this.getDatabaseClient(options));
   }
 
-  async executeRawSql<T = any>(query: string, params: any[], options: ExecuteSqlOptions): Promise<T[]> {
+  async executeRawSql<T = any>(query: string, params: any[] | undefined, options: ExecuteSqlOptions): Promise<T[]> {
     return this.executeSql(
       {
         execute: async (conn) => {
@@ -1532,12 +1533,7 @@ export class Repository extends FhirRepository implements Disposable {
       throw new OperationOutcomeError(forbidden);
     }
 
-    const client = this.getDatabaseClient({
-      mode: DatabaseMode.WRITER,
-      operation: 'write',
-      resourceTypes: resourceType,
-      source: 'repo.purgeResources',
-    });
+    const client = this.getDatabaseClient(repoAccess.sqlWrite(resourceType, { source: 'repo.purgeResources' }));
 
     // Delete from lookup tables first
     // These operations use the main resource table for lastUpdated, so must come first
@@ -1880,12 +1876,9 @@ export class Repository extends FhirRepository implements Disposable {
    * @param create - If true, then the resource is being created.
    */
   protected async writeLookupTables(resource: WithId<Resource>, create: boolean): Promise<void> {
-    const client = this.getDatabaseClient({
-      mode: DatabaseMode.WRITER,
-      operation: 'write',
-      resourceTypes: [resource.resourceType],
-      source: 'repo.writeLookupTables',
-    });
+    const client = this.getDatabaseClient(
+      repoAccess.sqlWrite(resource.resourceType, { source: 'repo.writeLookupTables' })
+    );
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(client, resource, create);
     }
@@ -1895,12 +1888,9 @@ export class Repository extends FhirRepository implements Disposable {
     if (!resources.length) {
       return;
     }
-    const client = this.getDatabaseClient({
-      mode: DatabaseMode.WRITER,
-      operation: 'write',
-      resourceTypes: [resources[0].resourceType],
-      source: 'repo.batchWriteLookupTables',
-    });
+    const client = this.getDatabaseClient(
+      repoAccess.sqlWrite(resources[0].resourceType, { source: 'repo.batchWriteLookupTables' })
+    );
     for (const lookupTable of lookupTables) {
       await lookupTable.batchIndexResources(client, resources, create);
     }
@@ -1911,12 +1901,9 @@ export class Repository extends FhirRepository implements Disposable {
    * @param resource - The resource to delete.
    */
   protected async deleteFromLookupTables(resource: WithId<Resource>): Promise<void> {
-    const client = this.getDatabaseClient({
-      mode: DatabaseMode.WRITER,
-      operation: 'write',
-      resourceTypes: [resource.resourceType],
-      source: 'repo.deleteFromLookupTables',
-    });
+    const client = this.getDatabaseClient(
+      repoAccess.sqlWrite(resource.resourceType, { source: 'repo.deleteFromLookupTables' })
+    );
     for (const lookupTable of lookupTables) {
       await lookupTable.deleteValuesForResource(client, resource);
     }
@@ -2317,6 +2304,9 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
+   * @deprecated Use {@link Repository.sqlRead}, {@link Repository.sqlWrite},
+   * {@link Repository.executeSql}, etc. to facilitate resource-type routing.
+   *
    * Returns a query-capable database client.
    * Use this method when you don't care if you're in a transaction or not.
    * For example, use this method for "read by ID".
@@ -2380,7 +2370,7 @@ export class Repository extends FhirRepository implements Disposable {
     if (this.connection.isInTransaction()) {
       return undefined;
     }
-    this.connection.recordResourceAccess('cache', 'read', [resourceType], 'repo.getCacheEntry');
+    this.connection.recordResourceAccess('cache', 'read', resourceType, 'repo.getCacheEntry');
     return getResourceCacheEntry<T>(resourceType, id);
   }
 
@@ -2418,7 +2408,7 @@ export class Repository extends FhirRepository implements Disposable {
       return;
     }
 
-    this.connection.recordResourceAccess('cache', 'write', [resource.resourceType], 'repo.setCacheEntry');
+    this.connection.recordResourceAccess('cache', 'write', resource.resourceType, 'repo.setCacheEntry');
     await setResourceCacheEntry(resource);
   }
 
@@ -2434,7 +2424,7 @@ export class Repository extends FhirRepository implements Disposable {
       return;
     }
 
-    this.connection.recordResourceAccess('cache', 'write', [resourceType], 'repo.deleteCacheEntry');
+    this.connection.recordResourceAccess('cache', 'write', resourceType, 'repo.deleteCacheEntry');
     await deleteResourceCacheEntry(resourceType, id);
   }
 
@@ -2450,7 +2440,7 @@ export class Repository extends FhirRepository implements Disposable {
       return;
     }
 
-    this.connection.recordResourceAccess('cache', 'write', [resourceType], 'repo.deleteCacheEntries');
+    this.connection.recordResourceAccess('cache', 'write', resourceType, 'repo.deleteCacheEntries');
     await deleteResourceCacheEntries(resourceType, ids);
   }
 

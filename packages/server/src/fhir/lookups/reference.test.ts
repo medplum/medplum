@@ -6,9 +6,8 @@ import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { DatabaseMode } from '../../database';
-import type { ExecuteSqlOptions } from '../repo';
 import { getGlobalSystemRepo } from '../repo';
+import { repoAccess } from '../repository/access-tracker';
 import { lookupTables } from '../searchparameter';
 import type { ReferenceTableRow } from './reference';
 import { ReferenceTable } from './reference';
@@ -36,14 +35,9 @@ describe('ReferenceTable', () => {
   }
 
   function getReferenceTestClient(
-    resourceTypes: Partial<ExecuteSqlOptions> & { resourceTypes: ResourceType[] }
+    resourceTypes: ResourceType | ResourceType[]
   ): ReturnType<typeof systemRepo.getDatabaseClient> {
-    return systemRepo.getDatabaseClient({
-      ...resourceTypes,
-      mode: DatabaseMode.WRITER,
-      operation: 'write',
-      source: 'reference.test',
-    });
+    return systemRepo.getDatabaseClient(repoAccess.sqlWrite(resourceTypes));
   }
 
   describe('getColumnName', () => {
@@ -54,14 +48,14 @@ describe('ReferenceTable', () => {
 
   describe('getExistingRows', () => {
     test('returns empty array for empty resources', async () => {
-      const rows = await refTable.getExistingRows(getReferenceTestClient({ resourceTypes: ['Observation'] }), []);
+      const rows = await refTable.getExistingRows(getReferenceTestClient('Observation'), []);
       expect(rows).toEqual([]);
     });
   });
 
   describe('batchInsertRows', () => {
     test('returns early for empty values without querying DB', async () => {
-      const client = getReferenceTestClient({ resourceTypes: ['Observation'] });
+      const client = getReferenceTestClient('Observation');
       const querySpy = vi.spyOn(client, 'query');
 
       await refTable.batchInsertRows(client, 'Observation', []);
@@ -73,7 +67,7 @@ describe('ReferenceTable', () => {
 
   describe('batchIndexResources', () => {
     test('returns early for empty resources array', async () => {
-      const client = getReferenceTestClient({ resourceTypes: ['Observation'] });
+      const client = getReferenceTestClient('Observation');
       const querySpy = vi.spyOn(client, 'query');
 
       // Should not throw and should return early
@@ -95,9 +89,7 @@ describe('ReferenceTable', () => {
         code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
       });
 
-      const createRows = await refTable.getExistingRows(getReferenceTestClient({ resourceTypes: [obs.resourceType] }), [
-        obs,
-      ]);
+      const createRows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
       expect(createRows).toHaveLength(2);
       expect(createRows.sort(sortFn)).toStrictEqual([
         {
@@ -118,9 +110,7 @@ describe('ReferenceTable', () => {
         encounter: { reference: 'Encounter/' + encounterId },
       });
 
-      const updateRows = await refTable.getExistingRows(getReferenceTestClient({ resourceTypes: [obs.resourceType] }), [
-        obs,
-      ]);
+      const updateRows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
       expect(updateRows).toHaveLength(3);
       expect(updateRows.sort(sortFn)).toStrictEqual([
         {
@@ -141,9 +131,7 @@ describe('ReferenceTable', () => {
       ]);
 
       await systemRepo.deleteResource('Observation', obs.id);
-      const deleteRows = await refTable.getExistingRows(getReferenceTestClient({ resourceTypes: ['Observation'] }), [
-        obs,
-      ]);
+      const deleteRows = await refTable.getExistingRows(getReferenceTestClient('Observation'), [obs]);
       expect(deleteRows).toHaveLength(0);
     });
 
@@ -162,7 +150,7 @@ describe('ReferenceTable', () => {
 
       await expect(
         refTable.batchIndexResources(
-          getReferenceTestClient({ resourceTypes: [obs.resourceType, patient.resourceType] }),
+          getReferenceTestClient([obs.resourceType, patient.resourceType]),
           [obs, patient],
           true
         )
@@ -185,7 +173,7 @@ describe('ReferenceTable', () => {
         status: 'final', // Change something else, not the reference
       });
 
-      const rows = await refTable.getExistingRows(getReferenceTestClient({ resourceTypes: [obs.resourceType] }), [obs]);
+      const rows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
       expect(rows).toHaveLength(2);
       expect(rows.sort(sortFn)).toStrictEqual([
         {
@@ -219,19 +207,11 @@ describe('ReferenceTable', () => {
 
       // This should process all resources with yielding between batches
       await expect(
-        refTable.batchIndexResources(
-          getReferenceTestClient({ resourceTypes: [resources[0].resourceType] }),
-          resources,
-          true,
-          batchSize
-        )
+        refTable.batchIndexResources(getReferenceTestClient(resources[0].resourceType), resources, true, batchSize)
       ).resolves.toBeUndefined();
 
       // Verify at least one resource was indexed
-      const rows = await refTable.getExistingRows(
-        getReferenceTestClient({ resourceTypes: [resources[0].resourceType] }),
-        [resources[0]]
-      );
+      const rows = await refTable.getExistingRows(getReferenceTestClient(resources[0].resourceType), [resources[0]]);
       expect(rows.length).toBeGreaterThan(0);
     });
   });
@@ -250,9 +230,9 @@ describe('ReferenceTable', () => {
         throw extractError;
       });
 
-      await expect(
-        refTable.batchIndexResources(getReferenceTestClient({ resourceTypes: [obs.resourceType] }), [obs], true)
-      ).rejects.toThrow('Test extraction error');
+      await expect(refTable.batchIndexResources(getReferenceTestClient(obs.resourceType), [obs], true)).rejects.toThrow(
+        'Test extraction error'
+      );
 
       extractValuesSpy.mockRestore();
     });
@@ -278,10 +258,9 @@ describe('ReferenceTable', () => {
 
       // The requester reference uses a local reference to contained resource
       // This tests that references are properly extracted
-      const rows = await refTable.getExistingRows(
-        getReferenceTestClient({ resourceTypes: [serviceRequest.resourceType] }),
-        [serviceRequest]
-      );
+      const rows = await refTable.getExistingRows(getReferenceTestClient(serviceRequest.resourceType), [
+        serviceRequest,
+      ]);
       expect(rows.length).toBeGreaterThan(0);
 
       // Verify the subject reference was indexed (patient reference)
@@ -297,9 +276,7 @@ describe('ReferenceTable', () => {
         name: [{ text: 'Test Patient' }],
       });
 
-      const rows = await refTable.getExistingRows(getReferenceTestClient({ resourceTypes: [patient.resourceType] }), [
-        patient,
-      ]);
+      const rows = await refTable.getExistingRows(getReferenceTestClient(patient.resourceType), [patient]);
       // Patient with no references should have no reference rows
       expect(rows).toHaveLength(0);
     });
