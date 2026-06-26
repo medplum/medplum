@@ -2,8 +2,8 @@
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
-    "types": ["node", "vitest/globals", "vite/client"],
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["vitest/globals", "vite/client"],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
