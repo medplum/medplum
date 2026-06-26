@@ -8696,5 +8696,34 @@
         ]
       }
     }
+  },
+  {
+    "fullUrl": "https://medplum.com/fhir/OperationDefinition/rebuild-base-definitions",
+    "resource": {
+      "resourceType": "OperationDefinition",
+      "url": "https://medplum.com/fhir/OperationDefinition/rebuild-base-definitions",
+      "name": "rebuild-base-definitions",
+      "title": "Rebuild Base Definitions",
+      "status": "active",
+      "kind": "operation",
+      "code": "rebuild-base-definitions",
+      "system": true,
+      "type": false,
+      "instance": false,
+      "parameter": [
+        {
+          "use": "in",
+          "name": "resourceType",
+          "documentation": "StructureDefinition | SearchParameter | ValueSet | CodeSystem | OperationDefinition",
+          "min": 0,
+          "max": "*",
+          "type": "code",
+          "binding": {
+            "strength": "required",
+            "valueSet": "https://medplum.com/fhir/ValueSet/base-definition-types"
+          }
+        }
+      ]
+    }
   }]
 }
