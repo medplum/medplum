@@ -11,6 +11,7 @@ import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { mockFetchJson, mockFetchText } from '../test.setup.fetch';
@@ -23,6 +24,22 @@ const domain = randomUUID() + '.example.com';
 const email = `text@${domain}`;
 const redirectUri = `https://${domain}/auth/callback`;
 const externalId = `google-oauth2|${randomUUID()}`;
+const externalAuthIssuer = 'https://example.com';
+const externalAuthConfigClientId = randomUUID();
+const identityProvider = {
+  authorizeUrl: 'https://example.com/oauth2/authorize',
+  tokenUrl: 'https://example.com/oauth2/token',
+  userInfoUrl: 'https://example.com/oauth2/userinfo',
+  clientId: '123',
+  clientSecret: '456',
+};
+const gcipIdentityProvider = {
+  ...identityProvider,
+  userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
+  userInfoMode: 'gcip' as const,
+  userInfoApiKey: 'test-api-key',
+};
+let config: MedplumServerConfig;
 let project: WithId<Project>;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
@@ -32,7 +49,7 @@ let gcipSubjectAuthClient: ClientApplication;
 
 describe('Token Exchange', () => {
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    config = await loadTestConfig();
     await withTestContext(async () => {
       await initApp(app, config);
 
@@ -48,14 +65,6 @@ describe('Token Exchange', () => {
       });
       project = registration.project;
       defaultClient = registration.client;
-
-      const identityProvider = {
-        authorizeUrl: 'https://example.com/oauth2/authorize',
-        tokenUrl: 'https://example.com/oauth2/token',
-        userInfoUrl: 'https://example.com/oauth2/userinfo',
-        clientId: '123',
-        clientSecret: '456',
-      };
 
       const systemRepo = await getProjectSystemRepo(project);
 
@@ -87,12 +96,7 @@ describe('Token Exchange', () => {
         project,
         name: 'GCIP Auth Client',
         redirectUri,
-        identityProvider: {
-          ...identityProvider,
-          userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
-          userInfoMode: 'gcip',
-          userInfoApiKey: 'test-api-key',
-        },
+        identityProvider: gcipIdentityProvider,
       });
 
       gcipSubjectAuthClient = await createClient(systemRepo, {
@@ -100,10 +104,7 @@ describe('Token Exchange', () => {
         name: 'GCIP Subject Auth Client',
         redirectUri,
         identityProvider: {
-          ...identityProvider,
-          userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
-          userInfoMode: 'gcip',
-          userInfoApiKey: 'test-api-key',
+          ...gcipIdentityProvider,
           useSubject: true,
         },
       });
@@ -117,6 +118,11 @@ describe('Token Exchange', () => {
         lastName: 'User',
       });
     });
+  });
+
+  afterEach(() => {
+    fetchMock.mockClear();
+    config.externalAuthProviders = undefined;
   });
 
   afterAll(async () => {
@@ -167,6 +173,21 @@ describe('Token Exchange', () => {
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
       clientId: externalAuthClient.id,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Server external auth provider success', async () => {
+    config.externalAuthProviders = [
+      { issuer: externalAuthIssuer, clientId: externalAuthConfigClientId, identityProvider },
+    ];
+
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: externalAuthConfigClientId,
     });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeTruthy();
