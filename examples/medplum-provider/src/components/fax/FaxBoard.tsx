@@ -1,28 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  ActionIcon,
-  Box,
-  Divider,
-  Flex,
-  Group,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Tabs,
-  Text,
-  Tooltip,
-} from '@mantine/core';
-import { isNotFound, OperationOutcomeError } from '@medplum/core';
+import { ActionIcon, Flex, Text, Tooltip } from '@mantine/core';
+import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
+import { isNotFound, OperationOutcomeError, parseSearchRequest } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { ResourceBoard, useMedplum } from '@medplum/react';
 import { IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
-import classes from './FaxBoard.module.css';
 import { FaxDetailPanel } from './FaxDetailPanel';
 import type { FaxTab } from './FaxListItem';
 import { FaxListItem } from './FaxListItem';
@@ -37,56 +24,53 @@ interface FaxBoardProps {
   query: string;
   getFaxUri: (fax: Communication) => string;
   onNew: (fax: Communication) => void;
+  onChange: (search: SearchRequest) => void;
 }
 
-export function FaxBoard({ faxId, activeTab, inboxUri, sentUri, query, getFaxUri, onNew }: FaxBoardProps): JSX.Element {
+export function FaxBoard({
+  faxId,
+  activeTab,
+  inboxUri,
+  sentUri,
+  query,
+  getFaxUri,
+  onNew,
+  onChange,
+}: FaxBoardProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
 
-  const [faxes, setFaxes] = useState<Communication[]>([]);
-  const [selectedFax, setSelectedFax] = useState<Communication | undefined>();
-  const [loading, setLoading] = useState(false);
   const [sendModalOpened, setSendModalOpened] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const efaxPolledRef = useRef(false);
-  const faxQueryRef = useRef('');
 
-  // Clear the list when switching tabs so the skeleton shows
-  useEffect(() => {
-    setFaxes([]);
-  }, [query]);
+  const currentSearch = useMemo(() => parseSearchRequest(`Communication?${query}`), [query]);
 
-  // Fetch the fax list for the current tab
-  useEffect(() => {
-    let cancelled = false;
+  const refreshList = useCallback((): void => {
+    setRefreshKey((k) => k + 1);
+  }, []);
 
-    const fetchList = async (): Promise<void> => {
-      setLoading(true);
-      try {
-        const params = Object.fromEntries(new URLSearchParams(query));
-        const results = await medplum.searchResources('Communication', params, { cache: 'no-cache' });
-        if (!cancelled) {
-          faxQueryRef.current = query;
-          setFaxes(results);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          showErrorNotification(error);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+  // Resolve an out-of-list selection silently (a stale/deleted fax id shouldn't toast).
+  const resolveSelected = useCallback(
+    async (
+      id: string,
+      items: WithId<Communication>[],
+      client: MedplumClient
+    ): Promise<WithId<Communication> | undefined> => {
+      const found = items.find((f) => f.id === id);
+      if (found) {
+        return found;
       }
-    };
-    fetchList().catch(showErrorNotification);
+      try {
+        return await client.readResource('Communication', id);
+      } catch {
+        return undefined;
+      }
+    },
+    []
+  );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [query, refreshKey, medplum]);
-
-  // Poll eFax once on mount, then refresh the list when done
+  // Poll eFax once on mount, then refresh the list when done.
   useEffect(() => {
     if (efaxPolledRef.current) {
       return;
@@ -103,127 +87,60 @@ export function FaxBoard({ faxId, activeTab, inboxUri, sentUri, query, getFaxUri
         }
         return;
       }
-      setRefreshKey((k) => k + 1);
+      refreshList();
     };
     pollEfax().catch(showErrorNotification);
-  }, [medplum]);
-
-  useEffect(() => {
-    if (!loading && faxes.length > 0 && !faxId && faxQueryRef.current === query) {
-      const firstFax = faxes[0];
-      if (firstFax?.id) {
-        navigate(getFaxUri(firstFax), { replace: true })?.catch(console.error);
-      }
-    }
-  }, [loading, faxes, faxId, navigate, getFaxUri, query]);
-
-  useEffect(() => {
-    const selectFax = async (): Promise<void> => {
-      if (faxId) {
-        const fax = faxes.find((f) => f.id === faxId);
-        if (fax) {
-          setSelectedFax(fax);
-        } else {
-          try {
-            const fax = await medplum.readResource('Communication', faxId);
-            setSelectedFax(fax);
-          } catch {
-            setSelectedFax(undefined);
-          }
-        }
-      } else {
-        setSelectedFax(undefined);
-      }
-    };
-    selectFax().catch(console.error);
-  }, [faxId, faxes, medplum]);
-
-  const handleTabChange = (value: string | null): void => {
-    if (value === 'inbox') {
-      navigate(inboxUri)?.catch(console.error);
-    } else if (value === 'sent') {
-      navigate(sentUri)?.catch(console.error);
-    }
-  };
-
-  const refreshList = useCallback((): void => {
-    setRefreshKey((k) => k + 1);
-  }, []);
+  }, [medplum, refreshList]);
 
   const handleFaxSent = (fax: Communication): void => {
     onNew(fax);
     refreshList();
   };
 
+  const tabs = [
+    { value: 'inbox', label: 'Received', uri: inboxUri },
+    { value: 'sent', label: 'Sent', uri: sentUri },
+  ];
+
+  const headerActions = (
+    <Tooltip label="Send Fax" position="bottom" openDelay={500}>
+      <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={() => setSendModalOpened(true)}>
+        <IconSend size={16} />
+      </ActionIcon>
+    </Tooltip>
+  );
+
   return (
-    <Box w="100%" h="100%">
-      <Flex h="100%">
-        <Box w={350} h="100%">
-          <Flex direction="column" h="100%" className={classes.borderRight}>
-            <Paper>
-              <Flex h={64} align="center" justify="space-between" p="md">
-                <Tabs value={activeTab} onChange={handleTabChange} variant="unstyled" className="pill-tabs">
-                  <Tabs.List>
-                    <Tabs.Tab value="inbox">Received</Tabs.Tab>
-                    <Tabs.Tab value="sent">Sent</Tabs.Tab>
-                  </Tabs.List>
-                </Tabs>
-
-                <Group gap="xs">
-                  <Tooltip label="Send Fax" position="bottom" openDelay={500}>
-                    <ActionIcon
-                      radius="xl"
-                      variant="filled"
-                      color="blue"
-                      size={32}
-                      onClick={() => setSendModalOpened(true)}
-                    >
-                      <IconSend size={16} />
-                    </ActionIcon>
-                  </Tooltip>
-                </Group>
-              </Flex>
-            </Paper>
-
-            <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <ScrollArea style={{ flex: 1 }} id="fax-list-scrollarea">
-                <Box p={10}>
-                  {loading && faxes.length === 0 && <FaxListSkeleton />}
-                  {!loading && faxes.length === 0 && <EmptyFaxState activeTab={activeTab} />}
-                  {faxes.length > 0 &&
-                    faxes.map((fax, index) => {
-                      const isSelected = selectedFax?.id === fax.id;
-                      const nextIsSelected = index < faxes.length - 1 && selectedFax?.id === faxes[index + 1]?.id;
-
-                      return (
-                        <FaxListItem
-                          key={fax.id}
-                          fax={fax}
-                          selectedFax={selectedFax}
-                          activeTab={activeTab}
-                          getFaxUri={getFaxUri}
-                          hideDivider={isSelected || nextIsSelected}
-                        />
-                      );
-                    })}
-                </Box>
-              </ScrollArea>
-            </Paper>
-          </Flex>
-        </Box>
-
-        {selectedFax ? (
-          <FaxDetailPanel fax={selectedFax} onFaxChange={refreshList} />
-        ) : (
-          <Flex direction="column" h="100%" style={{ flex: 1 }}>
-            <FaxSelectEmpty />
-          </Flex>
+    <>
+      <ResourceBoard<Communication>
+        search={currentSearch}
+        selectedId={faxId}
+        reloadKey={refreshKey}
+        resolveSelected={resolveSelected}
+        tabs={tabs}
+        activeTab={activeTab}
+        headerActions={headerActions}
+        renderItem={(fax, { selected, index, items }) => (
+          <FaxListItem
+            fax={fax}
+            selectedFax={selected ? fax : undefined}
+            activeTab={activeTab}
+            getFaxUri={getFaxUri}
+            hideDivider={selected || (index < items.length - 1 && items[index + 1]?.id === faxId)}
+          />
         )}
-      </Flex>
+        emptyList={<EmptyFaxState activeTab={activeTab} />}
+        renderDetail={(fax) => <FaxDetailPanel fax={fax} onFaxChange={refreshList} />}
+        emptyDetail={<FaxSelectEmpty />}
+        onChange={onChange}
+        onSelectFirst={(fax) => {
+          navigate(getFaxUri(fax), { replace: true })?.catch(console.error);
+        }}
+        onError={showErrorNotification}
+      />
 
       <SendFaxModal opened={sendModalOpened} onClose={() => setSendModalOpened(false)} onFaxSent={handleFaxSent} />
-    </Box>
+    </>
   );
 }
 
@@ -239,31 +156,5 @@ function EmptyFaxState({ activeTab }: { activeTab: FaxTab }): JSX.Element {
         {labels[activeTab]}
       </Text>
     </Flex>
-  );
-}
-
-const SKELETON_WIDTHS = [
-  ['85%', '60%', '72%'],
-  ['70%', '80%', '55%'],
-  ['92%', '50%', '65%'],
-  ['78%', '68%', '58%'],
-  ['88%', '45%', '75%'],
-  ['74%', '70%', '62%'],
-];
-
-function FaxListSkeleton(): JSX.Element {
-  return (
-    <Stack gap="md" p="md">
-      {SKELETON_WIDTHS.map((widths, index) => (
-        <Stack key={index}>
-          <Flex direction="column" gap="xs" align="flex-start">
-            <Skeleton height={16} width={widths[0]} />
-            <Skeleton height={14} width={widths[1]} />
-            <Skeleton height={14} width={widths[2]} />
-          </Flex>
-          <Divider />
-        </Stack>
-      ))}
-    </Stack>
   );
 }

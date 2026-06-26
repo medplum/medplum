@@ -86,6 +86,7 @@ export interface MedplumServerConfig {
   accurateCountThreshold: number;
   maxSearchOffset?: number;
   base64BinaryMaxBytes?: number;
+  inlineAttachmentsMaxTotalBytes?: number;
   defaultSuperAdminEmail?: string;
   defaultSuperAdminPassword?: string;
   defaultSuperAdminClientId?: string;
@@ -93,6 +94,8 @@ export interface MedplumServerConfig {
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?: Project['features'];
   defaultProjectSystemSetting?: ProjectSetting[];
+  /** Enables HTTP request rate limits, FHIR quota, and resource cap accounting. Default is `true`. */
+  rateLimitsEnabled?: boolean;
   /** Number of HTTP requests per minute users can make by default; overridable by Project settings */
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;

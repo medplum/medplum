@@ -60,8 +60,14 @@ export async function handleEchoConnection(socket: WebSocket): Promise<void> {
     'message',
     AsyncLocalStorage.bind(async (data: RawData) => {
       echoMessagesReceived++;
-      await subscribed;
-      await publish(channel, data as Buffer);
+      try {
+        // Note that re-awaiting an already-rejected `subscribed` would otherwise create a
+        // new unhandled rejection on every message
+        await subscribed;
+        await publish(channel, data as Buffer);
+      } catch (err) {
+        globalLogger.error('[WS] Failed to echo message', { error: err });
+      }
     })
   );
 

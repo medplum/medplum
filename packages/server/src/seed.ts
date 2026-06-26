@@ -24,22 +24,22 @@ export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
     return;
   }
 
-  await systemRepo.withTransaction(async () => {
-    await createSuperAdmin(systemRepo, config);
+  await systemRepo.withTransaction(async (txRepo) => {
+    await createSuperAdmin(txRepo, config);
 
     globalLogger.info('Building structure definitions...');
     let startTime = Date.now();
-    await rebuildR4StructureDefinitions(systemRepo);
+    await rebuildR4StructureDefinitions(txRepo);
     globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
 
     globalLogger.info('Building value sets...');
     startTime = Date.now();
-    await rebuildR4ValueSets(systemRepo);
+    await rebuildR4ValueSets(txRepo);
     globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
 
     globalLogger.info('Building search parameters...');
     startTime = Date.now();
-    await rebuildR4SearchParameters(systemRepo);
+    await rebuildR4SearchParameters(txRepo);
     globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
   });
 }

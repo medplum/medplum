@@ -4,6 +4,7 @@ import { InvokeWithResponseStreamCommand } from '@aws-sdk/client-lambda';
 import { normalizeErrorString } from '@medplum/core';
 import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
+import { getLogger } from '../../logger';
 import {
   buildLambdaPayload,
   getExecuteLambdaClient,
@@ -52,25 +53,47 @@ async function processEventStream(
   responseStream: NonNullable<BotExecutionContext['responseStream']>
 ): Promise<BotExecutionResult> {
   const decoder = new TextDecoder();
-  let headersParsed = false;
+  let preambleParsed = false;
   let buffer = '';
   let logResult = '';
+  let responseChunks: string[] | undefined;
 
   for await (const event of eventStream) {
     if (event.PayloadChunk?.Payload) {
       const chunk = decoder.decode(event.PayloadChunk.Payload);
-      if (!headersParsed) {
-        const result = processStreamingHeaders(buffer + chunk, responseStream);
+
+      // A JSON-encoded preamble containing the statusCode and headers and other metadata
+      // to be used in the responseStream must be the first line of the stream delimited by a newline
+      // buffer and attempt to process chunks until the preamble is fully received and parsed.
+      if (!preambleParsed) {
+        const result = processStreamingPreamble(buffer + chunk);
         if (result.error) {
           return { success: false, logResult: sanitizeLogResult(result.error) };
         }
-        headersParsed = result.headersParsed;
-        buffer = result.buffer;
+        if (result.preambleParsed) {
+          preambleParsed = true;
+          if (result.preamble.nonStreamingResponse) {
+            // nonStreamingResponse true means that streaming was not used in the user's handler
+            // response body can also be parsed and included in the BotExecutionResult.returnValue
+            responseChunks = [result.buffer];
+          }
+
+          responseStream.startStreaming(result.preamble.statusCode || 200, result.preamble.headers || {});
+          if (result.buffer) {
+            responseStream.write(result.buffer);
+          }
+          buffer = '';
+        } else {
+          buffer = result.buffer;
+        }
       } else {
         responseStream.write(chunk);
         // Flush to ensure data is sent immediately to client
         if (typeof (responseStream as any).flush === 'function') {
           (responseStream as any).flush();
+        }
+        if (responseChunks) {
+          responseChunks.push(chunk);
         }
       }
     }
@@ -91,18 +114,38 @@ async function processEventStream(
   }
 
   responseStream.end();
+
+  // make a best effort to parse the response body, but it's possible that streaming response was not JSON
+  // or that the stream was not used correctly, so handle errors gracefully
+  if (responseChunks && responseChunks.length > 0) {
+    try {
+      const returnValue = JSON.parse(responseChunks.join(''));
+      return { success: true, logResult, returnValue };
+    } catch (err) {
+      getLogger().error('Failed to parse streaming response body', { err: normalizeErrorString(err) });
+    }
+  }
+
   return { success: true, logResult };
 }
 
 const MAX_HEADER_SIZE = 65536; // 64KB
 
-function processStreamingHeaders(
-  buffer: string,
-  responseStream: NonNullable<BotExecutionContext['responseStream']>
-): { headersParsed: boolean; buffer: string; error?: string } {
+type UnparsedResult = {
+  preambleParsed: false;
+  buffer: string;
+  error?: string;
+};
+type ParsedResult = {
+  preambleParsed: true;
+  buffer: string;
+  preamble: { statusCode?: number; headers?: Record<string, string>; nonStreamingResponse?: boolean };
+  error?: never;
+};
+function processStreamingPreamble(buffer: string): ParsedResult | UnparsedResult {
   if (buffer.length > MAX_HEADER_SIZE) {
     return {
-      headersParsed: false,
+      preambleParsed: false,
       buffer: '',
       error: `Streaming headers exceeded maximum size of ${MAX_HEADER_SIZE} bytes`,
     };
@@ -110,24 +153,18 @@ function processStreamingHeaders(
 
   const newlineIndex = buffer.indexOf('\n');
   if (newlineIndex === -1) {
-    return { headersParsed: false, buffer };
+    return { preambleParsed: false, buffer };
   }
 
   const headersLine = buffer.substring(0, newlineIndex);
-  const remainingData = buffer.substring(newlineIndex + 1);
+  const remainingBuffer = buffer.substring(newlineIndex + 1);
 
   try {
-    const headersJson = JSON.parse(headersLine);
-    responseStream.startStreaming(headersJson.statusCode || 200, headersJson.headers || {});
-
-    if (remainingData) {
-      responseStream.write(remainingData);
-    }
-
-    return { headersParsed: true, buffer: '' };
+    const preamble = JSON.parse(headersLine);
+    return { preambleParsed: true, buffer: remainingBuffer, preamble };
   } catch (err) {
     return {
-      headersParsed: false,
+      preambleParsed: false,
       buffer: '',
       error: `Failed to parse streaming headers: ${headersLine} - ${String(err)}`,
     };

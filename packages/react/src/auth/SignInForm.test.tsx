@@ -47,7 +47,7 @@ function mockFetch(url: string, options: any): Promise<any> {
           {
             id: '100',
             profile: {
-              reference: 'Practitioner/123',
+              reference: 'Practitioner/124',
               display: 'Alice Smith',
             },
             project: {
@@ -142,7 +142,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       login: '1',
       code: '1',
     };
-  } else if (options.method === 'GET' && url.endsWith('Practitioner/123')) {
+  } else if (options.method === 'GET' && url.endsWith('Practitioner/124')) {
     status = 200;
     result = {
       resourceType: 'Practitioner',
@@ -159,7 +159,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       token_type: 'Bearer',
       scope: 'openid',
       project: { reference: 'Project/123' },
-      profile: { reference: 'Practitioner/123' },
+      profile: { reference: 'Practitioner/124' },
     };
   } else if (options.method === 'GET' && url.endsWith('auth/me')) {
     status = 200;

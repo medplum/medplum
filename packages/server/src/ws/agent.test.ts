@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import type { Server } from 'http';
 import request from 'superwstest';
+import { vi } from 'vitest';
 import type { AgentInfo } from '../agent/utils';
 import { AgentConnectionState } from '../agent/utils';
 import { initApp, shutdownApp } from '../app';
@@ -13,7 +14,9 @@ import * as executeBotModule from '../bots/execute';
 import type { BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
+import * as redisModule from '../redis';
 import { getCacheRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
 
@@ -431,6 +434,7 @@ describe('Agent WebSockets', () => {
         })
       )
       .expectJson({ type: 'agent:connect:response' })
+      .exec(() => heartbeat.dispatchEvent({ type: 'heartbeat' }))
       .expectJson({ type: 'agent:heartbeat:request' })
       // Send a ping
       .sendJson({ type: 'agent:heartbeat:request' })
@@ -454,6 +458,35 @@ describe('Agent WebSockets', () => {
       version: MEDPLUM_VERSION,
       lastUpdated: expect.any(String),
     });
+  });
+
+  test('Logs when updating agent status fails on disconnect', async () => {
+    const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+    // Simulate Redis being unavailable (e.g. closing during shutdown) so the disconnect
+    // status update rejects -- the close handler must catch it, not leak the rejection
+    const cacheSpy = vi.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
+      get: vi.fn().mockRejectedValue(new Error('Connection is closed.')),
+      set: vi.fn(),
+    } as any);
+
+    try {
+      await request(server).ws('/ws/agent').close().expectClosed();
+
+      // The close handler updates status asynchronously; wait for the failure to be logged
+      for (let i = 0; i < 10; i++) {
+        if (errorSpy.mock.calls.some((call) => call[0] === '[Agent]: Failed to update agent status on disconnect')) {
+          break;
+        }
+        await sleep(20);
+      }
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[Agent]: Failed to update agent status on disconnect',
+        expect.objectContaining({ error: 'Connection is closed.' })
+      );
+    } finally {
+      cacheSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
   });
 
   test('Ping IP', async () => {
@@ -526,7 +559,7 @@ describe('Agent WebSockets', () => {
   });
 
   test('Received agent:error without callback', async () => {
-    const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
     await request(server)
       .ws('/ws/agent')
       .sendText(
@@ -644,7 +677,7 @@ describe('Agent WebSockets', () => {
     });
 
     test('Bot failure -- Error during Lambda execution, error in returnValue', async () => {
-      jest.spyOn(executeBotModule, 'executeBot').mockImplementationOnce(
+      vi.spyOn(executeBotModule, 'executeBot').mockImplementationOnce(
         async () =>
           ({
             success: false,

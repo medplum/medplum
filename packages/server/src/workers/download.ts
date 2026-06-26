@@ -11,10 +11,9 @@ import {
   toTypedValue,
 } from '@medplum/core';
 import type { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
-import type { Job, QueueBaseOptions } from 'bullmq';
+import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
-import fetch from 'node-fetch';
-import type { Readable } from 'node:stream';
+import { Readable } from 'node:stream';
 import { Pointer } from 'rfc6902';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
@@ -24,7 +23,7 @@ import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -49,19 +48,9 @@ const queueName = 'DownloadQueue';
 const jobName = 'DownloadJobData';
 
 export const initDownloadWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<DownloadJobData>(queueName, {
     ...defaultOptions,
-    defaultJobOptions: {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
-      },
-    },
   });
 
   let worker: Worker<DownloadJobData> | undefined;
@@ -287,9 +276,12 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
       throw new Error('Received null response body');
     }
 
-    // From node-fetch docs:
-    // Note that while the Fetch Standard requires the property to always be a WHATWG ReadableStream, in node-fetch it is a Node.js Readable stream.
-    await getBinaryStorage().writeBinary(binary, contentDisposition, contentType, response.body as Readable);
+    await getBinaryStorage().writeBinary(
+      binary,
+      contentDisposition,
+      contentType,
+      Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0])
+    );
     log.info('Downloaded content successfully', { binaryId: binary.id });
 
     // re-fetch resource so we are mutating as recent a copy as possible

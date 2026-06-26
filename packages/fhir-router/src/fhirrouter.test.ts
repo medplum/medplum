@@ -314,7 +314,7 @@ describe('FHIR Router', () => {
       makeSimpleRequest('PATCH', `/Patient/${patient?.id}`, { foo: 'bar' }),
       repo
     );
-    expect(res4).toMatchObject(badRequest('Patch body must be an array'));
+    expect(res4).toMatchObject(badRequest('Invalid patch body'));
     expect(patient4).toBeUndefined();
   });
 
@@ -458,14 +458,14 @@ describe('FHIR Router', () => {
         body: patient,
         params: {},
         query: {
-          _account: 'Organization/123',
+          _account: 'Organization/125',
         },
       },
       repo
     );
     expect(res).toMatchObject(created);
     expect(resource).toMatchObject(patient);
-    expect(resource?.meta?.account?.reference).toStrictEqual('Organization/123');
+    expect(resource?.meta?.account?.reference).toStrictEqual('Organization/125');
   });
 
   test('Custom system-level operation returns not found', async () => {

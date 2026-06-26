@@ -10,7 +10,8 @@ export default function SignInPage(): JSX.Element {
   return (
     <SignInForm
       // Configure according to your settings
-      googleClientId="397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com"
+      googleClientId={import.meta.env.GOOGLE_CLIENT_ID}
+      clientId={import.meta.env.MEDPLUM_CLIENT_ID}
       onSuccess={() => navigate('/')?.catch(console.error)}
     >
       <Logo size={32} />

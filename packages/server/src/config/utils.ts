@@ -39,11 +39,13 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
   config.autoDownloadEnabled ??= true;
   config.base64BinaryMaxBytes ??= 1 * 1024 * 1024; // 1 MB default cap for base64Binary
+  config.inlineAttachmentsMaxTotalBytes ??= 0;
   // History:
   // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
   // That meant that the rate limit was per server instance, rather than per server cluster
   // The value was primarily tuned for one particular cluster with 6 server instances
   // Therefore, to maintain parity, the new default "auth rate limit" is 1200 per 15 minutes
+  config.rateLimitsEnabled ??= true;
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
   config.defaultFhirQuota ??= 50_000;
@@ -98,10 +100,12 @@ type DefaultConfigKeys =
   | 'accurateCountThreshold'
   | 'maxSearchOffset'
   | 'base64BinaryMaxBytes'
+  | 'inlineAttachmentsMaxTotalBytes'
   | 'defaultBotRuntimeVersion'
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
   | 'emailProvider'
+  | 'rateLimitsEnabled'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
   | 'defaultFhirQuota'
@@ -120,6 +124,7 @@ const integerKeys = new Set([
   'maxBotLogLengthForLogs',
   'maxBotLogLengthForResource',
   'maxSearchOffset',
+  'inlineAttachmentsMaxTotalBytes',
   'mfaAuthenticatorWindow',
   'port',
   'shutdownTimeoutMilliseconds',
@@ -172,6 +177,7 @@ const booleanKeys = new Set([
   'readonlyDatabase.ssl.rejectUnauthorized',
   'readonlyDatabase.ssl.require',
   'readonlyDatabase.disableConnectionConfiguration',
+  'rateLimitsEnabled',
   'logRequests',
   'logAuditEvents',
   'mcpEnabled',

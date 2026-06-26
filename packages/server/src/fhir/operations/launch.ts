@@ -33,7 +33,7 @@ export async function appLaunchHandler(req: FhirRequest): Promise<FhirResponse> 
 
   const params = parseInputParameters<LaunchOperationParameters>(operation, req);
 
-  const clientApp = await ctx.systemRepo.readResource<ClientApplication>('ClientApplication', req.params.id);
+  const clientApp = await ctx.repo.readResource<ClientApplication>('ClientApplication', req.params.id);
 
   if (!clientApp.launchUri) {
     return [badRequest('ClientApplication not configured for launch')];

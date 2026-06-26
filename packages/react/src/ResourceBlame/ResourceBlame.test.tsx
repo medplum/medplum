@@ -58,8 +58,8 @@ describe('ResourceBlame', () => {
             meta: {
               versionId: '1',
               lastUpdated: '2024-01-01T00:00:00Z',
-              author: { reference: 'Practitioner/123' },
-              onBehalfOf: { reference: 'Practitioner/123' },
+              author: { reference: 'Practitioner/124' },
+              onBehalfOf: { reference: 'Practitioner/124' },
             },
             name: [{ family: 'Doe' }],
           },

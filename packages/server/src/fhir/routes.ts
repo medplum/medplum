@@ -55,7 +55,7 @@ import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { extractHandler } from './operations/extract';
-import { appointmentFindHandler, scheduleFindHandler } from './operations/find';
+import { appointmentFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
 import { getWsSubStatsHandler } from './operations/getwssubstats';
@@ -70,6 +70,7 @@ import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectRateLimitsHandler } from './operations/project-rate-limits';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { rebuildBaseDefinitionsOperation } from './operations/rebuild-base-definitions';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
 import { userRescopeOperation } from './operations/rescope';
 import { resourceGraphHandler } from './operations/resourcegraph';
@@ -233,6 +234,9 @@ function initInternalFhirRouter(): FhirRouter {
   const router = new FhirRouter({
     introspectionEnabled: getConfig().introspectionEnabled,
   });
+
+  // Rebuild base definitions
+  router.add('POST', '/$rebuild-base-definitions', rebuildBaseDefinitionsOperation);
 
   // Project $export
   router.add('GET', '/$export', bulkExportHandler);
@@ -410,9 +414,6 @@ function initInternalFhirRouter(): FhirRouter {
 
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
-
-  // Schedule $find operation
-  router.add('GET', '/Schedule/:id/$find', scheduleFindHandler);
 
   // Appointment Scheduling operations
   router.add('GET', '/Appointment/$find', appointmentFindHandler);

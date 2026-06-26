@@ -153,7 +153,7 @@ describe('CLI auth', () => {
           accessToken: 'abc',
           refreshToken: 'xyz',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
             display: 'Alice Smith',
           },
           project: {
@@ -168,7 +168,7 @@ describe('CLI auth', () => {
 
     expect((console.log as unknown as Mock).mock.calls).toStrictEqual([
       ['Server:  https://example.com/'],
-      ['Profile: Alice Smith (Practitioner/123)'],
+      ['Profile: Alice Smith (Practitioner/124)'],
       ['Project: My Project (Project/456)'],
     ]);
   });
@@ -183,7 +183,7 @@ describe('CLI auth', () => {
           accessToken: 'abc',
           refreshToken: 'xyz',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
             display: 'Alice Smith',
           },
           project: {
