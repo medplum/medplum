@@ -142,8 +142,12 @@ export async function createProject(
     description: 'Default client for ' + project.name,
   });
 
-  const accessPolicy = await createDefaultPatientAccessPolicy(systemRepo, project);
-  const relatedPersonAccessPolicy = await createDefaultRelatedPersonAccessPolicy(systemRepo, project);
+  const accessPolicy = await createPatientCompartmentAccessPolicy(systemRepo, project, 'Default Patient Access Policy');
+  const relatedPersonAccessPolicy = await createPatientCompartmentAccessPolicy(
+    systemRepo,
+    project,
+    'Default RelatedPerson Access Policy'
+  );
   project = await systemRepo.patchResource<Project>('Project', project.id, [
     { op: 'add', path: '/defaultPatientAccessPolicy', value: createReference(accessPolicy) },
     {
@@ -171,14 +175,15 @@ export async function createProject(
   return { project, client };
 }
 
-async function createDefaultRelatedPersonAccessPolicy(
+async function createPatientCompartmentAccessPolicy(
   systemRepo: SystemRepository,
-  project: WithId<Project>
+  project: WithId<Project>,
+  name: string
 ): Promise<WithId<AccessPolicy>> {
   return systemRepo.createResource<AccessPolicy>({
     resourceType: 'AccessPolicy',
     meta: { project: project.id },
-    name: 'Default RelatedPerson Access Policy',
+    name,
     compartment: { reference: '%patient' },
     resource: [
       { resourceType: 'Patient', criteria: 'Patient?_id=%patient.id' },
@@ -201,42 +206,6 @@ async function createDefaultRelatedPersonAccessPolicy(
       { resourceType: 'Procedure', criteria: 'Procedure?_compartment=%patient' },
       { resourceType: 'QuestionnaireResponse', criteria: 'QuestionnaireResponse?_compartment=%patient' },
       { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?patient=%patient' },
-      { resourceType: 'ServiceRequest', criteria: 'ServiceRequest?_compartment=%patient' },
-      { resourceType: 'Task', criteria: 'Task?_compartment=%patient' },
-    ],
-  });
-}
-
-async function createDefaultPatientAccessPolicy(
-  systemRepo: SystemRepository,
-  project: WithId<Project>
-): Promise<WithId<AccessPolicy>> {
-  return systemRepo.createResource<AccessPolicy>({
-    resourceType: 'AccessPolicy',
-    meta: { project: project.id },
-    name: 'Default Patient Access Policy',
-    compartment: { reference: '%patient' },
-    resource: [
-      { resourceType: 'Patient', criteria: 'Patient?_id=%patient.id' },
-      { resourceType: 'AllergyIntolerance', criteria: 'AllergyIntolerance?_compartment=%patient' },
-      { resourceType: 'Appointment', criteria: 'Appointment?_compartment=%patient' },
-      { resourceType: 'CarePlan', criteria: 'CarePlan?_compartment=%patient' },
-      { resourceType: 'CareTeam', criteria: 'CareTeam?_compartment=%patient' },
-      { resourceType: 'Communication', criteria: 'Communication?sender=%patient' },
-      { resourceType: 'Communication', criteria: 'Communication?recipient=%patient' },
-      { resourceType: 'Condition', criteria: 'Condition?_compartment=%patient' },
-      { resourceType: 'Coverage', criteria: 'Coverage?_compartment=%patient' },
-      { resourceType: 'DiagnosticReport', criteria: 'DiagnosticReport?_compartment=%patient' },
-      { resourceType: 'DocumentReference', criteria: 'DocumentReference?_compartment=%patient' },
-      { resourceType: 'Encounter', criteria: 'Encounter?_compartment=%patient' },
-      { resourceType: 'Goal', criteria: 'Goal?_compartment=%patient' },
-      { resourceType: 'Immunization', criteria: 'Immunization?_compartment=%patient' },
-      { resourceType: 'MedicationRequest', criteria: 'MedicationRequest?_compartment=%patient' },
-      { resourceType: 'MedicationStatement', criteria: 'MedicationStatement?_compartment=%patient' },
-      { resourceType: 'Observation', criteria: 'Observation?_compartment=%patient' },
-      { resourceType: 'Procedure', criteria: 'Procedure?_compartment=%patient' },
-      { resourceType: 'QuestionnaireResponse', criteria: 'QuestionnaireResponse?_compartment=%patient' },
-      { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?_compartment=%patient' },
       { resourceType: 'ServiceRequest', criteria: 'ServiceRequest?_compartment=%patient' },
       { resourceType: 'Task', criteria: 'Task?_compartment=%patient' },
     ],
