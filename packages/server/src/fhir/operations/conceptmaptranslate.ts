@@ -85,6 +85,7 @@ async function findConceptMappings(
 ): Promise<ConceptMapTranslateMatch[]> {
   const query = new SelectQuery('ConceptMapping')
     .column('conceptMap')
+    .column('id')
     .column(new Column('source', 'system', false, 'sourceSystem'))
     .column('sourceCode')
     .column('sourceDisplay')
@@ -117,7 +118,8 @@ async function findConceptMappings(
     )
     .where('conceptMap', '=', conceptMap.id)
     .where(new Column('source', 'system'), '=', system)
-    .where('sourceCode', 'IN', codes);
+    .where('sourceCode', 'IN', codes)
+    .orderBy('id');
 
   if (params.targetsystem) {
     query.where(new Column('target', 'system'), '=', params.targetsystem);
@@ -167,7 +169,12 @@ async function handleUnmappedCodes(
 
 function parseDatabaseRows(rows: any[]): ConceptMapTranslateMatch[] {
   const matches: ConceptMapTranslateMatch[] = [];
-  for (const { targetSystem, targetCode, targetDisplay, relationship } of rows) {
+  console.log(
+    rows
+      .map((r) => `[${r.id}] ${r.sourceCode} --> ${r.targetCode}${r.kind ? '\t(' + r.kind + ' ' + r.value + ')' : ''}`)
+      .join('\n')
+  );
+  for (const { targetSystem, targetCode, targetDisplay, relationship, kind, uri, type, value } of rows) {
     matches.push({
       concept: { system: targetSystem, code: targetCode, display: targetDisplay ?? undefined },
       equivalence: relationship ?? EQUIVALENT,

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { TypedValue, WithId } from '@medplum/core';
-import { allOk, append, badRequest, EMPTY, flatMapFilter, forbidden, OperationOutcomeError } from '@medplum/core';
+import { allOk, append, badRequest, EMPTY, forbidden, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -10,7 +10,7 @@ import type { PgQueryable } from '../sql';
 import { InsertQuery, SelectQuery, Union } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
-import { findTerminologyResource, uniqueOn } from './utils/terminology';
+import { findTerminologyResource } from './utils/terminology';
 
 const operation = makeOperationDefinition(
   { scope: 'type-and-instance', resource: 'ConceptMap' },
@@ -143,7 +143,7 @@ export async function importConceptMap(
     addRowsForMapping(mapping, conceptMap, mappingRows, attributeRows);
   }
 
-  const uniqueMappings = await prepareMappingRows(db, mappingRows);
+  const uniqueMappings = await prepareMappingRows(db, mappingRows, attributeRows);
   await writeMappingRows(db, uniqueMappings, attributeRows);
 }
 
@@ -267,18 +267,34 @@ function addRowsForMapping(
 
 async function prepareMappingRows(
   db: PgQueryable,
-  rows: MappingRow[]
+  rows: MappingRow[],
+  attributeRows: (Omit<AttributeRow, 'mapping'>[] | undefined)[]
 ): Promise<(MappingRow & { sourceSystem: number; targetSystem: number })[]> {
   if (!rows.length) {
     return rows as Awaited<ReturnType<typeof prepareMappingRows>>;
   }
 
   const systems = new Set<string>();
-  const uniqueMappings = uniqueOn(rows, (r) => {
-    systems.add(r.sourceSystem as string);
-    systems.add(r.targetSystem as string);
-    return `${r.sourceSystem}|${r.sourceCode} : ${r.targetSystem}|${r.targetCode}`;
-  });
+  const mappingIndices: Record<string, number> = Object.create(null);
+  const uniqueMappings: MappingRow[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    systems.add(row.sourceSystem as string);
+    systems.add(row.targetSystem as string);
+
+    const mappingKey = `${row.sourceSystem}|${row.sourceCode} : ${row.targetSystem}|${row.targetCode}`;
+    const index = mappingIndices[mappingKey];
+    if (index !== undefined) {
+      // Copy attributes from this (duplicate) mapping to the earlier entry
+      for (const attribute of attributeRows[i] ?? EMPTY) {
+        attributeRows[index] = append(attributeRows[index], attribute);
+      }
+      attributeRows.splice(i, 1);
+    } else {
+      mappingIndices[mappingKey] = i;
+      uniqueMappings.push(row);
+    }
+  }
 
   const systemStrings = Array.from(systems.values());
   const insertCTE = new InsertQuery(
@@ -303,7 +319,7 @@ async function prepareMappingRows(
   const systemIds: Record<string, number> = Object.create(null);
   for (let i = 0; i < systemStrings.length; i++) {
     const { id, system } = systemResults[i];
-    systemIds[system] = id;
+    systemIds[system] = Number.parseInt(id, 10);
   }
 
   for (const mapping of uniqueMappings) {
@@ -324,9 +340,18 @@ async function writeMappingRows(
       .returnColumn('id');
     const mappingIds = await insertMappings.execute(db);
 
-    const attributeRows = flatMapFilter(attributes, (attrs, i) =>
-      attrs?.map((a) => ({ ...a, mapping: mappingIds[i].id }))
-    );
+    // const attributeRows = flatMapFilter(attributes, (attrs, i) =>
+    //   attrs?.map((a) => ({ ...a, mapping: mappingIds[i].id }))
+    // );
+    const attributeRows: AttributeRow[] = [];
+    for (let i = 0; i < mappings.length; i++) {
+      const mappingId = mappingIds[i].id;
+      for (const attribute of attributes[i] ?? EMPTY) {
+        const row = attribute as AttributeRow;
+        row.mapping = mappingId;
+        attributeRows.push(row);
+      }
+    }
     if (attributeRows.length) {
       const insertAttributes = new InsertQuery('ConceptMapping_Attribute', attributeRows).ignoreOnConflict();
       await insertAttributes.execute(db);
