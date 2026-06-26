@@ -733,7 +733,7 @@ export class Repository extends FhirRepository implements Disposable {
       for (const row of rows) {
         const parsed = parseHistoryContent(row.content as string);
         const isDeleted = parsed.tombstone;
-        const resource = !isDeleted ? this.removeHiddenFields(parsed.resource) : undefined;
+        const resource = !isDeleted ? this.removeHiddenFields(parsed.resource as T) : undefined;
         const outcome: OperationOutcome = !isDeleted
           ? allOk
           : {
@@ -812,11 +812,14 @@ export class Repository extends FhirRepository implements Disposable {
       }
 
       const parsed = parseHistoryContent(rows[0].content as string);
+      // FHIR vread of a delete version returns 410 Gone with no resource body.
       if (parsed.tombstone) {
         throw new OperationOutcomeError(gone);
       }
 
-      const result = await this.authorizeBinarySecurityContext(this.removeHiddenFields(parsed.resource));
+      const result = (await this.authorizeBinarySecurityContext(
+        this.removeHiddenFields(parsed.resource as T)
+      )) as WithId<T>;
       const durationMs = Date.now() - startTime;
       this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });
       return result;
@@ -1277,9 +1280,16 @@ export class Repository extends FhirRepository implements Disposable {
 
       if (!this.isCacheOnly(resource)) {
         await this.ensureInTransaction(async (txRepo) => {
+          // FHIR logical delete: retain history and append a new deleted version. Instance
+          // reads and vread of that version return HTTP 410 Gone; prior versions stay readable.
           const versionId = txRepo.generateId();
           const lastUpdated = new Date();
+
+          // Main table: empty content with deleted=true so search/read return 410, not 404.
           const columns = buildDeletedResourceRow(resource, lastUpdated);
+
+          // History table: minimal tombstone (resourceType, id, meta.deleted) for auditing and
+          // warehouse sync. Public history bundles still omit the body and return 410 per spec.
           const historyContent = buildDeleteHistoryContent(resource, {
             versionId,
             lastUpdated,
@@ -1302,6 +1312,7 @@ export class Repository extends FhirRepository implements Disposable {
 
           const durationMs = Date.now() - startTime;
 
+          // Delete auditing via AuditEvent; FHIR does not require a searchable Provenance per delete.
           await txRepo.postCommit(async () => {
             txRepo.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });
           });

@@ -346,19 +346,19 @@ async function getSearchEntries<T extends Resource>(
   }
 
   const rowCount = Math.min(rows.length, originalLimit);
-  const resources = [];
+  const resources: WithId<T>[] = [];
   for (let i = 0; i < rowCount; i++) {
     const row = rows[i];
     const parsed = parseHistoryContent(row.content as string);
     if (!parsed.tombstone) {
-      resources.push(parsed.resource);
+      resources.push(parsed.resource as WithId<T>);
     } else {
       // Handle missing or tombstone content for soft-deleted resources.
       resources.push({
         resourceType: searchRequest.resourceType,
         id: row.id,
         meta: { lastUpdated: row.lastUpdated?.toISOString() },
-      });
+      } as WithId<T>);
     }
   }
   let nextResource: T | undefined;
