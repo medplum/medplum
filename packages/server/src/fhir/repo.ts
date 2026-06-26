@@ -120,7 +120,12 @@ import {
   getResourceCacheEntry,
   setResourceCacheEntry,
 } from './repository/resource-cache';
-import { buildDeleteHistoryContent, buildDeletedResourceRow, buildResourceRow, isDeleteTombstone } from './repository/row-builder';
+import {
+  buildDeletedResourceRow,
+  buildDeleteHistoryContent,
+  buildResourceRow,
+  isDeleteTombstone,
+} from './repository/row-builder';
 import { validateRepositoryResource } from './repository/validation';
 import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';

@@ -48,11 +48,7 @@ import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationT
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
-import {
-  buildRestoredResource,
-  getLatestNonDeletedHistoryResource,
-  isResourceCurrentlyDeleted,
-} from './restore';
+import { buildRestoredResource, getLatestNonDeletedHistoryResource, isResourceCurrentlyDeleted } from './restore';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 

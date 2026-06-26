@@ -11,7 +11,13 @@ import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject, withTestContext } from '../../test.setup';
 import { getProjectSystemRepo, Repository } from '../repo';
 import type { ColumnValue } from './row-builder';
-import { buildDeletedResourceRow, buildDeleteHistoryContent, buildResourceRow, compareColumnValues, isDeleteTombstone } from './row-builder';
+import {
+  buildDeletedResourceRow,
+  buildDeleteHistoryContent,
+  buildResourceRow,
+  compareColumnValues,
+  isDeleteTombstone,
+} from './row-builder';
 
 describe('Repository Row Builder', () => {
   let testProject: WithId<Project>;
