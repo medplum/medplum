@@ -175,7 +175,7 @@ documentation for more information.
 
 ## Default Profiles {/* #default-profiles */}
 
-The `defaultProfile` setting automatically applies [FHIR profiles](http://hl7.org/fhir/R4/profiling.html#resources) to resources that do not specify a profile in `meta.profile`. This is useful for enforcing consistent validation across a project without requiring every resource creation call to include profile references.
+The `defaultProfile` setting automatically applies [FHIR profiles](http://hl7.org/fhir/R4/profiling.html#resources) to resources that do not specify a profile in `meta.profile`. This is useful for enforcing consistent validation and clinical data quality across a project without requiring every resource creation call to include profile references.
 
 ### How It Works
 
@@ -228,18 +228,6 @@ const observation = await medplum.createResource({
 ```
 
 If the observation is missing required fields (e.g., `subject`), the server will reject it with a validation error — even though no profile was explicitly specified.
-
-### When to Use `defaultProfile`
-
-- **Clinical data quality**: Enforce that all resources of a given type conform to a specific profile (e.g., US Core, Vital Signs)
-- **Multi-tenant applications**: Different projects can enforce different profiles for the same resource type
-- **Gradual adoption**: Apply profiles automatically without requiring changes to existing client code
-
-### Notes
-
-- Default profiles are applied **before** resource validation, so profile-based constraints are enforced automatically
-- Multiple profiles can be specified per resource type — all will be applied
-- This setting is configured by project administrators and is specific to each project
 
 ## Project Secrets
 
