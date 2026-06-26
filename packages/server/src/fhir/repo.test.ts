@@ -19,6 +19,7 @@ import {
 import { RepositoryMode } from '@medplum/fhir-router';
 import type {
   Binary,
+  Bundle,
   BundleEntry,
   Login,
   OperationOutcome,
@@ -29,6 +30,7 @@ import type {
   ProjectMembership,
   Questionnaire,
   ResearchDefinition,
+  Resource,
   ResourceType,
   ServiceRequest,
   User,
@@ -48,11 +50,34 @@ import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationT
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
-import { buildRestoredResource, getLatestNonDeletedHistoryResource, isResourceCurrentlyDeleted } from './restore';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
 vi.mock('hibp');
+
+function isHistoryEntryDeleted(entry: BundleEntry): boolean {
+  return (
+    entry.response?.status === '410' &&
+    entry.response?.outcome?.issue?.some((issue) => issue.code === 'deleted') === true
+  );
+}
+
+function isResourceCurrentlyDeleted<T extends Resource>(history: Bundle<T>): boolean {
+  return history.entry?.some(isHistoryEntryDeleted) ?? false;
+}
+
+function getLatestNonDeletedHistoryResource<T extends Resource>(history: Bundle<T>): WithId<T> | undefined {
+  const entry = history.entry?.find((e) => e.response?.status === '200' && e.resource);
+  return entry?.resource as WithId<T> | undefined;
+}
+
+function buildRestoredResource<T extends Resource>(latestVersion: WithId<T>): WithId<T> {
+  if (!latestVersion.meta?.deleted) {
+    return latestVersion;
+  }
+  const { deleted: _, ...meta } = latestVersion.meta;
+  return { ...latestVersion, meta } as WithId<T>;
+}
 
 describe('FHIR Repo', () => {
   const globalSystemRepo = getGlobalSystemRepo();
