@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource, WithId } from '@medplum/core';
+import type { JWTPayload, ProfileResource, WithId } from '@medplum/core';
 import {
   ContentType,
   OAuthClientAssertionType,
@@ -425,11 +425,25 @@ export async function exchangeExternalAuthToken(
     return;
   }
 
-  const projectId = useServerExternalAuth
-    ? await resolveServerExternalAuthProjectId(res, systemRepo, membershipId)
-    : await getProjectIdByClientId(clientId, undefined);
-  if (projectId === null) {
-    return;
+  let projectId: string | undefined;
+  if (useServerExternalAuth) {
+    if (membershipId) {
+      let membership: ProjectMembership;
+      try {
+        membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+      } catch {
+        sendTokenError(res, 'invalid_request', 'Invalid membership');
+        return;
+      }
+
+      projectId = resolveId(membership.project);
+      if (!projectId) {
+        sendTokenError(res, 'invalid_request', 'Invalid membership');
+        return;
+      }
+    }
+  } else {
+    projectId = await getProjectIdByClientId(clientId, undefined);
   }
 
   const userInfo = await tryGetExternalUserInfo(res, idp, subjectToken);
@@ -490,37 +504,11 @@ async function tryReadTokenExchangeClient(
   }
 }
 
-async function resolveServerExternalAuthProjectId(
-  res: Response,
-  systemRepo: ReturnType<typeof getGlobalSystemRepo>,
-  membershipId?: string
-): Promise<string | undefined | null> {
-  if (membershipId) {
-    let membership: ProjectMembership;
-    try {
-      membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-    } catch {
-      sendTokenError(res, 'invalid_request', 'Invalid membership');
-      return null;
-    }
-
-    const projectId = resolveId(membership.project);
-    if (!projectId) {
-      sendTokenError(res, 'invalid_request', 'Invalid membership');
-      return null;
-    }
-
-    return projectId;
-  }
-
-  return undefined;
-}
-
 async function tryGetExternalUserInfo(
   res: Response,
   idp: IdentityProvider,
   subjectToken: string
-): Promise<Record<string, unknown> | undefined> {
+): Promise<JWTPayload | undefined> {
   try {
     return await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
   } catch (err: any) {
@@ -532,10 +520,10 @@ async function tryGetExternalUserInfo(
 
 function getExternalAuthLoginIdentity(
   idp: IdentityProvider,
-  userInfo: Record<string, unknown>
+  userInfo: JWTPayload
 ): { email?: string; externalId?: string } {
   if (idp.useSubject) {
-    return { externalId: userInfo.sub as string };
+    return { externalId: userInfo.sub };
   }
 
   return { email: userInfo.email as string };

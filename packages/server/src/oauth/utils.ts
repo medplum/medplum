@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter, ProfileResource, SearchRequest, WithId } from '@medplum/core';
+import type { Filter, JWTPayload, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
@@ -33,7 +33,7 @@ import type {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import type { Request } from 'express';
-import type { JWTPayload, VerifyOptions } from 'jose';
+import type { VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
@@ -842,7 +842,7 @@ export async function getExternalUserInfo(
   userInfoUrl: string,
   externalAccessToken: string,
   idp?: IdentityProvider
-): Promise<Record<string, unknown>> {
+): Promise<JWTPayload> {
   const log = getLogger();
 
   try {
