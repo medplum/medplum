@@ -6,7 +6,7 @@ describe('findAlignedSlotTimes', () => {
   test('can find a slot that exactly coincides with the interval', () => {
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T01:00:00Z') },
-      { alignment: 60, offsetMinutes: 0, durationMinutes: 60, timezone: 'Etc/UTC' }
+      { alignment: { interval: 60, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 60 }
     );
     expect(slots).toEqual([{ start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T01:00:00Z') }]);
   });
@@ -14,7 +14,7 @@ describe('findAlignedSlotTimes', () => {
   test('returns empty when the interval is less than the duration', () => {
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T01:00:00Z') },
-      { alignment: 60, offsetMinutes: 0, durationMinutes: 90, timezone: 'Etc/UTC' }
+      { alignment: { interval: 60, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 90 }
     );
     expect(slots).toEqual([]);
   });
@@ -22,7 +22,7 @@ describe('findAlignedSlotTimes', () => {
   test('it finds slots aligned to hours', () => {
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T02:00:00Z') },
-      { alignment: 60, offsetMinutes: 0, durationMinutes: 10, timezone: 'Etc/UTC' }
+      { alignment: { interval: 60, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 10 }
     );
     expect(slots).toEqual([
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T00:10:00Z') },
@@ -33,7 +33,7 @@ describe('findAlignedSlotTimes', () => {
   test('it finds slots aligned to half hours', () => {
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T02:00:00Z') },
-      { alignment: 30, offsetMinutes: 0, durationMinutes: 10, timezone: 'Etc/UTC' }
+      { alignment: { interval: 30, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 10 }
     );
     expect(slots).toEqual([
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T00:10:00Z') },
@@ -46,7 +46,7 @@ describe('findAlignedSlotTimes', () => {
   test('it finds slots aligned to quarter hours', () => {
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T02:00:00Z') },
-      { alignment: 15, offsetMinutes: 0, durationMinutes: 10, timezone: 'Etc/UTC' }
+      { alignment: { interval: 15, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 10 }
     );
     expect(slots).toEqual([
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T00:10:00Z') },
@@ -63,7 +63,7 @@ describe('findAlignedSlotTimes', () => {
   test('it finds slots aligned to ten minute marks', () => {
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T02:00:00Z') },
-      { alignment: 10, offsetMinutes: 0, durationMinutes: 10, timezone: 'Etc/UTC' }
+      { alignment: { interval: 10, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 10 }
     );
     expect(slots).toEqual([
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T00:10:00Z') },
@@ -84,7 +84,7 @@ describe('findAlignedSlotTimes', () => {
   test('offsetting alignment by five minutes', () => {
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T02:00:00Z') },
-      { alignment: 15, offsetMinutes: 5, durationMinutes: 10, timezone: 'Etc/UTC' }
+      { alignment: { interval: 15, offset: 5, timezone: 'Etc/UTC' }, durationMinutes: 10 }
     );
     expect(slots).toEqual([
       { start: new Date('2025-12-01T00:05:00Z'), end: new Date('2025-12-01T00:15:00Z') },
@@ -101,7 +101,7 @@ describe('findAlignedSlotTimes', () => {
   test('offsetting alignment by 20 minutes', () => {
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T02:00:00Z') },
-      { alignment: 30, offsetMinutes: 20, durationMinutes: 10, timezone: 'Etc/UTC' }
+      { alignment: { interval: 30, offset: 20, timezone: 'Etc/UTC' }, durationMinutes: 10 }
     );
     expect(slots).toEqual([
       { start: new Date('2025-12-01T00:20:00Z'), end: new Date('2025-12-01T00:30:00Z') },
@@ -117,7 +117,7 @@ describe('findAlignedSlotTimes', () => {
     // some time before the resulting slot start time.
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T02:00:00Z') },
-      { alignment: 30, offsetMinutes: -20, durationMinutes: 10, timezone: 'Etc/UTC' }
+      { alignment: { interval: 30, offset: -20, timezone: 'Etc/UTC' }, durationMinutes: 10 }
     );
     expect(slots).toEqual([
       { start: new Date('2025-12-01T00:10:00Z'), end: new Date('2025-12-01T00:20:00Z') },
@@ -131,7 +131,7 @@ describe('findAlignedSlotTimes', () => {
     // Slots are aligned to a fifty-minute grid. The first slot is found at `00:00`.
     const slots50Midnight = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T03:00:00Z') },
-      { alignment: 50, offsetMinutes: 0, durationMinutes: 10, timezone: 'Etc/UTC' }
+      { alignment: { interval: 50, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 10 }
     );
     expect(slots50Midnight).toEqual([
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T00:10:00Z') },
@@ -144,7 +144,7 @@ describe('findAlignedSlotTimes', () => {
     // to the same fifty-minute grid.
     const slots50Later = findAlignedSlotTimes(
       { start: new Date('2025-12-01T01:00:00Z'), end: new Date('2025-12-01T03:00:00Z') },
-      { alignment: 50, offsetMinutes: 0, durationMinutes: 10, timezone: 'Etc/UTC' }
+      { alignment: { interval: 50, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 10 }
     );
     expect(slots50Later).toEqual([
       { start: new Date('2025-12-01T01:40:00Z'), end: new Date('2025-12-01T01:50:00Z') },
@@ -158,7 +158,7 @@ describe('findAlignedSlotTimes', () => {
     // Re-anchoring from Dec 2 midnight gives 00:00, 00:50, 01:40 (all 0 mod 50).
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T23:10:00Z'), end: new Date('2025-12-02T01:50:00Z') },
-      { alignment: 50, offsetMinutes: 0, durationMinutes: 10, timezone: 'Etc/UTC' }
+      { alignment: { interval: 50, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 10 }
     );
     expect(slots).toEqual([
       { start: new Date('2025-12-01T23:20:00Z'), end: new Date('2025-12-01T23:30:00Z') },
@@ -174,7 +174,7 @@ describe('findAlignedSlotTimes', () => {
     // Re-anchoring from local midnight gives 00:00, 00:50, 01:40 EST on Dec 2.
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-02T04:10:00Z'), end: new Date('2025-12-02T07:00:00Z') },
-      { alignment: 50, offsetMinutes: 0, durationMinutes: 10, timezone: 'America/New_York' }
+      { alignment: { interval: 50, offset: 0, timezone: 'America/New_York' }, durationMinutes: 10 }
     );
     expect(slots).toEqual([
       // 23:20 EST Dec 1 — on Dec 1's grid (1400 min, 1400 % 50 = 0)
@@ -194,7 +194,7 @@ describe('findAlignedSlotTimes', () => {
     // 2025-11-30T18:30:00Z = midnight in Kolkata; 2025-11-30T21:30:00Z = 3am Kolkata.
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-11-30T18:30:00Z'), end: new Date('2025-11-30T21:30:00Z') },
-      { alignment: 50, offsetMinutes: 0, durationMinutes: 10, timezone: 'Asia/Kolkata' }
+      { alignment: { interval: 50, offset: 0, timezone: 'Asia/Kolkata' }, durationMinutes: 10 }
     );
     // Grid anchored to local midnight (18:30 UTC): 18:30, 19:20, 20:10, 21:00 UTC
     // = 00:00, 00:50, 01:40, 02:30 Kolkata
@@ -231,7 +231,7 @@ describe('findAlignedSlotTimes', () => {
     // following day, potentially overlapping the grid.
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T23:00:00Z'), end: new Date('2025-12-02T01:00:00Z') },
-      { alignment: 50, offsetMinutes: 0, durationMinutes: 50, timezone: 'Etc/UTC' }
+      { alignment: { interval: 50, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 50 }
     );
     expect(slots).toEqual([
       // This slot at the end of Dec 1 is found, even though it extends outside the Dec 1
@@ -248,7 +248,7 @@ describe('findAlignedSlotTimes', () => {
     // America/Chicago is CST (UTC-6) in winter and CDT (UTC-5) in summer.
     // alignment=50 with UTC anchoring gives different local start times in each
     // season; timezone anchoring keeps them the same.
-    const opts = { alignment: 50, offsetMinutes: 0, durationMinutes: 10, timezone: 'America/Chicago' };
+    const opts = { alignment: { interval: 50, offset: 0, timezone: 'America/Chicago' }, durationMinutes: 10 };
 
     // Winter (CST, UTC-6): 08:00–10:00 UTC = 02:00–04:00 CST
     const winterSlots = findAlignedSlotTimes(
@@ -276,7 +276,7 @@ describe('findAlignedSlotTimes', () => {
     expect(() => {
       findAlignedSlotTimes(
         { start: new Date('2025-12-01'), end: new Date('2025-12-08') },
-        { alignment: 0, offsetMinutes: 0, durationMinutes: 10, timezone: 'Etc/UTC' }
+        { alignment: { interval: 0, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 10 }
       );
     }).toThrow('Invalid alignment');
   });
@@ -284,7 +284,7 @@ describe('findAlignedSlotTimes', () => {
   test('maxCount option is respected', () => {
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T02:00:00Z') },
-      { alignment: 15, offsetMinutes: 0, durationMinutes: 10, maxCount: 5, timezone: 'Etc/UTC' }
+      { alignment: { interval: 15, offset: 0, timezone: 'Etc/UTC' }, durationMinutes: 10, maxCount: 5 }
     );
     expect(slots).toEqual([
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T00:10:00Z') },

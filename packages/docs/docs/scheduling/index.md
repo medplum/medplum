@@ -3,8 +3,10 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Scheduling
 
-:::info[]
-Medplum Scheduling is currently in alpha.
+:::info[Beta]
+
+Medplum Scheduling is currently in [beta](/docs/compliance/alpha-beta).
+
 :::
 
 Welcome to the Medplum Scheduling documentation. We currently support a range of scheduling operations that are available via the FHIR API. The following sections walk through the FHIR resources that are used to model scheduling and how the operations interact with them.
@@ -15,7 +17,7 @@ Welcome to the Medplum Scheduling documentation. We currently support a range of
 
 ## Step 1: Defining Service Types
 
-Decide what types of appointments you would like to offer. Create a [HealthcareService](/docs/api/fhir/resources/healthcareservice) resource for each type. Set a SchedulingParameters extension on each to define attributes like the length of the visit.
+Decide what types of appointments you would like to offer. Create a [HealthcareService](/docs/api/fhir/resources/healthcareservice) resource for each appointment type or service. Set a SchedulingParameters extension on each to define attributes like the length of the visit.
 
 Mark which [Schedule](/docs/api/fhir/resources/schedule) resources should be able to schedule appointments of that type by setting a reference to the HealthcareService in the Schedule.serviceType attribute.
 
@@ -65,7 +67,7 @@ Based on the availability defined in the previous step, we can now find availabl
 
 | Operation | Description | Status |
 | --------- | ----------- | ------ |
-| [`$find`](/docs/scheduling/appointment-find) | Find available appointment slots | **Alpha** |
+| [`$find`](/docs/scheduling/appointment-find) | Find available appointment slots | **Beta** |
 
 ---
 
@@ -75,10 +77,10 @@ Once a desired slot has been found, the appointment booking process can be handl
 
 | Operation | Description | Status |
 | --------- | ----------- | ------ |
-| [`$book`](/docs/scheduling/appointment-book) | Book an appointment in one step | **Alpha** |
-| [`$hold`](/docs/scheduling/appointment-hold) | Temporarily hold a slot | **Alpha** |
-| [`$confirm`](/docs/scheduling/appointment-confirm) | Confirm a held appointment | **Alpha** |
-| [`$cancel`](/docs/scheduling/appointment-cancel) | Cancel an appointment | **Alpha** |
+| [`$book`](/docs/scheduling/appointment-book) | Book an appointment in one step | **Beta** |
+| [`$hold`](/docs/scheduling/appointment-hold) | Create a pending appointment | **Beta** |
+| [`$confirm`](/docs/scheduling/appointment-confirm) | Confirm a held appointment | **Beta** |
+| [`$cancel`](/docs/scheduling/appointment-cancel) | Cancel an appointment | **Beta** |
 
 ---
 
@@ -94,7 +96,7 @@ Once a desired slot has been found, the appointment booking process can be handl
 
 ## Medplum Scheduling FHIR Model Design Decisions
 
-Scheduling can be built in FHIR in many different ways. The key design decisions in Meduplum's specific scheduling FHIR model are:
+Scheduling can be built in FHIR in many different ways. The key design decisions in Medplum's specific scheduling FHIR model are:
 
 - **Recurring availability does not require pre-generated slots**: Synthetic[`Slot`](/docs/api/fhir/resources/slot) resources are **computed on-demand** by [`$find`](/docs/scheduling/appointment-find) as drafted resources that are not persisted in the datastore until an Appointment is booked. This means you don't need to maintain a bulk set of Slot resources across a planning horizon.
 :::note[]

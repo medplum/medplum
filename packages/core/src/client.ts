@@ -301,8 +301,6 @@ export interface MedplumClientOptions {
    * Fetch implementation.
    *
    * Default is `window.fetch` (if available).
-   *
-   * For Node.js applications, consider the 'node-fetch' package.
    */
   fetch?: FetchLike;
 
@@ -610,6 +608,12 @@ export interface InviteRequest {
   lastName: string;
   email?: string;
   externalId?: string;
+  /**
+   * The patient that a newly provisioned `RelatedPerson` is related to.
+   * Required when inviting a `RelatedPerson` without an existing
+   * `membership.profile`, since `RelatedPerson.patient` is a required FHIR field.
+   */
+  patient?: Reference<Patient>;
   scope?: 'project' | 'server';
   password?: string;
   sendEmail?: boolean;

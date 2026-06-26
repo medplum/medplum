@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, getReferenceString, LOINC, SNOMED, UCUM } from '@medplum/core';
+import { createReference, LOINC, SNOMED, UCUM } from '@medplum/core';
 import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
 import type {
   AllergyIntolerance,
@@ -9,6 +9,7 @@ import type {
   Communication,
   Condition,
   DiagnosticReport,
+  HealthcareService,
   Immunization,
   MedicationRequest,
   Observation,
@@ -179,61 +180,64 @@ async function getPractitioner(medplum: MedplumClient): Promise<Practitioner> {
 }
 
 /**
- * Ensures that the practitioner has a schedule, and that the schedule has slots.
+ * Ensure that a HealthcareService exists
+ *
+ * @param medplum - The medplum client.
+ * @returns healthcareService - the HealthcareService.
+ */
+async function ensureHealthcareService(medplum: MedplumClient): Promise<WithId<HealthcareService>> {
+  return medplum.createResourceIfNoneExist<HealthcareService>(
+    {
+      resourceType: 'HealthcareService',
+      identifier: [
+        {
+          system: 'https://medplum.com/fhir/sample-data',
+          value: 'sample-office-visit-service',
+        },
+      ],
+      active: true,
+      name: 'Office Visit',
+      type: [{ coding: [{ code: 'office-visit' }] }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [{ url: 'duration', valueDuration: { value: 1, unit: 'h' } }],
+        },
+      ],
+    },
+    'identifier=sample-office-visit-service'
+  );
+}
+
+/**
+ * Ensures that the practitioner has a schedule, and that the schedule is linked to a HealthcareService.
  * @param medplum - The medplum client.
  * @param practitioner - The practitioner.
  */
 async function ensureSchedule(medplum: MedplumClient, practitioner: Practitioner): Promise<void> {
+  const healthcareService = await ensureHealthcareService(medplum);
+
   // Try to get the schedule
-  const schedule = await medplum.createResourceIfNoneExist<Schedule>(
+  await medplum.createResourceIfNoneExist<Schedule>(
     {
       resourceType: 'Schedule',
       id: 'schedule',
       actor: [createReference(practitioner)],
+      serviceType: [
+        {
+          text: 'Office Visit',
+          coding: [{ code: 'office-visit' }],
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/service-type-reference',
+              valueReference: createReference(healthcareService),
+            },
+          ],
+        },
+      ],
     },
     'actor=Practitioner/' + practitioner.id
   );
-
-  // Ensure there are slots for the next 30 days
-  const slotDate = new Date();
-  for (let day = 0; day < 30; day++) {
-    slotDate.setHours(0, 0, 0, 0);
-    await ensureSlots(medplum, schedule, slotDate);
-    slotDate.setDate(slotDate.getDate() + 1);
-  }
-}
-
-/**
- * Ensures that the schedule has slots for the given date.
- * @param medplum - The medplum client.
- * @param schedule - The practitioner's schedule.
- * @param slotDate - The day of slots.
- */
-async function ensureSlots(medplum: MedplumClient, schedule: WithId<Schedule>, slotDate: Date): Promise<void> {
-  const existingSlots = await medplum.search(
-    'Slot',
-    new URLSearchParams([
-      ['_summary', 'true'],
-      ['schedule', getReferenceString(schedule)],
-      ['start', 'gt' + slotDate.toISOString()],
-      ['start', 'lt' + new Date(slotDate.getTime() + 24 * 60 * 60 * 1000).toISOString()],
-    ])
-  );
-
-  if ((existingSlots.total as number) > 0) {
-    return;
-  }
-
-  for (let hour = 0; hour < 24; hour++) {
-    slotDate.setHours(hour, 0, 0, 0);
-    await medplum.createResource({
-      resourceType: 'Slot',
-      status: 'free',
-      start: slotDate.toISOString(),
-      end: new Date(slotDate.getTime() + 30 * 60 * 1000).toISOString(),
-      schedule: createReference(schedule),
-    });
-  }
 }
 
 /**

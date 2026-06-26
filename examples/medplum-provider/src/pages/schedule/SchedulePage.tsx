@@ -156,9 +156,9 @@ export function SchedulePage(): JSX.Element | null {
   );
 
   const handleBookSuccess = useCallback(
-    (results: { appointments: WithId<Appointment>[]; slots: Slot[] }) => {
-      setAppointments((state) => results.appointments.concat(state ?? EMPTY));
-      setAppointmentDetails(results.appointments[0]);
+    (results: { appointment: WithId<Appointment>; slots: Slot[] }) => {
+      setAppointments((state) => [...(state ?? EMPTY), results.appointment]);
+      setAppointmentDetails(results.appointment);
       appointmentDetailsHandlers.open();
       setSlots((state) => results.slots.concat(state ?? EMPTY));
     },

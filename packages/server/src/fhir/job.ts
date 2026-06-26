@@ -17,7 +17,7 @@ import { sendFhirResponse } from './response';
 
 export const jobRouter = Router();
 
-const finalJobStatusCodes = ['completed', 'error'];
+const finalJobStatusCodes = ['completed', 'error', 'cancelled'];
 
 jobRouter.get('/:id/status', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
