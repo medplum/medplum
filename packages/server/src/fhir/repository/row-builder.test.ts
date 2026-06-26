@@ -17,6 +17,7 @@ import {
   buildResourceRow,
   compareColumnValues,
   isDeleteTombstone,
+  parseHistoryContent,
 } from './row-builder';
 
 describe('Repository Row Builder', () => {
@@ -444,6 +445,27 @@ describe('compareColumnValues', () => {
         deleted: true,
       },
     });
+  });
+
+  test('parseHistoryContent', () => {
+    expect(parseHistoryContent('')).toStrictEqual({ tombstone: true });
+    expect(parseHistoryContent(undefined)).toStrictEqual({ tombstone: true });
+
+    const tombstone = {
+      resourceType: 'Patient',
+      id: randomUUID(),
+      meta: { deleted: true },
+    };
+    expect(parseHistoryContent(JSON.stringify(tombstone))).toStrictEqual({ tombstone: true });
+
+    const patient = {
+      resourceType: 'Patient',
+      id: randomUUID(),
+      name: [{ family: 'Smith' }],
+    };
+    expect(parseHistoryContent(JSON.stringify(patient))).toStrictEqual({ tombstone: false, resource: patient });
+
+    expect(() => parseHistoryContent('{')).toThrow(SyntaxError);
   });
 
   test('isDeleteTombstone', () => {
