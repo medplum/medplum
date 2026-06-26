@@ -13,8 +13,8 @@ import type {
   ValueSetComposeIncludeFilter,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { DatabaseMode } from '../../database';
 import type { Repository } from '../repo';
+import { repoAccess } from '../repository/access-tracker';
 import { validateCoding } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { hydrateCodeSystemProperties } from './expand';
@@ -123,12 +123,10 @@ async function findIncludedCode(
     return candidates.find((c) => include.concept?.some((i) => i.code === c.code));
   } else if (include.filter) {
     const codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', include.system);
-    const db = repo.getDatabaseClient({
-      mode: DatabaseMode.READER,
-      operation: 'read',
-      resourceTypes: ['CodeSystem'], // // used on non resource type tables derived from CodeSystem
-      source: 'valuesetvalidatecode.includeHasCoding',
-    });
+    // used on non resource type tables derived from CodeSystem
+    const db = repo.getDatabaseClient(
+      repoAccess.sqlRead('CodeSystem', { source: 'valuesetvalidatecode.includeHasCoding' })
+    );
     await hydrateCodeSystemProperties(db, codeSystem);
 
     for (const coding of candidates) {
@@ -152,12 +150,7 @@ async function satisfies(
   codeSystem: WithId<CodeSystem>
 ): Promise<boolean> {
   const { logger, repo } = getAuthenticatedContext();
-  const db = repo.getDatabaseClient({
-    mode: DatabaseMode.READER,
-    operation: 'read',
-    resourceTypes: ['CodeSystem'],
-    source: 'valuesetvalidatecode.satisfies',
-  });
+  const db = repo.getDatabaseClient(repoAccess.sqlRead('CodeSystem', { source: 'valuesetvalidatecode.satisfies' }));
   let query = selectCoding(codeSystem.id, code);
 
   switch (filter.op) {

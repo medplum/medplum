@@ -18,7 +18,9 @@ import * as workersModule from '../../workers';
 import type { Repository, SystemRepository } from '../repo';
 import { getShardSystemRepo } from '../repo';
 import { RepositoryConnection } from '../repository/repository-connection';
+import type { PgQueryable } from '../sql';
 import { PostgresError } from '../sql';
+import { repoAccess } from './access-tracker';
 
 const TRANSACTION_SCOPE_ERROR =
   'Repository is in an active transaction; use the transaction-scoped repository passed to the callback';
@@ -51,12 +53,7 @@ describe('FHIR Repo Transactions', () => {
           expect(txRepo).not.toBe(repo);
           expect(() =>
             // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
-            repo.getDatabaseClient({
-              mode: DatabaseMode.WRITER,
-              operation: 'write',
-              resourceTypes: [],
-              source: 'test.withTransaction.parentRepo',
-            })
+            repo.getDatabaseClient(repoAccess.sqlWriteConfig())
           ).toThrow(TRANSACTION_SCOPE_ERROR);
           // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
           await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
@@ -254,12 +251,7 @@ describe('FHIR Repo Transactions', () => {
                 await expectPatientVisible(nestedRepo, patient1?.id);
                 await expectPatientVisible(nestedRepo, patient2?.id);
 
-                const db = nestedRepo.getDatabaseClient({
-                  mode: DatabaseMode.READER,
-                  operation: 'read',
-                  resourceTypes: [],
-                  source: 'test.transaction.getDatabaseClient',
-                });
+                const db = nestedRepo.getDatabaseClient(repoAccess.sqlReadConfig());
                 await expect(db.query(`SELECT * FROM "TableDoesNotExist"`)).rejects.toMatchObject({
                   message: 'relation "TableDoesNotExist" does not exist',
                 });
@@ -411,14 +403,7 @@ describe('FHIR Repo Transactions', () => {
             source: 'test.releasedNestedRepo.locked',
           });
 
-          expect(() =>
-            releasedRepo.getDatabaseClient({
-              mode: DatabaseMode.WRITER,
-              operation: 'write',
-              resourceTypes: [],
-              source: 'test.transaction.getDatabaseClient',
-            })
-          ).toThrow(SAVEPOINT_RELEASED_ERROR);
+          expect(() => releasedRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow(SAVEPOINT_RELEASED_ERROR);
           await expect(releasedRepo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
             SAVEPOINT_RELEASED_ERROR
           );
@@ -510,12 +495,7 @@ describe('FHIR Repo Transactions', () => {
 
       await repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: [],
-            source: 'test.transaction.getDatabaseClient',
-          });
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
           const querySpy = spyOnQuery(client);
           try {
             await txRepo
@@ -997,12 +977,7 @@ describe('FHIR Repo Transactions', () => {
     await expect(
       repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: [],
-            source: 'test.transaction.getDatabaseClient',
-          });
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
           querySpy = spyOnQuery(client).mockImplementation(() => {
             // Simulates a session killed by idle_in_transaction_session_timeout: every query
             // issued on the client — including the ROLLBACK the error handler sends — rejects.
@@ -1048,12 +1023,7 @@ describe('FHIR Repo Transactions', () => {
     await expect(
       repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: [],
-            source: 'test.deadBackendMixed.getDatabaseClient',
-          });
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
           querySpy = spyOnQuery(client).mockImplementation(() => {
             const terminationErr = Object.assign(
               new Error('terminating connection due to idle-in-transaction timeout'),
@@ -1095,38 +1065,19 @@ describe('FHIR Repo Transactions', () => {
   });
 
   test('withStatementTimeout pins connection and discards it after callback', async () => {
-    let escapedClient: PoolClient | undefined;
+    let escapedClient: PgQueryable | undefined;
     await repo.withStatementTimeout({ timeoutMs: 0 }, async () => {
-      const client = repo.getDatabaseClient({
-        mode: DatabaseMode.WRITER,
-        operation: 'write',
-        resourceTypes: [],
-        source: 'test.withStatementTimeout.pins',
-      }) as PoolClient;
+      const client = repo.getDatabaseClient(repoAccess.sqlWriteConfig());
       escapedClient = client;
       await repo.withTransaction(
         async (txRepo) => {
-          expect(
-            txRepo.getDatabaseClient({
-              mode: DatabaseMode.WRITER,
-              operation: 'write',
-              resourceTypes: [],
-              source: 'test.withStatementTimeout.pins',
-            })
-          ).toBe(client);
+          expect(txRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toBe(client);
         },
         { resourceTypes: [], source: 'test.withStatementTimeout.pins' }
       );
     });
     assert(escapedClient);
-    expect(
-      repo.getDatabaseClient({
-        mode: DatabaseMode.WRITER,
-        operation: 'write',
-        resourceTypes: [],
-        source: 'test.withStatementTimeout.pins',
-      })
-    ).not.toBe(escapedClient);
+    expect(repo.getDatabaseClient(repoAccess.sqlWriteConfig())).not.toBe(escapedClient);
   });
 
   test('withStatementTimeout rejects on borrowed repository connections but succeeds within transactions', async () => {
@@ -1315,69 +1266,22 @@ describe('FHIR Repo Transactions', () => {
         // disposing a derived transaction repo does not dispose the main txnRepo
         const derivedTxnRepo = txnRepo.withOverrideConfig({ extendedMode: false });
         derivedTxnRepo[Symbol.dispose]();
-        expect(() =>
-          derivedTxnRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: [],
-            source: 'test.transaction.getDatabaseClient',
-          })
-        ).toThrow('Already closed');
+        expect(() => derivedTxnRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
 
-        const client = txnRepo.getDatabaseClient({
-          mode: DatabaseMode.WRITER,
-          operation: 'write',
-          resourceTypes: [],
-          source: 'test.transaction.getDatabaseClient',
-        });
+        const client = txnRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
         assert(client);
 
         const systemRepo = txnRepo.getSystemRepo();
         const overrideRepo = txnRepo.withOverrideConfig({ extendedMode: false });
 
-        expect(
-          systemRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: [],
-            source: 'test.transaction.getDatabaseClient',
-          })
-        ).toBe(client);
-        expect(
-          overrideRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: [],
-            source: 'test.transaction.getDatabaseClient',
-          })
-        ).toBe(client);
+        expect(systemRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toBe(client);
+        expect(overrideRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toBe(client);
 
         // disposing the main txnRepo does not close derived repos
         txnRepo[Symbol.dispose]();
-        expect(() =>
-          txnRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: [],
-            source: 'test.transaction.getDatabaseClient',
-          })
-        ).toThrow('Already closed');
-        expect(
-          systemRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: [],
-            source: 'test.transaction.getDatabaseClient',
-          })
-        ).toBe(client);
-        expect(
-          overrideRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: [],
-            source: 'test.transaction.getDatabaseClient',
-          })
-        ).toBe(client);
+        expect(() => txnRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
+        expect(systemRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toBe(client);
+        expect(overrideRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toBe(client);
 
         escapedTxnRepo = txnRepo;
         escapedTxnSystemRepo = systemRepo;
@@ -1395,30 +1299,9 @@ describe('FHIR Repo Transactions', () => {
     const closedTxnOverrideRepo = escapedTxnOverrideRepo;
 
     // After the transaction commits, both the txnRepo and derived repos are all closed.
-    expect(() =>
-      closedTxnRepo.getDatabaseClient({
-        mode: DatabaseMode.WRITER,
-        operation: 'write',
-        resourceTypes: [],
-        source: 'test.transaction.getDatabaseClient',
-      })
-    ).toThrow('Already closed');
-    expect(() =>
-      closedTxnSystemRepo.getDatabaseClient({
-        mode: DatabaseMode.WRITER,
-        operation: 'write',
-        resourceTypes: [],
-        source: 'test.transaction.getDatabaseClient',
-      })
-    ).toThrow('Already closed');
-    expect(() =>
-      closedTxnOverrideRepo.getDatabaseClient({
-        mode: DatabaseMode.WRITER,
-        operation: 'write',
-        resourceTypes: [],
-        source: 'test.transaction.getDatabaseClient',
-      })
-    ).toThrow('Already closed');
+    expect(() => closedTxnRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
+    expect(() => closedTxnSystemRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
+    expect(() => closedTxnOverrideRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
   });
 
   test('withTransaction rejects a writer client that is not a PoolClient', async () => {
@@ -1589,12 +1472,7 @@ describe('FHIR Repo Transactions', () => {
             // The parent repo should also be blocked for ordinary repository/database operations, not
             // only for nested withTransaction calls.
             // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
-            repo.getDatabaseClient({
-              mode: DatabaseMode.WRITER,
-              operation: 'write',
-              resourceTypes: [],
-              source: 'test.transaction.getDatabaseClient',
-            });
+            repo.getDatabaseClient(repoAccess.sqlWriteConfig());
           } catch (err) {
             parentDatabaseClientError = err;
           }
@@ -1669,24 +1547,12 @@ describe('FHIR Repo Transactions', () => {
       let checked = false;
       await repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: [],
-            source: 'test.transaction.getDatabaseClient',
-          });
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
           // starting a transaction will have pinned a connection to `txRepo`.
           // so ensure that cloning after that pinning does not propagate the pinned connection
           // to the cloned repository.
-          const clonedRepo1 = txRepo.clone();
-          expect(
-            clonedRepo1.getDatabaseClient({
-              mode: DatabaseMode.WRITER,
-              operation: 'write',
-              resourceTypes: [],
-              source: 'test.transaction.getDatabaseClient',
-            })
-          ).not.toBe(client);
+          const clonedTxRepo = txRepo.clone();
+          expect(clonedTxRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).not.toBe(client);
           checked = true;
         },
         { resourceTypes: [], source: 'test.clone.noSharedConnection' }

@@ -47,6 +47,7 @@ import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationT
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
+import { repoAccess } from './repository/access-tracker';
 import type { PgQueryable } from './sql';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
@@ -1279,38 +1280,19 @@ describe('FHIR Repo', () => {
 
     async function countRows(db: PgQueryable, tableName: string, id: string): Promise<number> {
       const query = new SelectQuery(tableName).column('id').where('id', '=', id);
-      return (
-        await query.execute(
-          systemRepo.getDatabaseClient({
-            mode: DatabaseMode.READER,
-            operation: 'read',
-            resourceTypes: ['Patient'],
-            source: 'repo.test.countRows',
-          })
-        )
-      ).length;
+      return (await query.execute(systemRepo.getDatabaseClient(repoAccess.sqlRead('Patient')))).length;
     }
 
     async function expectPatientExpunged(patient: WithId<Patient>): Promise<void> {
       await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow();
-      const db = systemRepo.getDatabaseClient({
-        mode: DatabaseMode.READER,
-        operation: 'read',
-        resourceTypes: ['Patient'],
-        source: 'repo.test.countRows',
-      });
+      const db = systemRepo.getDatabaseClient(repoAccess.sqlRead('Patient'));
       expect(await countRows(db, 'Patient', patient.id)).toStrictEqual(0);
       expect(await countRows(db, 'Patient_History', patient.id)).toStrictEqual(0);
     }
 
     async function expectPatientPresent(patient: WithId<Patient>): Promise<void> {
       expect((await systemRepo.readResource('Patient', patient.id)).id).toStrictEqual(patient.id);
-      const db = systemRepo.getDatabaseClient({
-        mode: DatabaseMode.READER,
-        operation: 'read',
-        resourceTypes: ['Patient'],
-        source: 'repo.test.countRows',
-      });
+      const db = systemRepo.getDatabaseClient(repoAccess.sqlRead('Patient'));
       expect(await countRows(db, 'Patient', patient.id)).toStrictEqual(1);
       expect(await countRows(db, 'Patient_History', patient.id)).toBeGreaterThan(0);
     }
@@ -1696,12 +1678,7 @@ describe('FHIR Repo', () => {
 
   async function getProjectIdColumn(id: string): Promise<string | null> {
     const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
-    const client = systemRepo.getDatabaseClient({
-      mode: DatabaseMode.WRITER,
-      operation: 'read',
-      resourceTypes: ['User'],
-      source: 'repo.test.getProjectIdColumn',
-    });
+    const client = systemRepo.getDatabaseClient(repoAccess.sqlRead('User', { mode: DatabaseMode.WRITER }));
     return (await projectIdQuery.execute(client))[0].projectId;
   }
 
@@ -1788,12 +1765,7 @@ describe('FHIR Repo', () => {
       let finishedTransaction = false;
       await repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient({
-            mode: DatabaseMode.WRITER,
-            operation: 'write',
-            resourceTypes: ['Patient'],
-            source: 'repo.test.insertReferenceBatching.client',
-          });
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWrite('Patient'));
           const querySpy = spyOnQuery(client);
           await txRepo.createResource(patient);
           const calls = querySpy.mock.calls;
@@ -1824,12 +1796,7 @@ describe('FHIR Repo', () => {
 
       const versionQuery = new SelectQuery('Patient').column('__version').where('id', '=', patient.id);
 
-      const client = repo.getDatabaseClient({
-        mode: DatabaseMode.WRITER,
-        operation: 'write',
-        resourceTypes: ['Patient'],
-        source: 'repo.test.versionColumn',
-      });
+      const client = repo.getDatabaseClient(repoAccess.sqlWrite('Patient'));
       expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
 
       // Simulate the resource being at an older version

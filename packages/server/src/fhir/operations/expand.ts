@@ -14,9 +14,9 @@ import type {
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 import type { Repository } from '../repo';
+import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
 import {
   Column,
@@ -239,12 +239,10 @@ async function includeInExpansion(
   codeSystem: WithId<CodeSystem>,
   params: ValueSetExpandParameters
 ): Promise<void> {
-  const db = getAuthenticatedContext().repo.getDatabaseClient({
-    mode: DatabaseMode.READER,
-    operation: 'read',
-    resourceTypes: ['CodeSystem'], // used on non resource type tables derived from CodeSystem, like Coding and CodeSystem_Property
-    source: 'expand.includeInExpansion',
-  });
+  const db = getAuthenticatedContext().repo.getDatabaseClient(
+    // for non resource tables derived from CodeSystem, e.g. Coding and CodeSystem_Property
+    repoAccess.sqlRead('CodeSystem', { source: 'expand.includeInExpansion' })
+  );
   await hydrateCodeSystemProperties(db, codeSystem);
 
   const query = expansionQuery(include, codeSystem, params);

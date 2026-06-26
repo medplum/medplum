@@ -51,6 +51,7 @@ import { DatabaseMode } from '../database';
 import { clamp } from './operations/utils/parameters';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
+import { repoAccess } from './repository/access-tracker';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
@@ -341,28 +342,27 @@ async function getSearchEntries<T extends Resource>(
     builder.limit(config.fhirSearchMinLimit);
   }
 
-  const client = repo.getDatabaseClient({
-    mode: DatabaseMode.READER,
-    operation: 'configuration',
-    resourceTypes: [],
-    source: 'search.getSearchEntries.statementConfig',
-  });
-  let rows: any[];
+  let rows: { id: string; content: string; lastUpdated?: Date }[];
   try {
     if (config.fhirSearchDiscourageSeqScan) {
       // Despite the name, this doesn't truly remove the possibility of a sequential scan,
       // just massively inflates the cost of a sequential scan to the planner.
-      await client.query('SET enable_seqscan = off');
+      await repo.executeRawSql(
+        'SET enable_seqscan = off',
+        undefined,
+        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.setSeqScan' })
+      );
     }
-    rows = await repo.executeSql(builder, {
-      mode: DatabaseMode.READER,
-      operation: 'read',
-      resourceTypes: trackedResourceTypes,
+    rows = await repo.sqlRead<(typeof rows)[number]>(builder, trackedResourceTypes, {
       source: 'search.getSearchEntries',
     });
   } finally {
     if (config.fhirSearchDiscourageSeqScan) {
-      await client.query('RESET enable_seqscan');
+      await repo.executeRawSql(
+        'RESET enable_seqscan',
+        undefined,
+        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.resetSeqScan' })
+      );
     }
   }
 

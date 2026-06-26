@@ -5,7 +5,7 @@ import { allOk, append, badRequest, EMPTY, flatMapFilter, forbidden, OperationOu
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { DatabaseMode } from '../../database';
+import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
 import { InsertQuery, SelectQuery, Union } from '../sql';
 import { makeOperationDefinition } from './definitions';
@@ -122,12 +122,9 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
   await repo.withTransaction(
     async (txRepo) => {
       // `importConceptMap` operates only on ConceptMap derivative tables
-      const db = txRepo.getDatabaseClient({
-        mode: DatabaseMode.WRITER,
-        operation: 'write',
-        resourceTypes: ['ConceptMap'],
-        source: 'conceptMapImportHandler.client',
-      });
+      const db = txRepo.getDatabaseClient(
+        repoAccess.sqlWrite('ConceptMap', { source: 'conceptMapImportHandler.client' })
+      );
       await importConceptMap(db, conceptMap, params.mapping);
     },
     {

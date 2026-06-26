@@ -12,8 +12,10 @@ import type { PgQueryable, TransactionIsolationLevel } from '../sql';
 import { isPoolClient, isRetryableTransactionError, normalizeDatabaseError } from '../sql';
 import type {
   ExecuteSqlOptions,
+  NormalizedResourceTypes,
   RepositoryAccessLayer,
   RepositoryAccessOperation,
+  RepositoryAccessOptions,
   ResourceTypeInput,
   TransactionSqlOptions,
 } from './access-tracker';
@@ -228,7 +230,8 @@ export class RepositoryConnection implements Disposable {
     resourceTypes: ResourceTypeInput,
     source: string | undefined
   ): void {
-    this.accessTracker.recordResourceAccess(layer, operation, resourceTypes, source);
+    const normalizedResourceTypes = RepositoryAccessTracker.normalizeResourceTypes(resourceTypes);
+    this.accessTracker.recordResourceAccess(layer, operation, normalizedResourceTypes, source);
   }
 
   /**
@@ -909,5 +912,16 @@ export class RepositoryConnection implements Disposable {
     if (this.closed) {
       throw new Error('Already closed');
     }
+  }
+
+  static noramlizeResourceTypes(input: ResourceTypeInput): NormalizedResourceTypes {
+    return RepositoryAccessTracker.normalizeResourceTypes(input);
+  }
+
+  static normalizeOptions<T extends RepositoryAccessOptions>(opts: T): T & { resourceTypes: NormalizedResourceTypes } {
+    return {
+      ...opts,
+      resourceTypes: RepositoryAccessTracker.normalizeResourceTypes(opts.resourceTypes),
+    };
   }
 }
