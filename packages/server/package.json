@@ -114,7 +114,6 @@
     "@types/express": "5.0.6",
     "@types/json-schema": "7.0.15",
     "@types/mailparser": "3.4.6",
-    "@types/node": "22.19.21",
     "@types/node-fetch": "2.6.13",
     "@types/nodemailer": "8.0.1",
     "@types/pg": "8.20.0",
