@@ -118,6 +118,17 @@ const guardedInvocations: MethodInvocation[] = [
     invoke: (repo) => repo.getDatabaseClient(repoAccess.sqlWriteConfig()),
   },
   {
+    name: 'sqlRead',
+    kind: 'method',
+    invoke: (repo) => repo.sqlRead(new SelectQuery('Patient').column('id').limit(0), 'Patient'),
+  },
+  {
+    name: 'sqlWrite',
+    kind: 'method',
+    // not actually writing anything, just testing the guard
+    invoke: (repo) => repo.sqlWrite(new SelectQuery('Patient').column('id').limit(0), 'Patient'),
+  },
+  {
     name: 'executeSql',
     kind: 'method',
     invoke: (repo) =>

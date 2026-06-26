@@ -69,6 +69,7 @@ import type {
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
+import type { QueryResult, QueryResultRow } from 'pg';
 import type { Operation } from 'rfc6902';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project } from '../constants';
@@ -417,11 +418,11 @@ export class Repository extends FhirRepository implements Disposable {
     }
   }
 
-  async sqlRead<T = any>(
-    query: { execute(conn: PgQueryable): Promise<T[]> },
+  async sqlRead<R extends QueryResultRow = any>(
+    query: { execute(conn: PgQueryable): Promise<R[]> },
     resourceTypes: ResourceTypeInput,
     options?: { mode?: DatabaseMode; source?: string }
-  ): Promise<T[]> {
+  ): Promise<R[]> {
     return this.executeSql(query, {
       resourceTypes,
       operation: 'read',
@@ -430,11 +431,11 @@ export class Repository extends FhirRepository implements Disposable {
     });
   }
 
-  async sqlWrite<T = any>(
-    query: { execute(conn: PgQueryable): Promise<T[]> },
+  async sqlWrite<R extends QueryResultRow = any>(
+    query: { execute(conn: PgQueryable): Promise<R[]> },
     resourceTypes: ResourceTypeInput,
     options?: { source?: string }
-  ): Promise<T[]> {
+  ): Promise<R[]> {
     return this.executeSql(query, {
       resourceTypes,
       operation: 'write',
@@ -443,19 +444,28 @@ export class Repository extends FhirRepository implements Disposable {
     });
   }
 
-  async executeSql<T = any>(
-    query: { execute(conn: PgQueryable): Promise<T[]> },
+  async executeSql<R extends QueryResultRow = any>(
+    query: { execute(conn: PgQueryable): Promise<R[]> },
     options: ExecuteSqlOptions
-  ): Promise<T[]> {
+  ): Promise<R[]> {
     this.assertUsable();
     return query.execute(this.getDatabaseClient(options));
   }
 
-  async executeRawSql<T = any>(query: string, params: any[] | undefined, options: ExecuteSqlOptions): Promise<T[]> {
+  async executeRawSql<R extends QueryResultRow = any>(
+    query: string,
+    params: any[] | undefined,
+    options: ExecuteSqlOptions
+  ): Promise<R[]> {
     return this.executeSql(
       {
-        execute: async (conn) => {
-          const result = await conn.query(query, params);
+        execute: async (conn): Promise<R[]> => {
+          let result: QueryResult<R>;
+          if (params) {
+            result = await conn.query(query, params);
+          } else {
+            result = await conn.query(query);
+          }
           return result.rows;
         },
       },
@@ -2304,8 +2314,8 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * @deprecated Use {@link Repository.sqlRead}, {@link Repository.sqlWrite},
-   * {@link Repository.executeSql}, etc. to facilitate resource-type routing.
+   * @deprecated Use {@link sqlRead}, {@link sqlWrite},
+   * {@link executeSql}, etc. to facilitate resource-type routing.
    *
    * Returns a query-capable database client.
    * Use this method when you don't care if you're in a transaction or not.
