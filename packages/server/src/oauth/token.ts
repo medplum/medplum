@@ -20,9 +20,9 @@ import {
 import type { ClientApplication, Login, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
-import type { Operation } from 'rfc6902';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { createHash, randomUUID } from 'node:crypto';
+import type { Operation } from 'rfc6902';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
