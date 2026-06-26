@@ -594,6 +594,52 @@ describe('FHIR Repo', () => {
       expect(updated.meta?.author?.reference).toStrictEqual(getReferenceString(client));
     }));
 
+  test('Create Patient ignores submitted meta.deleted', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        meta: {
+          deleted: true,
+        },
+      });
+
+      expect(patient.meta?.deleted).toBeUndefined();
+
+      const searchResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
+      });
+      expect(searchResult.entry?.length).toBe(1);
+      expect((searchResult.entry?.[0]?.resource as Patient)?.name?.[0]?.family).toStrictEqual('Smith');
+    }));
+
+  test('Update Patient ignores submitted meta.deleted', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const updated = await systemRepo.updateResource<Patient>({
+        ...patient,
+        name: [{ given: ['Alice'], family: 'Jones' }],
+        meta: {
+          ...patient.meta,
+          deleted: true,
+        },
+      });
+
+      expect(updated.meta?.deleted).toBeUndefined();
+
+      const searchResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
+      });
+      expect(searchResult.entry?.length).toBe(1);
+      expect((searchResult.entry?.[0]?.resource as Patient)?.name?.[0]?.family).toStrictEqual('Jones');
+    }));
+
   test('Create Patient as ClientApplication with no author', () =>
     withTestContext(async () => {
       const { client, repo } = await createTestProject({ withClient: true, withRepo: true });

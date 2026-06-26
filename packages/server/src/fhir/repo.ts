@@ -924,6 +924,7 @@ export class Repository extends FhirRepository implements Disposable {
       lastUpdated: this.getLastUpdated(existing, validatedResource),
       author: this.getAuthor(),
       onBehalfOf: this.context.onBehalfOf,
+      deleted: undefined,
     };
 
     const result = { ...updated, meta: resultMeta };
@@ -2075,6 +2076,7 @@ export class Repository extends FhirRepository implements Disposable {
       meta.account = undefined;
       meta.accounts = undefined;
       meta.compartment = undefined;
+      meta.deleted = undefined;
     }
     return input;
   }
