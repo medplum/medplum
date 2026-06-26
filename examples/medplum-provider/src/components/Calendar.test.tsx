@@ -169,31 +169,36 @@ describe('Calendar', () => {
       expect(weekRadio).toBeInTheDocument();
       expect(dayRadio).toBeInTheDocument();
 
-      // defaults to Week view on first render
+      // defaults to Week view on first render — time grid has a "Timed" rowheader
       expect(monthRadio).toHaveProperty('checked', false);
       expect(weekRadio).toHaveProperty('checked', true);
       expect(dayRadio).toHaveProperty('checked', false);
+      expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader')).toHaveLength(7);
 
-      // Switch to month view
+      // Switch to month view — column headers become day names ("Sunday", "Monday", …)
       await userEvent.click(screen.getByText('Month'));
       expect(monthRadio).toHaveProperty('checked', true);
       expect(weekRadio).toHaveProperty('checked', false);
       expect(dayRadio).toHaveProperty('checked', false);
-      expect(screen.getByLabelText('Month View')).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Sunday' })).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader')).toHaveLength(7);
 
-      // Switch back to week view
+      // Switch back to week view — time grid returns
       await userEvent.click(screen.getByText('Week'));
       expect(monthRadio).toHaveProperty('checked', false);
       expect(weekRadio).toHaveProperty('checked', true);
       expect(dayRadio).toHaveProperty('checked', false);
-      expect(screen.queryByLabelText('Month View')).not.toBeInTheDocument();
+      expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader')).toHaveLength(7);
 
-      // Switch to day view
+      // Switch to day view — single column (one columnheader for the day), with "Timed" rowheader
       await userEvent.click(screen.getByText('Day'));
       expect(monthRadio).toHaveProperty('checked', false);
       expect(weekRadio).toHaveProperty('checked', false);
       expect(dayRadio).toHaveProperty('checked', true);
-      expect(screen.queryByLabelText('Month View')).not.toBeInTheDocument();
+      expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader')).toHaveLength(1);
     });
   });
 
@@ -231,16 +236,7 @@ describe('Calendar', () => {
       expect(screen.queryByText(/Cancelled Patient/)).not.toBeInTheDocument();
     });
 
-    test('shows status suffix for non-standard statuses', async () => {
-      const pendingAppointment = createAppointment({
-        status: 'pending',
-      });
-
-      setup({ appointments: [pendingAppointment] });
-      expect(screen.getByText(/John Doe.*\(pending\)/)).toBeInTheDocument();
-    });
-
-    test.each(['booked', 'arrived', 'fulfilled'] as const)(
+    test.each(['booked', 'arrived', 'fulfilled', 'pending'] as const)(
       'does not show status suffix for %s appointments',
       async (status) => {
         const bookedAppointment = createAppointment({ status });
@@ -251,7 +247,7 @@ describe('Calendar', () => {
       }
     );
 
-    test.each(['pending', 'waitlist', 'noshow'] as const)('shows status suffix for %s appointments', async (status) => {
+    test.each(['waitlist', 'noshow'] as const)('shows status suffix for %s appointments', async (status) => {
       const bookedAppointment = createAppointment({ status });
 
       setup({ appointments: [bookedAppointment] });
@@ -468,16 +464,6 @@ describe('Calendar', () => {
       // Switch to month view
       await userEvent.click(screen.getByText('Month'));
       expect(onRangeChange.mock.calls.length).toBeGreaterThan(initialCallCount);
-    });
-  });
-
-  describe('styling', () => {
-    test('applies custom style prop', async () => {
-      const { container } = render(
-        <Calendar slots={[]} appointments={[]} style={{ height: '500px', width: '100%' }} />
-      );
-      const calendar = container.querySelector('.rbc-calendar');
-      expect(calendar).toHaveStyle({ height: '500px', width: '100%' });
     });
   });
 });

@@ -9,7 +9,6 @@ import { ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import type { SlotInfo } from 'react-big-calendar';
 import { useNavigate, useParams } from 'react-router';
 import { Calendar } from '../../components/Calendar';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
@@ -127,7 +126,7 @@ export function SchedulePage(): JSX.Element | null {
   // When a date/time interval is selected, set the event object and open the
   // create appointment modal
   const handleSelectInterval = useCallback(
-    (slot: SlotInfo) => {
+    (slot: Range) => {
       if (!practitioner) {
         showErrorNotification("Can't create visit without associated Practitioner");
         return;
@@ -194,8 +193,6 @@ export function SchedulePage(): JSX.Element | null {
     [medplum, navigate, appointmentDetailsHandlers]
   );
 
-  const height = window.innerHeight - 60;
-
   const handleAppointmentUpdate = useCallback(
     (updated: WithId<Appointment>) => {
       setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
@@ -231,7 +228,7 @@ export function SchedulePage(): JSX.Element | null {
   const schedulingEnabled = project?.features?.includes('scheduling');
 
   return (
-    <Box pos="relative" bg="white" p="md" style={{ height }}>
+    <Box pos="relative" className={classes.page} p="md">
       <div className={classes.wrapper}>
         <Group justify="space-between">
           <Box mb="sm" w={320}>
@@ -257,7 +254,6 @@ export function SchedulePage(): JSX.Element | null {
         <div className={classes.container}>
           <div className={classes.calendar}>
             <Calendar
-              style={{ height: '100%' }}
               onSelectInterval={handleSelectInterval}
               onSelectAppointment={handleSelectAppointment}
               onSelectSlot={handleSelectSlot}
