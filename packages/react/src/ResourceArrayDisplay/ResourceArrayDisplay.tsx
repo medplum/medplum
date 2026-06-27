@@ -6,11 +6,13 @@ import { getPathDisplayName, isPopulated } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useContext, useEffect, useMemo, useState } from 'react';
+import { DEFAULT_IGNORED_EXTENSION_URLS } from '../constants';
 import { DescriptionListEntry } from '../DescriptionList/DescriptionList';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { assignValuesIntoSlices, prepareSlices } from '../ResourceArrayInput/ResourceArrayInput.utils';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { SliceDisplay } from '../SliceDisplay/SliceDisplay';
+import { getExtensionDisplayName } from '../utils/extensions';
 
 const MAX_ARRAY_SIZE = 50;
 
@@ -59,9 +61,42 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
   }
 
   let nonSliceContent: JSX.Element | undefined;
-  const showNonSliceValues = property.type[0]?.code !== 'Extension';
-  if (showNonSliceValues) {
-    const nonSliceValues = slicedValues[slices.length];
+  const nonSliceValues = slicedValues[slices.length];
+  if (property.type[0]?.code === 'Extension') {
+    // Un-sliced extensions can each have a different URL/meaning, so render one entry per
+    // extension labeled by a human-friendly name derived from its URL. Well-known noisy
+    // extensions (e.g. Synthea junk data) are suppressed via DEFAULT_IGNORED_EXTENSION_URLS.
+    const extensionEntries = nonSliceValues
+      .filter((ext) => ext?.url && !DEFAULT_IGNORED_EXTENSION_URLS.includes(ext.url))
+      .map((ext, valueIndex) => {
+        const display = (
+          <ResourcePropertyDisplay
+            path={props.path}
+            arrayElement={true}
+            property={property}
+            propertyType={propertyType}
+            value={ext}
+            ignoreMissingValues={props.ignoreMissingValues}
+            link={props.link}
+          />
+        );
+        const term = getExtensionDisplayName(ext.url);
+        if (props.includeDescriptionListEntry) {
+          return (
+            <DescriptionListEntry key={`${ext.url}-${valueIndex}`} term={term}>
+              {display}
+            </DescriptionListEntry>
+          );
+        }
+        return (
+          <Group key={`${ext.url}-${valueIndex}`} gap={4} wrap="nowrap">
+            <Text fw={500}>{term}:</Text>
+            {display}
+          </Group>
+        );
+      });
+    nonSliceContent = <>{extensionEntries}</>;
+  } else {
     const nonSliceElements = nonSliceValues.map((value, valueIndex) => (
       <div key={`${valueIndex}-${nonSliceValues.length}`}>
         <ResourcePropertyDisplay

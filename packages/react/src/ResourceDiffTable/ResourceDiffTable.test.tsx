@@ -285,4 +285,26 @@ describe('ResourceDiffTable', () => {
     expect(await screen.findByText('Replace contained[0].code.text')).toBeInTheDocument();
     expect(console.warn).toHaveBeenCalledWith('Failed to get element definition', expect.anything());
   });
+
+  test('Shows added extension value', async () => {
+    const original: Patient = {
+      resourceType: 'Patient',
+      id: '123',
+      meta: { versionId: '456' },
+      name: [{ family: 'Smith', given: ['John'] }],
+    };
+
+    const revised: Patient = {
+      ...original,
+      meta: { versionId: '457' },
+      extension: [{ url: 'http://example.com/eye-color', valueString: 'blue' }],
+    };
+
+    await act(async () => {
+      setup({ original, revised });
+    });
+
+    expect(await screen.findByText('Add extension')).toBeInTheDocument();
+    expect(screen.getByText('blue')).toBeInTheDocument();
+  });
 });

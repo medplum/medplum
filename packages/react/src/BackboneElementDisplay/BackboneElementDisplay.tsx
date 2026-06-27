@@ -78,10 +78,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
     newElementsContext,
     <DescriptionList compact={props.compact}>
       {Object.entries(elementsContext.elements).map(([key, property]) => {
-        if (EXTENSION_KEYS.includes(key) && isEmpty(property.slicing?.slices)) {
-          // an extension property without slices has no nested extensions
-          return null;
-        } else if (IGNORED_PROPERTIES.includes(key)) {
+        if (IGNORED_PROPERTIES.includes(key)) {
           return null;
         } else if (DEFAULT_IGNORED_NON_NESTED_PROPERTIES.includes(key) && property.path.split('.').length === 2) {
           return null;
