@@ -1,6 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Button, Group, JsonInput, Modal, Stack, Tabs, Text, TextInput, Title, useMantineTheme } from '@mantine/core';
+import {
+  Anchor,
+  Button,
+  Group,
+  JsonInput,
+  Modal,
+  Stack,
+  Tabs,
+  Text,
+  TextInput,
+  Title,
+  useMantineTheme,
+} from '@mantine/core';
 import type { FileWithPath } from '@mantine/dropzone';
 import { Dropzone } from '@mantine/dropzone';
 import { useDisclosure } from '@mantine/hooks';
@@ -188,7 +200,10 @@ export function BatchPage(): JSX.Element {
         });
         const valid = result.parameter?.find((p) => p.name === 'valid')?.valueBoolean;
         const error = result.parameter?.find((p) => p.name === 'error')?.valueString;
-        const warnings = result.parameter?.filter((p) => p.name === 'warning').map((p) => p.valueString).filter(Boolean);
+        const warnings = result.parameter
+          ?.filter((p) => p.name === 'warning')
+          .map((p) => p.valueString)
+          .filter(Boolean);
         if (!valid) {
           throw new Error(error || 'SMART Health Link could not be resolved.');
         }
