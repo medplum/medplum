@@ -265,11 +265,24 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const previousSaveAuditEvents = getConfig().saveAuditEvents;
       const loggerErrorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
+      const accountReference = 'Organization/' + randomUUID();
+      const { repo: compartmentRepo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          compartment: { reference: accountReference },
+          resource: [
+            { resourceType: 'Patient' },
+            { resourceType: 'AuditEvent', criteria: `AuditEvent?_compartment=${accountReference}` },
+          ],
+        },
+      });
+      const compartmentSystemRepo = compartmentRepo.getSystemRepo();
       let patient: WithId<Patient> | undefined;
 
       getConfig().saveAuditEvents = true;
       try {
-        await repo.withTransaction(
+        await compartmentRepo.withTransaction(
           async (txRepo) => {
             patient = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
             await txRepo.createResource<Patient>({ resourceType: 'Patient' });
@@ -279,11 +292,14 @@ describe('FHIR Repo Transactions', () => {
 
         await waitFor(async () => {
           assert(patient);
-          const auditEvent = await systemRepo.searchOne<AuditEvent>({
+          const auditEvent = await compartmentSystemRepo.searchOne<AuditEvent>({
             resourceType: 'AuditEvent',
             filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(patient) }],
           });
           expect(auditEvent).toBeDefined();
+          expect(auditEvent.meta?.account?.reference).toStrictEqual(accountReference);
+          expect(auditEvent.meta?.accounts).toContainEqual({ reference: accountReference });
+          expect(auditEvent.meta?.compartment).toContainEqual({ reference: accountReference });
         });
         expect(loggerErrorSpy).not.toHaveBeenCalledWith('Failed to save AuditEvent', expect.anything());
       } finally {

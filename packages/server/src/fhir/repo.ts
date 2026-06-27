@@ -2186,6 +2186,11 @@ export class Repository extends FhirRepository implements Disposable {
 
   private saveAuditEvent(auditEvent: AuditEvent): void {
     const auditRepo = getShardSystemRepo(this.shardId, undefined, { skipBackgroundJobs: true });
+    const accessPolicyAccount = this.context.accessPolicy?.compartment?.reference;
+    if (accessPolicyAccount) {
+      auditEvent.meta ??= {};
+      auditEvent.meta.account ??= { reference: accessPolicyAccount };
+    }
     auditEvent.id = auditRepo.generateId();
     auditRepo
       .updateResourceImpl(auditEvent, true)
