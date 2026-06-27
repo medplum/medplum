@@ -160,7 +160,8 @@ describe('QrCodeScanner', () => {
 
   test('stops camera stream when getUserMedia resolves after unmount', async () => {
     const stop = vi.fn();
-    let resolveGetUserMedia: (stream: { getTracks: () => { stop: ReturnType<typeof vi.fn> }[] }) => void = () => undefined;
+    let resolveGetUserMedia: (stream: { getTracks: () => { stop: ReturnType<typeof vi.fn> }[] }) => void = () =>
+      undefined;
     const getUserMedia = vi.fn(
       () =>
         new Promise<{ getTracks: () => { stop: ReturnType<typeof vi.fn> }[] }>((resolve) => {
