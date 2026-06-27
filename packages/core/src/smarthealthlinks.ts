@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { decodeBase64, encodeBase64 } from './base64';
+import { decodeBase64Url, encodeBase64Url } from './base64';
 
 export type SmartHealthLinkMode = 'manifest' | 'direct';
 
@@ -36,7 +36,7 @@ export interface SmartHealthLinkManifestFile {
 }
 
 export function encodeSmartHealthLink(payload: SmartHealthLinkPayload): string {
-  return `shlink:/${encodeBase64(JSON.stringify(payload))}`;
+  return `shlink:/${encodeBase64Url(JSON.stringify(payload))}`;
 }
 
 export function parseSmartHealthLink(input: string): SmartHealthLinkPayload {
@@ -45,7 +45,7 @@ export function parseSmartHealthLink(input: string): SmartHealthLinkPayload {
   if (!raw.startsWith('shlink:/')) {
     throw new Error('Invalid SMART Health Link URI');
   }
-  const payload = JSON.parse(decodeBase64(raw.substring('shlink:/'.length)));
+  const payload = JSON.parse(decodeBase64Url(raw.substring('shlink:/'.length)));
   if (payload?.v !== 1 || typeof payload.url !== 'string' || typeof payload.key !== 'string') {
     throw new Error('Invalid SMART Health Link payload');
   }

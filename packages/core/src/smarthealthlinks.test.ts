@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { SmartHealthLinkPayload } from './smarthealthlinks';
+import { encodeBase64, encodeBase64Url } from './base64';
 import { encodeSmartHealthLink, getSmartHealthLinkId, parseSmartHealthLink } from './smarthealthlinks';
 
 describe('SMART Health Links', () => {
@@ -16,8 +17,17 @@ describe('SMART Health Links', () => {
 
   test('encodes and parses a SMART Health Link', () => {
     const encoded = encodeSmartHealthLink(payload);
+    const encodedPayload = encoded.substring('shlink:/'.length);
 
     expect(encoded).toMatch(/^shlink:\/.+/);
+    expect(encodedPayload).toBe(encodeBase64Url(JSON.stringify(payload)));
+    expect(encodedPayload).not.toMatch(/[+/=]/);
+    expect(parseSmartHealthLink(encoded)).toStrictEqual(payload);
+  });
+
+  test('parses a legacy padded base64 SMART Health Link payload', () => {
+    const encoded = `shlink:/${encodeBase64(JSON.stringify(payload))}`;
+
     expect(parseSmartHealthLink(encoded)).toStrictEqual(payload);
   });
 

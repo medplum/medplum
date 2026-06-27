@@ -422,6 +422,7 @@ describe('SMART Health operations', () => {
     const fhirResources = JSON.parse(getStringParameter(resolveResponse.body, 'fhirResources')) as Bundle[];
     expect(fhirResources[0]?.resourceType).toBe('Bundle');
     expect(fhirResources[0]?.type).toBe('collection');
+    expect(fhirResources[0]?.entry?.every((entry) => entry.search === undefined)).toBe(true);
   });
 
   test('Rejects invalid direct SMART Health Links', async () => {
@@ -452,12 +453,8 @@ describe('SMART Health operations', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.JSON)
       .send({ mode: 'direct', exp: Math.floor(Date.now() / 1000) - 60 });
-    expect(expiredResponse.status).toBe(200);
-
-    const directUrl = new URL(getStringParameter(expiredResponse.body, 'url'));
-    const payloadResponse = await request(app).get(directUrl.pathname).query({ recipient: 'Test Recipient' });
-    expect(payloadResponse.status).toBe(400);
-    expect(payloadResponse.body.error).toContain('expired');
+    expect(expiredResponse.status).toBe(400);
+    expect(JSON.stringify(expiredResponse.body)).toContain('Expected exp to be in the future');
   });
 
   test('Returns not found when direct SMART Health Link Binary is deleted', async () => {

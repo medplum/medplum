@@ -96,6 +96,9 @@ export async function generateSmartHealthLinkHandler(req: FhirRequest): Promise<
     if (params.exp === undefined) {
       throw new OperationOutcomeError(badRequest('Expected exp for direct SMART Health Link'));
     }
+    if (params.exp <= Math.floor(Date.now() / 1000)) {
+      throw new OperationOutcomeError(badRequest('Expected exp to be in the future for direct SMART Health Link'));
+    }
     if (params.passcode) {
       throw new OperationOutcomeError(badRequest('Passcode is not supported for direct SMART Health Links'));
     }
@@ -124,7 +127,18 @@ export async function generateSmartHealthLinkHandler(req: FhirRequest): Promise<
     label: params.label,
     v: 1,
   };
-  const shlBundle: Bundle = mode === 'direct' ? { ...bundle, type: 'collection' } : bundle;
+  const shlBundle: Bundle =
+    mode === 'direct'
+      ? {
+          ...bundle,
+          type: 'collection',
+          entry: bundle.entry?.map((entry) => {
+            const result = { ...entry };
+            delete result.search;
+            return result;
+          }),
+        }
+      : bundle;
   const encryptedBundle = await encryptSmartHealthLinkFile(shlBundle, key);
   const binary = await ctx.systemRepo.createResource<Binary>({
     resourceType: 'Binary',
