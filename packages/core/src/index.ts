@@ -47,6 +47,7 @@ export * from './search/ir';
 export * from './search/match';
 export * from './search/search';
 export * from './sftp';
+export * from './smarthealthlinks';
 export * from './sql-on-fhir/eval';
 export * from './storage';
 export * from './subscriptions';

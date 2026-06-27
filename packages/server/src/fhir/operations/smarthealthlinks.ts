@@ -1,15 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type {
+  GenerateSmartHealthLinkParams,
+  ResolveSmartHealthLinkParams,
+  SmartHealthLinkManifestFile,
+  SmartHealthLinkPayload,
+} from '@medplum/core';
 import {
   allOk,
   badRequest,
   concatUrls,
   ContentType,
+  encodeSmartHealthLink,
+  getSmartHealthLinkId,
   isNotFound,
   isString,
   normalizeErrorString,
   normalizeOperationOutcome,
   OperationOutcomeError,
+  parseSmartHealthLink,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Binary, Bundle, Patient, Resource, SmartHealthLink } from '@medplum/fhirtypes';
@@ -20,6 +29,7 @@ import { base64url, compactDecrypt, CompactEncrypt } from 'jose';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import QRCode from 'qrcode';
+import { bcryptHashPassword } from '../../auth/utils';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
@@ -28,42 +38,6 @@ import { getGlobalSystemRepo } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { getPatientEverything } from './patienteverything';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-
-const SHL_CONTENT_TYPE_FHIR_JSON = 'application/fhir+json';
-const SHL_CONTENT_TYPE_JOSE = 'application/jose';
-const SHL_PASSCODE_BCRYPT_ROUNDS = 10;
-
-type SmartHealthLinkMode = 'manifest' | 'direct';
-
-interface GenerateSmartHealthLinkParams {
-  mode?: SmartHealthLinkMode;
-  _type?: string;
-  exp?: number;
-  label?: string;
-  passcode?: string;
-  includeQrCode?: boolean;
-}
-
-interface ResolveSmartHealthLinkParams {
-  shlink?: string;
-  recipient?: string;
-  passcode?: string;
-}
-
-interface SmartHealthLinkPayload {
-  url: string;
-  key: string;
-  exp?: number;
-  flag?: string;
-  label?: string;
-  v: 1;
-}
-
-interface SmartHealthLinkManifestFile {
-  contentType: string;
-  embedded: string;
-  lastUpdated?: string;
-}
 
 export const smartHealthLinkRouter = Router();
 smartHealthLinkRouter.post('/:id/manifest', smartHealthLinkManifestHandler);
@@ -154,9 +128,9 @@ export async function generateSmartHealthLinkHandler(req: FhirRequest): Promise<
   const binary = await ctx.systemRepo.createResource<Binary>({
     resourceType: 'Binary',
     meta: { project: ctx.project.id },
-    contentType: SHL_CONTENT_TYPE_JOSE,
+    contentType: ContentType.JOSE,
   });
-  await getBinaryStorage().writeBinary(binary, undefined, SHL_CONTENT_TYPE_JOSE, Readable.from(encryptedBundle));
+  await getBinaryStorage().writeBinary(binary, undefined, ContentType.JOSE, Readable.from(encryptedBundle));
   await ctx.systemRepo.createResource<SmartHealthLink>(
     {
       resourceType: 'SmartHealthLink',
@@ -169,12 +143,12 @@ export async function generateSmartHealthLinkHandler(req: FhirRequest): Promise<
       label: params.label,
       flag,
       expiresAt: params.exp !== undefined ? new Date(params.exp * 1000).toISOString() : undefined,
-      passcodeHash: params.passcode ? await hashPasscode(params.passcode) : undefined,
+      passcodeHash: params.passcode ? await bcryptHashPassword(params.passcode) : undefined,
       file: [
         {
-          contentType: SHL_CONTENT_TYPE_FHIR_JSON,
+          contentType: ContentType.FHIR_JSON,
           attachment: {
-            contentType: SHL_CONTENT_TYPE_JOSE,
+            contentType: ContentType.JOSE,
             url: `Binary/${binary.id}`,
           },
         },
@@ -264,14 +238,14 @@ export async function smartHealthLinkPayloadHandler(req: Request, res: Response)
     res.status(404).json({ error: 'SMART Health Link payload not found' });
     return;
   }
-  res.status(200).contentType(SHL_CONTENT_TYPE_JOSE).send(encrypted);
+  res.status(200).contentType(ContentType.JOSE).send(encrypted);
 }
 
 async function resolveGeneratedSmartHealthLink(
   shlink: string,
   recipient?: string,
   passcode?: string
-): Promise<{ manifest: object; fhirResources: Resource[] }> {
+): Promise<{ manifest?: Record<string, unknown>; fhirResources: Resource[] }> {
   const payload = parseSmartHealthLink(shlink);
   const id = getSmartHealthLinkId(payload.url);
   const smartHealthLink = id ? await readSmartHealthLink(id) : undefined;
@@ -283,7 +257,7 @@ async function resolveGeneratedSmartHealthLink(
     throw new Error(outcome);
   }
   if (smartHealthLink.mode === 'direct' && !recipient) {
-    throw new Error('Expected recipient query parameter');
+    throw new Error('Expected recipient parameter');
   }
   const fhirResources: Resource[] = [];
   if (smartHealthLink.mode === 'direct') {
@@ -292,15 +266,15 @@ async function resolveGeneratedSmartHealthLink(
       throw new Error('SMART Health Link payload not found');
     }
     const { contentType, plaintext } = await decryptSmartHealthLinkFile(encrypted, payload.key);
-    if (contentType === SHL_CONTENT_TYPE_FHIR_JSON) {
+    if (contentType === ContentType.FHIR_JSON) {
       fhirResources.push(JSON.parse(plaintext) as Resource);
     }
-    return { manifest: {}, fhirResources };
+    return { fhirResources };
   }
   const manifest = await buildSmartHealthLinkManifest(smartHealthLink);
   for (const file of manifest.files) {
     const { contentType, plaintext } = await decryptSmartHealthLinkFile(file.embedded, payload.key);
-    if (contentType === SHL_CONTENT_TYPE_FHIR_JSON) {
+    if (contentType === ContentType.FHIR_JSON) {
       fhirResources.push(JSON.parse(plaintext) as Resource);
     }
   }
@@ -310,7 +284,7 @@ async function resolveGeneratedSmartHealthLink(
 async function encryptSmartHealthLinkFile(bundle: Bundle, key: string): Promise<string> {
   const plaintext = Buffer.from(JSON.stringify(bundle));
   return new CompactEncrypt(plaintext)
-    .setProtectedHeader({ alg: 'dir', enc: 'A256GCM', cty: SHL_CONTENT_TYPE_FHIR_JSON })
+    .setProtectedHeader({ alg: 'dir', enc: 'A256GCM', cty: ContentType.FHIR_JSON })
     .encrypt(base64url.decode(key));
 }
 
@@ -395,30 +369,4 @@ async function readSmartHealthLinkEncryptedFile(
   );
   const stream = await getBinaryStorage().readBinary(binary);
   return readStreamToString(stream);
-}
-
-function encodeSmartHealthLink(payload: SmartHealthLinkPayload): string {
-  return `shlink:/${base64url.encode(Buffer.from(JSON.stringify(payload)))}`;
-}
-
-function parseSmartHealthLink(input: string): SmartHealthLinkPayload {
-  const fragmentIndex = input.indexOf('#shlink:/');
-  const raw = fragmentIndex === -1 ? input : input.substring(fragmentIndex + 1);
-  if (!raw.startsWith('shlink:/')) {
-    throw new Error('Invalid SMART Health Link URI');
-  }
-  const payload = JSON.parse(Buffer.from(base64url.decode(raw.substring('shlink:/'.length))).toString('utf8'));
-  if (payload?.v !== 1 || typeof payload.url !== 'string' || typeof payload.key !== 'string') {
-    throw new Error('Invalid SMART Health Link payload');
-  }
-  return payload as SmartHealthLinkPayload;
-}
-
-function getSmartHealthLinkId(manifestUrl: string): string | undefined {
-  const match = /\/shl\/([^/]+)\/(?:manifest|payload)$/.exec(manifestUrl);
-  return match?.[1];
-}
-
-function hashPasscode(passcode: string): Promise<string> {
-  return bcrypt.hash(passcode, SHL_PASSCODE_BCRYPT_ROUNDS);
 }

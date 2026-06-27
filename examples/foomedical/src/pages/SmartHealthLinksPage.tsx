@@ -14,7 +14,6 @@ import {
   Group,
   Image,
   JsonInput,
-  NumberInput,
   PasswordInput,
   SegmentedControl,
   Stack,
@@ -23,24 +22,13 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
-import type { WithId } from '@medplum/core';
-import { ContentType, normalizeErrorString } from '@medplum/core';
+import type { SmartHealthLinkMode, SmartHealthLinkPayload, WithId } from '@medplum/core';
+import { ContentType, normalizeErrorString, parseSmartHealthLink } from '@medplum/core';
 import type { Parameters, Patient, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCopy, IconLink, IconPlayerPlay, IconShieldCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-
-type SmartHealthLinkMode = 'manifest' | 'direct';
-
-interface SmartHealthLinkPayload {
-  url: string;
-  key: string;
-  exp?: number;
-  flag?: string;
-  label?: string;
-  v: number;
-}
 
 interface GeneratedSmartHealthLink {
   shlink: string;
@@ -58,7 +46,6 @@ export function SmartHealthLinksPage(): JSX.Element {
   const [label, setLabel] = useState('FooMedical patient share');
   const [recipient, setRecipient] = useState('Verona Health System');
   const [passcode, setPasscode] = useState('');
-  const [expirationMinutes, setExpirationMinutes] = useState<number | string>(15);
   const [includeQrCode, setIncludeQrCode] = useState(true);
   const [generated, setGenerated] = useState<GeneratedSmartHealthLink>();
   const [retrievalResult, setRetrievalResult] = useState('');
@@ -73,7 +60,7 @@ export function SmartHealthLinksPage(): JSX.Element {
     setResolveResult('');
     try {
       const selectedMode: SmartHealthLinkMode = mode;
-      const exp = Date.now() + Number(expirationMinutes) * 60 * 1000;
+      const exp = Date.now() + 15 * 60 * 1000; // 15 minutes
       const response = await medplum.post<Parameters>(
         medplum.fhirUrl('Patient', patient.id, '$generate-smart-health-link'),
         {
@@ -92,7 +79,7 @@ export function SmartHealthLinksPage(): JSX.Element {
         manifestUrl: getOptionalStringParameter(response, 'manifestUrl'),
         qrCodeDataUrl: getOptionalStringParameter(response, 'qrCodeDataUrl'),
         id: getStringParameter(response, 'id'),
-        payload: decodeShlinkPayload(shlink),
+        payload: parseSmartHealthLink(shlink),
       });
     } catch (err) {
       setError(normalizeErrorString(err));
@@ -221,13 +208,6 @@ export function SmartHealthLinksPage(): JSX.Element {
                   label="Recipient"
                   value={recipient}
                   onChange={(event) => setRecipient(event.currentTarget.value)}
-                />
-                <NumberInput
-                  label="Expires in minutes"
-                  value={expirationMinutes}
-                  onChange={setExpirationMinutes}
-                  min={mode === 'direct' ? 1 : undefined}
-                  allowDecimal={false}
                 />
                 <PasswordInput
                   label="Passcode"
@@ -363,10 +343,4 @@ function getBooleanParameter(parameters: Parameters, name: string): boolean {
     throw new Error(`Expected ${name} parameter`);
   }
   return value;
-}
-
-function decodeShlinkPayload(shlink: string): SmartHealthLinkPayload {
-  const encoded = shlink.substring('shlink:/'.length).replace(/-/g, '+').replace(/_/g, '/');
-  const padded = encoded.padEnd(encoded.length + ((4 - (encoded.length % 4)) % 4), '=');
-  return JSON.parse(atob(padded)) as SmartHealthLinkPayload;
 }
