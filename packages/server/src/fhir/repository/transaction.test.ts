@@ -297,9 +297,9 @@ describe('FHIR Repo Transactions', () => {
             filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(patient) }],
           });
           expect(auditEvent).toBeDefined();
-          expect(auditEvent.meta?.account?.reference).toStrictEqual(accountReference);
-          expect(auditEvent.meta?.accounts).toContainEqual({ reference: accountReference });
-          expect(auditEvent.meta?.compartment).toContainEqual({ reference: accountReference });
+          expect(auditEvent?.meta?.account?.reference).toStrictEqual(accountReference);
+          expect(auditEvent?.meta?.accounts).toContainEqual({ reference: accountReference });
+          expect(auditEvent?.meta?.compartment).toContainEqual({ reference: accountReference });
         });
         expect(loggerErrorSpy).not.toHaveBeenCalledWith('Failed to save AuditEvent', expect.anything());
       } finally {
