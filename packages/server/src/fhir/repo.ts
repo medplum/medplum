@@ -52,6 +52,7 @@ import { FhirRepository } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AuditEvent,
   Binary,
   Bundle,
   BundleEntry,
@@ -2179,9 +2180,17 @@ export class Repository extends FhirRepository implements Disposable {
     logAuditEvent(auditEvent);
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
-      auditEvent.id = this.generateId();
-      this.updateResourceImpl(auditEvent, true).catch((err) => getLogger().error('Failed to save AuditEvent', err));
+      this.saveAuditEvent(auditEvent);
     }
+  }
+
+  private saveAuditEvent(auditEvent: AuditEvent): void {
+    const auditRepo = getShardSystemRepo(this.shardId, undefined, { skipBackgroundJobs: true });
+    auditEvent.id = auditRepo.generateId();
+    auditRepo
+      .updateResourceImpl(auditEvent, true)
+      .catch((err) => getLogger().error('Failed to save AuditEvent', err))
+      .finally(() => auditRepo[Symbol.dispose]());
   }
 
   /**

@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { conflict, notFound, OperationOutcomeError, Operator, parseSearchRequest } from '@medplum/core';
+import { conflict, getReferenceString, notFound, OperationOutcomeError, Operator, parseSearchRequest } from '@medplum/core';
 import { RepositoryMode } from '@medplum/fhir-router';
-import type { Patient } from '@medplum/fhirtypes';
+import type { AuditEvent, Patient } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config/loader';
+import { getConfig, loadTestConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
-import { createTestProject, spyOnQuery, withTestContext } from '../../test.setup';
+import { createTestProject, spyOnQuery, waitFor, withTestContext } from '../../test.setup';
 import * as workersModule from '../../workers';
 import type { Repository, SystemRepository } from '../repo';
 import { getShardSystemRepo } from '../repo';
@@ -253,6 +253,37 @@ describe('FHIR Repo Transactions', () => {
       }
     })
   );
+
+  test('saved AuditEvents from transaction post-commit do not trip transaction scope guard', () =>
+    withTestContext(async () => {
+      const previousSaveAuditEvents = getConfig().saveAuditEvents;
+      const loggerErrorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
+      let patient: WithId<Patient> | undefined;
+
+      getConfig().saveAuditEvents = true;
+      try {
+        await repo.withTransaction(
+          async (txRepo) => {
+            patient = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+            await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+          },
+          { serializable: true }
+        );
+
+        assert(patient);
+        await waitFor(async () => {
+          const auditEvent = await systemRepo.searchOne<AuditEvent>({
+            resourceType: 'AuditEvent',
+            filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(patient) }],
+          });
+          expect(auditEvent).toBeDefined();
+        });
+        expect(loggerErrorSpy).not.toHaveBeenCalledWith('Failed to save AuditEvent', expect.anything());
+      } finally {
+        getConfig().saveAuditEvents = previousSaveAuditEvents;
+        loggerErrorSpy.mockRestore();
+      }
+    }));
 
   test('Nested transaction post-commit', () =>
     withTestContext(async () => {
