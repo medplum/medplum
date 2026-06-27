@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Button, Group, JsonInput, Modal, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
+import { Anchor, Button, Group, JsonInput, Modal, Stack, Tabs, Text, TextInput, Title, useMantineTheme } from '@mantine/core';
 import type { FileWithPath } from '@mantine/dropzone';
 import { Dropzone } from '@mantine/dropzone';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { convertToTransactionBundle, normalizeErrorString, stringify } from '@medplum/core';
-import type { Bundle, Parameters } from '@medplum/fhirtypes';
+import type { Bundle, Parameters, Resource } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconCheck, IconUpload, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -53,6 +53,8 @@ export function BatchPage(): JSX.Element {
   const medplum = useMedplum();
   const [value, setValue] = useState<string>(DEFAULT_VALUE);
   const [output, setOutput] = useState<Record<string, Bundle>>({});
+  const [smartHealthLink, setSmartHealthLink] = useState('');
+  const [smartScanLoading, setSmartScanLoading] = useState(false);
   const smartScanDisclosure = useDisclosure(false);
 
   const submitBatch = useCallback(
@@ -121,39 +123,106 @@ export function BatchPage(): JSX.Element {
 
   const handleQrCode = useCallback(
     async (data: string) => {
+      data = data.trim();
+      if (!data) {
+        return;
+      }
+      setSmartScanLoading(true);
+      showNotification({
+        id: 'smart-scan',
+        title: 'SMART Scan in Progress',
+        message: 'Reading SMART data...',
+        method: 'show',
+        loading: true,
+      });
       if (data.startsWith('shc:')) {
-        const result = await medplum.post<Parameters>(medplum.fhirUrl('$verify-smart-health-card'), { shcUri: data });
-        const fhirBundleStr = result.parameter?.find((p) => p.name === 'fhirBundle')?.valueString;
-        if (fhirBundleStr) {
-          try {
+        try {
+          const result = await medplum.post<Parameters>(medplum.fhirUrl('$verify-smart-health-card'), { shcUri: data });
+          const fhirBundleStr = result.parameter?.find((p) => p.name === 'fhirBundle')?.valueString;
+          if (fhirBundleStr) {
             const fhirBundle = JSON.parse(fhirBundleStr) as Bundle;
             setValue(stringify(fhirBundle, true));
-          } catch (err) {
-            console.error(err);
           }
-        }
-        const valid = result.parameter?.find((p) => p.name === 'valid')?.valueBoolean;
-        if (valid) {
-          showNotification({
-            id: 'smart-scan',
-            title: 'SMART Health Card Verified',
-            message: 'Your SMART Health Card data was successfully verified.',
-            color: 'green',
-            method: 'update',
-            icon: <IconCheck size="1rem" />,
-            withCloseButton: true,
-          });
-        } else {
+          const valid = result.parameter?.find((p) => p.name === 'valid')?.valueBoolean;
+          if (valid) {
+            showNotification({
+              id: 'smart-scan',
+              title: 'SMART Health Card Verified',
+              message: 'Your SMART Health Card data was successfully verified.',
+              color: 'green',
+              method: 'update',
+              icon: <IconCheck size="1rem" />,
+              withCloseButton: true,
+            });
+          } else {
+            showNotification({
+              id: 'smart-scan',
+              title: 'SMART Health Card Verification Failed',
+              color: 'red',
+              message: 'Your SMART Health Card data could not be verified.',
+              method: 'update',
+              icon: <IconX size="1rem" />,
+              withCloseButton: true,
+            });
+          }
+        } catch (err) {
           showNotification({
             id: 'smart-scan',
             title: 'SMART Health Card Verification Failed',
             color: 'red',
-            message: 'Your SMART Health Card data could not be verified.',
+            message: normalizeErrorString(err),
             method: 'update',
             icon: <IconX size="1rem" />,
             withCloseButton: true,
           });
+        } finally {
+          setSmartScanLoading(false);
         }
+        return;
+      }
+
+      try {
+        const result = await medplum.post<Parameters>(medplum.fhirUrl('$resolve-smart-health-link'), {
+          shlink: data,
+          recipient: 'Medplum App',
+        });
+        const valid = result.parameter?.find((p) => p.name === 'valid')?.valueBoolean;
+        const error = result.parameter?.find((p) => p.name === 'error')?.valueString;
+        const warnings = result.parameter?.filter((p) => p.name === 'warning').map((p) => p.valueString).filter(Boolean);
+        if (!valid) {
+          throw new Error(error || 'SMART Health Link could not be resolved.');
+        }
+
+        const fhirResources = JSON.parse(
+          result.parameter?.find((p) => p.name === 'fhirResources')?.valueString ?? '[]'
+        ) as Resource[];
+        const bundle = fhirResources.find((resource): resource is Bundle => resource.resourceType === 'Bundle');
+        if (!bundle) {
+          throw new Error('SMART Health Link did not contain a FHIR Bundle.');
+        }
+
+        setValue(stringify(bundle, true));
+        showNotification({
+          id: 'smart-scan',
+          title: 'SMART Health Link Resolved',
+          message: warnings?.length ? warnings.join('\n') : 'Your SMART Health Link data was successfully resolved.',
+          color: warnings?.length ? 'yellow' : 'green',
+          method: 'update',
+          icon: <IconCheck size="1rem" />,
+          withCloseButton: true,
+        });
+      } catch (err) {
+        showNotification({
+          id: 'smart-scan',
+          title: 'SMART Health Link Failed',
+          color: 'red',
+          message: normalizeErrorString(err),
+          method: 'update',
+          icon: <IconX size="1rem" />,
+          withCloseButton: true,
+        });
+      } finally {
+        setSmartScanLoading(false);
       }
     },
     [medplum]
@@ -242,12 +311,32 @@ export function BatchPage(): JSX.Element {
         </>
       )}
       <Modal title="SMART" size="xl" opened={smartScanDisclosure[0]} onClose={smartScanDisclosure[1].close}>
-        <QrCodeScanner
-          onScan={(data) => {
-            smartScanDisclosure[1].close();
-            handleQrCode(data).catch(console.error);
-          }}
-        />
+        <Stack>
+          <Group align="end">
+            <TextInput
+              label="SMART Health Link"
+              placeholder="shlink:/..."
+              value={smartHealthLink}
+              onChange={(event) => setSmartHealthLink(event.currentTarget.value)}
+              style={{ flex: 1 }}
+            />
+            <Button
+              loading={smartScanLoading}
+              onClick={() => {
+                smartScanDisclosure[1].close();
+                handleQrCode(smartHealthLink).catch(console.error);
+              }}
+            >
+              Resolve
+            </Button>
+          </Group>
+          <QrCodeScanner
+            onScan={(data) => {
+              smartScanDisclosure[1].close();
+              handleQrCode(data).catch(console.error);
+            }}
+          />
+        </Stack>
       </Modal>
     </Document>
   );
