@@ -10,8 +10,21 @@ import { fileURLToPath } from 'node:url';
 const EMPTY: readonly [] = Object.freeze([]);
 
 export function readJson(filename: string): any {
+  // console.log('CODY packages/definitions readJson', filename);
+  const startTime = Date.now();
   const filenamePath = resolve(getDataDir(), filename);
-  return JSON.parse(readFileSync(filenamePath, 'utf8'));
+  const result = JSON.parse(readFileSync(filenamePath, 'utf8'));
+  const endTime = Date.now();
+  // console.log(`CODY packages/definitions readJson ${filename} took ${endTime - startTime}ms`);
+  console.log(
+    JSON.stringify({
+      msg: 'CODY packages/definitions readJson',
+      filename,
+      time: endTime - startTime,
+      size: JSON.stringify(result).length,
+    })
+  );
+  return result;
 }
 
 export async function readJsonAsync(filename: string): Promise<any> {
