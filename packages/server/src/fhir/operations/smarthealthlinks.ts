@@ -13,6 +13,7 @@ import {
   ContentType,
   encodeSmartHealthLink,
   getSmartHealthLinkId,
+  isGone,
   isNotFound,
   isString,
   normalizeErrorString,
@@ -34,7 +35,7 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
-import { getGlobalSystemRepo } from '../repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { getPatientEverything } from './patienteverything';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -339,9 +340,14 @@ async function readSmartHealthLink(id: string | undefined): Promise<SmartHealthL
     return undefined;
   }
   try {
+    // Public SHL URLs currently contain only the SmartHealthLink id, so the first
+    // lookup must be global. If SmartHealthLink moves to per-project shards, the
+    // URL will need to carry project/shard context or SmartHealthLink must remain
+    // globally addressable.
     return await getGlobalSystemRepo().readResource<SmartHealthLink>('SmartHealthLink', id);
   } catch (err) {
-    if (isNotFound(normalizeOperationOutcome(err))) {
+    const outcome = normalizeOperationOutcome(err);
+    if (isNotFound(outcome) || isGone(outcome)) {
       return undefined;
     }
     throw err;
@@ -363,10 +369,23 @@ async function readSmartHealthLinkEncryptedFile(
   if (!binaryReference?.startsWith('Binary/')) {
     return undefined;
   }
-  const binary = await getGlobalSystemRepo().readResource<Binary>(
-    'Binary',
-    binaryReference.substring('Binary/'.length)
-  );
-  const stream = await getBinaryStorage().readBinary(binary);
-  return readStreamToString(stream);
+  const projectId = smartHealthLink.meta?.project;
+  if (!projectId) {
+    return undefined;
+  }
+  try {
+    const systemRepo = await getProjectSystemRepo(projectId);
+    const binary = await systemRepo.readResource<Binary>('Binary', binaryReference.substring('Binary/'.length));
+    if (binary.meta?.project !== projectId) {
+      return undefined;
+    }
+    const stream = await getBinaryStorage().readBinary(binary);
+    return await readStreamToString(stream);
+  } catch (err) {
+    const outcome = normalizeOperationOutcome(err);
+    if (isNotFound(outcome) || isGone(outcome)) {
+      return undefined;
+    }
+    throw err;
+  }
 }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType } from '@medplum/core';
-import type { Bundle, Parameters, Patient, SmartHealthLink } from '@medplum/fhirtypes';
+import type { Binary, Bundle, Parameters, Patient, SmartHealthLink } from '@medplum/fhirtypes';
 import express from 'express';
 import type { KeyLike } from 'jose';
 import { CompactSign, exportJWK, generateKeyPair } from 'jose';
@@ -10,7 +10,7 @@ import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { createTestProject, initTestAuth } from '../../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -459,6 +459,87 @@ describe('SMART Health operations', () => {
     expect(payloadResponse.status).toBe(400);
     expect(payloadResponse.body.error).toContain('expired');
   });
+
+  test('Returns not found when direct SMART Health Link Binary is deleted', async () => {
+    const patient = await createPatient();
+
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        mode: 'direct',
+        exp: Math.floor(Date.now() / 1000) + 300,
+      });
+    expect(generateResponse.status).toBe(200);
+
+    const directUrl = new URL(getStringParameter(generateResponse.body, 'url'));
+    const smartHealthLink = await readGeneratedSmartHealthLink(directUrl.pathname);
+    const binaryId = getBinaryId(smartHealthLink);
+    const { getGlobalSystemRepo } = await import('../repo');
+    await getGlobalSystemRepo().deleteResource('Binary', binaryId);
+
+    const payloadResponse = await request(app).get(directUrl.pathname).query({ recipient: 'Test Recipient' });
+    expect(payloadResponse.status).toBe(404);
+    expect(payloadResponse.body.error).toContain('payload not found');
+
+    const resolveResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ shlink: getStringParameter(generateResponse.body, 'shlink'), recipient: 'Test Recipient' });
+    expect(resolveResponse.status).toBe(200);
+    expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(resolveResponse.body, 'error')).toContain('payload not found');
+  });
+
+  test('Does not dereference SMART Health Link Binary from another project', async () => {
+    const patient = await createPatient();
+
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        mode: 'direct',
+        exp: Math.floor(Date.now() / 1000) + 300,
+      });
+    expect(generateResponse.status).toBe(200);
+
+    const directUrl = new URL(getStringParameter(generateResponse.body, 'url'));
+    const smartHealthLink = await readGeneratedSmartHealthLink(directUrl.pathname);
+    const otherProjectBinary = await createBinaryInAnotherProject();
+    smartHealthLink.file[0].attachment.url = `Binary/${otherProjectBinary.id}`;
+    await updateGeneratedSmartHealthLink(smartHealthLink);
+
+    const payloadResponse = await request(app).get(directUrl.pathname).query({ recipient: 'Test Recipient' });
+    expect(payloadResponse.status).toBe(404);
+    expect(payloadResponse.body.error).toContain('payload not found');
+  });
+
+  test('Omits manifest files backed by Binary resources from another project', async () => {
+    const patient = await createPatient();
+
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ passcode: '123456' });
+    expect(generateResponse.status).toBe(200);
+
+    const manifestUrl = new URL(getStringParameter(generateResponse.body, 'manifestUrl'));
+    const smartHealthLink = await readGeneratedSmartHealthLink(manifestUrl.pathname);
+    const otherProjectBinary = await createBinaryInAnotherProject();
+    smartHealthLink.file[0].attachment.url = `Binary/${otherProjectBinary.id}`;
+    await updateGeneratedSmartHealthLink(smartHealthLink);
+
+    const manifestResponse = await request(app)
+      .post(manifestUrl.pathname)
+      .set('Content-Type', ContentType.JSON)
+      .send({ passcode: '123456' });
+    expect(manifestResponse.status).toBe(200);
+    expect(manifestResponse.body.files).toStrictEqual([]);
+  });
 });
 
 async function createPatient(): Promise<Patient> {
@@ -476,6 +557,27 @@ async function readGeneratedSmartHealthLink(pathname: string): Promise<SmartHeal
   expect(id).toBeDefined();
   const { getGlobalSystemRepo } = await import('../repo');
   return getGlobalSystemRepo().readResource<SmartHealthLink>('SmartHealthLink', id as string);
+}
+
+async function updateGeneratedSmartHealthLink(smartHealthLink: SmartHealthLink): Promise<void> {
+  const { getGlobalSystemRepo } = await import('../repo');
+  await getGlobalSystemRepo().updateResource(smartHealthLink);
+}
+
+async function createBinaryInAnotherProject(): Promise<Binary> {
+  const { project } = await createTestProject();
+  const { getGlobalSystemRepo } = await import('../repo');
+  return getGlobalSystemRepo().createResource<Binary>({
+    resourceType: 'Binary',
+    meta: { project: project.id },
+    contentType: ContentType.JOSE,
+  });
+}
+
+function getBinaryId(smartHealthLink: SmartHealthLink): string {
+  const binaryReference = smartHealthLink.file[0].attachment.url;
+  expect(binaryReference).toMatch(/^Binary\//);
+  return (binaryReference as string).substring('Binary/'.length);
 }
 
 function getStringParameter(parameters: Parameters, name: string): string {
