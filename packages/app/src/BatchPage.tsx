@@ -1,15 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Button, Group, JsonInput, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
+import { Anchor, Button, Group, JsonInput, Modal, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
 import type { FileWithPath } from '@mantine/dropzone';
 import { Dropzone } from '@mantine/dropzone';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { convertToTransactionBundle, normalizeErrorString } from '@medplum/core';
-import type { Bundle } from '@medplum/fhirtypes';
+import { convertToTransactionBundle, normalizeErrorString, stringify } from '@medplum/core';
+import type { Bundle, Parameters } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconCheck, IconUpload, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
+import { QrCodeScanner } from './components/QrCodeScanner';
 
 const DEFAULT_VALUE = `{"resourceType": "Bundle"}`;
 
@@ -49,7 +51,9 @@ function showNotification({
 export function BatchPage(): JSX.Element {
   const theme = useMantineTheme();
   const medplum = useMedplum();
+  const [value, setValue] = useState<string>(DEFAULT_VALUE);
   const [output, setOutput] = useState<Record<string, Bundle>>({});
+  const smartScanDisclosure = useDisclosure(false);
 
   const submitBatch = useCallback(
     async (str: string, fileName: string) => {
@@ -115,64 +119,105 @@ export function BatchPage(): JSX.Element {
     [submitBatch]
   );
 
+  const handleQrCode = useCallback(
+    async (data: string) => {
+      if (data.startsWith('shc:')) {
+        const result = await medplum.post<Parameters>(medplum.fhirUrl('$verify-smart-health-card'), { shcUri: data });
+        const fhirBundleStr = result.parameter?.find((p) => p.name === 'fhirBundle')?.valueString;
+        if (fhirBundleStr) {
+          try {
+            const fhirBundle = JSON.parse(fhirBundleStr) as Bundle;
+            setValue(stringify(fhirBundle, true));
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        const valid = result.parameter?.find((p) => p.name === 'valid')?.valueBoolean;
+        if (valid) {
+          showNotification({
+            id: 'smart-scan',
+            title: 'SMART Health Card Verified',
+            message: 'Your SMART Health Card data was successfully verified.',
+            color: 'green',
+            method: 'update',
+            icon: <IconCheck size="1rem" />,
+            withCloseButton: true,
+          });
+        } else {
+          showNotification({
+            id: 'smart-scan',
+            title: 'SMART Health Card Verification Failed',
+            color: 'red',
+            message: 'Your SMART Health Card data could not be verified.',
+            method: 'update',
+            icon: <IconX size="1rem" />,
+            withCloseButton: true,
+          });
+        }
+      }
+    },
+    [medplum]
+  );
+
   return (
     <Document>
-      <Title>Batch Create</Title>
+      <Title order={1}>Batch Create</Title>
       <Text>
         Use this page to create, read, or update multiple resources. For more details, see{' '}
         <Anchor href="https://www.hl7.org/fhir/http.html#transaction">FHIR Batch and Transaction</Anchor>.
       </Text>
       {Object.keys(output).length === 0 && (
-        <>
-          <h3>Input</h3>
-          <Tabs defaultValue="upload">
-            <Tabs.List>
-              <Tabs.Tab value="upload">File Upload</Tabs.Tab>
-              <Tabs.Tab value="json">JSON</Tabs.Tab>
-            </Tabs.List>
+        <Tabs defaultValue="upload" mt="xl">
+          <Tabs.List>
+            <Tabs.Tab value="upload">File Upload</Tabs.Tab>
+            <Tabs.Tab value="json">JSON</Tabs.Tab>
+          </Tabs.List>
 
-            <Tabs.Panel value="upload" pt="xs">
-              <Dropzone onDrop={handleFiles} accept={['application/json']}>
-                <Group justify="center" gap="xl" style={{ minHeight: 220, pointerEvents: 'none' }}>
-                  <Dropzone.Accept>
-                    <IconUpload size={50} stroke={1.5} color={theme.colors[theme.primaryColor][5]} />
-                  </Dropzone.Accept>
-                  <Dropzone.Reject>
-                    <IconX size={50} stroke={1.5} color={theme.colors.red[5]} />
-                  </Dropzone.Reject>
-                  <Dropzone.Idle>
-                    <IconUpload size={50} stroke={1.5} />
-                  </Dropzone.Idle>
+          <Tabs.Panel value="upload" pt="xs">
+            <Dropzone onDrop={handleFiles} accept={['application/json']}>
+              <Group justify="center" gap="xl" style={{ minHeight: 220, pointerEvents: 'none' }}>
+                <Dropzone.Accept>
+                  <IconUpload size={50} stroke={1.5} color={theme.colors[theme.primaryColor][5]} />
+                </Dropzone.Accept>
+                <Dropzone.Reject>
+                  <IconX size={50} stroke={1.5} color={theme.colors.red[5]} />
+                </Dropzone.Reject>
+                <Dropzone.Idle>
+                  <IconUpload size={50} stroke={1.5} />
+                </Dropzone.Idle>
 
-                  <div>
-                    <Text size="xl" inline>
-                      Drag files here or click to select files
-                    </Text>
-                    <Text size="sm" color="dimmed" inline mt={7}>
-                      Attach as many files as you like
-                    </Text>
-                  </div>
-                </Group>
-              </Dropzone>
-            </Tabs.Panel>
+                <div>
+                  <Text size="xl" inline>
+                    Drag files here or click to select files
+                  </Text>
+                  <Text size="sm" color="dimmed" inline mt={7}>
+                    Attach as many files as you like
+                  </Text>
+                </div>
+              </Group>
+            </Dropzone>
+          </Tabs.Panel>
 
-            <Tabs.Panel value="json" pt="xs">
-              <Form onSubmit={handleJson}>
-                <JsonInput
-                  data-testid="batch-input"
-                  name="input"
-                  autosize
-                  minRows={20}
-                  defaultValue={DEFAULT_VALUE}
-                  deserialize={JSON.parse}
-                />
-                <Group justify="flex-end" mt="xl" wrap="nowrap">
-                  <Button type="submit">Submit</Button>
-                </Group>
-              </Form>
-            </Tabs.Panel>
-          </Tabs>
-        </>
+          <Tabs.Panel value="json" pt="xs">
+            <Form onSubmit={handleJson}>
+              <JsonInput
+                data-testid="batch-input"
+                name="input"
+                autosize
+                minRows={20}
+                value={value}
+                onChange={setValue}
+                deserialize={JSON.parse}
+              />
+              <Group justify="flex-end" mt="xl" wrap="nowrap">
+                <Button type="submit">Submit</Button>
+                <Button variant="default" onClick={() => smartScanDisclosure[1].open()}>
+                  SMART
+                </Button>
+              </Group>
+            </Form>
+          </Tabs.Panel>
+        </Tabs>
       )}
       {Object.keys(output).length > 0 && (
         <>
@@ -196,6 +241,14 @@ export function BatchPage(): JSX.Element {
           </Group>
         </>
       )}
+      <Modal title="SMART" size="xl" opened={smartScanDisclosure[0]} onClose={smartScanDisclosure[1].close}>
+        <QrCodeScanner
+          onScan={(data) => {
+            smartScanDisclosure[1].close();
+            handleQrCode(data).catch(console.error);
+          }}
+        />
+      </Modal>
     </Document>
   );
 }

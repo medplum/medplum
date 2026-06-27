@@ -47,6 +47,7 @@
     "@testing-library/react": "16.3.2",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
+    "jsqr": "1.4.0",
     "postcss": "8.5.15",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.7",
