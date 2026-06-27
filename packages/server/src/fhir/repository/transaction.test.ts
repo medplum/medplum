@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { conflict, getReferenceString, notFound, OperationOutcomeError, Operator, parseSearchRequest } from '@medplum/core';
+import {
+  conflict,
+  getReferenceString,
+  notFound,
+  OperationOutcomeError,
+  Operator,
+  parseSearchRequest,
+} from '@medplum/core';
 import { RepositoryMode } from '@medplum/fhir-router';
 import type { AuditEvent, Patient } from '@medplum/fhirtypes';
 import assert from 'node:assert';
@@ -270,8 +277,8 @@ describe('FHIR Repo Transactions', () => {
           { serializable: true }
         );
 
-        assert(patient);
         await waitFor(async () => {
+          assert(patient);
           const auditEvent = await systemRepo.searchOne<AuditEvent>({
             resourceType: 'AuditEvent',
             filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(patient) }],
