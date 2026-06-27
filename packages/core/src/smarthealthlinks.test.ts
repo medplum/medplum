@@ -4,9 +4,10 @@
 import {
   encodeSmartHealthLink,
   getSmartHealthLinkId,
-  parseSmartHealthLink,
-  type SmartHealthLinkPayload,
+  parseSmartHealthLink
+  
 } from './smarthealthlinks';
+import type {SmartHealthLinkPayload} from './smarthealthlinks';
 
 describe('SMART Health Links', () => {
   const payload: SmartHealthLinkPayload = {
