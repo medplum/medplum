@@ -251,6 +251,11 @@ Maintainer: Medplum <hello@medplum.com>
 Description: Medplum Server
 EOF
 
+# Mark local configuration files as conffiles so dpkg preserves local edits on upgrade.
+cat > "$DEBIAN_DIR/conffiles" <<EOF
+/etc/$SERVICE_NAME/medplum.config.json
+EOF
+
 # Create the Debian post-install script
 cat > "$DEBIAN_DIR/postinst" <<EOF
 #!/bin/sh
@@ -358,4 +363,3 @@ rm -rf "$TMP_DIR"
 
 # Done
 echo "Done"
-
