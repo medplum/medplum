@@ -8,8 +8,8 @@ export class MockSocket extends Duplex {
   destroyed = false;
   closed = false;
   handlers: Record<string, () => void> = {};
-  setEncoding = vi.fn();
-  setTimeout = vi.fn();
+  setEncoding = vi.fn() as (encoding?: BufferEncoding) => this;
+  setTimeout = vi.fn() as (timeout: number, callback?: () => void) => this;
 
   on(event: unknown, listener: unknown): this {
     this.handlers[event as string] = listener as () => void;
