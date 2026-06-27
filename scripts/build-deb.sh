@@ -66,8 +66,8 @@ echo "Medplum data files" > "$VAR_DIR/README.txt"
 # Move into the working directory
 pushd "$LIB_DIR"
 
-# Install dependencies
-npm ci --omit=dev --omit=optional --omit=peer
+# Install production dependencies
+npm ci --omit=dev --omit=peer
 
 # Move back to the original directory
 popd
@@ -243,7 +243,7 @@ Package: $SERVICE_NAME
 Version: $VERSION
 Section: base
 Priority: optional
-Architecture: all
+Architecture: amd64
 Depends: debconf, nodejs
 Recommends: nginx, postgresql-16, redis-server
 Suggests: certbot
@@ -342,8 +342,7 @@ chmod 755 "$DEBIAN_DIR/prerm"
 
 # Build the package
 # Use the standard Debian package naming convention: <name>_<version>_<architecture>.deb
-# We can use architecture "all" because we are not building a binary package
-DEB_FILENAME="${SERVICE_NAME}_${VERSION}_all.deb"
+DEB_FILENAME="${SERVICE_NAME}_${VERSION}_amd64.deb"
 dpkg-deb --build --root-owner-group -Zgzip "$TMP_DIR" "$DEB_FILENAME"
 
 # Generate the checksum
@@ -358,4 +357,3 @@ rm -rf "$TMP_DIR"
 
 # Done
 echo "Done"
-

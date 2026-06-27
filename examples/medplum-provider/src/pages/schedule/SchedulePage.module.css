@@ -1,7 +1,14 @@
+.page {
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
+  height: 100vh;
+}
+
 .wrapper {
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
+  overflow-x: auto;
 }
 
 .container {
@@ -14,6 +21,8 @@
 .calendar {
   flex-grow: 1;
   min-height: 0;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .findPane {
