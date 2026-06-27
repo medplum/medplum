@@ -98,6 +98,35 @@ describe('BatchPage', () => {
     await user.click(screen.getByRole('button', { name: 'Start over' }));
   });
 
+  test('Shows invalid JSON errors', async () => {
+    const { user } = setup();
+
+    await user.click(screen.getByRole('tab', { name: 'JSON' }));
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('batch-input'), {
+        target: {
+          value: 'not-json',
+        },
+      });
+    });
+    await user.click(screen.getByText('Submit'));
+
+    expect(screen.queryByText('Output')).not.toBeInTheDocument();
+  });
+
+  test('Ignores empty SMART input', async () => {
+    const postSpy = vi.spyOn(medplum, 'post');
+    const { user } = setup();
+
+    await user.click(screen.getByRole('tab', { name: 'JSON' }));
+    await user.click(screen.getByRole('button', { name: 'SMART' }));
+    await user.type(await screen.findByLabelText('SMART Health Link'), '   ');
+    await user.click(screen.getByRole('button', { name: 'Resolve' }));
+
+    expect(postSpy).not.toHaveBeenCalled();
+    expect(screen.getByTestId('batch-input')).toHaveValue('{"resourceType": "Bundle"}');
+  });
+
   test('Resolve SMART Health Card QR code', async () => {
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce({
       resourceType: 'Parameters',
@@ -129,6 +158,41 @@ describe('BatchPage', () => {
     });
   });
 
+  test('Shows invalid SMART Health Card QR code errors', async () => {
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'valid', valueBoolean: false }],
+    });
+    const { user } = setup();
+
+    await user.click(screen.getByRole('tab', { name: 'JSON' }));
+    await user.click(screen.getByRole('button', { name: 'SMART' }));
+    await user.click(await screen.findByRole('button', { name: 'Mock QR Scan' }));
+
+    await waitFor(() => {
+      expect(postSpy).toHaveBeenCalledWith(medplum.fhirUrl('$verify-smart-health-card'), {
+        shcUri: 'shc:/mock-health-card',
+      });
+      expect(screen.getByTestId('batch-input')).toHaveValue('{"resourceType": "Bundle"}');
+    });
+  });
+
+  test('Shows SMART Health Card verification errors', async () => {
+    const postSpy = vi.spyOn(medplum, 'post').mockRejectedValueOnce(new Error('Invalid signature'));
+    const { user } = setup();
+
+    await user.click(screen.getByRole('tab', { name: 'JSON' }));
+    await user.click(screen.getByRole('button', { name: 'SMART' }));
+    await user.click(await screen.findByRole('button', { name: 'Mock QR Scan' }));
+
+    await waitFor(() => {
+      expect(postSpy).toHaveBeenCalledWith(medplum.fhirUrl('$verify-smart-health-card'), {
+        shcUri: 'shc:/mock-health-card',
+      });
+      expect(screen.getByTestId('batch-input')).toHaveValue('{"resourceType": "Bundle"}');
+    });
+  });
+
   test('Resolve SMART Health Link from input', async () => {
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce({
       resourceType: 'Parameters',
@@ -144,6 +208,7 @@ describe('BatchPage', () => {
             },
           ]),
         },
+        { name: 'warning', valueString: 'Link warning' },
       ],
     });
     const { user } = setup();
@@ -161,6 +226,30 @@ describe('BatchPage', () => {
     });
     await waitFor(() => {
       expect(screen.getByTestId<HTMLTextAreaElement>('batch-input').value).toContain('patient-from-link');
+    });
+  });
+
+  test('Shows SMART Health Link errors when no Bundle is returned', async () => {
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'valid', valueBoolean: true },
+        {
+          name: 'fhirResources',
+          valueString: JSON.stringify([{ resourceType: 'Patient', id: 'not-a-bundle' }]),
+        },
+      ],
+    });
+    const { user } = setup();
+
+    await user.click(screen.getByRole('tab', { name: 'JSON' }));
+    await user.click(screen.getByRole('button', { name: 'SMART' }));
+    await user.type(await screen.findByLabelText('SMART Health Link'), 'shlink:/missing-bundle');
+    await user.click(screen.getByRole('button', { name: 'Resolve' }));
+
+    await waitFor(() => {
+      expect(postSpy).toHaveBeenCalled();
+      expect(screen.getByTestId('batch-input')).toHaveValue('{"resourceType": "Bundle"}');
     });
   });
 

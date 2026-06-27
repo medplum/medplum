@@ -4,13 +4,14 @@ import { Alert, Loader, Stack, Text } from '@mantine/core';
 import jsQR from 'jsqr';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { normalizeErrorString } from '../../../core/src/outcomes';
 
 const SCAN_INTERVAL_MS = 150;
 
 export interface QrCodeScannerProps {
-  onScan: (data: string) => void;
-  onError?: (error: Error) => void;
-  scanOnce?: boolean;
+  readonly onScan: (data: string) => void;
+  readonly onError?: (error: Error) => void;
+  readonly scanOnce?: boolean;
 }
 
 export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScannerProps): JSX.Element {
@@ -54,7 +55,7 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
       const error = err instanceof Error ? err : new Error(String(err));
       if (!cancelled) {
         setLoading(false);
-        setError(getCameraErrorMessage(error));
+        setError(normalizeErrorString(error));
         onErrorRef.current?.(error);
       }
     }
@@ -142,17 +143,4 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
       )}
     </Stack>
   );
-}
-
-function getCameraErrorMessage(error: Error): string {
-  if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
-    return 'Camera permission was denied.';
-  }
-  if (error.name === 'NotFoundError' || error.name === 'OverconstrainedError') {
-    return 'No camera was found.';
-  }
-  if (error.name === 'NotReadableError') {
-    return 'The camera is already in use by another application.';
-  }
-  return error.message || 'Could not start the camera.';
 }
