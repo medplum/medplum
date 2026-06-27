@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { SmartHealthLinkPayload } from './smarthealthlinks';
 import { encodeBase64, encodeBase64Url } from './base64';
+import type { SmartHealthLinkPayload } from './smarthealthlinks';
 import { encodeSmartHealthLink, getSmartHealthLinkId, parseSmartHealthLink } from './smarthealthlinks';
 
 describe('SMART Health Links', () => {
