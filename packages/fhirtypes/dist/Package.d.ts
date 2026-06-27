@@ -5,6 +5,7 @@
  * Do not edit manually.
  */
 
+import type { Attachment } from './Attachment.d.ts';
 import type { CodeableConcept } from './CodeableConcept.d.ts';
 import type { Extension } from './Extension.d.ts';
 import type { Identifier } from './Identifier.d.ts';
@@ -114,7 +115,12 @@ export interface Package {
   name: string;
 
   /**
-   * A summary, characterization or explanation of the Package.
+   * A brief summary or characterization of the Package.
+   */
+  short?: string;
+
+  /**
+   * A detailed description of the Package.
    */
   description?: string;
 
@@ -128,4 +134,34 @@ export interface Package {
    * Reference to the resource that represents the author of the package.
    */
   author: Reference<Organization | Practitioner>;
+
+  /**
+   * Image of the package.
+   */
+  icon?: Attachment;
+
+  /**
+   * Screenshots of the package.
+   */
+  screenshots?: Attachment[];
+
+  /**
+   * URL for support related to the package.
+   */
+  supportUrl?: string;
+
+  /**
+   * URL for documentation related to the package.
+   */
+  docsUrl?: string;
+
+  /**
+   * URL for terms and conditions related to the package.
+   */
+  termsUrl?: string;
+
+  /**
+   * URL for privacy policy related to the package.
+   */
+  privacyUrl?: string;
 }
