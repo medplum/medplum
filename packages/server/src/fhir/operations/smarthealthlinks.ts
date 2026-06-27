@@ -29,6 +29,7 @@ import { Router } from 'express';
 import { base64url, compactDecrypt, CompactEncrypt } from 'jose';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
+import { inflateRawSync } from 'node:zlib';
 import QRCode from 'qrcode';
 import { bcryptHashPassword } from '../../auth/utils';
 import { getConfig } from '../../config/loader';
@@ -79,6 +80,7 @@ export const resolveSmartHealthLinkOperation = makeOperationDefinition(
       { use: 'out', name: 'valid', type: 'boolean', min: 1, max: '1' },
       { use: 'out', name: 'manifest', type: 'string', min: 0, max: '1' },
       { use: 'out', name: 'fhirResources', type: 'string', min: 0, max: '1' },
+      { use: 'out', name: 'warning', type: 'string', min: 0, max: '*' },
       { use: 'out', name: 'error', type: 'string', min: 0, max: '1' },
     ],
   }
@@ -198,6 +200,7 @@ export async function resolveSmartHealthLinkHandler(req: FhirRequest): Promise<F
         valid: true,
         manifest: JSON.stringify(result.manifest),
         fhirResources: JSON.stringify(result.fhirResources),
+        warning: result.warnings,
       }),
     ];
   } catch (err) {
@@ -260,12 +263,12 @@ async function resolveGeneratedSmartHealthLink(
   shlink: string,
   recipient?: string,
   passcode?: string
-): Promise<{ manifest?: Record<string, unknown>; fhirResources: Resource[] }> {
+): Promise<{ manifest?: Record<string, unknown>; fhirResources: Resource[]; warnings?: string[] }> {
   const payload = parseSmartHealthLink(shlink);
   const id = getSmartHealthLinkId(payload.url);
   const smartHealthLink = id ? await readSmartHealthLink(id) : undefined;
   if (!smartHealthLink) {
-    throw new Error('Only Medplum-generated SMART Health Links are supported by this prototype');
+    return resolveExternalSmartHealthLink(payload, recipient);
   }
   const outcome = await validateSmartHealthLink(smartHealthLink, passcode);
   if (outcome) {
@@ -296,6 +299,38 @@ async function resolveGeneratedSmartHealthLink(
   return { manifest, fhirResources };
 }
 
+async function resolveExternalSmartHealthLink(
+  payload: SmartHealthLinkPayload,
+  recipient?: string
+): Promise<{ fhirResources: Resource[]; warnings?: string[] }> {
+  if (payload.flag && payload.flag !== 'U') {
+    throw new Error('Only direct SMART Health Links are supported');
+  }
+  if (!recipient) {
+    throw new Error('Expected recipient parameter');
+  }
+
+  const warnings: string[] = [];
+  if (payload.exp !== undefined && payload.exp <= Math.floor(Date.now() / 1000)) {
+    warnings.push('SMART Health Link is expired. Content was still available and decrypted.');
+  }
+
+  const url = new URL(payload.url);
+  url.searchParams.set('recipient', recipient);
+  const response = await fetch(url);
+  const body = await response.text();
+  if (!response.ok) {
+    throw new Error(`SMART Health Link payload request failed with HTTP ${response.status}: ${body}`);
+  }
+
+  const { contentType, plaintext } = await decryptSmartHealthLinkFile(body, payload.key);
+  if (contentType !== ContentType.FHIR_JSON) {
+    throw new Error(`Unsupported SMART Health Link content type: ${contentType || 'unknown'}`);
+  }
+
+  return { fhirResources: [JSON.parse(plaintext) as Resource], warnings };
+}
+
 async function encryptSmartHealthLinkFile(bundle: Bundle, key: string): Promise<string> {
   const plaintext = Buffer.from(JSON.stringify(bundle));
   return new CompactEncrypt(plaintext)
@@ -308,7 +343,8 @@ async function decryptSmartHealthLinkFile(
   key: string
 ): Promise<{ contentType: string | undefined; plaintext: string }> {
   const { plaintext, protectedHeader } = await compactDecrypt(jwe, base64url.decode(key));
-  return { contentType: protectedHeader.cty, plaintext: Buffer.from(plaintext).toString('utf8') };
+  const bytes = protectedHeader.zip === 'DEF' ? inflateRawSync(plaintext) : plaintext;
+  return { contentType: protectedHeader.cty, plaintext: Buffer.from(bytes).toString('utf8') };
 }
 
 async function buildSmartHealthLinkManifest(

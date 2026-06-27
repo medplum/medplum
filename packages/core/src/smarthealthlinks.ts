@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { decodeBase64Url, encodeBase64Url } from './base64';
+import { isString } from './utils';
 
 export type SmartHealthLinkMode = 'manifest' | 'direct';
 
@@ -26,7 +27,7 @@ export interface SmartHealthLinkPayload {
   exp?: number;
   flag?: string;
   label?: string;
-  v: 1;
+  v?: 1;
 }
 
 export interface SmartHealthLinkManifestFile {
@@ -46,7 +47,7 @@ export function parseSmartHealthLink(input: string): SmartHealthLinkPayload {
     throw new Error('Invalid SMART Health Link URI');
   }
   const payload = JSON.parse(decodeBase64Url(raw.substring('shlink:/'.length)));
-  if (payload?.v !== 1 || typeof payload.url !== 'string' || typeof payload.key !== 'string') {
+  if (!payload || (payload.v !== undefined && payload.v !== 1) || !isString(payload.url) || !isString(payload.key)) {
     throw new Error('Invalid SMART Health Link payload');
   }
   return payload as SmartHealthLinkPayload;
