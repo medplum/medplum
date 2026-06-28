@@ -24,7 +24,7 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Binary, Bundle, Patient, Resource, SmartHealthLink } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
-import type { Request, Response } from 'express';
+import type { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { Router } from 'express';
 import { base64url, compactDecrypt, CompactEncrypt } from 'jose';
 import { randomBytes, randomUUID } from 'node:crypto';
@@ -215,7 +215,7 @@ export async function resolveSmartHealthLinkHandler(req: FhirRequest): Promise<F
   }
 }
 
-export async function smartHealthLinkManifestHandler(req: Request, res: Response): Promise<void> {
+export async function smartHealthLinkManifestHandler(req: ExpressRequest, res: ExpressResponse): Promise<void> {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const smartHealthLink = await readSmartHealthLink(id);
   if (!smartHealthLink) {
@@ -238,7 +238,7 @@ export async function smartHealthLinkManifestHandler(req: Request, res: Response
     .json(await buildSmartHealthLinkManifest(smartHealthLink));
 }
 
-export async function smartHealthLinkPayloadHandler(req: Request, res: Response): Promise<void> {
+export async function smartHealthLinkPayloadHandler(req: ExpressRequest, res: ExpressResponse): Promise<void> {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const smartHealthLink = await readSmartHealthLink(id);
   if (smartHealthLink?.mode !== 'direct') {

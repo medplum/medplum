@@ -566,7 +566,7 @@ describe('SMART Health operations', () => {
       text: async () => {
         throw new Error('Unexpected text read');
       },
-    } as Response);
+    } as unknown as Response);
     const tooLargeResponse = await request(app)
       .post('/fhir/R4/$resolve-smart-health-link')
       .set('Authorization', 'Bearer ' + accessToken)
