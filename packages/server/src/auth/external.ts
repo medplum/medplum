@@ -21,6 +21,7 @@ import { getLogger, globalLogger } from '../logger';
 import { getClientRedirectUri } from '../oauth/clients';
 import type { CodeChallengeMethod } from '../oauth/utils';
 import { getClientApplication, tryLogin } from '../oauth/utils';
+import { validateOutboundUrl } from '../util/url';
 import { getDomainConfiguration } from './method';
 
 /*
@@ -283,7 +284,8 @@ async function verifyExternalCode(
   }
 
   try {
-    const response = await fetch(idp.tokenUrl, {
+    const tokenUrl = validateOutboundUrl(idp.tokenUrl).toString();
+    const response = await fetch(tokenUrl, {
       method: 'POST',
       headers,
       body: params.toString(),
