@@ -19,7 +19,7 @@ import {
   preconditionFailed,
   stringify,
 } from '@medplum/core';
-import type { Bundle, OperationOutcome, Parameters, Reference, Resource } from '@medplum/fhirtypes';
+import type { Bundle, OperationOutcome, Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Operation } from 'rfc6902';
 import { applyPatch } from 'rfc6902';
 
@@ -35,6 +35,13 @@ export type ReadHistoryOptions = {
   offset?: number;
   limit?: number;
 };
+
+type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
+
+export interface TransactionOptions {
+  readonly resourceTypes: ResourceTypeInput;
+  readonly serializable?: boolean;
+}
 
 export const RepositoryMode = {
   READER: 'reader',
@@ -196,10 +203,12 @@ export abstract class FhirRepository {
    * Runs a callback function within a transaction.
    *
    * @param callback - The callback function to be run within a transaction.
+   * @param options - The transaction options.
+   * @returns The result of the callback function.
    */
   abstract withTransaction<TResult>(
     callback: (txRepo: this) => Promise<TResult>,
-    options?: { serializable?: boolean }
+    options: TransactionOptions
   ): Promise<TResult>;
 
   /**
@@ -281,7 +290,10 @@ export abstract class FhirRepository {
         const createdResource = await txRepo.createResource(resource, options);
         return { resource: createdResource, outcome: created };
       },
-      { serializable: true } // Requires strong transactional guarantees to ensure unique resource creation
+      {
+        resourceTypes: getSearchResourceTypes(search),
+        serializable: true,
+      } // Requires strong transactional guarantees to ensure unique resource creation
     );
   }
 
@@ -341,7 +353,7 @@ export abstract class FhirRepository {
         const updated = await txRepo.updateResource({ ...resource, id: existing.id }, options);
         return { resource: updated, outcome: allOk };
       },
-      { serializable: true }
+      { serializable: true, resourceTypes: getSearchResourceTypes(search) }
     );
   }
 
@@ -375,7 +387,7 @@ export abstract class FhirRepository {
         const resource = matches[0];
         await txRepo.deleteResource(resource.resourceType, resource.id);
       },
-      { serializable: true }
+      { serializable: true, resourceTypes: getSearchResourceTypes(search) }
     );
   }
 
@@ -396,7 +408,7 @@ export abstract class FhirRepository {
         const resource = matches[0];
         return txRepo.patchResource(resource.resourceType, resource.id, patch);
       },
-      { serializable: true }
+      { serializable: true, resourceTypes: getSearchResourceTypes(search) }
     );
   }
 }
@@ -664,3 +676,7 @@ const sortComparator = <T extends Resource>(a: T, b: T, sortRule: SortRule): num
   const bStr = JSON.stringify(evalFhirPath(expression, b));
   return aStr.localeCompare(bStr) * (sortRule.descending ? -1 : 1);
 };
+
+function getSearchResourceTypes(searchRequest: SearchRequest): ResourceTypeInput {
+  return searchRequest.types ?? [searchRequest.resourceType];
+}

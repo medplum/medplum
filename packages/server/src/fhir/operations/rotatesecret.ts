@@ -51,25 +51,31 @@ export async function rotateSecretHandler(req: FhirRequest): Promise<FhirRespons
 
   // Patch using system repo since the secret fields should not generally be user-writeable
   const systemRepo = ctx.systemRepo;
-  const clientApp = await systemRepo.withTransaction(async (txRepo) => {
-    let clientApp = await txRepo.readResource<ClientApplication>('ClientApplication', req.params.id);
-    if (params.secret && params.secret === clientApp.secret) {
-      clientApp = await txRepo.updateResource({
-        ...clientApp,
-        secret: generateSecret(32), // Generate new secret
-        retiringSecret: clientApp.secret, // Rotate existing secret to "retiring" slot
-      });
-    } else if (params.retiringSecret && params.retiringSecret === clientApp.retiringSecret) {
-      clientApp = await txRepo.updateResource({
-        ...clientApp,
-        retiringSecret: undefined, // Remove rotated secret after it's been retired
-      });
-    } else {
-      throw new OperationOutcomeError(badRequest('Provided secret does not match client'));
-    }
+  const clientApp = await systemRepo.withTransaction(
+    async (txRepo) => {
+      let clientApp = await txRepo.readResource<ClientApplication>('ClientApplication', req.params.id);
+      if (params.secret && params.secret === clientApp.secret) {
+        clientApp = await txRepo.updateResource({
+          ...clientApp,
+          secret: generateSecret(32), // Generate new secret
+          retiringSecret: clientApp.secret, // Rotate existing secret to "retiring" slot
+        });
+      } else if (params.retiringSecret && params.retiringSecret === clientApp.retiringSecret) {
+        clientApp = await txRepo.updateResource({
+          ...clientApp,
+          retiringSecret: undefined, // Remove rotated secret after it's been retired
+        });
+      } else {
+        throw new OperationOutcomeError(badRequest('Provided secret does not match client'));
+      }
 
-    return clientApp;
-  });
+      return clientApp;
+    },
+    {
+      resourceTypes: ['ClientApplication'],
+      source: 'rotateSecretHandler',
+    }
+  );
 
   return [allOk, buildOutputParameters(operation, clientApp)];
 }

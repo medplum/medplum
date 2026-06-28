@@ -58,10 +58,10 @@ import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, Repository } from './repo';
+import { repoAccess } from './repository/access-tracker';
 import type { ChainedSearchLink } from './search';
 import { clampEstimateCount, Direction, getCount, parseChainedParameter } from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
@@ -5394,7 +5394,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
   describe('discourage sequential scans', () => {
     let querySpy: MockInstance;
     beforeEach(() => {
-      querySpy = vi.spyOn(repo.getDatabaseClient(DatabaseMode.READER), 'query');
+      querySpy = vi.spyOn(repo.getDatabaseClient(repoAccess.sqlReadConfig()), 'query');
     });
 
     afterEach(() => {
@@ -5416,8 +5416,6 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringContaining('SET enable_seqscan = off'));
       expect(querySpy).toHaveBeenNthCalledWith(2, expect.stringContaining('SELECT'), expect.anything());
       expect(querySpy).toHaveBeenNthCalledWith(3, expect.stringContaining('RESET enable_seqscan'));
-
-      querySpy.mockRestore();
     });
 
     test('config.fhirSearchMinLimit', async () => {
@@ -5432,7 +5430,6 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
       expect(querySpy).toHaveBeenCalledTimes(1);
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
-      querySpy.mockClear();
     });
   });
 });
@@ -5743,7 +5740,7 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
         new SelectQuery('Patient').column('__version').where('id', '=', id);
 
       // patient1 at OLDER_VERSION, patient2 at Repository.VERSION
-      const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = systemRepo.getDatabaseClient(repoAccess.sqlWrite('Patient'));
       const OLDER_VERSION = Repository.VERSION - 1;
       await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient1.id]);
       expect((await getVersionQuery(patient1.id).execute(client))[0].__version).toStrictEqual(OLDER_VERSION);

@@ -141,7 +141,11 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
         return txRepo.conditionalCreate(userResource, searchRequest);
       },
-      { serializable: true }
+      {
+        resourceTypes: ['ProjectMembership', 'User'],
+        source: 'inviteUser.upsertUser',
+        serializable: true,
+      }
     );
     user = result;
     existingUser = !isCreated(outcome);
@@ -439,7 +443,11 @@ async function upsertProjectMembership(
         return createProjectMembership(txRepo, user, project, profile, partialMembership);
       }
     },
-    { serializable: true }
+    {
+      resourceTypes: ['ProjectMembership', profile.resourceType],
+      source: 'upsertProjectMembership',
+      serializable: true,
+    }
   );
 
   return membership;

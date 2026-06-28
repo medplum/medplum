@@ -5,6 +5,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { RepositoryMode } from '@medplum/fhir-router';
 import type { Project, Reference } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../context';
+import { DatabaseMode } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import { getCount, getSelectQueryForSearch } from '../search';
 import { SqlBuilder } from '../sql';
@@ -65,8 +66,13 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     selectQuery.explain.push('format json');
   }
 
-  const { result, countResult } = await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
-    const result = await selectQuery.execute(client);
+  const { result, countResult } = await repo.withStatementTimeout({ timeoutMs: 0 }, async () => {
+    const result = await repo.executeSql<{ 'QUERY PLAN': string[] }>(selectQuery, {
+      mode: DatabaseMode.READER,
+      operation: 'read',
+      resourceTypes: searchReq.types ?? [searchReq.resourceType],
+      source: 'dbExplainHandler',
+    });
     const countResult = params.count ? await getCount(repo, searchReq, { forceAccurate: true }) : undefined;
     return { result, countResult };
   });
