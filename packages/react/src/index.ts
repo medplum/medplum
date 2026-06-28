@@ -103,13 +103,13 @@ export { summaryResourceListSection } from './PatientSummary/SummaryResourceList
 export type { SummaryResourceListOptions } from './PatientSummary/SummaryResourceListSection';
 export * from './PatientTimeline/PatientTimeline';
 export * from './PlanDefinitionBuilder/PlanDefinitionBuilder';
+export * from './QrCodeScanner/QrCodeScanner';
 export * from './QuantityDisplay/QuantityDisplay';
 export * from './QuantityInput/QuantityInput';
 export * from './QuestionnaireBuilder/QuestionnaireBuilder';
 export * from './QuestionnaireForm/AIRealTimeQuestionnaireForm';
 export * from './QuestionnaireForm/QuestionnaireForm';
 export * from './QuestionnaireResponseDisplay/QuestionnaireResponseDisplay';
-export * from './QrCodeScanner/QrCodeScanner';
 export * from './RangeDisplay/RangeDisplay';
 export * from './RangeInput/RangeInput';
 export * from './RatioInput/RatioInput';

@@ -18,14 +18,15 @@ import {
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { ContentType, deepClone, normalizeErrorString } from '@medplum/core';
 import type { WithId } from '@medplum/core';
+import { ContentType, deepClone, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Parameters, Patient, Resource } from '@medplum/fhirtypes';
 import { Document, QrCodeScanner, useMedplum } from '@medplum/react';
 import { IconCheck, IconQrcode, IconSearch, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
+import type { SmartHealthLinkMatch, SmartHealthLinkResourceItem } from './SmartHealthLinkImport.utils';
 import {
   buildSmartHealthLinkImportBundle,
   getMatchGrade,
@@ -35,7 +36,6 @@ import {
   getSmartHealthLinkPatient,
   getSmartHealthLinkResourceItems,
 } from './SmartHealthLinkImport.utils';
-import type { SmartHealthLinkMatch, SmartHealthLinkResourceItem } from './SmartHealthLinkImport.utils';
 
 export function SmartHealthLinkImportPage(): JSX.Element {
   const medplum = useMedplum();
@@ -162,7 +162,9 @@ export function SmartHealthLinkImportPage(): JSX.Element {
     setLoading('import');
     setError(undefined);
     try {
-      const targetPatient = createNewPatient ? await medplum.createResource(preparePatientForCreate(sharedPatient)) : selectedPatient;
+      const targetPatient = createNewPatient
+        ? await medplum.createResource(preparePatientForCreate(sharedPatient))
+        : selectedPatient;
       if (!targetPatient) {
         throw new Error('Unable to determine target patient.');
       }
@@ -286,7 +288,9 @@ export function SmartHealthLinkImportPage(): JSX.Element {
           <Card withBorder radius="sm" p="md">
             <Stack gap="xs">
               <Title order={3}>Import Cart</Title>
-              <Text c="dimmed">Select an existing patient match or create a new patient to review importable resources.</Text>
+              <Text c="dimmed">
+                Select an existing patient match or create a new patient to review importable resources.
+              </Text>
             </Stack>
           </Card>
         )}
