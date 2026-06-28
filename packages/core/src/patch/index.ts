@@ -14,15 +14,16 @@
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import { Pointer } from './pointer';
-export { Pointer };
-
 import type { Diff, Operation, TestOperation, VoidableDiff } from './diff';
 import { diffAny, isDestructive } from './diff';
-import type { InvalidOperationError, MissingError, Options, TestError } from './patch';
+import type { InvalidOperationError, MissingError, PatchOptions, TestError } from './patch';
 import { apply } from './patch';
+import { Pointer } from './pointer';
 
-export type { Operation, Options, TestOperation };
+export * from './diff';
+export * from './patch';
+export * from './pointer';
+
 export type Patch = Operation[];
 
 /**
@@ -30,10 +31,10 @@ export type Patch = Operation[];
  *
  * `patch` *must* be an array of operations.
  *
- * > Operation objects MUST have exactly one "op" member, whose value
- * > indicates the operation to perform.  Its value MUST be one of "add",
- * > "remove", "replace", "move", "copy", or "test"; other values are
- * > errors.
+ *   Operation objects MUST have exactly one "op" member, whose value
+ *   indicates the operation to perform.  Its value MUST be one of "add",
+ *   "remove", "replace", "move", "copy", or "test"; other values are
+ *   errors.
  *
  * This method mutates the target object in-place.
  *
@@ -46,7 +47,7 @@ export type Patch = Operation[];
 export function applyPatch(
   object: any,
   patch: Operation[],
-  options?: Options
+  options?: PatchOptions
 ): (null | MissingError | InvalidOperationError | TestError)[] {
   return patch.map((operation) => apply(object, operation, options));
 }
