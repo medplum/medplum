@@ -284,7 +284,11 @@ async function verifyExternalCode(
   }
 
   try {
-    const tokenUrl = validateOutboundUrl(idp.tokenUrl).toString();
+    const allowInsecureExternalAuthUrl = !!getConfig().allowInsecureExternalAuthUrl;
+    const tokenUrl = validateOutboundUrl(idp.tokenUrl, {
+      allowHttp: allowInsecureExternalAuthUrl,
+      allowUnsafeHostname: allowInsecureExternalAuthUrl,
+    }).toString();
     const response = await fetch(tokenUrl, {
       method: 'POST',
       headers,

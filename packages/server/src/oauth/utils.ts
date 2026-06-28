@@ -824,7 +824,11 @@ function includeRefreshToken(request: LoginRequest, client: ClientApplication | 
 }
 
 export function normalizeUserInfoUrl(userInfoUrl: string): string {
-  return validateOutboundUrl(userInfoUrl, { allowHttp: true }).toString();
+  const allowInsecureExternalAuthUrl = !!getConfig().allowInsecureExternalAuthUrl;
+  return validateOutboundUrl(userInfoUrl, {
+    allowHttp: allowInsecureExternalAuthUrl,
+    allowUnsafeHostname: allowInsecureExternalAuthUrl,
+  }).toString();
 }
 
 /**
