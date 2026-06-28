@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { TypedValueWithPath } from '@medplum/core';
+import type { Operation, TypedValueWithPath } from '@medplum/core';
 import { allOk, badRequest, getDisplayString, isResourceType, pathToJSONPointer } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Operation } from 'rfc6902';
 import { getAuthenticatedContext } from '../../context';
 import { collectReferences } from '../references';
 

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@medplum/core';
+import type { BackgroundJobContext, BackgroundJobInteraction, Operation, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   ContentType,
@@ -37,7 +37,6 @@ import type {
 import type { Job, MinimalJob } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import { createHmac } from 'node:crypto';
-import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';

@@ -38,6 +38,7 @@ export * from './keyvalue';
 export * from './logger';
 export * from './medication-order-utils';
 export * from './outcomes';
+export * from './patch';
 export * from './pharmacy-utils';
 export * from './readablepromise';
 export * from './schema';

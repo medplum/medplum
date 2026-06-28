@@ -8,13 +8,13 @@ import {
   isGone,
   normalizeOperationOutcome,
   pathToJSONPointer,
+  Pointer,
   toTypedValue,
 } from '@medplum/core';
 import type { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { Readable } from 'node:stream';
-import { Pointer } from 'rfc6902';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getShardSystemRepo } from '../fhir/repo';
