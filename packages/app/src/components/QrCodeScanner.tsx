@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader, Stack, Text } from '@mantine/core';
+import { normalizeErrorString } from '@medplum/core';
 import jsQR from 'jsqr';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { normalizeErrorString } from '../../../core/src/outcomes';
 
 const SCAN_INTERVAL_MS = 150;
 
