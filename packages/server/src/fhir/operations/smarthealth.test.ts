@@ -563,9 +563,7 @@ describe('SMART Health operations', () => {
       ok: true,
       status: 200,
       headers: new Headers({ 'content-length': '10485761' }),
-      text: async () => {
-        throw new Error('Unexpected text read');
-      },
+      text: async () => 'Unexpected text read',
     } as unknown as Response);
     const tooLargeResponse = await request(app)
       .post('/fhir/R4/$resolve-smart-health-link')
