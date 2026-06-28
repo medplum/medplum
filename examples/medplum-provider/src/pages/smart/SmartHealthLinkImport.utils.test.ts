@@ -13,9 +13,9 @@ import type {
 } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import {
+  getSmartHealthCardFile,
   buildSmartHealthLinkImportBundle,
   getSmartHealthLinkPatient,
-  getSmartHealthLinkResourceItems,
 } from './SmartHealthLinkImport.utils';
 
 const sharedPatient: Patient = {
@@ -44,7 +44,7 @@ const observation: Observation = {
   resourceType: 'Observation',
   id: 'observation-1',
   status: 'final',
-  subject: { reference: 'urn:uuid:patient-entry' },
+  subject: { reference: 'Patient/shared-patient' },
   code: {
     coding: [{ system: 'http://loinc.org', code: '4548-4', display: 'Hemoglobin A1c' }],
   },
@@ -97,24 +97,36 @@ const bundle: Bundle = {
   resourceType: 'Bundle',
   type: 'collection',
   entry: [
-    { fullUrl: 'urn:uuid:patient-entry', resource: sharedPatient },
-    { fullUrl: 'urn:uuid:condition-entry', resource: condition },
-    { fullUrl: 'urn:uuid:observation-entry', resource: observation },
-    { fullUrl: 'urn:uuid:diagnostic-report-entry', resource: diagnosticReport },
-    { fullUrl: 'urn:uuid:immunization-entry', resource: immunization },
-    { fullUrl: 'urn:uuid:document-reference-entry', resource: documentReference },
+    { resource: sharedPatient },
+    { resource: condition },
+    { resource: observation },
+    { resource: diagnosticReport },
+    { resource: immunization },
+    { resource: documentReference },
   ],
 };
 
+const selectedKeys = new Set([
+  'Patient/shared-patient',
+  'Condition/condition-1',
+  'Observation/observation-1',
+  'DiagnosticReport/diagnostic-report-1',
+  'Immunization/immunization-1',
+  'DocumentReference/document-reference-1',
+]);
+
 describe('SmartHealthLinkImport utils', () => {
+  test('finds SMART Health Card file payloads', () => {
+    const file = { verifiableCredential: ['credential'] };
+    expect(getSmartHealthCardFile([{ resourceType: 'Patient' }, file])).toBe(file);
+  });
+
   test('finds the shared patient', () => {
     expect(getSmartHealthLinkPatient(bundle)).toBe(sharedPatient);
   });
 
   test('builds transaction bundle with patient references rewritten', () => {
-    const items = getSmartHealthLinkResourceItems(bundle);
-    const selectedKeys = new Set(items.map((item) => item.key));
-    const result = buildSmartHealthLinkImportBundle(items, selectedKeys, sharedPatient, {
+    const result = buildSmartHealthLinkImportBundle(bundle, selectedKeys, sharedPatient, {
       ...sharedPatient,
       id: 'local-patient',
     });
@@ -129,9 +141,7 @@ describe('SmartHealthLinkImport utils', () => {
   });
 
   test('adds conditional create criteria for common clinical resources', () => {
-    const items = getSmartHealthLinkResourceItems(bundle);
-    const selectedKeys = new Set(items.map((item) => item.key));
-    const result = buildSmartHealthLinkImportBundle(items, selectedKeys, sharedPatient, {
+    const result = buildSmartHealthLinkImportBundle(bundle, selectedKeys, sharedPatient, {
       ...sharedPatient,
       id: 'local-patient',
     });
@@ -151,9 +161,7 @@ describe('SmartHealthLinkImport utils', () => {
   });
 
   test('rewrites internal references between imported resources', () => {
-    const items = getSmartHealthLinkResourceItems(bundle);
-    const selectedKeys = new Set(items.map((item) => item.key));
-    const result = buildSmartHealthLinkImportBundle(items, selectedKeys, sharedPatient, {
+    const result = buildSmartHealthLinkImportBundle(bundle, selectedKeys, sharedPatient, {
       ...sharedPatient,
       id: 'local-patient',
     });
@@ -164,8 +172,7 @@ describe('SmartHealthLinkImport utils', () => {
   });
 
   test('removes inbound server metadata', () => {
-    const items = getSmartHealthLinkResourceItems(bundle);
-    const result = buildSmartHealthLinkImportBundle(items, new Set([items[1].key]), sharedPatient, {
+    const result = buildSmartHealthLinkImportBundle(bundle, new Set(['Condition/condition-1']), sharedPatient, {
       ...sharedPatient,
       id: 'local-patient',
     });

@@ -1,31 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { convertToTransactionBundle, getDisplayString } from '@medplum/core';
+import { convertToTransactionBundle, getReferenceString, isResource } from '@medplum/core';
 import type { Bundle, BundleEntry, CodeableConcept, Identifier, Patient, Resource } from '@medplum/fhirtypes';
-
-export interface SmartHealthLinkResourceItem {
-  readonly key: string;
-  readonly fullUrl?: string;
-  readonly resource: Resource;
-  readonly defaultSelected: boolean;
-}
-
-export interface SmartHealthLinkMatch {
-  readonly patient: WithId<Patient>;
-  readonly score?: number;
-  readonly grade?: string;
-}
-
-const DEFAULT_SELECTED_RESOURCE_TYPES = new Set([
-  'AllergyIntolerance',
-  'Condition',
-  'DocumentReference',
-  'Immunization',
-  'MedicationRequest',
-  'Observation',
-  'DiagnosticReport',
-]);
 
 const CONDITIONAL_CREATE_RESOURCE_TYPES = new Set([
   'AllergyIntolerance',
@@ -38,49 +15,38 @@ const CONDITIONAL_CREATE_RESOURCE_TYPES = new Set([
   'Procedure',
 ]);
 
-export function getSmartHealthLinkBundle(resources: Resource[]): Bundle | undefined {
-  return resources.find((resource): resource is Bundle => resource.resourceType === 'Bundle');
+export function getSmartHealthLinkBundle(resources: unknown[]): Bundle | undefined {
+  return resources.find((resource) => isResource<Bundle>(resource, 'Bundle'));
+}
+
+export function getSmartHealthCardFile(resources: unknown[]): { verifiableCredential: string[] } | undefined {
+  return resources.find(isSmartHealthCardFile);
 }
 
 export function getSmartHealthLinkPatient(bundle: Bundle): Patient | undefined {
-  return getSmartHealthLinkResourceItems(bundle).find((item) => item.resource.resourceType === 'Patient')?.resource as
-    | Patient
-    | undefined;
-}
-
-export function getSmartHealthLinkResourceItems(bundle: Bundle): SmartHealthLinkResourceItem[] {
-  return (bundle.entry ?? [])
-    .map((entry, index): SmartHealthLinkResourceItem | undefined => {
-      if (!entry.resource) {
-        return undefined;
-      }
-      const key = entry.fullUrl ?? `${entry.resource.resourceType}/${entry.resource.id ?? index}`;
-      return {
-        key,
-        fullUrl: entry.fullUrl,
-        resource: entry.resource,
-        defaultSelected: DEFAULT_SELECTED_RESOURCE_TYPES.has(entry.resource.resourceType),
-      };
-    })
-    .filter((item): item is SmartHealthLinkResourceItem => !!item);
+  return bundle.entry?.find((e) => isResource<Patient>(e.resource, 'Patient'))?.resource as Patient | undefined;
 }
 
 export function buildSmartHealthLinkImportBundle(
-  items: SmartHealthLinkResourceItem[],
+  bundle: Bundle,
   selectedKeys: Set<string>,
   sharedPatient: Patient,
   targetPatient: WithId<Patient>
 ): Bundle {
+  const sharedPatientRef = `Patient/${sharedPatient.id}`;
   const targetPatientRef = `Patient/${targetPatient.id}`;
-  const sharedPatientRefs = getSharedPatientReferences(items, sharedPatient);
   const selectedBundle: Bundle = {
     resourceType: 'Bundle',
     type: 'collection',
-    entry: items
-      .filter((item) => selectedKeys.has(item.key) && item.resource.resourceType !== 'Patient')
-      .map((item) => ({
-        fullUrl: item.fullUrl,
-        resource: rewriteSharedPatientReferences(item.resource, sharedPatientRefs, targetPatientRef),
+    entry: bundle.entry
+      ?.filter((entry) => {
+        const resource = entry.resource;
+        const key = resource && getReferenceString(resource);
+        return !!key && selectedKeys.has(key) && resource.resourceType !== 'Patient';
+      })
+      .map((entry) => ({
+        fullUrl: entry.fullUrl,
+        resource: rewritePatientReference(entry.resource as Resource, sharedPatientRef, targetPatientRef),
       })),
   };
   const transaction = convertToTransactionBundle(selectedBundle);
@@ -92,48 +58,15 @@ export function buildSmartHealthLinkImportBundle(
   return transaction;
 }
 
-export function getResourceSummary(resource: Resource): string {
-  const typedResource = resource as Record<string, any>;
-  const display = getDisplayString(resource);
-  const date =
-    typedResource.effectiveDateTime ??
-    typedResource.issued ??
-    typedResource.recordedDate ??
-    typedResource.onsetDateTime ??
-    typedResource.occurrenceDateTime ??
-    typedResource.authoredOn ??
-    typedResource.date;
-  const status = typedResource.clinicalStatus?.coding?.[0]?.code ?? typedResource.status;
-  return [display, date, status].filter(Boolean).join(' | ') || resource.id || resource.resourceType;
-}
-
 export function getMatchGrade(entry: BundleEntry<WithId<Patient>>): string | undefined {
   return entry.search?.extension?.find((ext) => ext.url.endsWith('/match-grade'))?.valueCode;
 }
 
-function getSharedPatientReferences(items: SmartHealthLinkResourceItem[], sharedPatient: Patient): Set<string> {
-  const sharedPatientRefs = new Set<string>();
-  for (const item of items) {
-    if (item.resource === sharedPatient && item.fullUrl) {
-      sharedPatientRefs.add(item.fullUrl);
-    }
-  }
-  if (sharedPatient.id) {
-    sharedPatientRefs.add(`Patient/${sharedPatient.id}`);
-    sharedPatientRefs.add(`resource:${sharedPatient.id}`);
-  }
-  return sharedPatientRefs;
-}
-
-function rewriteSharedPatientReferences<T extends Resource>(
-  resource: T,
-  sharedPatientRefs: Set<string>,
-  targetRef: string
-): T {
+function rewritePatientReference<T extends Resource>(resource: T, sharedPatientRef: string, targetPatientRef: string): T {
   return JSON.parse(
     JSON.stringify(resource, (key, value) => {
-      if ((key === 'reference' || key === 'url') && typeof value === 'string') {
-        return sharedPatientRefs.has(value) ? targetRef : value;
+      if (key === 'reference' && value === sharedPatientRef) {
+        return targetPatientRef;
       }
       return value;
     })
@@ -229,4 +162,11 @@ function getTokenSearchValue(input: CodeableConcept | undefined): string | undef
     return undefined;
   }
   return coding.system ? `${coding.system}|${coding.code}` : coding.code;
+}
+
+function isSmartHealthCardFile(input: unknown): input is { verifiableCredential: string[] } {
+  const verifiableCredential = (input as { verifiableCredential?: unknown } | undefined)?.verifiableCredential;
+  return (
+    Array.isArray(verifiableCredential) && verifiableCredential.some((credential) => typeof credential === 'string')
+  );
 }

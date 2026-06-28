@@ -167,7 +167,7 @@ export function App(): JSX.Element | null {
                         },
                       ]
                     : []),
-                  { icon: <IconQrcode />, label: 'Import SHL', href: '/smart-health-link' },
+                  { icon: <IconQrcode />, label: 'SMART Health Link', href: '/smart-health-link' },
                 ],
               },
             ]

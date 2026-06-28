@@ -19,21 +19,19 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
-import { ContentType, deepClone, getDisplayString, normalizeErrorString } from '@medplum/core';
+import { ContentType, deepClone, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Parameters, Patient, Resource } from '@medplum/fhirtypes';
 import { Document, QrCodeScanner, useMedplum } from '@medplum/react';
-import { IconCheck, IconQrcode, IconSearch, IconUpload } from '@tabler/icons-react';
+import { IconQrcode, IconSearch, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import type { SmartHealthLinkMatch, SmartHealthLinkResourceItem } from './SmartHealthLinkImport.utils';
 import {
   buildSmartHealthLinkImportBundle,
   getMatchGrade,
-  getResourceSummary,
+  getSmartHealthCardFile,
   getSmartHealthLinkBundle,
   getSmartHealthLinkPatient,
-  getSmartHealthLinkResourceItems,
 } from './SmartHealthLinkImport.utils';
 
 export function SmartHealthLinkImportPage(): JSX.Element {
@@ -46,20 +44,19 @@ export function SmartHealthLinkImportPage(): JSX.Element {
   const [warning, setWarning] = useState<string[]>([]);
   const [bundle, setBundle] = useState<Bundle>();
   const [sharedPatient, setSharedPatient] = useState<Patient>();
-  const [matches, setMatches] = useState<SmartHealthLinkMatch[]>([]);
+  const [matches, setMatches] = useState<{ patient: WithId<Patient>; score?: number; grade?: string }[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<WithId<Patient>>();
   const [createNewPatient, setCreateNewPatient] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-  const [importResult, setImportResult] = useState<Bundle>();
 
-  const items = useMemo(() => (bundle ? getSmartHealthLinkResourceItems(bundle) : []), [bundle]);
-  const selectedItems = items.filter((item) => selectedKeys.has(item.key) && item.resource.resourceType !== 'Patient');
+  const items = (bundle?.entry?.map((e) => e.resource).filter(Boolean) ?? []) as WithId<Resource>[];
+  const selectedItems = items.filter((i) => selectedKeys.has(getReferenceString(i)) && i.resourceType !== 'Patient');
   const recipient = medplum.getProject()?.name ?? 'Medplum Provider';
   const hasTargetPatient = createNewPatient || !!selectedPatient;
 
-  async function resolveLink(input: string): Promise<void> {
-    const normalized = normalizeSmartHealthLink(input);
-    if (!normalized) {
+  async function resolveLink(shlink: string): Promise<void> {
+    const trimmedShlink = shlink.trim();
+    if (!trimmedShlink) {
       setError('Enter a SMART Health Link.');
       return;
     }
@@ -72,11 +69,10 @@ export function SmartHealthLinkImportPage(): JSX.Element {
     setMatches([]);
     setSelectedPatient(undefined);
     setCreateNewPatient(false);
-    setImportResult(undefined);
     try {
       const result = await medplum.post<Parameters>(
         medplum.fhirUrl('$resolve-smart-health-link'),
-        { shlink: normalized, recipient },
+        { shlink: trimmedShlink, recipient },
         ContentType.JSON
       );
       const valid = result.parameter?.find((p) => p.name === 'valid')?.valueBoolean;
@@ -93,26 +89,51 @@ export function SmartHealthLinkImportPage(): JSX.Element {
 
       const resources = JSON.parse(
         result.parameter?.find((p) => p.name === 'fhirResources')?.valueString ?? '[]'
-      ) as Resource[];
-      const resolvedBundle = getSmartHealthLinkBundle(resources);
+      ) as unknown[];
+      const resolvedBundle = getSmartHealthLinkBundle(resources) ?? (await resolveSmartHealthCardFile(resources));
       if (!resolvedBundle) {
-        throw new Error('SMART Health Link did not contain a FHIR Bundle.');
+        throw new Error('SMART Health Link did not contain a FHIR Bundle or SMART Health Card file.');
       }
       const patient = getSmartHealthLinkPatient(resolvedBundle);
       if (!patient) {
         throw new Error('SMART Health Link Bundle did not contain a Patient resource.');
       }
 
-      const resourceItems = getSmartHealthLinkResourceItems(resolvedBundle);
+      const bundleResources = (resolvedBundle?.entry?.map((e) => e.resource).filter(Boolean) ??
+        []) as WithId<Resource>[];
       setBundle(resolvedBundle);
       setSharedPatient(patient);
-      setSelectedKeys(new Set(resourceItems.filter((item) => item.defaultSelected).map((item) => item.key)));
+      setSelectedKeys(new Set(bundleResources.map((e) => getReferenceString(e))));
       await matchPatient(patient);
     } catch (err) {
       setError(normalizeErrorString(err));
     } finally {
       setLoading(undefined);
     }
+  }
+
+  async function resolveSmartHealthCardFile(resources: unknown[]): Promise<Bundle | undefined> {
+    const smartHealthCardFile = getSmartHealthCardFile(resources);
+    if (!smartHealthCardFile) {
+      return undefined;
+    }
+
+    const result = await medplum.post<Parameters>(
+      medplum.fhirUrl('$verify-smart-health-card'),
+      { file: JSON.stringify(smartHealthCardFile) },
+      ContentType.JSON
+    );
+    const valid = result.parameter?.find((p) => p.name === 'valid')?.valueBoolean;
+    const error = result.parameter?.find((p) => p.name === 'error')?.valueString;
+    if (!valid) {
+      throw new Error(error || 'SMART Health Card could not be verified.');
+    }
+
+    const fhirBundleStr = result.parameter?.find((p) => p.name === 'fhirBundle')?.valueString;
+    if (!fhirBundleStr) {
+      throw new Error('SMART Health Card did not contain a FHIR Bundle.');
+    }
+    return JSON.parse(fhirBundleStr) as Bundle;
   }
 
   async function matchPatient(patient: Patient): Promise<void> {
@@ -150,7 +171,7 @@ export function SmartHealthLinkImportPage(): JSX.Element {
   }
 
   async function importSelectedResources(): Promise<void> {
-    if (!sharedPatient) {
+    if (!bundle || !sharedPatient) {
       return;
     }
     if (!createNewPatient && !selectedPatient) {
@@ -168,10 +189,11 @@ export function SmartHealthLinkImportPage(): JSX.Element {
         throw new Error('Unable to determine target patient.');
       }
 
-      const transaction = buildSmartHealthLinkImportBundle(items, selectedKeys, sharedPatient, targetPatient);
-      const result = transaction.entry?.length ? await medplum.executeBatch(transaction) : undefined;
+      const transaction = buildSmartHealthLinkImportBundle(bundle, selectedKeys, sharedPatient, targetPatient);
+      if (transaction.entry?.length) {
+        await medplum.executeBatch(transaction);
+      }
       setSelectedPatient(targetPatient);
-      setImportResult(result);
       navigate(`/Patient/${targetPatient.id}/timeline`)?.catch(console.error);
     } catch (err) {
       setError(normalizeErrorString(err));
@@ -283,17 +305,6 @@ export function SmartHealthLinkImportPage(): JSX.Element {
           </Card>
         )}
 
-        {items.length > 0 && !hasTargetPatient && (
-          <Card withBorder radius="sm" p="md">
-            <Stack gap="xs">
-              <Title order={3}>Import Cart</Title>
-              <Text c="dimmed">
-                Select an existing patient match or create a new patient to review importable resources.
-              </Text>
-            </Stack>
-          </Card>
-        )}
-
         {items.length > 0 && hasTargetPatient && (
           <Card withBorder radius="sm" p="md">
             <Stack>
@@ -301,15 +312,18 @@ export function SmartHealthLinkImportPage(): JSX.Element {
                 <div>
                   <Title order={3}>Import Cart</Title>
                   <Text c="dimmed" size="sm">
-                    {selectedItems.length} of {items.filter((item) => item.resource.resourceType !== 'Patient').length}{' '}
-                    resources selected
+                    {selectedItems.length} of {items.filter((item) => item.resourceType !== 'Patient').length} resources
+                    selected
                   </Text>
-                  <Text c={hasTargetPatient ? 'green' : 'orange'} size="sm" fw={600}>
+                  <Text c="green" size="sm" fw={600}>
                     {getTargetPatientLabel(createNewPatient, selectedPatient)}
                   </Text>
                 </div>
                 <Group>
-                  <Button variant="default" onClick={() => setSelectedKeys(new Set(items.map((item) => item.key)))}>
+                  <Button
+                    variant="default"
+                    onClick={() => setSelectedKeys(new Set(items.map((item) => getReferenceString(item))))}
+                  >
                     Select All
                   </Button>
                   <Button variant="default" onClick={() => setSelectedKeys(new Set())}>
@@ -324,22 +338,21 @@ export function SmartHealthLinkImportPage(): JSX.Element {
                       <Table.Th w={48}></Table.Th>
                       <Table.Th>Type</Table.Th>
                       <Table.Th>Summary</Table.Th>
-                      <Table.Th>Import</Table.Th>
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
                     {items.map((item) => (
                       <ResourceCartRow
-                        key={item.key}
+                        key={getReferenceString(item)}
                         item={item}
-                        checked={selectedKeys.has(item.key)}
+                        checked={selectedKeys.has(getReferenceString(item))}
                         onChange={(checked) => {
                           setSelectedKeys((prev) => {
                             const next = new Set(prev);
                             if (checked) {
-                              next.add(item.key);
+                              next.add(getReferenceString(item));
                             } else {
-                              next.delete(item.key);
+                              next.delete(getReferenceString(item));
                             }
                             return next;
                           });
@@ -363,12 +376,6 @@ export function SmartHealthLinkImportPage(): JSX.Element {
             </Stack>
           </Card>
         )}
-
-        {importResult && (
-          <Alert color="green" icon={<IconCheck size={16} />}>
-            Imported {importResult.entry?.length ?? 0} selected resources.
-          </Alert>
-        )}
       </Stack>
 
       <Modal title="Scan SMART Health Link" size="xl" opened={scannerOpened} onClose={scannerHandlers.close}>
@@ -385,53 +392,31 @@ export function SmartHealthLinkImportPage(): JSX.Element {
 }
 
 interface ResourceCartRowProps {
-  readonly item: SmartHealthLinkResourceItem;
+  readonly item: WithId<Resource>;
   readonly checked: boolean;
   readonly onChange: (checked: boolean) => void;
 }
 
 function ResourceCartRow({ item, checked, onChange }: ResourceCartRowProps): JSX.Element {
-  const isPatient = item.resource.resourceType === 'Patient';
+  const isPatient = item.resourceType === 'Patient';
   return (
     <Table.Tr>
       <Table.Td>
         <Checkbox
-          aria-label={`Select ${item.resource.resourceType}`}
+          aria-label={`Select ${item.resourceType}`}
           disabled={isPatient}
           checked={!isPatient && checked}
           onChange={(event) => onChange(event.currentTarget.checked)}
         />
       </Table.Td>
       <Table.Td>
-        <Badge variant="light">{item.resource.resourceType}</Badge>
+        <Badge variant="light">{item.resourceType}</Badge>
       </Table.Td>
       <Table.Td>
-        <Text size="sm">{getCartRowSummary(item)}</Text>
-      </Table.Td>
-      <Table.Td>
-        <Text size="sm" c="dimmed">
-          {getCartRowImportLabel(item)}
-        </Text>
+        <Text size="sm">{getDisplayString(item)}</Text>
       </Table.Td>
     </Table.Tr>
   );
-}
-
-function getCartRowSummary(item: SmartHealthLinkResourceItem): string {
-  if (item.resource.resourceType === 'Patient') {
-    return getDisplayString(item.resource);
-  }
-  return getResourceSummary(item.resource);
-}
-
-function getCartRowImportLabel(item: SmartHealthLinkResourceItem): string {
-  if (item.resource.resourceType === 'Patient') {
-    return 'Used for patient matching';
-  }
-  if (item.defaultSelected) {
-    return 'Conditional create when possible';
-  }
-  return 'Create';
 }
 
 function getTargetPatientLabel(createNewPatient: boolean, selectedPatient: WithId<Patient> | undefined): string {
@@ -442,12 +427,6 @@ function getTargetPatientLabel(createNewPatient: boolean, selectedPatient: WithI
     return `Target patient: ${getDisplayString(selectedPatient)}`;
   }
   return 'Target patient: not selected';
-}
-
-function normalizeSmartHealthLink(input: string): string {
-  const value = input.trim();
-  const index = value.indexOf('shlink:/');
-  return index >= 0 ? value.substring(index) : value;
 }
 
 function preparePatientForCreate(patient: Patient): Patient {
