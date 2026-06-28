@@ -19,7 +19,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
-import { ContentType, deepClone, normalizeErrorString } from '@medplum/core';
+import { ContentType, deepClone, getDisplayString, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Parameters, Patient, Resource } from '@medplum/fhirtypes';
 import { Document, QrCodeScanner, useMedplum } from '@medplum/react';
 import { IconCheck, IconQrcode, IconSearch, IconUpload } from '@tabler/icons-react';
@@ -30,7 +30,6 @@ import type { SmartHealthLinkMatch, SmartHealthLinkResourceItem } from './SmartH
 import {
   buildSmartHealthLinkImportBundle,
   getMatchGrade,
-  getPatientDisplay,
   getResourceSummary,
   getSmartHealthLinkBundle,
   getSmartHealthLinkPatient,
@@ -233,7 +232,7 @@ export function SmartHealthLinkImportPage(): JSX.Element {
                 <div>
                   <Title order={3}>Patient Match</Title>
                   <Text c="dimmed" size="sm">
-                    Shared patient: {getPatientDisplay(sharedPatient)}
+                    Shared patient: {getDisplayString(sharedPatient)}
                     {sharedPatient.birthDate ? `, born ${sharedPatient.birthDate}` : ''}
                   </Text>
                 </div>
@@ -246,7 +245,7 @@ export function SmartHealthLinkImportPage(): JSX.Element {
                     <Paper key={match.patient.id} withBorder p="sm">
                       <Group justify="space-between">
                         <div>
-                          <Text fw={600}>{getPatientDisplay(match.patient)}</Text>
+                          <Text fw={600}>{getDisplayString(match.patient)}</Text>
                           <Text c="dimmed" size="sm">
                             {match.patient.birthDate ? `Born ${match.patient.birthDate}` : 'No birth date'}
                             {match.grade ? ` | ${match.grade}` : ''}
@@ -420,7 +419,7 @@ function ResourceCartRow({ item, checked, onChange }: ResourceCartRowProps): JSX
 
 function getCartRowSummary(item: SmartHealthLinkResourceItem): string {
   if (item.resource.resourceType === 'Patient') {
-    return getPatientDisplay(item.resource);
+    return getDisplayString(item.resource);
   }
   return getResourceSummary(item.resource);
 }
@@ -440,7 +439,7 @@ function getTargetPatientLabel(createNewPatient: boolean, selectedPatient: WithI
     return 'Target patient: create new patient';
   }
   if (selectedPatient) {
-    return `Target patient: ${getPatientDisplay(selectedPatient)}`;
+    return `Target patient: ${getDisplayString(selectedPatient)}`;
   }
   return 'Target patient: not selected';
 }

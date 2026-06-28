@@ -1,17 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { deepClone } from '@medplum/core';
-import type {
-  Bundle,
-  BundleEntry,
-  CodeableConcept,
-  Coding,
-  HumanName,
-  Identifier,
-  Patient,
-  Resource,
-} from '@medplum/fhirtypes';
+import { convertToTransactionBundle, getDisplayString } from '@medplum/core';
+import type { Bundle, BundleEntry, CodeableConcept, Identifier, Patient, Resource } from '@medplum/fhirtypes';
 
 export interface SmartHealthLinkResourceItem {
   readonly key: string;
@@ -80,55 +71,30 @@ export function buildSmartHealthLinkImportBundle(
   sharedPatient: Patient,
   targetPatient: WithId<Patient>
 ): Bundle {
-  const referenceMap = buildReferenceMap(items, sharedPatient, targetPatient);
-  for (const item of items) {
-    if (!selectedKeys.has(item.key) || item.resource.resourceType === 'Patient') {
-      continue;
-    }
-    const fullUrl = getTransactionFullUrl(item);
-    referenceMap.set(item.key, fullUrl);
-    referenceMap.set(getResourceReference(item.resource), fullUrl);
-    if (item.fullUrl) {
-      referenceMap.set(item.fullUrl, fullUrl);
-    }
-  }
-  const entries: BundleEntry[] = [];
-
-  for (const item of items) {
-    if (!selectedKeys.has(item.key) || item.resource.resourceType === 'Patient') {
-      continue;
-    }
-
-    const resource = cleanResource(rewriteReferences(item.resource, referenceMap));
-    const fullUrl = referenceMap.get(item.key) as string;
-
-    entries.push({
-      fullUrl,
-      resource,
-      request: {
-        method: 'POST',
-        url: resource.resourceType,
-        ifNoneExist: buildIfNoneExist(resource, targetPatient),
-      },
-    });
-  }
-
-  return {
+  const targetPatientRef = `Patient/${targetPatient.id}`;
+  const sharedPatientRefs = getSharedPatientReferences(items, sharedPatient);
+  const selectedBundle: Bundle = {
     resourceType: 'Bundle',
-    type: 'transaction',
-    entry: entries,
+    type: 'collection',
+    entry: items
+      .filter((item) => selectedKeys.has(item.key) && item.resource.resourceType !== 'Patient')
+      .map((item) => ({
+        fullUrl: item.fullUrl,
+        resource: rewriteSharedPatientReferences(item.resource, sharedPatientRefs, targetPatientRef),
+      })),
   };
-}
-
-export function getPatientDisplay(patient: Patient): string {
-  const name = patient.name?.[0];
-  const formattedName = name ? formatHumanName(name) : undefined;
-  return formattedName || patient.id || 'Unnamed patient';
+  const transaction = convertToTransactionBundle(selectedBundle);
+  for (const entry of transaction.entry ?? []) {
+    if (entry.resource && entry.request) {
+      entry.request.ifNoneExist = buildIfNoneExist(entry.resource, targetPatient);
+    }
+  }
+  return transaction;
 }
 
 export function getResourceSummary(resource: Resource): string {
   const typedResource = resource as Record<string, any>;
-  const code = getCodeableConceptText(typedResource.code) ?? getCodeableConceptText(typedResource.type);
+  const display = getDisplayString(resource);
   const date =
     typedResource.effectiveDateTime ??
     typedResource.issued ??
@@ -138,69 +104,40 @@ export function getResourceSummary(resource: Resource): string {
     typedResource.authoredOn ??
     typedResource.date;
   const status = typedResource.clinicalStatus?.coding?.[0]?.code ?? typedResource.status;
-  return [code, date, status].filter(Boolean).join(' | ') || resource.id || resource.resourceType;
+  return [display, date, status].filter(Boolean).join(' | ') || resource.id || resource.resourceType;
 }
 
 export function getMatchGrade(entry: BundleEntry<WithId<Patient>>): string | undefined {
   return entry.search?.extension?.find((ext) => ext.url.endsWith('/match-grade'))?.valueCode;
 }
 
-function buildReferenceMap(
-  items: SmartHealthLinkResourceItem[],
-  sharedPatient: Patient,
-  targetPatient: WithId<Patient>
-): Map<string, string> {
-  const referenceMap = new Map<string, string>();
-  const targetRef = `Patient/${targetPatient.id}`;
-  referenceMap.set(getResourceReference(sharedPatient), targetRef);
+function getSharedPatientReferences(items: SmartHealthLinkResourceItem[], sharedPatient: Patient): Set<string> {
+  const sharedPatientRefs = new Set<string>();
   for (const item of items) {
     if (item.resource === sharedPatient && item.fullUrl) {
-      referenceMap.set(item.fullUrl, targetRef);
+      sharedPatientRefs.add(item.fullUrl);
     }
   }
   if (sharedPatient.id) {
-    referenceMap.set(`Patient/${sharedPatient.id}`, targetRef);
-    referenceMap.set(`resource:${sharedPatient.id}`, targetRef);
+    sharedPatientRefs.add(`Patient/${sharedPatient.id}`);
+    sharedPatientRefs.add(`resource:${sharedPatient.id}`);
   }
-  return referenceMap;
+  return sharedPatientRefs;
 }
 
-function rewriteReferences<T extends Resource>(resource: T, referenceMap: Map<string, string>): T {
+function rewriteSharedPatientReferences<T extends Resource>(
+  resource: T,
+  sharedPatientRefs: Set<string>,
+  targetRef: string
+): T {
   return JSON.parse(
     JSON.stringify(resource, (key, value) => {
       if ((key === 'reference' || key === 'url') && typeof value === 'string') {
-        return referenceMap.get(value) ?? value;
+        return sharedPatientRefs.has(value) ? targetRef : value;
       }
       return value;
     })
   ) as T;
-}
-
-function cleanResource<T extends Resource>(resource: T): T {
-  const result = deepClone(resource);
-  delete result.id;
-  if (result.meta) {
-    delete result.meta.author;
-    delete result.meta.compartment;
-    delete result.meta.lastUpdated;
-    delete result.meta.project;
-    delete result.meta.versionId;
-    if (Object.keys(result.meta).length === 0) {
-      delete result.meta;
-    }
-  }
-  return result;
-}
-
-function getTransactionFullUrl(item: SmartHealthLinkResourceItem): string {
-  if (item.fullUrl?.startsWith('urn:uuid:')) {
-    return item.fullUrl;
-  }
-  return `urn:uuid:${globalThis.crypto?.randomUUID?.() ?? `${item.resource.resourceType}-${Math.random()}`}`;
-}
-
-function getResourceReference(resource: Resource): string {
-  return resource.id ? `${resource.resourceType}/${resource.id}` : resource.resourceType;
 }
 
 function buildIfNoneExist(resource: Resource, targetPatient: WithId<Patient>): string | undefined {
@@ -215,12 +152,13 @@ function buildIfNoneExist(resource: Resource, targetPatient: WithId<Patient>): s
 
   const typedResource = resource as Record<string, any>;
   const patientParam = getPatientSearchParam(resource.resourceType);
-  const code = getTokenSearchValue(typedResource.code ?? typedResource.type ?? typedResource.vaccineCode);
-  if (!patientParam || !code) {
+  const tokenParam = getTokenSearchParam(resource.resourceType);
+  const token = getTokenSearchValue(typedResource.code ?? typedResource.type ?? typedResource.vaccineCode);
+  if (!patientParam || !tokenParam || !token) {
     return undefined;
   }
 
-  const params = [`${patientParam}=Patient/${targetPatient.id}`, `code=${code}`];
+  const params = [`${patientParam}=Patient/${targetPatient.id}`, `${tokenParam}=${token}`];
   const date = getResourceDate(resource);
   if (date) {
     params.push(`date=${date}`);
@@ -254,6 +192,24 @@ function getPatientSearchParam(resourceType: string): string | undefined {
   }
 }
 
+function getTokenSearchParam(resourceType: string): string | undefined {
+  switch (resourceType) {
+    case 'DocumentReference':
+      return 'type';
+    case 'Immunization':
+      return 'vaccine-code';
+    case 'AllergyIntolerance':
+    case 'Condition':
+    case 'DiagnosticReport':
+    case 'MedicationRequest':
+    case 'Observation':
+    case 'Procedure':
+      return 'code';
+    default:
+      return undefined;
+  }
+}
+
 function getResourceDate(resource: Resource): string | undefined {
   const typedResource = resource as Record<string, any>;
   const date =
@@ -273,19 +229,4 @@ function getTokenSearchValue(input: CodeableConcept | undefined): string | undef
     return undefined;
   }
   return coding.system ? `${coding.system}|${coding.code}` : coding.code;
-}
-
-function getCodeableConceptText(input: CodeableConcept | undefined): string | undefined {
-  if (!input) {
-    return undefined;
-  }
-  return input.text ?? formatCoding(input.coding?.find((c) => c.display || c.code));
-}
-
-function formatCoding(coding: Coding | undefined): string | undefined {
-  return coding?.display ?? coding?.code;
-}
-
-function formatHumanName(name: HumanName): string {
-  return [name.given?.join(' '), name.family].filter(Boolean).join(' ');
 }
