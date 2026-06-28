@@ -788,8 +788,10 @@ async function sendRestHook(
 }
 
 function validateRestHookUrl(url: string): void {
+  const allowInsecureRestHookUrl = !!getConfig().allowInsecureRestHookUrl;
   validateOutboundUrl(url, {
-    allowHttp: !!getConfig().allowInsecureRestHookUrl,
+    allowHttp: allowInsecureRestHookUrl,
+    allowUnsafeHostname: allowInsecureRestHookUrl,
   });
 }
 

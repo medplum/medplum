@@ -4,6 +4,7 @@ import ipaddr from 'ipaddr.js';
 
 export interface OutboundUrlValidationOptions {
   readonly allowHttp?: boolean;
+  readonly allowUnsafeHostname?: boolean;
 }
 
 /**
@@ -27,7 +28,7 @@ export function validateOutboundUrl(value: string | URL, options: OutboundUrlVal
     }
   }
 
-  if (isUnsafeHostname(url.hostname)) {
+  if (!options.allowUnsafeHostname && isUnsafeHostname(url.hostname)) {
     throw new Error('Invalid URL: unsafe hostname');
   }
 
@@ -63,7 +64,11 @@ export function isUnsafeIpAddress(address: string): boolean {
   if (!ipaddr.isValid(normalizedAddress)) {
     return false;
   }
-  return ipaddr.process(normalizedAddress).range() !== 'unicast';
+  const parsedAddress = ipaddr.process(normalizedAddress);
+  if (parsedAddress.kind() === 'ipv4' && parsedAddress.match(ipaddr.parse('198.18.0.0'), 15)) {
+    return true;
+  }
+  return parsedAddress.range() !== 'unicast';
 }
 
 function stripIpv6Brackets(hostname: string): string {
