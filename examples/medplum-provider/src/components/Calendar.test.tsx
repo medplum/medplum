@@ -125,7 +125,8 @@ describe('Calendar', () => {
     });
 
     test('navigates to today when clicking today button', async () => {
-      setup();
+      const onRangeChange = vi.fn();
+      setup({ onRangeChange });
 
       // First navigate away from today
       await userEvent.click(screen.getByLabelText('Previous'));
@@ -133,11 +134,10 @@ describe('Calendar', () => {
       // Then click today
       await userEvent.click(screen.getByText('Today'));
 
-      // Should be back to current month
-      const title = screen.getByRole('heading', { level: 4 }).textContent;
       const today = new Date();
-      const expectedMonth = today.toLocaleDateString('en-US', { month: 'long' });
-      expect(title).toContain(expectedMonth);
+      const range = onRangeChange.mock.lastCall?.[0];
+      expect(range.start.getTime()).toBeLessThanOrEqual(today.getTime());
+      expect(range.end.getTime()).toBeGreaterThan(today.getTime());
     });
 
     test('switches to day view and triggers range change', async () => {
