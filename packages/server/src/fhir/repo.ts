@@ -732,8 +732,8 @@ export class Repository extends FhirRepository implements Disposable {
 
       for (const row of rows) {
         const parsed = parseHistoryContent(row.content as string);
-        const isDeleted = parsed.tombstone;
-        const resource = !isDeleted ? this.removeHiddenFields(parsed.resource as T) : undefined;
+        const isDeleted = parsed.meta?.deleted;
+        const resource = !isDeleted ? this.removeHiddenFields(parsed as T) : undefined;
         const outcome: OperationOutcome = !isDeleted
           ? allOk
           : {
@@ -813,12 +813,12 @@ export class Repository extends FhirRepository implements Disposable {
 
       const parsed = parseHistoryContent(rows[0].content as string);
       // FHIR vread of a delete version returns 410 Gone with no resource body.
-      if (parsed.tombstone) {
+      if (parsed.meta?.deleted) {
         throw new OperationOutcomeError(gone);
       }
 
       const result = (await this.authorizeBinarySecurityContext(
-        this.removeHiddenFields(parsed.resource as T)
+        this.removeHiddenFields(parsed as T)
       )) as WithId<T>;
       const durationMs = Date.now() - startTime;
       this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });

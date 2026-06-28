@@ -16,7 +16,6 @@ import {
   buildDeleteHistoryContent,
   buildResourceRow,
   compareColumnValues,
-  isDeleteTombstone,
   parseHistoryContent,
 } from './row-builder';
 
@@ -448,46 +447,23 @@ describe('compareColumnValues', () => {
   });
 
   test('parseHistoryContent', () => {
-    expect(parseHistoryContent('')).toStrictEqual({ tombstone: true });
-    expect(parseHistoryContent(undefined)).toStrictEqual({ tombstone: true });
+    expect(parseHistoryContent('')).toStrictEqual({ meta: { deleted: true } });
+    expect(parseHistoryContent(undefined)).toStrictEqual({ meta: { deleted: true } });
 
     const tombstone = {
       resourceType: 'Patient',
       id: randomUUID(),
       meta: { deleted: true },
     };
-    expect(parseHistoryContent(JSON.stringify(tombstone))).toStrictEqual({ tombstone: true });
+    expect(parseHistoryContent(JSON.stringify(tombstone))).toStrictEqual(tombstone);
 
     const patient = {
       resourceType: 'Patient',
       id: randomUUID(),
       name: [{ family: 'Smith' }],
     };
-    expect(parseHistoryContent(JSON.stringify(patient))).toStrictEqual({ tombstone: false, resource: patient });
+    expect(parseHistoryContent(JSON.stringify(patient))).toStrictEqual(patient);
 
     expect(() => parseHistoryContent('{')).toThrow(SyntaxError);
-  });
-
-  test('isDeleteTombstone', () => {
-    expect(isDeleteTombstone('')).toBe(true);
-    expect(isDeleteTombstone(undefined)).toBe(true);
-    expect(
-      isDeleteTombstone(
-        JSON.stringify({
-          resourceType: 'Patient',
-          id: randomUUID(),
-          meta: { deleted: true },
-        })
-      )
-    ).toBe(true);
-    expect(
-      isDeleteTombstone(
-        JSON.stringify({
-          resourceType: 'Patient',
-          id: randomUUID(),
-          name: [{ family: 'Smith' }],
-        })
-      )
-    ).toBe(false);
   });
 });

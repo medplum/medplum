@@ -40,28 +40,8 @@ export interface DeleteHistoryContentOptions {
   author: Reference;
 }
 
-export type ParsedHistoryContent = { tombstone: true } | { tombstone: false; resource: Resource };
-
-export function parseHistoryContent(content: string | null | undefined): ParsedHistoryContent {
-  if (!content) {
-    return { tombstone: true };
-  }
-  const resource = JSON.parse(content) as Resource;
-  if (resource.meta?.deleted === true) {
-    return { tombstone: true };
-  }
-  return { tombstone: false, resource };
-}
-
-export function isDeleteTombstone(content: string | null | undefined): boolean {
-  if (!content) {
-    return true;
-  }
-  try {
-    return parseHistoryContent(content).tombstone;
-  } catch {
-    return false;
-  }
+export function parseHistoryContent(content: string | null | undefined): Resource {
+  return content ? (JSON.parse(content) as Resource) : ({ meta: { deleted: true } } as Resource);
 }
 
 export function buildDeleteHistoryContent(resource: Resource, options: DeleteHistoryContentOptions): string {
