@@ -57,6 +57,7 @@ import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscri
 import { getCacheRedis } from '../redis';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import { validateOutboundUrl } from '../util/url';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import {
   clearSubscriptionFailures,
@@ -787,22 +788,11 @@ async function sendRestHook(
 }
 
 function validateRestHookUrl(url: string): void {
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url);
-  } catch {
-    throw new Error('Invalid rest-hook URL: must be an absolute HTTPS URL');
-  }
-
-  if (parsedUrl.protocol === 'https:') {
-    return;
-  }
-
-  if (parsedUrl.protocol === 'http:' && getConfig().allowInsecureRestHookUrl) {
-    return;
-  }
-
-  throw new Error('Invalid rest-hook URL: HTTPS is required unless allowInsecureRestHookUrl is enabled');
+  const allowInsecureRestHookUrl = !!getConfig().allowInsecureRestHookUrl;
+  validateOutboundUrl(url, {
+    allowHttp: allowInsecureRestHookUrl,
+    allowUnsafeHostname: allowInsecureRestHookUrl,
+  });
 }
 
 /**

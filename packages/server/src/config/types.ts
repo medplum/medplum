@@ -212,6 +212,9 @@ export interface MedplumServerConfig {
 
   /** Optional flag to allow rest-hook Subscriptions to send requests to insecure HTTP URLs. */
   allowInsecureRestHookUrl?: boolean;
+
+  /** Optional flag to allow external auth providers to use insecure HTTP or local URLs. */
+  allowInsecureExternalAuthUrl?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {

@@ -193,7 +193,7 @@ describe('SMART Health operations', () => {
         .send({ credential });
       expect(verifyResponse.status).toBe(200);
       expect(getBooleanParameter(verifyResponse.body, 'valid')).toBe(false);
-      expect(getStringParameter(verifyResponse.body, 'error')).toContain('Unsafe SMART Health Card issuer host');
+      expect(getStringParameter(verifyResponse.body, 'error')).toContain('unsafe hostname');
     }
 
     expect(fetchSpy).not.toHaveBeenCalled();
