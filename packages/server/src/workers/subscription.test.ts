@@ -574,7 +574,7 @@ describe('Subscription Worker', () => {
 
   test('Allow insecure rest-hook URLs when configured', () =>
     withTestContext(async () => {
-      const url = 'http://example.com/subscription';
+      const url = 'http://localhost:8080/subscription';
       const savedConfig = getConfig().allowInsecureRestHookUrl;
       getConfig().allowInsecureRestHookUrl = true;
 

@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SearchRequest, WithId } from '@medplum/core';
+import type { Operation, SearchRequest, WithId } from '@medplum/core';
 import { badRequest, forbidden, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
 import type { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import type { Operation } from 'rfc6902';
 import { inviteUser } from '../admin/invite';
 import { getConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';

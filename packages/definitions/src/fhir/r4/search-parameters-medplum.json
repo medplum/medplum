@@ -1943,6 +1943,58 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/SmartHealthLink-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "SmartHealthLink-status",
+        "url": "https://medplum.com/fhir/SearchParameter/SmartHealthLink-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The status of the SMART Health Link",
+        "code": "status",
+        "base": ["SmartHealthLink"],
+        "type": "token",
+        "expression": "SmartHealthLink.status"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/SmartHealthLink-mode",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "SmartHealthLink-mode",
+        "url": "https://medplum.com/fhir/SearchParameter/SmartHealthLink-mode",
+        "version": "4.0.1",
+        "name": "mode",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The delivery mode of the SMART Health Link",
+        "code": "mode",
+        "base": ["SmartHealthLink"],
+        "type": "token",
+        "expression": "SmartHealthLink.mode"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/SmartHealthLink-subject",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "SmartHealthLink-subject",
+        "url": "https://medplum.com/fhir/SearchParameter/SmartHealthLink-subject",
+        "version": "4.0.1",
+        "name": "subject",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The subject whose records are shared by the SMART Health Link",
+        "code": "subject",
+        "base": ["SmartHealthLink"],
+        "type": "reference",
+        "expression": "SmartHealthLink.subject",
+        "target": ["Group", "Patient"]
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/HealthcareService-offered-in",
       "resource": {
         "resourceType": "SearchParameter",

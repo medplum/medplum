@@ -5,7 +5,6 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, Patient, Resource } from '@medplum/fhirtypes';
 import type { JWK, KeyLike, ProtectedHeaderParameters } from 'jose';
 import { CompactSign, compactVerify, decodeProtectedHeader, importJWK } from 'jose';
-import { isIP } from 'node:net';
 import { promisify } from 'node:util';
 import { deflateRaw as deflateRawCb, inflateRaw as inflateRawCb } from 'node:zlib';
 import QRCode from 'qrcode';
@@ -13,6 +12,7 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getJwks, getSigningKey } from '../../oauth/keys';
+import { validateOutboundUrl } from '../../util/url';
 import { makeOperationDefinition } from './definitions';
 import { getPatientEverything } from './patienteverything';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -426,13 +426,7 @@ async function getSmartHealthCardPublicKey(
  * @returns JWK array from the issuer JWKS document.
  */
 async function getExternalSmartHealthCardJwks(issuer: string): Promise<JWK[]> {
-  const issuerUrl = new URL(issuer);
-  if (issuerUrl.protocol !== 'https:') {
-    throw new Error('External SMART Health Card issuer must use HTTPS');
-  }
-  if (isUnsafeHostname(issuerUrl.hostname)) {
-    throw new Error('Unsafe SMART Health Card issuer host');
-  }
+  const issuerUrl = validateOutboundUrl(issuer);
   const jwksUrl = new URL('/.well-known/jwks.json', issuerUrl);
   const response = await fetch(jwksUrl, { redirect: 'error', signal: AbortSignal.timeout(5000) });
   if (!response.ok) {
@@ -440,28 +434,4 @@ async function getExternalSmartHealthCardJwks(issuer: string): Promise<JWK[]> {
   }
   const jwks = (await response.json()) as { keys?: JWK[] };
   return jwks.keys ?? [];
-}
-
-/**
- * Checks whether a hostname should be rejected for outbound SMART Health Card JWKS lookup.
- *
- * @param hostname - Hostname from an external issuer URL.
- * @returns True when the hostname is localhost, link-local, loopback, private, or otherwise unsafe.
- */
-function isUnsafeHostname(hostname: string): boolean {
-  const normalizedHostname = hostname.toLowerCase();
-  const ipHostname =
-    normalizedHostname.startsWith('[') && normalizedHostname.endsWith(']')
-      ? normalizedHostname.slice(1, -1)
-      : normalizedHostname;
-  const ipVersion = isIP(ipHostname);
-  if (ipVersion === 0) {
-    return ['localhost', 'localhost.localdomain'].includes(normalizedHostname);
-  }
-  if (ipVersion === 4) {
-    return /^(10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[0-1])\.|192\.168\.)/.test(ipHostname);
-  }
-  return (
-    ipHostname === '::1' || ipHostname.startsWith('fe80:') || ipHostname.startsWith('fc') || ipHostname.startsWith('fd')
-  );
 }

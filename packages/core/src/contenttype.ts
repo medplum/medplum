@@ -13,6 +13,7 @@ export const ContentType = {
   HL7_V2: 'x-application/hl7-v2+er7',
   HTML: 'text/html',
   JAVASCRIPT: 'text/javascript',
+  JOSE: 'application/jose',
   JSON: 'application/json',
   JSON_PATCH: 'application/json-patch+json',
   JWT: 'application/jwt',

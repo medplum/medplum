@@ -56,6 +56,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
+import { validateOutboundUrl } from '../util/url';
 import { getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
@@ -823,11 +824,11 @@ function includeRefreshToken(request: LoginRequest, client: ClientApplication | 
 }
 
 export function normalizeUserInfoUrl(userInfoUrl: string): string {
-  const url = new URL(userInfoUrl);
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error('Must use http or https protocol');
-  }
-  return url.toString();
+  const allowInsecureExternalAuthUrl = !!getConfig().allowInsecureExternalAuthUrl;
+  return validateOutboundUrl(userInfoUrl, {
+    allowHttp: allowInsecureExternalAuthUrl,
+    allowUnsafeHostname: allowInsecureExternalAuthUrl,
+  }).toString();
 }
 
 /**

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobInteraction, FhirPathPatch, Filter, SearchRequest, WithId } from '@medplum/core';
+import type { BackgroundJobInteraction, FhirPathPatch, Filter, Operation, SearchRequest, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
@@ -70,7 +70,6 @@ import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { PoolClient } from 'pg';
-import type { Operation } from 'rfc6902';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
