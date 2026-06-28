@@ -344,6 +344,7 @@ describe('SMART Health operations', () => {
         shlink: encodeShlinkPayload({
           url: 'https://example.com/shl/not-found/manifest',
           key: '0000000000000000000000000000000000000000000',
+          flag: 'U',
           v: 1,
         }),
       });
@@ -447,7 +448,7 @@ describe('SMART Health operations', () => {
         shlink: encodeShlinkPayload({
           url: 'https://issuer.example.com/smart-link/payload?existing=true',
           key,
-          flag: 'U',
+          flag: 'LU',
           exp: Math.floor(Date.now() / 1000) + 300,
           v: 1,
         }),
@@ -460,6 +461,10 @@ describe('SMART Health operations', () => {
     expect(fetchUrl.toString()).toBe(
       'https://issuer.example.com/smart-link/payload?existing=true&recipient=Test+Recipient'
     );
+    expect(fetchSpy.mock.calls[0][1]).toStrictEqual({
+      redirect: 'error',
+      signal: expect.any(AbortSignal),
+    });
 
     const fhirResources = JSON.parse(getStringParameter(resolveResponse.body, 'fhirResources')) as Bundle[];
     expect(fhirResources).toHaveLength(1);
@@ -527,7 +532,8 @@ describe('SMART Health operations', () => {
       });
     expect(httpErrorResponse.status).toBe(200);
     expect(getBooleanParameter(httpErrorResponse.body, 'valid')).toBe(false);
-    expect(getStringParameter(httpErrorResponse.body, 'error')).toContain('HTTP 410: Gone');
+    expect(getStringParameter(httpErrorResponse.body, 'error')).toContain('HTTP 410');
+    expect(getStringParameter(httpErrorResponse.body, 'error')).not.toContain('Gone');
 
     fetchSpy.mockResolvedValueOnce({
       ok: true,
@@ -553,6 +559,31 @@ describe('SMART Health operations', () => {
       'Unsupported SMART Health Link content type'
     );
 
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-length': '10485761' }),
+      text: async () => {
+        throw new Error('Unexpected text read');
+      },
+    } as Response);
+    const tooLargeResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          url: 'https://issuer.example.com/smart-link/payload',
+          key,
+          flag: 'U',
+          v: 1,
+        }),
+        recipient: 'Test Recipient',
+      });
+    expect(tooLargeResponse.status).toBe(200);
+    expect(getBooleanParameter(tooLargeResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(tooLargeResponse.body, 'error')).toContain('too large');
+
     const unsupportedFlagResponse = await request(app)
       .post('/fhir/R4/$resolve-smart-health-link')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -569,7 +600,40 @@ describe('SMART Health operations', () => {
     expect(unsupportedFlagResponse.status).toBe(200);
     expect(getBooleanParameter(unsupportedFlagResponse.body, 'valid')).toBe(false);
     expect(getStringParameter(unsupportedFlagResponse.body, 'error')).toContain('Only direct SMART Health Links');
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    const missingFlagResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          url: 'https://issuer.example.com/smart-link/payload',
+          key,
+          v: 1,
+        }),
+        recipient: 'Test Recipient',
+      });
+    expect(missingFlagResponse.status).toBe(200);
+    expect(getBooleanParameter(missingFlagResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(missingFlagResponse.body, 'error')).toContain('Only direct SMART Health Links');
+
+    const unsafeUrlResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          url: 'https://169.254.169.254/latest/meta-data',
+          key,
+          flag: 'U',
+          v: 1,
+        }),
+        recipient: 'Test Recipient',
+      });
+    expect(unsafeUrlResponse.status).toBe(200);
+    expect(getBooleanParameter(unsafeUrlResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(unsafeUrlResponse.body, 'error')).toContain('unsafe hostname');
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
 
     fetchSpy.mockRestore();
   });

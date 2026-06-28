@@ -36,10 +36,14 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
+import { validateOutboundUrl } from '../../util/url';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { getPatientEverything } from './patienteverything';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+
+const EXTERNAL_SMART_HEALTH_LINK_FETCH_TIMEOUT_MS = 5000;
+const MAX_EXTERNAL_SMART_HEALTH_LINK_PAYLOAD_BYTES = 10 * 1024 * 1024;
 
 export const smartHealthLinkRouter = Router();
 smartHealthLinkRouter.post('/:id/manifest', smartHealthLinkManifestHandler);
@@ -303,7 +307,7 @@ async function resolveExternalSmartHealthLink(
   payload: SmartHealthLinkPayload,
   recipient?: string
 ): Promise<{ fhirResources: Resource[]; warnings?: string[] }> {
-  if (payload.flag && payload.flag !== 'U') {
+  if (!payload.flag?.includes('U')) {
     throw new Error('Only direct SMART Health Links are supported');
   }
   if (!recipient) {
@@ -315,13 +319,16 @@ async function resolveExternalSmartHealthLink(
     warnings.push('SMART Health Link is expired. Content was still available and decrypted.');
   }
 
-  const url = new URL(payload.url);
+  const url = validateOutboundUrl(payload.url);
   url.searchParams.set('recipient', recipient);
-  const response = await fetch(url);
-  const body = await response.text();
+  const response = await fetch(url, {
+    redirect: 'error',
+    signal: AbortSignal.timeout(EXTERNAL_SMART_HEALTH_LINK_FETCH_TIMEOUT_MS),
+  });
   if (!response.ok) {
-    throw new Error(`SMART Health Link payload request failed with HTTP ${response.status}: ${body}`);
+    throw new Error(`SMART Health Link payload request failed with HTTP ${response.status}`);
   }
+  const body = await readExternalSmartHealthLinkPayload(response);
 
   const { contentType, plaintext } = await decryptSmartHealthLinkFile(body, payload.key);
   if (contentType !== ContentType.FHIR_JSON) {
@@ -329,6 +336,32 @@ async function resolveExternalSmartHealthLink(
   }
 
   return { fhirResources: [JSON.parse(plaintext) as Resource], warnings };
+}
+
+async function readExternalSmartHealthLinkPayload(response: Response): Promise<string> {
+  const contentLength = response.headers?.get('content-length');
+  if (isString(contentLength) && Number(contentLength) > MAX_EXTERNAL_SMART_HEALTH_LINK_PAYLOAD_BYTES) {
+    throw new Error('SMART Health Link payload response is too large');
+  }
+  if (!response.body) {
+    return response.text();
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    size += value.byteLength;
+    if (size > MAX_EXTERNAL_SMART_HEALTH_LINK_PAYLOAD_BYTES) {
+      throw new Error('SMART Health Link payload response is too large');
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 async function encryptSmartHealthLinkFile(bundle: Bundle, key: string): Promise<string> {
