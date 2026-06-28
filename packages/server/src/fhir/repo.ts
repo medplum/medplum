@@ -816,9 +816,7 @@ export class Repository extends FhirRepository implements Disposable {
         throw new OperationOutcomeError(gone);
       }
 
-      const result = (await this.authorizeBinarySecurityContext(
-        this.removeHiddenFields(parsed as T)
-      )) as WithId<T>;
+      const result = (await this.authorizeBinarySecurityContext(this.removeHiddenFields(parsed as T))) as WithId<T>;
       const durationMs = Date.now() - startTime;
       this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });
       return result;
