@@ -19,11 +19,10 @@ import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { convertToTransactionBundle, normalizeErrorString, stringify } from '@medplum/core';
 import type { Bundle, Parameters, Resource } from '@medplum/fhirtypes';
-import { Document, Form, useMedplum } from '@medplum/react';
+import { Document, Form, QrCodeScanner, useMedplum } from '@medplum/react';
 import { IconCheck, IconUpload, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { QrCodeScanner } from './components/QrCodeScanner';
 
 const DEFAULT_VALUE = `{"resourceType": "Bundle"}`;
 

@@ -11,6 +11,7 @@ import {
   IconMail,
   IconPill,
   IconPrinter,
+  IconQrcode,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
@@ -58,6 +59,7 @@ import { SchedulePage } from './pages/schedule/SchedulePage';
 import { ScheduleSettingsPage } from './pages/schedule/ScheduleSettingsPage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
+import { SmartHealthLinkImportPage } from './pages/smart/SmartHealthLinkImportPage';
 import { SpacesPage } from './pages/spaces/SpacesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
 
@@ -165,6 +167,7 @@ export function App(): JSX.Element | null {
                         },
                       ]
                     : []),
+                  { icon: <IconQrcode />, label: 'Import SHL', href: '/smart-health-link' },
                 ],
               },
             ]
@@ -242,6 +245,7 @@ export function App(): JSX.Element | null {
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>
