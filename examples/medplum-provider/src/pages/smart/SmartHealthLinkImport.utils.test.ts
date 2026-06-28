@@ -13,8 +13,8 @@ import type {
 } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import {
-  getSmartHealthCardFile,
   buildSmartHealthLinkImportBundle,
+  getSmartHealthCardFile,
   getSmartHealthLinkPatient,
 } from './SmartHealthLinkImport.utils';
 

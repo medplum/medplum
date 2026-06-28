@@ -62,7 +62,11 @@ export function getMatchGrade(entry: BundleEntry<WithId<Patient>>): string | und
   return entry.search?.extension?.find((ext) => ext.url.endsWith('/match-grade'))?.valueCode;
 }
 
-function rewritePatientReference<T extends Resource>(resource: T, sharedPatientRef: string, targetPatientRef: string): T {
+function rewritePatientReference<T extends Resource>(
+  resource: T,
+  sharedPatientRef: string,
+  targetPatientRef: string
+): T {
   return JSON.parse(
     JSON.stringify(resource, (key, value) => {
       if (key === 'reference' && value === sharedPatientRef) {
