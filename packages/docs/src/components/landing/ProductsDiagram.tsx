@@ -189,8 +189,7 @@ function Card({
   /* All cards share the same icon tile size and padding — the compact prop is kept for
      call-site compatibility but no longer changes sizing. */
   const shadowClass = kind === 'partner' ? styles.cardShadowDeep : styles.cardShadow;
-  const managedClass =
-    kind === 'customer' || kind === 'partner' ? styles.userManaged : styles.medplumManaged;
+  const managedClass = kind === 'customer' || kind === 'partner' ? styles.userManaged : styles.medplumManaged;
   return (
     <div
       ref={nodeRef}
@@ -306,66 +305,87 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
       <div className={styles.diagramGrid}>
         {/* Row 1 — Hosted Platform */}
         <div className={`${styles.sectionWrap} ${styles.platformSection}`}>
-            <div className={`${styles.sectionLabel} ${ctxClass}`}>
-              Medplum Hosted Platform
-              <span className={styles.footnoteMark}> *</span>
-            </div>
+          <div className={`${styles.sectionLabel} ${ctxClass}`}>
+            Medplum Hosted Platform
+            <span className={styles.footnoteMark}> *</span>
+          </div>
 
-            {/* REST API + Auth API */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <div
-                {...clk('FHIR Data Store & API', { band: true })}
-                style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 12px 8px 8px', borderRadius: 10, minWidth: 0 }}
-              >
-                <IconChip kind="medplum" number={FOUNDATION_NUMBER['FHIR Data Store & API']} size={32} />
-                <div className={styles.bandName} style={{ whiteSpace: 'nowrap' }}>REST API</div>
-              </div>
-              <div
-                {...clk('Medplum Auth', { band: true })}
-                style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 12px 8px 8px', borderRadius: 10, minWidth: 0 }}
-              >
-                <IconChip kind="medplum" number={FOUNDATION_NUMBER['Medplum Auth']} size={32} />
-                <div className={styles.bandName}>
-                  Auth API <span className={styles.subText}>(Medplum Identity Provider)</span>
-                </div>
+          {/* REST API + Auth API */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div
+              {...clk('FHIR Data Store & API', { band: true })}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 9,
+                padding: '8px 12px 8px 8px',
+                borderRadius: 10,
+                minWidth: 0,
+              }}
+            >
+              <IconChip kind="medplum" number={FOUNDATION_NUMBER['FHIR Data Store & API']} size={32} />
+              <div className={styles.bandName} style={{ whiteSpace: 'nowrap' }}>
+                REST API
               </div>
             </div>
-
-            {/* FHIR Datastore · Subscriptions · Bots · Governance — 2-col grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <div
-                {...clk('FHIR Data Store & API', { band: true })}
-                style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 12px 8px 8px', borderRadius: 10 }}
-              >
-                <IconChip kind="medplum" number={FOUNDATION_NUMBER['FHIR Data Store & API']} size={32} />
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div className={styles.bandName}>FHIR Datastore</div>
-                  <div className={styles.cardSub}>Terminology: SNOMED · ICD-10 · LOINC</div>
-                </div>
+            <div
+              {...clk('Medplum Auth', { band: true })}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 9,
+                padding: '8px 12px 8px 8px',
+                borderRadius: 10,
+                minWidth: 0,
+              }}
+            >
+              <IconChip kind="medplum" number={FOUNDATION_NUMBER['Medplum Auth']} size={32} />
+              <div className={styles.bandName}>
+                Auth API <span className={styles.subText}>(Medplum Identity Provider)</span>
               </div>
-              <Card {...clk('Subscriptions')} kind="extensible" number={FOUNDATION_NUMBER.Subscriptions} name="Webhook / Subscriptions" extensible compact />
-              <Card {...clk('Bots')} kind="extensible" number={FOUNDATION_NUMBER.Bots} name="Bots" extensible compact />
-              {[
-                { name: 'Multi-Tenancy' },
-                { name: 'Access Control' },
-                { name: 'Audit Logging' },
-              ].map((cell) => (
-                <div
-                  key={cell.name}
-                  {...clk(cell.name, { band: true })}
-                  style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 12px 8px 8px', borderRadius: 10 }}
-                >
-                  <IconChip kind="medplum" number={FOUNDATION_NUMBER[cell.name]} size={32} />
-                  <div className={styles.bandName} style={{ whiteSpace: 'nowrap' }}>{cell.name}</div>
-                  <ExtensibleMark />
-                </div>
-              ))}
-            </div>
-            <div className={`${styles.footnoteText} ${ctxClass}`}>
-              <span className={styles.footnoteMark}>* </span>
-              Hosted by default but can be self-hosted
             </div>
           </div>
+
+          {/* FHIR Datastore · Subscriptions · Bots · Governance — 2-col grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div
+              {...clk('FHIR Data Store & API', { band: true })}
+              style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 12px 8px 8px', borderRadius: 10 }}
+            >
+              <IconChip kind="medplum" number={FOUNDATION_NUMBER['FHIR Data Store & API']} size={32} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className={styles.bandName}>FHIR Datastore</div>
+                <div className={styles.cardSub}>Terminology: SNOMED · ICD-10 · LOINC</div>
+              </div>
+            </div>
+            <Card
+              {...clk('Subscriptions')}
+              kind="extensible"
+              number={FOUNDATION_NUMBER.Subscriptions}
+              name="Webhook / Subscriptions"
+              extensible
+              compact
+            />
+            <Card {...clk('Bots')} kind="extensible" number={FOUNDATION_NUMBER.Bots} name="Bots" extensible compact />
+            {[{ name: 'Multi-Tenancy' }, { name: 'Access Control' }, { name: 'Audit Logging' }].map((cell) => (
+              <div
+                key={cell.name}
+                {...clk(cell.name, { band: true })}
+                style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 12px 8px 8px', borderRadius: 10 }}
+              >
+                <IconChip kind="medplum" number={FOUNDATION_NUMBER[cell.name]} size={32} />
+                <div className={styles.bandName} style={{ whiteSpace: 'nowrap' }}>
+                  {cell.name}
+                </div>
+                <ExtensibleMark />
+              </div>
+            ))}
+          </div>
+          <div className={`${styles.footnoteText} ${ctxClass}`}>
+            <span className={styles.footnoteMark}>* </span>
+            Hosted by default but can be self-hosted
+          </div>
+        </div>
 
         {/* Row 1 — External services (top-aligned with Hosted Platform) */}
         <div className={styles.rightColumn}>
@@ -374,7 +394,14 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
             <Card className={ctxClass} kind="extensible" icon="apps" iconRotate={-90} name="First-party" compact />
             <Card className={ctxClass} kind="customer" icon="apps" iconRotate={180} name="Third-party" compact />
           </div>
-          <Card className={ctxClass} kind="partner" icon="userKey" name="External Identity Provider" sub="Optional" compact />
+          <Card
+            className={ctxClass}
+            kind="partner"
+            icon="userKey"
+            name="External Identity Provider"
+            sub="Optional"
+            compact
+          />
           <Card
             {...clk('Medplum Bridge')}
             kind="extensible"
@@ -388,27 +415,69 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
 
         {/* Row 2 — Apps */}
         <div className={styles.appsRow}>
-
-            {/* Medplum Apps */}
-            <div className={styles.sectionWrap}>
-              <div className={`${styles.sectionLabel} ${ctxClass}`}>Medplum Apps</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <Card className={ctxClass} kind="extensible" icon="stethoscope" name="Medplum Provider" sub="Example EHR" extensible compact />
-                <Card className={ctxClass} kind="extensible" icon="appWindow" name="Medplum App" sub="Admin / Dev Console" extensible compact />
-              </div>
-              <Card {...clk('Medplum Component Library')} kind="extensible" number={FOUNDATION_NUMBER['Medplum Component Library']} name="Component Library" extensible compact />
-              <Card {...clk('TypeScript / JavaScript SDK')} kind="extensible" number={FOUNDATION_NUMBER['TypeScript / JavaScript SDK']} name="TypeScript / JS SDK" extensible compact />
+          {/* Medplum Apps */}
+          <div className={styles.sectionWrap}>
+            <div className={`${styles.sectionLabel} ${ctxClass}`}>Medplum Apps</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <Card
+                className={ctxClass}
+                kind="extensible"
+                icon="stethoscope"
+                name="Medplum Provider"
+                sub="Example EHR"
+                extensible
+                compact
+              />
+              <Card
+                className={ctxClass}
+                kind="extensible"
+                icon="appWindow"
+                name="Medplum App"
+                sub="Admin / Dev Console"
+                extensible
+                compact
+              />
             </div>
-
-            {/* Your Apps */}
-            <div className={styles.sectionWrap}>
-              <div className={`${styles.sectionLabel} ${ctxClass}`}>Your Apps</div>
-              <Card className={ctxClass} kind="customer" icon="puzzle" name="Custom App" compact />
-              <Card {...clk('Medplum Component Library')} kind="customer" number={FOUNDATION_NUMBER['Medplum Component Library']} name="Component Library" sub="Optional" compact />
-              <Card {...clk('TypeScript / JavaScript SDK')} kind="customer" number={FOUNDATION_NUMBER['TypeScript / JavaScript SDK']} name="TypeScript / JS SDK" sub="Optional" compact />
-            </div>
-
+            <Card
+              {...clk('Medplum Component Library')}
+              kind="extensible"
+              number={FOUNDATION_NUMBER['Medplum Component Library']}
+              name="Component Library"
+              extensible
+              compact
+            />
+            <Card
+              {...clk('TypeScript / JavaScript SDK')}
+              kind="extensible"
+              number={FOUNDATION_NUMBER['TypeScript / JavaScript SDK']}
+              name="TypeScript / JS SDK"
+              extensible
+              compact
+            />
           </div>
+
+          {/* Your Apps */}
+          <div className={styles.sectionWrap}>
+            <div className={`${styles.sectionLabel} ${ctxClass}`}>Your Apps</div>
+            <Card className={ctxClass} kind="customer" icon="puzzle" name="Custom App" compact />
+            <Card
+              {...clk('Medplum Component Library')}
+              kind="customer"
+              number={FOUNDATION_NUMBER['Medplum Component Library']}
+              name="Component Library"
+              sub="Optional"
+              compact
+            />
+            <Card
+              {...clk('TypeScript / JavaScript SDK')}
+              kind="customer"
+              number={FOUNDATION_NUMBER['TypeScript / JavaScript SDK']}
+              name="TypeScript / JS SDK"
+              sub="Optional"
+              compact
+            />
+          </div>
+        </div>
 
         {/* Row 2 — Legend (beside Your Apps) */}
         <div className={`${styles.legendRow} ${ctxClass}`}>
@@ -416,7 +485,6 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
           <LegendSwatch kind="customer" label="User-Managed" />
           <LegendExtensible label="Extensible & Customizable" />
         </div>
-
       </div>
     </div>
   );

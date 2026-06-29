@@ -174,7 +174,8 @@ export function ProductsApps(): JSX.Element {
       <div className={styles.sectionIntro}>
         <h2 className={styles.sectionHeadline}>Start using Medplum today, with our pre-built Apps.</h2>
         <p className={styles.sectionLead}>
-        Developed by Medplum using our powerful Capabilities and Foundations, these prepackaged Apps are ready to be modified for your clinical needs—or used as a reference when building your own custom Apps.
+          Developed by Medplum using our powerful Capabilities and Foundations, these prepackaged Apps are ready to be
+          modified for your clinical needs—or used as a reference when building your own custom Apps.
         </p>
       </div>
 
