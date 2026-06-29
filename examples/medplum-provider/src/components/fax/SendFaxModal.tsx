@@ -3,7 +3,14 @@
 import { Box, Button, Divider, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createReference, isNotFound, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
-import type { Attachment, Communication, DocumentReference, Organization, Patient, Reference } from '@medplum/fhirtypes';
+import type {
+  Attachment,
+  Communication,
+  DocumentReference,
+  Organization,
+  Patient,
+  Reference,
+} from '@medplum/fhirtypes';
 import { ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleOff, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -140,7 +147,6 @@ export function SendFaxModal({
         documentReference = await medplum.createResource<DocumentReference>({
           resourceType: 'DocumentReference',
           status: 'current',
-          category: [{ coding: [{ system: 'http://medplum/fhir/CodeSystem/document-source', code: 'fax' }] }],
           description: subject.trim() || undefined,
           subject: patient,
           author: [createReference(profile)],
