@@ -45,6 +45,15 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 const EXTERNAL_SMART_HEALTH_LINK_FETCH_TIMEOUT_MS = 5000;
 const MAX_EXTERNAL_SMART_HEALTH_LINK_PAYLOAD_BYTES = 10 * 1024 * 1024;
 
+interface ResolvedSmartHealthLink {
+  manifest?: Record<string, unknown>;
+  fhirResources: Resource[];
+  recipient?: string;
+  signingAuthority?: string;
+  expiresAt?: string;
+  warnings?: string[];
+}
+
 export const smartHealthLinkRouter = Router();
 smartHealthLinkRouter.post('/:id/manifest', smartHealthLinkManifestHandler);
 smartHealthLinkRouter.get('/:id/payload', smartHealthLinkPayloadHandler);
@@ -84,6 +93,9 @@ export const resolveSmartHealthLinkOperation = makeOperationDefinition(
       { use: 'out', name: 'valid', type: 'boolean', min: 1, max: '1' },
       { use: 'out', name: 'manifest', type: 'string', min: 0, max: '1' },
       { use: 'out', name: 'fhirResources', type: 'string', min: 0, max: '1' },
+      { use: 'out', name: 'recipient', type: 'string', min: 0, max: '1' },
+      { use: 'out', name: 'signingAuthority', type: 'string', min: 0, max: '1' },
+      { use: 'out', name: 'expiresAt', type: 'dateTime', min: 0, max: '1' },
       { use: 'out', name: 'warning', type: 'string', min: 0, max: '*' },
       { use: 'out', name: 'error', type: 'string', min: 0, max: '1' },
     ],
@@ -204,6 +216,9 @@ export async function resolveSmartHealthLinkHandler(req: FhirRequest): Promise<F
         valid: true,
         manifest: JSON.stringify(result.manifest),
         fhirResources: JSON.stringify(result.fhirResources),
+        recipient: result.recipient,
+        signingAuthority: result.signingAuthority,
+        expiresAt: result.expiresAt,
         warning: result.warnings,
       }),
     ];
@@ -267,7 +282,7 @@ async function resolveGeneratedSmartHealthLink(
   shlink: string,
   recipient?: string,
   passcode?: string
-): Promise<{ manifest?: Record<string, unknown>; fhirResources: Resource[]; warnings?: string[] }> {
+): Promise<ResolvedSmartHealthLink> {
   const payload = parseSmartHealthLink(shlink);
   const id = getSmartHealthLinkId(payload.url);
   const smartHealthLink = id ? await readSmartHealthLink(id) : undefined;
@@ -291,7 +306,12 @@ async function resolveGeneratedSmartHealthLink(
     if (contentType === ContentType.FHIR_JSON) {
       fhirResources.push(JSON.parse(plaintext) as Resource);
     }
-    return { fhirResources };
+    return {
+      fhirResources,
+      recipient,
+      signingAuthority: new URL(smartHealthLink.url).origin,
+      expiresAt: smartHealthLink.expiresAt,
+    };
   }
   const manifest = await buildSmartHealthLinkManifest(smartHealthLink);
   for (const file of manifest.files) {
@@ -300,13 +320,18 @@ async function resolveGeneratedSmartHealthLink(
       fhirResources.push(JSON.parse(plaintext) as Resource);
     }
   }
-  return { manifest, fhirResources };
+  return {
+    manifest,
+    fhirResources,
+    signingAuthority: new URL(smartHealthLink.url).origin,
+    expiresAt: smartHealthLink.expiresAt,
+  };
 }
 
 async function resolveExternalSmartHealthLink(
   payload: SmartHealthLinkPayload,
   recipient?: string
-): Promise<{ fhirResources: Resource[]; warnings?: string[] }> {
+): Promise<ResolvedSmartHealthLink> {
   if (!payload.flag?.includes('U')) {
     throw new Error('Only direct SMART Health Links are supported');
   }
@@ -339,7 +364,13 @@ async function resolveExternalSmartHealthLink(
     throw new Error(`Unsupported SMART Health Link content type: ${contentType || 'unknown'}`);
   }
 
-  return { fhirResources: [JSON.parse(plaintext) as Resource], warnings };
+  return {
+    fhirResources: [JSON.parse(plaintext) as Resource],
+    recipient,
+    signingAuthority: url.origin,
+    expiresAt: payload.exp !== undefined ? new Date(payload.exp * 1000).toISOString() : undefined,
+    warnings,
+  };
 }
 
 async function encryptSmartHealthLinkFile(bundle: Bundle, key: string): Promise<string> {

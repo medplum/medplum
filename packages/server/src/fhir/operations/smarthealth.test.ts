@@ -362,6 +362,7 @@ describe('SMART Health operations', () => {
 
   test('Generate direct SMART Health Link and resolve payload', async () => {
     const patient = await createPatient();
+    const exp = Math.floor(Date.now() / 1000) + 300;
 
     const generateResponse = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
@@ -369,7 +370,7 @@ describe('SMART Health operations', () => {
       .set('Content-Type', ContentType.JSON)
       .send({
         mode: 'direct',
-        exp: Math.floor(Date.now() / 1000) + 300,
+        exp,
         label: 'Test CMS Link',
         includeQrCode: true,
       });
@@ -419,6 +420,9 @@ describe('SMART Health operations', () => {
       .send({ shlink, recipient: 'Test Recipient' });
     expect(resolveResponse.status).toBe(200);
     expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(true);
+    expect(getStringParameter(resolveResponse.body, 'recipient')).toBe('Test Recipient');
+    expect(getStringParameter(resolveResponse.body, 'signingAuthority')).toBe(directUrl.origin);
+    expect(getDateTimeParameter(resolveResponse.body, 'expiresAt')).toBe(new Date(exp * 1000).toISOString());
 
     const fhirResources = JSON.parse(getStringParameter(resolveResponse.body, 'fhirResources')) as Bundle[];
     expect(fhirResources[0]?.resourceType).toBe('Bundle');
@@ -428,6 +432,7 @@ describe('SMART Health operations', () => {
 
   test('Resolves external direct SMART Health Link payloads', async () => {
     const key = base64url.encode(Buffer.alloc(32, 1));
+    const exp = Math.floor(Date.now() / 1000) + 300;
     const bundle: Bundle = {
       resourceType: 'Bundle',
       type: 'collection',
@@ -449,7 +454,7 @@ describe('SMART Health operations', () => {
           url: 'https://issuer.example.com/smart-link/payload?existing=true',
           key,
           flag: 'LU',
-          exp: Math.floor(Date.now() / 1000) + 300,
+          exp,
           v: 1,
         }),
         recipient: 'Test Recipient',
@@ -465,6 +470,9 @@ describe('SMART Health operations', () => {
       redirect: 'error',
       signal: expect.any(AbortSignal),
     });
+    expect(getStringParameter(resolveResponse.body, 'recipient')).toBe('Test Recipient');
+    expect(getStringParameter(resolveResponse.body, 'signingAuthority')).toBe('https://issuer.example.com');
+    expect(getDateTimeParameter(resolveResponse.body, 'expiresAt')).toBe(new Date(exp * 1000).toISOString());
 
     const fhirResources = JSON.parse(getStringParameter(resolveResponse.body, 'fhirResources')) as Bundle[];
     expect(fhirResources).toHaveLength(1);
@@ -790,6 +798,12 @@ function getBinaryId(smartHealthLink: SmartHealthLink): string {
 
 function getStringParameter(parameters: Parameters, name: string): string {
   const value = parameters.parameter?.find((p) => p.name === name)?.valueString;
+  expect(value).toBeDefined();
+  return value as string;
+}
+
+function getDateTimeParameter(parameters: Parameters, name: string): string {
+  const value = parameters.parameter?.find((p) => p.name === name)?.valueDateTime;
   expect(value).toBeDefined();
   return value as string;
 }

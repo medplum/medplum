@@ -49,6 +49,11 @@ export function SmartHealthLinkImportPage(): JSX.Element {
   const [selectedPatient, setSelectedPatient] = useState<WithId<Patient>>();
   const [createNewPatient, setCreateNewPatient] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [smartHealthLinkDetails, setSmartHealthLinkDetails] = useState<{
+    recipient?: string;
+    signingAuthority?: string;
+    expiresAt?: string;
+  }>();
 
   const items = bundle?.entry?.filter((entry) => entry.resource && getSmartHealthLinkBundleEntryKey(entry)) ?? [];
   const selectedItems = items.filter((entry) => {
@@ -70,6 +75,7 @@ export function SmartHealthLinkImportPage(): JSX.Element {
     setWarning([]);
     setBundle(undefined);
     setSharedPatient(undefined);
+    setSmartHealthLinkDetails(undefined);
     setMatches([]);
     setSelectedPatient(undefined);
     setCreateNewPatient(false);
@@ -90,6 +96,15 @@ export function SmartHealthLinkImportPage(): JSX.Element {
         .map((p) => p.valueString)
         .filter((value): value is string => !!value);
       setWarning(warnings ?? []);
+
+      const details = {
+        recipient: result.parameter?.find((p) => p.name === 'recipient')?.valueString,
+        signingAuthority: result.parameter?.find((p) => p.name === 'signingAuthority')?.valueString,
+        expiresAt: result.parameter?.find((p) => p.name === 'expiresAt')?.valueDateTime,
+      };
+      setSmartHealthLinkDetails(
+        details.recipient || details.signingAuthority || details.expiresAt ? details : undefined
+      );
 
       const resources = JSON.parse(
         result.parameter?.find((p) => p.name === 'fhirResources')?.valueString ?? '[]'
@@ -253,6 +268,40 @@ export function SmartHealthLinkImportPage(): JSX.Element {
             </Group>
           </Stack>
         </Paper>
+
+        {smartHealthLinkDetails && (
+          <Paper withBorder p="md">
+            <Stack gap="xs">
+              <Title order={3}>SMART Health Link Details</Title>
+              <Group gap="xl" align="start">
+                {smartHealthLinkDetails.recipient && (
+                  <div>
+                    <Text size="xs" c="dimmed" fw={700}>
+                      Recipient
+                    </Text>
+                    <Text size="sm">{smartHealthLinkDetails.recipient}</Text>
+                  </div>
+                )}
+                {smartHealthLinkDetails.signingAuthority && (
+                  <div>
+                    <Text size="xs" c="dimmed" fw={700}>
+                      Signing Authority
+                    </Text>
+                    <Text size="sm">{smartHealthLinkDetails.signingAuthority}</Text>
+                  </div>
+                )}
+                {smartHealthLinkDetails.expiresAt && (
+                  <div>
+                    <Text size="xs" c="dimmed" fw={700}>
+                      Expires
+                    </Text>
+                    <Text size="sm">{new Date(smartHealthLinkDetails.expiresAt).toLocaleString()}</Text>
+                  </div>
+                )}
+              </Group>
+            </Stack>
+          </Paper>
+        )}
 
         {sharedPatient && (
           <Card withBorder radius="sm" p="md">
