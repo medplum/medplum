@@ -26,7 +26,7 @@
     "test": "vitest run --exclude src/seed.int.test.ts",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --exclude src/seed.int.test.ts --project integration",
-    "test:seed": "vitest run src/seed.int.test.ts --project integration --testTimeout=400000"
+    "test:seed": "vitest run --project seed --testTimeout=400000"
   },
   "dependencies": {
     "@appsignal/opentelemetry-instrumentation-bullmq": "0.8.0",

@@ -53,8 +53,8 @@ const sharedTestConfig = {
   // Jest used a single `testTimeout` for both tests and lifecycle hooks (beforeAll, afterAll, etc.).
   // Vitest splits these into `testTimeout` and `hookTimeout`, so both must be set explicitly.
   // Jest config: testTimeout 30_000; `test:seed` overrode it to 400_000 for tests and hooks alike.
-  // `test:seed` still passes `--testTimeout=400000` for the test body; hookTimeout here covers the
-  // long-running seed.int.test.ts beforeAll (migrations, index config, vacuum).
+  // `test:seed` passes `--testTimeout=400000` for the test body; hookTimeout here covers the
+  // long-running seed.int.test.ts beforeAll (migrations, index config, vacuum) in the seed project.
   testTimeout: 30_000,
   hookTimeout: 400_000,
 } as const;
@@ -92,9 +92,23 @@ export default defineConfig({
           name: 'integration',
           pool: 'forks',
           include: ['src/**/*.int.test.ts'],
+          // Seed runs separately via `test:seed` (see `seed` project). Exclude here so it is not
+          // picked up when `npm run test` runs both projects without relying on CLI --exclude.
+          exclude: [...configDefaults.exclude, 'src/seed.int.test.ts'],
           sequence: {
             sequencer: CustomSequencer,
           },
+        },
+      },
+      {
+        ...sharedConfig,
+        test: {
+          ...sharedTestConfig,
+          name: 'seed',
+          pool: 'forks',
+          // Dedicated project for `npm run test:seed`; must be separate because project-level
+          // exclude blocks CLI file filters on the integration project.
+          include: ['src/seed.int.test.ts'],
         },
       },
     ],
