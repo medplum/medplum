@@ -13,6 +13,7 @@ import type {
 } from '@medplum/fhirtypes';
 import Bowser from 'bowser';
 import type { Request, Response } from 'express';
+import { isMfaRequired } from './utils';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import type { SystemRepository } from '../fhir/repo';
@@ -29,6 +30,7 @@ interface UserSession {
 
 interface UserSecurity {
   mfaEnrolled: boolean;
+  mfaRequired: boolean;
   sessions: UserSession[];
   memberships: Partial<ProjectMembership>[];
 }
@@ -63,6 +65,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     });
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
+      mfaRequired: isMfaRequired(user, project),
       sessions,
       memberships: memberships
         .filter((m) => m.active !== false)
