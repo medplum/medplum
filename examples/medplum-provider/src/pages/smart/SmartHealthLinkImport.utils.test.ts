@@ -140,6 +140,36 @@ describe('SmartHealthLinkImport utils', () => {
     );
   });
 
+  test('rewrites patient references by patient entry fullUrl', () => {
+    const patientFullUrl = 'urn:uuid:d8c63f84-d51c-469b-a4f8-abe3d04139fc';
+    const documentReferenceFullUrl = 'urn:uuid:85f5f237-cf9b-4d34-9c49-58d15d51ab80';
+    const result = buildSmartHealthLinkImportBundle(
+      {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          { fullUrl: patientFullUrl, resource: { ...sharedPatient, id: undefined } },
+          {
+            fullUrl: documentReferenceFullUrl,
+            resource: {
+              ...documentReference,
+              id: undefined,
+              subject: { reference: patientFullUrl },
+              author: [{ reference: patientFullUrl }],
+            },
+          },
+        ],
+      },
+      new Set([patientFullUrl, documentReferenceFullUrl]),
+      { ...sharedPatient, id: undefined },
+      { ...sharedPatient, id: 'local-patient' }
+    );
+
+    const importedDocumentReference = findResource(result, 'DocumentReference') as DocumentReference;
+    expect(importedDocumentReference.subject?.reference).toBe('Patient/local-patient');
+    expect(importedDocumentReference.author?.[0].reference).toBe('Patient/local-patient');
+  });
+
   test('selects id-less bundle entries by fullUrl', () => {
     const result = buildSmartHealthLinkImportBundle(
       {
