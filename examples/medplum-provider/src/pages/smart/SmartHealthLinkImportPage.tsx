@@ -51,7 +51,7 @@ export function SmartHealthLinkImportPage(): JSX.Element {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [smartHealthLinkDetails, setSmartHealthLinkDetails] = useState<{
     recipient?: string;
-    signingAuthority?: string;
+    sourceOrigin?: string;
     expiresAt?: string;
   }>();
 
@@ -99,12 +99,10 @@ export function SmartHealthLinkImportPage(): JSX.Element {
 
       const details = {
         recipient: result.parameter?.find((p) => p.name === 'recipient')?.valueString,
-        signingAuthority: result.parameter?.find((p) => p.name === 'signingAuthority')?.valueString,
+        sourceOrigin: result.parameter?.find((p) => p.name === 'sourceOrigin')?.valueString,
         expiresAt: result.parameter?.find((p) => p.name === 'expiresAt')?.valueDateTime,
       };
-      setSmartHealthLinkDetails(
-        details.recipient || details.signingAuthority || details.expiresAt ? details : undefined
-      );
+      setSmartHealthLinkDetails(details.recipient || details.sourceOrigin || details.expiresAt ? details : undefined);
 
       const resources = JSON.parse(
         result.parameter?.find((p) => p.name === 'fhirResources')?.valueString ?? '[]'
@@ -282,12 +280,12 @@ export function SmartHealthLinkImportPage(): JSX.Element {
                     <Text size="sm">{smartHealthLinkDetails.recipient}</Text>
                   </div>
                 )}
-                {smartHealthLinkDetails.signingAuthority && (
+                {smartHealthLinkDetails.sourceOrigin && (
                   <div>
                     <Text size="xs" c="dimmed" fw={700}>
-                      Signing Authority
+                      Source Origin
                     </Text>
-                    <Text size="sm">{smartHealthLinkDetails.signingAuthority}</Text>
+                    <Text size="sm">{smartHealthLinkDetails.sourceOrigin}</Text>
                   </div>
                 )}
                 {smartHealthLinkDetails.expiresAt && (

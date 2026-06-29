@@ -49,7 +49,7 @@ interface ResolvedSmartHealthLink {
   manifest?: Record<string, unknown>;
   fhirResources: Resource[];
   recipient?: string;
-  signingAuthority?: string;
+  sourceOrigin?: string;
   expiresAt?: string;
   warnings?: string[];
 }
@@ -94,7 +94,7 @@ export const resolveSmartHealthLinkOperation = makeOperationDefinition(
       { use: 'out', name: 'manifest', type: 'string', min: 0, max: '1' },
       { use: 'out', name: 'fhirResources', type: 'string', min: 0, max: '1' },
       { use: 'out', name: 'recipient', type: 'string', min: 0, max: '1' },
-      { use: 'out', name: 'signingAuthority', type: 'string', min: 0, max: '1' },
+      { use: 'out', name: 'sourceOrigin', type: 'string', min: 0, max: '1' },
       { use: 'out', name: 'expiresAt', type: 'dateTime', min: 0, max: '1' },
       { use: 'out', name: 'warning', type: 'string', min: 0, max: '*' },
       { use: 'out', name: 'error', type: 'string', min: 0, max: '1' },
@@ -217,7 +217,7 @@ export async function resolveSmartHealthLinkHandler(req: FhirRequest): Promise<F
         manifest: JSON.stringify(result.manifest),
         fhirResources: JSON.stringify(result.fhirResources),
         recipient: result.recipient,
-        signingAuthority: result.signingAuthority,
+        sourceOrigin: result.sourceOrigin,
         expiresAt: result.expiresAt,
         warning: result.warnings,
       }),
@@ -309,7 +309,7 @@ async function resolveGeneratedSmartHealthLink(
     return {
       fhirResources,
       recipient,
-      signingAuthority: new URL(smartHealthLink.url).origin,
+      sourceOrigin: new URL(smartHealthLink.url).origin,
       expiresAt: smartHealthLink.expiresAt,
     };
   }
@@ -323,7 +323,7 @@ async function resolveGeneratedSmartHealthLink(
   return {
     manifest,
     fhirResources,
-    signingAuthority: new URL(smartHealthLink.url).origin,
+    sourceOrigin: new URL(smartHealthLink.url).origin,
     expiresAt: smartHealthLink.expiresAt,
   };
 }
@@ -367,7 +367,7 @@ async function resolveExternalSmartHealthLink(
   return {
     fhirResources: [JSON.parse(plaintext) as Resource],
     recipient,
-    signingAuthority: url.origin,
+    sourceOrigin: url.origin,
     expiresAt: payload.exp !== undefined ? new Date(payload.exp * 1000).toISOString() : undefined,
     warnings,
   };

@@ -421,7 +421,7 @@ describe('SMART Health operations', () => {
     expect(resolveResponse.status).toBe(200);
     expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(true);
     expect(getStringParameter(resolveResponse.body, 'recipient')).toBe('Test Recipient');
-    expect(getStringParameter(resolveResponse.body, 'signingAuthority')).toBe(directUrl.origin);
+    expect(getStringParameter(resolveResponse.body, 'sourceOrigin')).toBe(directUrl.origin);
     expect(getDateTimeParameter(resolveResponse.body, 'expiresAt')).toBe(new Date(exp * 1000).toISOString());
 
     const fhirResources = JSON.parse(getStringParameter(resolveResponse.body, 'fhirResources')) as Bundle[];
@@ -471,7 +471,7 @@ describe('SMART Health operations', () => {
       signal: expect.any(AbortSignal),
     });
     expect(getStringParameter(resolveResponse.body, 'recipient')).toBe('Test Recipient');
-    expect(getStringParameter(resolveResponse.body, 'signingAuthority')).toBe('https://issuer.example.com');
+    expect(getStringParameter(resolveResponse.body, 'sourceOrigin')).toBe('https://issuer.example.com');
     expect(getDateTimeParameter(resolveResponse.body, 'expiresAt')).toBe(new Date(exp * 1000).toISOString());
 
     const fhirResources = JSON.parse(getStringParameter(resolveResponse.body, 'fhirResources')) as Bundle[];
