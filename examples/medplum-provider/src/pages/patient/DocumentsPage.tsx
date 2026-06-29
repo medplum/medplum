@@ -30,9 +30,7 @@ export function DocumentsPage(): JSX.Element {
   const search = useMemo<SearchRequest>(() => {
     const parsed = parseSearchRequest(`DocumentReference${location.search}`);
     const sortRules =
-      parsed.sortRules && parsed.sortRules.length > 0
-        ? parsed.sortRules
-        : [{ code: '_lastUpdated', descending: true }];
+      parsed.sortRules && parsed.sortRules.length > 0 ? parsed.sortRules : [{ code: '_lastUpdated', descending: true }];
     return {
       resourceType: 'DocumentReference',
       filters: [
