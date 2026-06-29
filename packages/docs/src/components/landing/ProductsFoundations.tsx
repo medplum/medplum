@@ -4,7 +4,7 @@ import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { COMPLIANCE, FOUNDATIONS } from '../../data/products-content';
-import { MedplumDiagram, FOUNDATION_NUMBER } from './ProductsDiagram';
+import { FOUNDATION_NUMBER, MedplumDiagram } from './ProductsDiagram';
 import styles from './ProductsFoundations.module.css';
 
 const FOUNDATION_NAMES = FOUNDATIONS.map((f) => f.name);
@@ -96,9 +96,7 @@ export function ProductsFoundations(): JSX.Element {
               <p className={styles.detailBody}>{active.body}</p>
             </>
           ) : (
-            <p className={styles.detailBody}>
-              Select any Foundation in the diagram below to learn more about it.
-            </p>
+            <p className={styles.detailBody}>Select any Foundation in the diagram below to learn more about it.</p>
           )}
         </div>
         <div className={styles.detailCardActions}>

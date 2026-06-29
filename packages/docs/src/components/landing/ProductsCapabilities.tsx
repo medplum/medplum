@@ -20,29 +20,51 @@ function IntakeFormPreview(): JSX.Element {
       <rect x="0" y="0" width="300" height="300" fill="white" fillOpacity="0.9" />
 
       {/* Demographics heading */}
-      <text x="20" y="34" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>Demographics</text>
+      <text x="20" y="34" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>
+        Demographics
+      </text>
 
       {/* First Name * */}
-      <text x="20" y="60" fontFamily={f} fontSize="12" fontWeight="500" fill={tc}>First Name</text>
-      <text x="88" y="60" fontFamily={f} fontSize="12" fontWeight="500" fill={red}>*</text>
+      <text x="20" y="60" fontFamily={f} fontSize="12" fontWeight="500" fill={tc}>
+        First Name
+      </text>
+      <text x="88" y="60" fontFamily={f} fontSize="12" fontWeight="500" fill={red}>
+        *
+      </text>
       <rect x="20" y="66" width="260" height="32" rx="4" fill="white" stroke={border} strokeWidth="1.5" />
-      <text x="30" y="86" fontFamily={f} fontSize="13" fill={tc}>Sarah</text>
+      <text x="30" y="86" fontFamily={f} fontSize="13" fill={tc}>
+        Sarah
+      </text>
 
       {/* Middle Name */}
-      <text x="20" y="122" fontFamily={f} fontSize="12" fontWeight="500" fill={tc}>Middle Name</text>
+      <text x="20" y="122" fontFamily={f} fontSize="12" fontWeight="500" fill={tc}>
+        Middle Name
+      </text>
       <rect x="20" y="128" width="260" height="32" rx="4" fill="white" stroke={border} strokeWidth="1.5" />
 
       {/* Last Name * */}
-      <text x="20" y="184" fontFamily={f} fontSize="12" fontWeight="500" fill={tc}>Last Name</text>
-      <text x="80" y="184" fontFamily={f} fontSize="12" fontWeight="500" fill={red}>*</text>
+      <text x="20" y="184" fontFamily={f} fontSize="12" fontWeight="500" fill={tc}>
+        Last Name
+      </text>
+      <text x="80" y="184" fontFamily={f} fontSize="12" fontWeight="500" fill={red}>
+        *
+      </text>
       <rect x="20" y="190" width="260" height="32" rx="4" fill="white" stroke={border} strokeWidth="1.5" />
-      <text x="30" y="210" fontFamily={f} fontSize="13" fill={tc}>Mitchell</text>
+      <text x="30" y="210" fontFamily={f} fontSize="13" fill={tc}>
+        Mitchell
+      </text>
 
       {/* Date of Birth * */}
-      <text x="20" y="246" fontFamily={f} fontSize="12" fontWeight="500" fill={tc}>Date of Birth</text>
-      <text x="101" y="246" fontFamily={f} fontSize="12" fontWeight="500" fill={red}>*</text>
+      <text x="20" y="246" fontFamily={f} fontSize="12" fontWeight="500" fill={tc}>
+        Date of Birth
+      </text>
+      <text x="101" y="246" fontFamily={f} fontSize="12" fontWeight="500" fill={red}>
+        *
+      </text>
       <rect x="20" y="252" width="260" height="32" rx="4" fill="white" stroke={border} strokeWidth="1.5" />
-      <text x="30" y="272" fontFamily={f} fontSize="13" fill={tc}>04/12/1988</text>
+      <text x="30" y="272" fontFamily={f} fontSize="13" fill={tc}>
+        04/12/1988
+      </text>
     </svg>
   );
 }
@@ -77,9 +99,15 @@ function SchedulingPreview(): JSX.Element {
       {/* Month / Week / Day segmented control */}
       <rect x="96" y="12" width="150" height="26" rx="7" fill={segBg} />
       <rect x="149" y="15" width="44" height="20" rx="5" fill="white" />
-      <text x="121" y="29" fontFamily={f} fontSize="11" fill={segText} textAnchor="middle">Month</text>
-      <text x="171" y="29" fontFamily={f} fontSize="11" fontWeight="600" fill={tc} textAnchor="middle">Week</text>
-      <text x="221" y="29" fontFamily={f} fontSize="11" fill={segText} textAnchor="middle">Day</text>
+      <text x="121" y="29" fontFamily={f} fontSize="11" fill={segText} textAnchor="middle">
+        Month
+      </text>
+      <text x="171" y="29" fontFamily={f} fontSize="11" fontWeight="600" fill={tc} textAnchor="middle">
+        Week
+      </text>
+      <text x="221" y="29" fontFamily={f} fontSize="11" fill={segText} textAnchor="middle">
+        Day
+      </text>
 
       {/* Grid frame: top border, two day columns + a time gutter */}
       <line x1="0" y1="54" x2="300" y2="54" stroke={grid} strokeWidth="1.5" />
@@ -87,8 +115,12 @@ function SchedulingPreview(): JSX.Element {
       <line x1="167" y1="54" x2="167" y2="300" stroke={grid} strokeWidth="1.5" />
 
       {/* Day headers */}
-      <text x="100" y="74" fontFamily={f} fontSize="12" fontWeight="700" fill={tc} textAnchor="middle">01 Fri</text>
-      <text x="233" y="74" fontFamily={f} fontSize="12" fontWeight="700" fill={tc} textAnchor="middle">02 Sat</text>
+      <text x="100" y="74" fontFamily={f} fontSize="12" fontWeight="700" fill={tc} textAnchor="middle">
+        01 Fri
+      </text>
+      <text x="233" y="74" fontFamily={f} fontSize="12" fontWeight="700" fill={tc} textAnchor="middle">
+        02 Sat
+      </text>
       <line x1="0" y1="86" x2="300" y2="86" stroke={grid} strokeWidth="1.5" />
 
       {/* Hour rows + gutter labels */}
@@ -103,8 +135,12 @@ function SchedulingPreview(): JSX.Element {
 
       {/* Appointment block — aligned to the 10–11 AM slot; same patient as the intake form */}
       <rect x="40" y="158" width="120" height="36" rx="5" fill={blue} />
-      <text x="48" y="174" fontFamily={f} fontSize="9" fill="white" fillOpacity="0.9">10:00 – 11:00 AM</text>
-      <text x="48" y="189" fontFamily={f} fontSize="11" fontWeight="600" fill="white">Sarah Mitchell</text>
+      <text x="48" y="174" fontFamily={f} fontSize="9" fill="white" fillOpacity="0.9">
+        10:00 – 11:00 AM
+      </text>
+      <text x="48" y="189" fontFamily={f} fontSize="11" fontWeight="600" fill="white">
+        Sarah Mitchell
+      </text>
     </svg>
   );
 }
@@ -146,8 +182,12 @@ function ChartingPreview(): JSX.Element {
       <rect x="0" y="0" width="300" height="300" fill="white" fillOpacity="0.9" />
 
       {/* Note header */}
-      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>Progress Note</text>
-      <text x="20" y="50" fontFamily={f} fontSize="10" fill={muted}>Dr. A. Nguyen · Mar 1, 2025</text>
+      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>
+        Progress Note
+      </text>
+      <text x="20" y="50" fontFamily={f} fontSize="10" fill={muted}>
+        Dr. A. Nguyen · Mar 1, 2025
+      </text>
       <line x1="20" y1="62" x2="280" y2="62" stroke={grid} strokeWidth="1.5" />
 
       {sections.map((s) => (
@@ -188,7 +228,9 @@ function DiagnosticOrdersPreview(): JSX.Element {
     >
       <rect x="0" y="0" width="300" height="300" fill="white" fillOpacity="0.9" />
 
-      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>Lab Orders</text>
+      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>
+        Lab Orders
+      </text>
 
       {orders.map((o) => {
         const pillW = o.status === 'Pending' ? 58 : 44;
@@ -242,7 +284,9 @@ function MedicationsPreview(): JSX.Element {
     >
       <rect x="0" y="0" width="300" height="300" fill="white" fillOpacity="0.9" />
 
-      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>Active Medications</text>
+      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>
+        Active Medications
+      </text>
 
       {meds.map((m) => (
         <g key={m.name}>
@@ -274,8 +318,18 @@ function CareCoordinationPreview(): JSX.Element {
   const tasks = [
     { top: 52, label: 'Schedule follow-up visit', done: true, chip: null },
     { top: 96, label: 'Send referral to Cardiology', done: true, chip: null },
-    { top: 140, label: 'Review lab results', done: false, chip: { text: 'Today', bg: '#ffe3e3', fg: '#e03131', w: 48 } },
-    { top: 184, label: 'Call patient re: meds', done: false, chip: { text: 'Tomorrow', bg: '#e7f5ff', fg: '#1971c2', w: 66 } },
+    {
+      top: 140,
+      label: 'Review lab results',
+      done: false,
+      chip: { text: 'Today', bg: '#ffe3e3', fg: '#e03131', w: 48 },
+    },
+    {
+      top: 184,
+      label: 'Call patient re: meds',
+      done: false,
+      chip: { text: 'Tomorrow', bg: '#e7f5ff', fg: '#1971c2', w: 66 },
+    },
   ];
 
   return (
@@ -287,7 +341,9 @@ function CareCoordinationPreview(): JSX.Element {
     >
       <rect x="0" y="0" width="300" height="300" fill="white" fillOpacity="0.9" />
 
-      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>Care Tasks</text>
+      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>
+        Care Tasks
+      </text>
 
       {tasks.map((t) => (
         <g key={t.label}>
@@ -360,7 +416,9 @@ function MessagingPreview(): JSX.Element {
     >
       <rect x="0" y="0" width="300" height="300" fill="white" fillOpacity="0.9" />
 
-      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>Messages</text>
+      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>
+        Messages
+      </text>
 
       {msgs.map((m) => {
         const x = m.out ? 280 - m.w : 20;
@@ -401,10 +459,16 @@ function BillingPreview(): JSX.Element {
       <rect x="0" y="0" width="300" height="300" fill="white" fillOpacity="0.9" />
 
       {/* Header + status badge */}
-      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>Claim Summary</text>
+      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>
+        Claim Summary
+      </text>
       <rect x="210" y="18" width="70" height="20" rx="10" fill="#e7f5ff" />
-      <text x="245" y="32" fontFamily={f} fontSize="9.5" fontWeight="600" fill={blue} textAnchor="middle">Submitted</text>
-      <text x="20" y="52" fontFamily={f} fontSize="10" fill={muted}>Claim #CLM-1043 · Mar 1, 2025</text>
+      <text x="245" y="32" fontFamily={f} fontSize="9.5" fontWeight="600" fill={blue} textAnchor="middle">
+        Submitted
+      </text>
+      <text x="20" y="52" fontFamily={f} fontSize="10" fill={muted}>
+        Claim #CLM-1043 · Mar 1, 2025
+      </text>
       <line x1="20" y1="64" x2="280" y2="64" stroke={grid} strokeWidth="1.5" />
 
       {/* Line items */}
@@ -421,10 +485,18 @@ function BillingPreview(): JSX.Element {
 
       {/* Totals */}
       <line x1="20" y1="162" x2="280" y2="162" stroke={grid} strokeWidth="1.5" />
-      <text x="20" y="188" fontFamily={f} fontSize="12" fontWeight="700" fill={tc}>Total billed</text>
-      <text x="280" y="188" fontFamily={f} fontSize="12" fontWeight="700" fill={tc} textAnchor="end">$245.00</text>
-      <text x="20" y="214" fontFamily={f} fontSize="11.5" fill={body}>Patient owes</text>
-      <text x="280" y="214" fontFamily={f} fontSize="12" fontWeight="700" fill={blue} textAnchor="end">$49.00</text>
+      <text x="20" y="188" fontFamily={f} fontSize="12" fontWeight="700" fill={tc}>
+        Total billed
+      </text>
+      <text x="280" y="188" fontFamily={f} fontSize="12" fontWeight="700" fill={tc} textAnchor="end">
+        $245.00
+      </text>
+      <text x="20" y="214" fontFamily={f} fontSize="11.5" fill={body}>
+        Patient owes
+      </text>
+      <text x="280" y="214" fontFamily={f} fontSize="12" fontWeight="700" fill={blue} textAnchor="end">
+        $49.00
+      </text>
     </svg>
   );
 }
