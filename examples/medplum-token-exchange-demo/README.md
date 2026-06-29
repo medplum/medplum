@@ -7,9 +7,14 @@ Medplum access token using the OAuth2 [Token Exchange](https://datatracker.ietf.
 grant. It can optionally target a specific `ProjectMembership` via `membership_id`, which lets the
 same external identity authenticate into a project other than the client's own project.
 
-This is the machine-to-machine counterpart to the browser based
-[medplum-client-external-idp-demo](../medplum-client-external-idp-demo): no redirect/PKCE flow,
-just a direct token exchange suitable for backend services and integration tests.
+Unlike the browser based [medplum-client-external-idp-demo](../medplum-client-external-idp-demo),
+the token exchange itself can be a direct server-to-server call. This demo shows how to do that.
+
+The catch is that you still need a token from your external IdP to exchange. In production that
+token comes from your own sign-in flow (e.g. a browser login); for local testing this example ships an optional
+`get-external-token` helper that performs an interactive browser login (authorization code + PKCE)
+just to mint one. That interactive step is only a convenience for obtaining the input token — the
+token exchange demonstrated here remains a non-interactive, machine-to-machine operation.
 
 ## How it works
 
@@ -92,28 +97,29 @@ for full details.
 
 ```bash
 npm install
-cp .env.example .env
+cp .env.defaults .env
 # edit .env with your values
 npm run exchange-for-medplum-token
 ```
 
 ### Configuration (`.env`)
 
-| Variable                 | Required | Description                                                                                         |
-| ------------------------ | -------- | --------------------------------------------------------------------------------------------------- |
-| `MEDPLUM_BASE_URL`       | No       | Medplum server URL. Defaults to `http://localhost:8103/`.                                           |
-| `MEDPLUM_AUTH_PROVIDER_ID` | Yes | External auth provider selector (server `externalAuthProviders` clientId, or ClientApplication id). |
-| `MEDPLUM_MEMBERSHIP_ID`  | No       | A specific `ProjectMembership` id to authenticate into.                                             |
-| `EXTERNAL_ACCESS_TOKEN`  | Maybe    | Access token from your external IdP. Provide this **or** the `EXTERNAL_*` fetch fields below.       |
-| `EXTERNAL_TOKEN_URL`     | Maybe    | External IdP token endpoint, used to fetch a token via `client_credentials`.                        |
-| `EXTERNAL_CLIENT_ID`     | Maybe    | External IdP client ID for the `client_credentials` fetch.                                          |
-| `EXTERNAL_CLIENT_SECRET` | Maybe    | External IdP client secret for the `client_credentials` fetch.                                      |
-| `EXTERNAL_SCOPE`         | No       | Optional scope for the `client_credentials` fetch.                                                  |
+| Variable                   | Required | Description                                                                                         |
+| -------------------------- | -------- | --------------------------------------------------------------------------------------------------- |
+| `MEDPLUM_BASE_URL`         | No       | Medplum server URL. Defaults to `http://localhost:8103/`.                                           |
+| `MEDPLUM_AUTH_PROVIDER_ID` | Yes      | External auth provider selector (server `externalAuthProviders` clientId, or ClientApplication id). |
+| `MEDPLUM_MEMBERSHIP_ID`    | No       | A specific `ProjectMembership` id to authenticate into.                                             |
+| `EXTERNAL_ACCESS_TOKEN`    | Maybe    | Access token from your external IdP. Provide this **or** the `EXTERNAL_*` fetch fields below.       |
+| `EXTERNAL_TOKEN_URL`       | Maybe    | External IdP token endpoint, used to fetch a token via `client_credentials`.                        |
+| `EXTERNAL_CLIENT_ID`       | Maybe    | External IdP client ID for the `client_credentials` fetch.                                          |
+| `EXTERNAL_CLIENT_SECRET`   | Maybe    | External IdP client secret for the `client_credentials` fetch.                                      |
+| `EXTERNAL_SCOPE`           | No       | Optional scope for the `client_credentials` fetch.                                                  |
 
 You must supply the external token in one of three ways:
 
-- **Interactive login (recommended)**: run `npm run get-external-token` (see below) to log in as a real
-  user and have the token written to `EXTERNAL_ACCESS_TOKEN` automatically.
+- **Interactive login (recommended for local testing)**: run `npm run get-external-token` (see below) to
+  log in as a real user and have the token written to `EXTERNAL_ACCESS_TOKEN` automatically. This is just a
+  convenience for minting an input token locally; the token exchange itself stays non-interactive.
 - **Directly**: set `EXTERNAL_ACCESS_TOKEN` to a token you already obtained from your IdP.
 - **Fetched for you**: set `EXTERNAL_TOKEN_URL`, `EXTERNAL_CLIENT_ID`, and `EXTERNAL_CLIENT_SECRET`,
   and the script will request one using the OAuth2 `client_credentials` grant. (Note: `client_credentials`
@@ -125,7 +131,7 @@ You must supply the external token in one of three ways:
 It opens your IdP's hosted login page in the browser, captures the redirect on a local listener,
 exchanges the code for an access token, and writes it into `.env` as `EXTERNAL_ACCESS_TOKEN`.
 
-Configure these in `.env` (examples for several vendors are in `.env.example`):
+Configure these in `.env` (examples for several vendors are in `.env.defaults`):
 
 | Variable            | Required | Description                                                                                                 |
 | ------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |

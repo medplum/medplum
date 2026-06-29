@@ -21,7 +21,6 @@
   "devDependencies": {
     "@medplum/core": "5.1.22",
     "@medplum/eslint-config": "5.1.22",
-    "@medplum/fhirtypes": "5.1.22",
     "@types/node": "22.19.21",
     "dotenv": "17.4.2",
     "tsx": "4.22.4",

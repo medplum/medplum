@@ -24,7 +24,7 @@ function getIdpConfig(): IdpConfig {
   const tokenUrl = process.env.IDP_TOKEN_URL;
   const clientId = process.env.IDP_CLIENT_ID;
   if (!authorizeUrl || !tokenUrl || !clientId) {
-    throw new Error('Missing IDP_AUTHORIZE_URL, IDP_TOKEN_URL, or IDP_CLIENT_ID. See README.md / .env.example.');
+    throw new Error('Missing IDP_AUTHORIZE_URL, IDP_TOKEN_URL, or IDP_CLIENT_ID. See README.md / .env.defaults.');
   }
   return {
     authorizeUrl,
@@ -42,6 +42,23 @@ function getIdpConfig(): IdpConfig {
 function base64url(buffer: Buffer): string {
   return buffer.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/[=]+$/, '');
 }
+
+/**
+ * Escapes a value for safe interpolation into an HTML response.
+ * @param value - The value to escape.
+ * @returns The HTML-escaped string.
+ */
+function escapeHtml(value: unknown): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Abort the local listener if the user never completes the login, so the process does not hang.
+const LISTEN_TIMEOUT_MS = 5 * 60 * 1000;
 
 interface Pkce {
   verifier: string;
@@ -84,7 +101,9 @@ async function exchangeCodeForToken(config: IdpConfig, code: string, pkce: Pkce)
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     redirect_uri: config.redirectUri,
-    client_id: config.clientId, //Note that this is the id to identify the external auth provider in the server config, not the client id of the client application in the medplum project.
+    // This request goes directly to the external IdP, so this is the IdP application's own OAuth
+    // client ID (IDP_CLIENT_ID) - unrelated to the Medplum-side MEDPLUM_AUTH_PROVIDER_ID selector.
+    client_id: config.clientId,
     code,
     code_verifier: pkce.verifier,
   });
@@ -156,14 +175,19 @@ async function main(): Promise<void> {
       const returnedState = url.searchParams.get('state');
       const error = url.searchParams.get('error');
 
+      const fail = (status: number, heading: string, err: Error): void => {
+        res.writeHead(status, { 'Content-Type': 'text/html' }).end(`<h1>${escapeHtml(heading)}</h1>`);
+        finish();
+        reject(err);
+      };
+
       if (error) {
-        res.writeHead(400, { 'Content-Type': 'text/html' }).end(`<h1>IdP error: ${error}</h1>`);
-        server.close();
-        reject(new Error(`IdP returned error: ${error} - ${url.searchParams.get('error_description')}`));
+        const description = url.searchParams.get('error_description');
+        fail(400, `IdP error: ${error}`, new Error(`IdP returned error: ${error} - ${description ?? ''}`));
         return;
       }
       if (!code || returnedState !== state) {
-        res.writeHead(400, { 'Content-Type': 'text/html' }).end('<h1>Missing code or state mismatch</h1>');
+        fail(400, 'Missing code or state mismatch', new Error('Missing authorization code or state mismatch.'));
         return;
       }
 
@@ -172,15 +196,28 @@ async function main(): Promise<void> {
           res
             .writeHead(200, { 'Content-Type': 'text/html' })
             .end('<h1>Success!</h1><p>Access token captured. You can close this tab and return to the terminal.</p>');
-          server.close();
+          finish();
           resolve(token);
         })
         .catch((err) => {
-          res.writeHead(500, { 'Content-Type': 'text/html' }).end(`<h1>Token request failed</h1><pre>${err}</pre>`);
-          server.close();
+          res
+            .writeHead(500, { 'Content-Type': 'text/html' })
+            .end(`<h1>Token request failed</h1><pre>${escapeHtml(err)}</pre>`);
+          finish();
           reject(err);
         });
     });
+
+    const timeout = setTimeout(() => {
+      finish();
+      reject(new Error(`Timed out after ${LISTEN_TIMEOUT_MS / 1000}s waiting for the IdP redirect.`));
+    }, LISTEN_TIMEOUT_MS);
+    timeout.unref();
+
+    function finish(): void {
+      clearTimeout(timeout);
+      server.close();
+    }
 
     server.listen(port, () => {
       console.log(`Listening for the IdP redirect on ${config.redirectUri}`);
@@ -188,7 +225,10 @@ async function main(): Promise<void> {
       console.log('If it does not open, visit:\n', authorizeUrl.toString());
       openBrowser(authorizeUrl.toString());
     });
-    server.on('error', reject);
+    server.on('error', (err) => {
+      finish();
+      reject(err);
+    });
   });
 
   updateEnvFile('EXTERNAL_ACCESS_TOKEN', accessToken);
