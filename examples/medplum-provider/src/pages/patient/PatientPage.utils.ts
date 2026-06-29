@@ -71,6 +71,11 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Visits',
   },
   {
+    id: 'claim',
+    url: 'Claim',
+    label: 'Claims',
+  },
+  {
     id: 'tasks',
     url: 'Task',
     label: 'Tasks',
