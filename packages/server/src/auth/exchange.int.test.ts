@@ -1,0 +1,276 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { ContentType } from '@medplum/core';
+import type { ClientApplication, Project } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
+import express from 'express';
+import request from 'supertest';
+import { vi } from 'vitest';
+import { createClient } from '../admin/client';
+import { inviteUser } from '../admin/invite';
+import { initApp, shutdownApp } from '../app';
+import { loadTestConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
+import { getProjectSystemRepo } from '../fhir/repo';
+import { withTestContext } from '../test.setup';
+import { mockFetchJson, mockFetchText } from '../test.setup.fetch';
+import { registerNew } from './register';
+
+const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+const app = express();
+const domain = randomUUID() + '.example.com';
+const email = `text@${domain}`;
+const redirectUri = `https://${domain}/auth/callback`;
+const externalId = `google-oauth2|${randomUUID()}`;
+const externalAuthIssuer = 'https://example.com';
+const externalAuthConfigClientId = randomUUID();
+const identityProvider = {
+  authorizeUrl: 'https://example.com/oauth2/authorize',
+  tokenUrl: 'https://example.com/oauth2/token',
+  userInfoUrl: 'https://example.com/oauth2/userinfo',
+  clientId: '123',
+  clientSecret: '456',
+};
+const gcipIdentityProvider = {
+  ...identityProvider,
+  userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
+  userInfoMode: 'gcip' as const,
+  userInfoApiKey: 'test-api-key',
+};
+let config: MedplumServerConfig;
+let project: WithId<Project>;
+let defaultClient: ClientApplication;
+let externalAuthClient: ClientApplication;
+let subjectAuthClient: ClientApplication;
+let gcipAuthClient: ClientApplication;
+let gcipSubjectAuthClient: ClientApplication;
+
+describe('Token Exchange', () => {
+  beforeAll(async () => {
+    config = await loadTestConfig();
+    await withTestContext(async () => {
+      await initApp(app, config);
+
+      // Create a new project
+      const registration = await registerNew({
+        firstName: 'External',
+        lastName: 'Text',
+        projectName: 'External Test Project',
+        email,
+        password: 'password!@#',
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      });
+      project = registration.project;
+      defaultClient = registration.client;
+
+      const systemRepo = await getProjectSystemRepo(project);
+
+      // Create a new client application with external auth
+      externalAuthClient = await createClient(systemRepo, {
+        project,
+        name: 'External Auth Client',
+        redirectUri,
+        identityProvider,
+      });
+
+      // Create a new client application with external subject auth
+      subjectAuthClient = await createClient(systemRepo, {
+        project,
+        name: 'Subject Auth Client',
+        redirectUri,
+      });
+
+      // Update client application with external auth
+      await systemRepo.updateResource<ClientApplication>({
+        ...subjectAuthClient,
+        identityProvider: {
+          ...identityProvider,
+          useSubject: true,
+        },
+      });
+
+      gcipAuthClient = await createClient(systemRepo, {
+        project,
+        name: 'GCIP Auth Client',
+        redirectUri,
+        identityProvider: gcipIdentityProvider,
+      });
+
+      gcipSubjectAuthClient = await createClient(systemRepo, {
+        project,
+        name: 'GCIP Subject Auth Client',
+        redirectUri,
+        identityProvider: {
+          ...gcipIdentityProvider,
+          useSubject: true,
+        },
+      });
+
+      // Invite user with external ID
+      await inviteUser({
+        project,
+        externalId,
+        resourceType: 'Patient',
+        firstName: 'External',
+        lastName: 'User',
+      });
+    });
+  });
+
+  afterEach(() => {
+    fetchMock.mockClear();
+    config.externalAuthProviders = undefined;
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('Missing externalAccessToken', async () => {
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: '',
+      clientId: defaultClient.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Missing externalAccessToken');
+  });
+
+  test('Missing clientId', async () => {
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: '',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Missing clientId');
+  });
+
+  test('Missing identity provider', async () => {
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: defaultClient.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error_description).toBe('Invalid client');
+  });
+
+  test('Unknown user', async () => {
+    fetchMock.mockImplementation(() => mockFetchJson({ email: 'not-found@' + domain }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: externalAuthClient.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('ClientApplication success', async () => {
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: externalAuthClient.id,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Server external auth provider success', async () => {
+    config.externalAuthProviders = [
+      { issuer: externalAuthIssuer, clientId: externalAuthConfigClientId, identityProvider },
+    ];
+
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: externalAuthConfigClientId,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('GCIP success', async () => {
+    fetchMock.mockImplementation(() => mockFetchJson({ users: [{ email, localId: 'firebase-user-id' }] }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'firebase-token',
+      clientId: gcipAuthClient.id,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=test-api-key',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Accept: ContentType.JSON,
+          'Content-Type': ContentType.JSON,
+        }),
+        body: JSON.stringify({ idToken: 'firebase-token' }),
+      })
+    );
+    const fetchUrl = fetchMock.mock.calls.at(-1)?.[0];
+    expect(typeof fetchUrl).toBe('string');
+    expect(new URL(fetchUrl as string).searchParams.get('key')).toBe('test-api-key');
+  });
+
+  test('Missing projectId success', async () => {
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      projectId: '',
+      clientId: externalAuthClient.id,
+    });
+    expect(res.status).toBe(200);
+  });
+
+  test('Invalid token request', async () => {
+    fetchMock.mockImplementation(() => mockFetchText('', { contentType: ContentType.TEXT }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: externalAuthClient.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Failed to verify code - unsupported content type: text/plain');
+  });
+
+  test('Subject auth success', async () => {
+    fetchMock.mockImplementation(() => mockFetchJson({ email: '', sub: externalId }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: subjectAuthClient.id,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('GCIP subject auth success', async () => {
+    fetchMock.mockImplementation(() => mockFetchJson({ users: [{ email: '', localId: externalId }] }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'firebase-token',
+      clientId: gcipSubjectAuthClient.id,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('GCIP missing localId', async () => {
+    fetchMock.mockImplementation(() => mockFetchJson({ users: [{ email }] }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'firebase-token',
+      clientId: gcipAuthClient.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error_description).toBe('Failed to verify code - missing localId in user info response');
+  });
+});

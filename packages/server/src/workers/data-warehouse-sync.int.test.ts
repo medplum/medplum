@@ -9,7 +9,7 @@
  * Mocks only `getWarehouseSyncPostgresTableNames` to limit scope. Does not use BullMQ or Redis.
  *
  * Contrast with:
- * - `data-warehouse-sync.test.ts` — unit tests for worker/scheduler wiring (mocked `syncData` / BullMQ).
+ * - `data-warehouse-sync.worker.int.test.ts` — unit tests for worker/scheduler wiring (mocked `syncData` / BullMQ).
  * - `data-warehouse/sync.int.test.ts` — same export pipeline via `syncData` directly (no worker layer).
  */
 

@@ -23,8 +23,10 @@
     "lint:fix": "eslint . --fix",
     "migrate": "tsx src/migrations/migrate-main.ts",
     "start": "node --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./dist/otel/instrumentation.js dist/index.js",
-    "test": "vitest run --exclude src/seed.test.ts",
-    "test:seed": "vitest run src/seed.test.ts --testTimeout=400000"
+    "test": "vitest run --exclude src/seed.int.test.ts",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --exclude src/seed.int.test.ts --project integration",
+    "test:seed": "vitest run src/seed.int.test.ts --project integration --testTimeout=400000"
   },
   "dependencies": {
     "@appsignal/opentelemetry-instrumentation-bullmq": "0.8.0",

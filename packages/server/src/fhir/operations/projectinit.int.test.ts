@@ -1,0 +1,289 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { ContentType, createReference, isUUID } from '@medplum/core';
+import type { Practitioner, Project } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
+import express from 'express';
+import { pwnedPassword } from 'hibp';
+import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
+import { initApp, shutdownApp } from '../../app';
+import { createUser } from '../../auth/newuser';
+import { loadTestConfig } from '../../config/loader';
+import type { MedplumServerConfig } from '../../config/types';
+import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
+import { getGlobalSystemRepo } from '../repo';
+
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
+const app = express();
+
+describe('Project $init', () => {
+  let config: MedplumServerConfig;
+
+  beforeAll(async () => {
+    config = await loadTestConfig();
+    await initApp(app, config);
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  beforeEach(() => {
+    fetchMock.mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(true);
+  });
+
+  test('Success', async () => {
+    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+
+    const projectName = 'Test Init Project ' + randomUUID();
+    const owner = await createUser({
+      email: randomUUID() + '@example.com',
+      password: 'iaudhbrglkjhabdfligubhaedrg',
+      firstName: projectName,
+      lastName: 'Admin',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/Project/$init`)
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'name',
+            valueString: projectName,
+          },
+          {
+            name: 'owner',
+            valueReference: createReference(owner),
+          },
+        ],
+      });
+    expect(res.status).toBe(201);
+
+    const project = res.body as WithId<Project>;
+    expect(project.id).toBeDefined();
+    expect(isUUID(project.id)).toBe(true);
+    expect(project.owner).toStrictEqual(createReference(owner));
+
+    // Verify default patient access policy was created and set on the project
+    const updatedProject = await withTestContext(() =>
+      getGlobalSystemRepo().readResource<Project>('Project', project.id)
+    );
+    expect(updatedProject.defaultPatientAccessPolicy).toBeDefined();
+    expect(updatedProject.defaultPatientAccessPolicy?.reference).toMatch(/^AccessPolicy\//);
+  });
+
+  test('Requires project name', async () => {
+    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+
+    const owner = await createUser({
+      email: randomUUID() + '@example.com',
+      password: 'iaudhbrglkjhabdfligubhaedrg',
+      firstName: 'The',
+      lastName: 'Admin',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/Project/$init`)
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'owner',
+            valueReference: createReference(owner),
+          },
+        ],
+      });
+    expect(res.status).toBe(400);
+  });
+
+  test('Requires owner to be User', async () => {
+    const superAdminClientToken = await initTestAuth({ superAdmin: true });
+    expect(superAdminClientToken).toBeDefined();
+
+    const doc = await withTestContext(() =>
+      getGlobalSystemRepo().createResource<Practitioner>({ resourceType: 'Practitioner' })
+    );
+
+    const projectName = 'Test Init Project ' + randomUUID();
+    const res = await request(app)
+      .post(`/fhir/R4/Project/$init`)
+      .set('Authorization', 'Bearer ' + superAdminClientToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'name',
+            valueString: projectName,
+          },
+          {
+            name: 'owner',
+            valueReference: createReference(doc),
+          },
+        ],
+      });
+    expect(res.status).toBe(400);
+  });
+
+  test('Requires server User', async () => {
+    const accessToken = await initTestAuth();
+
+    const projectName = 'Test Init Project ' + randomUUID();
+    const owner = await createUser({
+      email: randomUUID() + '@example.com',
+      password: 'iaudhbrglkjhabdfligubhaedrg',
+      firstName: 'Other Project',
+      lastName: 'Member',
+      projectId: randomUUID(),
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/Project/$init`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'name',
+            valueString: projectName,
+          },
+          {
+            name: 'owner',
+            valueReference: createReference(owner),
+          },
+        ],
+      });
+    expect(res.status).toBe(400);
+  });
+
+  test('Looks up existing user by email', async () => {
+    const accessToken = await initTestAuth();
+
+    const ownerEmail = randomUUID() + '@example.com';
+    const projectName = 'Test Init Project ' + randomUUID();
+    const owner = await createUser({
+      email: ownerEmail,
+      password: 'iaudhbrglkjhabdfligubhaedrg',
+      firstName: 'Server',
+      lastName: 'User',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/Project/$init`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'name',
+            valueString: projectName,
+          },
+          {
+            name: 'ownerEmail',
+            valueString: ownerEmail,
+          },
+        ],
+      });
+    expect(res.status).toBe(201);
+
+    const project = res.body as Project;
+    expect(project.owner).toStrictEqual(createReference(owner));
+  });
+
+  test('Creates new owner User from email', async () => {
+    const accessToken = await initTestAuth();
+
+    const ownerEmail = randomUUID() + '@example.com';
+    const projectName = 'Test Init Project ' + randomUUID();
+
+    const res = await request(app)
+      .post(`/fhir/R4/Project/$init`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'name',
+            valueString: projectName,
+          },
+          {
+            name: 'ownerEmail',
+            valueString: ownerEmail,
+          },
+        ],
+      });
+    expect(res.status).toBe(201);
+  });
+
+  test('Defaults to no owner if unspecified', async () => {
+    const accessToken = await initTestAuth();
+
+    const projectName = 'Test Init Project ' + randomUUID();
+    const res = await request(app)
+      .post(`/fhir/R4/Project/$init`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'name',
+            valueString: projectName,
+          },
+        ],
+      });
+    expect(res.status).toBe(201);
+    const project = res.body as Project;
+    expect(project.owner).toBeUndefined();
+  });
+
+  test('Specify defaultProjectSystemSetting', async () => {
+    const originalDefaultProjectSystemSetting = config.defaultProjectSystemSetting;
+    config.defaultProjectSystemSetting = [{ name: 'searchTokenColumns', valueBoolean: true }];
+
+    const accessToken = await initTestAuth();
+    const projectName = 'Test Init Project ' + randomUUID();
+    const res = await request(app)
+      .post(`/fhir/R4/Project/$init`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'name',
+            valueString: projectName,
+          },
+        ],
+      });
+    expect(res.status).toBe(201);
+    const project = res.body as Project;
+    expect(project.owner).toBeUndefined();
+    expect(project.systemSetting).toStrictEqual(config.defaultProjectSystemSetting);
+
+    config.defaultProjectSystemSetting = originalDefaultProjectSystemSetting;
+  });
+});
