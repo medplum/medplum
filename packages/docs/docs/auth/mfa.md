@@ -136,3 +136,6 @@ curl -X POST https://api.medplum.com/admin/projects/:projectId/members/:membersh
 - **MFA Enrollment**: Automatically detects when a user needs to enroll in MFA (e.g., when `mfaRequired: true` was set during invitation) and displays the enrollment screen with QR code
 - **MFA Verification**: Automatically prompts for MFA codes when users with enrolled MFA attempt to log in
 
+## Building Your Own MFA UI
+
+Can't use `SignInForm` or the Medplum App Security page to manage MFA configuration and challenge completion? See [**MFA Under the Hood: Routes & User Flows**](./how-mfa-works.md) for the underlying routes and the enrollment and challenge flows you can drive directly.
