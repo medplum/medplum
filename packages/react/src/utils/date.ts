@@ -3,6 +3,32 @@
 import type { Resource } from '@medplum/fhirtypes';
 
 /**
+ * Compares two resources by meta.lastUpdated descending.
+ * Resources without meta.lastUpdated sort after resources with meta.lastUpdated.
+ * @param a - First resource.
+ * @param b - Second resource.
+ * @returns Comparator result for Array.sort().
+ */
+export function compareByLastUpdatedDescending(a: Resource, b: Resource): number {
+  const aLastUpdated = a.meta?.lastUpdated;
+  const bLastUpdated = b.meta?.lastUpdated;
+
+  if (!aLastUpdated && !bLastUpdated) {
+    return 0;
+  }
+
+  if (!aLastUpdated) {
+    return 1;
+  }
+
+  if (!bLastUpdated) {
+    return -1;
+  }
+
+  return bLastUpdated.localeCompare(aLastUpdated);
+}
+
+/**
  * Sorts an array of resources in place by meta.lastUpdated ascending.
  * @param resources - Array of resources.
  * @param timelineResource - Optional primary resource of a timeline view. If specified, the primary resource will be sorted by meta.lastUpdated descending.

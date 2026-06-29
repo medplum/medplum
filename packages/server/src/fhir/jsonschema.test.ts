@@ -19,7 +19,7 @@ describe('FHIR JSONSchema', () => {
 
     try {
       validateResourceWithJsonSchema({ resourceType: 'Patient', name: 'Homer' } as unknown as Resource);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -34,7 +34,7 @@ describe('FHIR JSONSchema', () => {
 
     try {
       validateResourceWithJsonSchema({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Resource);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -45,7 +45,7 @@ describe('FHIR JSONSchema', () => {
   test('Required properties', () => {
     try {
       validateResourceWithJsonSchema({ resourceType: 'DiagnosticReport' } as DiagnosticReport);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -56,7 +56,7 @@ describe('FHIR JSONSchema', () => {
   test('Null value', () => {
     try {
       validateResourceWithJsonSchema({ resourceType: 'Patient', name: null } as unknown as Patient);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -67,7 +67,7 @@ describe('FHIR JSONSchema', () => {
   test('Null array element', () => {
     try {
       validateResourceWithJsonSchema({ resourceType: 'Patient', name: [null] } as unknown as Patient);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -78,7 +78,7 @@ describe('FHIR JSONSchema', () => {
   test('Undefined array element', () => {
     try {
       validateResourceWithJsonSchema({ resourceType: 'Patient', name: [{ given: [undefined] }] } as unknown as Patient);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -106,7 +106,7 @@ describe('FHIR JSONSchema', () => {
           },
         ],
       } as unknown as Patient);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.length).toBe(2);
@@ -139,7 +139,7 @@ describe('FHIR JSONSchema', () => {
           },
         ],
       } as unknown as Questionnaire);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');

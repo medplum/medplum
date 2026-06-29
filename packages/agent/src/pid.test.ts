@@ -295,7 +295,7 @@ describe('PID File Manager', () => {
 
     beforeEach(() => {
       originalExit = process.exit;
-      process.exit = vi.fn() as unknown as typeof process.exit;
+      process.exit = vi.fn<typeof process.exit>();
       processOnMock = vi.spyOn(process, 'on').mockImplementation((event, cb) => {
         processEvents[event.toString()] = cb as (err?: Error) => void;
         return process; // For chaining

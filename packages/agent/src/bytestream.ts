@@ -117,11 +117,13 @@ export class AgentByteStreamChannel extends BaseChannel {
     assert(this.startChar !== -1 && this.endChar !== -1);
   }
 
-  sendToRemote(msg: AgentTransmitResponse): void {
+  sendToRemote(msg: AgentTransmitResponse): boolean {
     const connection = this.connections.get(msg.remote);
-    if (connection) {
-      connection.write(Buffer.from(msg.body, 'hex'));
+    if (!connection) {
+      return false;
     }
+    connection.write(Buffer.from(msg.body, 'hex'));
+    return true;
   }
 
   private handleNewConnection(socket: net.Socket): void {

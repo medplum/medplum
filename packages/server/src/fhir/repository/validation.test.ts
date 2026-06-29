@@ -6,13 +6,14 @@ import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import assert from 'node:assert';
 import { resolve } from 'path';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
 import { getGlobalSystemRepo } from '../repo';
 
-jest.mock('hibp');
+vi.mock('hibp');
 
 describe('Repository validation', () => {
   const systemRepo = getGlobalSystemRepo();
@@ -55,9 +56,7 @@ describe('Repository validation', () => {
 
       await expect(repo.createResource(patient)).resolves.toBeTruthy();
       await repo.createResource(profile);
-      await expect(repo.createResource(patient)).rejects.toThrow(
-        new Error('Missing required property (Patient.gender)')
-      );
+      await expect(repo.createResource(patient)).rejects.toThrow('Missing required property (Patient.gender)');
     }));
 
   test('Profile update', async () =>
@@ -100,9 +99,7 @@ describe('Repository validation', () => {
 
       // Now try to create another patient without an address
       // This should fail
-      await expect(repo.createResource(patient)).rejects.toThrow(
-        new Error('Missing required property (Patient.address)')
-      );
+      await expect(repo.createResource(patient)).rejects.toThrow('Missing required property (Patient.address)');
     }));
 
   describe('Update resource with terminology validation', () => {
@@ -229,7 +226,7 @@ describe('Repository validation', () => {
       await expect(repo.createResource(observation)).rejects.toThrow('Missing required property (Observation.subject)');
 
       observation.subject = { identifier: { value: randomUUID() } };
-      await expect(repo.createResource(observation)).resolves.toMatchObject<Partial<Observation>>({
+      await expect(repo.createResource(observation)).resolves.toMatchObject({
         meta: expect.objectContaining({
           profile: ['http://hl7.org/fhir/StructureDefinition/vitalsigns'],
         }),
