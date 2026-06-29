@@ -49,6 +49,7 @@ import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { ScriptSureTab } from './pages/patient/ScriptSureTab';
 import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
+import { RegisterPage } from './pages/RegisterPage';
 import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
 import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
 import { ResourceEditPage } from './pages/resource/ResourceEditPage';
@@ -242,6 +243,7 @@ export function App(): JSX.Element | null {
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
               <Route path="/signin" element={<SignInPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
@@ -260,6 +262,7 @@ export function App(): JSX.Element | null {
           ) : (
             <>
               <Route path="/signin" element={<SignInPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               <Route path="*" element={<Navigate to="/signin" replace />} />
             </>
           )}
