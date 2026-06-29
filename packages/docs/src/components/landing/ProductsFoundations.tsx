@@ -1,100 +1,145 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { COMPLIANCE, FOUNDATIONS } from '../../data/products-content';
-import { FOUNDATION_ICON, Icon, MedplumDiagram } from './ProductsDiagram';
+import { MedplumDiagram, FOUNDATION_NUMBER } from './ProductsDiagram';
 import styles from './ProductsFoundations.module.css';
 
-/* Shortened labels for the nav chips only, so all ten fit one line and the chips stay a
-   uniform size. The canonical names (used for selection + the detail panel + the diagram)
-   are unchanged. */
-const NAV_LABEL: Record<string, string> = {
-  'FHIR Data Store & API': 'FHIR Datastore & API',
-  'TypeScript / JavaScript SDK': 'TypeScript SDK',
-  'Medplum Component Library': 'Component Library',
-};
+const FOUNDATION_NAMES = FOUNDATIONS.map((f) => f.name);
 
 export function ProductsFoundations(): JSX.Element {
   /* null = resting state: the diagram shows at full strength until the user picks a
-     foundation (pill or diagram region). Picking the active one again deselects. */
+     foundation in the diagram. Picking the active one again deselects. */
   const [activeName, setActiveName] = useState<string | null>(null);
   const [peekName, setPeekName] = useState<string | null>(null);
   const active = activeName ? FOUNDATIONS.find((f) => f.name === activeName) : undefined;
-  const activeIdx = activeName ? FOUNDATIONS.findIndex((f) => f.name === activeName) : -1;
 
   const toggle = (name: string): void => {
     setActiveName((prev) => (prev === name ? null : name));
   };
-  const step = (dir: 1 | -1): void => {
-    const next =
-      activeIdx === -1
-        ? dir === 1
-          ? 0
-          : FOUNDATIONS.length - 1
-        : (activeIdx + dir + FOUNDATIONS.length) % FOUNDATIONS.length;
-    setActiveName(FOUNDATIONS[next].name);
+
+  const selectFoundation = (name: string): void => {
+    setActiveName(name);
   };
+
+  const goNext = (): void => {
+    if (!activeName) {
+      return;
+    }
+    const index = FOUNDATION_NAMES.indexOf(activeName);
+    if (index === -1) {
+      return;
+    }
+    selectFoundation(FOUNDATION_NAMES[(index + 1) % FOUNDATION_NAMES.length]);
+  };
+
+  const goPrev = (): void => {
+    if (!activeName) {
+      return;
+    }
+    const index = FOUNDATION_NAMES.indexOf(activeName);
+    if (index === -1) {
+      return;
+    }
+    selectFoundation(FOUNDATION_NAMES[(index - 1 + FOUNDATION_NAMES.length) % FOUNDATION_NAMES.length]);
+  };
+
+  /* Click anywhere outside a selectable diagram layer or the detail card to exit spotlight. */
+  useEffect(() => {
+    if (!activeName) {
+      return undefined;
+    }
+
+    const handleClick = (event: MouseEvent): void => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target.closest('[data-diagram-selectable]')) {
+        return;
+      }
+      if (target.closest('[data-foundation-detail]')) {
+        return;
+      }
+      if (target.closest('[data-foundation-nav]')) {
+        return;
+      }
+      setActiveName(null);
+    };
+
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [activeName]);
 
   return (
     <div id="foundations" className={styles.section}>
       <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionHeadline}>Foundations</h2>
+        <h2 className={styles.sectionHeadline}>Build on the strongest Foundations in healthcare.</h2>
         <p className={styles.sectionLead}>
-          The primitives that make the rest possible — ten building blocks sharing one FHIR data model. Every capability
-          and app above sits on these. Select one to see where it lives in the architecture.
+          The primitives that make the rest possible—ten building blocks that share one FHIR data model. Every
+          Capability and App above relies on these.
         </p>
       </div>
 
-      <MedplumDiagram active={activeName} peek={peekName} onSelect={toggle} />
-
-      {/* ---- tracker: description of the selected foundation, with prev/next stepper.
-             Sits directly under the diagram and above the selector list, so it stays
-             co-visible with whichever surface the user interacts with. ---- */}
-      <div className={styles.detailPanel}>
-        {active ? (
-          <div className={styles.detailMeta}>
-            <p className={styles.detailBody}>{active.body}</p>
-          </div>
-        ) : (
-          <div className={styles.detailMeta}>
-            <p className={styles.detailPrompt}>
-              Select a foundation — in the diagram above or the list below — to read about it. Use the arrows to step
-              through all {FOUNDATIONS.length}.
+      <div className={styles.detailCard} data-foundation-detail>
+        <div className={styles.detailCardMain}>
+          {active ? (
+            <>
+              <div className={styles.detailCardTitleRow}>
+                <span className={styles.detailCardNumber} aria-hidden="true">
+                  {FOUNDATION_NUMBER[active.name]}
+                </span>
+                <h3 className={styles.detailCardTitle}>{active.name}</h3>
+              </div>
+              <p className={styles.detailBody}>{active.body}</p>
+            </>
+          ) : (
+            <p className={styles.detailBody}>
+              Select any Foundation in the diagram below to learn more about it.
             </p>
-          </div>
-        )}
-        <div className={styles.navButtons}>
-          <button className={styles.navButton} onClick={() => step(-1)} aria-label="Previous foundation">
-            ←
-          </button>
-          <button className={styles.navButton} onClick={() => step(1)} aria-label="Next foundation">
-            →
-          </button>
+          )}
+        </div>
+        <div className={styles.detailCardActions}>
+          {active ? (
+            <>
+              <button type="button" className={styles.circleButton} onClick={goPrev} aria-label="Previous foundation">
+                <IconChevronLeft size={20} stroke={1.75} aria-hidden />
+              </button>
+              <button type="button" className={styles.circleButton} onClick={goNext} aria-label="Next foundation">
+                <IconChevronRight size={20} stroke={1.75} aria-hidden />
+              </button>
+            </>
+          ) : (
+            <div className={styles.foundationNav} data-foundation-nav>
+              {FOUNDATIONS.map((foundation) => (
+                <button
+                  key={foundation.name}
+                  type="button"
+                  className={`${styles.detailCardNumber} ${styles.foundationNavButton} ${
+                    peekName === foundation.name ? styles.foundationNavButtonPeeked : ''
+                  }`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setPeekName(null);
+                    selectFoundation(foundation.name);
+                  }}
+                  onMouseEnter={() => setPeekName(foundation.name)}
+                  onMouseLeave={() => setPeekName(null)}
+                  onFocus={() => setPeekName(foundation.name)}
+                  onBlur={() => setPeekName(null)}
+                  aria-label={foundation.name}
+                >
+                  {FOUNDATION_NUMBER[foundation.name]}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ---- index of every foundation; each chip's icon matches its diagram region ---- */}
-      <div className={styles.foundationsNav}>
-        {FOUNDATIONS.map((f) => (
-          <button
-            key={f.name}
-            type="button"
-            className={`${styles.navChip} ${f.name === activeName ? styles.navChipActive : ''}`}
-            aria-pressed={f.name === activeName}
-            onClick={() => toggle(f.name)}
-            onMouseEnter={() => setPeekName(f.name)}
-            onMouseLeave={() => setPeekName(null)}
-            onFocus={() => setPeekName(f.name)}
-            onBlur={() => setPeekName(null)}
-          >
-            <span className={styles.navChipIcon}>
-              <Icon name={FOUNDATION_ICON[f.name]} color="currentColor" size={18} />
-            </span>
-            {NAV_LABEL[f.name] ?? f.name}
-          </button>
-        ))}
-      </div>
+      <MedplumDiagram active={activeName} peek={peekName} onSelect={toggle} />
 
       {/* ---- Compliance & Certification (full-width band, grouped with Foundations) ---- */}
       <div className={styles.complianceBand}>

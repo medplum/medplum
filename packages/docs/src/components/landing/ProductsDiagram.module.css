@@ -4,60 +4,108 @@
 /* Theme tokens consumed by the diagram's inline styles via var(--dg-*).
    Light values here; dark overrides below. */
 .root {
-  --dg-purple: #9c36b5;
-  --dg-purple-soft: #d9a6e8;
-  --dg-purple-bg: #f2e4f7;
-  --dg-stripe: repeating-linear-gradient(135deg, #fbf1fe 0 3px, #ffffff 3px 6px);
-  --dg-border: #e5e5e5;
-  --dg-bg-gray: #f4f2ef;
-  --dg-bg: #ffffff;
-  --dg-text: #1f2937;
-  --dg-muted: #9ca3af;
-  --dg-line: #b7b7b7;
-  --dg-dot-fill: #ffffff;
-  --dg-dot-stroke: #b7b7b7;
-  --dg-sub: #4b5563;
-  --dg-dashed: #94a3b8;
-  --dg-hosted-bg: #862e9c;
-  --dg-panel: #ffffff;
-  --dg-chip-bg: #ffffff;
-  --dg-int-bg: #faf9f8;
-  --dg-int-pill-bg: #f3f4f6;
-  --dg-int-pill-border: #d1d5db;
-  --dg-panel-soft: #ffffff;
-  /* Highlight border color for selected/hovered foundations — deeper than the base
-     purple so the recolor reads even on already-purple-bordered cards. */
-  --dg-hl: #862e9c;
+  --dg-purple: var(--oc-grape-8);
+  --dg-purple-soft: var(--oc-grape-4);
+  --dg-purple-bg: var(--oc-grape-0);
+  --dg-stripe: repeating-linear-gradient(135deg, var(--oc-grape-0) 0 3px, var(--landing-surface) 3px 6px);
+  --dg-border: var(--landing-border-strong);
+  --dg-bg-gray: var(--landing-surface-inset);
+  --dg-bg: var(--landing-surface);
+  --dg-text: var(--landing-color-heading);
+  --dg-muted: var(--landing-color-muted);
+  --dg-line: var(--landing-border-strong);
+  --dg-dot-fill: var(--landing-surface);
+  --dg-dot-stroke: var(--landing-border-strong);
+  --dg-sub: var(--landing-color-body);
+  --dg-dashed: var(--landing-color-muted);
+  --dg-hosted-bg: var(--oc-grape-9);
+  --dg-panel: var(--landing-surface-elevated);
+  --dg-chip-bg: var(--landing-surface-elevated);
+  --dg-int-bg: var(--landing-surface-inset);
+  --dg-int-pill-bg: var(--landing-surface-inset);
+  --dg-int-pill-border: var(--landing-border-strong);
+  --dg-panel-soft: var(--landing-surface-elevated);
+  --dg-hl: var(--oc-grape-9);
+
+  /* Tonal fills — surfaces are distinguished by SHADE, not borders or stripes. A grape
+     ramp encodes "how core to Medplum" (platform wash → extensible blocks → owned core),
+     and a gray ramp encodes user-managed (standard → optional). */
+  --dg-fill-platform: var(--oc-grape-0);
+  --dg-fill-build: var(--oc-grape-1);
+  --dg-fill-core: var(--oc-grape-2);
+  --dg-fill-user: var(--oc-red-2);
+  --dg-fill-user-selected: var(--oc-red-3);
+  --dg-fill-user-soft: var(--oc-gray-1);
+  --dg-icon-core: var(--oc-grape-9);
+  --dg-icon-build: var(--oc-grape-8);
+  --dg-icon-user: rgba(var(--oc-red-9-rgb), 0.75);
+
+  /* ── Type scale ────────────────────────────────────────────
+     Edit a single token here to change that size across the whole diagram. */
+  --dg-size-card: 12px;          /* Card / band primary label */
+  --dg-size-sub: 11.5px;         /* Card sub-label */
+  --dg-size-label: 14px;         /* Section headers (Medplum Apps, etc.) */
+  --dg-size-badge: 10px;         /* Extensible badge pill */
+  --dg-size-term: 12.5px;        /* Terminology chip name */
+  --dg-size-legend-title: 13px;
+  --dg-size-legend: 12px;
+
+  /* ── Weights ── */
+  --dg-weight-medium: 500;
+  --dg-weight-semibold: 600;
+  --dg-weight-extrabold: 800;
+
+  /* ── Line heights ── */
+  --dg-leading-card: 16px;
+  --dg-leading-sub: 1.25;
+  --dg-leading-footnote: 1.4;
+  --dg-leading-legend: 1.3;
+
+  /* ── Letter spacing ── */
+  --dg-tracking-label: 0.08em;
+  --dg-tracking-badge: 0.03em;
+
+  /* ── Layout ── */
+  --dg-section-gap: 16px;        /* Gap between diagram section containers */
+  --dg-extensible-size: 24px;    /* Black circle extensible marker */
 }
 
 /* Dark mode follows an ELEVATION LADDER: the page is darkest, panels sit a step up,
    cards a clear step above that, and icon chips lightest — separation comes from
    lighter surfaces and lighter borders, since shadows are invisible on near-black. */
 [data-theme='dark'] .root {
-  --dg-purple: #c77dd6;
-  --dg-purple-soft: #8a4a9e;
-  --dg-purple-bg: #3b2846;
-  --dg-stripe: repeating-linear-gradient(135deg, #402c4b 0 3px, #2e2e33 3px 6px);
-  --dg-border: #50505a;
-  --dg-bg-gray: #2e2e33;
-  --dg-bg: #1b1b1d;
-  --dg-text: #f0f0f4;
-  --dg-muted: #9aa0aa;
-  --dg-line: #6e6e76;
-  --dg-dot-fill: #2a2a2e;
-  --dg-dot-stroke: #80808a;
-  --dg-sub: #b8bcc6;
-  --dg-dashed: #8a93a3;
-  --dg-hosted-bg: #9c36b5;
+  --dg-purple: var(--oc-grape-5);
+  --dg-purple-soft: var(--oc-grape-6);
+  --dg-purple-bg: rgba(156, 54, 181, 0.18);
+  --dg-stripe: repeating-linear-gradient(135deg, rgba(156, 54, 181, 0.12) 0 3px, var(--landing-surface-muted) 3px 6px);
+  --dg-border: var(--landing-border-strong);
+  --dg-bg-gray: var(--landing-surface-muted);
+  --dg-bg: var(--landing-surface-elevated);
+  --dg-text: var(--landing-color-heading);
+  --dg-muted: var(--landing-color-muted);
+  --dg-line: var(--landing-border-strong);
+  --dg-dot-fill: var(--landing-surface-muted);
+  --dg-dot-stroke: var(--landing-color-muted);
+  --dg-sub: var(--landing-color-body);
+  --dg-dashed: var(--landing-color-muted);
+  --dg-hosted-bg: var(--oc-grape-8);
   --dg-panel: #232327;
-  --dg-chip-bg: #37373e;
+  --dg-chip-bg: var(--oc-gray-7);
   --dg-int-bg: #242429;
   --dg-int-pill-bg: #33333a;
-  --dg-int-pill-border: #50505a;
+  --dg-int-pill-border: var(--landing-border-strong);
   --dg-panel-soft: #232327;
-  /* Dark highlight goes BRIGHTER than the base purple (toward white) so the
-     recolored border pops against dark surfaces. */
-  --dg-hl: #e6b8f2;
+  --dg-hl: var(--oc-grape-3);
+
+  --dg-fill-platform: rgba(156, 54, 181, 0.08);
+  --dg-fill-build: rgba(156, 54, 181, 0.18);
+  --dg-fill-core: rgba(156, 54, 181, 0.32);
+  --dg-fill-user: var(--oc-gray-7);
+  --dg-fill-user-selected: rgba(var(--oc-red-9-rgb), 0.28);
+  --dg-fill-user-soft: var(--oc-gray-8);
+  --dg-icon-core: var(--oc-grape-3);
+  --dg-icon-build: var(--oc-grape-4);
+  --dg-icon-user: var(--oc-gray-4);
 }
 
 /* ---- interaction model ----
@@ -88,9 +136,16 @@
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 0;
   border-radius: inherit;
   pointer-events: none;
   transition: background-color 120ms ease;
+}
+
+/* Keep labels/icons above the hover tint — otherwise the ::after wash lightens text. */
+.clickable > * {
+  position: relative;
+  z-index: 1;
 }
 
 .clickable {
@@ -103,73 +158,53 @@
 .clickable:hover,
 .clickable.peeked,
 .clickable.active {
-  --hl-border: var(--dg-hl);
-  /* Lift the highlighted element above its neighbors so its ring is never covered by an
-     adjacent (dimmed) card where their edges meet. Below the SVG connector overlay
-     (z-index 10) so the wiring still sits on top. */
+  /* Lift the highlighted element above its dimmed neighbors so its tonal wash and shadow
+     are never clipped where edges meet. */
   z-index: 5;
 }
 
-.clickable:hover::after,
-.clickable.peeked::after {
-  background: rgba(156, 54, 181, 0.05);
+/* Hover uses a tint overlay; selected swaps the fill (no overlay). */
+.clickable.medplumManaged:not(.active):hover::after,
+.clickable.medplumManaged:not(.active).peeked::after {
+  background: rgba(156, 54, 181, 0.08);
 }
 
-/* Cards draw the highlight as an OUTSET ring on ::after rather than recoloring their own
-   border: stacked cards zero their shared edges (borderTopWidth:0 etc.), so a recolored
-   border leaves the touching edge drawn by the dimmed neighbor and the outline breaks. The
-   ring (inset:0 ::after + 2px outset shadow) traces all four edges over the border box no
-   matter which borders exist. Bands keep the inset ring below — an outset ring would be
-   clipped by the platform box's overflow:hidden. */
-.clickable:not(.regionBand):hover::after,
-.clickable:not(.regionBand).peeked::after,
-.clickable:not(.regionBand).active::after {
-  box-shadow: 0 0 0 2px var(--dg-hl);
+.clickable.userManaged:not(.active):hover::after,
+.clickable.userManaged:not(.active).peeked::after {
+  background: rgba(var(--oc-red-4-rgb), 0.25);
 }
 
 .clickable.active {
-  box-shadow: 0 6px 22px -6px rgba(156, 54, 181, 0.45);
+  opacity: 1;
+  isolation: isolate;
 }
 
 .clickable.active::after {
-  background: rgba(156, 54, 181, 0.07);
+  background: transparent;
 }
 
-[data-theme='dark'] .clickable.active {
-  box-shadow: 0 6px 22px -6px rgba(199, 125, 214, 0.5);
+.clickable.medplumManaged.active {
+  background: var(--dg-fill-core);
 }
 
-[data-theme='dark'] .clickable.active::after {
-  background: rgba(199, 125, 214, 0.14);
+.clickable.userManaged.active {
+  background: var(--dg-fill-user-selected);
 }
 
-/* Platform-interior bands: inset ring (their borders are partial, so recoloring
-   them would highlight only one edge). Placed after .clickable.active so the
-   ring replaces the drop glow, which would be clipped by the platform box anyway. */
-.regionBand:hover,
-.regionBand.peeked,
-.regionBand.active {
-  box-shadow: inset 0 0 0 2px var(--dg-purple);
+[data-theme='dark'] .clickable.medplumManaged:not(.active):hover::after,
+[data-theme='dark'] .clickable.medplumManaged:not(.active).peeked::after {
+  background: rgba(199, 125, 214, 0.12);
 }
 
-/* Card base shadows (moved out of inline styles so the ring rules above can
-   override/compose; inline box-shadow would always win over a class). */
-.cardShadow {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-}
-
-.cardShadowDeep {
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 1px 3px rgba(0, 0, 0, 0.05);
+[data-theme='dark'] .clickable.userManaged:not(.active):hover::after,
+[data-theme='dark'] .clickable.userManaged:not(.active).peeked::after {
+  background: rgba(var(--oc-red-5-rgb), 0.18);
 }
 
 /* ---- spotlight dimming ----
    Un-selected elements fade via opacity so the active region reads as the lit cluster.
-   Applied per leaf element (not containers) so an active card nested inside the platform
-   box is never dimmed by its parent. EXCEPTION: solid-fill elements (the purple "MEDPLUM
-   HOSTED PLATFORM" pill) would go translucent and let the page bleed through, so they use
-   .dimmedSolid — a filter-only wash that recedes without any transparency. */
+   Applied per leaf element only — never on section containers, because parent opacity
+   would wash out active children even when they carry .active. */
 .dimmable {
   transition:
     filter 200ms ease,
@@ -177,8 +212,8 @@
 }
 
 .dimmed {
-  filter: saturate(0.85);
-  opacity: 0.42;
+  filter: saturate(0.75);
+  opacity: 0.5;
 }
 
 [data-theme='dark'] .dimmed {
@@ -207,4 +242,228 @@
    opacity, so the bands nested inside stay fully opaque. */
 .platformDimmed {
   --dg-platform-border: var(--dg-purple-soft);
+}
+
+/* ── Typography roles ─────────────────────────────────────────────────────────
+   Each class owns one text role in the diagram. Change the token in .root and
+   every instance of that role updates at once. */
+
+/* Primary label on every card and platform band. */
+.cardName {
+  font-size: var(--dg-size-card);
+  font-weight: var(--dg-weight-medium);
+  line-height: var(--dg-leading-card);
+  color: var(--dg-text);
+  white-space: pre-line;
+}
+
+/* Band labels inside the platform (REST API, FHIR Datastore, governance).
+   Same scale as cardName; flex:1 pushes any trailing badge to the row end. */
+.bandName {
+  flex: 1;
+  font-size: var(--dg-size-card);
+  font-weight: var(--dg-weight-medium);
+  line-height: var(--dg-leading-card);
+  color: var(--dg-text);
+}
+
+/* Secondary / descriptive line beneath a card name. */
+.cardSub {
+  font-size: var(--dg-size-sub);
+  color: var(--dg-sub);
+  line-height: var(--dg-leading-sub);
+  margin-top: 2px;
+}
+
+/* Muted inline text used as a parenthetical within a band label. */
+.subText {
+  color: var(--dg-sub);
+  font-weight: 400;
+}
+
+/* Section group headers (Medplum Apps, Your Apps, Integrations…). */
+.sectionLabel {
+  font-size: var(--dg-size-label);
+  font-weight: var(--dg-weight-extrabold);
+  color: var(--oc-gray-9);
+  padding: 4px 6px;
+}
+
+/* Gray inset container shared by every diagram section. */
+.sectionWrap {
+  border-radius: 16px;
+  background: rgba(var(--oc-gray-1-rgb), 0.5);
+  border: 1px solid var(--oc-gray-1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+/* 2-col diagram grid — right column starts on row 1 beside Hosted Platform. */
+.diagramGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: var(--dg-section-gap);
+  align-items: start;
+}
+
+.appsRow {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--dg-section-gap);
+}
+
+.platformSection {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.legendRow {
+  grid-column: 2;
+  grid-row: 2;
+  place-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.legendMarker {
+  flex-shrink: 0;
+  width: var(--dg-extensible-size);
+  height: var(--dg-extensible-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.legendSwatch {
+  width: var(--dg-extensible-size);
+  height: var(--dg-extensible-size);
+  border-radius: 5px;
+}
+
+.rightColumn {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-section-gap);
+}
+
+.footnoteText {
+  font-size: var(--dg-size-label);
+  line-height: var(--dg-leading-footnote);
+  color: var(--dg-muted);
+  padding: 4px 6px;
+  text-align: left;
+}
+
+.footnoteMark {
+  font-weight: 400;
+  color: var(--dg-muted);
+}
+
+/* User-managed layers (--dg-fill-user / oc-red-2). */
+.userManaged {
+  background: var(--dg-fill-user);
+  border: 1px solid rgba(var(--oc-red-3-rgb), 0.25);
+}
+
+/* Medplum-managed layers (--dg-fill-build / oc-grape-1). */
+.medplumManaged {
+  background: var(--dg-fill-build);
+  border: 1px solid rgba(var(--oc-grape-2-rgb), 0.25);
+}
+
+/* Context-only layers (no foundation selection) — softer fill so clickable regions read forward. */
+.medplumManaged:not(.clickable) {
+  background: color-mix(in srgb, var(--dg-fill-build) 40%, transparent);
+}
+
+.userManaged:not(.clickable) {
+  background: color-mix(in srgb, var(--dg-fill-user) 40%, transparent);
+}
+
+.medplumManaged,
+.userManaged {
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    filter 200ms ease,
+    opacity 200ms ease;
+}
+
+/* Icon tile — stays above hover/selection wash; background never changes. */
+.iconChip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--dg-chip-bg);
+  position: relative;
+  z-index: 1;
+}
+
+.numberMark {
+  font-family: var(--landing-font-display, system-ui, sans-serif);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Black circle + white code icon — stays above hover/selection wash. */
+.extensibleMark {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dg-extensible-size);
+  height: var(--dg-extensible-size);
+  border-radius: 50%;
+  background: var(--oc-grape-9);
+  align-self: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Terminology chip: main label and sub-label. */
+.termName {
+  font-size: var(--dg-size-term);
+  font-weight: var(--dg-weight-medium);
+  color: var(--dg-text);
+  white-space: nowrap;
+}
+
+.termSub {
+  font-size: var(--dg-size-sub);
+  color: var(--dg-sub);
+  white-space: nowrap;
+}
+
+/* Legend. */
+.legendTitle {
+  font-size: var(--dg-size-legend-title);
+  font-weight: var(--dg-weight-semibold);
+  color: var(--dg-text);
+  margin-bottom: 8px;
+}
+
+.legendLabel {
+  font-size: var(--dg-size-legend);
+  color: var(--dg-text);
+  line-height: var(--dg-leading-legend);
+  text-align: left;
 }
