@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, normalizeOperationOutcome, OperationOutcomeError } from '@medplum/core';
-import type { Operation } from 'rfc6902';
-import { applyPatch } from 'rfc6902';
+import type { Operation } from '@medplum/core';
+import { applyPatch, badRequest, normalizeOperationOutcome, OperationOutcomeError } from '@medplum/core';
 
 const patchOptions = { implicitArrayCreation: true };
 

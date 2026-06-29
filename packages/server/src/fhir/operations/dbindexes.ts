@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { requireSuperAdmin } from '../../admin/super';
+import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import type { PgQueryable } from '../sql';

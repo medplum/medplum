@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@medplum/core';
+import type { BackgroundJobContext, BackgroundJobInteraction, Operation, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   ContentType,
@@ -34,10 +34,9 @@ import type {
   ResourceType,
   Subscription,
 } from '@medplum/fhirtypes';
-import type { Job, MinimalJob, QueueBaseOptions } from 'bullmq';
+import type { Job, MinimalJob } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import { createHmac } from 'node:crypto';
-import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
@@ -57,6 +56,7 @@ import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscri
 import { getCacheRedis } from '../redis';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import { validateOutboundUrl } from '../util/url';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import {
   clearSubscriptionFailures,
@@ -66,8 +66,8 @@ import {
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
+  defaultQueueOptions,
   findProjectMembership,
-  getBullmqRedisConnectionOptions,
   getWorkerBullmqConfig,
   isJobSuccessful,
   queueRegistry,
@@ -149,13 +149,11 @@ const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
 
 export const initSubscriptionWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
+      ...defaultOptions.defaultJobOptions,
       attempts: MAX_JOB_ATTEMPTS, // can be overridden in catchJobError() below
       backoff: { type: 'cappedExponential' }, // see below
     },
@@ -789,22 +787,11 @@ async function sendRestHook(
 }
 
 function validateRestHookUrl(url: string): void {
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url);
-  } catch {
-    throw new Error('Invalid rest-hook URL: must be an absolute HTTPS URL');
-  }
-
-  if (parsedUrl.protocol === 'https:') {
-    return;
-  }
-
-  if (parsedUrl.protocol === 'http:' && getConfig().allowInsecureRestHookUrl) {
-    return;
-  }
-
-  throw new Error('Invalid rest-hook URL: HTTPS is required unless allowInsecureRestHookUrl is enabled');
+  const allowInsecureRestHookUrl = !!getConfig().allowInsecureRestHookUrl;
+  validateOutboundUrl(url, {
+    allowHttp: allowInsecureRestHookUrl,
+    allowUnsafeHostname: allowInsecureRestHookUrl,
+  });
 }
 
 /**

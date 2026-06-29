@@ -4,12 +4,20 @@ import { Checkbox, Group, List, NativeSelect, Stack, Text, TextInput, Title } fr
 import { showNotification } from '@mantine/notifications';
 import type { InviteRequest } from '@medplum/core';
 import {
+  createReference,
   isOperationOutcome,
   normalizeErrorString,
   normalizeOperationOutcome,
   operationOutcomeToString,
 } from '@medplum/core';
-import type { AccessPolicy, OperationOutcome, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import type {
+  AccessPolicy,
+  OperationOutcome,
+  Patient,
+  Project,
+  ProjectMembership,
+  Reference,
+} from '@medplum/fhirtypes';
 import {
   Form,
   FormSection,
@@ -26,6 +34,8 @@ import { AccessPolicyInput } from './AccessPolicyInput';
 export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
   const [project, setProject] = useState(medplum.getProject());
+  const [resourceType, setResourceType] = useState<'Practitioner' | 'Patient' | 'RelatedPerson'>('Practitioner');
+  const [patient, setPatient] = useState<Reference<Patient>>();
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [error, setError] = useState<OperationOutcome>();
@@ -45,7 +55,9 @@ export function InvitePage(): JSX.Element {
         admin: formData.isAdmin === 'on',
         scope: formData.isProjectScoped === 'on' ? 'project' : 'server',
         mfaRequired: formData.mfaRequired === 'on',
+        patient: formData.resourceType === 'RelatedPerson' ? patient : undefined,
       };
+
       return medplum
         .invite(project?.id as string, body as InviteRequest)
         .then((response: ProjectMembership | OperationOutcome) => {
@@ -65,7 +77,7 @@ export function InvitePage(): JSX.Element {
           setError(normalizeOperationOutcome(err));
         });
     },
-    [medplum, project, accessPolicy]
+    [medplum, project, accessPolicy, patient]
   );
 
   return (
@@ -93,6 +105,10 @@ export function InvitePage(): JSX.Element {
             label="Role"
             defaultValue="Practitioner"
             data={['Practitioner', 'Patient', 'RelatedPerson']}
+            onChange={(e) => {
+              setResourceType(e.currentTarget.value as 'Practitioner' | 'Patient' | 'RelatedPerson');
+              setPatient(undefined);
+            }}
             error={getErrorsForInput(error, 'resourceType')}
           />
           <TextInput
@@ -110,6 +126,16 @@ export function InvitePage(): JSX.Element {
             required={true}
             error={getErrorsForInput(error, 'email')}
           />
+          {resourceType === 'RelatedPerson' && (
+            <FormSection title="Patient" htmlFor="patient" outcome={error}>
+              <ResourceInput<Patient>
+                resourceType="Patient"
+                name="patient"
+                placeholder="Patient"
+                onChange={(value) => setPatient(value ? createReference(value) : undefined)}
+              />
+            </FormSection>
+          )}
           <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={error}>
             <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
           </FormSection>

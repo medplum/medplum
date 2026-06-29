@@ -12,7 +12,7 @@ import {
 import type { FhirRequest } from '@medplum/fhir-router';
 import { FhirRouter } from '@medplum/fhir-router';
 import type { AsyncJob, Bundle } from '@medplum/fhirtypes';
-import type { Job, QueueBaseOptions } from 'bullmq';
+import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
 import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
@@ -24,7 +24,7 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { addVerboseQueueLogging, defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,
@@ -43,13 +43,13 @@ const queueName = 'BatchQueue';
 const jobName = 'BatchJobData';
 
 export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<BatchJobData>(queueName, {
     ...defaultOptions,
-    defaultJobOptions: { attempts: 1 },
+    defaultJobOptions: {
+      ...defaultOptions.defaultJobOptions,
+      attempts: 1,
+    },
   });
 
   let worker: Worker<BatchJobData> | undefined;
@@ -67,6 +67,26 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
         ...workerBullmq,
       }
     );
+
+    worker.on('failed', async (job) => {
+      if (!job) {
+        return;
+      }
+
+      // Mark AsyncJob as failed
+      const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
+      const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
+      await exec.failJob();
+    });
+    addVerboseQueueLogging<BatchJobData>(queue, worker, (job) => ({
+      asyncJob: getReferenceString(job.data.asyncJob),
+      project: getReferenceString(job.data.authState.project),
+      profile: job.data.authState.profile && getReferenceString(job.data.authState.profile),
+      membership: getReferenceString(job.data.authState.membership),
+      onBehalfOf: job.data.authState.onBehalfOf && getReferenceString(job.data.authState.onBehalfOf),
+      onBehalfOfMembership:
+        job.data.authState.onBehalfOfMembership && getReferenceString(job.data.authState.onBehalfOfMembership),
+    }));
   }
 
   return { queue, worker, name: queueName };

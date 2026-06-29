@@ -15,6 +15,7 @@ import {
   parseSearchRequest,
   preconditionFailed,
 } from '@medplum/core';
+import { RepositoryMode } from '@medplum/fhir-router';
 import type {
   Binary,
   BundleEntry,
@@ -33,11 +34,13 @@ import type {
   UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'node:crypto';
+import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { runInAuthenticatedContext } from '../context';
-import { DatabaseMode } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, spyOnQuery, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
@@ -47,7 +50,7 @@ import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Reposito
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
-jest.mock('hibp');
+vi.mock('hibp');
 
 describe('FHIR Repo', () => {
   const globalSystemRepo = getGlobalSystemRepo();
@@ -68,6 +71,7 @@ describe('FHIR Repo', () => {
     testProjectRepo = new Repository({
       projects: [testProject],
       extendedMode: true,
+      strictMode: true,
       author: {
         reference: 'Practitioner/' + randomUUID(),
       },
@@ -93,10 +97,107 @@ describe('FHIR Repo', () => {
     ).rejects.toThrow('Invalid reference');
   });
 
+  describe('setMode routes reads to reader until writer promotion', () => {
+    type PoolQuerySpy = MockInstance<ReturnType<typeof getDatabasePool>['query']>;
+    let readerPoolQuerySpy: PoolQuerySpy;
+    let writerPoolQuerySpy: PoolQuerySpy;
+
+    function resetSpies(): void {
+      readerPoolQuerySpy.mockClear();
+      writerPoolQuerySpy.mockClear();
+    }
+
+    beforeAll(() => {
+      readerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      writerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    });
+
+    beforeEach(() => {
+      resetSpies();
+    });
+
+    afterAll(() => {
+      readerPoolQuerySpy.mockRestore();
+      writerPoolQuerySpy.mockRestore();
+    });
+
+    test('on creates', () =>
+      withTestContext(async () => {
+        const repo = testProjectRepo.clone();
+
+        repo.setMode(RepositoryMode.READER);
+        await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(repo.mode).toBe(RepositoryMode.READER);
+        resetSpies();
+
+        await repo.createResource<Patient>({ resourceType: 'Patient' });
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found'); // randomUUID to ensure cache miss
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        repo.setMode(RepositoryMode.READER);
+        await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(repo.mode).toBe(RepositoryMode.READER);
+      }));
+
+    test('on updates', () =>
+      withTestContext(async () => {
+        // AuditEvent since it does not get cached on writes
+        const auditEvent = await testProjectRepo
+          .clone()
+          .createResource(
+            createAuditEvent(
+              RestfulOperationType,
+              ReadInteraction,
+              randomUUID(),
+              { reference: 'Practitioner/user-123' },
+              undefined,
+              AuditEventOutcome.Success
+            )
+          );
+
+        const repo = testProjectRepo.clone();
+
+        repo.setMode(RepositoryMode.READER);
+        await expect(repo.readResource('AuditEvent', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        resetSpies();
+
+        await repo.updateResource({ ...auditEvent, outcomeDesc: 'updated' });
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1); // called to fetch existing resource; arguably incorrect and should be directed to writer
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        await expect(repo.readResource('AuditEvent', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        await repo.updateResource({ ...auditEvent, outcomeDesc: 'something new' });
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1); // called to fetch existing resource
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+      }));
+  });
+
   test('Read resource with undefined id', async () => {
     try {
       await systemRepo.readResource('Patient', undefined as unknown as string);
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -106,7 +207,7 @@ describe('FHIR Repo', () => {
   test('Read resource with blank id', async () => {
     try {
       await systemRepo.readResource('Patient', '');
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -116,7 +217,7 @@ describe('FHIR Repo', () => {
   test('Read resource with invalid id', async () => {
     try {
       await systemRepo.readResource('Patient', 'x');
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -215,28 +316,28 @@ describe('FHIR Repo', () => {
   test('Repo read malformed reference', async () => {
     try {
       await systemRepo.readReference({ reference: undefined });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: '' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: '////' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: 'Patient/123/foo' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
@@ -494,7 +595,7 @@ describe('FHIR Repo', () => {
   test('Create Patient as ClientApplication with no author', () =>
     withTestContext(async () => {
       const { client, repo } = await createTestProject({ withClient: true, withRepo: true });
-      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
       try {
         const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
@@ -593,7 +694,7 @@ describe('FHIR Repo', () => {
         getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
       ).toBe(true);
 
-      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
       // Check that createResource, updateResource, and deleteResource all skip addBackgroundJobs.
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
@@ -690,7 +791,7 @@ describe('FHIR Repo', () => {
 
       try {
         await systemRepo.updateResource(rest);
-        fail('Should have thrown');
+        expect.fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(badRequest('Missing id'));
       }
@@ -848,7 +949,7 @@ describe('FHIR Repo', () => {
       const { repo: repo2 } = await createTestProject({ withRepo: true });
       try {
         await repo2.readResource('Patient', patient1.id);
-        fail('Should have thrown');
+        expect.fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
       }
@@ -907,7 +1008,7 @@ describe('FHIR Repo', () => {
 
     try {
       await repo.reindexResource('Practitioner', randomUUID());
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
@@ -919,7 +1020,7 @@ describe('FHIR Repo', () => {
 
     try {
       await repo.reindexResources([patient]);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
@@ -928,7 +1029,7 @@ describe('FHIR Repo', () => {
   test('Reindex resource not found', async () => {
     try {
       await systemRepo.reindexResource('Practitioner', randomUUID());
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
@@ -942,11 +1043,11 @@ describe('FHIR Repo', () => {
     });
 
     // rely on Patient having a search parameter with token-column strategy
-    const buildTokenColumnsSpy = jest.spyOn(tokenColumnModule, 'buildTokenColumns').mockImplementation(() => {
+    const buildTokenColumnsSpy = vi.spyOn(tokenColumnModule, 'buildTokenColumns').mockImplementation(() => {
       throw new Error('test error');
     });
     const logger = getLogger();
-    const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
 
     await expect(systemRepo.reindexResources([patient1])).rejects.toThrow('test error');
     expect(errorSpy).toHaveBeenCalledWith('Error building row for resource', {

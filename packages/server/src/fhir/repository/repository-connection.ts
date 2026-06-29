@@ -85,12 +85,17 @@ function validateScope(scope: unknown): Scope {
  */
 export class RepositoryConnection implements Disposable {
   private conn?: PoolClient;
+  /** Physical mode of the currently held PoolClient, if one is pinned. */
   private connMode?: DatabaseMode;
   private ownsClient = true;
   private transactionIsolationLevel?: TransactionIsolationLevel;
   private pinDepth = 0;
   private discardOnRelease = false;
   private closed = false;
+  /**
+   * Preferred mode for future pool-backed operations. Reader mode is opportunistic:
+   * once this connection performs writer work, future unpinned reads should use the writer pool.
+   */
   mode: RepositoryMode;
   private transactionIdleTracker?: TransactionIdleTracker;
 
@@ -228,10 +233,7 @@ export class RepositoryConnection implements Disposable {
       return this.conn;
     }
     this.assertCanAcquireConnection();
-    if (mode === DatabaseMode.WRITER) {
-      // If we ever use a writer, then all subsequent operations must use a writer.
-      this.mode = RepositoryMode.WRITER;
-    }
+    this.promoteRepositoryMode(mode);
     return getDatabasePool(this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : mode);
   }
 
@@ -249,6 +251,7 @@ export class RepositoryConnection implements Disposable {
     }
 
     this.assertCanAcquireConnection();
+    this.promoteRepositoryMode(mode);
     this.conn = await getDatabasePool(mode).connect();
     this.connMode = mode;
     return this.conn;
@@ -746,6 +749,19 @@ export class RepositoryConnection implements Disposable {
     }
     if (this.connMode === DatabaseMode.READER && mode === DatabaseMode.WRITER) {
       throw new Error('Cannot use reader database connection for writer operation');
+    }
+  }
+
+  /**
+   * Promotes mode if applicable to adhere to the description
+   * from {@link FhirRepository.mode}: after using "writer" once it should
+   * use "writer" exclusively.
+   * @param mode - The database mode to promote.
+   */
+  private promoteRepositoryMode(mode: DatabaseMode): void {
+    if (mode === DatabaseMode.WRITER) {
+      // If we ever use a writer, then all subsequent operations must use a writer.
+      this.mode = RepositoryMode.WRITER;
     }
   }
 
