@@ -21,4 +21,14 @@ describe('data warehouse destinations', () => {
       rmSync(basePath, { recursive: true, force: true });
     }
   });
+
+  test('local destination applies postgres connection limits before attach', () => {
+    const destination = new LocalParquetWarehouseDestination('/tmp/dw-local-destination');
+    const queries = destination.getSetupQueries('postgresql://user:pass@localhost/db');
+    const attachIndex = queries.findIndex((query) => query.startsWith('ATTACH'));
+    const settingsIndex = queries.findIndex((query) => query === 'SET pg_connection_limit = 1');
+
+    expect(settingsIndex).toBeGreaterThan(-1);
+    expect(attachIndex).toBeGreaterThan(settingsIndex);
+  });
 });
