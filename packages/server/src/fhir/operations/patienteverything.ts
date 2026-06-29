@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest, WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   allOk,
   append,
   concatUrls,
@@ -204,9 +205,22 @@ export async function searchPatientCompartment(
   target: WithId<Resource>,
   search?: Partial<SearchRequest>
 ): Promise<Bundle<WithId<Resource>>> {
-  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  const types = search?.types ?? flatMapFilter(resourceList, (r) => (r.code === 'Binary' ? undefined : r.code));
-  types.push(target.resourceType);
+  const types = [target.resourceType];
+
+  if (search?.types) {
+    types.push(...search.types);
+  } else {
+    const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
+    for (const resourceType of resourceList) {
+      if (
+        resourceType.code !== 'Binary' &&
+        repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType.code)
+      ) {
+        types.push(resourceType.code);
+      }
+    }
+  }
+
   const uniqueTypes = Array.from(new Set(types));
   sortStringArray(uniqueTypes);
 

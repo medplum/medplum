@@ -60,8 +60,7 @@
     "@medplum/definitions": "5.1.22",
     "@medplum/fhirtypes": "5.1.22",
     "dataloader": "2.2.3",
-    "graphql": "16.14.2",
-    "rfc6902": "5.2.0"
+    "graphql": "16.14.2"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"

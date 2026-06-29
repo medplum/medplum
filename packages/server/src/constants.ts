@@ -16,7 +16,7 @@ export const syntheticR4Project: WithId<Project> = {
   resourceType: 'Project',
   id: r4ProjectId,
   name: 'FHIR R4',
-  exportedResourceType: ['StructureDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter'],
+  exportedResourceType: ['StructureDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter', 'OperationDefinition'],
 };
 
 /**
@@ -30,3 +30,8 @@ export const syntheticR4Project: WithId<Project> = {
 export const systemResourceProjectId = '65897e4f-7add-55f3-9b17-035b5a4e6d52';
 
 export const WEBSOCKET_SUB_PUBLISH_CHANNEL = 'medplum:subscriptions:r4:websockets';
+
+/**
+ * How long a single-use email MFA code remains valid before it expires, in milliseconds.
+ */
+export const EMAIL_MFA_CODE_EXPIRATION_MS = 20 * 60 * 1000; // 20 minutes

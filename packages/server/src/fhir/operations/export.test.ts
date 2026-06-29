@@ -84,7 +84,14 @@ describe('Export', () => {
       Object.values(output)
         .map((ex) => ex.type)
         .sort()
-    ).toStrictEqual(['ClientApplication', 'Observation', 'Patient', 'Project', 'ProjectMembership']);
+    ).toStrictEqual([
+      'ClientApplication',
+      'Observation',
+      'OperationDefinition',
+      'Patient',
+      'Project',
+      'ProjectMembership',
+    ]);
 
     // Get the export content
     const outputLocation = new URL(output.find((o) => o.type === 'Observation')?.url as string);
