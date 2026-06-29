@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import type { TestSpecification } from 'vitest/node';
 import { BaseSequencer } from 'vitest/node';
 import { medplumAliases } from '../../vitest.config';
@@ -82,7 +82,7 @@ export default defineConfig({
           name: 'unit',
           pool: 'threads',
           include: ['src/**/*.test.ts'],
-          exclude: ['src/**/*.int.test.ts'],
+          exclude: [...configDefaults.exclude, 'src/**/*.int.test.ts'],
         },
       },
       {
