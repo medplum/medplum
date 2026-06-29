@@ -7,7 +7,7 @@ import type { DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
 import { ResourceBoard } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
@@ -23,14 +23,16 @@ export function DocumentsPage(): JSX.Element {
   const [uploadOpened, setUploadOpened] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Patient-scoped DocumentReference search. Only the page offset/count are read from the URL;
-  // the filters and sort are fixed here. The sort ends with a unique `_id` tiebreaker: the clinical
-  // `date` (and even `_lastUpdated`) can be identical across documents, and offset pagination over
-  // rows tied on the sort key returns an inconsistent order across pages — which surfaces the same
-  // document on more than one page. The `_id` tiebreaker gives every row a total order so paging
-  // is stable.
+  // Patient-scoped DocumentReference search. The page offset/count AND the sort are read from the
+  // URL — sort is URL-driven, so deep links and the pagination round-trip stay authoritative. When
+  // the URL carries no `_sort`, we fall back to most-recent-first (and the effect below pins that
+  // default into the URL).
   const search = useMemo<SearchRequest>(() => {
     const parsed = parseSearchRequest(`DocumentReference${location.search}`);
+    const sortRules =
+      parsed.sortRules && parsed.sortRules.length > 0
+        ? parsed.sortRules
+        : [{ code: '_lastUpdated', descending: true }];
     return {
       resourceType: 'DocumentReference',
       filters: [
@@ -38,14 +40,27 @@ export function DocumentsPage(): JSX.Element {
         // Hide soft-deleted documents (delete marks them entered-in-error rather than removing them).
         { code: 'status', operator: Operator.NOT, value: 'entered-in-error' },
       ],
-      sortRules: [
-        { code: '_lastUpdated', descending: true },
-        { code: '_id', descending: true },
-      ],
+      sortRules,
       count: parsed.count ?? DEFAULT_SEARCH_COUNT,
       offset: parsed.offset ?? 0,
     };
   }, [location.search, patientId]);
+
+  // Sort is URL-driven; when the URL carries no `_sort`, pin the default into the URL (history
+  // replace) so the address bar always reflects the active sort. The resulting search is deep-equal
+  // to the pre-redirect one, so ResourceBoard's memoized search does not refetch.
+  useEffect(() => {
+    const parsed = parseSearchRequest(`DocumentReference${location.search}`);
+    if (parsed.sortRules && parsed.sortRules.length > 0) {
+      return;
+    }
+    const query = formatSearchQuery({
+      ...parsed,
+      resourceType: 'DocumentReference',
+      sortRules: [{ code: '_lastUpdated', descending: true }],
+    });
+    navigate(`/Patient/${patientId}/DocumentReference${query}`, { replace: true })?.catch(console.error);
+  }, [location.search, patientId, navigate]);
 
   // Keep the current pagination query when navigating to a document.
   const docUri = useCallback(
