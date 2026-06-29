@@ -315,13 +315,20 @@ export function bundleContains(bundle: Bundle, resource: Resource): BundleEntry 
  * Waits for a function to evaluate successfully.
  * Use this to wait for async behaviors without a handle.
  * @param fn - Function to call.
+ * @param timeoutMs - Maximum time to wait before rejecting (default 10s).
  */
-export function waitFor(fn: () => Promise<void>): Promise<void> {
-  return new Promise((resolve) => {
+export function waitFor(fn: () => Promise<void>, timeoutMs = 10_000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + timeoutMs;
     const timer = setInterval(() => {
+      if (Date.now() > deadline) {
+        clearInterval(timer);
+        reject(new Error(`waitFor timed out after ${timeoutMs}ms`));
+        return;
+      }
       fn()
         .then(() => {
-          clearTimeout(timer);
+          clearInterval(timer);
           resolve();
         })
         .catch(() => {
