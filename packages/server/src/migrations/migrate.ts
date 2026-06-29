@@ -744,10 +744,9 @@ function buildConceptMappingTable(result: SchemaDefinition): void {
     ],
     indexes: [
       {
-        indexNameOverride: 'ConceptMapping_map_source_target_idx',
+        indexNameOverride: 'ConceptMapping_map_forward_idx',
         indexType: 'btree',
         columns: ['conceptMap', 'sourceSystem', 'sourceCode', 'targetSystem', 'targetCode'],
-        unique: true,
       },
       {
         indexNameOverride: 'ConceptMapping_map_reverse_idx',
