@@ -100,9 +100,6 @@ export function DocumentsPage(): JSX.Element {
 
   const patientRef: Reference<Patient> = { reference: `Patient/${patientId}` };
 
-  // Owned here so toggling between documents (or revisiting one) doesn't re-animate the author clause.
-  const fadedAuthorIds = useMemo(() => new Set<string>(), []);
-
   const headerActions = (
     <Tooltip label="Upload document" position="bottom" openDelay={500}>
       <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={() => setUploadOpened(true)}>
@@ -121,11 +118,7 @@ export function DocumentsPage(): JSX.Element {
         headerText="All Documents"
         headerActions={headerActions}
         renderItem={(doc) => (
-          <DocumentListItem
-            item={doc}
-            selectedDocumentId={documentId}
-            getItemUri={(item) => docUri(item.id)}
-          />
+          <DocumentListItem item={doc} selectedDocumentId={documentId} getItemUri={(item) => docUri(item.id)} />
         )}
         emptyList={<EmptyDocuments />}
         renderDetail={(doc) => (
@@ -134,7 +127,6 @@ export function DocumentsPage(): JSX.Element {
             patientRef={patientRef}
             onDocumentChange={refreshList}
             onDocumentDeleted={handleDeleted}
-            fadedAuthorIds={fadedAuthorIds}
           />
         )}
         emptyDetail={

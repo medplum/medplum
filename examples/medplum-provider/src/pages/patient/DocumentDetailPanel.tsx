@@ -2,16 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Divider, Flex, Group, Paper, Stack, Text, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { formatDate } from '@medplum/core';
-import type { Attachment, Bundle, DocumentReference, Patient, Reference, Resource } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { formatDate, getDisplayString, getReferenceString } from '@medplum/core';
+import type { Attachment, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
 import { useCachedBinaryUrl } from '@medplum/react-hooks';
 import { IconBrowserShare, IconEditCircle, IconPrinter } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { SendFaxModal } from '../../components/fax/SendFaxModal';
-import classes from './DocumentDetailPanel.module.css';
-import { getDocumentName, getDocumentSource, getDocumentTypeDisplay } from './documentDisplay';
 import { EditDocumentDetailsModal } from './EditDocumentDetailsModal';
 
 // Subtle 1px frame drawn around attachment previews (PDF iframe, images, video). Theme-aware so the
@@ -24,9 +21,6 @@ interface DocumentDetailPanelProps {
   patientRef?: Reference<Patient>;
   onDocumentChange: () => void;
   onDocumentDeleted: () => void;
-  // Documents whose original-author clause has already faded in this section visit. Owned by the
-  // page so toggling between documents (or revisiting a cached one) doesn't re-animate.
-  fadedAuthorIds: Set<string>;
 }
 
 export function DocumentDetailPanel({
@@ -34,50 +28,14 @@ export function DocumentDetailPanel({
   patientRef,
   onDocumentChange,
   onDocumentDeleted,
-  fadedAuthorIds,
 }: DocumentDetailPanelProps): JSX.Element {
-  const medplum = useMedplum();
   const [faxModalOpened, setFaxModalOpened] = useState(false);
   const [editModalOpened, setEditModalOpened] = useState(false);
-  // The original author comes from version history (oldest version's meta.author). It's loaded
-  // async so the Added date renders immediately and the "by …" clause fades in as a fast-follow.
-  const [originalAuthor, setOriginalAuthor] = useState<string | undefined>(undefined);
 
   const attachment = getAttachment(item);
   const attachmentUrl = useCachedBinaryUrl(attachment?.url);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!item.id) {
-      return undefined;
-    }
-    const historyUrl = medplum.fhirUrl(item.resourceType, item.id, '_history');
-    historyUrl.searchParams.set('_count', '100');
-    historyUrl.searchParams.set('_elements', 'id,meta');
-    medplum
-      .get(historyUrl)
-      .then((bundle: Bundle) => {
-        if (cancelled) {
-          return;
-        }
-        const versions: Resource[] = [];
-        for (const entry of bundle.entry ?? []) {
-          if (entry.resource) {
-            versions.push(entry.resource);
-          }
-        }
-        versions.sort(
-          (a, b) => new Date(a.meta?.lastUpdated ?? 0).getTime() - new Date(b.meta?.lastUpdated ?? 0).getTime()
-        );
-        setOriginalAuthor(authorLabel(versions[0]?.meta?.author));
-      })
-      .catch(() => {
-        // Leave the original author unset; the Added date still renders on its own.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [medplum, item]);
+  const name = getDisplayString(item);
+  const referenceString = getReferenceString(item);
 
   const handleOpenInBrowser = (): void => {
     if (attachment?.url) {
@@ -94,7 +52,7 @@ export function DocumentDetailPanel({
               <Group justify="space-between" align="center">
                 <Stack gap={4} style={{ flex: 1 }}>
                   <Text fw={700} size="lg">
-                    {getDocumentName(item)}
+                    {name === referenceString ? 'Untitled Document' : name}
                   </Text>
                 </Stack>
 
@@ -169,12 +127,7 @@ export function DocumentDetailPanel({
                 </Box>
 
                 <Box p="md">
-                  <DocumentMetadata
-                    item={item}
-                    contentType={attachment?.contentType}
-                    originalAuthor={originalAuthor}
-                    fadedAuthorIds={fadedAuthorIds}
-                  />
+                  <DocumentMetadata item={item} contentType={attachment?.contentType} />
                 </Box>
               </>
             ) : (
@@ -194,12 +147,7 @@ export function DocumentDetailPanel({
                 </Box>
 
                 <Box p="md">
-                  <DocumentMetadata
-                    item={item}
-                    contentType={attachment?.contentType}
-                    originalAuthor={originalAuthor}
-                    fadedAuthorIds={fadedAuthorIds}
-                  />
+                  <DocumentMetadata item={item} contentType={attachment?.contentType} />
                 </Box>
               </Box>
             )}
@@ -229,6 +177,10 @@ function getAttachment(doc: DocumentReference): Attachment | undefined {
   return doc.content?.[0]?.attachment;
 }
 
+function getDocumentTypeDisplay(doc: DocumentReference): string | undefined {
+  return doc.type?.coding?.[0]?.display || doc.type?.text;
+}
+
 function isPdfLike(attachment: Attachment | undefined): boolean {
   const ct = attachment?.contentType;
   if (!ct) {
@@ -245,13 +197,9 @@ function getAuthor(doc: DocumentReference): string | undefined {
 function DocumentMetadata({
   item,
   contentType,
-  originalAuthor,
-  fadedAuthorIds,
 }: {
   item: WithId<DocumentReference>;
   contentType: string | undefined;
-  originalAuthor: string | undefined;
-  fadedAuthorIds: Set<string>;
 }): JSX.Element {
   const documentType = getDocumentTypeDisplay(item);
   const documentCategory =
@@ -267,21 +215,8 @@ function DocumentMetadata({
   const lastUpdated = item.meta?.lastUpdated;
   const date = item.date || item.meta?.lastUpdated;
 
-  // Fade the "Added by …" clause in only the first time a document's author resolves this visit;
-  // on revisits the history call is cached (resolves immediately), so render it statically to
-  // avoid an out-of-place re-fade. The page-owned set records which documents have already faded.
-  const [alreadyFaded] = useState(() => fadedAuthorIds.has(item.id));
-  useEffect(() => {
-    if (originalAuthor && item.id) {
-      fadedAuthorIds.add(item.id);
-    }
-  }, [originalAuthor, item.id, fadedAuthorIds]);
-
-  const addedAuthorClause = ` by ${originalAuthor}`;
-
   return (
     <Stack gap="sm">
-      <MetadataRow label="Source" value={getDocumentSource(item)} />
       {documentType && <MetadataRow label="Type" value={documentType} />}
       {documentCategory && <MetadataRow label="Category" value={documentCategory} />}
       {contentType && <MetadataRow label="Content type" value={contentType} />}
@@ -295,21 +230,7 @@ function DocumentMetadata({
           )
         }
       />
-      {date && (
-        <MetadataRow
-          label="Added"
-          value={
-            <>
-              {formatDate(date)}
-              {originalAuthor && (
-                <Text span className={alreadyFaded ? undefined : classes.authorClauseFade}>
-                  {addedAuthorClause}
-                </Text>
-              )}
-            </>
-          }
-        />
-      )}
+      {date && <MetadataRow label="Added" value={formatDate(date)} />}
       {lastUpdated && (
         <MetadataRow
           label="Last updated"

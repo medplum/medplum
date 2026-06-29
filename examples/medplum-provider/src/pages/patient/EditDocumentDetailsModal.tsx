@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Divider, Group, Modal, Stack, Text, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
+import { getDisplayString, getReferenceString } from '@medplum/core';
 import type { CodeableConcept, DocumentReference, Reference } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ReferenceInput, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
-import { getDocumentName } from './documentDisplay';
 
 interface EditDocumentDetailsModalProps {
   item: WithId<DocumentReference>;
@@ -164,6 +164,16 @@ export function EditDocumentDetailsModal({
       )}
     </Modal>
   );
+}
+
+function getDocumentName(doc: DocumentReference): string {
+  // getDisplayString is the primary source, but a DocumentReference has no name/code for it to read,
+  // so it returns the bare reference string ("DocumentReference/<id>"); fall back to a readable field then.
+  const display = getDisplayString(doc);
+  if (display && display !== getReferenceString(doc)) {
+    return display;
+  }
+  return doc.description || doc.content?.[0]?.attachment?.title || 'Untitled Document';
 }
 
 function getInitialCategory(doc: DocumentReference): CodeableConcept | undefined {
