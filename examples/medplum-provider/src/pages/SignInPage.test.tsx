@@ -3,10 +3,8 @@
 import type { MedplumClient } from '@medplum/core';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import crypto from 'crypto';
 import { MemoryRouter } from 'react-router';
-import { TextEncoder } from 'util';
-import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { App } from '../App';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
@@ -22,16 +20,6 @@ describe('SignInPage', () => {
     );
     return client;
   }
-
-  beforeAll(() => {
-    Object.defineProperty(global, 'TextEncoder', {
-      value: TextEncoder,
-    });
-
-    Object.defineProperty(global.self, 'crypto', {
-      value: crypto.webcrypto,
-    });
-  });
 
   beforeEach(() => {
     vi.stubEnv('MEDPLUM_REGISTER_ENABLED', '');
@@ -53,12 +41,20 @@ describe('SignInPage', () => {
   });
 
   test('Shows register link when registration is enabled', async () => {
+    vi.stubEnv('MEDPLUM_REGISTER_ENABLED', 'true');
+
     setup();
 
     expect(screen.getByText('Register')).toBeInTheDocument();
   });
 
-  test('Hides register link when registration is disabled', async () => {
+  test('Hides register link when registration is disabled by default', async () => {
+    setup();
+
+    expect(screen.queryByText('Register')).not.toBeInTheDocument();
+  });
+
+  test('Hides register link when registration is explicitly disabled', async () => {
     vi.stubEnv('MEDPLUM_REGISTER_ENABLED', 'false');
     setup();
 

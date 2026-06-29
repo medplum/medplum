@@ -16,7 +16,7 @@ export function SignInPage(): JSX.Element {
       clientId={import.meta.env.MEDPLUM_CLIENT_ID}
       onSuccess={() => navigate('/')?.catch(console.error)}
       onRegister={
-        import.meta.env.MEDPLUM_REGISTER_ENABLED !== 'false'
+        import.meta.env.MEDPLUM_REGISTER_ENABLED === 'true'
           ? () => navigate('/register')?.catch(console.error)
           : undefined
       }

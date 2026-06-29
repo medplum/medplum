@@ -18,7 +18,7 @@ export function RegisterPage(): JSX.Element | null {
     }
   }, [medplum, navigate]);
 
-  if (import.meta.env.MEDPLUM_REGISTER_ENABLED === 'false') {
+  if (import.meta.env.MEDPLUM_REGISTER_ENABLED !== 'true') {
     return (
       <Document width={450}>
         <Alert icon={<IconAlertCircle size={16} />} title="New projects disabled" color="red">

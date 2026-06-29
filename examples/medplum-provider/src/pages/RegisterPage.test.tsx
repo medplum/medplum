@@ -3,10 +3,8 @@
 import type { MedplumClient } from '@medplum/core';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import crypto from 'crypto';
 import { MemoryRouter } from 'react-router';
-import { TextEncoder } from 'util';
-import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { App } from '../App';
 import type { UserEvent } from '../test-utils/render';
 import { act, render, screen, userEvent } from '../test-utils/render';
@@ -27,16 +25,6 @@ async function setup(medplum: MedplumClient, url = '/register'): Promise<UserEve
 }
 
 describe('RegisterPage', () => {
-  beforeAll(() => {
-    Object.defineProperty(global, 'TextEncoder', {
-      value: TextEncoder,
-    });
-
-    Object.defineProperty(global.self, 'crypto', {
-      value: crypto.webcrypto,
-    });
-  });
-
   beforeEach(() => {
     vi.stubEnv('MEDPLUM_REGISTER_ENABLED', '');
   });
@@ -46,6 +34,8 @@ describe('RegisterPage', () => {
   });
 
   test('Renders', async () => {
+    vi.stubEnv('MEDPLUM_REGISTER_ENABLED', 'true');
+
     const medplum = new MockClient({ profile: null });
     await setup(medplum);
 
@@ -54,6 +44,8 @@ describe('RegisterPage', () => {
   });
 
   test('Redirects to sign in if signed in', async () => {
+    vi.stubEnv('MEDPLUM_REGISTER_ENABLED', 'true');
+
     const medplum = new MockClient({ profile: DrAliceSmith });
     await setup(medplum);
 
@@ -61,6 +53,8 @@ describe('RegisterPage', () => {
   });
 
   test('Submit success', async () => {
+    vi.stubEnv('MEDPLUM_REGISTER_ENABLED', 'true');
+
     const medplum = new MockClient({ profile: null });
     medplum.startNewUser = vi.fn(() => Promise.resolve({ login: '1' }));
     const user = await setup(medplum);
@@ -87,7 +81,14 @@ describe('RegisterPage', () => {
     expect(await screen.findByLabelText('Project Name *')).toBeInTheDocument();
   });
 
-  test('Register disabled', async () => {
+  test('Register disabled by default', async () => {
+    const medplum = new MockClient({ profile: null });
+    await setup(medplum);
+
+    expect(screen.getByText('New projects are disabled on this server.')).toBeInTheDocument();
+  });
+
+  test('Register disabled when explicitly false', async () => {
     vi.stubEnv('MEDPLUM_REGISTER_ENABLED', 'false');
 
     const medplum = new MockClient({ profile: null });
