@@ -37,7 +37,14 @@ export function buildSmartHealthLinkImportBundle(
   sharedPatient: Patient,
   targetPatient: WithId<Patient>
 ): Bundle {
-  const sharedPatientRef = `Patient/${sharedPatient.id}`;
+  const sharedPatientRefs = new Set<string>();
+  if (sharedPatient.id) {
+    sharedPatientRefs.add(`Patient/${sharedPatient.id}`);
+  }
+  const sharedPatientFullUrl = bundle.entry?.find((entry) => isResource<Patient>(entry.resource, 'Patient'))?.fullUrl;
+  if (sharedPatientFullUrl) {
+    sharedPatientRefs.add(sharedPatientFullUrl);
+  }
   const targetPatientRef = `Patient/${targetPatient.id}`;
   const selectedBundle: Bundle = {
     resourceType: 'Bundle',
@@ -50,7 +57,7 @@ export function buildSmartHealthLinkImportBundle(
       })
       .map((entry) => ({
         fullUrl: entry.fullUrl,
-        resource: rewritePatientReference(entry.resource as Resource, sharedPatientRef, targetPatientRef),
+        resource: rewritePatientReference(entry.resource as Resource, sharedPatientRefs, targetPatientRef),
       })),
   };
   const transaction = convertToTransactionBundle(selectedBundle);
@@ -68,12 +75,12 @@ export function getMatchGrade(entry: BundleEntry<WithId<Patient>>): string | und
 
 function rewritePatientReference<T extends Resource>(
   resource: T,
-  sharedPatientRef: string,
+  sharedPatientRefs: Set<string>,
   targetPatientRef: string
 ): T {
   return JSON.parse(
     JSON.stringify(resource, (key, value) => {
-      if (key === 'reference' && value === sharedPatientRef) {
+      if (key === 'reference' && sharedPatientRefs.has(value)) {
         return targetPatientRef;
       }
       return value;
