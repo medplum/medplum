@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference, getReferenceString } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, validationError } from '@medplum/core';
 import type {
   Bundle,
   BundleEntryResponse,
@@ -919,8 +919,9 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transaction);
-    expect(res.status).toBe(200);
-    expect(res.body.resourceType).toStrictEqual('Bundle');
+    expect(res.status).toBe(400);
+    expect(res.body.resourceType).toStrictEqual('OperationOutcome');
+    expect(res.body).toMatchObject(validationError('Invalid reference (Not found)'));
   });
 
   test('Failed referential integrity check in transaction Bundle', async () => {

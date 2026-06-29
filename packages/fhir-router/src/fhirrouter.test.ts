@@ -59,6 +59,24 @@ describe('FHIR Router', () => {
     expect(outcome).toMatchObject(badRequest('Not a bundle'));
   });
 
+  test('Failed transaction returns OperationOutcome', async () => {
+    const request = makeSimpleRequest('POST', '/', {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {},
+        },
+      ],
+    });
+    const [outcome] = (await router.handleRequest(request, repo)) as [OperationOutcome];
+    expect(outcome).toMatchObject(badRequest('Incorrect resource type: expected Patient, but found <EMPTY>'));
+  });
+
   test('Read resource by ID', async () => {
     const [res1, patient] = await router.handleRequest(
       makeSimpleRequest('POST', '/Patient', {
