@@ -144,7 +144,7 @@ export function DocumentsPage(): JSX.Element {
       <UploadDocumentModal
         opened={uploadOpened}
         onClose={() => setUploadOpened(false)}
-        patientId={patientId}
+        patient={patientRef}
         onCreated={handleCreated}
       />
     </>

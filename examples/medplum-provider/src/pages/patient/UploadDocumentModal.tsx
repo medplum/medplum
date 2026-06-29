@@ -1,22 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Divider, Modal, Stack, Text, TextInput } from '@mantine/core';
-import type { CodeableConcept, DocumentReference } from '@medplum/fhirtypes';
-import { CodeableConceptInput, useMedplum } from '@medplum/react';
+import { createReference } from '@medplum/core';
+import type { CodeableConcept, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
+import { CodeableConceptInput, useMedplum, useResource } from '@medplum/react';
 import { IconUpload } from '@tabler/icons-react';
+import cx from 'clsx';
 import type { JSX } from 'react';
 import { useRef, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
+import classes from './UploadDocumentModal.module.css';
 
 export interface UploadDocumentModalProps {
   opened: boolean;
   onClose: () => void;
-  patientId: string;
+  patient: Reference<Patient> | Patient;
   onCreated: (doc: DocumentReference) => void;
 }
 
-export function UploadDocumentModal({ opened, onClose, patientId, onCreated }: UploadDocumentModalProps): JSX.Element {
+export function UploadDocumentModal({ opened, onClose, patient, onCreated }: UploadDocumentModalProps): JSX.Element {
   const medplum = useMedplum();
+  const patientResource = useResource(patient);
 
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -41,6 +45,11 @@ export function UploadDocumentModal({ opened, onClose, patientId, onCreated }: U
       return;
     }
 
+    if (!patientResource) {
+      showErrorNotification(new Error('Patient is not loaded yet. Please try again.'));
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const attachment = await medplum.createAttachment({
@@ -52,7 +61,7 @@ export function UploadDocumentModal({ opened, onClose, patientId, onCreated }: U
       const doc = await medplum.createResource<DocumentReference>({
         resourceType: 'DocumentReference',
         status: 'current',
-        subject: { reference: `Patient/${patientId}` },
+        subject: createReference(patientResource),
         description: description.trim() || undefined,
         type,
         content: [{ attachment }],
@@ -71,13 +80,13 @@ export function UploadDocumentModal({ opened, onClose, patientId, onCreated }: U
       <Stack gap="md">
         <Stack gap={4}>
           <Text size="sm" fw={500}>
-            File <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
+            File <span className={classes.required}>*</span>
           </Text>
           <input
             type="file"
             ref={fileInputRef}
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            style={{ display: 'none' }}
+            className={classes.hiddenInput}
           />
           <Box
             onClick={() => fileInputRef.current?.click()}
@@ -94,15 +103,7 @@ export function UploadDocumentModal({ opened, onClose, patientId, onCreated }: U
                 setFile(dropped);
               }
             }}
-            style={{
-              border: `2px dashed ${isDragging ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-3)'}`,
-              borderRadius: 'var(--mantine-radius-md)',
-              padding: 'var(--mantine-spacing-xl) var(--mantine-spacing-md)',
-              cursor: 'pointer',
-              textAlign: 'center',
-              backgroundColor: isDragging ? 'var(--mantine-color-blue-0)' : undefined,
-              transition: 'border-color 150ms ease, background-color 150ms ease',
-            }}
+            className={cx(classes.dropzone, isDragging && classes.dropzoneDragging)}
           >
             <Stack align="center" gap={4}>
               <IconUpload size={24} color={file ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-5)'} />
