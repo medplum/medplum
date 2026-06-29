@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { JWTPayload, ProfileResource, WithId } from '@medplum/core';
+import type { JWTPayload, Operation, ProfileResource, WithId } from '@medplum/core';
 import {
   ContentType,
   OAuthClientAssertionType,
@@ -354,14 +354,45 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
 
   // Refresh token rotation
   // Generate a new refresh secret and update the login
-  const updatedLogin = await systemRepo.updateResource<Login>({
-    ...login,
-    refreshSecret: generateSecret(32),
+  const updatedLogin = await rotateLoginRefreshSecret(login, {
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
 
   await sendTokenResponse(res, updatedLogin, client);
+}
+
+/**
+ * Rotates a login's refresh secret as part of refresh-token rotation.
+ *
+ * The rotation is applied via `patchResource` rather than a full
+ * `updateResource` of a `{ ...login }` snapshot. `patchResource` re-reads the
+ * login inside its own transaction and mutates only the patched fields, so it
+ * cannot drop fields that a concurrent request set after the caller's read — in
+ * particular the single-use email-MFA challenge code on `login.emailMfa`, which
+ * is written by `/send-email-challenge` and read by `/enroll`. A full overwrite
+ * of a stale snapshot would clobber it, making the user's subsequent code
+ * submission fail with a spurious "Invalid token" while enrolling in email MFA.
+ *
+ * @param login - The login to rotate; only its `id` is authoritative.
+ * @param details - Request metadata to record on the login.
+ * @param details.remoteAddress - The client IP address to record, if any.
+ * @param details.userAgent - The client user agent to record, if any.
+ * @returns The updated login with a freshly rotated refresh secret.
+ */
+export async function rotateLoginRefreshSecret(
+  login: WithId<Login>,
+  details?: { remoteAddress?: string; userAgent?: string }
+): Promise<WithId<Login>> {
+  const systemRepo = getGlobalSystemRepo();
+  const patch: Operation[] = [{ op: 'add', path: '/refreshSecret', value: generateSecret(32) }];
+  if (details?.remoteAddress !== undefined) {
+    patch.push({ op: 'add', path: '/remoteAddress', value: details.remoteAddress });
+  }
+  if (details?.userAgent !== undefined) {
+    patch.push({ op: 'add', path: '/userAgent', value: details.userAgent });
+  }
+  return systemRepo.patchResource<Login>('Login', login.id, patch);
 }
 
 /**
