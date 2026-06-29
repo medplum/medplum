@@ -30,8 +30,8 @@ import {
   buildSmartHealthLinkImportBundle,
   getMatchGrade,
   getSmartHealthCardFile,
-  getSmartHealthLinkBundleEntryKey,
   getSmartHealthLinkBundle,
+  getSmartHealthLinkBundleEntryKey,
   getSmartHealthLinkPatient,
 } from './SmartHealthLinkImport.utils';
 
@@ -319,8 +319,8 @@ export function SmartHealthLinkImportPage(): JSX.Element {
                 <div>
                   <Title order={3}>Import Cart</Title>
                   <Text c="dimmed" size="sm">
-                    {selectedItems.length} of{' '}
-                    {items.filter((item) => item.resource?.resourceType !== 'Patient').length} resources selected
+                    {selectedItems.length} of {items.filter((item) => item.resource?.resourceType !== 'Patient').length}{' '}
+                    resources selected
                   </Text>
                   <Text c="green" size="sm" fw={600}>
                     {getTargetPatientLabel(createNewPatient, selectedPatient)}
