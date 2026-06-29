@@ -56,6 +56,7 @@ import { ResourcePage } from './pages/resource/ResourcePage';
 import { ResourceSchedulingPage } from './pages/resource/ResourceSchedulingPage';
 import { SchedulePage } from './pages/schedule/SchedulePage';
 import { ScheduleSettingsPage } from './pages/schedule/ScheduleSettingsPage';
+import { RegisterPage } from './pages/RegisterPage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { SpacesPage } from './pages/spaces/SpacesPage';
@@ -239,6 +240,7 @@ export function App(): JSX.Element | null {
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
               <Route path="/signin" element={<SignInPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
@@ -256,6 +258,7 @@ export function App(): JSX.Element | null {
           ) : (
             <>
               <Route path="/signin" element={<SignInPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               <Route path="*" element={<Navigate to="/signin" replace />} />
             </>
           )}

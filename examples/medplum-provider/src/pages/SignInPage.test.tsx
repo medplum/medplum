@@ -6,7 +6,7 @@ import { MedplumProvider } from '@medplum/react';
 import crypto from 'crypto';
 import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
-import { beforeAll, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { App } from '../App';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
@@ -33,6 +33,14 @@ describe('SignInPage', () => {
     });
   });
 
+  beforeEach(() => {
+    vi.stubEnv('MEDPLUM_REGISTER_ENABLED', '');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   function expectSigninPageRendered(): void {
     expect(screen.getByText('Sign in to Provider')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
@@ -42,6 +50,19 @@ describe('SignInPage', () => {
     setup();
 
     expectSigninPageRendered();
+  });
+
+  test('Shows register link when registration is enabled', async () => {
+    setup();
+
+    expect(screen.getByText('Register')).toBeInTheDocument();
+  });
+
+  test('Hides register link when registration is disabled', async () => {
+    vi.stubEnv('MEDPLUM_REGISTER_ENABLED', 'false');
+    setup();
+
+    expect(screen.queryByText('Register')).not.toBeInTheDocument();
   });
 
   test('Success', async () => {
