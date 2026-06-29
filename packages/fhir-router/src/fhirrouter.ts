@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Operation } from '@medplum/core';
 import {
   EventTarget,
   OperationOutcomeError,
@@ -21,7 +22,6 @@ import type {
   ResourceType,
 } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
-import type { Operation } from 'rfc6902';
 import type { LogEvent } from './batch';
 import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';

@@ -19,6 +19,7 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { Readable } from 'stream';
 import request from 'supertest';
+import type { Mock } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
@@ -32,8 +33,8 @@ import {
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { createProject } from './projectinit';
 
-const fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
-jest.mock('hibp');
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 
 describe('Project clone', () => {
   const app = express();
@@ -42,8 +43,8 @@ describe('Project clone', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     fetchMock.mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
     setupRecaptchaMock(true);
   });
 

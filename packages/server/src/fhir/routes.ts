@@ -70,17 +70,14 @@ import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectRateLimitsHandler } from './operations/project-rate-limits';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { rebuildBaseDefinitionsOperation } from './operations/rebuild-base-definitions';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
 import { userRescopeOperation } from './operations/rescope';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
 import { setAccountsHandler } from './operations/set-accounts';
 import { generateSmartHealthCardHandler, verifySmartHealthCardHandler } from './operations/smarthealthcards';
-import {
-  generateSmartHealthLinkHandler,
-  resolveSmartHealthLinkHandler,
-  smartHealthLinkManifestHandler,
-} from './operations/smarthealthlinks';
+import { generateSmartHealthLinkHandler, resolveSmartHealthLinkHandler } from './operations/smarthealthlinks';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { updateUserEmailOperation } from './operations/update-user-email';
@@ -175,7 +172,6 @@ publicRoutes.get(['/$versions', '/%24versions'], (_req: Request, res: Response) 
 // See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#sample-request
 publicRoutes.get('/.well-known/smart-configuration', smartConfigurationHandler);
 publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
-publicRoutes.post('/.well-known/smart-health-links/:id/manifest.json', smartHealthLinkManifestHandler);
 
 // Protected routes require authentication
 const protectedRoutes = Router().use(authenticateRequest);
@@ -233,6 +229,9 @@ function initInternalFhirRouter(): FhirRouter {
   const router = new FhirRouter({
     introspectionEnabled: getConfig().introspectionEnabled,
   });
+
+  // Rebuild base definitions
+  router.add('POST', '/$rebuild-base-definitions', rebuildBaseDefinitionsOperation);
 
   // Project $export
   router.add('GET', '/$export', bulkExportHandler);

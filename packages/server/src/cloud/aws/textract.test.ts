@@ -10,7 +10,6 @@ import {
 import { ContentType } from '@medplum/core';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';

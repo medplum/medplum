@@ -167,6 +167,7 @@ export function isFloatConfig(_key: string): boolean {
 }
 
 const booleanKeys = new Set([
+  'allowInsecureExternalAuthUrl',
   'allowInsecureRestHookUrl',
   'botCustomFunctionsEnabled',
   'database.ssl.rejectUnauthorized',

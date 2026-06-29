@@ -140,6 +140,15 @@ Medplum supports the following first party integrations.
       <td>Large language models</td>
       <td><a href="/docs/ai">Medplum AI</a></td>
     </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Devices and Remote Monitoring</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.anybiosignal.com/">AnyBio</a></td>
+      <td>Remote Monitoring</td>
+      <td>Cardiac and biosignal monitoring data as FHIR Observations</td>
+      <td>Documentation coming soon</td>
+    </tr>
   </tbody>
 </table>
 

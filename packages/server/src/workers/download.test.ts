@@ -3,6 +3,7 @@
 import { ContentType } from '@medplum/core';
 import type { DocumentReference, Media } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
@@ -10,7 +11,7 @@ import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDownloadJob, mockFetchResponse } from './test-utils';
 
 let repo: Repository;
-const fetchMock = jest.spyOn(globalThis, 'fetch');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 
 describe('Download Worker', () => {
   beforeAll(async () => {

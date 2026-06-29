@@ -5,7 +5,7 @@ import { createReference } from '@medplum/core';
 import type { ClientApplication, Login, Patient, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
@@ -43,7 +43,7 @@ describe('OAuth utils', () => {
         scope: 'openid',
         nonce: 'nonce',
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -61,7 +61,7 @@ describe('OAuth utils', () => {
         scope: 'openid',
         nonce: 'nonce',
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -79,7 +79,7 @@ describe('OAuth utils', () => {
         scope: 'openid',
         nonce: 'nonce',
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -97,7 +97,7 @@ describe('OAuth utils', () => {
         scope: 'openid',
         nonce: 'nonce',
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -115,7 +115,7 @@ describe('OAuth utils', () => {
         scope: 'openid',
         nonce: 'nonce',
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -132,7 +132,7 @@ describe('OAuth utils', () => {
         scope: 'openid',
         nonce: 'nonce',
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -149,7 +149,7 @@ describe('OAuth utils', () => {
         scope: 'openid',
         nonce: 'nonce',
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -167,7 +167,7 @@ describe('OAuth utils', () => {
         scope: '',
         nonce: 'nonce',
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -183,7 +183,7 @@ describe('OAuth utils', () => {
         scope: 'openid',
         nonce: 'nonce',
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -200,7 +200,7 @@ describe('OAuth utils', () => {
         scope: 'openid',
         nonce: 'nonce',
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
@@ -228,7 +228,7 @@ describe('OAuth utils', () => {
         nonce: 'nonce',
         projectId: randomUUID(),
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Missing email or externalId');
@@ -243,7 +243,7 @@ describe('OAuth utils', () => {
         scope: 'openid',
         nonce: 'nonce',
       });
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Project ID is required for external ID');
@@ -265,7 +265,7 @@ describe('OAuth utils', () => {
         },
         undefined
       );
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge_method');
@@ -287,7 +287,7 @@ describe('OAuth utils', () => {
         },
         client
       );
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge');
@@ -310,7 +310,7 @@ describe('OAuth utils', () => {
         },
         client
       );
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge_method');
@@ -378,7 +378,7 @@ describe('OAuth utils', () => {
   test('verifyMfaToken login revoked', async () => {
     try {
       await verifyMfaToken({ resourceType: 'Login', revoked: true } as Login, 'token');
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login revoked');
@@ -388,7 +388,7 @@ describe('OAuth utils', () => {
   test('verifyMfaToken login granted', async () => {
     try {
       await verifyMfaToken({ resourceType: 'Login', granted: true } as Login, 'token');
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login granted');
@@ -398,7 +398,7 @@ describe('OAuth utils', () => {
   test('verifyMfaToken login already verified', async () => {
     try {
       await verifyMfaToken({ resourceType: 'Login', mfaVerified: true } as Login, 'token');
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login already verified');
@@ -408,7 +408,7 @@ describe('OAuth utils', () => {
   test('getMembershipsForLogin missing user reference', async () => {
     try {
       await getMembershipsForLogin({ resourceType: 'Login', user: {} } as Login);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toStrictEqual('User reference is missing');
@@ -520,7 +520,7 @@ describe('OAuth utils', () => {
           reference: 'Patient/123',
         }
       );
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login missing profile');
@@ -748,8 +748,8 @@ describe('OAuth utils', () => {
 
   describe('normalizeUserInfoUrl', () => {
     test.each([
-      ['http://example.com/oauth2/userinfo', false],
-      [' http://example.com/oauth2/userinfo ', false],
+      ['http://example.com/oauth2/userinfo', true],
+      [' http://example.com/oauth2/userinfo ', true],
       ['https://example.com/oauth2/userinfo', false],
       [' https://example.com/oauth2/userinfo ', false],
       ['file://example.com/oauth2/userinfo', true],
@@ -758,7 +758,7 @@ describe('OAuth utils', () => {
       try {
         normalizeUserInfoUrl(userInfoUrl);
         if (expectError) {
-          fail('Expected error');
+          expect.fail('Expected error');
         }
       } catch (err) {
         if (!expectError) {
@@ -766,9 +766,17 @@ describe('OAuth utils', () => {
         }
       }
     });
+
+    test('allows insecure user info URLs when configured', () => {
+      const savedConfig = getConfig().allowInsecureExternalAuthUrl;
+      getConfig().allowInsecureExternalAuthUrl = true;
+      try {
+        expect(normalizeUserInfoUrl('http://localhost:8080/oauth2/userinfo')).toBe(
+          'http://localhost:8080/oauth2/userinfo'
+        );
+      } finally {
+        getConfig().allowInsecureExternalAuthUrl = savedConfig;
+      }
+    });
   });
 });
-
-function fail(message: string): never {
-  throw new Error(message);
-}

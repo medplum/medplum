@@ -5,17 +5,20 @@ import { badRequest } from '@medplum/core';
 import type { Bot, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth } from '../../test.setup';
+import { mockFetchText } from '../../test.setup.fetch';
 import { executeFissionBot } from './execute';
+
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 
 describe('Execute Fission bots', () => {
   const app = express();
   let config: MedplumServerConfig;
   let accessToken: string;
-  let fetchMock: jest.Mock;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -35,11 +38,7 @@ describe('Execute Fission bots', () => {
   });
 
   beforeEach(() => {
-    fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
+    fetchMock.mockClear();
   });
 
   test('Success', async () => {
@@ -50,13 +49,9 @@ describe('Execute Fission bots', () => {
       runtimeVersion: 'fission',
     };
 
-    fetchMock.mockImplementationOnce(() => ({
-      status: 200,
-      ok: true,
-      text: jest.fn(async () =>
-        JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } })
-      ),
-    }));
+    fetchMock.mockImplementationOnce(() =>
+      mockFetchText(JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } }))
+    );
 
     await expect(
       executeFissionBot({
@@ -88,13 +83,12 @@ describe('Execute Fission bots', () => {
       runtimeVersion: 'fission',
     };
 
-    fetchMock.mockImplementationOnce(() => ({
-      status: 400,
-      ok: false,
-      text: jest.fn(async () =>
-        JSON.stringify({ success: false, logResult: 'unhandled error', returnValue: { result: 'unhandled error' } })
-      ),
-    }));
+    fetchMock.mockImplementationOnce(() =>
+      mockFetchText(
+        JSON.stringify({ success: false, logResult: 'unhandled error', returnValue: { result: 'unhandled error' } }),
+        { status: 400 }
+      )
+    );
 
     await expect(
       executeFissionBot({
@@ -128,11 +122,9 @@ describe('Execute Fission bots', () => {
     };
     const outcome = badRequest('fission problem');
 
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 400,
-      ok: false,
-      text: jest.fn(async () => JSON.stringify({ logResult: 'unhandled error', returnValue: outcome })),
-    }));
+    fetchMock.mockImplementationOnce(() =>
+      mockFetchText(JSON.stringify({ logResult: 'unhandled error', returnValue: outcome }), { status: 400 })
+    );
 
     await expect(
       executeFissionBot({
@@ -161,11 +153,7 @@ describe('Execute Fission bots', () => {
     };
     const outcome = badRequest('returned problem');
 
-    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
-      status: 200,
-      ok: true,
-      text: jest.fn(async () => JSON.stringify({ logResult: '', returnValue: outcome })),
-    }));
+    fetchMock.mockImplementationOnce(() => mockFetchText(JSON.stringify({ logResult: '', returnValue: outcome })));
 
     await expect(
       executeFissionBot({
