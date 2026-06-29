@@ -89,7 +89,9 @@ export function Calendar(props: {
   );
 
   // Add slight delay to click handler to permit double-clicks to register
-  const handleSelectEvent = useDebouncedCallback(handleSelectEventRaw, 100);
+  const handleSelectEventDebounced = useDebouncedCallback(handleSelectEventRaw, 100);
+
+  const handleSelectEvent = onDoubleClickAppointment ? handleSelectEventDebounced : handleSelectEventRaw;
 
   // FullCalendar creates new elements on each render rather than recycling them,
   // so dblclick listeners are cleaned up automatically when the old element is GC'd
