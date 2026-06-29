@@ -4,8 +4,10 @@
 import { existsSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { createMockLogger } from '../test-utils';
 import { DurableQueue, isUniqueConstraintError } from './durable-queue';
+import { MIGRATIONS } from './schema';
 import { AckOutcome, MessageState, QueueErrorCode } from './types';
 
 function makeEnqueueInput(
@@ -606,6 +608,45 @@ describe('DurableQueue', () => {
       expect(row.n).toBe(1);
       return queue;
     })();
+  });
+
+  test('runs the v2 migration on startup against a DB where only v1 is applied', () => {
+    const v1OnlyPath = join(dir, 'v1-only.sqlite');
+
+    // Build a DB that looks like one created by an older agent that only knew
+    // about v1: apply just the v1 migration and stamp _schema at version 1.
+    const seed = new DatabaseSync(v1OnlyPath);
+    const v1 = MIGRATIONS.find((m) => m.version === 1);
+    if (!v1) {
+      throw new Error('v1 migration missing');
+    }
+    seed.exec('BEGIN');
+    seed.exec(v1.sql);
+    seed.prepare('INSERT INTO _schema (version, applied_at) VALUES (?, ?)').run(1, Date.now());
+    seed.exec('COMMIT');
+    const colsBefore = (seed.prepare("PRAGMA table_info('inbound_hl7_messages')").all() as { name: string }[]).map(
+      (c) => c.name
+    );
+    expect(colsBefore).not.toContain('next_attempt_at');
+    expect(colsBefore).not.toContain('guaranteed_delivery');
+    seed.close();
+
+    // Opening the queue is the real startup path; it must apply v2.
+    const q = DurableQueue.open({ path: v1OnlyPath, log: createMockLogger() });
+    try {
+      const db = q.getDb();
+      const versions = (db.prepare('SELECT version FROM _schema ORDER BY version').all() as { version: number }[]).map(
+        (r) => r.version
+      );
+      expect(versions).toEqual([1, 2]);
+      const colsAfter = (db.prepare("PRAGMA table_info('inbound_hl7_messages')").all() as { name: string }[]).map(
+        (c) => c.name
+      );
+      expect(colsAfter).toContain('next_attempt_at');
+      expect(colsAfter).toContain('guaranteed_delivery');
+    } finally {
+      q.close();
+    }
   });
 
   describe('lease', () => {

@@ -60,13 +60,6 @@ export const MIGRATIONS: readonly Migration[] = [
         -- error_code is the machine-readable failure classification (QueueErrorCode);
         -- the retry policy gates on it, never on the free-form last_error string.
         error_code            TEXT,
-        -- next_attempt_at is the earliest time (ms) a retry-scheduled 'queued' row
-        -- may be re-claimed; NULL unless an auto-retry backoff is pending.
-        next_attempt_at       INTEGER,
-        -- guaranteed_delivery snapshots the channel's guaranteedDelivery setting at
-        -- intake, so recoverOnStartup (which runs before channel policies resolve)
-        -- knows whether to requeue (1) or fail (0) an interrupted inflight row.
-        guaranteed_delivery   INTEGER NOT NULL DEFAULT 0,
         seq_no                INTEGER,
         received_at           INTEGER NOT NULL,
         -- processing_started_at is stamped when the worker claims the row (enters
@@ -132,6 +125,25 @@ export const MIGRATIONS: readonly Migration[] = [
         channel_name TEXT    PRIMARY KEY,
         last_seq_no  INTEGER NOT NULL
       ) STRICT;
+    `,
+  },
+  {
+    // Auto-retry support for the Bot leg. Adds two columns to the existing
+    // inbound_hl7_messages table; SQLite ALTER TABLE ... ADD COLUMN is a
+    // metadata-only operation, so this is cheap even on a populated DB.
+    version: 2,
+    sql: `
+      -- next_attempt_at is the earliest time (ms) a retry-scheduled 'queued' row
+      -- may be re-claimed; NULL unless an auto-retry backoff is pending. A
+      -- retryable failure returns the row to 'queued' with this stamped (see §4.1).
+      ALTER TABLE inbound_hl7_messages
+        ADD COLUMN next_attempt_at INTEGER;
+
+      -- guaranteed_delivery snapshots the channel's guaranteedDelivery setting at
+      -- intake, so recoverOnStartup (which runs before channel policies resolve)
+      -- knows whether to requeue (1) or fail (0) an interrupted inflight row.
+      ALTER TABLE inbound_hl7_messages
+        ADD COLUMN guaranteed_delivery INTEGER NOT NULL DEFAULT 0;
     `,
   },
 ];
