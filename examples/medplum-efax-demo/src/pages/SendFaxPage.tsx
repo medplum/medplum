@@ -6,8 +6,8 @@ import { createReference, isNotFound, normalizeErrorString, OperationOutcomeErro
 import type { Communication, DocumentReference, Organization } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconFile, IconSend } from '@tabler/icons-react';
-import { useState } from 'react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 
 interface SendFaxForm {
   recipientName: string;
@@ -67,7 +67,6 @@ export function SendFaxPage(): JSX.Element {
       await medplum.createResource<DocumentReference>({
         resourceType: 'DocumentReference',
         status: 'current',
-        category: [{ coding: [{ system: 'http://medplum/fhir/CodeSystem/document-source', code: 'fax' }] }],
         author: [createReference(profile)],
         date: new Date().toISOString(),
         content: [{ attachment }],
