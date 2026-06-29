@@ -42,13 +42,8 @@ import {
   toTypedValue,
   validateResourceType,
 } from '@medplum/core';
-import type {
-  CreateResourceOptions,
-  ReadHistoryOptions,
-  RepositoryMode,
-  UpdateResourceOptions,
-} from '@medplum/fhir-router';
-import { FhirRepository } from '@medplum/fhir-router';
+import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
+import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
@@ -393,7 +388,7 @@ export class Repository extends FhirRepository implements Disposable {
 
   setMode(mode: RepositoryMode): void {
     this.assertUsable();
-    this.connection.mode = mode;
+    this.connection.setMode(mode);
   }
 
   async recordFhirQuota(points: number): Promise<void> {
@@ -452,6 +447,8 @@ export class Repository extends FhirRepository implements Disposable {
     if (options?.assignedId && resource.id && !this.context.superAdmin) {
       // NB: To be removed after proper client assigned ID support is added
       const systemRepo = this.getSystemRepo();
+      // ensure writer so the existing read goes to the writer
+      systemRepo.setMode(RepositoryMode.WRITER);
       try {
         const existing = await systemRepo.readResourceImpl(resource.resourceType, resource.id);
         if (existing) {
@@ -875,6 +872,8 @@ export class Repository extends FhirRepository implements Disposable {
     create: boolean,
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
+    // Promote before pre-commit validation and existing-resource reads.
+    this.setMode(RepositoryMode.WRITER);
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
     let validatedResource = this.checkResourcePermissions(resource, interaction);
     this.validateBinarySecurityContext(validatedResource);
@@ -1222,6 +1221,8 @@ export class Repository extends FhirRepository implements Disposable {
     const startTime = Date.now();
     let resource: WithId<T>;
     try {
+      // ensure existing resource read goes to the writer
+      this.setMode(RepositoryMode.WRITER);
       resource = await this.readResourceImpl<T>(resourceType, id);
     } catch (err) {
       const outcomeErr = err as OperationOutcomeError;
