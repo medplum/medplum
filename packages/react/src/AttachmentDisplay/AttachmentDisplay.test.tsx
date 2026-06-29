@@ -55,7 +55,47 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.jpg',
       },
     });
-    expect(await screen.findByTestId('attachment-image')).toBeInTheDocument();
+    expect(await screen.findByTestId('attachment-image')).toHaveAttribute('src', 'https://example.com/test.jpg');
+  });
+
+  test('Renders image with inline data', async () => {
+    await setup({
+      value: {
+        contentType: 'image/png',
+        data: 'aW1hZ2UtZGF0YQ==',
+        title: 'scan.png',
+      },
+    });
+    expect(await screen.findByTestId('attachment-image')).toHaveAttribute(
+      'src',
+      'data:image/png;base64,aW1hZ2UtZGF0YQ=='
+    );
+    expect(screen.getByText('scan.png')).toBeInTheDocument();
+  });
+
+  test('Renders iframe with inline data', async () => {
+    await setup({
+      value: {
+        contentType: 'application/pdf',
+        data: 'cGRmLWRhdGE=',
+      },
+    });
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
+    expect(screen.getByTitle('Attachment')).toHaveAttribute(
+      'src',
+      'data:application/pdf;base64,cGRmLWRhdGE=#navpanes=0'
+    );
+  });
+
+  test('Prefers URL over inline data', async () => {
+    await setup({
+      value: {
+        contentType: 'image/jpeg',
+        data: 'aW5saW5lLWRhdGE=',
+        url: 'https://example.com/test.jpg',
+      },
+    });
+    expect(await screen.findByTestId('attachment-image')).toHaveAttribute('src', 'https://example.com/test.jpg');
   });
 
   test('Renders video', async () => {

@@ -1,17 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { vi } from 'vitest';
 import type { MedplumServerConfig } from './types';
+import type * as ValidateConfig from './validate-config';
 
-jest.mock('../data-warehouse/config', () => ({
-  getWarehouseSyncPostgresTableNames: jest.fn(() => ['Patient_History', 'Observation_History', 'Account_History']),
+const { mockGetWarehouseSyncPostgresTableNames } = vi.hoisted(() => ({
+  mockGetWarehouseSyncPostgresTableNames: vi.fn(() => ['Patient_History', 'Observation_History', 'Account_History']),
 }));
 
-import {
-  getDataWarehouseConfigErrors,
-  isDataWarehouseSyncOperational,
-  warnInvalidDataWarehouseConfig,
-} from './validate-config';
+vi.mock('../data-warehouse/config', () => ({
+  getWarehouseSyncPostgresTableNames: mockGetWarehouseSyncPostgresTableNames,
+}));
+
+let getDataWarehouseConfigErrors: typeof ValidateConfig.getDataWarehouseConfigErrors;
+let isDataWarehouseSyncOperational: typeof ValidateConfig.isDataWarehouseSyncOperational;
+let warnInvalidDataWarehouseConfig: typeof ValidateConfig.warnInvalidDataWarehouseConfig;
+
+beforeAll(async () => {
+  vi.resetModules();
+  ({ getDataWarehouseConfigErrors, isDataWarehouseSyncOperational, warnInvalidDataWarehouseConfig } =
+    await import('./validate-config'));
+});
 
 function baseServerConfig(overrides?: Partial<MedplumServerConfig>): MedplumServerConfig {
   return {
@@ -275,7 +285,7 @@ describe('isDataWarehouseSyncOperational', () => {
 
 describe('warnInvalidDataWarehouseConfig', () => {
   test('does not log when configuration is valid', () => {
-    const logger = { warn: jest.fn() } as any;
+    const logger = { warn: vi.fn() } as any;
     warnInvalidDataWarehouseConfig(
       baseServerConfig({
         dataWarehouse: {
@@ -291,7 +301,7 @@ describe('warnInvalidDataWarehouseConfig', () => {
   });
 
   test('logs when enabled but invalid', () => {
-    const logger = { warn: jest.fn() } as any;
+    const logger = { warn: vi.fn() } as any;
     warnInvalidDataWarehouseConfig(
       baseServerConfig({
         dataWarehouse: { enabled: true, cron: '0 * * * *' },

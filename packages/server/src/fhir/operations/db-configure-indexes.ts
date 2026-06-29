@@ -3,8 +3,8 @@
 import { accepted, badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { escapeIdentifier } from 'pg';
-import { requireSuperAdmin } from '../../admin/super';
 import { getConfig } from '../../config/loader';
+import { requireSuperAdmin } from '../../context';
 import { DatabaseMode } from '../../database';
 import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
 import { getShardSystemRepo } from '../repo';

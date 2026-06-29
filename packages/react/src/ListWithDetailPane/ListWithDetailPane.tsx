@@ -65,7 +65,7 @@ export interface ListWithDetailPaneProps<T extends { id: string } = WithId<Resou
   // Pagination
   /** Current 1-based page. Pagination is hidden unless this, `pageCount`, and `onPageChange` are set. */
   readonly page?: number;
-  /** Total number of pages. Pagination is hidden when this is <= 1. */
+  /** Total number of pages. Pagination is hidden when this is less than or equal to 1. */
   readonly pageCount?: number;
   /** Fired by the built-in pagination with the new 1-based page. */
   readonly onPageChange?: (page: number) => void;

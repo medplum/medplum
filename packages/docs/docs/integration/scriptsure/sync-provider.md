@@ -10,12 +10,16 @@ The ScriptSure integration is in beta. Features and APIs may change.
 
 Before a prescriber can use ScriptSure, they must have a ScriptSure user account linked to their Medplum `ProjectMembership`. There are two ways to accomplish this:
 
-| Approach | Bot | Best for |
-|---|---|---|
+| Approach        | Bot                              | Best for                                               |
+| --------------- | -------------------------------- | ------------------------------------------------------ |
 | **Invite flow** | `scriptsure-provider-invite-bot` | Provider self-enrolls via a pre-populated sign-up link |
-| **Admin sync** | `scriptsure-provider-sync-bot` | Bulk onboarding or re-syncing existing providers |
+| **Admin sync**  | `scriptsure-provider-sync-bot`   | Bulk onboarding or re-syncing existing providers       |
 
 Both bots will look up the `Practitioner` resource by id, and require the `Practitioner` to have at minimum: `name` (given + family), an `email` telecom, and an NPI identifier (`system: "http://hl7.org/fhir/sid/us-npi"`). DEA and state license are also read when present.
+
+Medplum also provides the `Medplum ScriptSure Practitioner` FHIR profile to ensure that the Practitioner resource includes the correct set of information. The profile can be [applied the profile via API](/docs/fhir-datastore/profiles#profile-adoption), or added using the [Practitioner's Profiles tab](https://app.medplum.com/Practitioner) in the UI.
+
+![Scriptsure Practitioner Profile](./scriptsure-practitioner-profile.png)
 
 ---
 

@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { AsyncCrawlerVisitor, InternalTypeSchema, TypedValue, TypedValueWithPath } from '@medplum/core';
+import type { AsyncCrawlerVisitor, InternalTypeSchema, Operation, TypedValue, TypedValueWithPath } from '@medplum/core';
 import {
   allOk,
+  applyPatch,
   arrayify,
   badRequest,
   crawlTypedValueAsync,
@@ -31,8 +32,6 @@ import type {
   Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
-import type { Operation } from 'rfc6902';
-import { applyPatch } from 'rfc6902';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
 import { parseInputParameters } from './utils/parameters';

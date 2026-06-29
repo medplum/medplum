@@ -20,7 +20,9 @@ export * from './AttachmentDisplay/AttachmentDisplay';
 export * from './AttachmentInput/AttachmentInput';
 export * from './auth/ChangePasswordForm';
 export * from './auth/ChooseScopeForm';
+export * from './auth/MfaEnrollForm';
 export * from './auth/MfaForm';
+export * from './auth/MfaVerificationForm';
 export * from './auth/RegisterForm';
 export * from './auth/ResetPasswordForm';
 export * from './auth/SetPasswordForm';
@@ -103,6 +105,7 @@ export { summaryResourceListSection } from './PatientSummary/SummaryResourceList
 export type { SummaryResourceListOptions } from './PatientSummary/SummaryResourceListSection';
 export * from './PatientTimeline/PatientTimeline';
 export * from './PlanDefinitionBuilder/PlanDefinitionBuilder';
+export * from './QrCodeScanner/QrCodeScanner';
 export * from './QuantityDisplay/QuantityDisplay';
 export * from './QuantityInput/QuantityInput';
 export * from './QuestionnaireBuilder/QuestionnaireBuilder';
