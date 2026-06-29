@@ -27,6 +27,10 @@ export function getSmartHealthLinkPatient(bundle: Bundle): Patient | undefined {
   return bundle.entry?.find((e) => isResource<Patient>(e.resource, 'Patient'))?.resource as Patient | undefined;
 }
 
+export function getSmartHealthLinkBundleEntryKey(entry: BundleEntry): string | undefined {
+  return entry.fullUrl ?? (entry.resource ? getReferenceString(entry.resource) : undefined);
+}
+
 export function buildSmartHealthLinkImportBundle(
   bundle: Bundle,
   selectedKeys: Set<string>,
@@ -41,8 +45,8 @@ export function buildSmartHealthLinkImportBundle(
     entry: bundle.entry
       ?.filter((entry) => {
         const resource = entry.resource;
-        const key = resource && getReferenceString(resource);
-        return !!key && selectedKeys.has(key) && resource.resourceType !== 'Patient';
+        const key = getSmartHealthLinkBundleEntryKey(entry);
+        return !!resource && !!key && selectedKeys.has(key) && resource.resourceType !== 'Patient';
       })
       .map((entry) => ({
         fullUrl: entry.fullUrl,

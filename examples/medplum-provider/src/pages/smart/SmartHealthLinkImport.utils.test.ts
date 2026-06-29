@@ -140,6 +140,22 @@ describe('SmartHealthLinkImport utils', () => {
     );
   });
 
+  test('selects id-less bundle entries by fullUrl', () => {
+    const result = buildSmartHealthLinkImportBundle(
+      {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [{ fullUrl: 'urn:uuid:condition-1', resource: { ...condition, id: undefined } }],
+      },
+      new Set(['urn:uuid:condition-1']),
+      sharedPatient,
+      { ...sharedPatient, id: 'local-patient' }
+    );
+
+    expect(result.entry).toHaveLength(1);
+    expect(result.entry?.[0].resource?.resourceType).toBe('Condition');
+  });
+
   test('adds conditional create criteria for common clinical resources', () => {
     const result = buildSmartHealthLinkImportBundle(bundle, selectedKeys, sharedPatient, {
       ...sharedPatient,

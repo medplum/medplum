@@ -19,8 +19,8 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
-import { ContentType, deepClone, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
-import type { Bundle, Parameters, Patient, Resource } from '@medplum/fhirtypes';
+import { ContentType, deepClone, getDisplayString, normalizeErrorString } from '@medplum/core';
+import type { Bundle, BundleEntry, Parameters, Patient, Resource } from '@medplum/fhirtypes';
 import { Document, QrCodeScanner, useMedplum } from '@medplum/react';
 import { IconQrcode, IconSearch, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -30,6 +30,7 @@ import {
   buildSmartHealthLinkImportBundle,
   getMatchGrade,
   getSmartHealthCardFile,
+  getSmartHealthLinkBundleEntryKey,
   getSmartHealthLinkBundle,
   getSmartHealthLinkPatient,
 } from './SmartHealthLinkImport.utils';
@@ -49,8 +50,11 @@ export function SmartHealthLinkImportPage(): JSX.Element {
   const [createNewPatient, setCreateNewPatient] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-  const items = (bundle?.entry?.map((e) => e.resource).filter(Boolean) ?? []) as WithId<Resource>[];
-  const selectedItems = items.filter((i) => selectedKeys.has(getReferenceString(i)) && i.resourceType !== 'Patient');
+  const items = bundle?.entry?.filter((entry) => entry.resource && getSmartHealthLinkBundleEntryKey(entry)) ?? [];
+  const selectedItems = items.filter((entry) => {
+    const key = getSmartHealthLinkBundleEntryKey(entry);
+    return !!key && selectedKeys.has(key) && entry.resource?.resourceType !== 'Patient';
+  });
   const recipient = medplum.getProject()?.name ?? 'Medplum Provider';
   const hasTargetPatient = createNewPatient || !!selectedPatient;
 
@@ -99,11 +103,14 @@ export function SmartHealthLinkImportPage(): JSX.Element {
         throw new Error('SMART Health Link Bundle did not contain a Patient resource.');
       }
 
-      const bundleResources = (resolvedBundle?.entry?.map((e) => e.resource).filter(Boolean) ??
-        []) as WithId<Resource>[];
+      const bundleKeys =
+        resolvedBundle.entry
+          ?.filter((entry) => entry.resource)
+          .map(getSmartHealthLinkBundleEntryKey)
+          .filter((key): key is string => !!key) ?? [];
       setBundle(resolvedBundle);
       setSharedPatient(patient);
-      setSelectedKeys(new Set(bundleResources.map((e) => getReferenceString(e))));
+      setSelectedKeys(new Set(bundleKeys));
       await matchPatient(patient);
     } catch (err) {
       setError(normalizeErrorString(err));
@@ -312,8 +319,8 @@ export function SmartHealthLinkImportPage(): JSX.Element {
                 <div>
                   <Title order={3}>Import Cart</Title>
                   <Text c="dimmed" size="sm">
-                    {selectedItems.length} of {items.filter((item) => item.resourceType !== 'Patient').length} resources
-                    selected
+                    {selectedItems.length} of{' '}
+                    {items.filter((item) => item.resource?.resourceType !== 'Patient').length} resources selected
                   </Text>
                   <Text c="green" size="sm" fw={600}>
                     {getTargetPatientLabel(createNewPatient, selectedPatient)}
@@ -322,7 +329,11 @@ export function SmartHealthLinkImportPage(): JSX.Element {
                 <Group>
                   <Button
                     variant="default"
-                    onClick={() => setSelectedKeys(new Set(items.map((item) => getReferenceString(item))))}
+                    onClick={() =>
+                      setSelectedKeys(
+                        new Set(items.map(getSmartHealthLinkBundleEntryKey).filter((key): key is string => !!key))
+                      )
+                    }
                   >
                     Select All
                   </Button>
@@ -341,24 +352,27 @@ export function SmartHealthLinkImportPage(): JSX.Element {
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
-                    {items.map((item) => (
-                      <ResourceCartRow
-                        key={getReferenceString(item)}
-                        item={item}
-                        checked={selectedKeys.has(getReferenceString(item))}
-                        onChange={(checked) => {
-                          setSelectedKeys((prev) => {
-                            const next = new Set(prev);
-                            if (checked) {
-                              next.add(getReferenceString(item));
-                            } else {
-                              next.delete(getReferenceString(item));
-                            }
-                            return next;
-                          });
-                        }}
-                      />
-                    ))}
+                    {items.map((item) => {
+                      const key = getSmartHealthLinkBundleEntryKey(item) as string;
+                      return (
+                        <ResourceCartRow
+                          key={key}
+                          item={item}
+                          checked={selectedKeys.has(key)}
+                          onChange={(checked) => {
+                            setSelectedKeys((prev) => {
+                              const next = new Set(prev);
+                              if (checked) {
+                                next.add(key);
+                              } else {
+                                next.delete(key);
+                              }
+                              return next;
+                            });
+                          }}
+                        />
+                      );
+                    })}
                   </Table.Tbody>
                 </Table>
               </ScrollArea>
@@ -392,28 +406,29 @@ export function SmartHealthLinkImportPage(): JSX.Element {
 }
 
 interface ResourceCartRowProps {
-  readonly item: WithId<Resource>;
+  readonly item: BundleEntry;
   readonly checked: boolean;
   readonly onChange: (checked: boolean) => void;
 }
 
 function ResourceCartRow({ item, checked, onChange }: ResourceCartRowProps): JSX.Element {
-  const isPatient = item.resourceType === 'Patient';
+  const resource = item.resource as Resource;
+  const isPatient = resource.resourceType === 'Patient';
   return (
     <Table.Tr>
       <Table.Td>
         <Checkbox
-          aria-label={`Select ${item.resourceType}`}
+          aria-label={`Select ${resource.resourceType}`}
           disabled={isPatient}
           checked={!isPatient && checked}
           onChange={(event) => onChange(event.currentTarget.checked)}
         />
       </Table.Td>
       <Table.Td>
-        <Badge variant="light">{item.resourceType}</Badge>
+        <Badge variant="light">{resource.resourceType}</Badge>
       </Table.Td>
       <Table.Td>
-        <Text size="sm">{getDisplayString(item)}</Text>
+        <Text size="sm">{getDisplayString(resource)}</Text>
       </Table.Td>
     </Table.Tr>
   );
