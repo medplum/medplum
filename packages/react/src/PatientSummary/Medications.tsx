@@ -29,7 +29,9 @@ export function Medications(props: MedicationsProps): JSX.Element {
   const [medicationRequests, setMedicationRequests] = useState(props.medicationRequests);
   const [editMedication, setEditMedication] = useState<MedicationRequest>();
   const [opened, { open, close }] = useDisclosure(false);
-  const medications = [...medicationRequests, ...(props.medicationStatements ?? [])].sort(compareByLastUpdatedDescending);
+  const medications = [...medicationRequests, ...(props.medicationStatements ?? [])].sort(
+    compareByLastUpdatedDescending
+  );
 
   const handleSubmit = useCallback(
     async (medication: MedicationRequest) => {
