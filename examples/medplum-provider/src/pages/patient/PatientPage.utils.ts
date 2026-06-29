@@ -94,7 +94,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   {
     id: 'documentreference',
-    url: 'DocumentReference',
+    url: 'DocumentReference?subject=Patient/%patient.id',
     label: 'Documents',
   },
   {
