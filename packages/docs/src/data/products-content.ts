@@ -33,10 +33,10 @@ export interface ComplianceItem {
   img: string | null;
 }
 
-export const HERO_HEADLINE = 'The platform underneath your healthcare product';
+export const HERO_HEADLINE = 'Fast and flexible products, for any healthcare solution';
 
 export const HERO_SUB =
-  'Medplum is an open-source, standards forward healthcare platform. Our modular building blocks let your team move fast, stay compliant, and avoid getting locked into a rigid system.';
+  'Our pre-built Apps, Capabilites, and Foundations, allow you to move fast, stay compliant, and avoid getting locked into rigid systems as your organization evolves.';
 
 export const TIER_INTRO_HEADLINE = 'Build outward from one data model.';
 
@@ -162,13 +162,13 @@ export const ALL_APPS: AppItem[] = [
   {
     id: 'provider',
     name: 'Medplum Provider',
-    tagline: 'Open-source clinician EHR',
+    tagline: 'Open-source EHR',
     body: 'A working EHR shell for clinicians: charting, orders, messaging, schedule, and more. Fork it, pull code from it, or use it as just a reference.',
   },
   {
     id: 'admin',
     name: 'Medplum App',
-    tagline: 'Admin & developer console',
+    tagline: 'Admin & Developer Console',
     body: 'Access your datastore, project admin, AccessPolicy editor, Bot editor, and Questionnaire builder. Your developer and admin console from day one.',
   },
 ];

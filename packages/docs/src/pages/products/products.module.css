@@ -2,31 +2,23 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 .page {
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  color: #212529;
-  background: #fff;
+  font-family: var(--landing-font-display);
+  color: var(--landing-color-heading);
+  background: var(--landing-surface);
   width: 100%;
-  line-height: 1.55;
+  line-height: var(--landing-body-leading);
 }
 
-/* ---- stacked sections wrapper (Apps + Capabilities + Foundations) ---- */
-
 .stackedSections {
-  background: #fff;
-  padding: 0 0 24px;
+  background: var(--landing-surface);
+  padding: 0;
 }
 
 .container {
   max-width: var(--layout-max-width);
   margin: 0 auto;
   padding: 0 var(--layout-padding);
-  /* Divider between the three-tier panel above and the Apps section below. */
-  border-top: 1px solid #e9ecef;
+
 }
 
 @media (max-width: 996px) {
@@ -39,19 +31,4 @@
   .container {
     padding: 0 var(--layout-padding-sm);
   }
-}
-
-/* ---- dark mode ---- */
-
-[data-theme='dark'] .page {
-  background: var(--ifm-background-color);
-  color: var(--oc-gray-1);
-}
-
-[data-theme='dark'] .stackedSections {
-  background: var(--ifm-background-color);
-}
-
-[data-theme='dark'] .container {
-  border-top-color: var(--oc-gray-8);
 }

@@ -7,7 +7,6 @@ import { ProductsCapabilities } from '../../components/landing/ProductsCapabilit
 import { ProductsCta } from '../../components/landing/ProductsCta';
 import { ProductsFoundations } from '../../components/landing/ProductsFoundations';
 import { ProductsHero } from '../../components/landing/ProductsHero';
-import { ProductsThreeTierIntro } from '../../components/landing/ProductsThreeTierIntro';
 import styles from './products.module.css';
 
 export default function ProductsPage(): JSX.Element {
@@ -15,13 +14,10 @@ export default function ProductsPage(): JSX.Element {
     <Layout title="Products" description="The platform underneath your healthcare product">
       <div className={styles.page}>
         <ProductsHero />
-        {/* The three-tier intro doubles as the section nav — its Apps/Capabilities/Foundations
-            rows jump to each section, so a separate anchor-link row is redundant. */}
-        <ProductsThreeTierIntro />
 
         <section className={styles.stackedSections}>
+          <ProductsApps />
           <div className={styles.container}>
-            <ProductsApps />
             <ProductsCapabilities />
             <ProductsFoundations />
           </div>

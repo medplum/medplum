@@ -2,9 +2,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 .section {
-  font-family: 'Poppins', system-ui, sans-serif;
-  background: #fff;
-  padding: 40px 0 56px;
+  font-family: var(--landing-font-display);
+  background: var(--landing-surface);
+  padding: 3rem 0 3.5rem;
 }
 
 .container {
@@ -28,42 +28,41 @@
 .headlineRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 48px;
+  gap: 3rem;
   align-items: start;
-  margin-bottom: 40px;
+  margin-bottom: 2.5rem;
 }
 
 .headline {
-  font-family: 'Poppins', system-ui, sans-serif;
-  font-weight: 600;
-  font-size: 44px;
-  line-height: 1.1;
-  letter-spacing: -0.022em;
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-section-weight);
+  font-size: var(--landing-section-size);
+  line-height: var(--landing-section-leading);
+  letter-spacing: var(--landing-section-tracking);
+  text-wrap-style: balance;
   margin: 0;
-  color: #212529;
+  color: var(--landing-color-heading);
 }
 
 .sub {
-  font-family: 'Poppins', system-ui, sans-serif;
-  font-size: 17px;
-  line-height: 1.6;
-  color: #495057;
+  font-family: var(--landing-font-body);
+  font-size: var(--landing-lead-size);
+  line-height: var(--landing-lead-leading);
+  font-weight: var(--landing-lead-weight);
+  color: var(--landing-color-body-alt);
   margin: 0;
 }
 
 .panel {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 16px;
-  padding: 40px;
+  background: var(--landing-surface-inset);
+  border: 1px solid var(--landing-border);
+  border-radius: var(--landing-radius-card);
+  padding: 2.5rem;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-/* Rows are buttons: each jumps to its section. Hovering reveals the tier's verb
-   line and quiets the other rows (same spotlight grammar as the Foundations
-   diagram). */
 .tierRow {
   appearance: none;
   border: none;
@@ -98,7 +97,6 @@
   outline-offset: 2px;
 }
 
-/* Verb line + arrow: hidden at rest, revealed on row hover/focus. */
 .rowReveal {
   display: flex;
   align-items: center;
@@ -118,33 +116,37 @@
 }
 
 .rowVerb {
-  font-family: 'Poppins', system-ui, sans-serif;
+  font-family: var(--landing-font-body);
   font-size: 13.5px;
   font-weight: 500;
-  color: #495057;
+  color: var(--landing-color-body);
 }
 
 .rowArrow {
   font-size: 15px;
-  color: #212529;
+  color: var(--landing-color-heading);
 }
 
 @media (max-width: 996px) {
   .rowReveal {
     display: none;
   }
+
+  .headlineRow {
+    grid-template-columns: 1fr;
+  }
 }
 
 .tierRowApps {
-  background: #e5dbff;
+  background: var(--oc-violet-1);
 }
 
 .tierRowCapabilities {
-  background: #f3d9fa;
+  background: var(--oc-grape-1);
 }
 
 .tierRowFoundations {
-  background: #dbe4ff;
+  background: var(--oc-indigo-1);
 }
 
 .tierStripe {
@@ -157,7 +159,7 @@
 }
 
 .tierStripeApps {
-  background: #845ef7;
+  background: var(--oc-violet-6);
 }
 
 .tierStripeCapabilities {
@@ -165,15 +167,16 @@
 }
 
 .tierStripeFoundations {
-  background: #4263eb;
+  background: var(--oc-indigo-6);
 }
 
 .tierLabel {
   padding-left: 8px;
-  font-family: 'Poppins', system-ui, sans-serif;
-  font-weight: 600;
-  font-size: 20px;
-  color: #212529;
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-subsection-weight);
+  font-size: var(--landing-subsection-size);
+  line-height: var(--landing-subsection-leading);
+  color: var(--landing-color-heading);
 }
 
 .pills {
@@ -183,33 +186,14 @@
 }
 
 .pill {
-  background: #fff;
-  color: #212529;
-  font-family: 'Poppins', system-ui, sans-serif;
+  background: var(--landing-surface-elevated);
+  color: var(--landing-color-heading);
+  font-family: var(--landing-font-display);
   font-size: 13px;
   font-weight: 500;
   padding: 6px 12px;
-  border-radius: 9999px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-/* ---- dark mode ---- */
-
-[data-theme='dark'] .section {
-  background: var(--ifm-background-color);
-}
-
-[data-theme='dark'] .headline {
-  color: var(--oc-gray-0);
-}
-
-[data-theme='dark'] .sub {
-  color: var(--oc-gray-4);
-}
-
-[data-theme='dark'] .panel {
-  background: var(--oc-gray-8);
-  border-color: var(--oc-gray-7);
+  border-radius: var(--landing-radius-chip);
+  border: 1px solid var(--landing-border);
 }
 
 [data-theme='dark'] .tierRowApps {
@@ -224,20 +208,8 @@
   background: rgba(66, 99, 235, 0.2);
 }
 
-[data-theme='dark'] .tierLabel {
-  color: var(--oc-gray-1);
-}
-
 [data-theme='dark'] .pill {
   background: var(--oc-gray-7);
   color: var(--oc-gray-2);
   border-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme='dark'] .rowVerb {
-  color: var(--oc-gray-3);
-}
-
-[data-theme='dark'] .rowArrow {
-  color: var(--oc-gray-1);
 }
