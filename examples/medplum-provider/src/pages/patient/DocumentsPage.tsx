@@ -121,11 +121,7 @@ export function DocumentsPage(): JSX.Element {
         headerText="All Documents"
         headerActions={headerActions}
         renderItem={(doc) => (
-          <DocumentListItem
-            item={doc}
-            selectedDocumentId={documentId}
-            getItemUri={(item) => docUri(item.id)}
-          />
+          <DocumentListItem item={doc} selectedDocumentId={documentId} getItemUri={(item) => docUri(item.id)} />
         )}
         emptyList={<EmptyDocuments />}
         renderDetail={(doc) => (
