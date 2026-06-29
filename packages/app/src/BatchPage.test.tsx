@@ -7,7 +7,8 @@ import { BatchPage } from './BatchPage';
 import type { RenderResult, UserEvent } from './test-utils/render';
 import { act, fireEvent, render, screen, userEvent, waitFor } from './test-utils/render';
 
-vi.mock('./components/QrCodeScanner', () => ({
+vi.mock('@medplum/react', async () => ({
+  ...(await vi.importActual('@medplum/react')),
   QrCodeScanner: ({ onScan }: { onScan: (data: string) => void }) => (
     <button type="button" onClick={() => onScan('shc:/mock-health-card')}>
       Mock QR Scan

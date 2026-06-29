@@ -171,6 +171,7 @@ describe('QrCodeScanner', () => {
     setMediaDevices(getUserMedia);
 
     const { unmount } = render(<QrCodeScanner onScan={vi.fn()} />);
+    await waitFor(() => expect(getUserMedia).toHaveBeenCalled());
     unmount();
     await act(async () => {
       resolveGetUserMedia({ getTracks: () => [{ stop }] });

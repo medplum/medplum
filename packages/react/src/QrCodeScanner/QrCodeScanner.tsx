@@ -2,11 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader, Stack, Text } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
-import jsQR from 'jsqr';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
 const SCAN_INTERVAL_MS = 150;
+
+type JsQr = (
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+  options?: { inversionAttempts?: 'dontInvert' | 'onlyInvert' | 'attemptBoth' | 'invertFirst' }
+) => { data: string } | null;
+
+let jsQrPromise: Promise<JsQr> | undefined;
 
 export interface QrCodeScannerProps {
   readonly onScan: (data: string) => void;
@@ -46,22 +54,23 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
     let cancelled = false;
     let scanned = false;
     let lastScanTime = 0;
+    let jsQr: JsQr | undefined;
 
     function stopStream(): void {
       stream?.getTracks().forEach((t) => t.stop());
     }
 
     function fail(err: unknown): void {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const normalized = err instanceof Error ? err : new Error(String(err));
       if (!cancelled) {
         setLoading(false);
-        setError(normalizeErrorString(error));
-        onErrorRef.current?.(error);
+        setError(normalizeErrorString(normalized));
+        onErrorRef.current?.(normalized);
       }
     }
 
     function tick(timestamp: number): void {
-      if (cancelled || scanned) {
+      if (cancelled || scanned || !jsQr) {
         return;
       }
       if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
@@ -72,7 +81,7 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
           scanCanvas.width = videoElement.videoWidth;
           scanCtx.drawImage(videoElement, 0, 0, scanCanvas.width, scanCanvas.height);
           const imageData = scanCtx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+          const code = jsQr(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
           if (code?.data) {
             scanned = scanOnce;
             onScanRef.current(code.data);
@@ -86,29 +95,33 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
       rafId = requestAnimationFrame(tick);
     }
 
-    if (!navigator.mediaDevices?.getUserMedia) {
-      fail(new Error('Camera access is not available in this browser.'));
-      return undefined;
-    }
-
-    navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: 'environment' } })
-      .then((mediaStream) => {
+    async function start(): Promise<void> {
+      try {
+        jsQr = await loadJsQr();
+        if (cancelled) {
+          return;
+        }
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error('Camera access is not available in this browser.');
+        }
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         if (cancelled) {
           mediaStream.getTracks().forEach((t) => t.stop());
-          return undefined;
+          return;
         }
         stream = mediaStream;
         videoElement.srcObject = mediaStream;
-        videoElement.setAttribute('playsinline', 'true'); // tell iOS Safari we don't want fullscreen
-        return videoElement.play();
-      })
-      .then(() => {
+        videoElement.setAttribute('playsinline', 'true');
+        await videoElement.play();
         if (!cancelled) {
           rafId = requestAnimationFrame(tick);
         }
-      })
-      .catch(fail);
+      } catch (err) {
+        fail(err);
+      }
+    }
+
+    start().catch(fail);
 
     return () => {
       cancelled = true;
@@ -143,4 +156,20 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
       )}
     </Stack>
   );
+}
+
+async function loadJsQr(): Promise<JsQr> {
+  if (!jsQrPromise) {
+    jsQrPromise = import('jsqr')
+      .then((module) => module.default as JsQr)
+      .catch((err) => {
+        jsQrPromise = undefined;
+        throw new Error(
+          `QR code scanning requires the optional "jsqr" dependency. Install jsqr to use QrCodeScanner. ${normalizeErrorString(
+            err
+          )}`
+        );
+      });
+  }
+  return jsQrPromise;
 }
