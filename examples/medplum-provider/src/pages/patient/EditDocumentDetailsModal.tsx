@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Divider, Group, Modal, Stack, Text, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getDisplayString, getReferenceString } from '@medplum/core';
 import type { CodeableConcept, DocumentReference, Reference } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ReferenceInput, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
@@ -31,7 +30,7 @@ export function EditDocumentDetailsModal({
 
   // Editable field state, seeded from the resource. Inputs stay mounted while the delete
   // confirmation is shown (just visually hidden), so in-progress edits survive a cancel.
-  const [name, setName] = useState(() => getDocumentName(item));
+  const [description, setDescription] = useState(() => item.description ?? '');
   const [type, setType] = useState<CodeableConcept | undefined>(() => item.type);
   const [category, setCategory] = useState<CodeableConcept | undefined>(() => getInitialCategory(item));
   const [authorRef, setAuthorRef] = useState<Reference | undefined>(() => getInitialAuthor(item));
@@ -48,7 +47,7 @@ export function EditDocumentDetailsModal({
   const handleSave = async (): Promise<void> => {
     setSaving(true);
     try {
-      const updated = buildUpdatedResource(item, { name, type, category, authorRef });
+      const updated = buildUpdatedResource(item, { description, type, category, authorRef });
       await medplum.updateResource(updated);
       showSuccessNotification({ title: 'Success', message: 'Document details updated' });
       onSaved();
@@ -96,7 +95,11 @@ export function EditDocumentDetailsModal({
             <Stack gap="md">
               <Divider />
 
-              <TextInput label="Title" value={name} onChange={(event) => setName(event.currentTarget.value)} />
+              <TextInput
+                label="Description"
+                value={description}
+                onChange={(event) => setDescription(event.currentTarget.value)}
+              />
 
               <CodeableConceptInput
                 name="type"
@@ -166,16 +169,6 @@ export function EditDocumentDetailsModal({
   );
 }
 
-function getDocumentName(doc: DocumentReference): string {
-  // getDisplayString is the primary source, but a DocumentReference has no name/code for it to read,
-  // so it returns the bare reference string ("DocumentReference/<id>"); fall back to a readable field then.
-  const display = getDisplayString(doc);
-  if (display && display !== getReferenceString(doc)) {
-    return display;
-  }
-  return doc.description || doc.content?.[0]?.attachment?.title || 'Untitled Document';
-}
-
 function getInitialCategory(doc: DocumentReference): CodeableConcept | undefined {
   return doc.category?.[0];
 }
@@ -185,29 +178,20 @@ function getInitialAuthor(doc: DocumentReference): Reference | undefined {
 }
 
 interface EditedFields {
-  name: string;
+  description: string;
   type: CodeableConcept | undefined;
   category: CodeableConcept | undefined;
   authorRef: Reference | undefined;
 }
 
 function buildUpdatedResource(doc: DocumentReference, fields: EditedFields): DocumentReference {
-  const { name, type, category, authorRef } = fields;
-  const trimmedName = name.trim() || undefined;
+  const { description, type, category, authorRef } = fields;
 
-  const firstContent = doc.content?.[0];
-  const content = firstContent
-    ? [
-        { ...firstContent, attachment: { ...firstContent.attachment, title: trimmedName } },
-        ...(doc.content?.slice(1) ?? []),
-      ]
-    : doc.content;
   return {
     ...doc,
-    description: trimmedName,
+    description: description.trim() || undefined,
     type,
     category: category ? [category] : undefined,
     author: authorRef ? ([authorRef] as DocumentReference['author']) : undefined,
-    content,
   };
 }
