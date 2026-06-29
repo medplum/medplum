@@ -115,7 +115,7 @@ function slotToEvent(slot: Slot): EventInput {
 type ScheduleSlotsLoaderProps = {
   scheduleRef: string;
   range: Range;
-  onResult: (scheduleRef: string, slots: Slot[], loading: boolean) => void;
+  onResult: (scheduleRef: string, slots: WithId<Slot>[], loading: boolean) => void;
 };
 
 function ScheduleSlotsLoader({ scheduleRef, range, onResult }: ScheduleSlotsLoaderProps): null {
@@ -259,10 +259,10 @@ export function SchedulingPage(): JSX.Element | null {
   );
 
   // Slots are fetched per-schedule via ScheduleSlotsLoader components rendered below.
-  const [slotsMap, setSlotsMap] = useState<Map<string, Slot[]>>(new Map());
+  const [slotsMap, setSlotsMap] = useState<Map<string, WithId<Slot>[]>>(new Map());
   const [loadingScheduleRefs, setLoadingScheduleRefs] = useState<Set<string>>(new Set());
 
-  const handleSlotResult = useCallback((scheduleRef: string, slots: Slot[], loading: boolean) => {
+  const handleSlotResult = useCallback((scheduleRef: string, slots: WithId<Slot>[], loading: boolean) => {
     setSlotsMap((prev) => new Map(prev).set(scheduleRef, slots));
     setLoadingScheduleRefs((prev) => {
       const next = new Set(prev);
@@ -316,7 +316,7 @@ export function SchedulingPage(): JSX.Element | null {
       }, {});
 
       const appointmentSource = {
-        events: apts.map((apt) => appointmentToEvent(apt)),
+        events: apts.filter((apt) => apt.status !== 'cancelled').map((apt) => appointmentToEvent(apt)),
         color: getThemeColor(colorTheme.appointment, theme),
       } satisfies EventSourceInput;
 
@@ -394,36 +394,68 @@ export function SchedulingPage(): JSX.Element | null {
 
   const [chosenAppointment, setChosenAppointment] = useState<Appointment>();
 
+  const handleAppointmentUpdate = useCallback(
+    (updated: WithId<Appointment>) => {
+      console.log('appointment update', updated);
+      setAppointmentsMap((prev) => {
+        const next = new Map(prev);
+        updated.participant?.forEach((p) => {
+          const actorRef = p.actor ? getReferenceString(p.actor) : undefined;
+          console.log(actorRef, actorRef && actors.includes(actorRef));
+          if (actorRef && actors.includes(actorRef)) {
+            const appointments = next.get(actorRef) ?? [];
+            const existing = appointments.filter((apt) => apt.id !== updated.id);
+            next.set(actorRef, [...existing, updated]);
+          }
+        });
+        return next;
+      });
+
+      setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
+      if (updated.status === 'cancelled') {
+        const cancelledSlotRefs = new Set((updated.slot ?? []).map((ref) => getReferenceString(ref)).filter(isDefined));
+        if (cancelledSlotRefs.size > 0) {
+          setSlotsMap((prev) => {
+            const next = new Map(prev);
+            next.forEach((slots, scheduleRef) => {
+              next.set(
+                scheduleRef,
+                slots.filter((slot) => !cancelledSlotRefs.has(getReferenceString(slot)))
+              );
+            });
+            return next;
+          });
+        }
+        appointmentDetailsHandlers.close();
+      }
+    },
+    [appointmentDetailsHandlers, actors]
+  );
+
+  const handleSlotUpdates = useCallback((updated: WithId<Slot>[]) => {
+    setSlotsMap((prev) => {
+      const next = new Map(prev);
+      updated.forEach((slot) => {
+        const scheduleRef = getReferenceString(slot.schedule);
+        if (scheduleRef) {
+          const slots = next.get(scheduleRef) ?? [];
+          const existing = slots.filter((x) => x.id !== slot.id);
+          next.set(scheduleRef, [...existing, slot]);
+        }
+      });
+      return next;
+    });
+  }, []);
+
   const handleBookSuccess = useCallback(
-    (results: { appointment: WithId<Appointment>; slots: Slot[] }) => {
+    (results: { appointment: WithId<Appointment>; slots: WithId<Slot>[] }) => {
       bookingDrawerHandlers.close();
       const { appointment } = results;
 
-      setAppointmentsMap((prev) => {
-        const next = new Map(prev);
-        appointment.participant?.forEach((p) => {
-          const actorRef = p.actor ? getReferenceString(p.actor) : undefined;
-          if (actorRef && actors.includes(actorRef)) {
-            const existing = next.get(actorRef) ?? [];
-            next.set(actorRef, [...existing, appointment]);
-          }
-        });
-        return next;
-      });
-
-      setSlotsMap((prev) => {
-        const next = new Map(prev);
-        results.slots.forEach((slot) => {
-          const scheduleRef = getReferenceString(slot.schedule);
-          if (scheduleRef) {
-            const existing = next.get(scheduleRef) ?? [];
-            next.set(scheduleRef, [...existing, slot]);
-          }
-        });
-        return next;
-      });
+      handleAppointmentUpdate(appointment);
+      handleSlotUpdates(results.slots);
     },
-    [bookingDrawerHandlers, actors]
+    [bookingDrawerHandlers, handleAppointmentUpdate, handleSlotUpdates]
   );
 
   const handleEventClick = (info: EventClickInfo): void => {
@@ -559,7 +591,11 @@ export function SchedulingPage(): JSX.Element | null {
         position="right"
       >
         {appointmentDetails && (
-          <AppointmentDetails appointment={appointmentDetails} onAppointmentUpdate={() => {}} onSlotUpdate={() => {}} />
+          <AppointmentDetails
+            appointment={appointmentDetails}
+            onAppointmentUpdate={handleAppointmentUpdate}
+            onSlotUpdate={(slot) => handleSlotUpdates([slot])}
+          />
         )}
       </Drawer>
     </>
