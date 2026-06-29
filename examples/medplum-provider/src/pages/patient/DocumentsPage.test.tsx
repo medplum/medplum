@@ -6,6 +6,7 @@ import type { DocumentReference } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
+import type { NavigateFunction } from 'react-router';
 import * as reactRouter from 'react-router';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -17,13 +18,13 @@ const patientId = HomerSimpson.id as string;
 
 describe('DocumentsPage', () => {
   let medplum: MockClient;
-  let navigateMock: ReturnType<typeof vi.fn>;
+  let navigateMock: NavigateFunction;
 
   beforeEach(() => {
     medplum = new MockClient();
     vi.clearAllMocks();
     // Mock navigation so the page's redirects/selections don't change the route under test.
-    navigateMock = vi.fn();
+    navigateMock = vi.fn() as NavigateFunction;
     vi.spyOn(reactRouter, 'useNavigate').mockReturnValue(navigateMock);
   });
 
