@@ -349,7 +349,7 @@ describe('External', () => {
     });
 
     // Mock the external identity provider
-    fetchMock.mockImplementation(() => mockFetchJson(buildTokens('test@' + domain)));
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
 
     // Simulate the external identity provider callback
     await request(app).get(url);
@@ -363,6 +363,46 @@ describe('External', () => {
         }),
       })
     );
+  });
+
+  test('Insecure token URL requires config flag', async () => {
+    const insecureAuthClient = await withTestContext(async () => {
+      const client = await createClient(systemRepo, {
+        project,
+        name: 'Insecure External Auth Client',
+        redirectUri,
+      });
+      return systemRepo.updateResource<ClientApplication>({
+        ...client,
+        identityProvider: {
+          ...identityProvider,
+          tokenUrl: 'http://localhost:8080/oauth2/token',
+        },
+      });
+    });
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: insecureAuthClient.id }),
+    });
+
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens('test@' + domain)));
+    fetchMock.mockClear();
+    let res = await request(app).get(url);
+    expect(res.status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+
+    const savedConfig = getConfig().allowInsecureExternalAuthUrl;
+    getConfig().allowInsecureExternalAuthUrl = true;
+    try {
+      fetchMock.mockClear();
+      res = await request(app).get(url);
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:8080/oauth2/token',
+        expect.objectContaining({ method: 'POST' })
+      );
+    } finally {
+      getConfig().allowInsecureExternalAuthUrl = savedConfig;
+    }
   });
 
   test('Subject auth success', async () => {

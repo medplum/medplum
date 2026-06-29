@@ -60,9 +60,7 @@
     "@medplum/definitions": "5.1.22",
     "@medplum/fhir-router": "5.1.22",
     "@medplum/fhirtypes": "5.1.22",
-    "dataloader": "2.2.3",
-    "jest-websocket-mock": "2.5.0",
-    "rfc6902": "5.2.0"
+    "dataloader": "2.2.3"
   },
   "devDependencies": {
     "@types/pdfmake": "0.2.12"

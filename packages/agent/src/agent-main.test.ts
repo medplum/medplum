@@ -20,6 +20,7 @@ vi.mock('./constants', async (importOriginal) => {
 describe('Main', () => {
   beforeEach(() => {
     console.log = vi.fn();
+    vi.mocked(existsSync).mockReturnValue(false);
 
     vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit');

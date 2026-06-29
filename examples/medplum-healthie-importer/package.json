@@ -29,7 +29,7 @@
     "@medplum/eslint-config": "5.1.22",
     "@medplum/fhirtypes": "5.1.22",
     "@medplum/mock": "5.1.22",
-    "@types/node": "22.19.21",
+    "@types/node": "22.20.0",
     "@types/ssh2-sftp-client": "9.0.6",
     "@vitest/coverage-v8": "4.1.9",
     "@vitest/ui": "4.1.9",

@@ -2,22 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { getDisplayString } from '@medplum/core';
-import type { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import { formatCodeableConcept, getDisplayString } from '@medplum/core';
+import type { Encounter, MedicationRequest, MedicationStatement, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
+import { compareByLastUpdatedDescending } from '../utils/date';
 import { CollapsibleSection } from './CollapsibleSection';
 import { MedicationDialog } from './MedicationDialog';
 import SummaryItem from './SummaryItem';
 import styles from './SummaryItem.module.css';
 
+export type MedicationSummaryResource = MedicationRequest | MedicationStatement;
+
 export interface MedicationsProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly medicationRequests: MedicationRequest[];
-  readonly onClickResource?: (resource: MedicationRequest) => void;
+  readonly medicationStatements?: MedicationStatement[];
+  readonly onClickResource?: (resource: MedicationSummaryResource) => void;
 }
 
 export function Medications(props: MedicationsProps): JSX.Element {
@@ -25,6 +29,9 @@ export function Medications(props: MedicationsProps): JSX.Element {
   const [medicationRequests, setMedicationRequests] = useState(props.medicationRequests);
   const [editMedication, setEditMedication] = useState<MedicationRequest>();
   const [opened, { open, close }] = useDisclosure(false);
+  const medications = [...medicationRequests, ...(props.medicationStatements ?? [])].sort(
+    compareByLastUpdatedDescending
+  );
 
   const handleSubmit = useCallback(
     async (medication: MedicationRequest) => {
@@ -51,19 +58,23 @@ export function Medications(props: MedicationsProps): JSX.Element {
           open();
         }}
       >
-        {medicationRequests.length > 0 ? (
+        {medications.length > 0 ? (
           <Flex direction="column" gap={8}>
-            {medicationRequests.map((medication) => (
+            {medications.map((medication) => (
               <SummaryItem
-                key={medication.id}
+                key={`${medication.resourceType}/${medication.id}`}
                 onClick={() => {
-                  setEditMedication(medication);
-                  open();
+                  if (medication.resourceType === 'MedicationRequest') {
+                    setEditMedication(medication);
+                    open();
+                  } else {
+                    props.onClickResource?.(medication);
+                  }
                 }}
               >
                 <Box>
                   <Text fw={500} className={styles.itemText}>
-                    {getDisplayString(medication)}
+                    {getMedicationDisplayString(medication)}
                   </Text>
                   <Group mt={2} gap={4}>
                     {medication.status && (
@@ -117,4 +128,12 @@ function getStatusColor(status?: string): string {
     default:
       return 'gray';
   }
+}
+
+function getMedicationDisplayString(medication: MedicationSummaryResource): string {
+  if (medication.medicationCodeableConcept) {
+    return formatCodeableConcept(medication.medicationCodeableConcept);
+  }
+
+  return getDisplayString(medication);
 }

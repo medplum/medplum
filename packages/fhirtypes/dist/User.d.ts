@@ -154,6 +154,13 @@ export interface User {
   mfaEnrolled?: boolean;
 
   /**
+   * The MFA methods the user has enrolled in. 'totp' uses an
+   * authenticator application; 'email' sends a magic link to the user's
+   * email address on login.
+   */
+  mfaMethod?: ('totp' | 'email')[];
+
+  /**
    * Optional project if the user only exists for the project. This is used
    * for the project-specific user database.
    */

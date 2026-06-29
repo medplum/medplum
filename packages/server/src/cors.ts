@@ -49,6 +49,7 @@ const prefixes = [
   '/fhircast/',
   '/oauth2/',
   '/keyvalue/',
+  '/shl/',
   '/storage/',
 ];
 

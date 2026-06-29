@@ -47,9 +47,16 @@ import { findAndExecDispatchJob } from '../workers/test-utils';
 import { cleanupR4SubscriptionResources } from './subscriptions';
 
 vi.mock('hibp');
+const wsSubscriptionTestChannels = vi.hoisted(() => {
+  const suffix = process.env.VITEST_WORKER_ID ?? process.env.VITEST_POOL_ID ?? `pid-${process.pid}`;
+  return {
+    ws: `medplum:subscriptions:r4:websockets:test:ws:${suffix}`,
+  };
+});
+
 vi.mock('../constants', async () => ({
   ...(await vi.importActual<typeof Constants>('../constants')),
-  WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:ws',
+  WEBSOCKET_SUB_PUBLISH_CHANNEL: wsSubscriptionTestChannels.ws,
 }));
 
 const wsTestMocks = vi.hoisted(() => ({
