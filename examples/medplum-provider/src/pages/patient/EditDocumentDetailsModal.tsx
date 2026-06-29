@@ -1,21 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Divider, Group, Modal, Stack, Text, TextInput } from '@mantine/core';
-import type {
-  CodeableConcept,
-  Communication,
-  CommunicationPayload,
-  DocumentReference,
-  Reference,
-} from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { CodeableConcept, DocumentReference, Reference } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ReferenceInput, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
-import type { PatientDocument } from './DocumentListItem.utils';
+import { getDocumentName } from './documentDisplay';
 
 interface EditDocumentDetailsModalProps {
-  item: PatientDocument;
+  item: WithId<DocumentReference>;
   opened: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -33,14 +28,11 @@ export function EditDocumentDetailsModal({
   onDeleted,
 }: EditDocumentDetailsModalProps): JSX.Element {
   const medplum = useMedplum();
-  const isDocRef = item.resourceType === 'DocumentReference';
 
   // Editable field state, seeded from the resource. Inputs stay mounted while the delete
   // confirmation is shown (just visually hidden), so in-progress edits survive a cancel.
-  const [name, setName] = useState(item.name);
-  const [type, setType] = useState<CodeableConcept | undefined>(() =>
-    isDocRef ? (item.resource as DocumentReference).type : undefined
-  );
+  const [name, setName] = useState(() => getDocumentName(item));
+  const [type, setType] = useState<CodeableConcept | undefined>(() => item.type);
   const [category, setCategory] = useState<CodeableConcept | undefined>(() => getInitialCategory(item));
   const [authorRef, setAuthorRef] = useState<Reference | undefined>(() => getInitialAuthor(item));
 
@@ -73,17 +65,10 @@ export function EditDocumentDetailsModal({
     try {
       // Soft delete: mark the resource entered-in-error so it stays in the Medplum project but is
       // filtered out of the provider's documents list (see fetchDocuments in DocumentsPage).
-      if (item.resourceType === 'DocumentReference') {
-        await medplum.updateResource<DocumentReference>({
-          ...(item.resource as DocumentReference),
-          status: 'entered-in-error',
-        });
-      } else {
-        await medplum.updateResource<Communication>({
-          ...(item.resource as Communication),
-          status: 'entered-in-error',
-        });
-      }
+      await medplum.updateResource<DocumentReference>({
+        ...item,
+        status: 'entered-in-error',
+      });
       showSuccessNotification({ title: 'Success', message: 'Document deleted' });
       onDeleted();
       handleClose();
@@ -94,7 +79,7 @@ export function EditDocumentDetailsModal({
     }
   };
 
-  const sourcePath = `${item.resourceType}`;
+  const sourcePath = item.resourceType;
 
   return (
     <Modal
@@ -113,17 +98,15 @@ export function EditDocumentDetailsModal({
 
               <TextInput label="Title" value={name} onChange={(event) => setName(event.currentTarget.value)} />
 
-              {isDocRef && (
-                <CodeableConceptInput
-                  name="type"
-                  label="Type"
-                  path={`${sourcePath}.type`}
-                  binding="http://hl7.org/fhir/ValueSet/c80-doc-typecodes"
-                  maxValues={1}
-                  defaultValue={type}
-                  onChange={(value) => setType(value)}
-                />
-              )}
+              <CodeableConceptInput
+                name="type"
+                label="Type"
+                path={`${sourcePath}.type`}
+                binding="http://hl7.org/fhir/ValueSet/c80-doc-typecodes"
+                maxValues={1}
+                defaultValue={type}
+                onChange={(value) => setType(value)}
+              />
 
               <CodeableConceptInput
                 name="category"
@@ -183,18 +166,12 @@ export function EditDocumentDetailsModal({
   );
 }
 
-function getInitialCategory(item: PatientDocument): CodeableConcept | undefined {
-  if (item.resourceType === 'DocumentReference') {
-    return (item.resource as DocumentReference).category?.[0];
-  }
-  return (item.resource as Communication).category?.[0];
+function getInitialCategory(doc: DocumentReference): CodeableConcept | undefined {
+  return doc.category?.[0];
 }
 
-function getInitialAuthor(item: PatientDocument): Reference | undefined {
-  if (item.resourceType === 'DocumentReference') {
-    return (item.resource as DocumentReference).author?.[0];
-  }
-  return (item.resource as Communication).sender;
+function getInitialAuthor(doc: DocumentReference): Reference | undefined {
+  return doc.author?.[0];
 }
 
 interface EditedFields {
@@ -204,49 +181,23 @@ interface EditedFields {
   authorRef: Reference | undefined;
 }
 
-function buildUpdatedResource(item: PatientDocument, fields: EditedFields): DocumentReference | Communication {
+function buildUpdatedResource(doc: DocumentReference, fields: EditedFields): DocumentReference {
   const { name, type, category, authorRef } = fields;
   const trimmedName = name.trim() || undefined;
 
-  if (item.resourceType === 'DocumentReference') {
-    const doc = item.resource as DocumentReference;
-    const firstContent = doc.content?.[0];
-    const content = firstContent
-      ? [
-          { ...firstContent, attachment: { ...firstContent.attachment, title: trimmedName } },
-          ...(doc.content?.slice(1) ?? []),
-        ]
-      : doc.content;
-    return {
-      ...doc,
-      description: trimmedName,
-      type,
-      category: category ? [category] : undefined,
-      author: authorRef ? ([authorRef] as DocumentReference['author']) : undefined,
-      content,
-    };
-  }
-
-  const comm = item.resource as Communication;
+  const firstContent = doc.content?.[0];
+  const content = firstContent
+    ? [
+        { ...firstContent, attachment: { ...firstContent.attachment, title: trimmedName } },
+        ...(doc.content?.slice(1) ?? []),
+      ]
+    : doc.content;
   return {
-    ...comm,
+    ...doc,
+    description: trimmedName,
+    type,
     category: category ? [category] : undefined,
-    sender: authorRef as Communication['sender'],
-    payload: buildCommPayload(comm, trimmedName),
+    author: authorRef ? ([authorRef] as DocumentReference['author']) : undefined,
+    content,
   };
-}
-
-function buildCommPayload(comm: Communication, title: string | undefined): CommunicationPayload[] | undefined {
-  if (!comm.payload?.length) {
-    return comm.payload;
-  }
-  const payload = [...comm.payload];
-  const idx = payload.findIndex((p) => p.contentAttachment);
-  if (idx >= 0) {
-    payload[idx] = {
-      ...payload[idx],
-      contentAttachment: { ...payload[idx].contentAttachment, title },
-    };
-  }
-  return payload;
 }

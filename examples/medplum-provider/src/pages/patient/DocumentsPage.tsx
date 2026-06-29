@@ -12,7 +12,6 @@ import { useLocation, useNavigate, useParams } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
 import { DocumentListItem } from './DocumentListItem';
-import { toPatientDocument } from './DocumentListItem.utils';
 import { UploadDocumentModal } from './UploadDocumentModal';
 
 export function DocumentsPage(): JSX.Element {
@@ -125,7 +124,7 @@ export function DocumentsPage(): JSX.Element {
         headerActions={headerActions}
         renderItem={(doc) => (
           <DocumentListItem
-            item={toPatientDocument(doc)}
+            item={doc}
             selectedDocumentId={documentId}
             getItemUri={(item) => docUri(item.id)}
           />
@@ -133,7 +132,7 @@ export function DocumentsPage(): JSX.Element {
         emptyList={<EmptyDocuments />}
         renderDetail={(doc) => (
           <DocumentDetailPanel
-            item={toPatientDocument(doc)}
+            item={doc}
             patientRef={patientRef}
             onDocumentChange={refreshList}
             onDocumentDeleted={handleDeleted}

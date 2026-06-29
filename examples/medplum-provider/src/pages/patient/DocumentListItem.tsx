@@ -1,18 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Stack, Text, Tooltip } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import { formatDate } from '@medplum/core';
+import type { DocumentReference } from '@medplum/fhirtypes';
 import { MedplumLink } from '@medplum/react';
 import cx from 'clsx';
 import type { AnchorHTMLAttributes, JSX, RefObject } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import classes from './DocumentListItem.module.css';
-import type { PatientDocument } from './DocumentListItem.utils';
+import { getDocumentName, getDocumentSource, getDocumentTypeDisplay } from './documentDisplay';
 
 interface DocumentListItemProps {
-  item: PatientDocument;
+  item: WithId<DocumentReference>;
   selectedDocumentId?: string;
-  getItemUri: (item: PatientDocument) => string;
+  getItemUri: (item: WithId<DocumentReference>) => string;
   id?: string;
 }
 
@@ -43,10 +45,15 @@ function useIsTruncated(content: string): [RefObject<HTMLParagraphElement | null
 export function DocumentListItem({ item, selectedDocumentId, getItemUri, id }: DocumentListItemProps): JSX.Element {
   const isSelected = selectedDocumentId === item.id;
 
-  const metaPrefix = [item.date ? formatDate(item.date) : undefined, item.source].filter(Boolean).join(' · ');
-  const metaLine = item.documentType ? `${metaPrefix}: ${item.documentType}` : metaPrefix;
+  const name = getDocumentName(item);
+  const date = item.date || item.meta?.lastUpdated;
+  const source = getDocumentSource(item);
+  const documentType = getDocumentTypeDisplay(item);
 
-  const [nameRef, isNameTruncated] = useIsTruncated(item.name);
+  const metaPrefix = [date ? formatDate(date) : undefined, source].filter(Boolean).join(' · ');
+  const metaLine = documentType ? `${metaPrefix}: ${documentType}` : metaPrefix;
+
+  const [nameRef, isNameTruncated] = useIsTruncated(name);
   const [metaRef, isMetaTruncated] = useIsTruncated(metaLine);
 
   // MedplumLinkProps only types Mantine's style props, so the listbox-option DOM
@@ -66,14 +73,14 @@ export function DocumentListItem({ item, selectedDocumentId, getItemUri, id }: D
       className={cx(classes.item, isSelected && classes.selected)}
     >
       <Stack gap={0} miw={0}>
-        <Tooltip label={item.name} disabled={!isNameTruncated} multiline maw={320} withinPortal openDelay={300}>
+        <Tooltip label={name} disabled={!isNameTruncated} multiline maw={320} withinPortal openDelay={300}>
           <Text ref={nameRef} fw={700} truncate="end" miw={0}>
-            {item.name}
+            {name}
           </Text>
         </Tooltip>
         <Tooltip
-          label={item.documentType}
-          disabled={!isMetaTruncated || !item.documentType}
+          label={documentType}
+          disabled={!isMetaTruncated || !documentType}
           multiline
           maw={320}
           withinPortal

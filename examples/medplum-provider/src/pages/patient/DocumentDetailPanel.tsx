@@ -1,16 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Divider, Flex, Group, Paper, Stack, Text, Tooltip } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import { formatDate } from '@medplum/core';
-import type {
-  Attachment,
-  Bundle,
-  Communication,
-  DocumentReference,
-  Patient,
-  Reference,
-  Resource,
-} from '@medplum/fhirtypes';
+import type { Attachment, Bundle, DocumentReference, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useCachedBinaryUrl } from '@medplum/react-hooks';
 import { IconBrowserShare, IconEditCircle, IconPrinter } from '@tabler/icons-react';
@@ -18,7 +11,7 @@ import type { JSX, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { SendFaxModal } from '../../components/fax/SendFaxModal';
 import classes from './DocumentDetailPanel.module.css';
-import type { PatientDocument } from './DocumentListItem.utils';
+import { getDocumentName, getDocumentSource, getDocumentTypeDisplay } from './documentDisplay';
 import { EditDocumentDetailsModal } from './EditDocumentDetailsModal';
 
 // Subtle 1px frame drawn around attachment previews (PDF iframe, images, video). Theme-aware so the
@@ -27,7 +20,7 @@ const PREVIEW_BORDER =
   '1px solid color-mix(in srgb, light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4)) 50%, transparent)';
 
 interface DocumentDetailPanelProps {
-  item: PatientDocument;
+  item: WithId<DocumentReference>;
   patientRef?: Reference<Patient>;
   onDocumentChange: () => void;
   onDocumentDeleted: () => void;
@@ -101,7 +94,7 @@ export function DocumentDetailPanel({
               <Group justify="space-between" align="center">
                 <Stack gap={4} style={{ flex: 1 }}>
                   <Text fw={700} size="lg">
-                    {item.name}
+                    {getDocumentName(item)}
                   </Text>
                 </Stack>
 
@@ -232,13 +225,8 @@ export function DocumentDetailPanel({
   );
 }
 
-function getAttachment(item: PatientDocument): Attachment | undefined {
-  if (item.resourceType === 'DocumentReference') {
-    const doc = item.resource as DocumentReference;
-    return doc.content?.[0]?.attachment;
-  }
-  const comm = item.resource as Communication;
-  return comm.payload?.find((p) => p.contentAttachment)?.contentAttachment;
+function getAttachment(doc: DocumentReference): Attachment | undefined {
+  return doc.content?.[0]?.attachment;
 }
 
 function isPdfLike(attachment: Attachment | undefined): boolean {
@@ -249,13 +237,9 @@ function isPdfLike(attachment: Attachment | undefined): boolean {
   return ct === 'application/pdf' || ct === 'application/json' || ct.startsWith('text/');
 }
 
-function getAuthor(item: PatientDocument): string | undefined {
-  if (item.resourceType === 'DocumentReference') {
-    const author = (item.resource as DocumentReference).author?.[0];
-    return author?.display ?? author?.reference;
-  }
-  const sender = (item.resource as Communication).sender;
-  return sender?.display ?? sender?.reference;
+function getAuthor(doc: DocumentReference): string | undefined {
+  const author = doc.author?.[0];
+  return author?.display ?? author?.reference;
 }
 
 function DocumentMetadata({
@@ -264,25 +248,24 @@ function DocumentMetadata({
   originalAuthor,
   fadedAuthorIds,
 }: {
-  item: PatientDocument;
+  item: WithId<DocumentReference>;
   contentType: string | undefined;
   originalAuthor: string | undefined;
   fadedAuthorIds: Set<string>;
 }): JSX.Element {
-  const documentType = item.documentType;
+  const documentType = getDocumentTypeDisplay(item);
   const documentCategory =
-    item.resourceType === 'DocumentReference'
-      ? (item.resource as DocumentReference).category
-          ?.map((c) => c.coding?.[0]?.display || c.text)
-          .filter(Boolean)
-          .join(', ') || undefined
-      : undefined;
+    item.category
+      ?.map((c) => c.coding?.[0]?.display || c.text)
+      .filter(Boolean)
+      .join(', ') || undefined;
 
   // Author row reflects the document's own author field; the Added/Last updated lines attribute to
   // the audit meta.author (original = oldest version, current = the loaded resource).
   const author = getAuthor(item);
-  const currentAuthor = authorLabel(item.resource.meta?.author);
-  const lastUpdated = item.resource.meta?.lastUpdated;
+  const currentAuthor = authorLabel(item.meta?.author);
+  const lastUpdated = item.meta?.lastUpdated;
+  const date = item.date || item.meta?.lastUpdated;
 
   // Fade the "Added by …" clause in only the first time a document's author resolves this visit;
   // on revisits the history call is cached (resolves immediately), so render it statically to
@@ -298,7 +281,7 @@ function DocumentMetadata({
 
   return (
     <Stack gap="sm">
-      <MetadataRow label="Source" value={item.source} />
+      <MetadataRow label="Source" value={getDocumentSource(item)} />
       {documentType && <MetadataRow label="Type" value={documentType} />}
       {documentCategory && <MetadataRow label="Category" value={documentCategory} />}
       {contentType && <MetadataRow label="Content type" value={contentType} />}
@@ -312,12 +295,12 @@ function DocumentMetadata({
           )
         }
       />
-      {item.date && (
+      {date && (
         <MetadataRow
           label="Added"
           value={
             <>
-              {formatDate(item.date)}
+              {formatDate(date)}
               {originalAuthor && (
                 <Text span className={alreadyFaded ? undefined : classes.authorClauseFade}>
                   {addedAuthorClause}

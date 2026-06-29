@@ -3,6 +3,7 @@
 import { Center, Divider, Flex, Group, Pagination, ScrollArea, Stack, Tabs, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
+import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import classes from './ListWithDetailPane.module.css';
@@ -147,18 +148,18 @@ export function ListWithDetailPane<T extends { id: string } = WithId<Resource>>(
         <ScrollArea flex={1} scrollbarSize={10} type="hover" scrollHideDelay={250}>
           {loading && (skeleton ?? <ListWithDetailPaneSkeleton />)}
           {!loading && items.length === 0 && (emptyList ?? <DefaultEmptyList />)}
-          {!loading &&
-            items.map((item, index) => {
-              const isSelected = item.id !== undefined && item.id === selectedKey;
-              return (
-                <div
-                  key={item.id ?? index}
-                  className={isSelected ? `${classes.item} ${classes.selected}` : classes.item}
-                >
-                  {renderItem(item, { selected: isSelected, index, items })}
-                </div>
-              );
-            })}
+          {!loading && items.length > 0 && (
+            <div className={classes.list}>
+              {items.map((item, index) => {
+                const isSelected = item.id !== undefined && item.id === selectedKey;
+                return (
+                  <div key={item.id ?? index} className={cx(classes.item, isSelected && classes.selected)}>
+                    {renderItem(item, { selected: isSelected, index, items })}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </ScrollArea>
         {onPageChange !== undefined && page !== undefined && pageCount !== undefined && pageCount > 1 && (
           <div className={classes.footer}>
