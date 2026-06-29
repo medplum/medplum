@@ -3,7 +3,7 @@
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
-import { medplumAliases } from '../../vitest.config';
+import { globalSetupFiles, medplumAliases } from '../../vitest.config';
 
 export default defineConfig({
   plugins: [
@@ -39,7 +39,7 @@ export default defineConfig({
         url: 'http://localhost/',
       },
     },
-    setupFiles: ['./src/test.setup.ts'],
+    setupFiles: [...globalSetupFiles, './src/test.setup.ts'],
     testTimeout: 10_000,
     fakeTimers: {
       /*

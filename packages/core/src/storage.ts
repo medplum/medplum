@@ -12,6 +12,22 @@ export interface IClientStorage {
   makeKey(key: string): string;
 }
 
+// Node.js 24+ defines Web Storage globals on `globalThis`. In browsers and in Node with
+// `--localstorage-file`, `localStorage` is fully usable. Without that flag it may be undefined or
+// otherwise unavailable. Historically this code assumed "no localStorage in Node" and fell back to
+// MemoryStorage; check that the global is actually usable before selecting it.
+function getBrowserLocalStorage(): Storage | undefined {
+  try {
+    const storage = globalThis.localStorage;
+    if (storage && typeof storage.getItem === 'function') {
+      return storage;
+    }
+  } catch {
+    // Node may throw when web storage is enabled but --localstorage-file was not provided.
+  }
+  return undefined;
+}
+
 /**
  * The ClientStorage class is a utility class for storing strings and objects.
  *
@@ -22,9 +38,24 @@ export interface IClientStorage {
 export class ClientStorage implements IClientStorage {
   private readonly storage: Storage;
   private readonly prefix: string = '';
+  // Whether we selected a real browser localStorage at construction time. Cached because tests may
+  // replace `globalThis.localStorage` after construction and identity checks would be unreliable.
+  private readonly usesBrowserLocalStorage: boolean;
 
   constructor(storage?: Storage, prefix = '') {
-    this.storage = storage ?? globalThis.localStorage ?? new MemoryStorage();
+    if (storage) {
+      this.storage = storage;
+      this.usesBrowserLocalStorage = false;
+    } else {
+      const browserLocalStorage = getBrowserLocalStorage();
+      if (browserLocalStorage) {
+        this.storage = browserLocalStorage;
+        this.usesBrowserLocalStorage = true;
+      } else {
+        this.storage = new MemoryStorage();
+        this.usesBrowserLocalStorage = false;
+      }
+    }
     this.prefix = prefix;
   }
 
@@ -33,13 +64,15 @@ export class ClientStorage implements IClientStorage {
   }
 
   clear(): void {
-    // We only care about checking the keys for localStorage when a prefix is present
-    if (this.storage === globalThis.localStorage && this.prefix) {
-      Object.keys(this.storage)
-        .filter((key) => key.startsWith(this.prefix))
-        .forEach((key) => {
+    if (this.usesBrowserLocalStorage && this.prefix) {
+      // Use `key(i)` to enumerate keys — that is defined by the Storage spec. `Object.keys()` happens
+      // to work in browsers but is not guaranteed and is unreliable across Storage implementations.
+      for (let i = this.storage.length - 1; i >= 0; i--) {
+        const key = this.storage.key(i);
+        if (key?.startsWith(this.prefix)) {
           this.storage.removeItem(key);
-        });
+        }
+      }
     } else {
       // If not localStorage, then just clear out the whole storage
       this.storage.clear();

@@ -4,7 +4,7 @@
 
 import '@testing-library/jest-dom';
 
-import { MemoryStorage, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
@@ -51,5 +51,3 @@ indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bund
 for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
   indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
 }
-
-Object.defineProperty(globalThis.window, 'sessionStorage', { value: new MemoryStorage() });
