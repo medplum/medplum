@@ -19,7 +19,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
 .pill-tabs .mantine-Tabs-tab:hover {
@@ -63,4 +65,8 @@
 
 .filter-submenu-dropdown {
   min-width: 200px;
+}
+
+.grecaptcha-badge {
+  visibility: hidden;
 }
