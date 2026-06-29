@@ -4,56 +4,32 @@
 import { MockConsole } from './console';
 
 describe('MockConsole', () => {
-  let console: MockConsole;
+  let mockConsole: MockConsole;
 
   beforeEach(() => {
-    console = new MockConsole();
+    mockConsole = new MockConsole();
   });
 
-  test('log() stores message', () => {
-    console.log('hello', 'world');
-    expect(console.messages).toEqual(['hello world']);
+  test('all methods store messages in order', () => {
+    mockConsole.log('log');
+    mockConsole.error('error');
+    mockConsole.warn('warn');
+    mockConsole.info('info');
+    mockConsole.debug('debug');
+    mockConsole.trace('trace');
+
+    expect(mockConsole.messages).toStrictEqual(['log', 'error', 'warn', 'info', 'debug', 'trace']);
   });
 
-  test('error() stores message', () => {
-    console.error('something went wrong');
-    expect(console.messages).toEqual(['something went wrong']);
-  });
-
-  test('warn() stores message', () => {
-    console.warn('be careful');
-    expect(console.messages).toEqual(['be careful']);
-  });
-
-  test('info() stores message', () => {
-    console.info('for your information');
-    expect(console.messages).toEqual(['for your information']);
-  });
-
-  test('debug() stores message', () => {
-    console.debug('debug value', 42);
-    expect(console.messages).toEqual(['debug value 42']);
-  });
-
-  test('trace() stores message', () => {
-    console.trace('trace point');
-    expect(console.messages).toEqual(['trace point']);
-  });
-
-  test('all methods contribute to the same messages array', () => {
-    console.log('log');
-    console.error('error');
-    console.warn('warn');
-    console.info('info');
-    console.debug('debug');
-    console.trace('trace');
-    expect(console.messages).toHaveLength(6);
+  test('multiple arguments are joined with a space', () => {
+    mockConsole.debug('debug value', 42);
+    expect(mockConsole.messages).toStrictEqual(['debug value 42']);
   });
 
   test('toString() returns all messages joined by newline', () => {
-    console.log('first');
-    console.error('second');
-    console.warn('third');
-    expect(console.toString()).toBe('first\nsecond\nthird');
+    mockConsole.log('first');
+    mockConsole.error('second');
+    mockConsole.warn('third');
+    expect(mockConsole.toString()).toBe('first\nsecond\nthird');
   });
 });
