@@ -13,11 +13,11 @@ import type {
 } from '@medplum/fhirtypes';
 import Bowser from 'bowser';
 import type { Request, Response } from 'express';
-import { isMfaRequired } from './utils';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import type { SystemRepository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { isMfaRequired } from './utils';
 
 interface UserSession {
   id: string;
