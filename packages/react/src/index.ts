@@ -105,6 +105,7 @@ export { summaryResourceListSection } from './PatientSummary/SummaryResourceList
 export type { SummaryResourceListOptions } from './PatientSummary/SummaryResourceListSection';
 export * from './PatientTimeline/PatientTimeline';
 export * from './PlanDefinitionBuilder/PlanDefinitionBuilder';
+export * from './QrCodeScanner/QrCodeScanner';
 export * from './QuantityDisplay/QuantityDisplay';
 export * from './QuantityInput/QuantityInput';
 export * from './QuestionnaireBuilder/QuestionnaireBuilder';

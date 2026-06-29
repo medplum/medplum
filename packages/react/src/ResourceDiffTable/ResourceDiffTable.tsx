@@ -1,14 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Table } from '@mantine/core';
-import type { InternalSchemaElement, TypedValue } from '@medplum/core';
-import { arrayify, capitalize, evalFhirPathTyped, getSearchParameterDetails, toTypedValue } from '@medplum/core';
+import type { InternalSchemaElement, Operation, TypedValue } from '@medplum/core';
+import {
+  arrayify,
+  capitalize,
+  createPatch,
+  evalFhirPathTyped,
+  getSearchParameterDetails,
+  toTypedValue,
+} from '@medplum/core';
 import type { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import type { Operation } from 'rfc6902';
-import { createPatch } from 'rfc6902';
 import { ResourceDiffRow } from '../ResourceDiffRow/ResourceDiffRow';
 import classes from './ResourceDiffTable.module.css';
 

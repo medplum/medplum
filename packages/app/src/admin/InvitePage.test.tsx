@@ -145,6 +145,76 @@ describe('InvitePage', () => {
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });
 
+  test('Patient selector only shown for RelatedPerson', async () => {
+    await setup('/admin/invite');
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
+
+    // Not shown for the default Practitioner role
+    expect(screen.queryByPlaceholderText('Patient')).not.toBeInTheDocument();
+
+    // Shown when RelatedPerson is selected
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Role'), {
+        target: { value: 'RelatedPerson' },
+      });
+    });
+    expect(screen.getByPlaceholderText('Patient')).toBeInTheDocument();
+
+    // Hidden again when switching to Patient
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Role'), {
+        target: { value: 'Patient' },
+      });
+    });
+    expect(screen.queryByPlaceholderText('Patient')).not.toBeInTheDocument();
+  });
+
+  test('Invite RelatedPerson with patient', async () => {
+    await setup('/admin/invite');
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Role'), {
+        target: { value: 'RelatedPerson' },
+      });
+      fireEvent.change(screen.getByLabelText('First Name *'), {
+        target: { value: 'Ned' },
+      });
+      fireEvent.change(screen.getByLabelText('Last Name *'), {
+        target: { value: 'Flanders' },
+      });
+      fireEvent.change(screen.getByLabelText('Email *'), {
+        target: { value: 'ned@example.com' },
+      });
+    });
+
+    const input = screen.getByPlaceholderText('Patient');
+
+    // Search for a patient
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Homer' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    // Press the down arrow and select
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Invite'));
+    });
+
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+  });
+
   test('Invite admin', async () => {
     await setup('/admin/invite');
     expect(await screen.findByText('Invite')).toBeInTheDocument();

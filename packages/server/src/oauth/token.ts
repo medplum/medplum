@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource, WithId } from '@medplum/core';
+import type { JWTPayload, ProfileResource, WithId } from '@medplum/core';
 import {
   ContentType,
   OAuthClientAssertionType,
@@ -17,7 +17,14 @@ import {
   parseJWTPayload,
   resolveId,
 } from '@medplum/core';
-import type { ClientApplication, Login, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type {
+  ClientApplication,
+  IdentityProvider,
+  Login,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
@@ -425,53 +432,64 @@ export async function exchangeExternalAuthToken(
   subjectTokenType: OAuthTokenType,
   membershipId?: string
 ): Promise<void> {
-  if (!clientId) {
-    sendTokenError(res, 'invalid_request', 'Invalid client');
-    return;
-  }
-
-  if (!subjectToken) {
-    sendTokenError(res, 'invalid_request', 'Invalid subject_token');
-    return;
-  }
-
-  if (subjectTokenType !== OAuthTokenType.AccessToken) {
-    sendTokenError(res, 'invalid_request', 'Invalid subject_token_type');
+  if (!validateExternalAuthTokenExchangeRequest(res, clientId, subjectToken, subjectTokenType)) {
     return;
   }
 
   const systemRepo = getGlobalSystemRepo();
-  const projectId = await getProjectIdByClientId(clientId, undefined);
-  const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  const idp = client.identityProvider;
+  let client: ClientApplication | undefined;
+  // Server external auth providers are selected before ClientApplication lookup.
+  let idp = resolveExternalAuthProvider(clientId);
+  const useServerExternalAuth = !!idp;
+
+  if (!idp) {
+    client = await tryReadTokenExchangeClient(systemRepo, clientId);
+    if (!client) {
+      sendTokenError(res, 'invalid_request', 'Invalid client');
+      return;
+    }
+
+    idp = resolveExternalAuthProvider(clientId, client);
+  }
+
   if (!idp) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
   }
 
-  let userInfo;
-  try {
-    userInfo = await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
-  } catch (err: any) {
-    const outcome = normalizeOperationOutcome(err);
-    sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(outcome));
+  let projectId: string | undefined;
+  if (useServerExternalAuth) {
+    if (membershipId) {
+      let membership: ProjectMembership;
+      try {
+        membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+      } catch {
+        sendTokenError(res, 'invalid_request', 'Invalid membership');
+        return;
+      }
+
+      projectId = resolveId(membership.project);
+      if (!projectId) {
+        sendTokenError(res, 'invalid_request', 'Invalid membership');
+        return;
+      }
+    }
+  } else {
+    projectId = await getProjectIdByClientId(clientId, undefined);
+  }
+
+  const userInfo = await tryGetExternalUserInfo(res, idp, subjectToken);
+  if (!userInfo) {
     return;
   }
 
-  let email: string | undefined = undefined;
-  let externalId: string | undefined = undefined;
-  if (idp.useSubject) {
-    externalId = userInfo.sub as string;
-  } else {
-    email = userInfo.email as string;
-  }
-
+  const { email, externalId } = getExternalAuthLoginIdentity(idp, userInfo);
   const login = await tryLogin({
     authMethod: 'exchange',
     email,
     externalId,
     projectId,
-    clientId,
+    clientId: client?.id,
     scope: req.body.scope || 'openid offline_access',
     nonce: req.body.nonce || randomUUID(),
     remoteAddress: req.ip,
@@ -481,6 +499,84 @@ export async function exchangeExternalAuthToken(
   });
 
   await sendTokenResponse(res, login, client);
+}
+
+function validateExternalAuthTokenExchangeRequest(
+  res: Response,
+  clientId: string,
+  subjectToken: string,
+  subjectTokenType: OAuthTokenType
+): boolean {
+  if (!clientId) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return false;
+  }
+
+  if (!subjectToken) {
+    sendTokenError(res, 'invalid_request', 'Invalid subject_token');
+    return false;
+  }
+
+  if (subjectTokenType !== OAuthTokenType.AccessToken) {
+    sendTokenError(res, 'invalid_request', 'Invalid subject_token_type');
+    return false;
+  }
+
+  return true;
+}
+
+async function tryReadTokenExchangeClient(
+  systemRepo: ReturnType<typeof getGlobalSystemRepo>,
+  clientId: string
+): Promise<ClientApplication | undefined> {
+  try {
+    return await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+  } catch {
+    return undefined;
+  }
+}
+
+async function tryGetExternalUserInfo(
+  res: Response,
+  idp: IdentityProvider,
+  subjectToken: string
+): Promise<JWTPayload | undefined> {
+  try {
+    return await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
+  } catch (err: any) {
+    const outcome = normalizeOperationOutcome(err);
+    sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(outcome));
+    return undefined;
+  }
+}
+
+function getExternalAuthLoginIdentity(
+  idp: IdentityProvider,
+  userInfo: JWTPayload
+): { email?: string; externalId?: string } {
+  if (idp.useSubject) {
+    return { externalId: userInfo.sub };
+  }
+
+  return { email: userInfo.email as string };
+}
+
+function resolveExternalAuthProvider(clientId: string, client?: ClientApplication): IdentityProvider | undefined {
+  const externalAuthConfig = getConfig().externalAuthProviders?.find(
+    (provider) => (provider.clientId ?? provider.identityProvider?.clientId) === clientId
+  );
+  if (externalAuthConfig) {
+    if (externalAuthConfig.identityProvider) {
+      return externalAuthConfig.identityProvider;
+    }
+
+    const userInfoUrl = externalAuthConfig.userInfoUrl;
+    if (userInfoUrl) {
+      return { userInfoUrl } as IdentityProvider;
+    }
+  }
+
+  return client?.identityProvider;
 }
 
 /**

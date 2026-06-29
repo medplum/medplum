@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter, ProfileResource, SearchRequest, WithId } from '@medplum/core';
+import type { Filter, JWTPayload, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
@@ -33,7 +33,7 @@ import type {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import type { Request } from 'express';
-import type { JWTPayload, VerifyOptions } from 'jose';
+import type { VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
@@ -56,6 +56,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
+import { validateOutboundUrl } from '../util/url';
 import { getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
@@ -845,11 +846,11 @@ function includeRefreshToken(request: LoginRequest, client: ClientApplication | 
 }
 
 export function normalizeUserInfoUrl(userInfoUrl: string): string {
-  const url = new URL(userInfoUrl);
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error('Must use http or https protocol');
-  }
-  return url.toString();
+  const allowInsecureExternalAuthUrl = !!getConfig().allowInsecureExternalAuthUrl;
+  return validateOutboundUrl(userInfoUrl, {
+    allowHttp: allowInsecureExternalAuthUrl,
+    allowUnsafeHostname: allowInsecureExternalAuthUrl,
+  }).toString();
 }
 
 /**
@@ -864,7 +865,7 @@ export async function getExternalUserInfo(
   userInfoUrl: string,
   externalAccessToken: string,
   idp?: IdentityProvider
-): Promise<Record<string, unknown>> {
+): Promise<JWTPayload> {
   const log = getLogger();
 
   try {
