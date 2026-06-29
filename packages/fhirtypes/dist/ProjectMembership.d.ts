@@ -173,8 +173,8 @@ export interface ProjectMembership {
   access?: ProjectMembershipAccess[];
 
   /**
-   * The user configuration for the user within the project membership
-   * such as menu links, saved searches, and features.
+   * The user configuration for the user within the project membership such
+   * as menu links, saved searches, and features.
    */
   userConfiguration?: Reference<UserConfiguration>;
 

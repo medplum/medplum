@@ -56,11 +56,5 @@ export default defineConfig({
        */
       shouldAdvanceTime: true,
     },
-    /*
-     * Run test files sequentially in isolated fork processes. App tests share global
-     * FHIR indexes and jsdom polyfills from test.setup.ts; parallel file runs cause flaky tests
-     */
-    pool: 'forks',
-    fileParallelism: false,
   },
 });

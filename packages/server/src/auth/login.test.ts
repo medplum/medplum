@@ -4,11 +4,15 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
 import { createReference, LOINC } from '@medplum/core';
 import type { ClientApplication, Project } from '@medplum/fhirtypes';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -18,10 +22,8 @@ import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTest
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
 
-jest.mock('@aws-sdk/client-sesv2');
-jest.mock('hibp');
-const fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
-
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 const email = randomUUID() + '@example.com';
 const password = randomUUID();
@@ -29,9 +31,13 @@ let project: WithId<Project>;
 let repo: Repository;
 let client: WithId<ClientApplication>;
 let corsClient: WithId<ClientApplication>;
+let mockSESv2Client: AwsClientStub<SESv2Client>;
 
 describe('Login', () => {
   beforeAll(async () => {
+    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
+
     const config = await loadTestConfig();
     const systemRepo = getGlobalSystemRepo();
 
@@ -69,15 +75,17 @@ describe('Login', () => {
   });
 
   afterAll(async () => {
+    mockSESv2Client.restore();
     await shutdownApp();
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
+    mockSESv2Client.reset();
+    mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
+
     fetchMock.mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
     setupRecaptchaMock(true);
   });
 
@@ -238,12 +246,12 @@ describe('Login', () => {
       });
 
     expect(res2.status).toBe(200);
-    expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     // Parse the email for the "set password" link
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    const parsed = await simpleParser(args.Content.Raw.Data);
+    const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
     const content = parsed.text as string;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');

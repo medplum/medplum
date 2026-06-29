@@ -11,7 +11,7 @@ describe('MemberDetailsPage', () => {
     medplum.setActiveLoginOverride({
       accessToken: '123',
       refreshToken: '456',
-      profile: { reference: 'Practitioner/123' },
+      profile: { reference: 'Practitioner/124' },
       project: { reference: 'Project/123' },
     });
     medplum.getProjectMembership = () => ({ admin }) as ProjectMembership;

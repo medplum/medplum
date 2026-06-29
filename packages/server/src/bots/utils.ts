@@ -131,6 +131,20 @@ export function getOutParametersFromResult(result: OperationOutcome | BotExecuti
 }
 
 /**
+ * Normalizes the BotExecutionResult success flag based on structured FHIR outcomes.
+ * Runtime adapters should call this before returning so all bot execution surfaces
+ * agree on the meaning of a returned non-OK OperationOutcome.
+ * @param result - The bot execution result.
+ * @returns The normalized bot execution result.
+ */
+export function normalizeBotExecutionResult(result: BotExecutionResult): BotExecutionResult {
+  if (isOperationOutcome(result.returnValue) && !isOk(result.returnValue)) {
+    return { ...result, success: false };
+  }
+  return result;
+}
+
+/**
  * Returns true if the bot is enabled and bots are enabled for the project.
  * @param bot - The bot resource.
  * @returns True if the bot is enabled.

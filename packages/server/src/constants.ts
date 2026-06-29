@@ -16,7 +16,7 @@ export const syntheticR4Project: WithId<Project> = {
   resourceType: 'Project',
   id: r4ProjectId,
   name: 'FHIR R4',
-  exportedResourceType: ['StructureDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter'],
+  exportedResourceType: ['StructureDefinition', 'ValueSet', 'CodeSystem', 'SearchParameter', 'OperationDefinition'],
 };
 
 /**
