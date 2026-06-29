@@ -706,7 +706,10 @@ describe('ChannelQueueWorker', () => {
   });
 
   describe('auto-retry', () => {
-    // Multiplier 1 keeps every backoff at baseDelayMs so test timing stays flat.
+    // Multiplier 1 keeps the deterministic backoff at baseDelayMs; equal jitter then
+    // lands each delay in [baseDelayMs/2, baseDelayMs]. Kept small so retries fire
+    // promptly and the tests stay fast. Jitter itself is covered by the
+    // computeRetryDelayMs unit tests.
     const fastRetryPolicy: RetryPolicy = {
       enabled: true,
       guaranteedDelivery: false,
@@ -744,7 +747,8 @@ describe('ChannelQueueWorker', () => {
       const scheduled = queue.getById(r.id);
       expect(scheduled?.errorCode).toBe(QueueErrorCode.ServerError);
       expect(scheduled?.lastError).toContain('503');
-      expect(scheduled?.nextAttemptAt).toBeGreaterThanOrEqual(before + fastRetryPolicy.baseDelayMs);
+      // Equal jitter floors the delay at half the computed backoff.
+      expect(scheduled?.nextAttemptAt).toBeGreaterThanOrEqual(before + fastRetryPolicy.baseDelayMs / 2);
 
       // After the backoff, the worker re-claims the same row; succeed it.
       await waitFor(() => worker.hasInFlight(), 2000);
@@ -993,22 +997,49 @@ describe('computeRetryDelayMs', () => {
     backoffMultiplier: 2,
   };
 
-  test('grows exponentially from baseDelayMs', () => {
-    expect(computeRetryDelayMs(policy, 1)).toBe(1000);
-    expect(computeRetryDelayMs(policy, 2)).toBe(2000);
-    expect(computeRetryDelayMs(policy, 3)).toBe(4000);
-    expect(computeRetryDelayMs(policy, 5)).toBe(16000);
+  // Equal jitter is non-deterministic (uses Math.random internally), so assert the
+  // band [capped/2, capped] rather than exact values. The deterministic exponential
+  // schedule is the upper edge: capped = min(maxDelayMs, baseDelayMs * mult^(n-1)).
+  const cappedFor = (p: RetryPolicy, n: number): number =>
+    Math.min(p.maxDelayMs, p.baseDelayMs * p.backoffMultiplier ** (n - 1));
+
+  function expectInBand(p: RetryPolicy, n: number): void {
+    const capped = cappedFor(p, n);
+    for (let i = 0; i < 200; i++) {
+      const delay = computeRetryDelayMs(p, n);
+      expect(delay).toBeGreaterThanOrEqual(capped / 2);
+      expect(delay).toBeLessThanOrEqual(capped);
+      // Must be a whole millisecond: it is added to Date.now() and written to the
+      // INTEGER next_attempt_at column of a STRICT table, which rejects fractional
+      // REAL values at bind time (a fractional delay would crash the worker loop).
+      expect(Number.isInteger(delay)).toBe(true);
+    }
+  }
+
+  test('the deterministic backoff (jitter band upper edge) grows exponentially', () => {
+    expect(cappedFor(policy, 1)).toBe(1000);
+    expect(cappedFor(policy, 2)).toBe(2000);
+    expect(cappedFor(policy, 3)).toBe(4000);
+    expect(cappedFor(policy, 5)).toBe(16000);
   });
 
-  test('caps at maxDelayMs', () => {
-    expect(computeRetryDelayMs(policy, 7)).toBe(60_000);
-    expect(computeRetryDelayMs(policy, 50)).toBe(60_000);
+  test('equal jitter keeps each delay in [capped/2, capped]', () => {
+    for (let attempt = 1; attempt <= 8; attempt++) {
+      expectInBand(policy, attempt);
+    }
   });
 
-  test('multiplier 1 gives a fixed interval', () => {
+  test('caps at maxDelayMs (band [maxDelayMs/2, maxDelayMs])', () => {
+    expect(cappedFor(policy, 7)).toBe(60_000);
+    expectInBand(policy, 7);
+    expectInBand(policy, 50);
+  });
+
+  test('multiplier 1 jitters around a fixed base', () => {
     const fixed = { ...policy, backoffMultiplier: 1 };
-    expect(computeRetryDelayMs(fixed, 1)).toBe(1000);
-    expect(computeRetryDelayMs(fixed, 10)).toBe(1000);
+    expect(cappedFor(fixed, 10)).toBe(1000);
+    expectInBand(fixed, 1);
+    expectInBand(fixed, 10);
   });
 });
 

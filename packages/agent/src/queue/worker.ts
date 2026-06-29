@@ -103,13 +103,32 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = {
 };
 
 /**
+ * Computes the backoff before the next retry, with **equal jitter** applied.
+ *
+ * The deterministic part grows exponentially and is capped at `maxDelayMs`:
+ * `min(maxDelayMs, baseDelayMs * backoffMultiplier^(attempt-1))`. We then keep
+ * half of that as a fixed floor and randomize the other half, so the result lands
+ * uniformly in `[capped/2, capped]`.
+ *
+ * Jitter matters here because failures are correlated: a server outage or a fleet
+ * reconnect (see the liveness gate in {@link ChannelQueueWorker.loop}) fails many
+ * rows across many channels/agents at once. Without jitter they all retry on the
+ * same exponential schedule and re-synchronize the load spike on every attempt.
+ * Equal jitter (AWS, "Exponential Backoff And Jitter") decorrelates them while the
+ * half-fixed floor keeps `baseDelayMs` a meaningful minimum — full jitter could
+ * fire a retry almost immediately, undercutting the configured delay.
  * @param policy - The channel's retry policy.
  * @param failedAttemptCount - How many dispatch attempts have failed so far (>= 1).
  * @returns Backoff delay before the next attempt, in milliseconds.
  */
 export function computeRetryDelayMs(policy: RetryPolicy, failedAttemptCount: number): number {
   const exponent = Math.max(0, failedAttemptCount - 1);
-  return Math.min(policy.maxDelayMs, policy.baseDelayMs * policy.backoffMultiplier ** exponent);
+  const capped = Math.min(policy.maxDelayMs, policy.baseDelayMs * policy.backoffMultiplier ** exponent);
+  const half = capped / 2;
+  // Round to a whole millisecond: the delay is added to Date.now() and written to
+  // next_attempt_at, an INTEGER column in a STRICT table — a fractional value would
+  // be rejected at bind time and crash the worker loop.
+  return Math.round(half + Math.random() * half);
 }
 
 export interface ChannelQueueWorkerOptions {

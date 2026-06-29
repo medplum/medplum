@@ -336,7 +336,7 @@ describe('Durable queue integration', () => {
   // guaranteed-retry default (no autoRetry/guaranteedDelivery param), so a 5xx is
   // a transient ServerError the worker retries rather than settling — the row stays
   // `queued` (scheduled for a backoff retry), then drains to `processed` once the
-  // server stops failing. autoRetryBaseDelayMs is dialed down so the retry fires
+  // server stops failing. autoRetryBaseDelayMs is kept small so the retry fires
   // promptly and the test stays fast. This is the positive counterpart to the
   // terminal-classification tests above: the SAME 5xx that lands `failed` under
   // autoRetry=false is recovered here under the default.
