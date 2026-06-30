@@ -3,11 +3,11 @@
 import { Button, FileInput, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, isNotFound, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
-import type { Communication, Organization } from '@medplum/fhirtypes';
+import type { Communication, DocumentReference, Organization } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconFile, IconSend } from '@tabler/icons-react';
-import { useState } from 'react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 
 interface SendFaxForm {
   recipientName: string;
@@ -56,11 +56,20 @@ export function SendFaxPage(): JSX.Element {
 
     setSending(true);
     try {
-      // Step 1: Upload the file as an attachment (creates Binary resource)
+      // Step 1: Upload the file and persist it as a DocumentReference (creates a Binary
+      // resource) so the faxed document is tracked in the chart rather than existing only
+      // as a loose attachment on the Communication.
       const attachment = await medplum.createAttachment({
         data: formData.file,
         contentType: formData.file.type,
         filename: formData.file.name,
+      });
+      const documentReference = await medplum.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        author: [createReference(profile)],
+        date: new Date().toISOString(),
+        content: [{ attachment }],
       });
 
       // Step 2: Create the recipient Organization
@@ -70,7 +79,10 @@ export function SendFaxPage(): JSX.Element {
         contact: [{ telecom: [{ system: 'fax', value: formData.faxNumber }] }],
       });
 
-      // Step 3: Create the Communication with proper references
+      // Step 3: Create the Communication, referencing the DocumentReference via
+      // `contentReference`. The $send-efax operation also accepts an inline
+      // `contentAttachment`, but referencing the DocumentReference keeps the faxed
+      // document linked to the chart.
       const communication = await medplum.createResource<Communication>({
         resourceType: 'Communication',
         status: 'in-progress',
@@ -87,7 +99,7 @@ export function SendFaxPage(): JSX.Element {
         ],
         sender: createReference(profile),
         recipient: [createReference(recipient)],
-        payload: [{ contentAttachment: attachment }],
+        payload: [{ contentReference: createReference(documentReference) }],
       });
 
       // Step 4: Call the $send-efax operation
