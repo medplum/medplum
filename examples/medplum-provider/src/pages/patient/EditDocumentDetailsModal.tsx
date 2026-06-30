@@ -80,7 +80,8 @@ export function EditDocumentDetailsModal({
     setDeleting(true);
     try {
       // Soft delete: mark the resource entered-in-error so it stays in the Medplum project but is
-      // filtered out of the provider's documents list (see fetchDocuments in DocumentsPage).
+      // filtered out of the provider's documents list (see the status:not=entered-in-error filter
+      // in the search memo in DocumentsPage).
       await medplum.updateResource<DocumentReference>({
         ...item,
         status: 'entered-in-error',

@@ -8,6 +8,7 @@ import { MedplumLink } from '@medplum/react';
 import cx from 'clsx';
 import type { AnchorHTMLAttributes, JSX } from 'react';
 import classes from './DocumentListItem.module.css';
+import { getDocumentTypeDisplay } from './DocumentReference.utils';
 
 interface DocumentListItemProps {
   item: WithId<DocumentReference>;
@@ -60,8 +61,4 @@ export function DocumentListItem({ item, selectedDocumentId, getItemUri, id }: D
       </Stack>
     </MedplumLink>
   );
-}
-
-function getDocumentTypeDisplay(doc: DocumentReference): string | undefined {
-  return doc.type?.coding?.[0]?.display || doc.type?.text;
 }

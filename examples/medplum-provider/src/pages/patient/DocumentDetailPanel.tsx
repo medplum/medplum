@@ -9,6 +9,7 @@ import { IconBrowserShare, IconEditCircle, IconPrinter } from '@tabler/icons-rea
 import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
 import { SendFaxModal } from '../../components/fax/SendFaxModal';
+import { getDocumentTypeDisplay } from './DocumentReference.utils';
 import { EditDocumentDetailsModal } from './EditDocumentDetailsModal';
 
 // Subtle 1px frame drawn around attachment previews (PDF iframe, images, video). Theme-aware so the
@@ -175,10 +176,6 @@ export function DocumentDetailPanel({
 
 function getAttachment(doc: DocumentReference): Attachment | undefined {
   return doc.content?.[0]?.attachment;
-}
-
-function getDocumentTypeDisplay(doc: DocumentReference): string | undefined {
-  return doc.type?.coding?.[0]?.display || doc.type?.text;
 }
 
 function isPdfLike(attachment: Attachment | undefined): boolean {
