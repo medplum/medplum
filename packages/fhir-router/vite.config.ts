@@ -11,5 +11,6 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     testTimeout: 120_000,
+    pool: 'threads',
   },
 });

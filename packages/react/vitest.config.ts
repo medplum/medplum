@@ -41,6 +41,7 @@ export default defineConfig({
     },
     setupFiles: ['./src/test.setup.ts'],
     testTimeout: 10_000,
+    pool: 'threads',
     fakeTimers: {
       /*
        * Advance mocked timers automatically (e.g. debounced search inputs) instead of

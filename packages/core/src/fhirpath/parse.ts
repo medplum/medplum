@@ -241,9 +241,16 @@ export function parseFhirPath(input: string): FhirPathAtom {
  * Evaluates a FHIRPath expression against a resource or other object.
  * @param expression - The FHIRPath expression to evaluate.
  * @param input - The resource or object to evaluate the expression against.
+ * @param variables - A map of variables for eval input.
+ * @param cache - Cache for parsed ASTs.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
-export function evalFhirPath(expression: string | FhirPathAtom, input: unknown): unknown[] {
+export function evalFhirPath(
+  expression: string | FhirPathAtom,
+  input: unknown,
+  variables: Record<string, TypedValue> = {},
+  cache: LRUCache<FhirPathAtom> | undefined = undefined
+): unknown[] {
   // eval requires a TypedValue array
   // As a convenience, we can accept array or non-array, and TypedValue or unknown value
   const array = Array.isArray(input) ? input : [input];
@@ -253,7 +260,7 @@ export function evalFhirPath(expression: string | FhirPathAtom, input: unknown):
       array[i] = toTypedValue(array[i]);
     }
   }
-  return evalFhirPathTyped(expression, array).map((e) => e.value);
+  return evalFhirPathTyped(expression, array, variables, cache).map((e) => e.value);
 }
 
 /**

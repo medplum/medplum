@@ -92,11 +92,8 @@ export class RepositoryConnection implements Disposable {
   private pinDepth = 0;
   private discardOnRelease = false;
   private closed = false;
-  /**
-   * Preferred mode for future pool-backed operations. Reader mode is opportunistic:
-   * once this connection performs writer work, future unpinned reads should use the writer pool.
-   */
-  mode: RepositoryMode;
+  /** See {@link mode} */
+  private _mode: RepositoryMode;
   private transactionIdleTracker?: TransactionIdleTracker;
 
   private readonly rootScope: RootScope;
@@ -106,7 +103,7 @@ export class RepositoryConnection implements Disposable {
    * Creates a connection that owns any PoolClient it acquires.
    */
   constructor() {
-    this.mode = RepositoryMode.WRITER;
+    this._mode = RepositoryMode.WRITER;
     this.rootScope = {
       __brand: 'scope',
       state: 'active',
@@ -127,8 +124,17 @@ export class RepositoryConnection implements Disposable {
     connection.conn = client;
     connection.connMode = options.mode;
     connection.ownsClient = false;
-    connection.mode = options.mode === DatabaseMode.READER ? RepositoryMode.READER : RepositoryMode.WRITER;
+    connection._mode = options.mode === DatabaseMode.READER ? RepositoryMode.READER : RepositoryMode.WRITER;
     return connection;
+  }
+
+  /**
+   * Preferred mode for future pool-backed operations. Reader mode is opportunistic:
+   * once this connection performs writer work, future unpinned reads should use the writer pool.
+   * @returns The preferred repository mode.
+   */
+  get mode(): RepositoryMode {
+    return this._mode;
   }
 
   getCurrentScope(): ConnectionScope {
@@ -141,6 +147,14 @@ export class RepositoryConnection implements Disposable {
 
   hasConnection(): boolean {
     return !!this.conn;
+  }
+
+  setMode(mode: RepositoryMode): void {
+    this.assertNotClosed();
+    if (mode === RepositoryMode.READER && this.connMode === DatabaseMode.WRITER) {
+      throw new Error('Cannot set repository mode to reader while using writer database connection');
+    }
+    this._mode = mode;
   }
 
   private assertCurrentScope(scope: unknown): Scope {
@@ -234,7 +248,7 @@ export class RepositoryConnection implements Disposable {
     }
     this.assertCanAcquireConnection();
     this.promoteRepositoryMode(mode);
-    return getDatabasePool(this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : mode);
+    return getDatabasePool(this._mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : mode);
   }
 
   /**
@@ -761,7 +775,7 @@ export class RepositoryConnection implements Disposable {
   private promoteRepositoryMode(mode: DatabaseMode): void {
     if (mode === DatabaseMode.WRITER) {
       // If we ever use a writer, then all subsequent operations must use a writer.
-      this.mode = RepositoryMode.WRITER;
+      this._mode = RepositoryMode.WRITER;
     }
   }
 
