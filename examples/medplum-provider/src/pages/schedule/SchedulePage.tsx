@@ -16,7 +16,7 @@ import type { Appointment, Practitioner, Reference, Schedule, Slot } from '@medp
 import { ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Calendar } from '../../components/Calendar';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
@@ -98,7 +98,7 @@ export function SchedulePage(): JSX.Element | null {
         ['start', `le${range.end.toISOString()}`],
         ['status:not', 'entered-in-error'],
       ])
-      .then((rawSlots) => active && setSlots(mergeOverlappingSlots(rawSlots)))
+      .then((rawSlots) => active && setSlots(rawSlots))
       .catch((error: unknown) => active && showErrorNotification(error));
 
     return () => {
@@ -241,6 +241,8 @@ export function SchedulePage(): JSX.Element | null {
 
   const schedulingEnabled = project?.features?.includes('scheduling');
 
+  const mergedSlots = useMemo(() => mergeOverlappingSlots(slots ?? []), [slots]);
+
   return (
     <>
       <Stack p="sm" className={classes.page}>
@@ -270,7 +272,7 @@ export function SchedulePage(): JSX.Element | null {
             onSelectInterval={handleSelectInterval}
             onSelectAppointment={handleSelectAppointment}
             onSelectSlot={handleSelectSlot}
-            slots={slots ?? []}
+            slots={mergedSlots}
             appointments={appointments ?? []}
             onRangeChange={setRange}
             className={classes.calendar}
