@@ -10,9 +10,8 @@ import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
+import { LabDetailPane } from '../../components/labs/LabDetailPane';
 import { LabListItem } from '../../components/labs/LabListItem';
-import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
-import { LabResultDetails } from '../../components/labs/LabResultDetails';
 import { LabResultListItem } from '../../components/labs/LabResultListItem';
 import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { usePatient } from '../../hooks/usePatient';
@@ -206,15 +205,7 @@ export function LabsPage(): JSX.Element {
             />
           )
         }
-        renderDetail={(item) => (
-          <Box h="100%" style={{ flex: 1, overflow: 'hidden' }}>
-            {item.resourceType === 'DiagnosticReport' ? (
-              <LabResultDetails key={item.id} result={item} />
-            ) : (
-              <LabOrderDetails key={item.id} order={item} />
-            )}
-          </Box>
-        )}
+        renderDetail={(item) => <LabDetailPane item={item} />}
       />
 
       {/* New Order Modal */}
