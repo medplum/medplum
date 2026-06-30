@@ -59,6 +59,7 @@ import { ResourcePage } from './resource/ResourcePage';
 import { ResourceVersionPage } from './resource/ResourceVersionPage';
 import { SubscriptionsPage } from './resource/SubscriptionsPage';
 import { TimelinePage } from './resource/TimelinePage';
+import { AgentConfigPage } from './resource/AgentConfigPage';
 import { ToolsPage } from './resource/ToolsPage';
 import { UpdateEmailPage } from './resource/UpdateEmailPage';
 import { SecurityPage } from './SecurityPage';
@@ -147,6 +148,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="timeline" element={<TimelinePage />} />
           <Route path="tools" element={<ToolsPage />} />
+          <Route path="config" element={<AgentConfigPage />} />
           <Route path="email" element={<UpdateEmailPage />} />
           <Route path="payload" element={<CommunicationPayloadPage />} />
           <Route path="profiles" element={<ProfilesPage />} />

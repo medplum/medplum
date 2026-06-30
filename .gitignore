@@ -58,6 +58,7 @@ tsconfig.build.tsbuildinfo
 
 # Agent artifacts
 packages/agent/agent.properties
+packages/agent/agent-settings-schema.json
 packages/agent/src/.*-audit.json
 packages/agent/*agent-*-linux*
 packages/agent/sea-prep.blob
