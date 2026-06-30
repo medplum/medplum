@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
-import type { BulkDataExportOutput, Group, Patient } from '@medplum/fhirtypes';
+import { ContentType, getReferenceString } from '@medplum/core';
+import type { BulkDataExportOutput, Group, Organization, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -398,5 +398,38 @@ describe('Group Export', () => {
 
       const bulkDataExport = await exporter.close(project);
       expect(bulkDataExport.status).toBe('completed');
+    }));
+
+  test('Export carries access-policy compartment as account', () =>
+    withTestContext(async () => {
+      // A caller whose access policy is compartment-scoped must still be able to read back
+      // the export's bookkeeping resources, so those resources carry the compartment as an
+      // account -- mirroring what the caller's own repo would have assigned on create.
+      const org = await systemRepo.createResource<Organization>({ resourceType: 'Organization', name: 'Acme' });
+      const compartment = { reference: getReferenceString(org) };
+      const { repo, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          compartment,
+          resource: [{ resourceType: '*', readonly: true }],
+        },
+      });
+
+      const exporter = new BulkExporter(repo);
+      const asyncJob = await exporter.start('http://example.com');
+      expect(asyncJob.meta?.accounts).toContainEqual(compartment);
+
+      // Writing output creates a Binary, which carries the same account.
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Compartment'], family: 'Scoped' }],
+      });
+      await exporter.writeResource(patient);
+      expect(exporter.writers.Patient.binary.meta?.accounts).toContainEqual(compartment);
+
+      // The account survives close() so the completed job stays readable.
+      const completed = await exporter.close(project);
+      expect(completed.meta?.accounts).toContainEqual(compartment);
     }));
 });

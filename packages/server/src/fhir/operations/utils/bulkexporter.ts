@@ -50,16 +50,22 @@ export class BulkExporter {
   }
 
   async start(url: string): Promise<WithId<AsyncJob>> {
-    // The AsyncJob is internal bookkeeping for the export, not user-authored data.
-    // $export is a read operation, so creating it must not require the caller to have
-    // write access -- a read-only scope (e.g. system/*.read) is sufficient. Create it
-    // with the system repo, scoped to the caller's project so they can still poll it.
+    // $export is a read operation, but it creates an AsyncJob to track itself. That write must
+    // not require the caller to have write access -- a read-only scope (e.g. system/*.read) is
+    // sufficient -- so create it with the system repo. Replicate the scoping the caller's own
+    // repo would have applied: their project (so they can read it back) and their access-policy
+    // compartment as the account (so a policy that filters AsyncJob by _compartment still
+    // matches it -- the poll in job.ts / bulkdata.ts reads through the caller's repo).
+    const accountCompartment = this.repo.effectiveAccessPolicy()?.compartment;
     this.resource = await this.repo.getSystemRepo().createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'active',
       request: url,
       requestTime: new Date().toISOString(),
-      meta: { project: this.repo.currentProject()?.id },
+      meta: {
+        project: this.repo.currentProject()?.id,
+        accounts: accountCompartment ? [accountCompartment] : undefined,
+      },
     });
     return this.resource;
   }
@@ -67,13 +73,17 @@ export class BulkExporter {
   async getWriter(resourceType: string): Promise<BulkFileWriter> {
     let writer = this.writers[resourceType];
     if (!writer) {
-      // Like the AsyncJob, the export output Binary is bookkeeping for a read operation,
-      // so create it with the system repo scoped to the caller's project. The exported
-      // data itself was already access-checked when read via the caller's repo.
+      // Like the AsyncJob, the output Binary is bookkeeping for a read operation, so create it
+      // with the system repo (scoped to the caller's project + account compartment so they can
+      // presign/download it). The exported data was already access-checked when read.
+      const accountCompartment = this.repo.effectiveAccessPolicy()?.compartment;
       const binary = await this.repo.getSystemRepo().createResource<Binary>({
         resourceType: 'Binary',
         contentType: NDJSON_CONTENT_TYPE,
-        meta: { project: this.repo.currentProject()?.id },
+        meta: {
+          project: this.repo.currentProject()?.id,
+          accounts: accountCompartment ? [accountCompartment] : undefined,
+        },
       });
       writer = new BulkFileWriter(binary);
       this.writers[resourceType] = writer;
@@ -139,6 +149,9 @@ export class BulkExporter {
         ...this.resource,
         meta: {
           project: project.id,
+          // Preserve the account compartment assigned at start() so a caller whose access
+          // policy filters AsyncJob by _compartment can still read the completed job.
+          accounts: this.resource.meta?.accounts,
         },
         status: 'completed',
         transactionTime: new Date().toISOString(),
