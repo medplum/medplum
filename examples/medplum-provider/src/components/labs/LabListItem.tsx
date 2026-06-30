@@ -23,7 +23,7 @@ export function LabListItem(props: LabListItemProps): JSX.Element {
   const requester = useResource(item.requester) as Practitioner | undefined;
 
   return (
-    <MedplumLink to={onItemSelect(item)} underline="never">
+    <MedplumLink to={onItemSelect(item)} underline="never" display="block" w="100%" maw="100%">
       <Group
         align="center"
         wrap="nowrap"
@@ -31,7 +31,7 @@ export function LabListItem(props: LabListItemProps): JSX.Element {
           [classes.selected]: isSelected,
         })}
       >
-        <Stack gap={0} flex={1}>
+        <Stack gap={0} flex={1} miw={0}>
           <Group justify="space-between" align="flex-start">
             <Text fw={700} className={classes.title} flex={1}>
               {getDisplayText(item)}

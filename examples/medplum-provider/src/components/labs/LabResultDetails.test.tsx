@@ -295,7 +295,6 @@ describe('LabResultDetails', () => {
     setup(diagnosticReport);
 
     expect(screen.getByText('ATTACHMENTS')).toBeInTheDocument();
-    expect(screen.getByText('Attachment 1:')).toBeInTheDocument();
     expect(screen.getByText('Lab Report PDF')).toBeInTheDocument();
   });
 
@@ -337,8 +336,6 @@ describe('LabResultDetails', () => {
 
     setup(diagnosticReport);
 
-    expect(screen.getByText('Attachment 1:')).toBeInTheDocument();
-    expect(screen.getByText('Attachment 2:')).toBeInTheDocument();
     expect(screen.getByText('Report 1')).toBeInTheDocument();
     expect(screen.getByText('Report 2')).toBeInTheDocument();
   });

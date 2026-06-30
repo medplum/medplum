@@ -3,8 +3,9 @@
 import { Badge, Divider, Group, Paper, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { DiagnosticReport, Reference } from '@medplum/fhirtypes';
-import { ObservationTable, useResource } from '@medplum/react';
+import { AttachmentDisplay, ObservationTable, useResource } from '@medplum/react';
 import type { JSX } from 'react';
+import classes from './LabResultDetails.module.css';
 
 interface LabResultDetailsProps {
   result: DiagnosticReport | Reference<DiagnosticReport>;
@@ -17,7 +18,7 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
   const performer = useResource(diagnosticReport?.performer?.[0]);
 
   return (
-    <Paper h="100%" p="md" style={{ overflow: 'auto' }}>
+    <Paper h="100%" p="md" className={classes.scrollPaper}>
       <Stack gap="md">
         <Stack gap="xs">
           <Text size="xl" fw={700}>
@@ -134,20 +135,22 @@ export function LabResultDetails({ result, onResultChange: _onResultChange }: La
           </>
         )}
 
-        {diagnosticReport?.presentedForm && (
+        {diagnosticReport?.presentedForm && diagnosticReport.presentedForm.length > 0 && (
           <>
             <Divider />
             <Stack gap="sm">
               <Text fw={600} size="sm" c="dimmed">
                 ATTACHMENTS
               </Text>
-              {diagnosticReport?.presentedForm?.map((form, index) => (
-                <Group key={index} align="flex-start">
+              {diagnosticReport.presentedForm.map((form, index) => (
+                <Stack key={index} gap="xs">
                   <Text fw={500} size="sm">
-                    Attachment {index + 1}:
+                    {form.title || form.contentType || 'Attachment'}
                   </Text>
-                  <Text size="sm">{form.title || form.contentType || 'Attachment'}</Text>
-                </Group>
+                  <div className={classes.attachment}>
+                    <AttachmentDisplay value={form} />
+                  </div>
+                </Stack>
               ))}
             </Stack>
           </>
