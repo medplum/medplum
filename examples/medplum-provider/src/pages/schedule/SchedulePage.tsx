@@ -208,7 +208,8 @@ export function SchedulePage(): JSX.Element | null {
       if (updated.status === 'cancelled') {
         appointmentDetailsHandlers.close();
 
-        // If the appointment has been cancelled, we also soft-delete the related slots
+        // If the appointment was cancelled with `$cancel`, it also
+        // soft-deleted the related slots. Remove them from our local state.
         if (updated.slot) {
           const ids = new Set(updated.slot.map((ref) => resolveId(ref)).filter(isDefined));
           setSlots((state) => state?.filter((slot) => slot.id && !ids.has(slot.id)));
