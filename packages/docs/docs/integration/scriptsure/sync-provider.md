@@ -43,10 +43,7 @@ DEA and state license are optional, but when present they pre-fill the ScriptSur
     ]
   },
   "name": [{ "given": ["Jane", "Marie"], "family": "Doe", "suffix": ["MD"] }],
-  "telecom": [
-    { "system": "email", "value": "jane.doe@clinic.example" },
-    { "system": "phone", "use": "mobile", "value": "4045551234" }
-  ],
+  "telecom": [{ "system": "email", "value": "jane.doe@clinic.example" }],
   "identifier": [
     { "system": "http://hl7.org/fhir/sid/us-npi", "value": "1234567890" },
     { "system": "http://terminology.hl7.org/NamingSystem/usDEA", "value": "AF1234567" }
