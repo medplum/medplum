@@ -18,6 +18,7 @@ import type { MfaMethod } from './utils';
 import {
   getAllowedMfaMethods,
   getEnrolledMfaMethods,
+  isMfaRequired,
   sendLoginResult,
   sendMfaEmailCode,
   verifyEmailMfaCode,
@@ -107,7 +108,7 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
     allowedMethods,
     // When MFA is required for the account, the client must not offer to disable
     // it (the `/disable` endpoint enforces this server-side as well).
-    mfaRequired: Boolean(user.mfaRequired),
+    mfaRequired: isMfaRequired(user, ctx.project),
     email: user.email,
     enrollUri: otp,
     enrollQrCode: await toDataURL(otp),
@@ -367,7 +368,7 @@ mfaRouter.post(
     // an omitted `method`) would leave a required account with no second factor,
     // so reject it. Such a user can still rotate factors by enrolling a
     // replacement before removing the old one.
-    if (user.mfaRequired && remainingMethods.length === 0) {
+    if (isMfaRequired(user, ctx.project) && remainingMethods.length === 0) {
       sendOutcome(res, badRequest('Cannot remove the last MFA factor because MFA is required'));
       return;
     }

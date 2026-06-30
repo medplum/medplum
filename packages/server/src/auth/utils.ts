@@ -57,6 +57,22 @@ export function getAllowedMfaMethods(project: Project | undefined): MfaMethod[] 
 }
 
 /**
+ * Determines whether MFA is required for a user logging in to a project.
+ *
+ * The project's `mfaRequired` setting (a boolean) can only *tighten* the
+ * requirement: enabling it forces MFA across the whole project even for users
+ * whose own `User.mfaRequired` flag is unset or `false`. It never relaxes a
+ * user who individually requires MFA.
+ * @param user - The user logging in.
+ * @param project - The project the user is logging in to, if known.
+ * @returns True if the user must use MFA.
+ */
+export function isMfaRequired(user: User, project: Project | undefined): boolean {
+  const projectMfaRequired = project?.setting?.find((s) => s.name === 'mfaRequired')?.valueBoolean;
+  return Boolean(projectMfaRequired) || Boolean(user.mfaRequired);
+}
+
+/**
  * Returns the MFA methods that a user has enrolled in.
  * Existing users enrolled before the introduction of `User.mfaMethod` are
  * treated as TOTP, which was the only method at the time.
@@ -196,8 +212,9 @@ async function getLoginProject(login: Login): Promise<Project | undefined> {
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
   const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  const project = await getLoginProject(login);
 
-  if (user.mfaRequired && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
+  if (isMfaRequired(user, project) && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
     const accountName = `Medplum - ${user.email}`;
     const issuer = 'medplum.com';
     const secret = user.mfaSecret as string;
@@ -207,7 +224,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
       mfaEnrollRequired: true,
       enrollUri: otp,
       enrollQrCode: await toDataURL(otp),
-      allowedMfaMethods: getAllowedMfaMethods(await getLoginProject(login)),
+      allowedMfaMethods: getAllowedMfaMethods(project),
     });
     return;
   }
