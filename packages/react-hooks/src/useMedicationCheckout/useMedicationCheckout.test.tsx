@@ -84,9 +84,9 @@ describe('useMedicationCheckout', () => {
 
     const { result } = renderHook(() => useMedicationCheckout(), { wrapper: wrapper(medplum) });
 
-    await expect(
-      result.current.checkout({ patientId: 'p1', medicationRequestIds: ['mr-1'] })
-    ).rejects.toThrow(INVALID_MEDICATION_CHECKOUT_RESPONSE);
+    await expect(result.current.checkout({ patientId: 'p1', medicationRequestIds: ['mr-1'] })).rejects.toThrow(
+      INVALID_MEDICATION_CHECKOUT_RESPONSE
+    );
   });
 
   test('checkout throws when Parameters payload is missing approvalUrl', async () => {
@@ -99,8 +99,8 @@ describe('useMedicationCheckout', () => {
 
     const { result } = renderHook(() => useMedicationCheckout(), { wrapper: wrapper(medplum) });
 
-    await expect(
-      result.current.checkout({ patientId: 'p1', medicationRequestIds: ['mr-1'] })
-    ).rejects.toThrow(INVALID_MEDICATION_CHECKOUT_RESPONSE);
+    await expect(result.current.checkout({ patientId: 'p1', medicationRequestIds: ['mr-1'] })).rejects.toThrow(
+      INVALID_MEDICATION_CHECKOUT_RESPONSE
+    );
   });
 });

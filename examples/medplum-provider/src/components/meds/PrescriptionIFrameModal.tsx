@@ -68,7 +68,9 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
   // Stable, order-independent key for the set of MR ids to poll. Derived from
   // either the multi-id (cart / Approve Queue) or single-id prop so the polling
   // effect deps don't churn on every parent render (arrays are new each render).
-  const watchKey = [...(medicationRequestIdsToWatch ?? (medicationRequestIdToWatch ? [medicationRequestIdToWatch] : []))]
+  const watchKey = [
+    ...(medicationRequestIdsToWatch ?? (medicationRequestIdToWatch ? [medicationRequestIdToWatch] : [])),
+  ]
     .sort((a, b) => a.localeCompare(b))
     .join(',');
   // ScriptSure widget URLs are theme-agnostic from the bot side; the modal
