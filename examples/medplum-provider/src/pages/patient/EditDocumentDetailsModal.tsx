@@ -39,6 +39,23 @@ export function EditDocumentDetailsModal({
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  // The modal stays mounted between opens (the parent only toggles `opened`), so the lazy state
+  // initializers above run only once. Re-seed every field from `item` each time the modal opens so
+  // a previous session's unsaved edits don't carry over. This runs during render — before the
+  // `{opened && ...}` form remounts — so the uncontrolled inputs (CodeableConceptInput,
+  // ReferenceInput) pick up the fresh defaultValue; a useEffect would fire too late for those.
+  const [prevOpened, setPrevOpened] = useState(opened);
+  if (opened !== prevOpened) {
+    setPrevOpened(opened);
+    if (opened) {
+      setDescription(item.description ?? '');
+      setType(item.type);
+      setCategory(getInitialCategory(item));
+      setAuthorRef(getInitialAuthor(item));
+      setConfirmingDelete(false);
+    }
+  }
+
   const handleClose = (): void => {
     setConfirmingDelete(false);
     onClose();
