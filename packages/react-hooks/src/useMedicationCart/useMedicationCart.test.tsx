@@ -127,8 +127,8 @@ describe('useMedicationCart', () => {
 
     const { result } = renderHook(() => useMedicationCart(), { wrapper: wrapper(medplum) });
 
-    await expect(
-      result.current.removeFromCart({ patientId: 'p1', medicationRequestId: 'mr-1' })
-    ).rejects.toThrow(INVALID_MEDICATION_CART_RESPONSE);
+    await expect(result.current.removeFromCart({ patientId: 'p1', medicationRequestId: 'mr-1' })).rejects.toThrow(
+      INVALID_MEDICATION_CART_RESPONSE
+    );
   });
 });

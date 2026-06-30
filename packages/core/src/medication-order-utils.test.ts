@@ -3,9 +3,9 @@
 
 import type { Medication, MedicationRequest, Parameters } from '@medplum/fhirtypes';
 import type {
+  MedicationCartManageResponse,
   MedicationCheckoutRequest,
   MedicationCheckoutResponse,
-  MedicationCartManageResponse,
   MedicationOrderRequest,
   MedicationOrderResponse,
   MedicationOrderSetRequest,

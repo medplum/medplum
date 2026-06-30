@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import type { MedicationCartManageResponse, MedicationCheckoutRequest, MedicationCheckoutResponse, WithId } from '@medplum/core';
+import type {
+  MedicationCartManageResponse,
+  MedicationCheckoutRequest,
+  MedicationCheckoutResponse,
+  WithId,
+} from '@medplum/core';
 import type { Bundle, MedicationRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
