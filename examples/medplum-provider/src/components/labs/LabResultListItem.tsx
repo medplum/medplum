@@ -20,7 +20,7 @@ export function LabResultListItem(props: LabResultListItemProps): JSX.Element {
   const subText = getSubText(report, performer);
 
   return (
-    <MedplumLink to={to} underline="never" display="block" w="100%" maw="100%">
+    <MedplumLink to={to} underline="never">
       <Group
         align="center"
         wrap="nowrap"

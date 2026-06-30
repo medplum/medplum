@@ -84,7 +84,6 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'scriptsure', url: 'scriptsure', label: 'ScriptSure' },
   {
     id: 'labs',
-    // The labs page defaults to the "Completed" tab, which lives on the DiagnosticReport route.
     url: 'DiagnosticReport',
     label: 'Labs',
   },

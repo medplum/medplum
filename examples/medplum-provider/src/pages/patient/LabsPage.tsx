@@ -32,26 +32,6 @@ const DEFAULT_SORT_RULES: SortRule[] = [{ code: '_lastUpdated', descending: true
 // Page size. Overridable via the URL `_count` param.
 const DEFAULT_COUNT = 20;
 
-// Extra fields the Open tab list/detail need beyond the server default.
-const OPEN_ORDER_FIELDS = [
-  '_lastUpdated',
-  'code',
-  'status',
-  'orderDetail',
-  'category',
-  'subject',
-  'requester',
-  'performer',
-  'requisition',
-  'identifier',
-  'authoredOn',
-  'priority',
-  'reasonCode',
-  'note',
-  'supportingInfo',
-  'basedOn',
-];
-
 export function LabsPage(): JSX.Element {
   const { patientId, serviceRequestId, diagnosticReportId } = useParams();
   const navigate = useNavigate();
@@ -99,7 +79,6 @@ export function LabsPage(): JSX.Element {
       const fetchQuery: SearchRequest = {
         ...search,
         filters: [...(search.filters ?? []), { code: 'subject', operator: Operator.EQUALS, value: patientReference }],
-        fields: activeTab === 'open' ? OPEN_ORDER_FIELDS : undefined,
         total: 'accurate',
       };
       const results = await medplum.searchResources(resourceType, formatSearchQuery(fetchQuery), {
