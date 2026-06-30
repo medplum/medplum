@@ -174,6 +174,7 @@ jobs:
         if: steps.changes.outputs.deploy_app == 'true'
         run: './scripts/deploy-app.sh'
         env:
+          AWS_REGION: 'us-east-1'
           APP_BUCKET: preview.medplum.dev/previews/app-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
@@ -182,11 +183,13 @@ jobs:
         if: steps.changes.outputs.deploy_docs == 'true'
         run: './scripts/deploy-docs.sh'
         env:
+          AWS_REGION: 'us-east-1'
           DOCS_DESTINATION: preview.medplum.dev/previews/docs-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
       - name: Deploy provider app preview
         if: steps.changes.outputs.deploy_provider == 'true'
         run: './scripts/deploy-provider-app.sh'
         env:
+          AWS_REGION: 'us-east-1'
           PROVIDER_APP_BUCKET: preview.medplum.dev/previews/provider-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
