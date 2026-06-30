@@ -103,14 +103,7 @@ export function DocumentsPage(): JSX.Element {
 
   const headerActions = (
     <Tooltip label="Upload document" position="bottom" openDelay={500}>
-      <ActionIcon
-        aria-label="Upload document"
-        radius="xl"
-        variant="filled"
-        color="blue"
-        size={32}
-        onClick={openUpload}
-      >
+      <ActionIcon aria-label="Upload document" radius="xl" variant="filled" color="blue" size={32} onClick={openUpload}>
         <IconPlus size={16} />
       </ActionIcon>
     </Tooltip>
@@ -149,12 +142,7 @@ export function DocumentsPage(): JSX.Element {
         onError={showErrorNotification}
       />
 
-      <UploadDocumentModal
-        opened={uploadOpened}
-        onClose={closeUpload}
-        patient={patientRef}
-        onCreated={handleCreated}
-      />
+      <UploadDocumentModal opened={uploadOpened} onClose={closeUpload} patient={patientRef} onCreated={handleCreated} />
     </>
   );
 }

@@ -28,11 +28,7 @@ export function DocumentListItem({ item, selectedDocumentId, getItemUri }: Docum
   const metaLine = documentType ? `${metaPrefix}: ${documentType}` : metaPrefix;
 
   return (
-    <MedplumLink
-      to={getItemUri(item)}
-      underline="never"
-      className={cx(classes.item, isSelected && classes.selected)}
-    >
+    <MedplumLink to={getItemUri(item)} underline="never" className={cx(classes.item, isSelected && classes.selected)}>
       <Stack gap={0} miw={0}>
         <Tooltip label={name} multiline maw={320} withinPortal openDelay={300}>
           <Text fw={700} truncate="end" miw={0}>
