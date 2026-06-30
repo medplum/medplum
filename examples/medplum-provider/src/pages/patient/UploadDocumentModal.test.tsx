@@ -68,7 +68,12 @@ describe('UploadDocumentModal', () => {
     const user = userEvent.setup();
     const onCreated = vi.fn();
     const onClose = vi.fn();
-    const createdDoc: WithId<DocumentReference> = { resourceType: 'DocumentReference', id: 'doc-1', status: 'current' };
+    const createdDoc: WithId<DocumentReference> = {
+      resourceType: 'DocumentReference',
+      id: 'doc-1',
+      status: 'current',
+      content: [],
+    };
     const createResource = vi.spyOn(medplum, 'createResource').mockResolvedValue(createdDoc);
     vi.spyOn(medplum, 'createAttachment').mockResolvedValue({
       contentType: 'application/pdf',
@@ -103,6 +108,7 @@ describe('UploadDocumentModal', () => {
       resourceType: 'DocumentReference',
       id: 'doc-blank',
       status: 'current',
+      content: [],
     });
     vi.spyOn(medplum, 'createAttachment').mockResolvedValue({ contentType: 'text/plain', url: 'Binary/blank' });
 
@@ -123,6 +129,7 @@ describe('UploadDocumentModal', () => {
       resourceType: 'DocumentReference',
       id: 'doc-2',
       status: 'current',
+      content: [],
     });
     vi.spyOn(medplum, 'createAttachment').mockResolvedValue({ contentType: 'text/plain', url: 'Binary/xyz' });
 
@@ -144,6 +151,7 @@ describe('UploadDocumentModal', () => {
       resourceType: 'DocumentReference',
       id: 'doc-none',
       status: 'current',
+      content: [],
     });
 
     // A reference to a non-existent patient never resolves, so patientResource stays undefined.
