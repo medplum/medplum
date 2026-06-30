@@ -40,12 +40,28 @@ export const SCRIPTSURE_PENDING_ORDER_ID_SYSTEM = 'https://scriptsure.com/pendin
 
 export const SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION = 'https://scriptsure.com/pending-order-status';
 
+/**
+ * `SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION` value marking a draft
+ * `MedicationRequest` as staged in the patient's ScriptSure MedCart (added by
+ * `$checkout-medications`, before the prescriber sends from the MedCart widget).
+ * The UI uses this to show per-draft "Remove from cart" / "Clear cart" actions.
+ */
+export const SCRIPTSURE_PENDING_ORDER_STATUS_IN_CART = 'in-cart';
+
 export const SCRIPTSURE_IFRAME_URL_EXTENSION = 'https://scriptsure.com/iframe-url';
+
+/**
+ * Identifier system for the SureScripts `messageId` stamped on a draft
+ * MedicationRequest by the cart-checkout flow (electronic-queue submit). Used to
+ * reconcile the approval webhook back to the originating draft.
+ */
+export const SCRIPTSURE_MESSAGE_ID_SYSTEM = 'https://scriptsure.com/message-id';
 
 export const SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS: MedicationOrderExtensions = {
   pendingOrderIdSystem: SCRIPTSURE_PENDING_ORDER_ID_SYSTEM,
   pendingOrderStatusUrl: SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION,
   iframeUrlExtension: SCRIPTSURE_IFRAME_URL_EXTENSION,
+  messageIdSystem: SCRIPTSURE_MESSAGE_ID_SYSTEM,
 };
 
 export const SCRIPTSURE_IFRAME_BOT: Identifier = {

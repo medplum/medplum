@@ -3,6 +3,8 @@
 
 import type { Medication, MedicationRequest, Parameters } from '@medplum/fhirtypes';
 import type {
+  MedicationCheckoutRequest,
+  MedicationCheckoutResponse,
   MedicationOrderRequest,
   MedicationOrderResponse,
   MedicationOrderSetRequest,
@@ -10,6 +12,7 @@ import type {
   MedicationSearchParams,
 } from './medication-order-utils';
 import {
+  INVALID_MEDICATION_CHECKOUT_RESPONSE,
   INVALID_MEDICATION_ORDER_RESPONSE,
   INVALID_MEDICATION_ORDER_SET_RESPONSE,
   MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
@@ -19,11 +22,14 @@ import {
   getPendingMedicationOrderId,
   getPendingMedicationOrderStatus,
   isMedicationArray,
+  isMedicationCheckoutResponse,
   isMedicationOrderResponse,
   isMedicationOrderSetResponse,
+  medicationCheckoutRequestToParameters,
   medicationOrderRequestToParameters,
   medicationOrderSetRequestToParameters,
   medicationSearchParamsToParameters,
+  parametersToMedicationCheckoutResponse,
   parametersToMedicationOrderResponse,
   parametersToMedicationOrderSetResponse,
 } from './medication-order-utils';
@@ -458,5 +464,116 @@ describe('Custom FHIR operation Parameters helpers', () => {
       parameter: [{ name: 'vendorPatientId', valueInteger: 1 }],
     };
     expect(() => parametersToMedicationOrderSetResponse(params)).toThrow(INVALID_MEDICATION_ORDER_SET_RESPONSE);
+  });
+
+  describe('isMedicationCheckoutResponse', () => {
+    test('accepts valid response (including empty items)', () => {
+      expect(
+        isMedicationCheckoutResponse({ approvalUrl: 'https://example.com/approve', vendorPatientId: 2, items: [] })
+      ).toBe(true);
+    });
+
+    test('rejects missing or malformed fields', () => {
+      expect(isMedicationCheckoutResponse({})).toBe(false);
+      expect(isMedicationCheckoutResponse(null)).toBe(false);
+      expect(isMedicationCheckoutResponse({ approvalUrl: '', vendorPatientId: 2, items: [] })).toBe(false);
+      expect(isMedicationCheckoutResponse({ approvalUrl: 'x', vendorPatientId: 2 })).toBe(false);
+      expect(isMedicationCheckoutResponse({ approvalUrl: 'x', vendorPatientId: Number.NaN, items: [] })).toBe(false);
+    });
+  });
+
+  test('medicationCheckoutRequestToParameters emits one medicationRequestIds entry per id', () => {
+    const req: MedicationCheckoutRequest = {
+      patientId: 'pat-1',
+      medicationRequestIds: ['mr-1', 'mr-2', 'mr-3'],
+      appId: 'provider-app',
+    };
+    const result = medicationCheckoutRequestToParameters(req);
+    expect(result.resourceType).toBe('Parameters');
+    expect(result.parameter).toEqual([
+      { name: 'patientId', valueId: 'pat-1' },
+      { name: 'medicationRequestIds', valueId: 'mr-1' },
+      { name: 'medicationRequestIds', valueId: 'mr-2' },
+      { name: 'medicationRequestIds', valueId: 'mr-3' },
+      { name: 'appId', valueString: 'provider-app' },
+    ]);
+  });
+
+  test('medicationCheckoutRequestToParameters omits appId when not provided', () => {
+    const result = medicationCheckoutRequestToParameters({ patientId: 'pat-1', medicationRequestIds: ['mr-1'] });
+    expect(result.parameter).toEqual([
+      { name: 'patientId', valueId: 'pat-1' },
+      { name: 'medicationRequestIds', valueId: 'mr-1' },
+    ]);
+  });
+
+  test('parametersToMedicationCheckoutResponse round-trips the checkout response shape', () => {
+    const expected: MedicationCheckoutResponse = {
+      approvalUrl: 'https://ui.example.com/widgets/medcart/24057?sessiontoken=tok',
+      vendorPatientId: 24057,
+      items: [
+        { medicationRequestId: 'mr-1', vendorLineId: 'rx-1', status: 'queued' },
+        { medicationRequestId: 'mr-2', status: 'failed', error: 'no rxnorm' },
+      ],
+    };
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://ui.example.com/widgets/medcart/24057?sessiontoken=tok' },
+        { name: 'vendorPatientId', valueInteger: 24057 },
+        {
+          name: 'items',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-1' },
+            { name: 'vendorLineId', valueString: 'rx-1' },
+            { name: 'status', valueCode: 'queued' },
+          ],
+        },
+        {
+          name: 'items',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-2' },
+            { name: 'status', valueCode: 'failed' },
+            { name: 'error', valueString: 'no rxnorm' },
+          ],
+        },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params)).toEqual(expected);
+  });
+
+  test('parametersToMedicationCheckoutResponse tolerates zero items', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params)).toEqual({
+      approvalUrl: 'https://example.com/approve',
+      vendorPatientId: 7,
+      items: [],
+    });
+  });
+
+  test('parametersToMedicationCheckoutResponse drops malformed item parts (missing status)', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+        { name: 'items', part: [{ name: 'medicationRequestId', valueId: 'mr-1' }] },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params).items).toEqual([]);
+  });
+
+  test('parametersToMedicationCheckoutResponse rejects missing approvalUrl', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [{ name: 'vendorPatientId', valueInteger: 1 }],
+    };
+    expect(() => parametersToMedicationCheckoutResponse(params)).toThrow(INVALID_MEDICATION_CHECKOUT_RESPONSE);
   });
 });
