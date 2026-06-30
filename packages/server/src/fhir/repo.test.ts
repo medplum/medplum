@@ -175,9 +175,10 @@ describe('FHIR Repo', () => {
         expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
         resetSpies();
 
+        // in reader mode, no reader pool query is made for updateResource
         await repo.updateResource({ ...auditEvent, outcomeDesc: 'updated' });
-        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1); // called to fetch existing resource; arguably incorrect and should be directed to writer
-        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
         expect(repo.mode).toBe(RepositoryMode.WRITER);
         resetSpies();
 
@@ -189,7 +190,7 @@ describe('FHIR Repo', () => {
 
         await repo.updateResource({ ...auditEvent, outcomeDesc: 'something new' });
         expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
-        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1); // called to fetch existing resource
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
         expect(repo.mode).toBe(RepositoryMode.WRITER);
       }));
   });
