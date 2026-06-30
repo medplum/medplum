@@ -69,6 +69,7 @@ export function buildDeletedResourceRow(
   string,
   any
 > {
+  const content = '';
   const resourceType = resource.resourceType;
   const id = resource.id;
   const columns = {
@@ -76,7 +77,7 @@ export function buildDeletedResourceRow(
     lastUpdated,
     deleted: true,
     projectId: resource.meta?.project ?? systemResourceProjectId,
-    content: '',
+    content,
     __version: -1,
   };
 
