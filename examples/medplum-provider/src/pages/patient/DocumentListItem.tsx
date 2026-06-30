@@ -6,7 +6,7 @@ import { formatDate, getDisplayString, getReferenceString } from '@medplum/core'
 import type { DocumentReference } from '@medplum/fhirtypes';
 import { MedplumLink } from '@medplum/react';
 import cx from 'clsx';
-import type { AnchorHTMLAttributes, JSX } from 'react';
+import type { JSX } from 'react';
 import classes from './DocumentListItem.module.css';
 import { getDocumentTypeDisplay } from './DocumentReference.utils';
 
@@ -14,10 +14,9 @@ interface DocumentListItemProps {
   item: WithId<DocumentReference>;
   selectedDocumentId?: string;
   getItemUri: (item: WithId<DocumentReference>) => string;
-  id?: string;
 }
 
-export function DocumentListItem({ item, selectedDocumentId, getItemUri, id }: DocumentListItemProps): JSX.Element {
+export function DocumentListItem({ item, selectedDocumentId, getItemUri }: DocumentListItemProps): JSX.Element {
   const isSelected = selectedDocumentId === item.id;
 
   const name = getDisplayString(item);
@@ -28,18 +27,8 @@ export function DocumentListItem({ item, selectedDocumentId, getItemUri, id }: D
   const metaPrefix = date ? formatDate(date) : '';
   const metaLine = documentType ? `${metaPrefix}: ${documentType}` : metaPrefix;
 
-  // MedplumLinkProps only types Mantine's style props, so the listbox-option DOM
-  // attributes are passed via a spread (they reach the underlying <a> through ...rest).
-  const optionProps: AnchorHTMLAttributes<HTMLAnchorElement> = {
-    id,
-    role: 'option',
-    tabIndex: isSelected ? 0 : -1,
-    'aria-selected': isSelected,
-  };
-
   return (
     <MedplumLink
-      {...optionProps}
       to={getItemUri(item)}
       underline="never"
       className={cx(classes.item, isSelected && classes.selected)}
