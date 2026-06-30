@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Flex, Modal, Stack, Text, Tooltip } from '@mantine/core';
-import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
 import type { SearchRequest, SortRule, WithId } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
 import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
 import type { ListWithDetailPaneTab } from '@medplum/react';
 import { ListWithDetailPane, useMedplum } from '@medplum/react';
@@ -265,9 +265,7 @@ function addDefaultLabSearchValues(search: SearchRequest, tab: LabTab): SearchRe
   const defaultStatus = tab === 'completed' ? COMPLETED_REPORT_STATUS : OPEN_ORDER_STATUS;
   return {
     ...search,
-    filters: hasStatus
-      ? filters
-      : [...filters, { code: 'status', operator: Operator.EQUALS, value: defaultStatus }],
+    filters: hasStatus ? filters : [...filters, { code: 'status', operator: Operator.EQUALS, value: defaultStatus }],
     sortRules: search.sortRules ?? DEFAULT_SORT_RULES,
     count: search.count ?? DEFAULT_COUNT,
   };
