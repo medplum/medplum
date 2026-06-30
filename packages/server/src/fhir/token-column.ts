@@ -258,7 +258,7 @@ export async function buildTokenColumnsSearchFilter(
         { count: 100 }
       );
       const results = await findCodings?.execute(db);
-      if (results && results.length > 100) {
+      if (results && results.length > 1000) {
         throw new OperationOutcomeError(tooCostly('Expansion of child codes returned too many results'));
       }
 
