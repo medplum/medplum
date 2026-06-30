@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SearchParameterDetails, TypedValue } from '@medplum/core';
+import type { SearchParameterDetails, TypedValue, WithId } from '@medplum/core';
 import {
   convertToSearchableDates,
   convertToSearchableNumbers,
@@ -63,14 +63,14 @@ export function buildDeleteHistoryContent(resource: Resource, options: DeleteHis
 }
 
 export function buildDeletedResourceRow(
-  resource: Resource,
+  resource: WithId<Resource>,
   lastUpdated: Date
 ): { id: string; lastUpdated: Date; deleted: boolean; projectId: string; content: string; __version: number } & Record<
   string,
   any
 > {
   const resourceType = resource.resourceType;
-  const id = resource.id as string;
+  const id = resource.id;
   const columns = {
     id,
     lastUpdated,
