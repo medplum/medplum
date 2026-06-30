@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Text, Tooltip } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
 import { DEFAULT_SEARCH_COUNT, formatSearchQuery, Operator, parseSearchRequest } from '@medplum/core';
 import type { DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
@@ -19,7 +20,7 @@ export function DocumentsPage(): JSX.Element {
   const location = useLocation();
   const { patientId, documentId } = useParams() as { patientId: string; documentId?: string };
 
-  const [uploadOpened, setUploadOpened] = useState(false);
+  const [uploadOpened, { open: openUpload, close: closeUpload }] = useDisclosure(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Patient-scoped DocumentReference search. The page offset/count AND the sort are read from the
@@ -108,7 +109,7 @@ export function DocumentsPage(): JSX.Element {
         variant="filled"
         color="blue"
         size={32}
-        onClick={() => setUploadOpened(true)}
+        onClick={openUpload}
       >
         <IconPlus size={16} />
       </ActionIcon>
@@ -150,7 +151,7 @@ export function DocumentsPage(): JSX.Element {
 
       <UploadDocumentModal
         opened={uploadOpened}
-        onClose={() => setUploadOpened(false)}
+        onClose={closeUpload}
         patient={patientRef}
         onCreated={handleCreated}
       />
