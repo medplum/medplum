@@ -978,7 +978,7 @@ async function autoDisableSubscription(
   } catch (err) {
     globalLogger.warn('Failed to auto-disable subscription', {
       subscription: subscription.id,
-      project: subscription?.meta?.project,
+      projectId: subscription?.meta?.project,
       failureCount,
       error: err,
       timeWindowSeconds: trigger.timeWindowSeconds,
