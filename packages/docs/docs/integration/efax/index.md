@@ -84,7 +84,7 @@ Send a fax from a `Communication` resource.
 
 **Request Body:** A `Communication` resource with:
 - `medium` containing code `FAXWRIT` from system `http://terminology.hl7.org/CodeSystem/v3-ParticipationMode`
-- `payload` with `contentAttachment` containing the document to fax (PDF, JPEG, or PNG)
+- `payload` with either a `contentReference` to a `DocumentReference` (recommended) or an inline `contentAttachment` containing the document to fax (PDF, JPEG, or PNG)
 - `sender` reference to a Practitioner with eFax identifier
 - `recipient` reference(s) to resources with fax numbers in their `telecom`
 
@@ -112,7 +112,7 @@ const attachment = await medplum.createAttachment({
   contentType: file.type,
   filename: file.name,
 });
-await medplum.createResource<DocumentReference>({
+const documentReference = await medplum.createResource<DocumentReference>({
   resourceType: 'DocumentReference',
   status: 'current',
   author: [createReference(profile)],
@@ -144,7 +144,9 @@ const communication = await medplum.createResource<Communication>({
   ],
   sender: createReference(profile),
   recipient: [createReference(recipient)],
-  payload: [{ contentAttachment: attachment }],
+  // Reference the DocumentReference via `contentReference`. The operation also accepts
+  // an inline `contentAttachment` (e.g. `payload: [{ contentAttachment: attachment }]`).
+  payload: [{ contentReference: createReference(documentReference) }],
 });
 
 // Step 4: Call the $send-efax operation
@@ -220,9 +222,8 @@ The samples below show the `Communication` resource only. For outbound sends, th
   ],
   "payload": [
     {
-      "contentAttachment": {
-        "url": "Binary/document-id",
-        "contentType": "application/pdf"
+      "contentReference": {
+        "reference": "DocumentReference/document-id"
       }
     }
   ]

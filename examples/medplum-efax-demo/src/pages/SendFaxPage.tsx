@@ -64,7 +64,7 @@ export function SendFaxPage(): JSX.Element {
         contentType: formData.file.type,
         filename: formData.file.name,
       });
-      await medplum.createResource<DocumentReference>({
+      const documentReference = await medplum.createResource<DocumentReference>({
         resourceType: 'DocumentReference',
         status: 'current',
         author: [createReference(profile)],
@@ -79,7 +79,10 @@ export function SendFaxPage(): JSX.Element {
         contact: [{ telecom: [{ system: 'fax', value: formData.faxNumber }] }],
       });
 
-      // Step 3: Create the Communication with proper references
+      // Step 3: Create the Communication, referencing the DocumentReference via
+      // `contentReference`. The $send-efax operation also accepts an inline
+      // `contentAttachment`, but referencing the DocumentReference keeps the faxed
+      // document linked to the chart.
       const communication = await medplum.createResource<Communication>({
         resourceType: 'Communication',
         status: 'in-progress',
@@ -96,7 +99,7 @@ export function SendFaxPage(): JSX.Element {
         ],
         sender: createReference(profile),
         recipient: [createReference(recipient)],
-        payload: [{ contentAttachment: attachment }],
+        payload: [{ contentReference: createReference(documentReference) }],
       });
 
       // Step 4: Call the $send-efax operation
