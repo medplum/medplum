@@ -689,7 +689,6 @@ function buildCodingPropertyTable(result: SchemaDefinition): void {
       { name: 'value', type: 'TEXT', notNull: true },
     ],
     indexes: [
-      { columns: ['target', 'property', 'coding'], indexType: 'btree', unique: false, where: 'target IS NOT NULL' }, // To be removed in a future release in favor of the entry below
       {
         columns: ['target', 'property', 'coding'],
         indexType: 'btree',
