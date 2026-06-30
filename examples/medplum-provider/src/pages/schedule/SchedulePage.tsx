@@ -3,12 +3,20 @@
 import { ActionIcon, Box, Drawer, Group, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
-import { createReference, EMPTY, getReferenceString, isReference, isResourceWithId } from '@medplum/core';
+import {
+  createReference,
+  EMPTY,
+  getReferenceString,
+  isDefined,
+  isReference,
+  isResourceWithId,
+  resolveId,
+} from '@medplum/core';
 import type { Appointment, Practitioner, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Calendar } from '../../components/Calendar';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
@@ -90,7 +98,7 @@ export function SchedulePage(): JSX.Element | null {
         ['start', `le${range.end.toISOString()}`],
         ['status:not', 'entered-in-error'],
       ])
-      .then((rawSlots) => active && setSlots(mergeOverlappingSlots(rawSlots)))
+      .then((rawSlots) => active && setSlots(rawSlots))
       .catch((error: unknown) => active && showErrorNotification(error));
 
     return () => {
@@ -199,6 +207,13 @@ export function SchedulePage(): JSX.Element | null {
       setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
       if (updated.status === 'cancelled') {
         appointmentDetailsHandlers.close();
+
+        // If the appointment was cancelled with `$cancel`, it also
+        // soft-deleted the related slots. Remove them from our local state.
+        if (updated.slot) {
+          const ids = new Set(updated.slot.map((ref) => resolveId(ref)).filter(isDefined));
+          setSlots((state) => state?.filter((slot) => slot.id && !ids.has(slot.id)));
+        }
       }
     },
     [appointmentDetailsHandlers]
@@ -226,6 +241,8 @@ export function SchedulePage(): JSX.Element | null {
   );
 
   const schedulingEnabled = project?.features?.includes('scheduling');
+
+  const mergedSlots = useMemo(() => mergeOverlappingSlots(slots ?? []), [slots]);
 
   return (
     <>
@@ -256,7 +273,7 @@ export function SchedulePage(): JSX.Element | null {
             onSelectInterval={handleSelectInterval}
             onSelectAppointment={handleSelectAppointment}
             onSelectSlot={handleSelectSlot}
-            slots={slots ?? []}
+            slots={mergedSlots}
             appointments={appointments ?? []}
             onRangeChange={setRange}
             className={classes.calendar}
