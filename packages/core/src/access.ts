@@ -29,6 +29,20 @@ export const projectAdminResourceTypes = [
 ];
 
 /**
+ * Marketplace catalog resource types.
+ *
+ * These are project admin resources, but unlike the rest of
+ * {@link projectAdminResourceTypes} they describe a deployment-wide,
+ * read-only package catalog rather than per-project identity/configuration.
+ * They may therefore be read **cross-project** via `Project.link` +
+ * `Project.exportedResourceType`, so a project admin whose project links to the
+ * catalog project can browse and install published packages. `PackageInstallation`
+ * is intentionally excluded — installations are per-customer-project state and
+ * must stay scoped to the owning project.
+ */
+export const catalogResourceTypes = ['Package', 'PackageRelease'];
+
+/**
  * Interactions with a resource that can be controlled via an access policy.
  *
  * Codes taken from http://hl7.org/fhir/codesystem-restful-interaction.html
