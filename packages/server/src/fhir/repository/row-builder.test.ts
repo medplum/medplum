@@ -401,7 +401,7 @@ describe('compareColumnValues', () => {
   });
 
   test('buildDeletedResourceRow stores empty main table content', () => {
-    const patient: Patient = {
+    const patient: WithId<Patient> = {
       resourceType: 'Patient',
       id: randomUUID(),
       meta: {
