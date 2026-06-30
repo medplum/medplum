@@ -79,7 +79,7 @@ describe('Expand', () => {
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
   });
 
-  test('Invalid filter', async () => {
+  test('Multiple filters', async () => {
     const res = await request(app)
       .get(
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
@@ -89,6 +89,18 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
     expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('filter');
+  });
+
+  test('Invalid filter', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
+          'http://hl7.org/fhir/ValueSet/observation-codes'
+        )}&filter=%00a`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('null byte');
   });
 
   test('Success', async () => {

@@ -8,6 +8,7 @@ import { useMedplumNavigate, useResourceBoard } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import type {
   ListWithDetailPaneDetailContext,
+  ListWithDetailPaneHeaderProps,
   ListWithDetailPaneItemContext,
   ListWithDetailPaneTab,
 } from '../ListWithDetailPane/ListWithDetailPane';
@@ -46,6 +47,8 @@ export interface ResourceBoardProps<T extends Resource = Resource> {
   readonly reloadKey?: unknown;
 
   // Sidebar header
+  /** Plain title shown at the left of the header when no `tabs` are provided. */
+  readonly headerText?: ReactNode;
   /** Sidebar header tabs. Selecting a tab navigates to its URI. */
   readonly tabs?: ResourceBoardTab[];
   /** Controlled active tab value; consumers derive it from the URL. */
@@ -99,6 +102,7 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
     loadItems,
     resolveSelected,
     reloadKey,
+    headerText,
     tabs,
     activeTab,
     headerActions,
@@ -156,6 +160,11 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
     onChange?.({ ...memoizedSearch, offset: (page - 1) * count });
   };
 
+  // ListWithDetailPane treats text and tabs as mutually exclusive; tabs take precedence.
+  const headerProps: ListWithDetailPaneHeaderProps = tabs
+    ? { tabs, activeTab, onTabChange: handleTabChange }
+    : { headerText };
+
   return (
     <ListWithDetailPane<WithId<T>>
       items={items}
@@ -165,9 +174,7 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
       emptyList={emptyList}
       skeleton={skeleton}
       listWidth={listWidth}
-      tabs={tabs}
-      activeTab={activeTab}
-      onTabChange={handleTabChange}
+      {...headerProps}
       headerActions={headerActions}
       selected={selected}
       renderDetail={renderDetail}
