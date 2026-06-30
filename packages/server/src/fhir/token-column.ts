@@ -14,6 +14,7 @@ import type { CodeSystem, Resource, ResourceType, SearchParameter } from '@medpl
 import { NIL, v5 } from 'uuid';
 import type { ArrayColumnPaddingConfig } from '../config/types';
 import { DatabaseMode } from '../database';
+import { getLogger } from '../logger';
 import { expansionQuery, hydrateCodeSystemProperties } from './operations/expand';
 import { findTerminologyResource } from './operations/utils/terminology';
 import type { Repository } from './repo';
@@ -255,11 +256,13 @@ export async function buildTokenColumnsSearchFilter(
       const findCodings = expansionQuery(
         { system, filter: [{ property: 'concept', op: 'is-a', value: code }] },
         codeSystem,
-        { count: 100 }
+        { count: 1000 }
       );
       const results = await findCodings?.execute(db);
       if (results && results.length > 1000) {
-        throw new OperationOutcomeError(tooCostly('Expansion of child codes returned too many results'));
+        throw new OperationOutcomeError(
+          tooCostly(`Expansion of codes below ${filter.value} returned too many results`)
+        );
       }
 
       if (results) {
@@ -267,6 +270,7 @@ export async function buildTokenColumnsSearchFilter(
         return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_OVERLAPS', tokenHashes, 'UUID[]');
       } else {
         // Fall back to selecting only the speified parent code
+        getLogger().warn('Search below fallback', { system, code, codeSystemId: codeSystem.id });
         return buildTokenColumnsWhereConditionEqualsAndExact(
           impl,
           tableName,
