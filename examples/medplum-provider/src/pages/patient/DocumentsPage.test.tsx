@@ -60,14 +60,14 @@ describe('DocumentsPage', () => {
     setup(`/Patient/${patientId}/DocumentReference?_sort=-_lastUpdated`);
 
     expect(await screen.findByText('All Documents')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(2));
   });
 
   test('shows the empty state when there are no documents', async () => {
     setup(`/Patient/${patientId}/DocumentReference?_sort=-_lastUpdated`);
 
     expect(await screen.findByText('No documents.')).toBeInTheDocument();
-    expect(screen.queryAllByRole('option')).toHaveLength(0);
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
   });
 
   test('hides soft-deleted (entered-in-error) documents', async () => {
@@ -77,7 +77,7 @@ describe('DocumentsPage', () => {
     setup(`/Patient/${patientId}/DocumentReference?_sort=-_lastUpdated`);
 
     // Only the 'current' document should be listed; the entered-in-error one is filtered out.
-    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(1));
+    await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(1));
   });
 
   test('renders the detail panel for the selected document', async () => {

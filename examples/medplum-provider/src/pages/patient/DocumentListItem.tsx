@@ -30,6 +30,7 @@ export function DocumentListItem({ item, selectedDocumentId, getItemUri }: Docum
   return (
     <MedplumLink
       to={getItemUri(item)}
+      aria-current={isSelected ? 'page' : undefined}
       underline="never"
       className={cx(classes.item, isSelected && classes.selected)}
     >
