@@ -143,7 +143,7 @@ export async function importConceptMap(
     addRowsForMapping(mapping, conceptMap, mappingRows, attributeRows);
   }
 
-  const uniqueMappings = await prepareMappingRows(db, mappingRows, attributeRows);
+  const uniqueMappings = await prepareMappingRows(db, mappingRows);
   await writeMappingRows(db, uniqueMappings, attributeRows);
 }
 
@@ -267,33 +267,17 @@ function addRowsForMapping(
 
 async function prepareMappingRows(
   db: PgQueryable,
-  rows: MappingRow[],
-  attributeRows: (Omit<AttributeRow, 'mapping'>[] | undefined)[]
+  rows: MappingRow[]
+  // attributeRows: (Omit<AttributeRow, 'mapping'>[] | undefined)[]
 ): Promise<(MappingRow & { sourceSystem: number; targetSystem: number })[]> {
   if (!rows.length) {
     return rows as Awaited<ReturnType<typeof prepareMappingRows>>;
   }
 
   const systems = new Set<string>();
-  const mappingIndices: Record<string, number> = Object.create(null);
-  const uniqueMappings: MappingRow[] = [];
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
+  for (const row of rows) {
     systems.add(row.sourceSystem as string);
     systems.add(row.targetSystem as string);
-
-    const mappingKey = `${row.sourceSystem}|${row.sourceCode} : ${row.targetSystem}|${row.targetCode}`;
-    const index = mappingIndices[mappingKey];
-    if (index !== undefined) {
-      // Copy attributes from this (duplicate) mapping to the earlier entry
-      for (const attribute of attributeRows[i] ?? EMPTY) {
-        attributeRows[index] = append(attributeRows[index], attribute);
-      }
-      attributeRows.splice(i, 1);
-    } else {
-      mappingIndices[mappingKey] = i;
-      uniqueMappings.push(row);
-    }
   }
 
   const systemStrings = Array.from(systems.values());
@@ -322,11 +306,11 @@ async function prepareMappingRows(
     systemIds[system] = Number.parseInt(id, 10);
   }
 
-  for (const mapping of uniqueMappings) {
+  for (const mapping of rows) {
     mapping.sourceSystem = systemIds[mapping.sourceSystem];
     mapping.targetSystem = systemIds[mapping.targetSystem];
   }
-  return uniqueMappings as (MappingRow & { sourceSystem: number; targetSystem: number })[];
+  return rows as (MappingRow & { sourceSystem: number; targetSystem: number })[];
 }
 
 async function writeMappingRows(
@@ -335,9 +319,7 @@ async function writeMappingRows(
   attributes: (Omit<AttributeRow, 'mapping'>[] | undefined)[]
 ): Promise<void> {
   if (mappings.length) {
-    const insertMappings = new InsertQuery('ConceptMapping', mappings)
-      .mergeOnConflict(['conceptMap', 'sourceSystem', 'sourceCode', 'targetSystem', 'targetCode'])
-      .returnColumn('id');
+    const insertMappings = new InsertQuery('ConceptMapping', mappings).returnColumn('id');
     const mappingIds = await insertMappings.execute(db);
 
     // const attributeRows = flatMapFilter(attributes, (attrs, i) =>
