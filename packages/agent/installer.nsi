@@ -381,8 +381,43 @@ Section Uninstall
     # Uninstall the Start menu shortcuts
     RMDir /r /REBOOTOK "$SMPROGRAMS\${APP_NAME}"
 
-    # Delete the files
-    RMDir /r /REBOOTOK "$INSTDIR"
+    # Delete the files, but preserve any .log files so retained log
+    # information survives an uninstall (gh #3672)
+    Push $0  # File handle
+    Push $1  # File name
+    Push $2  # File extension (last 4 chars)
+
+    ClearErrors
+    FindFirst $0 $1 "$INSTDIR\*.*"
+
+    ${DoWhile} $1 != ""
+        # Skip the "." and ".." directory entries
+        ${If} $1 != "."
+        ${AndIf} $1 != ".."
+            StrCpy $2 $1 "" -4   # last 4 characters of the file name
+            ${If} $2 == ".log"
+                DetailPrint "Keeping log file: $1"
+            ${Else}
+                Delete /REBOOTOK "$INSTDIR\$1"
+                ${If} ${Errors}
+                    DetailPrint "Warning: Could not delete $1 (may be in use)"
+                    ClearErrors
+                ${EndIf}
+            ${EndIf}
+        ${EndIf}
+
+        FindNext $0 $1
+    ${Loop}
+
+    FindClose $0
+
+    Pop $2
+    Pop $1
+    Pop $0
+
+    # Remove the install directory only if it is now empty
+    # (i.e. no log files were left behind)
+    RMDir "$INSTDIR"
 
     # Unregister the program
     DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}"
