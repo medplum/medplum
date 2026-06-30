@@ -61,12 +61,7 @@ import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFil
 import { DurableQueue } from './queue/durable-queue';
 import { RetentionSweeper } from './queue/retention';
 import type { ChannelQueueWorker, RetryPolicy } from './queue/worker';
-import {
-  readBooleanSetting,
-  readDecimalSetting,
-  readIntegerSetting,
-  readStringSetting,
-} from './settings-manifest';
+import { readBooleanSetting, readDecimalSetting, readIntegerSetting, readStringSetting } from './settings-manifest';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
