@@ -11,9 +11,6 @@
   text-overflow: ellipsis !important;
   width: 100% !important;
   max-width: 100% !important;
-  /* Allow the title to shrink inside its flex parent so the ellipsis engages
-     instead of forcing the row (and the whole list) to overflow horizontally. */
-  min-width: 0 !important;
 }
 
 .contentContainer {
