@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import type { MedicationCheckoutRequest, MedicationCheckoutResponse, WithId } from '@medplum/core';
+import type { MedicationCartManageResponse, MedicationCheckoutRequest, MedicationCheckoutResponse, WithId } from '@medplum/core';
 import type { Bundle, MedicationRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -14,8 +14,11 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { MedicationsPage } from './MedicationsPage';
 
 const checkoutMock = vi.fn<(input: MedicationCheckoutRequest) => Promise<MedicationCheckoutResponse>>();
+const removeFromCartMock =
+  vi.fn<(input: { patientId: string; medicationRequestId: string }) => Promise<MedicationCartManageResponse>>();
+const clearCartMock = vi.fn<(input: { patientId: string }) => Promise<MedicationCartManageResponse>>();
 
-// Mock only the cart-checkout hook; keep the rest of the module (constants,
+// Mock only the cart hooks; keep the rest of the module (constants,
 // `useScriptSureOrderMedication`) real so the page's other ScriptSure paths
 // behave normally.
 vi.mock('@medplum/scriptsure-react', async () => {
@@ -23,6 +26,7 @@ vi.mock('@medplum/scriptsure-react', async () => {
   return {
     ...actual,
     useScriptSureCheckout: () => ({ checkout: checkoutMock }),
+    useScriptSureCart: () => ({ removeFromCart: removeFromCartMock, clearCart: clearCartMock }),
   };
 });
 
@@ -130,6 +134,8 @@ describe('MedicationsPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     checkoutMock.mockReset();
+    removeFromCartMock.mockReset();
+    clearCartMock.mockReset();
   });
 
   test('Renders medication tabs and order action', async () => {
@@ -330,6 +336,79 @@ describe('MedicationsPage', () => {
       medicationRequestIds: ['mr-a', 'mr-b'],
     });
     expect(await screen.findByText('Approve queued prescriptions')).toBeInTheDocument();
+  });
+
+  test('Checkout does not open the approval modal when every line fails to queue', async () => {
+    const medplum = new MockClient();
+    const drafts = [draftMr('mr-a', 'Aspirin 81 mg tablet'), draftMr('mr-b', 'Lisinopril 10 mg tablet')];
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(2, drafts));
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    checkoutMock.mockResolvedValue({
+      approvalUrl: 'https://ssu.example/widgets/medcart/253312?sessiontoken=abc',
+      vendorPatientId: 253312,
+      items: [
+        { medicationRequestId: 'mr-a', status: 'failed', error: 'bad payload' },
+        { medicationRequestId: 'mr-b', status: 'failed', error: 'no pharmacy' },
+      ],
+    });
+
+    const user = userEvent.setup();
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest?status=draft`, medplum);
+
+    await user.click(await screen.findByRole('button', { name: /^Checkout \(2\)$/ }));
+
+    await waitFor(() => {
+      expect(checkoutMock).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByText('Approve queued prescriptions')).not.toBeInTheDocument();
+  });
+
+  test('Per-row trash removes a draft via $remove-cart-medication', async () => {
+    const medplum = new MockClient();
+    const drafts = [draftMr('mr-a', 'Aspirin 81 mg tablet')];
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(1, drafts));
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    removeFromCartMock.mockResolvedValue({
+      vendorPatientId: 24057,
+      removedCount: 1,
+      items: [{ medicationRequestId: 'mr-a', status: 'removed' }],
+    });
+
+    const user = userEvent.setup();
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest?status=draft`, medplum);
+
+    await user.click(await screen.findByLabelText('Remove medication from cart'));
+
+    await waitFor(() => {
+      expect(removeFromCartMock).toHaveBeenCalledWith({
+        patientId: HomerSimpson.id,
+        medicationRequestId: 'mr-a',
+      });
+    });
+  });
+
+  test('Clear cart removes every draft via $clear-cart', async () => {
+    const medplum = new MockClient();
+    const drafts = [draftMr('mr-a', 'Aspirin 81 mg tablet'), draftMr('mr-b', 'Lisinopril 10 mg tablet')];
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(2, drafts));
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    clearCartMock.mockResolvedValue({
+      vendorPatientId: 24057,
+      removedCount: 2,
+      items: [
+        { medicationRequestId: 'mr-a', status: 'removed' },
+        { medicationRequestId: 'mr-b', status: 'removed' },
+      ],
+    });
+
+    const user = userEvent.setup();
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest?status=draft`, medplum);
+
+    await user.click(await screen.findByRole('button', { name: /^Clear cart \(2\)$/ }));
+
+    await waitFor(() => {
+      expect(clearCartMock).toHaveBeenCalledWith({ patientId: HomerSimpson.id });
+    });
   });
 
   test('Pure cart model: no per-row selection checkboxes are rendered on the Draft tab', async () => {

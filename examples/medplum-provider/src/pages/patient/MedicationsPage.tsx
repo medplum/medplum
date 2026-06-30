@@ -376,16 +376,48 @@ export function MedicationsPage(): JSX.Element {
     fetchData().catch(showErrorNotification);
   }, [fetchData]);
 
-  // The cart is the set of draft MRs currently shown on the Draft tab. Pure cart
-  // model: every draft on the page is a cart item, so checkout always sends the
-  // whole page. Per-row trash prunes one; "Clear cart" empties it.
-  const draftIdsOnPage = useMemo(
-    () =>
-      activeTab === 'draft'
-        ? orders.map((o) => o.id).filter((id): id is string => typeof id === 'string' && id.length > 0)
-        : [],
-    [activeTab, orders]
-  );
+  // The cart is every draft MedicationRequest for this patient (all pages). The
+  // Draft tab list is paginated, but checkout must submit the whole cart so
+  // counts stay consistent with Clear cart and the order-modal indicator.
+  const fetchAllDraftIds = useCallback(async (): Promise<string[]> => {
+    if (!patientReference) {
+      return [];
+    }
+    const ids: string[] = [];
+    const pageSize = 100;
+    let pageOffset = 0;
+    let expectedTotal = Number.POSITIVE_INFINITY;
+
+    while (ids.length < expectedTotal) {
+      const bundle = await medplum.search(
+        'MedicationRequest',
+        {
+          subject: patientReference,
+          status: 'draft',
+          _count: String(pageSize),
+          _offset: String(pageOffset),
+          _sort: '-_lastUpdated',
+          _total: 'accurate',
+          _fields: 'id',
+        },
+        { cache: 'no-cache' }
+      );
+      expectedTotal = bundle.total ?? ids.length;
+      const pageEntries = bundle.entry ?? [];
+      for (const entry of pageEntries) {
+        const id = entry.resource?.id;
+        if (typeof id === 'string' && id.length > 0) {
+          ids.push(id);
+        }
+      }
+      if (pageEntries.length < pageSize) {
+        break;
+      }
+      pageOffset += pageSize;
+    }
+
+    return ids;
+  }, [medplum, patientReference]);
 
   // Counts the patient's draft (cart) MRs independent of the active tab, so the
   // order modal can show an accurate "N in cart" even when opened from Active.
@@ -423,12 +455,16 @@ export function MedicationsPage(): JSX.Element {
 
   const handleCheckout = useCallback(async (): Promise<void> => {
     const checkoutPatientId = patient?.id;
-    if (!checkoutPatientId || draftIdsOnPage.length === 0) {
+    if (!checkoutPatientId || total === 0) {
       return;
     }
     setCheckingOut(true);
     try {
-      const res = await checkout({ patientId: checkoutPatientId, medicationRequestIds: draftIdsOnPage });
+      const medicationRequestIds = await fetchAllDraftIds();
+      if (medicationRequestIds.length === 0) {
+        return;
+      }
+      const res = await checkout({ patientId: checkoutPatientId, medicationRequestIds });
       const failed = res.items.filter((i) => i.status === 'failed');
       const queuedIds = res.items.filter((i) => i.status === 'queued').map((i) => i.medicationRequestId);
       if (failed.length > 0) {
@@ -439,9 +475,11 @@ export function MedicationsPage(): JSX.Element {
           autoClose: false,
         });
       }
-      // Poll the items that actually queued; fall back to the full cart when the
-      // bot reported none (so the modal still watches for a webhook merge).
-      setCartWatchIds(queuedIds.length > 0 ? queuedIds : draftIdsOnPage);
+      if (queuedIds.length === 0) {
+        // Every line failed — don't open the widget or poll drafts that will never reconcile.
+        return;
+      }
+      setCartWatchIds(queuedIds);
       setIframeMode('cart-checkout');
       setIframePollMrId(undefined);
       setIframeUrl(res.approvalUrl);
@@ -452,7 +490,7 @@ export function MedicationsPage(): JSX.Element {
     } finally {
       setCheckingOut(false);
     }
-  }, [patient, draftIdsOnPage, checkout, fetchData]);
+  }, [patient, total, fetchAllDraftIds, checkout, fetchData]);
 
   const handleRemoveFromCart = useCallback(
     async (mrId: string): Promise<void> => {
@@ -632,7 +670,7 @@ export function MedicationsPage(): JSX.Element {
                     );
                   })}
               </ScrollArea>
-              {!loading && hasScriptSure && activeTab === 'draft' && draftIdsOnPage.length > 0 && (
+              {!loading && hasScriptSure && activeTab === 'draft' && total > 0 && (
                 <>
                   <Divider />
                   <Box p="xs">
@@ -651,10 +689,10 @@ export function MedicationsPage(): JSX.Element {
                         size="xs"
                         leftSection={<IconShoppingCart size={14} />}
                         loading={checkingOut}
-                        disabled={draftIdsOnPage.length === 0}
+                        disabled={total === 0}
                         onClick={() => handleCheckout().catch(showErrorNotification)}
                       >
-                        Checkout ({draftIdsOnPage.length})
+                        Checkout ({total})
                       </Button>
                     </Group>
                   </Box>

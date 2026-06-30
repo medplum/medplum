@@ -201,6 +201,7 @@ export interface MedicationOrderExtensions {
    * `messageId` in ScriptSure). Stamped on a draft `MedicationRequest` by the
    * cart-checkout flow and used to reconcile the approval webhook back to the
    * draft. Optional so existing single-order consumers don't have to populate it.
+   * Consumed by the paired `medplum-ee` cart-checkout / prescription-webhook bots.
    */
   readonly messageIdSystem?: string;
 }

@@ -997,14 +997,11 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
   };
 
   const submitSingle = async (): Promise<void> => {
-    if (!patient?.id || !requester || !selectedFormat) {
-      showErrorNotification('Patient, requester, and medication are required');
-      return;
-    }
     const body = buildSingleDraftBody();
-    if (!body) {
+    if (!body || !patient?.id) {
       return;
     }
+    const patientId = patient.id;
 
     setSubmitting(true);
     let createdMr: MedicationRequest | undefined;
@@ -1012,7 +1009,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
       createdMr = await medplum.createResource<MedicationRequest>(body);
 
       const res = await orderMedication({
-        patientId: patient.id,
+        patientId,
         medicationRequestId: createdMr.id,
         conditionIds: primaryCondition?.id ? [primaryCondition.id] : [],
         coverageId: coverage?.id,
