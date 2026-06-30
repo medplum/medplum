@@ -28,16 +28,12 @@ export function DocumentListItem({ item, selectedDocumentId, getItemUri }: Docum
   const metaLine = documentType ? `${metaPrefix}: ${documentType}` : metaPrefix;
 
   return (
-<<<<<<< HEAD
     <MedplumLink
       to={getItemUri(item)}
       aria-current={isSelected ? 'page' : undefined}
       underline="never"
       className={cx(classes.item, isSelected && classes.selected)}
     >
-=======
-    <MedplumLink to={getItemUri(item)} underline="never" className={cx(classes.item, isSelected && classes.selected)}>
->>>>>>> 8bf013ee98effde886f8050575c8217e81a2c073
       <Stack gap={0} miw={0}>
         <Tooltip label={name} multiline maw={320} withinPortal openDelay={300}>
           <Text fw={700} truncate="end" miw={0}>
