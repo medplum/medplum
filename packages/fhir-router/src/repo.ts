@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SearchRequest, SortRule, WithId } from '@medplum/core';
+import type { Operation, SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   EMPTY,
   OperationOutcomeError,
   Operator,
   allOk,
+  applyPatch,
   badRequest,
   created,
   deepClone,
@@ -19,9 +20,7 @@ import {
   preconditionFailed,
   stringify,
 } from '@medplum/core';
-import type { Bundle, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
-import type { Operation } from 'rfc6902';
-import { applyPatch } from 'rfc6902';
+import type { Bundle, OperationOutcome, Parameters, Reference, Resource } from '@medplum/fhirtypes';
 
 export type CreateResourceOptions = {
   assignedId?: boolean;
@@ -164,7 +163,7 @@ export abstract class FhirRepository {
   abstract patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[]
+    patch: Operation[] | Parameters
   ): Promise<WithId<T>>;
 
   /**
@@ -519,14 +518,18 @@ export class MemoryRepository extends FhirRepository {
   async patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[]
+    patch: Operation[] | Parameters
   ): Promise<WithId<T>> {
     const resource = await this.readResource<T>(resourceType, id);
 
     try {
-      const patchResult = applyPatch(resource, patch).filter(Boolean);
-      if (patchResult.length > 0) {
-        throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
+      if (Array.isArray(patch)) {
+        const patchResult = applyPatch(resource, patch).filter(Boolean);
+        if (patchResult.length > 0) {
+          throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
+        }
+      } else {
+        throw new Error('MemoryRepository does not support FHIRPath Patch');
       }
     } catch (err) {
       throw new OperationOutcomeError(normalizeOperationOutcome(err));

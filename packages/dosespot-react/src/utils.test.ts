@@ -117,7 +117,7 @@ describe('utils', () => {
               {
                 url: 'pharmacy',
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                 },
               },
               {
@@ -138,7 +138,7 @@ describe('utils', () => {
 
       const result = getPreferredPharmaciesFromPatient(patient);
       expect(result).toHaveLength(1);
-      expect(result[0].organizationRef.reference).toBe('Organization/123');
+      expect(result[0].organizationRef.reference).toBe('Organization/125');
       expect(result[0].isPrimary).toBe(true);
     });
 
@@ -186,7 +186,7 @@ describe('utils', () => {
               {
                 url: 'pharmacy',
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                 },
               },
               {
@@ -295,7 +295,7 @@ describe('utils', () => {
 
   describe('createPreferredPharmacyExtension', () => {
     test('Creates primary pharmacy extension', () => {
-      const orgRef = { reference: 'Organization/123' };
+      const orgRef = { reference: 'Organization/125' };
       const ext = createPreferredPharmacyExtension(orgRef, true);
 
       expect(ext.url).toBe(PATIENT_PREFERRED_PHARMACY_URL);
@@ -327,7 +327,7 @@ describe('utils', () => {
       const patient: Patient = {
         resourceType: 'Patient',
       };
-      const orgRef = { reference: 'Organization/123' };
+      const orgRef = { reference: 'Organization/125' };
 
       const result = addPreferredPharmacyToPatient(patient, orgRef, false);
 
@@ -344,7 +344,7 @@ describe('utils', () => {
             extension: [
               {
                 url: 'pharmacy',
-                valueReference: { reference: 'Organization/123' },
+                valueReference: { reference: 'Organization/125' },
               },
               {
                 url: 'type',
@@ -369,7 +369,7 @@ describe('utils', () => {
       expect(result.extension).toHaveLength(2);
 
       // Check that the old primary pharmacy is now preferred
-      const oldPharmacy = findPharmacyExtension(result.extension, 'Organization/123');
+      const oldPharmacy = findPharmacyExtension(result.extension, 'Organization/125');
       expect(getPharmacyTypeCode(oldPharmacy)).toBe(PHARMACY_TYPE_PREFERRED);
 
       // Check that the new pharmacy is primary
@@ -386,7 +386,7 @@ describe('utils', () => {
             extension: [
               {
                 url: 'pharmacy',
-                valueReference: { reference: 'Organization/123' },
+                valueReference: { reference: 'Organization/125' },
               },
               {
                 url: 'type',
@@ -404,7 +404,7 @@ describe('utils', () => {
           },
         ],
       };
-      const orgRef = { reference: 'Organization/123' };
+      const orgRef = { reference: 'Organization/125' };
 
       const result = addPreferredPharmacyToPatient(patient, orgRef, true);
 
@@ -423,7 +423,7 @@ describe('utils', () => {
             extension: [
               {
                 url: 'pharmacy',
-                valueReference: { reference: 'Organization/123' },
+                valueReference: { reference: 'Organization/125' },
               },
               {
                 url: 'type',
@@ -441,7 +441,7 @@ describe('utils', () => {
           },
         ],
       };
-      const orgRef = { reference: 'Organization/123' };
+      const orgRef = { reference: 'Organization/125' };
 
       const result = addPreferredPharmacyToPatient(patient, orgRef, true);
 
@@ -460,7 +460,7 @@ describe('utils', () => {
           },
         ],
       };
-      const orgRef = { reference: 'Organization/123' };
+      const orgRef = { reference: 'Organization/125' };
 
       const result = addPreferredPharmacyToPatient(patient, orgRef, false);
 
@@ -479,7 +479,7 @@ describe('utils', () => {
             extension: [
               {
                 url: 'pharmacy',
-                valueReference: { reference: 'Organization/123' },
+                valueReference: { reference: 'Organization/125' },
               },
               {
                 url: 'type',
@@ -496,7 +496,7 @@ describe('utils', () => {
           },
         ],
       };
-      const orgRef = { reference: 'Organization/123' };
+      const orgRef = { reference: 'Organization/125' };
 
       const result = removePreferredPharmacyFromPatient(patient, orgRef);
 
@@ -512,7 +512,7 @@ describe('utils', () => {
             extension: [
               {
                 url: 'pharmacy',
-                valueReference: { reference: 'Organization/123' },
+                valueReference: { reference: 'Organization/125' },
               },
               {
                 url: 'type',
@@ -539,7 +539,7 @@ describe('utils', () => {
           },
         ],
       };
-      const orgRef = { reference: 'Organization/123' };
+      const orgRef = { reference: 'Organization/125' };
 
       const result = removePreferredPharmacyFromPatient(patient, orgRef);
 
@@ -552,7 +552,7 @@ describe('utils', () => {
       const patient: Patient = {
         resourceType: 'Patient',
       };
-      const orgRef = { reference: 'Organization/123' };
+      const orgRef = { reference: 'Organization/125' };
 
       const result = removePreferredPharmacyFromPatient(patient, orgRef);
 
@@ -572,7 +572,7 @@ describe('utils', () => {
             extension: [
               {
                 url: 'pharmacy',
-                valueReference: { reference: 'Organization/123' },
+                valueReference: { reference: 'Organization/125' },
               },
               {
                 url: 'type',
@@ -584,7 +584,7 @@ describe('utils', () => {
           },
         ],
       };
-      const orgRef = { reference: 'Organization/123' };
+      const orgRef = { reference: 'Organization/125' };
 
       const result = removePreferredPharmacyFromPatient(patient, orgRef);
 
@@ -613,7 +613,7 @@ describe('utils', () => {
           },
         ],
       };
-      const orgRef = { reference: 'Organization/123' };
+      const orgRef = { reference: 'Organization/125' };
 
       const result = removePreferredPharmacyFromPatient(patient, orgRef);
 
@@ -635,7 +635,7 @@ describe('utils', () => {
           },
         ],
       };
-      const orgRef = { reference: 'Organization/123' };
+      const orgRef = { reference: 'Organization/125' };
 
       const result = removePreferredPharmacyFromPatient(patient, orgRef);
 

@@ -3,7 +3,7 @@
 import type { BackgroundJobContext, WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
 import type { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
-import type { Job, QueueBaseOptions } from 'bullmq';
+import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
@@ -11,7 +11,7 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { findProjectMembership, getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { defaultQueueOptions, findProjectMembership, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 const MAX_BOTS_PER_PAGE = 500;
@@ -30,19 +30,9 @@ export interface CronJobData {
 const queueName = 'CronQueue';
 
 export const initCronWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<CronJobData>(queueName, {
     ...defaultOptions,
-    defaultJobOptions: {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
-      },
-    },
   });
 
   let worker: Worker<CronJobData> | undefined;

@@ -55,7 +55,7 @@ describe('getPreferredPharmaciesFromPatient', () => {
         {
           url: PATIENT_PREFERRED_PHARMACY_URL,
           extension: [
-            { url: 'pharmacy', valueReference: { reference: 'Organization/123' } },
+            { url: 'pharmacy', valueReference: { reference: 'Organization/125' } },
             {
               url: 'type',
               valueCodeableConcept: {
@@ -68,7 +68,7 @@ describe('getPreferredPharmaciesFromPatient', () => {
     };
     const result = getPreferredPharmaciesFromPatient(patient);
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({ organizationRef: { reference: 'Organization/123' }, isPrimary: true });
+    expect(result[0]).toEqual({ organizationRef: { reference: 'Organization/125' }, isPrimary: true });
   });
 
   test('Returns pharmacy with preferred (non-primary) type', () => {
@@ -101,7 +101,7 @@ describe('getPreferredPharmaciesFromPatient', () => {
         {
           url: PATIENT_PREFERRED_PHARMACY_URL,
           extension: [
-            { url: 'pharmacy', valueReference: { reference: 'Organization/123' } },
+            { url: 'pharmacy', valueReference: { reference: 'Organization/125' } },
             {
               url: 'type',
               valueCodeableConcept: {
@@ -156,7 +156,7 @@ describe('getPreferredPharmaciesFromPatient', () => {
       extension: [
         {
           url: PATIENT_PREFERRED_PHARMACY_URL,
-          extension: [{ url: 'pharmacy', valueReference: { reference: 'Organization/123' } }],
+          extension: [{ url: 'pharmacy', valueReference: { reference: 'Organization/125' } }],
         },
       ],
     };
@@ -172,7 +172,7 @@ describe('getPreferredPharmaciesFromPatient', () => {
         {
           url: PATIENT_PREFERRED_PHARMACY_URL,
           extension: [
-            { url: 'pharmacy', valueReference: { reference: 'Organization/123' } },
+            { url: 'pharmacy', valueReference: { reference: 'Organization/125' } },
             {
               url: 'type',
               valueCodeableConcept: { coding: [{ system: 'https://any-vendor.com', code: PHARMACY_TYPE_PRIMARY }] },
@@ -193,7 +193,7 @@ describe('getPreferredPharmaciesFromPatient', () => {
         {
           url: PATIENT_PREFERRED_PHARMACY_URL,
           extension: [
-            { url: 'pharmacy', valueReference: { reference: 'Organization/123' } },
+            { url: 'pharmacy', valueReference: { reference: 'Organization/125' } },
             {
               url: 'type',
               valueCodeableConcept: { coding: [{ system: 'https://wrong-system.com', code: PHARMACY_TYPE_PRIMARY }] },
@@ -218,7 +218,7 @@ describe('getPreferredPharmaciesFromPatient', () => {
 
 describe('createPreferredPharmacyExtension', () => {
   test('Creates primary pharmacy extension', () => {
-    const orgRef: Reference<Organization> = { reference: 'Organization/123' };
+    const orgRef: Reference<Organization> = { reference: 'Organization/125' };
     const extension = createPreferredPharmacyExtension(orgRef, true);
     expect(extension.url).toBe(PATIENT_PREFERRED_PHARMACY_URL);
     expect(extension.extension).toHaveLength(2);
@@ -238,7 +238,7 @@ describe('createPreferredPharmacyExtension', () => {
 describe('addPreferredPharmacyToPatient', () => {
   test('Adds pharmacy to patient with no extensions', () => {
     const patient: Patient = { resourceType: 'Patient' };
-    const orgRef: Reference<Organization> = { reference: 'Organization/123' };
+    const orgRef: Reference<Organization> = { reference: 'Organization/125' };
     const result = addPreferredPharmacyToPatient(patient, orgRef, false);
     expect(result.extension).toHaveLength(1);
     expect(result.extension?.[0].url).toBe(PATIENT_PREFERRED_PHARMACY_URL);
@@ -275,7 +275,7 @@ describe('addPreferredPharmacyToPatient', () => {
 describe('removePreferredPharmacyFromPatient', () => {
   test('Returns patient unchanged when no extensions', () => {
     const patient: Patient = { resourceType: 'Patient' };
-    const result = removePreferredPharmacyFromPatient(patient, { reference: 'Organization/123' });
+    const result = removePreferredPharmacyFromPatient(patient, { reference: 'Organization/125' });
     expect(result.extension).toBeUndefined();
   });
 
@@ -286,7 +286,7 @@ describe('removePreferredPharmacyFromPatient', () => {
         {
           url: PATIENT_PREFERRED_PHARMACY_URL,
           extension: [
-            { url: 'pharmacy', valueReference: { reference: 'Organization/123' } },
+            { url: 'pharmacy', valueReference: { reference: 'Organization/125' } },
             {
               url: 'type',
               valueCodeableConcept: {
@@ -297,7 +297,7 @@ describe('removePreferredPharmacyFromPatient', () => {
         },
       ],
     };
-    const result = removePreferredPharmacyFromPatient(patient, { reference: 'Organization/123' });
+    const result = removePreferredPharmacyFromPatient(patient, { reference: 'Organization/125' });
     expect(result.extension).toHaveLength(0);
   });
 });

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, generateId } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import { closeRedis, getCacheRedis, initRedis } from '../redis';
 import { getTopicForUser } from './utils';
@@ -47,7 +48,7 @@ describe('FHIRcast Utils', () => {
       }
       const redis = getCacheRedis();
       const originalMulti = redis.multi;
-      const mockMulti = jest.fn(() => new MockCommander());
+      const mockMulti = vi.fn(() => new MockCommander());
       // @ts-expect-error Replacing multi with partial mock implementation
       redis.multi = mockMulti;
 
@@ -91,7 +92,7 @@ describe('FHIRcast Utils', () => {
       }
       const redis = getCacheRedis();
       const originalMulti = redis.multi;
-      const mockMulti = jest.fn(() => new MockCommander());
+      const mockMulti = vi.fn(() => new MockCommander());
       // @ts-expect-error Replacing multi with partial mock implementation
       redis.multi = mockMulti;
 

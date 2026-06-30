@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
 import type { Encounter, Patient, PlanDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -111,7 +112,7 @@ describe('EncounterModal', () => {
 
   test('Form fields can be populated with values', async () => {
     const user = userEvent.setup();
-    const mockEncounter: Encounter = {
+    const mockEncounter: WithId<Encounter> = {
       resourceType: 'Encounter',
       id: 'encounter-456',
       status: 'in-progress',
@@ -239,7 +240,7 @@ describe('EncounterModal', () => {
   });
 
   test('Navigates to created encounter on success', async () => {
-    const mockEncounter: Encounter = {
+    const mockEncounter: WithId<Encounter> = {
       resourceType: 'Encounter',
       id: 'new-encounter-789',
       status: 'in-progress',

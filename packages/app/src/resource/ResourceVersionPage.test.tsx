@@ -38,7 +38,7 @@ describe('ResourceVersionPage', () => {
 
   test('Version not found', async () => {
     await act(async () => {
-      setup('/Practitioner/123/_history/3');
+      setup('/Practitioner/124/_history/3');
     });
 
     expect(await screen.findByText('Version not found')).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('ResourceVersionPage', () => {
 
   test('Diff tab renders', async () => {
     await act(async () => {
-      setup('/Practitioner/123/_history/1');
+      setup('/Practitioner/124/_history/1');
     });
 
     expect(await screen.findByText('Diff')).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe('ResourceVersionPage', () => {
 
   test('Diff tab renders last version', async () => {
     await act(async () => {
-      setup('/Practitioner/123/_history/2');
+      setup('/Practitioner/124/_history/2');
     });
 
     expect(await screen.findByText('Diff')).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe('ResourceVersionPage', () => {
 
   test('Raw tab renders', async () => {
     await act(async () => {
-      setup('/Practitioner/123/_history/1/raw');
+      setup('/Practitioner/124/_history/1/raw');
     });
 
     expect(await screen.findByText('Raw')).toBeInTheDocument();
@@ -74,7 +74,7 @@ describe('ResourceVersionPage', () => {
 
   test('Change tab', async () => {
     await act(async () => {
-      setup('/Practitioner/123/_history/1');
+      setup('/Practitioner/124/_history/1');
     });
 
     expect(await screen.findByText('Diff')).toBeInTheDocument();
@@ -88,7 +88,7 @@ describe('ResourceVersionPage', () => {
 
   test('Next button', async () => {
     await act(async () => {
-      setup('/Practitioner/123/_history/1');
+      setup('/Practitioner/124/_history/1');
     });
 
     expect(await screen.findByLabelText('Next page')).toBeInTheDocument();

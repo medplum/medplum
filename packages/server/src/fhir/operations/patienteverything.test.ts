@@ -16,6 +16,7 @@ import type {
 import express from 'express';
 import { Readable } from 'node:stream';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth } from '../../test.setup';
@@ -332,6 +333,63 @@ describe('Patient Everything Operation', () => {
     }
   });
 
+  test('Cursor pagination with _type', async () => {
+    const patientRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' } satisfies Patient);
+    expect(patientRes.status).toBe(201);
+    const patient = patientRes.body as Patient;
+
+    const expectedIds = new Set<string>([patient.id as string]);
+    for (let i = 0; i < 24; i++) {
+      const obsRes = await request(app)
+        .post('/fhir/R4/Observation')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'patient_everything_cursor_test' },
+          subject: createReference(patient),
+        } satisfies Observation);
+      expect(obsRes.status).toBe(201);
+      expectedIds.add(obsRes.body.id);
+    }
+
+    let url = `/fhir/R4/Patient/${patient.id}/$everything?_count=20&_type=Observation`;
+    const seenIds = new Set<string>();
+    while (url) {
+      const res = await request(app)
+        .get(url)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res.status).toBe(200);
+
+      const bundle = res.body as Bundle;
+      for (const entry of bundle.entry ?? []) {
+        seenIds.add(entry.resource?.id as string);
+      }
+
+      const nextUrl = bundle.link?.find((link) => link.relation === 'next')?.url;
+      if (nextUrl) {
+        const next = new URL(nextUrl);
+        expect(next.pathname).toBe(`/fhir/R4/Patient/${patient.id}/$everything`);
+        expect(next.searchParams.get('_type')).toBe('Observation');
+        expect(next.searchParams.get('_count')).toBe('20');
+        expect(next.searchParams.has('_cursor')).toBe(true);
+        expect(next.searchParams.has('_offset')).toBe(false);
+        expect(next.searchParams.has('_compartment')).toBe(false);
+        expect(next.searchParams.has('_sort')).toBe(false);
+        url = next.pathname + next.search;
+      } else {
+        url = '';
+      }
+    }
+
+    expect(seenIds).toStrictEqual(expectedIds);
+  });
+
   test('Skips inlining attachments when the attachment cannot fit or be read', async () => {
     const previousMaxTotal = getConfig().inlineAttachmentsMaxTotalBytes;
     getConfig().inlineAttachmentsMaxTotalBytes = 5;
@@ -439,8 +497,8 @@ describe('Patient Everything inline attachments helpers', () => {
     const binary = { resourceType: 'Binary', id: 'binary-id' } as Binary;
     const versionedBinary = { resourceType: 'Binary', id: 'binary-id', meta: { versionId: 'version-id' } } as Binary;
     const repo = {
-      readResource: jest.fn().mockResolvedValue(binary),
-      readVersion: jest.fn().mockResolvedValue(versionedBinary),
+      readResource: vi.fn().mockResolvedValue(binary),
+      readVersion: vi.fn().mockResolvedValue(versionedBinary),
     };
 
     await expect(readBinaryAttachmentResource(repo, 'binary-id')).resolves.toBe(binary);
@@ -458,7 +516,7 @@ describe('Patient Everything inline attachments helpers', () => {
 
   test('Returns undefined and destroys the stream when the max byte count is exceeded', async () => {
     const stream = Readable.from([Buffer.from('123'), Buffer.from('456')]);
-    const destroySpy = jest.spyOn(stream, 'destroy');
+    const destroySpy = vi.spyOn(stream, 'destroy');
 
     await expect(readStreamToBufferWithLimit(stream, 5)).resolves.toBeUndefined();
     expect(destroySpy).toHaveBeenCalled();

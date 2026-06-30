@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobInteraction, Filter, SearchRequest, WithId } from '@medplum/core';
+import type { BackgroundJobInteraction, FhirPathPatch, Filter, Operation, SearchRequest, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
@@ -13,6 +13,7 @@ import {
   EMPTY,
   evalFhirPathTyped,
   extractAccountReferences,
+  fhirpathPatchTypedValue,
   forbidden,
   formatSearchQuery,
   getStatus,
@@ -38,15 +39,11 @@ import {
   satisfiedAccessPolicy,
   sleep,
   stringify,
+  toTypedValue,
   validateResourceType,
 } from '@medplum/core';
-import type {
-  CreateResourceOptions,
-  ReadHistoryOptions,
-  RepositoryMode,
-  UpdateResourceOptions,
-} from '@medplum/fhir-router';
-import { FhirRepository } from '@medplum/fhir-router';
+import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
+import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
@@ -55,7 +52,10 @@ import type {
   BundleEntry,
   ClientApplication,
   Meta,
+  OperationDefinition,
+  OperationDefinitionParameter,
   OperationOutcome,
+  Parameters,
   Project,
   Reference,
   Resource,
@@ -65,7 +65,6 @@ import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { PoolClient } from 'pg';
-import type { Operation } from 'rfc6902';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
@@ -99,7 +98,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { checkWebSocketSubscriptionLimit } from '../ws/subscriptions';
 import { FhirQuotaCost } from './fhirquota';
-import { clamp } from './operations/utils/parameters';
+import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
@@ -389,7 +388,7 @@ export class Repository extends FhirRepository implements Disposable {
 
   setMode(mode: RepositoryMode): void {
     this.assertUsable();
-    this.connection.mode = mode;
+    this.connection.setMode(mode);
   }
 
   async recordFhirQuota(points: number): Promise<void> {
@@ -448,6 +447,8 @@ export class Repository extends FhirRepository implements Disposable {
     if (options?.assignedId && resource.id && !this.context.superAdmin) {
       // NB: To be removed after proper client assigned ID support is added
       const systemRepo = this.getSystemRepo();
+      // ensure writer so the existing read goes to the writer
+      systemRepo.setMode(RepositoryMode.WRITER);
       try {
         const existing = await systemRepo.readResourceImpl(resource.resourceType, resource.id);
         if (existing) {
@@ -546,7 +547,7 @@ export class Repository extends FhirRepository implements Disposable {
     return this.readResourceFromDatabase(resourceType, id);
   }
 
-  private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
+  private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<WithId<T>> {
     if (!isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
@@ -871,6 +872,8 @@ export class Repository extends FhirRepository implements Disposable {
     create: boolean,
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
+    // Promote before pre-commit validation and existing-resource reads.
+    this.setMode(RepositoryMode.WRITER);
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
     let validatedResource = this.checkResourcePermissions(resource, interaction);
     this.validateBinarySecurityContext(validatedResource);
@@ -907,7 +910,7 @@ export class Repository extends FhirRepository implements Disposable {
       ...updated.meta,
       versionId: this.generateId(),
       lastUpdated: this.getLastUpdated(existing, validatedResource),
-      author: this.getAuthor(validatedResource),
+      author: this.getAuthor(),
       onBehalfOf: this.context.onBehalfOf,
     };
 
@@ -1218,6 +1221,8 @@ export class Repository extends FhirRepository implements Disposable {
     const startTime = Date.now();
     let resource: WithId<T>;
     try {
+      // ensure existing resource read goes to the writer
+      this.setMode(RepositoryMode.WRITER);
       resource = await this.readResourceImpl<T>(resourceType, id);
     } catch (err) {
       const outcomeErr = err as OperationOutcomeError;
@@ -1303,7 +1308,7 @@ export class Repository extends FhirRepository implements Disposable {
   async patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[],
+    patch: Operation[] | Parameters,
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
@@ -1320,7 +1325,17 @@ export class Repository extends FhirRepository implements Disposable {
           throw new OperationOutcomeError(badRequest('Incorrect ID'));
         }
 
-        patchObject(resource, patch);
+        if (Array.isArray(patch)) {
+          patchObject(resource, patch);
+        } else if (patch.parameter) {
+          const params = parseParametersFromDefinitions(
+            patchOperationDefinition.parameter as OperationDefinitionParameter[],
+            patch.parameter
+          );
+          fhirpathPatchTypedValue(toTypedValue(resource), params.operation as FhirPathPatch[]);
+        } else {
+          return resource; // No patch present, return unmodified
+        }
 
         const result = await txRepo.updateResourceImpl(resource, false, options);
         const durationMs = Date.now() - startTime;
@@ -1842,23 +1857,11 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * Returns the author reference.
-   * If the current context is allowed to write meta,
-   * and the provided resource includes an author reference,
-   * then use the provided value.
-   * Otherwise uses the current context profile.
-   * @param resource - The FHIR resource.
+   * Returns the author reference from the repository context.
+   * meta.author is server-controlled and is never taken from the request body.
    * @returns The author value.
    */
-  getAuthor(resource?: Resource): Reference {
-    // If the resource has an author (whether provided or from existing),
-    // and the current context is allowed to write meta,
-    // then use the provided value.
-    const author = resource?.meta?.author;
-    if (author && this.canWriteProtectedMeta()) {
-      return author;
-    }
-
+  getAuthor(): Reference {
     return this.context.author;
   }
 
@@ -1932,7 +1935,7 @@ export class Repository extends FhirRepository implements Disposable {
 
   /**
    * Determines if the current user can manually set certain protected meta fields
-   * such as author, project, lastUpdated, etc.
+   * such as project, lastUpdated, etc.
    * @returns True if the current user can manually set protected meta fields.
    */
   private canWriteProtectedMeta(): boolean {
@@ -2454,3 +2457,25 @@ export async function getProjectSystemRepo(
   // But for now, all projects are on the global shard.
   return getGlobalSystemRepo();
 }
+
+const patchOperationDefinition: OperationDefinition = {
+  resourceType: 'OperationDefinition',
+  name: 'FHIRPatch',
+  code: 'UNUSED',
+  kind: 'operation',
+  status: 'unknown',
+  system: false,
+  type: false,
+  instance: false,
+  parameter: [
+    makeOperationDefinitionParameter('in', 'operation', undefined, 1, '*', [
+      makeOperationDefinitionParameter('in', 'type', 'code', 1, '1'),
+      makeOperationDefinitionParameter('in', 'path', 'string', 1, '1'),
+      makeOperationDefinitionParameter('in', 'name', 'string', 0, '1'),
+      makeOperationDefinitionParameter('in', 'value', 'Any', 0, '1'),
+      makeOperationDefinitionParameter('in', 'index', 'integer', 0, '1'),
+      makeOperationDefinitionParameter('in', 'source', 'integer', 0, '1'),
+      makeOperationDefinitionParameter('in', 'destination', 'integer', 0, '1'),
+    ]),
+  ],
+};

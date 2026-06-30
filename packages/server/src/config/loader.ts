@@ -156,6 +156,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
   config.logLevel = 'error';
+  config.rateLimitsEnabled = true;
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
   config.defaultSuperAdminClientId = randomUUID();
   config.defaultSuperAdminClientSecret = randomUUID();

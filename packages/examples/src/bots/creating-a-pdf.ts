@@ -31,13 +31,11 @@ export async function handler(medplum: MedplumClient, _event: BotEvent): Promise
 
 let YOUR_DOCUMENT_ID: any;
 // start-block embeddedImages
-import fetch from 'node-fetch';
-
 export async function botHandler(medplum: MedplumClient, _event: BotEvent): Promise<any> {
   // Load the image
   const image = await medplum.readResource('DocumentReference', YOUR_DOCUMENT_ID);
   const response = await fetch(image.content?.[0]?.attachment?.url as string);
-  const buffer = await response.buffer();
+  const buffer = Buffer.from(await response.arrayBuffer());
   const imageData = `data:${response.headers.get('content-type')};base64,${buffer.toString('base64')}`;
 
   // Create the PDF

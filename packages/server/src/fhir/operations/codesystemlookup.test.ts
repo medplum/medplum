@@ -34,6 +34,11 @@ const testCodeSystem: CodeSystem = {
       type: 'boolean',
     },
     {
+      code: 'deprecated',
+      description: 'Code is no longer in use',
+      type: 'boolean',
+    },
+    {
       code: 'publishedOn',
       type: 'dateTime',
     },
@@ -399,6 +404,14 @@ describe('CodeSystem lookup', () => {
             name: 'property',
             part: [
               { name: 'code', valueCode: '1' },
+              { name: 'property', valueCode: 'deprecated' },
+              { name: 'value', valueString: '1' },
+            ],
+          },
+          {
+            name: 'property',
+            part: [
+              { name: 'code', valueCode: '1' },
               { name: 'property', valueCode: 'publishedOn' },
               { name: 'value', valueString: '2020-01-01' },
             ],
@@ -443,6 +456,14 @@ describe('CodeSystem lookup', () => {
             { name: 'code', valueCode: 'abstract' },
             { name: 'value', valueBoolean: false },
             { name: 'description', valueString: 'Code is not a real thing' },
+          ],
+        },
+        {
+          name: 'property',
+          part: [
+            { name: 'code', valueCode: 'deprecated' },
+            { name: 'value', valueBoolean: true },
+            { name: 'description', valueString: 'Code is no longer in use' },
           ],
         },
         {
