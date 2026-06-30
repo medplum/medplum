@@ -3,7 +3,14 @@
 import { Box, Button, Divider, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createReference, isNotFound, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
-import type { Attachment, Communication, Organization, Patient, Reference } from '@medplum/fhirtypes';
+import type {
+  Attachment,
+  Communication,
+  DocumentReference,
+  Organization,
+  Patient,
+  Reference,
+} from '@medplum/fhirtypes';
 import { ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleOff, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -125,13 +132,26 @@ export function SendFaxModal({
     setIsSubmitting(true);
     try {
       let attachment: Attachment;
+      let documentReference: DocumentReference | undefined;
       if (defaultAttachment) {
         attachment = defaultAttachment;
       } else if (file) {
+        // Persist the uploaded file as a DocumentReference so the faxed document is
+        // tracked in the chart (and surfaces in the patient's documents) rather than
+        // existing only as a loose attachment on the Communication.
         attachment = await medplum.createAttachment({
           data: file,
           contentType: file.type,
           filename: file.name,
+        });
+        documentReference = await medplum.createResource<DocumentReference>({
+          resourceType: 'DocumentReference',
+          status: 'current',
+          description: subject.trim() || undefined,
+          subject: patient,
+          author: [createReference(profile)],
+          date: new Date().toISOString(),
+          content: [{ attachment }],
         });
       } else {
         return;
@@ -173,7 +193,11 @@ export function SendFaxModal({
         subject: patient,
         sender: createReference(profile),
         recipient: [createReference(recipient)],
-        payload: [{ contentAttachment: attachment }],
+        payload: [
+          documentReference
+            ? { contentReference: createReference(documentReference) }
+            : { contentAttachment: attachment },
+        ],
         topic: subject ? { text: subject } : undefined,
         note: noteEntries.length > 0 ? noteEntries : undefined,
       });
