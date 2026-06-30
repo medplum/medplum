@@ -33,6 +33,7 @@ import { OAuthPage } from './OAuthPage';
 import { RegisterPage } from './RegisterPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
 import { AccountsPage } from './resource/AccountsPage';
+import { AgentConfigPage } from './resource/AgentConfigPage';
 import { ApplyPage } from './resource/ApplyPage';
 import { AppsPage } from './resource/AppsPage';
 import { AuditEventPage } from './resource/AuditEventPage';
@@ -147,6 +148,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="timeline" element={<TimelinePage />} />
           <Route path="tools" element={<ToolsPage />} />
+          <Route path="config" element={<AgentConfigPage />} />
           <Route path="email" element={<UpdateEmailPage />} />
           <Route path="payload" element={<CommunicationPayloadPage />} />
           <Route path="profiles" element={<ProfilesPage />} />

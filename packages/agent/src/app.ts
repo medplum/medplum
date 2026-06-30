@@ -61,6 +61,7 @@ import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFil
 import { DurableQueue } from './queue/durable-queue';
 import { RetentionSweeper } from './queue/retention';
 import type { ChannelQueueWorker, RetryPolicy } from './queue/worker';
+import { readBooleanSetting, readDecimalSetting, readIntegerSetting, readStringSetting } from './settings-manifest';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
@@ -551,31 +552,28 @@ export class App {
    */
   private async beginReloadConfig(): Promise<{ listenersStarted: Promise<void> }> {
     const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
-    const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
-    const maxClientsPerRemote = agent?.setting?.find((setting) => setting.name === 'maxClientsPerRemote')?.valueInteger;
-    const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
-    const durableQueueOn = agent?.setting?.find((setting) => setting.name === 'durableQueue')?.valueBoolean ?? false;
-    const queueDbPath = agent?.setting?.find((setting) => setting.name === 'queueDbPath')?.valueString;
-    const queueRetentionDays = agent?.setting?.find((setting) => setting.name === 'queueRetentionDays')?.valueInteger;
-    const queueRetentionMaxMb = agent?.setting?.find((setting) => setting.name === 'queueRetentionMaxMb')?.valueInteger;
-    const queueErroredRetentionDays = agent?.setting?.find(
-      (setting) => setting.name === 'queueErroredRetentionDays'
-    )?.valueInteger;
-    const queueSweepIntervalSecs = agent?.setting?.find(
-      (setting) => setting.name === 'queueSweepIntervalSecs'
-    )?.valueInteger;
+    // All setting reads go through the manifest (the single source of truth) so a setting must be
+    // declared there -- and thus published in the version's settings schema -- to be read at runtime.
+    const keepAlive = readBooleanSetting(agent, 'keepAlive');
+    const maxClientsPerRemote = readIntegerSetting(agent, 'maxClientsPerRemote');
+    const logStatsFreqSecs = readIntegerSetting(agent, 'logStatsFreqSecs');
+    const durableQueueOn = readBooleanSetting(agent, 'durableQueue') ?? false;
+    const queueDbPath = readStringSetting(agent, 'queueDbPath');
+    const queueRetentionDays = readIntegerSetting(agent, 'queueRetentionDays');
+    const queueRetentionMaxMb = readIntegerSetting(agent, 'queueRetentionMaxMb');
+    const queueErroredRetentionDays = readIntegerSetting(agent, 'queueErroredRetentionDays');
+    const queueSweepIntervalSecs = readIntegerSetting(agent, 'queueSweepIntervalSecs');
 
     // Agent-wide auto-retry defaults. Channels layer their endpoint URL params
     // (autoRetry, autoRetryBaseDelayMs, ...) over these when resolving their
     // RetryPolicy in configureHl7ServerAndConnections.
     this.channelRetrySettings = {
-      enabled: agent?.setting?.find((setting) => setting.name === 'channelAutoRetry')?.valueBoolean,
-      guaranteedDelivery: agent?.setting?.find((setting) => setting.name === 'channelGuaranteedDelivery')?.valueBoolean,
-      baseDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBaseDelayMs')?.valueInteger,
-      maxDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxDelayMs')?.valueInteger,
-      maxAttempts: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxAttempts')?.valueInteger,
-      backoffMultiplier: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBackoffMultiplier')
-        ?.valueDecimal,
+      enabled: readBooleanSetting(agent, 'channelAutoRetry'),
+      guaranteedDelivery: readBooleanSetting(agent, 'channelGuaranteedDelivery'),
+      baseDelayMs: readIntegerSetting(agent, 'channelAutoRetryBaseDelayMs'),
+      maxDelayMs: readIntegerSetting(agent, 'channelAutoRetryMaxDelayMs'),
+      maxAttempts: readIntegerSetting(agent, 'channelAutoRetryMaxAttempts'),
+      backoffMultiplier: readDecimalSetting(agent, 'channelAutoRetryBackoffMultiplier'),
     };
 
     // If the keepAlive setting changed, we need to reset the pools we have

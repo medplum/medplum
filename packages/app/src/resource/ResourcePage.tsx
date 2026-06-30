@@ -47,7 +47,7 @@ function getTabs(resourceType: string): string[] {
   }
 
   if (resourceType === 'Agent') {
-    result.push('Tools');
+    result.push('Tools', 'Config');
   }
 
   if (resourceType === 'User') {

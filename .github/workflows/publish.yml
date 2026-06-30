@@ -148,6 +148,43 @@ jobs:
         if: steps.check-latest.outputs.result == 'true' # only deploy latest versions
         run: ./scripts/deploy-bot-layer.sh
 
+      # The agent settings schema is platform-independent, so emit it here (this job already runs
+      # build:all and runs exactly once) and attach it to the release. publish-meta then propagates it
+      # to S3 and lists it in each version manifest, where the Medplum App resolves it via
+      # fetchAgentSettingsSchema.
+      - name: Generate agent settings schema
+        working-directory: packages/agent
+        run: |
+          npx tsx -e "
+          import { assertAgentSettingsSchema } from '@medplum/core';
+          import { writeFileSync } from 'node:fs';
+          import pkg from './package.json' with { type: 'json' };
+          import { AGENT_SETTINGS_MANIFEST } from './src/settings-manifest';
+          const schema = { agentVersion: pkg.version, settings: AGENT_SETTINGS_MANIFEST };
+          assertAgentSettingsSchema(schema);
+          writeFileSync('agent-settings-schema.json', JSON.stringify(schema, null, 2) + '\n');
+          console.log('Wrote agent settings schema (v' + schema.agentVersion + ', ' + schema.settings.length + ' settings)');
+          "
+
+      - name: Upload agent settings schema
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const tag = context.ref.replace("refs/tags/", "");
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "agent-settings-schema.json",
+              data: await fs.readFileSync("packages/agent/agent-settings-schema.json")
+            });
+
   build_agent_win64:
     runs-on: windows-latest
     timeout-minutes: 45
