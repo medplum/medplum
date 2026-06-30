@@ -676,6 +676,6 @@ const sortComparator = <T extends Resource>(a: T, b: T, sortRule: SortRule): num
   return aStr.localeCompare(bStr) * (sortRule.descending ? -1 : 1);
 };
 
-function getSearchResourceTypes(searchRequest: SearchRequest): ResourceTypeInput {
+function getSearchResourceTypes(searchRequest: SearchRequest): ResourceType[] {
   return searchRequest.types ?? [searchRequest.resourceType];
 }

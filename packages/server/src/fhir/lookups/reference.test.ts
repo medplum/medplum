@@ -9,6 +9,7 @@ import { loadTestConfig } from '../../config/loader';
 import { getGlobalSystemRepo } from '../repo';
 import { repoAccess } from '../repository/access-tracker';
 import { lookupTables } from '../searchparameter';
+import type { PgQueryable } from '../sql';
 import type { ReferenceTableRow } from './reference';
 import { ReferenceTable } from './reference';
 
@@ -34,9 +35,7 @@ describe('ReferenceTable', () => {
     return a.code.localeCompare(b.code);
   }
 
-  function getReferenceTestClient(
-    resourceTypes: ResourceType | ResourceType[]
-  ): ReturnType<typeof systemRepo.getDatabaseClient> {
+  function getReferenceTestClient(resourceTypes: ResourceType | ResourceType[]): PgQueryable {
     return systemRepo.getDatabaseClient(repoAccess.sqlWrite(resourceTypes));
   }
 

@@ -27,12 +27,6 @@ export interface ExecuteSqlOptions extends RepositoryAccessOptions {
 export interface TransactionSqlOptions extends RepositoryAccessOptions, TransactionOptions {}
 
 type TransactionAccessFrame = {
-  sqlReadCount: number;
-  sqlWriteCount: number;
-  cacheReadCount: number;
-  cacheWriteCount: number;
-  readResourceTypes: Set<ResourceType>;
-  writeResourceTypes: Set<ResourceType>;
   specialResourceTypes: Set<ResourceType>;
   otherResourceTypes: Set<ResourceType>;
   sources: Set<string>;
@@ -41,7 +35,7 @@ type TransactionAccessFrame = {
 const splitTrackedResourceTypes = new Set<ResourceType>(['Project', 'ProjectMembership', 'User']);
 
 export class RepositoryAccessTracker {
-  readonly transactionFrames: TransactionAccessFrame[] = [];
+  private readonly transactionFrames: TransactionAccessFrame[] = [];
 
   getCurrentTransactionFrame(): TransactionAccessFrame | undefined {
     return this.transactionFrames.at(-1);
@@ -98,12 +92,6 @@ export class RepositoryAccessTracker {
       status,
       specialResourceTypes: Array.from(frame.specialResourceTypes),
       otherResourceTypes: Array.from(frame.otherResourceTypes),
-      readResourceTypes: Array.from(frame.readResourceTypes),
-      writeResourceTypes: Array.from(frame.writeResourceTypes),
-      sqlReadCount: frame.sqlReadCount,
-      sqlWriteCount: frame.sqlWriteCount,
-      cacheReadCount: frame.cacheReadCount,
-      cacheWriteCount: frame.cacheWriteCount,
       sources: Array.from(frame.sources),
     });
   }
@@ -150,25 +138,6 @@ function updateTransactionAccessFrame(
   source: string | undefined,
   access: ResourceTypePartition
 ): void {
-  if (operation === 'read') {
-    if (layer === 'sql') {
-      frame.sqlReadCount++;
-    } else {
-      frame.cacheReadCount++;
-    }
-    for (const resourceType of access.all) {
-      frame.readResourceTypes.add(resourceType);
-    }
-  } else if (operation === 'write') {
-    if (layer === 'sql') {
-      frame.sqlWriteCount++;
-    } else {
-      frame.cacheWriteCount++;
-    }
-    for (const resourceType of access.all) {
-      frame.writeResourceTypes.add(resourceType);
-    }
-  }
   for (const resourceType of access.special) {
     frame.specialResourceTypes.add(resourceType);
   }
@@ -182,12 +151,6 @@ function updateTransactionAccessFrame(
 
 function createTransactionAccessFrame(): TransactionAccessFrame {
   return {
-    sqlReadCount: 0,
-    sqlWriteCount: 0,
-    cacheReadCount: 0,
-    cacheWriteCount: 0,
-    readResourceTypes: new Set<ResourceType>(),
-    writeResourceTypes: new Set<ResourceType>(),
     specialResourceTypes: new Set<ResourceType>(),
     otherResourceTypes: new Set<ResourceType>(),
     sources: new Set<string>(),
@@ -217,14 +180,9 @@ function partitionResourceTypes(resourceTypes: ReadonlySet<ResourceType>): Resou
   return { all, special, other };
 }
 
-const setsToMerge = ['readResourceTypes', 'writeResourceTypes', 'specialResourceTypes', 'otherResourceTypes'] as const;
+const setsToMerge = ['specialResourceTypes', 'otherResourceTypes'] as const;
 
 function mergeTransactionAccessFrame(target: TransactionAccessFrame, source: TransactionAccessFrame): void {
-  target.sqlReadCount += source.sqlReadCount;
-  target.sqlWriteCount += source.sqlWriteCount;
-  target.cacheReadCount += source.cacheReadCount;
-  target.cacheWriteCount += source.cacheWriteCount;
-
   for (const set of setsToMerge) {
     for (const item of source[set]) {
       target[set].add(item);
