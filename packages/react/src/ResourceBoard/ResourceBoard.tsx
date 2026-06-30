@@ -8,6 +8,7 @@ import { useMedplumNavigate, useResourceBoard } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import type {
   ListWithDetailPaneDetailContext,
+  ListWithDetailPaneHeaderProps,
   ListWithDetailPaneItemContext,
   ListWithDetailPaneTab,
 } from '../ListWithDetailPane/ListWithDetailPane';
@@ -159,6 +160,11 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
     onChange?.({ ...memoizedSearch, offset: (page - 1) * count });
   };
 
+  // ListWithDetailPane treats text and tabs as mutually exclusive; tabs take precedence.
+  const headerProps: ListWithDetailPaneHeaderProps = tabs
+    ? { tabs, activeTab, onTabChange: handleTabChange }
+    : { headerText };
+
   return (
     <ListWithDetailPane<WithId<T>>
       items={items}
@@ -168,10 +174,7 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
       emptyList={emptyList}
       skeleton={skeleton}
       listWidth={listWidth}
-      headerText={headerText}
-      tabs={tabs}
-      activeTab={activeTab}
-      onTabChange={handleTabChange}
+      {...headerProps}
       headerActions={headerActions}
       selected={selected}
       renderDetail={renderDetail}

@@ -19,13 +19,3 @@
 .item.selected:hover {
   background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
 }
-
-/*
- * Arrow-key navigation moves selection in lockstep with focus, so the selected background already
- * marks the active option for keyboard users. Suppress the default focus ring to avoid a redundant
- * outline stacked on top of that highlight. (Mouse clicks never showed a ring: it's :focus-visible.)
- */
-.item:focus,
-.item:focus-visible {
-  outline: none;
-}

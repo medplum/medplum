@@ -25,7 +25,8 @@ export interface ListWithDetailPaneDetailContext {
   readonly refresh: () => Promise<void>;
 }
 
-export interface ListWithDetailPaneProps<T extends { id: string } = WithId<Resource>> {
+/** Props shared by every ListWithDetailPane, independent of the header style. */
+export interface ListWithDetailPanePropsBase<T extends { id: string } = WithId<Resource>> {
   // List sidebar
   /** The current page of items to render in the list. */
   readonly items: T[];
@@ -42,14 +43,6 @@ export interface ListWithDetailPaneProps<T extends { id: string } = WithId<Resou
   readonly listWidth?: number;
 
   // Header
-  /** Plain title shown at the left of the header when no `tabs` are provided. */
-  readonly headerText?: ReactNode;
-  /** Sidebar header tabs. Selecting a tab fires `onTabChange`. */
-  readonly tabs?: ListWithDetailPaneTab[];
-  /** Controlled active tab value; consumers derive it from the URL. */
-  readonly activeTab?: string;
-  /** Fired with the tab value when a tab is selected (e.g. keyboard or programmatic change). */
-  readonly onTabChange?: (value: string) => void;
   /** Right-aligned slot in the sidebar header row: action buttons, filter popovers. */
   readonly headerActions?: ReactNode;
 
@@ -70,6 +63,34 @@ export interface ListWithDetailPaneProps<T extends { id: string } = WithId<Resou
   /** Fired by the built-in pagination with the new 1-based page. */
   readonly onPageChange?: (page: number) => void;
 }
+
+/**
+ * Plain-text header (or no header at all). Declares the tab fields as `never` so a title
+ * can't be mixed with tabs.
+ */
+export interface ListWithDetailPaneTextHeaderProps {
+  /** Plain title shown at the left of the header. */
+  readonly headerText?: ReactNode;
+  readonly tabs?: never;
+  readonly activeTab?: never;
+  readonly onTabChange?: never;
+}
+
+/**
+ * Pill-tab header. Declares `headerText` as `never` so tabs can't be mixed with a title.
+ */
+export interface ListWithDetailPaneTabsHeaderProps {
+  readonly tabs: ListWithDetailPaneTab[];
+  readonly activeTab?: string;
+  readonly onTabChange?: (value: string) => void;
+  readonly headerText?: never;
+}
+
+/** The sidebar header is plain text or pill tabs, never both. */
+export type ListWithDetailPaneHeaderProps = ListWithDetailPaneTextHeaderProps | ListWithDetailPaneTabsHeaderProps;
+
+export type ListWithDetailPaneProps<T extends { id: string } = WithId<Resource>> = ListWithDetailPanePropsBase<T> &
+  ListWithDetailPaneHeaderProps;
 
 // Configs
 const DEFAULT_LIST_WIDTH = 350;

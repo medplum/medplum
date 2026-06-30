@@ -102,7 +102,14 @@ export function DocumentsPage(): JSX.Element {
 
   const headerActions = (
     <Tooltip label="Upload document" position="bottom" openDelay={500}>
-      <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={() => setUploadOpened(true)}>
+      <ActionIcon
+        aria-label="Upload document"
+        radius="xl"
+        variant="filled"
+        color="blue"
+        size={32}
+        onClick={() => setUploadOpened(true)}
+      >
         <IconPlus size={16} />
       </ActionIcon>
     </Tooltip>
