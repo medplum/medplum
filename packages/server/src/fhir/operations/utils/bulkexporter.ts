@@ -50,11 +50,16 @@ export class BulkExporter {
   }
 
   async start(url: string): Promise<WithId<AsyncJob>> {
-    this.resource = await this.repo.createResource<AsyncJob>({
+    // The AsyncJob is internal bookkeeping for the export, not user-authored data.
+    // $export is a read operation, so creating it must not require the caller to have
+    // write access -- a read-only scope (e.g. system/*.read) is sufficient. Create it
+    // with the system repo, scoped to the caller's project so they can still poll it.
+    this.resource = await this.repo.getSystemRepo().createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'active',
       request: url,
       requestTime: new Date().toISOString(),
+      meta: { project: this.repo.currentProject()?.id },
     });
     return this.resource;
   }
@@ -62,9 +67,13 @@ export class BulkExporter {
   async getWriter(resourceType: string): Promise<BulkFileWriter> {
     let writer = this.writers[resourceType];
     if (!writer) {
-      const binary = await this.repo.createResource<Binary>({
+      // Like the AsyncJob, the export output Binary is bookkeeping for a read operation,
+      // so create it with the system repo scoped to the caller's project. The exported
+      // data itself was already access-checked when read via the caller's repo.
+      const binary = await this.repo.getSystemRepo().createResource<Binary>({
         resourceType: 'Binary',
         contentType: NDJSON_CONTENT_TYPE,
+        meta: { project: this.repo.currentProject()?.id },
       });
       writer = new BulkFileWriter(binary);
       this.writers[resourceType] = writer;

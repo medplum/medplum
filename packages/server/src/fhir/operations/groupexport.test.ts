@@ -368,4 +368,35 @@ describe('Group Export', () => {
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
   });
+
+  test('Export with read-only access policy (no write scope)', () =>
+    withTestContext(async () => {
+      // Regression: $export is fundamentally a read operation. Its internal AsyncJob
+      // and Binary resources are server-side bookkeeping and must not require the caller
+      // to have write access -- e.g. a read-only `system/*.read` scope must still work.
+      // BulkExporter creates these via the system repo, scoped to the caller's project.
+      const { repo, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resource: [{ resourceType: '*', readonly: true }] },
+      });
+
+      const exporter = new BulkExporter(repo);
+
+      // Previously threw OperationOutcomeError(Forbidden): the AsyncJob was created via
+      // the caller's (read-only) repo.
+      const asyncJob = await exporter.start('http://example.com');
+      expect(asyncJob.id).toBeDefined();
+      expect(asyncJob.meta?.project).toBe(project.id);
+
+      // Writing output creates a Binary, which must also not require write access.
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Read'], family: 'Only' }],
+      });
+      await exporter.writeResource(patient);
+
+      const bulkDataExport = await exporter.close(project);
+      expect(bulkDataExport.status).toBe('completed');
+    }));
 });
