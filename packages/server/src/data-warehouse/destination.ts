@@ -9,7 +9,6 @@ import type { DuckdbConnection } from './warehouse-sql';
 import {
   buildCopySelectToParquetQuery,
   buildDuckdbPostgresAttachQuery,
-  buildDuckdbPostgresConnectionSettingsQueries,
   buildProjectedSelectFromHistoryTable,
   runParameterizedWarehouseSql,
 } from './warehouse-sql';
@@ -44,12 +43,7 @@ export class LocalParquetWarehouseDestination implements DataWarehouseDestinatio
   }
 
   getSetupQueries(connectionString: string): string[] {
-    return [
-      'INSTALL postgres',
-      'LOAD postgres',
-      ...buildDuckdbPostgresConnectionSettingsQueries(),
-      buildDuckdbPostgresAttachQuery(connectionString),
-    ];
+    return ['INSTALL postgres', 'LOAD postgres', buildDuckdbPostgresAttachQuery(connectionString)];
   }
 
   async ensureTargetExists(_tableSpec: WarehouseSourceTable, _namespace: string): Promise<void> {

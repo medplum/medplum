@@ -4,7 +4,6 @@
 import { Conjunction, Constant, SqlBuilder } from '../fhir/sql';
 import {
   buildCountFromHistoryTableQuery,
-  buildDuckdbPostgresConnectionSettingsQueries,
   buildInsertIntoSelectQuery,
   buildMaxLastUpdatedWatermarkPredicate,
   buildProjectedSelectFromHistoryTable,
@@ -13,16 +12,6 @@ import {
 } from './warehouse-sql';
 
 describe('warehouse SQL query builders', () => {
-  test('buildDuckdbPostgresConnectionSettingsQueries caps DuckDB and Postgres scan parallelism', () => {
-    expect(buildDuckdbPostgresConnectionSettingsQueries()).toStrictEqual([
-      'SET threads = 1',
-      'SET pg_use_ctid_scan = false',
-      'SET pg_connection_limit = 1',
-      'SET pg_pool_max_connections = 1',
-      "SET pg_pool_acquire_mode = 'try'",
-    ]);
-  });
-
   test('buildProjectedSelectFromHistoryTableQueryWithSubquery keeps json_extract_string in outer DuckDB layer', () => {
     const sourcePredicate = new Constant(`"lastUpdated" > TIMESTAMPTZ '2024-01-01T00:00:00.000Z'`);
     const query = buildSelectFromHistoryTableQuery('Patient_History', sourcePredicate);

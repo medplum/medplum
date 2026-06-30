@@ -10,7 +10,6 @@ import { SqlBuilder } from '../fhir/sql';
 import { buildPgConnectionURI } from './config';
 import {
   buildDuckdbPostgresAttachQuery,
-  buildDuckdbPostgresConnectionSettingsQueries,
   buildInsertIntoSelectQuery,
   buildSelectFromHistoryTableQuery,
   runParameterizedWarehouseSql,
@@ -85,9 +84,10 @@ describe('warehouse SQL (integration)', () => {
     const connection = await instance.connect();
     try {
       await connection.run('INSTALL postgres; LOAD postgres;');
-      for (const query of buildDuckdbPostgresConnectionSettingsQueries()) {
-        await connection.run(query);
-      }
+      await connection.run('SET threads = 1');
+      await connection.run('SET pg_use_ctid_scan = false');
+      await connection.run('SET pg_pool_max_connections = 1');
+      await connection.run("SET pg_pool_acquire_mode = 'wait'");
       await connection.run(buildDuckdbPostgresAttachQuery(connStr));
       await connection.run(`
         CREATE TABLE "${DEST_TABLE}" (

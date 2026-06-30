@@ -101,27 +101,11 @@ function buildQualifiedTableIdentifier(qualifiedTable: string, minParts = 1): st
 }
 
 /**
- * DuckDB session settings that cap Postgres scan parallelism and connection pooling.
- * Run after `LOAD postgres` and before any `ATTACH` that opens a Postgres catalog.
- *
- * @returns SQL `SET` statements in execution order.
- */
-export function buildDuckdbPostgresConnectionSettingsQueries(): string[] {
-  return [
-    'SET threads = 1',
-    'SET pg_use_ctid_scan = false',
-    'SET pg_connection_limit = 1',
-    'SET pg_pool_max_connections = 1',
-    "SET pg_pool_acquire_mode = 'try'",
-  ];
-}
-
-/**
  * DuckDB `ATTACH` for a PostgreSQL server (postgres extension), using the same alias as other data-warehouse DuckDB flows (`pg_db`).
  *
  * @param connectionString - PostgreSQL connection URI or libpq keyword/value string (including `options` for session GUCs such as `statement_timeout`).
  * @param alias - Unquoted DuckDB catalog name (default `pg_db`).
- * @returns SQL to run after {@link buildDuckdbPostgresConnectionSettingsQueries}.
+ * @returns SQL to run after `LOAD postgres` and DuckDB Postgres connection-limit settings.
  */
 export function buildDuckdbPostgresAttachQuery(connectionString: string, alias = POSTGRES_CATALOG): string {
   const escapedConnectionString = connectionString.replaceAll("'", "''");
@@ -292,7 +276,15 @@ export function buildManagedIcebergSetupQueries(options: ManagedIcebergAttachOpt
   const queries: string[] = [...buildManagedIcebergExtensionQueries()];
 
   queries.push(buildManagedS3CredentialSecretQuery(options.s3Region));
-  queries.push(...buildDuckdbPostgresConnectionSettingsQueries());
+  /*
+   * See https://duckdb.org/docs/current/core_extensions/postgres/connection_pool
+   * the default connection pool settings are very aggressive; many connections, much parallelism
+   * That's not what we want for a sync process on a timer; we want to be gentle on our reader instances
+   */
+  queries.push('SET threads = 1');
+  queries.push('SET pg_use_ctid_scan = false');
+  queries.push('SET pg_pool_max_connections = 1');
+  queries.push("SET pg_pool_acquire_mode = 'wait'");
   queries.push(buildDuckdbPostgresAttachQuery(options.connectionString));
   queries.push(buildManagedS3TablesIcebergAttachQuery(options.awsS3TableArn));
 
