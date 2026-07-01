@@ -240,10 +240,10 @@ describe('Durable queue integration', () => {
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      // autoRetry=false isolates the terminal classification: a 5xx is a transient
+      // retryMode=none isolates the terminal classification: a 5xx is a transient
       // ServerError, so under the guaranteed-retry default the row would sit in
       // `queued` awaiting a retry. Disabling retry lands it terminally in `failed`.
-      address: 'mllp://0.0.0.0:0?enhanced=true&autoRetry=false',
+      address: 'mllp://0.0.0.0:0?enhanced=true&retryMode=none',
     });
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -277,7 +277,7 @@ describe('Durable queue integration', () => {
     await app.stop();
   });
 
-  // guaranteedDelivery=false → normal mode, where a 4xx is a permanent reject.
+  // retryMode=normal → normal mode, where a 4xx is a permanent reject.
   // (Under the guaranteed-retry default a 4xx that lacks a definitive AR/CR ACK is
   // retried, not rejected — see the retry tests below and the worker's
   // guaranteed-delivery unit tests.)
@@ -298,7 +298,7 @@ describe('Durable queue integration', () => {
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      address: 'mllp://0.0.0.0:0?enhanced=true&guaranteedDelivery=false',
+      address: 'mllp://0.0.0.0:0?enhanced=true&retryMode=normal',
     });
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -333,13 +333,13 @@ describe('Durable queue integration', () => {
   });
 
   // Auto-retry, end to end, on the transient path. The channel is left on the
-  // guaranteed-retry default (no autoRetry/guaranteedDelivery param), so a 5xx is
-  // a transient ServerError the worker retries rather than settling — the row stays
-  // `queued` (scheduled for a backoff retry), then drains to `processed` once the
-  // server stops failing. autoRetryBaseDelayMs is kept small so the retry fires
-  // promptly and the test stays fast. This is the positive counterpart to the
+  // guaranteed-retry default (no retryMode param), so a 5xx is a transient
+  // ServerError the worker retries rather than settling — the row stays `queued`
+  // (scheduled for a backoff retry), then drains to `processed` once the server
+  // stops failing. autoRetryBaseDelayMs is kept small so the retry fires promptly
+  // and the test stays fast. This is the positive counterpart to the
   // terminal-classification tests above: the SAME 5xx that lands `failed` under
-  // autoRetry=false is recovered here under the default.
+  // retryMode=none is recovered here under the default.
   test('auto-retry (guaranteed default): a transient 5xx is retried and then succeeds, reaching processed', async () => {
     let dispatches = 0;
     startMockServer((cmd) => {
@@ -370,8 +370,8 @@ describe('Durable queue integration', () => {
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      // No autoRetry/guaranteedDelivery param → the guaranteed-retry default. A small
-      // base delay keeps the backoff retry prompt without a real long sleep.
+      // No retryMode param → the guaranteed-retry default. A small base delay keeps
+      // the backoff retry prompt without a real long sleep.
       address: 'mllp://0.0.0.0:0?enhanced=true&autoRetryBaseDelayMs=10',
     });
     const agent = await medplum.createResource<Agent>({
@@ -420,7 +420,7 @@ describe('Durable queue integration', () => {
 
   // Companion to the normal-mode 4xx-reject test above, on the guaranteed default:
   // a 4xx whose body is NOT a definitive upstream reject (no MSA-1 AR/CR) is treated
-  // as ambiguous and RETRIED, not rejected — guaranteedDelivery keeps trying until a
+  // as ambiguous and RETRIED, not rejected — guaranteed mode keeps trying until a
   // definitive reject (or success) settles it. Here the server returns 422 once and
   // then a 200/AA, so the row recovers to `processed` rather than landing `rejected`.
   test('auto-retry (guaranteed default): a 4xx without a definitive AR/CR ACK is retried, then succeeds', async () => {
@@ -1956,14 +1956,14 @@ describe('Durable queue integration', () => {
     mockServer.on('connection', handler);
 
     const dbPath = join(dir, 'queue.sqlite');
-    // autoRetry=false on the leader (A): worker-stopped is an ambiguous code that the
+    // retryMode=none on the leader (A): worker-stopped is an ambiguous code that the
     // guaranteed-retry default would requeue, so A's in-flight HO_1 would be re-drained
     // by B instead of settling. Opting A out keeps HO_1 terminally `failed` on stop —
     // the disposition this test pins (handed off rows succeed; the interrupted row is
     // parked for review).
     const [endpointA] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      address: 'mllp://0.0.0.0:0?enhanced=true&autoRetry=false',
+      address: 'mllp://0.0.0.0:0?enhanced=true&retryMode=none',
     });
     const [endpointB, portB] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
@@ -2094,11 +2094,11 @@ describe('Durable queue integration', () => {
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      // autoRetry=false stamps guaranteed_delivery=0 on the row at intake, so the new
+      // retryMode=none stamps guaranteed_delivery=0 on the row at intake, so the new
       // owner's recoverOnStartup marks the ambiguous interrupted row `failed`/`interrupted`
       // for review. (Under the guaranteed default recovery would instead requeue an
       // interrupted in-flight row, accepting the duplication risk.)
-      address: 'mllp://0.0.0.0:0?enhanced=true&autoRetry=false',
+      address: 'mllp://0.0.0.0:0?enhanced=true&retryMode=none',
     });
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -2296,11 +2296,11 @@ describe('Durable queue integration', () => {
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      // autoRetry=false: worker-stopped is an ambiguous code the guaranteed-retry
+      // retryMode=none: worker-stopped is an ambiguous code the guaranteed-retry
       // default would requeue, leaving the row `queued` after stop. Opting out lands
       // the interrupted in-flight row terminally in `failed` (worker-stopped), which
       // is the disposition this test pins.
-      address: 'mllp://0.0.0.0:0?enhanced=true&autoRetry=false',
+      address: 'mllp://0.0.0.0:0?enhanced=true&retryMode=none',
     });
     const dbPath = join(dir, 'queue.sqlite');
     const agent = await medplum.createResource<Agent>({

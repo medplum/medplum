@@ -27,6 +27,54 @@ export const DEFAULT_WORKER_RESPONSE_TIMEOUT_MS = 60_000;
 export const DEFAULT_WORKER_IDLE_POLL_MS = 250;
 
 /**
+ * The channel's retry behavior, as a single configuration knob. Collapses what
+ * would otherwise be two orthogonal booleans (auto-retry on/off × guaranteed
+ * delivery on/off) into the three combinations that actually make sense, so the
+ * invalid "guaranteed but not retrying" state is unrepresentable:
+ * - `none`: no auto-retry — a failed Bot leg lands terminal immediately.
+ * - `normal`: retry only the transient failures ({@link RETRYABLE_ERROR_CODES}),
+ *   up to `maxAttempts`; ambiguous codes are left `failed` for operator review.
+ * - `guaranteed`: keep retrying every failure (ambiguous codes included) until
+ *   upstream answers definitively; unlimited attempts. **The default** — see
+ *   {@link DEFAULT_RETRY_POLICY} for why.
+ *
+ * Configured via the `retryMode` endpoint URL param or the `channelRetryMode`
+ * agent setting; resolved into a {@link RetryPolicy} by `resolveRetryPolicy`.
+ */
+export const RetryMode = {
+  None: 'none',
+  Normal: 'normal',
+  Guaranteed: 'guaranteed',
+} as const;
+export type RetryMode = (typeof RetryMode)[keyof typeof RetryMode];
+
+/** The retry mode a channel gets with no configuration: {@link DEFAULT_RETRY_POLICY}. */
+export const DEFAULT_RETRY_MODE: RetryMode = RetryMode.Guaranteed;
+
+/**
+ * Type guard for a valid {@link RetryMode} string.
+ * @param value - The candidate mode (already lower-cased, if applicable).
+ * @returns True if `value` is one of `none` / `normal` / `guaranteed`.
+ */
+export function isRetryMode(value: string | undefined): value is RetryMode {
+  return value === RetryMode.None || value === RetryMode.Normal || value === RetryMode.Guaranteed;
+}
+
+/**
+ * Agent-wide retry defaults, read from the `channelRetryMode` / `channelAutoRetry*`
+ * agent settings. Every field is optional; an undefined field falls through to the
+ * endpoint URL param's next layer and ultimately {@link DEFAULT_RETRY_POLICY} when
+ * a channel resolves its policy (see `resolveRetryPolicy` in hl7.ts).
+ */
+export interface AgentRetryDefaults {
+  mode?: RetryMode;
+  baseDelayMs?: number;
+  maxDelayMs?: number;
+  maxAttempts?: number;
+  backoffMultiplier?: number;
+}
+
+/**
  * Per-channel auto-retry policy for the **Path-2** leg (queue → Bot), resolved
  * from endpoint query params layered over agent settings (see
  * `resolveRetryPolicy` in hl7.ts). It governs ONLY re-dispatch of a `failed`
@@ -45,18 +93,21 @@ export const DEFAULT_WORKER_IDLE_POLL_MS = 250;
  *
  * guaranteedDelivery is the **default** today — see {@link DEFAULT_RETRY_POLICY}
  * for why. Operators who want exactly-once semantics opt out per channel
- * (`guaranteedDelivery=false`) and dedupe in their Bot.
+ * (`retryMode=normal`) and dedupe in their Bot.
  */
 export interface RetryPolicy {
-  /** Master switch. On by default; opt out via the autoRetry URL param / channelAutoRetry agent setting. */
+  /**
+   * Master switch: false only when {@link RetryMode.None}. Derived from the
+   * resolved {@link RetryMode} (`none` → false, `normal`/`guaranteed` → true).
+   */
   enabled: boolean;
   /**
    * Keep retrying until upstream gives a definitive answer for the message
    * (MSA-1 of AA/CA → processed, AR/CR → rejected), even across the ambiguous
-   * failures that could cause duplicate delivery. **On by default** (see
-   * {@link DEFAULT_RETRY_POLICY}); opt out per channel with
-   * `guaranteedDelivery=false`. Requires `enabled`; policy resolution forces
-   * this off when autoRetry is disabled (warning only if it was set explicitly).
+   * failures that could cause duplicate delivery. True only for
+   * {@link RetryMode.Guaranteed} — **the default** (see {@link DEFAULT_RETRY_POLICY}).
+   * Derived from the resolved {@link RetryMode}, so it can never be true while
+   * {@link enabled} is false.
    */
   guaranteedDelivery: boolean;
   /** Delay before the first retry. */
@@ -89,7 +140,7 @@ export const DEFAULT_NORMAL_MODE_MAX_ATTEMPTS = 10;
  * only safe default is to assume every error might be ephemeral and keep
  * retrying — otherwise a retryable failure would be silently dropped. The cost
  * is possible duplicate delivery; operators who need exactly-once should either
- * opt out (`guaranteedDelivery=false`) or dedupe in their Bot — e.g. record
+ * opt out (`retryMode=normal`) or dedupe in their Bot — e.g. record
  * processed message control IDs on a FHIR resource such as `MessageHeader` and
  * skip a control ID that has already been handled.
  */
@@ -491,35 +542,52 @@ export class ChannelQueueWorker {
     const statusCode = response.statusCode ?? 0;
     if (this.retryPolicy.guaranteedDelivery) {
       // Guaranteed delivery: the upstream HL7 ACK code (MSA-1) is the source of
-      // truth, not the HTTP status. AA/CA → accepted (fall through to success);
-      // AR/CR → definitive reject (terminal `rejected`); AE/CE or any failure
-      // without a parseable AA/CA → keep retrying until upstream answers
-      // definitively. This deliberately retries the ambiguous codes too — the
-      // duplication risk the operator opted into by enabling guaranteedDelivery.
+      // truth, not the HTTP status. Rather than reason about the full (ackCode ×
+      // statusCode) matrix at once, resolve the ACK code first — every definitive
+      // code settles the row and returns here — and only fall back to the HTTP
+      // status when the body carried no parseable ACK. Whatever reaches the code
+      // below is, by elimination, an accepted message.
       const ackCode = parseAckCode(response.body);
-      if (ackCode === 'AR' || ackCode === 'CR') {
-        this.handleFailure(
-          row,
-          QueueErrorCode.UpstreamRejected,
-          `Upstream rejected the message (${ackCode}): ${response.body ?? ''}`
-        );
-        return;
-      }
-      if (ackCode === 'AE' || ackCode === 'CE') {
-        this.handleFailure(
-          row,
-          QueueErrorCode.UpstreamError,
-          `Upstream returned an error ACK (${ackCode}): ${response.body ?? ''}`
-        );
-        return;
-      }
-      if (ackCode !== 'AA' && ackCode !== 'CA' && statusCode >= 400) {
-        this.handleFailure(
-          row,
-          classifyStatusCode(statusCode),
-          `Server returned ${statusCode}: ${response.body ?? ''}`
-        );
-        return;
+      switch (ackCode) {
+        case 'AR':
+        case 'CR':
+          // Definitive upstream reject: terminal `rejected`, never retried.
+          this.handleFailure(
+            row,
+            QueueErrorCode.UpstreamRejected,
+            `Upstream rejected the message (${ackCode}): ${response.body ?? ''}`
+          );
+          return;
+        case 'AE':
+        case 'CE':
+          // Error ACK: not a definitive answer, so guaranteed mode keeps retrying.
+          this.handleFailure(
+            row,
+            QueueErrorCode.UpstreamError,
+            `Upstream returned an error ACK (${ackCode}): ${response.body ?? ''}`
+          );
+          return;
+        case undefined:
+          // No parseable ACK: fall back to the HTTP status. A 4xx/5xx retries —
+          // the duplication risk the operator opted into by enabling guaranteed
+          // delivery — while anything below 400 is treated as accepted.
+          if (statusCode >= 400) {
+            this.handleFailure(
+              row,
+              classifyStatusCode(statusCode),
+              `Server returned ${statusCode}: ${response.body ?? ''}`
+            );
+            return;
+          }
+          break;
+        case 'AA':
+        case 'CA':
+          // Accepted: fall through to the success path below.
+          break;
+        default:
+          // Exhaustiveness: every AckCode is handled above. If a new code is
+          // added to the union, this fails to compile until it is handled here.
+          ackCode satisfies never;
       }
     } else if (statusCode >= 400) {
       // Normal mode: the HTTP status is the Bot-leg verdict. A permanent 4xx is
@@ -698,14 +766,14 @@ function classifyStatusCode(statusCode: number): QueueErrorCode {
  * status — decides whether the message is settled. Anything unparseable returns
  * undefined and the caller falls back to status-code handling.
  * @param body - The server response body (expected to be an HL7 ACK message).
- * @returns The uppercased MSA-1 value (e.g. 'AA', 'AE', 'AR', 'CA', 'CE', 'CR'), or undefined.
+ * @returns The MSA-1 {@link AckCode} (e.g. 'AA', 'AE', 'AR', 'CA', 'CE', 'CR'), or undefined.
  */
 function parseAckCode(body: string | undefined): AckCode | undefined {
   if (!body) {
     return undefined;
   }
   try {
-    return (Hl7Message.parse(body).getSegment('MSA')?.getField(1)?.toString()?.toUpperCase() as AckCode) || undefined;
+    return Hl7Message.parse(body).getAckType();
   } catch {
     return undefined;
   }

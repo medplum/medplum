@@ -60,7 +60,8 @@ import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { DurableQueue } from './queue/durable-queue';
 import { RetentionSweeper } from './queue/retention';
-import type { ChannelQueueWorker, RetryPolicy } from './queue/worker';
+import type { AgentRetryDefaults, ChannelQueueWorker } from './queue/worker';
+import { isRetryMode } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
@@ -145,9 +146,9 @@ export class App {
   private config: Agent | undefined;
   private lastHeartbeatSentTime: number = -1;
   private durableQueue: DurableQueue | undefined;
-  // Agent-wide channelAutoRetry* settings; fields left undefined fall through to
-  // DEFAULT_RETRY_POLICY when channels resolve their per-channel policy.
-  private channelRetrySettings: Partial<RetryPolicy> = {};
+  // Agent-wide channelRetryMode / channelAutoRetry* settings; fields left undefined
+  // fall through to DEFAULT_RETRY_POLICY when channels resolve their per-channel policy.
+  private channelRetrySettings: AgentRetryDefaults = {};
   private retentionSweeper: RetentionSweeper | undefined;
   // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
   // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
@@ -566,11 +567,10 @@ export class App {
     )?.valueInteger;
 
     // Agent-wide auto-retry defaults. Channels layer their endpoint URL params
-    // (autoRetry, autoRetryBaseDelayMs, ...) over these when resolving their
+    // (retryMode, autoRetryBaseDelayMs, ...) over these when resolving their
     // RetryPolicy in configureHl7ServerAndConnections.
     this.channelRetrySettings = {
-      enabled: agent?.setting?.find((setting) => setting.name === 'channelAutoRetry')?.valueBoolean,
-      guaranteedDelivery: agent?.setting?.find((setting) => setting.name === 'channelGuaranteedDelivery')?.valueBoolean,
+      mode: this.parseChannelRetryModeSetting(agent),
       baseDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBaseDelayMs')?.valueInteger,
       maxDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxDelayMs')?.valueInteger,
       maxAttempts: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxAttempts')?.valueInteger,
@@ -789,9 +789,30 @@ export class App {
     return this.durableQueue;
   }
 
-  /** @returns The agent-wide channelAutoRetry* settings, used as per-channel policy defaults. */
-  getChannelRetrySettings(): Partial<RetryPolicy> {
+  /** @returns The agent-wide channelRetryMode / channelAutoRetry* settings, used as per-channel policy defaults. */
+  getChannelRetrySettings(): AgentRetryDefaults {
     return this.channelRetrySettings;
+  }
+
+  /**
+   * Reads and validates the agent-wide `channelRetryMode` setting.
+   * @param agent - The agent config being applied.
+   * @returns The configured {@link RetryMode}, or undefined when unset (falls
+   *   through to the endpoint param / built-in default) or invalid (warns).
+   */
+  private parseChannelRetryModeSetting(agent: Agent | undefined): AgentRetryDefaults['mode'] {
+    const rawMode = agent?.setting?.find((setting) => setting.name === 'channelRetryMode')?.valueString;
+    if (rawMode === undefined) {
+      return undefined;
+    }
+    const normalized = rawMode.toLowerCase();
+    if (isRetryMode(normalized)) {
+      return normalized;
+    }
+    this.log.warn(
+      `Invalid channelRetryMode setting '${rawMode}'; expected 'none', 'normal', or 'guaranteed'. Ignoring.`
+    );
+    return undefined;
   }
 
   getStats(): AgentStats {

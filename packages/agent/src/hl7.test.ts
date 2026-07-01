@@ -3202,14 +3202,14 @@ describe('resolveRetryPolicy', () => {
 
   test('agent settings override defaults, endpoint params override agent settings, per field', () => {
     const logger = createMockLogger();
-    // guaranteedDelivery:false pins normal mode so the maxAttempts cap is honored
-    // (guaranteed mode would force maxAttempts to 0, masking the precedence check).
-    const agentDefaults = { enabled: true, guaranteedDelivery: false, baseDelayMs: 5000, maxAttempts: 4 };
+    // mode:'normal' pins normal mode so the maxAttempts cap is honored (guaranteed
+    // mode would force maxAttempts to 0, masking the precedence check).
+    const agentDefaults = { mode: 'normal' as const, baseDelayMs: 5000, maxAttempts: 4 };
     const params = new URLSearchParams('autoRetryBaseDelayMs=250&autoRetryBackoffMultiplier=1.5');
     const policy = resolveRetryPolicy(agentDefaults, params, logger);
     expect(policy).toStrictEqual({
-      enabled: true, // from agent setting
-      guaranteedDelivery: false, // from agent setting (overrides the guaranteed default)
+      enabled: true, // from agent setting mode (normal)
+      guaranteedDelivery: false, // normal mode (overrides the guaranteed default)
       baseDelayMs: 250, // endpoint param wins over agent setting
       maxDelayMs: DEFAULT_RETRY_POLICY.maxDelayMs, // built-in default
       maxAttempts: 4, // from agent setting
@@ -3218,21 +3218,25 @@ describe('resolveRetryPolicy', () => {
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  test('autoRetry=false on the endpoint disables retry even when the agent setting enables it', () => {
+  test('retryMode=none on the endpoint disables retry even when the agent setting enables it', () => {
     const logger = createMockLogger();
-    const policy = resolveRetryPolicy({ enabled: true }, new URLSearchParams('autoRetry=false'), logger);
+    const policy = resolveRetryPolicy({ mode: 'guaranteed' }, new URLSearchParams('retryMode=none'), logger);
     expect(policy.enabled).toBe(false);
+    expect(policy.guaranteedDelivery).toBe(false);
   });
 
   test('invalid param values warn and fall through to the next layer', () => {
     const logger = createMockLogger();
-    const params = new URLSearchParams('autoRetry=yes&autoRetryBaseDelayMs=fast&autoRetryMaxAttempts=-1');
+    const params = new URLSearchParams('retryMode=sometimes&autoRetryBaseDelayMs=fast&autoRetryMaxAttempts=-1');
     const policy = resolveRetryPolicy({ baseDelayMs: 3000 }, params, logger);
-    // Invalid autoRetry falls through to the built-in default, which is enabled.
+    // Invalid retryMode falls through to the built-in default, which is guaranteed.
     expect(policy.enabled).toBe(true);
+    expect(policy.guaranteedDelivery).toBe(true);
     expect(policy.baseDelayMs).toBe(3000);
     expect(policy.maxAttempts).toBe(DEFAULT_RETRY_POLICY.maxAttempts);
-    expect(logger.warn).toHaveBeenCalledWith("Invalid autoRetry value 'yes'; expected 'true' or 'false'. Ignoring.");
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Invalid retryMode value 'sometimes'; expected 'none', 'normal', or 'guaranteed'. Ignoring."
+    );
     expect(logger.warn).toHaveBeenCalledWith(
       "Invalid autoRetryBaseDelayMs value 'fast'; expected a number >= 1. Ignoring."
     );
@@ -3244,7 +3248,7 @@ describe('resolveRetryPolicy', () => {
   test('clamps out-of-range agent settings and raises maxDelayMs to baseDelayMs', () => {
     const logger = createMockLogger();
     const policy = resolveRetryPolicy(
-      { enabled: true, baseDelayMs: 30_000, maxDelayMs: 10_000, backoffMultiplier: 0.5 },
+      { mode: 'normal', baseDelayMs: 30_000, maxDelayMs: 10_000, backoffMultiplier: 0.5 },
       new URLSearchParams(),
       logger
     );
@@ -3257,75 +3261,64 @@ describe('resolveRetryPolicy', () => {
 
   test('maxAttempts=0 (retry indefinitely) is accepted from the endpoint param', () => {
     const logger = createMockLogger();
-    const policy = resolveRetryPolicy({}, new URLSearchParams('autoRetry=true&autoRetryMaxAttempts=0'), logger);
+    const policy = resolveRetryPolicy({}, new URLSearchParams('retryMode=normal&autoRetryMaxAttempts=0'), logger);
     expect(policy.enabled).toBe(true);
     expect(policy.maxAttempts).toBe(0);
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  test('guaranteedDelivery implies unlimited attempts', () => {
+  test('retryMode=guaranteed implies unlimited attempts', () => {
     const logger = createMockLogger();
-    const policy = resolveRetryPolicy({}, new URLSearchParams('guaranteedDelivery=true'), logger);
+    const policy = resolveRetryPolicy({}, new URLSearchParams('retryMode=guaranteed'), logger);
     expect(policy.guaranteedDelivery).toBe(true);
     expect(policy.maxAttempts).toBe(0);
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  test('guaranteedDelivery flows through from the agent setting', () => {
+  test('retryMode is case-insensitive', () => {
     const logger = createMockLogger();
-    const policy = resolveRetryPolicy({ guaranteedDelivery: true }, new URLSearchParams(), logger);
+    const policy = resolveRetryPolicy({}, new URLSearchParams('retryMode=Normal'), logger);
+    expect(policy.enabled).toBe(true);
+    expect(policy.guaranteedDelivery).toBe(false);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('mode flows through from the agent setting', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({ mode: 'guaranteed' }, new URLSearchParams(), logger);
     expect(policy.guaranteedDelivery).toBe(true);
     expect(policy.maxAttempts).toBe(0);
   });
 
-  test('guaranteedDelivery=false on the endpoint overrides the agent setting', () => {
+  test('retryMode=normal on the endpoint overrides the agent setting', () => {
     const logger = createMockLogger();
-    const policy = resolveRetryPolicy(
-      { guaranteedDelivery: true },
-      new URLSearchParams('guaranteedDelivery=false'),
-      logger
-    );
+    const policy = resolveRetryPolicy({ mode: 'guaranteed' }, new URLSearchParams('retryMode=normal'), logger);
+    expect(policy.enabled).toBe(true);
     expect(policy.guaranteedDelivery).toBe(false);
     // Opting out of guaranteed mode falls back to the normal-mode cap, not the
     // guaranteed default's unlimited (0).
     expect(policy.maxAttempts).toBe(DEFAULT_NORMAL_MODE_MAX_ATTEMPTS);
   });
 
-  test('autoRetry=false alone drops the default guaranteedDelivery silently (no warning)', () => {
+  test('retryMode=none disables retry and guaranteed delivery silently (no warning)', () => {
     const logger = createMockLogger();
-    const policy = resolveRetryPolicy({}, new URLSearchParams('autoRetry=false'), logger);
+    const policy = resolveRetryPolicy({}, new URLSearchParams('retryMode=none'), logger);
     expect(policy.enabled).toBe(false);
-    // guaranteedDelivery defaults on but is forced off when retry is disabled.
-    // Because it was never set explicitly, this must NOT warn.
     expect(policy.guaranteedDelivery).toBe(false);
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  test('guaranteedDelivery conflicts with autoRetry=false — warn and ignore guaranteedDelivery', () => {
+  test('retryMode=guaranteed conflicts with an explicit nonzero maxAttempts — warn and respect the cap', () => {
     const logger = createMockLogger();
-    const policy = resolveRetryPolicy({}, new URLSearchParams('autoRetry=false&guaranteedDelivery=true'), logger);
-    expect(policy.enabled).toBe(false);
-    expect(policy.guaranteedDelivery).toBe(false);
-    expect(logger.warn).toHaveBeenCalledWith(
-      'guaranteedDelivery=true conflicts with autoRetry=false; ignoring guaranteedDelivery.'
-    );
-  });
-
-  test('guaranteedDelivery conflicts with an explicit nonzero maxAttempts — warn and respect the cap', () => {
-    const logger = createMockLogger();
-    const policy = resolveRetryPolicy(
-      {},
-      new URLSearchParams('guaranteedDelivery=true&autoRetryMaxAttempts=5'),
-      logger
-    );
+    const policy = resolveRetryPolicy({}, new URLSearchParams('retryMode=guaranteed&autoRetryMaxAttempts=5'), logger);
     expect(policy.guaranteedDelivery).toBe(true);
     expect(policy.maxAttempts).toBe(5);
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('respecting autoRetryMaxAttempts'));
   });
 
-  test('guaranteedDelivery with an explicit maxAttempts=0 is not a conflict', () => {
+  test('retryMode=guaranteed with an explicit maxAttempts=0 is not a conflict', () => {
     const logger = createMockLogger();
-    const policy = resolveRetryPolicy({ maxAttempts: 0 }, new URLSearchParams('guaranteedDelivery=true'), logger);
+    const policy = resolveRetryPolicy({ maxAttempts: 0 }, new URLSearchParams('retryMode=guaranteed'), logger);
     expect(policy.guaranteedDelivery).toBe(true);
     expect(policy.maxAttempts).toBe(0);
     expect(logger.warn).not.toHaveBeenCalled();
