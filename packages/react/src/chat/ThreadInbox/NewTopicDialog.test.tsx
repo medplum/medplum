@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Notifications } from '@mantine/notifications';
-import type { Patient } from '@medplum/fhirtypes';
+import type { Communication, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import userEvent from '@testing-library/user-event';
@@ -70,7 +70,7 @@ describe('NewTopicDialog', () => {
 
   test('displays practitioner input field', () => {
     setup(true);
-    expect(screen.getByText('Practitioner (optional)')).toBeInTheDocument();
+    expect(screen.getByText('Practitioner')).toBeInTheDocument();
   });
 
   test('displays topic input field', () => {
@@ -84,16 +84,47 @@ describe('NewTopicDialog', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
   });
 
-  test('shows error when submitting without patient and search is enabled', async () => {
-    const user = userEvent.setup();
+  test('disables submit until a patient is selected when search is enabled', () => {
     setup(true, undefined, true);
 
+    // With no patient chosen, the patient is required, so Next is disabled
+    // and cannot be submitted.
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+  });
+
+  test('creates a communication and calls onSubmit when a patient is provided', async () => {
+    const user = userEvent.setup();
+    const patient: Patient = { resourceType: 'Patient', id: '123' };
+    const createSpy = vi.spyOn(medplum, 'createResource');
+    // Subject pre-fills the patient; the signed-in Practitioner profile defaults a practitioner,
+    // so Next is enabled and submit runs the full creation path.
+    setup(true, patient);
+
     const submitButton = screen.getByRole('button', { name: 'Next' });
+    await waitFor(() => expect(submitButton).toBeEnabled());
     await user.click(submitButton);
 
-    await waitFor(() => {
-      expect(screen.getByText(/Please select a patient/i)).toBeInTheDocument();
-    });
+    await waitFor(() => expect(createSpy).toHaveBeenCalled());
+    const created = createSpy.mock.calls[0][0] as Communication;
+    expect(created.resourceType).toBe('Communication');
+    expect(created.subject).toEqual({ reference: 'Patient/123' });
+    expect(created.recipient).toContainEqual({ reference: 'Patient/123' });
+    expect(mockOnSubmit).toHaveBeenCalled();
+    expect(mockOnClose).toHaveBeenCalled();
+  });
+
+  test('shows an error notification when creation fails', async () => {
+    const user = userEvent.setup();
+    const patient: Patient = { resourceType: 'Patient', id: '123' };
+    vi.spyOn(medplum, 'createResource').mockRejectedValue(new Error('Create failed'));
+    setup(true, patient);
+
+    const submitButton = screen.getByRole('button', { name: 'Next' });
+    await waitFor(() => expect(submitButton).toBeEnabled());
+    await user.click(submitButton);
+
+    await waitFor(() => expect(screen.getByText(/Create failed/i)).toBeInTheDocument());
+    expect(mockOnClose).not.toHaveBeenCalled();
   });
 
   test('calls onClose when modal is closed', async () => {

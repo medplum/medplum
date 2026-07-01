@@ -5,7 +5,12 @@ import { createContext, useContext } from 'react';
 
 export const reactContext = createContext(undefined as MedplumContext | undefined);
 
-export type MedplumNavigateFunction = (path: string) => void;
+export interface MedplumNavigateOptions {
+  /** Replace the current history entry instead of pushing a new one. */
+  replace?: boolean;
+}
+
+export type MedplumNavigateFunction = (path: string, options?: MedplumNavigateOptions) => void;
 
 export interface MedplumContext {
   medplum: MedplumClient;

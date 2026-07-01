@@ -18,6 +18,7 @@ export interface UseThreadInboxReturn {
   selectedThread: Communication | undefined;
   total: number | undefined;
   addThreadMessage: (message: Communication) => void;
+  updateThreadParent: (updated: Communication) => void;
   handleThreadStatusChange: (newStatus: Communication['status']) => void;
   refreshThreadMessages: () => Promise<void>;
 }
@@ -110,6 +111,15 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       })
       .filter((thread): thread is [Communication, Communication] => thread[1] !== undefined);
 
+    // Order threads by their latest message so the list reflects actual message activity.
+    // Editing a thread's topic/participants (or changing its status) bumps the parent's
+    // meta.lastUpdated, but that must not reorder the inbox — only real messages should.
+    const getLastMessageTime = (message: Communication): number => {
+      const timestamp = message.sent ?? message.meta?.lastUpdated;
+      return timestamp ? new Date(timestamp).getTime() : 0;
+    };
+    threadsWithReplies.sort((a, b) => getLastMessageTime(b[1]) - getLastMessageTime(a[1]));
+
     setThreadMessages(threadsWithReplies);
   }, [medplum, query]);
 
@@ -176,6 +186,17 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     doAdd().catch((err: Error) => setError(err));
   };
 
+  // Update an already-listed thread's parent in place (e.g. after editing its topic/participants),
+  // preserving its last-message slot. A full refetch would drop a draft thread that has no reply
+  // yet, since fetchAllCommunications only keeps threads with a message; this keeps the draft
+  // visible in the list until the user navigates away.
+  const updateThreadParent = useCallback((updated: Communication): void => {
+    setSelectedThread((current) => (current?.id === updated.id ? updated : current));
+    setThreadMessages((prev) =>
+      prev.map(([parent, lastMsg]) => (parent.id === updated.id ? [updated, lastMsg] : [parent, lastMsg]))
+    );
+  }, []);
+
   return {
     loading,
     error,
@@ -183,6 +204,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     selectedThread,
     total,
     addThreadMessage,
+    updateThreadParent,
     handleThreadStatusChange,
     refreshThreadMessages: fetchAllCommunications,
   };

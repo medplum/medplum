@@ -26,13 +26,14 @@ import type { SearchRequest } from '@medplum/core';
 import { getReferenceString, normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
-import { IconChevronDown, IconMessageCircle, IconPlus } from '@tabler/icons-react';
+import { IconChevronDown, IconInfoCircle, IconMessageCircle, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { PatientSummary } from '../../PatientSummary/PatientSummary';
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
 import { ThreadChat } from '../ThreadChat/ThreadChat';
 import { ChatList } from './ChatList';
+import { EditTopicDialog } from './EditTopicDialog';
 import { NewTopicDialog } from './NewTopicDialog';
 import { ParticipantFilter } from './ParticipantFilter';
 import classes from './ThreadInbox.module.css';
@@ -86,6 +87,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   const navigate = useMedplumNavigate();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
 
   const currentSearch = useMemo(() => parseSearchRequest(`Communication?${query}`), [query]);
 
@@ -115,6 +117,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     total,
     handleThreadStatusChange,
     addThreadMessage,
+    updateThreadParent,
     refreshThreadMessages,
   } = useThreadInbox({
     query,
@@ -154,6 +157,16 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
       });
     }
   }, [error]);
+
+  // Auto-select the first thread when none is selected (matching the Tasks/Faxes boards).
+  // Uses replace so the implicit selection doesn't add a back-button entry that would
+  // bounce straight back into this effect.
+  useEffect(() => {
+    if (loading || threadId !== undefined || threadMessages.length === 0) {
+      return;
+    }
+    navigate(getThreadUri(threadMessages[0][0]), { replace: true });
+  }, [loading, threadId, threadMessages, navigate, getThreadUri]);
 
   const handleTopicStatusChangeWithErrorHandling = async (newStatus: Communication['status']): Promise<void> => {
     handleThreadStatusChange(newStatus);
@@ -271,32 +284,47 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                         {selectedThread.topic?.text ?? 'Messages'}
                       </Text>
 
-                      <Menu position="bottom-end" shadow="md">
-                        <Menu.Target>
-                          <Button
-                            variant="light"
-                            color={getStatusColor(selectedThread.status)}
-                            rightSection={
-                              selectedThread.status === 'completed' ? undefined : <IconChevronDown size={16} />
-                            }
+                      <Group gap="xs">
+                        <Tooltip label="Message Settings" position="bottom" openDelay={500}>
+                          <ActionIcon
+                            aria-label="Message settings"
+                            variant="transparent"
                             radius="xl"
-                            size="sm"
+                            size={32}
+                            className="outline-icon-button"
+                            onClick={openEditModal}
                           >
-                            {selectedThread.status
-                              .split('-')
-                              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                              .join(' ')}
-                          </Button>
-                        </Menu.Target>
+                            <IconInfoCircle size={16} />
+                          </ActionIcon>
+                        </Tooltip>
 
-                        {selectedThread.status !== 'completed' && (
-                          <Menu.Dropdown>
-                            <Menu.Item onClick={() => handleTopicStatusChangeWithErrorHandling('completed')}>
-                              Completed
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        )}
-                      </Menu>
+                        <Menu position="bottom-end" shadow="md">
+                          <Menu.Target>
+                            <Button
+                              variant="light"
+                              color={getStatusColor(selectedThread.status)}
+                              rightSection={
+                                selectedThread.status === 'completed' ? undefined : <IconChevronDown size={16} />
+                              }
+                              radius="xl"
+                              size="sm"
+                            >
+                              {selectedThread.status
+                                .split('-')
+                                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ')}
+                            </Button>
+                          </Menu.Target>
+
+                          {selectedThread.status !== 'completed' && (
+                            <Menu.Dropdown>
+                              <Menu.Item onClick={() => handleTopicStatusChangeWithErrorHandling('completed')}>
+                                Completed
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          )}
+                        </Menu>
+                      </Group>
                     </Flex>
                     <Divider />
                     <Flex direction="column" style={{ flex: 1 }} h="100%">
@@ -340,6 +368,18 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
         onSubmit={handleNewTopicCompletion}
         allowPatientSelection={allowPatientSelection}
       />
+      {/* Mount only while open so every open is a fresh instance — any edits dismissed
+          without saving are abandoned, with no leftover form state. */}
+      {selectedThread && editModalOpened && (
+        <EditTopicDialog
+          thread={selectedThread}
+          opened={editModalOpened}
+          onClose={closeEditModal}
+          // Update the thread in place rather than refetching, so a draft thread (no reply yet)
+          // stays in the list after editing its settings instead of being filtered out.
+          onSaved={(updated) => updateThreadParent(updated)}
+        />
+      )}
     </>
   );
 }
