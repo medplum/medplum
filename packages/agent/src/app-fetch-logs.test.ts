@@ -399,9 +399,7 @@ describe('Fetch Logs', () => {
     }
 
     // Page 1: fetch the newest 10 of 15 logs.
-    state.mySocket.send(
-      Buffer.from(JSON.stringify({ type: 'agent:logs:request', limit: 10, callback: randomUUID() }))
-    );
+    state.mySocket.send(Buffer.from(JSON.stringify({ type: 'agent:logs:request', limit: 10, callback: randomUUID() })));
 
     let shouldThrow = false;
     const timeout1 = setTimeout(() => {

@@ -4,8 +4,8 @@ import type { MockInstance } from 'vitest';
 
 import type { LogLevelNames } from '@medplum/core';
 import { LogLevel, parseLogLevel, sleep } from '@medplum/core';
-import { writeFileSync } from 'node:fs';
 import { mkdtemp, rm } from 'fs/promises';
+import { writeFileSync } from 'node:fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import {

@@ -652,7 +652,11 @@ describe('ToolsPage', () => {
             parameter: [
               {
                 name: 'logs',
-                valueString: JSON.stringify({ level: 'INFO', timestamp: '2020-01-02T00:00:00.000Z', msg: 'Newest log' }),
+                valueString: JSON.stringify({
+                  level: 'INFO',
+                  timestamp: '2020-01-02T00:00:00.000Z',
+                  msg: 'Newest log',
+                }),
               },
               { name: 'hasMore', valueBoolean: true },
               { name: 'nextBefore', valueString: '2020-01-02T00:00:00.000Z' },
