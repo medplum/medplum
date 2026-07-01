@@ -159,7 +159,12 @@ function MemberBulkActionsModal(props: MemberBulkActionsModalProps): JSX.Element
   }
 
   return (
-    <Modal opened={props.opened} onClose={props.onClose} title={`Actions for ${count} member${count === 1 ? '' : 's'}`} centered>
+    <Modal
+      opened={props.opened}
+      onClose={props.onClose}
+      title={`Actions for ${count} member${count === 1 ? '' : 's'}`}
+      centered
+    >
       <Stack>
         <Text size="sm">Choose an action to apply to the selected member{count === 1 ? '' : 's'}.</Text>
         <Button
@@ -187,11 +192,9 @@ function MemberBulkActionsModal(props: MemberBulkActionsModalProps): JSX.Element
             if (!window.confirm(`Remove ${count} member${count === 1 ? '' : 's'} from the project?`)) {
               return;
             }
-            runForEach(
-              'Removed',
-              (id) => medplum.delete(`admin/projects/${props.projectId}/members/${id}`),
-              { refresh: true }
-            ).catch(console.error);
+            runForEach('Removed', (id) => medplum.delete(`admin/projects/${props.projectId}/members/${id}`), {
+              refresh: true,
+            }).catch(console.error);
           }}
         >
           Remove from project

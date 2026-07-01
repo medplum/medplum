@@ -82,8 +82,8 @@ export function ResetMfaModal(props: ResetMfaModalProps): JSX.Element {
       <Form onSubmit={handleSubmit}>
         <Stack>
           <Text size="sm">
-            Reset a multi-factor authentication factor for this member. Resetting the authenticator app rotates
-            their secret so a lost device cannot be reused. Any other enrolled factors are left in place.
+            Reset a multi-factor authentication factor for this member. Resetting the authenticator app rotates their
+            secret so a lost device cannot be reused. Any other enrolled factors are left in place.
           </Text>
           <Radio.Group value={method} onChange={(v) => setMethod(v as MfaMethod)} label="Factor to reset">
             <Stack gap="xs" mt="xs">
@@ -139,8 +139,8 @@ export function SendPasswordResetModal(props: SendPasswordResetModalProps): JSX.
     <Modal opened={props.opened} onClose={props.onClose} title="Send password reset email" centered>
       <Stack>
         <Text size="sm">
-          Send this member an email with a single-use link to set a new password. Their current password remains
-          valid until they complete the reset.
+          Send this member an email with a single-use link to set a new password. Their current password remains valid
+          until they complete the reset.
         </Text>
         <Group justify="flex-end">
           <Button variant="default" onClick={props.onClose}>
@@ -264,9 +264,7 @@ export function AccountSecurityCard(props: AccountSecurityCardProps): JSX.Elemen
           )}
         </Group>
         {!user.email && (
-          <Alert color="yellow">
-            This member has no email address, so password reset emails cannot be sent.
-          </Alert>
+          <Alert color="yellow">This member has no email address, so password reset emails cannot be sent.</Alert>
         )}
         <Group>
           <Button variant="outline" color="red" onClick={resetMfa.open} disabled={enrolledMethods.length === 0}>

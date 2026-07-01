@@ -270,10 +270,7 @@ describe('MemberDetailsPage', () => {
     expect(screen.getByText('ProjectMembership Details')).toBeInTheDocument();
   });
 
-  async function setupMember(
-    medplum: MockClient,
-    userProps: Partial<User> = {}
-  ): Promise<ProjectMembership> {
+  async function setupMember(medplum: MockClient, userProps: Partial<User> = {}): Promise<ProjectMembership> {
     const practitioner = await medplum.createResource<Practitioner>({
       resourceType: 'Practitioner',
       name: [{ given: ['Sec'], family: 'User' }],
@@ -329,7 +326,9 @@ describe('MemberDetailsPage', () => {
 
   test('Reset MFA calls resetMemberMfa with selected method', async () => {
     const medplum = createMedplum(true);
-    const resetSpy = vi.spyOn(medplum, 'resetMemberMfa').mockResolvedValue({ resourceType: 'OperationOutcome', issue: [] });
+    const resetSpy = vi
+      .spyOn(medplum, 'resetMemberMfa')
+      .mockResolvedValue({ resourceType: 'OperationOutcome', issue: [] });
     const membership = await setupMember(medplum, { mfaEnrolled: true, mfaMethod: ['totp'] });
 
     renderAppRoutes(medplum, `/admin/users/${membership.id}`);
