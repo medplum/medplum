@@ -41,7 +41,7 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { tryLogin } from '../oauth/utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
-import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
+import { buildAccessPolicy, getRepoForLogin, reconcileDefaultAccessPolicy } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
@@ -3195,5 +3195,91 @@ describe('AccessPolicy', () => {
         await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
         await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
       }));
+  });
+});
+
+describe('reconcileDefaultAccessPolicy', () => {
+  const practitionerDefault = { reference: 'AccessPolicy/practitioner-default' };
+  const adminDefault = { reference: 'AccessPolicy/admin-default' };
+  const customPolicy = { reference: 'AccessPolicy/custom' };
+
+  const project: Project = {
+    resourceType: 'Project',
+    defaultAccessPolicies: [
+      { profileType: 'Practitioner', accessPolicy: practitionerDefault },
+      { profileType: 'Admin', accessPolicy: adminDefault },
+    ],
+  };
+
+  test('Upgrades Practitioner default to Admin default when admin', () => {
+    const membership: ProjectMembership = {
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/123' },
+      user: { reference: 'User/123' },
+      profile: { reference: 'Practitioner/123' },
+      admin: true,
+      accessPolicy: practitionerDefault,
+    };
+    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(adminDefault);
+  });
+
+  test('Downgrades Admin default to Practitioner default when not admin', () => {
+    const membership: ProjectMembership = {
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/123' },
+      user: { reference: 'User/123' },
+      profile: { reference: 'Practitioner/123' },
+      accessPolicy: adminDefault,
+    };
+    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(practitionerDefault);
+  });
+
+  test('Leaves a custom access policy untouched', () => {
+    const membership: ProjectMembership = {
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/123' },
+      user: { reference: 'User/123' },
+      profile: { reference: 'Practitioner/123' },
+      admin: true,
+      accessPolicy: customPolicy,
+    };
+    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(customPolicy);
+  });
+
+  test('No-op when the policy already matches the role', () => {
+    const membership: ProjectMembership = {
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/123' },
+      user: { reference: 'User/123' },
+      profile: { reference: 'Practitioner/123' },
+      admin: true,
+      accessPolicy: adminDefault,
+    };
+    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(adminDefault);
+  });
+
+  test('No-op when membership has no access policy', () => {
+    const membership: ProjectMembership = {
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/123' },
+      user: { reference: 'User/123' },
+      profile: { reference: 'Practitioner/123' },
+      admin: true,
+    };
+    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toBeUndefined();
+  });
+
+  test('No-op when project has no default access policies', () => {
+    const membership: ProjectMembership = {
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/123' },
+      user: { reference: 'User/123' },
+      profile: { reference: 'Practitioner/123' },
+      admin: true,
+      accessPolicy: practitionerDefault,
+    };
+    expect(reconcileDefaultAccessPolicy({ resourceType: 'Project' }, membership).accessPolicy).toStrictEqual(
+      practitionerDefault
+    );
   });
 });

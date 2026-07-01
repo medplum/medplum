@@ -2021,7 +2021,7 @@ describe('Admin Invite', () => {
       expect(membership.accessPolicy?.reference).toBe(getReferenceString(adminPolicy));
     }));
 
-  test('Invite non-admin Practitioner does not apply Admin defaultAccessPolicies', () =>
+  test('Invite non-admin Practitioner applies Practitioner defaultAccessPolicies (not Admin)', () =>
     withTestContext(async () => {
       const { project } = await createTestProject();
       const systemRepo = await getProjectSystemRepo(project);
@@ -2030,9 +2030,17 @@ describe('Admin Invite', () => {
         name: 'Default Admin Policy',
         resource: [{ resourceType: '*' }],
       });
+      const practitionerPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Practitioner Policy',
+        resource: [{ resourceType: '*', readonly: true }, { resourceType: 'Patient' }],
+      });
       const projectWithDefault = await systemRepo.updateResource({
         ...project,
-        defaultAccessPolicies: [{ profileType: 'Admin', accessPolicy: createReference(adminPolicy) }],
+        defaultAccessPolicies: [
+          { profileType: 'Admin', accessPolicy: createReference(adminPolicy) },
+          { profileType: 'Practitioner', accessPolicy: createReference(practitionerPolicy) },
+        ],
       });
 
       const { membership } = await inviteUser({
@@ -2044,6 +2052,6 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-      expect(membership.accessPolicy).toBeUndefined();
+      expect(membership.accessPolicy?.reference).toBe(getReferenceString(practitionerPolicy));
     }));
 });
