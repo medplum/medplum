@@ -35,7 +35,11 @@ const CASES: { name: string; sql: string; params: unknown[]; index: string }[] =
   // Hot path
   { name: 'findSeenByControlId', sql: FIND_SEEN_BY_CONTROL_ID, params: ['ch', 'mc'], index: 'idx_inbound_dup_lookup' },
   // claimNext binds `now` twice: processing_started_at + the next_attempt_at backoff predicate.
-  { name: 'claimNext', sql: CLAIM_NEXT, params: [0, 'ch', 0], index: 'idx_inbound_channel_state_id' },
+  // Its `head` scan (channel + state, ordered by id) rides idx_inbound_channel_state_id...
+  { name: 'claimNext head scan', sql: CLAIM_NEXT, params: [0, 'ch', 0], index: 'idx_inbound_channel_state_id' },
+  // ...while the per-partition head (MIN) and busy subqueries ride idx_inbound_vchannel_claim.
+  // Both must be present so neither the concurrency index nor the FIFO index can be dropped silently.
+  { name: 'claimNext partition subqueries', sql: CLAIM_NEXT, params: [0, 'ch', 0], index: 'idx_inbound_vchannel_claim' },
   { name: 'markSent', sql: MARK_SENT, params: [0, 'cb'], index: 'uq_inbound_callback' },
   { name: 'findByCallback', sql: FIND_BY_CALLBACK, params: ['cb'], index: 'uq_inbound_callback' },
   // Startup / recovery

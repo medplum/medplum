@@ -30,9 +30,9 @@ export const ENQUEUE = `
   INSERT INTO inbound_hl7_messages (
     channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
     enhanced_mode, state, attempt_count, callback_id,
-    seq_no, received_at, guaranteed_delivery
+    seq_no, received_at, guaranteed_delivery, virtual_channel_key
   ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?, ?
   )
 `;
 
@@ -49,6 +49,27 @@ export const ENQUEUE_REJECTED = `
   ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, 'nacked', 0, ?, 'not_owed', ?, ?, ?, ?
   )
+`;
+
+// --- Virtual-channel key recompute (config reload) ---
+//
+// When a channel's `virtualChannelKey` spec changes, the stored partition of
+// every still-`queued` row must be recomputed from its original bytes. We touch
+// ONLY `queued` rows: a `claimed`/`inflight` row is mid-dispatch under its
+// current partition and must finish there (never repartition a row a worker
+// holds in flight). See AgentHl7Channel config reload + DurableQueue.recomputeVirtualChannelKeys.
+
+/** Read every `queued` row for a channel, with the bytes + current key needed to recompute its partition. */
+export const SELECT_QUEUED_FOR_VCHANNEL_RECOMPUTE = `
+  SELECT id, original_message, virtual_channel_key FROM inbound_hl7_messages
+   WHERE channel_name = ? AND state = 'queued'
+`;
+
+/** Rewrite a single `queued` row's partition. Guarded on `state = 'queued'` so a row claimed since the read is left alone. */
+export const SET_VIRTUAL_CHANNEL_KEY = `
+  UPDATE inbound_hl7_messages
+     SET virtual_channel_key = ?
+   WHERE id = ? AND state = 'queued'
 `;
 
 // --- Per-channel sequence counter ---
@@ -85,17 +106,37 @@ export const FIND_SEEN_BY_CONTROL_ID = `
 `;
 
 /**
- * FIFO claim: flip the lowest-id queued row for a channel to `claimed` in one
- * statement. The row stays `claimed` until {@link MARK_SENT} flips it to
- * `inflight` once the request is written to the socket. The inner SELECT is
- * served by `idx_inbound_channel_state_id`. [index-guarded]
+ * Partition-aware FIFO claim: flip the head of the next *available* virtual
+ * channel to `claimed` in one statement. This is what lets a bounded pool of
+ * workers process distinct virtual channels of one physical channel concurrently
+ * while each virtual channel stays strictly serial and in order.
  *
- * The `next_attempt_at` backoff predicate sits on the OUTER update, not the
- * inner select, on purpose: a head row still waiting out its retry backoff
- * blocks the whole channel (claim returns null) instead of letting younger rows
- * skip ahead. That head-of-line blocking preserves the per-channel FIFO
- * ordering guarantee across retries (see {@link SCHEDULE_RETRY}). The claim also
- * clears `next_attempt_at` so a re-claimed retry row carries no stale schedule.
+ * A row is claimable iff ALL hold (candidate aliased `head`):
+ *  1. `head` is `queued` for this channel.
+ *  2. `head` is the *head* of its virtual channel — the lowest-id queued row for
+ *     its `virtual_channel_key`. This is what makes a non-head row unclaimable
+ *     while an earlier row in the same partition is still queued (per-partition
+ *     FIFO), even when the head is backing off.
+ *  3. That virtual channel is not already being processed — no `claimed`/`inflight`
+ *     row shares its `virtual_channel_key`. This is the serialization guard: at
+ *     most one worker ever holds a given virtual channel in flight, so raising the
+ *     worker-pool size never breaks per-partition ordering.
+ *  4. The head's retry backoff has elapsed (`next_attempt_at`). Because only heads
+ *     are considered (rule 2), a backing-off head blocks its whole virtual channel
+ *     rather than letting a younger row skip ahead — head-of-line blocking scoped
+ *     to the partition (see {@link SCHEDULE_RETRY}).
+ *
+ * Among all claimable heads we take the lowest id (`ORDER BY head.id`), so the
+ * oldest-waiting partition is served first. With the default single virtual
+ * channel (`virtual_channel_key = ''`) this reduces exactly to the old behavior:
+ * one in-flight row per channel, strict FIFO, head backoff blocks the channel.
+ *
+ * The claim clears `next_attempt_at` so a re-claimed retry row carries no stale
+ * schedule. The `head` scan is served by `idx_inbound_channel_state_id`; the
+ * per-partition head (MIN) and busy subqueries by `idx_inbound_vchannel_claim`.
+ * The subqueries are correlated to the outer `head` (channel + partition), so the
+ * bind list is unchanged from the pre-partition claim: now (processing_started_at),
+ * channel_name (head), now (head backoff). [index-guarded]
  */
 export const CLAIM_NEXT = `
   UPDATE inbound_hl7_messages
@@ -104,12 +145,25 @@ export const CLAIM_NEXT = `
          attempt_count = attempt_count + 1,
          next_attempt_at = NULL
    WHERE id = (
-     SELECT id FROM inbound_hl7_messages
-      WHERE channel_name = ? AND state = 'queued'
-      ORDER BY id ASC
+     SELECT head.id FROM inbound_hl7_messages head
+      WHERE head.channel_name = ?
+        AND head.state = 'queued'
+        AND (head.next_attempt_at IS NULL OR head.next_attempt_at <= ?)
+        AND head.id = (
+          SELECT MIN(h.id) FROM inbound_hl7_messages h
+           WHERE h.channel_name = head.channel_name
+             AND h.virtual_channel_key = head.virtual_channel_key
+             AND h.state = 'queued'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM inbound_hl7_messages busy
+           WHERE busy.channel_name = head.channel_name
+             AND busy.virtual_channel_key = head.virtual_channel_key
+             AND busy.state IN ('claimed', 'inflight')
+        )
+      ORDER BY head.id ASC
       LIMIT 1
    )
-   AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
    RETURNING *
 `;
 

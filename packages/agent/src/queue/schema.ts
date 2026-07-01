@@ -153,6 +153,33 @@ export const MIGRATIONS: readonly Migration[] = [
         ADD COLUMN guaranteed_delivery INTEGER NOT NULL DEFAULT 0;
     `,
   },
+  {
+    // Virtual channels: partition a physical channel's rows into independent
+    // FIFO sub-queues, so a bounded worker pool can process distinct partitions
+    // concurrently while each partition stays strictly serial. The partition of
+    // a row is its virtual_channel_key, computed at intake from the channel's
+    // `virtualChannelKey` spec (a set of HL7 field paths). The default '' means
+    // "one queue for the whole channel" -- byte-identical to pre-virtual-channel
+    // behavior. See virtual-channel.ts and the CLAIM_NEXT partition logic.
+    //
+    // ADD COLUMN stays cheap here (a plain, non-generated TEXT with a literal
+    // DEFAULT rewrites only the schema text, not existing rows -- same rationale
+    // as the v2 columns). The companion index is what the partition-aware claim
+    // relies on to stay off a full table scan.
+    version: 3,
+    sql: `
+      ALTER TABLE inbound_hl7_messages
+        ADD COLUMN virtual_channel_key TEXT NOT NULL DEFAULT '';
+
+      -- Serves the partition-aware CLAIM_NEXT: the per-partition head lookup
+      -- (MIN(id) WHERE channel+vkey+state='queued') and the "is this partition
+      -- already being processed" busy check (channel+vkey+state IN claimed,inflight).
+      -- Leading (channel_name, virtual_channel_key, state) lets both resolve by
+      -- index seek; the trailing id makes the MIN a boundary read.
+      CREATE INDEX IF NOT EXISTS idx_inbound_vchannel_claim
+        ON inbound_hl7_messages (channel_name, virtual_channel_key, state, id);
+    `,
+  },
 ];
 
 /**

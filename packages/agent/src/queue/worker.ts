@@ -331,24 +331,33 @@ export class ChannelQueueWorker {
   }
 
   /**
-   * Routes a server `agent:transmit:response` to its row.
+   * Routes a server `agent:transmit:response` to its row: resolve the in-flight
+   * dispatch if this worker owns the callback ({@link tryResolveInFlight}),
+   * otherwise treat it as a late response ({@link applyLateResponse}).
    *
-   * The common case is the response to the current in-flight dispatch, which
-   * resolves the pending promise and lets {@link process} settle the row.
-   *
-   * A response can also arrive *late* — after the response timeout (or a requeue
-   * / worker stop) already cleared the pending dispatch and left the row
-   * `failed`. We don't discard those: the Medplum server is the authority on the
-   * Bot-leg outcome, so a late ACK/NACK for a row that errored and isn't being
-   * retried right now is applied to settle the row ({@link applyServerResponse}),
-   * exactly as if it had arrived in time. This disambiguates the ambiguous
-   * `ResponseTimeout` case — a row we couldn't classify becomes a definite
-   * `processed`/`rejected`/`failed` — and avoids a redundant re-dispatch.
+   * This whole-worker entry point is used by a single-worker channel (and tests);
+   * a channel with a worker pool instead calls the two halves directly so it can
+   * route to exactly one owner (see {@link AgentHl7Channel.routeServerResponse}).
    * @param response - The response message received over the WS.
-   * @returns True if the response was applied or resolved a pending dispatch;
-   *          false if it could not be matched to a settleable row.
+   * @returns True if the response resolved a pending dispatch or settled a row;
+   *          false if it could not be matched.
    */
   onServerResponse(response: AgentTransmitResponse): boolean {
+    return this.tryResolveInFlight(response) || this.applyLateResponse(response);
+  }
+
+  /**
+   * Resolves the current in-flight dispatch if `response`'s callback matches it.
+   *
+   * Split out from {@link onServerResponse} so a channel with a worker pool can
+   * route a response to its true owner: it asks each worker in turn, and only the
+   * one holding that callback resolves. A non-owner returns false with no side
+   * effects (no DB lookup, no logging) — critical in a pool, where every other
+   * worker would otherwise mislog the response as belonging to a foreign row.
+   * @param response - The server response received over the WS.
+   * @returns True if this worker owned the callback and resolved its dispatch.
+   */
+  tryResolveInFlight(response: AgentTransmitResponse): boolean {
     if (!response.callback) {
       return false;
     }
@@ -359,8 +368,27 @@ export class ChannelQueueWorker {
       pending.resolve(response);
       return true;
     }
-    // No in-flight dispatch matches this callback — a late response. Look up the
-    // row it belongs to and decide whether it's still settleable.
+    return false;
+  }
+
+  /**
+   * Applies a *late* server response — one whose callback matches no in-flight
+   * dispatch on this worker, because the row already timed out / was requeued /
+   * the worker stopped. The Medplum server is authoritative on the Bot-leg
+   * outcome, so a late ACK/NACK for a `failed` row settles it
+   * ({@link applyServerResponse}) exactly as if it had arrived in time; anything
+   * else is logged and dropped.
+   *
+   * In a worker pool the channel calls this on a SINGLE worker only after every
+   * worker's {@link tryResolveInFlight} declined — the pool shares one queue and
+   * policy, so whichever worker applies it settles the row identically.
+   * @param response - The server response received over the WS.
+   * @returns True if the response was applied to settle a row; false if it could not be matched.
+   */
+  applyLateResponse(response: AgentTransmitResponse): boolean {
+    if (!response.callback) {
+      return false;
+    }
     const row = this.queue.findByCallback(response.callback);
     if (!row) {
       this.log.warn(`Discarding server response with no matching row (callback=${response.callback})`);
@@ -489,8 +517,8 @@ export class ChannelQueueWorker {
       // terminal write). Stop driving the queue and step down. We deliberately
       // leave any row we had mid-flight untouched (it stays `claimed`/`inflight`)
       // for the new leader's recoverOnStartup to reconcile — a demoted process
-      // must not write dispatch state. The channel reaps this stopped worker and
-      // starts a fresh one if we later reacquire (AgentHl7Channel.maybeStartWorker).
+      // must not write dispatch state. The channel reaps this stopped worker from
+      // its pool and starts a fresh one if we later reacquire (AgentHl7Channel.maybeStartWorkers).
       this.log.info(`Worker for channel '${this.channelName}' stepping down: queue lease taken by a peer.`);
       this.stopping = true;
       this.app.heartbeatEmitter.removeEventListener('heartbeat', this.onHeartbeat);

@@ -44,6 +44,14 @@ const TEST_MSG = (controlId: string): Hl7Message =>
       'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M\r'
   );
 
+// Like TEST_MSG but with a caller-chosen MSH.4 (sending facility), so a channel
+// keyed on virtualChannelKey=MSH.4 partitions messages by `facility`.
+const VC_MSG = (controlId: string, facility: string): Hl7Message =>
+  Hl7Message.parse(
+    `MSH|^~\\&|ADT1|${facility}|LABADT|MCM|198808181126|SECURITY|ADT^A01|${controlId}|P|2.5\r` +
+      'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M\r'
+  );
+
 let bot: Bot;
 
 describe('Durable queue integration', () => {
@@ -219,6 +227,110 @@ describe('Durable queue integration', () => {
     // warning. (Pre-fix this stayed at 1 forever.)
     const channel = app.channels.get('dq-test') as unknown as AgentHl7Channel;
     expect(channel.stats.getPendingCount()).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('virtual channels dispatch concurrently across partitions while each partition stays serial', async () => {
+    // A mock server that records every transmit and only replies on demand, so we
+    // can observe exactly how many messages the pool holds in flight at once.
+    const transmits: { channel: string; callback: string; remote: string; body: string }[] = [];
+    let serverSocket: Client | undefined;
+    mockServer.on('connection', (socket) => {
+      serverSocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:heartbeat:request') {
+          socket.send(
+            Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION }))
+          );
+        } else if (command.type === 'agent:transmit:request') {
+          transmits.push(command);
+        }
+      });
+    });
+    const replyTo = (controlId: string): void => {
+      const cmd = transmits.find((t) => Hl7Message.parse(t.body).getSegment('MSH')?.getField(10)?.toString() === controlId);
+      if (!cmd || !serverSocket) {
+        throw new Error(`no in-flight transmit for ${controlId}`);
+      }
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      serverSocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: cmd.channel,
+            remote: cmd.remote,
+            callback: cmd.callback,
+            contentType: ContentType.HL7_V2,
+            statusCode: 200,
+            body: ack.toString(),
+          } satisfies AgentTransmitResponse)
+        )
+      );
+    };
+
+    // Partition by sending facility (MSH.4); allow two workers so two partitions
+    // can be in flight at once. enhanced=true so each send gets its commit CA at
+    // intake (independent of the deferred Bot reply we control above).
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&virtualChannelKey=MSH.4&maxWorkers=2',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'vc', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+
+    // Enqueue in order: A1 (facility A), B1 (facility B), A2 (facility A). Each
+    // send resolves on its commit CA, so the rows land queued in this order.
+    const client = new Hl7Client({ host: 'localhost', port });
+    for (const [id, facility] of [
+      ['A1', 'HOSPA'],
+      ['B1', 'HOSPB'],
+      ['A2', 'HOSPA'],
+    ] as const) {
+      await client.sendAndWait(VC_MSG(id, facility), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    }
+
+    // Intake computed and stored the partition key end-to-end.
+    expect(queue.findSeenByControlId('vc', 'A1')?.virtualChannelKey).toBe('MSH.4:HOSPA');
+    expect(queue.findSeenByControlId('vc', 'B1')?.virtualChannelKey).toBe('MSH.4:HOSPB');
+
+    // The pool dispatches A1 and B1 concurrently (distinct partitions), but NOT A2
+    // (same partition as the still-in-flight A1). This is stable: A2 can't be
+    // claimed until A1 settles, so the count can't creep past 2.
+    await waitFor(() => transmits.length >= 2, 3000, 'two concurrent transmits');
+    await sleep(150);
+    expect(transmits.length).toBe(2);
+    const inFlightIds = transmits
+      .map((t) => Hl7Message.parse(t.body).getSegment('MSH')?.getField(10)?.toString())
+      .sort();
+    expect(inFlightIds).toEqual(['A1', 'B1']);
+
+    // Settle A1; only now does A2 (next in partition HOSPA) become claimable.
+    replyTo('A1');
+    await waitFor(() => transmits.length >= 3, 3000, 'A2 dispatched after A1 settled');
+    expect(Hl7Message.parse(transmits[2].body).getSegment('MSH')?.getField(10)?.toString()).toBe('A2');
+
+    // Drain the rest and confirm all three processed.
+    replyTo('B1');
+    replyTo('A2');
+    await waitForRow(queue, (counts) => counts.processed === 3, 3000);
+    expect(queue.countByState().queued).toBe(0);
 
     await client.close();
     await app.stop();

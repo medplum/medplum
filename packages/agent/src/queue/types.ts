@@ -273,6 +273,14 @@ interface InboundRowBase {
   encoding: string | null;
   enhancedMode: EnhancedModeColumn;
   attemptCount: number;
+  /**
+   * The row's virtual channel — the FIFO partition it's claimed within, computed
+   * at intake from the channel's `virtualChannelKey` spec. `''` (the default)
+   * means the channel is a single queue. Rows sharing a key are serialized
+   * against each other; distinct keys can run on different pool workers at once.
+   * See virtual-channel.ts and the CLAIM_NEXT partition logic.
+   */
+  virtualChannelKey: string;
   /** Snapshot of the channel's guaranteed-delivery setting at intake (drives crash recovery). */
   guaranteedDelivery: boolean;
   callbackId: string;
@@ -415,6 +423,12 @@ export interface EnqueueInput {
   callbackId: string;
   seqNo: number | null;
   receivedAt: number;
+  /**
+   * The row's virtual channel (FIFO partition), computed at intake from the
+   * channel's `virtualChannelKey` spec. Optional; defaults to `''` (the channel
+   * is a single queue). See {@link InboundRowBase.virtualChannelKey}.
+   */
+  virtualChannelKey?: string;
   /**
    * Snapshot of the channel's guaranteed-delivery setting at intake time.
    * Stored on the row so `recoverOnStartup` (which runs before channel

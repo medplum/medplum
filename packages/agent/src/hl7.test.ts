@@ -37,6 +37,7 @@ import {
   describeAckCode,
   parseAppLevelAckMode,
   parseEnhancedMode,
+  resolveMaxWorkers,
   resolveRetryPolicy,
   shouldSendAppLevelAck,
 } from './hl7';
@@ -2781,6 +2782,8 @@ describe('AgentHl7Channel application-level ACK gating', () => {
       getAgentConfig: vi.fn(),
       getDurableQueue: vi.fn().mockReturnValue(undefined),
       getChannelRetrySettings: vi.fn().mockReturnValue({}),
+      getChannelMaxWorkers: vi.fn().mockReturnValue(undefined),
+      getChannelVirtualChannelKey: vi.fn().mockReturnValue(undefined),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;
@@ -3097,6 +3100,8 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
       agentId: 'test-agent',
       getDurableQueue: vi.fn().mockReturnValue(undefined),
       getChannelRetrySettings: vi.fn().mockReturnValue({}),
+      getChannelMaxWorkers: vi.fn().mockReturnValue(undefined),
+      getChannelVirtualChannelKey: vi.fn().mockReturnValue(undefined),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;
@@ -3322,5 +3327,105 @@ describe('resolveRetryPolicy', () => {
     expect(policy.guaranteedDelivery).toBe(true);
     expect(policy.maxAttempts).toBe(0);
     expect(logger.warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('resolveMaxWorkers', () => {
+  test('defaults to 1 with no config', () => {
+    expect(resolveMaxWorkers(new URLSearchParams(), undefined, createMockLogger())).toBe(1);
+  });
+
+  test('endpoint URL param overrides the agent-wide default', () => {
+    expect(resolveMaxWorkers(new URLSearchParams('maxWorkers=4'), 2, createMockLogger())).toBe(4);
+  });
+
+  test('falls back to the agent-wide default when no URL param', () => {
+    expect(resolveMaxWorkers(new URLSearchParams(), 3, createMockLogger())).toBe(3);
+  });
+
+  test('clamps to an integer >= 1', () => {
+    expect(resolveMaxWorkers(new URLSearchParams(), 2.9, createMockLogger())).toBe(2);
+    // A 0 or negative agent setting clamps up to 1 (a channel always has at least one worker).
+    expect(resolveMaxWorkers(new URLSearchParams(), 0, createMockLogger())).toBe(1);
+  });
+
+  test('warns and falls through on an invalid URL param', () => {
+    const logger = createMockLogger();
+    // < 1 and non-numeric are both rejected at the URL layer, then fall back to the agent default.
+    expect(resolveMaxWorkers(new URLSearchParams('maxWorkers=0'), 5, logger)).toBe(5);
+    expect(resolveMaxWorkers(new URLSearchParams('maxWorkers=abc'), 5, logger)).toBe(5);
+    expect(logger.warn).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('AgentHl7Channel virtualChannelKey partitioning', () => {
+  const ADDR = 'mllp://localhost:59321';
+  const MSG = (facility: string): Hl7Message =>
+    Hl7Message.parse(`MSH|^~\\&|APP|${facility}|R|F|20240101||ADT^A01|MSG1|P|2.5.1`);
+
+  // Builds a channel with a stub durable queue whose recomputeVirtualChannelKeys
+  // we can spy on, plus a helper to re-run config with a new virtualChannelKey
+  // spec (simulating a reload). createMockLogger().clone() returns the same mock,
+  // so `appLog` is the channel's own logger.
+  function makeChannel(): {
+    channel: AgentHl7Channel;
+    recompute: Mock;
+    reconfigure: (spec: string) => void;
+    appLog: ReturnType<typeof createMockLogger>;
+  } {
+    const appLog = createMockLogger();
+    const recompute = vi.fn().mockReturnValue(0);
+    const mockApp = {
+      log: appLog,
+      channelLog: createMockLogger(),
+      heartbeatEmitter: { addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() },
+      getDurableQueue: vi.fn().mockReturnValue({ isLeader: () => false, recomputeVirtualChannelKeys: recompute }),
+      getChannelRetrySettings: vi.fn().mockReturnValue({}),
+      getChannelMaxWorkers: vi.fn().mockReturnValue(undefined),
+      getChannelVirtualChannelKey: vi.fn().mockReturnValue(undefined),
+    } as unknown as App;
+    const channel = new AgentHl7Channel(mockApp, { name: 'vc-channel' } as AgentChannel, {
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: `${ADDR}?virtualChannelKey=`,
+    } as Endpoint);
+    const reconfigure = (spec: string): void => {
+      (channel as unknown as { endpoint: Endpoint }).endpoint = {
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: `${ADDR}?virtualChannelKey=${spec}`,
+      } as Endpoint;
+      (channel as unknown as { configureHl7ServerAndConnections(): void }).configureHl7ServerAndConnections();
+    };
+    return { channel, recompute, reconfigure, appLog };
+  }
+
+  test('validates before applying, recomputes only on a real change, and keeps the prior spec on invalid input', () => {
+    const { channel, recompute, reconfigure, appLog } = makeChannel();
+
+    // First apply of a non-empty spec repartitions any already-queued rows.
+    reconfigure('MSH.4');
+    expect(recompute).toHaveBeenCalledTimes(1);
+    expect(recompute).toHaveBeenLastCalledWith('vc-channel', expect.any(Function));
+    expect(channel.getVirtualChannelKey(MSG('HOSPA'))).toBe('MSH.4:HOSPA');
+
+    // Re-applying the same spec is a no-op — no recompute.
+    recompute.mockClear();
+    reconfigure('MSH.4');
+    expect(recompute).not.toHaveBeenCalled();
+
+    // A changed, valid spec repartitions and takes effect for new intake.
+    reconfigure('MSH.9');
+    expect(recompute).toHaveBeenCalledTimes(1);
+    expect(channel.getVirtualChannelKey(MSG('HOSPA'))).toBe('MSH.9:ADT^A01');
+
+    // An invalid spec is rejected before it takes effect: warn, no recompute,
+    // prior (MSH.9) partitioning retained.
+    recompute.mockClear();
+    vi.mocked(appLog.warn).mockClear();
+    reconfigure('NOTASEGMENT.X');
+    expect(appLog.warn).toHaveBeenCalled();
+    expect(recompute).not.toHaveBeenCalled();
+    expect(channel.getVirtualChannelKey(MSG('HOSPA'))).toBe('MSH.9:ADT^A01');
   });
 });
