@@ -1143,16 +1143,15 @@ describe('Subscription Worker', () => {
         await findAndExecSubscriptionJob(patient, 'create');
 
         // The bot execution AuditEvent (type 'execute') must appear in logs regardless of auditEventDestination
-        const loggedExecuteEvent = writeSpy.mock.calls
-          .map((args: unknown[]) => {
-            try {
-              return JSON.parse(args[0] as string);
-            } catch {
-              return null;
-            }
-          })
-          .find((obj: any) => obj?.resourceType === 'AuditEvent' && obj?.type?.code === 'execute');
-        expect(loggedExecuteEvent).toBeDefined();
+        const loggedExecuteCall = writeSpy.mock.calls.find((call: unknown[]) => {
+          try {
+            const parsed = JSON.parse(call[0] as string);
+            return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'execute';
+          } catch {
+            return false;
+          }
+        });
+        expect(loggedExecuteCall).toBeDefined();
 
         // No separate 'transmit' AuditEvent should be created for bot subscriptions
         const bundle = await botRepo.search<AuditEvent>({
