@@ -129,8 +129,15 @@ export const MIGRATIONS: readonly Migration[] = [
   },
   {
     // Auto-retry support for the Bot leg. Adds two columns to the existing
-    // inbound_hl7_messages table; SQLite ALTER TABLE ... ADD COLUMN is a
-    // metadata-only operation, so this is cheap even on a populated DB.
+    // inbound_hl7_messages table. SQLite ALTER TABLE ... ADD COLUMN is cheap
+    // even on a populated DB *for these two columns*: it only rewrites the
+    // schema text and leaves existing rows untouched. That's NOT universally
+    // true -- adding a column with a CHECK constraint, or a generated column
+    // with NOT NULL, forces a full-table read/rewrite proportional to row count.
+    // Neither column here does that (next_attempt_at is nullable; the
+    // guaranteed_delivery NOT NULL sits on a plain, non-generated column with a
+    // DEFAULT), so both stay cheap. See
+    // https://www.sqlite.org/lang_altertable.html#altertableaddcolumn.
     version: 2,
     sql: `
       -- next_attempt_at is the earliest time (ms) a retry-scheduled 'queued' row

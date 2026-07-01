@@ -63,6 +63,66 @@ describe('DurableQueue', () => {
     q2.close();
   });
 
+  // Guards the ordering contract behind our "cheap ADD COLUMN" claim in
+  // schema.ts: the schema (all migrations) must be fully applied before we ever
+  // write a data row. If a refactor reordered the constructor to prepare/execute
+  // a data-table write before runMigrations(), a migration that reshapes
+  // inbound_hl7_messages could see rows that shouldn't exist yet (or fail
+  // outright). This asserts every migration's `_schema` version row is inserted
+  // before the first INSERT INTO inbound_hl7_messages.
+  test('does not write any data row until all migrations have run', () => {
+    // Record the SQL of every statement executed against the DB, in order.
+    const events: { op: string; sql: string }[] = [];
+    const rawDb = new DatabaseSync(':memory:');
+    const db = new Proxy(rawDb, {
+      get(target, prop, receiver) {
+        if (prop === 'exec') {
+          return (sql: string) => {
+            events.push({ op: 'exec', sql });
+            return target.exec(sql);
+          };
+        }
+        if (prop === 'prepare') {
+          return (sql: string) => {
+            const stmt = target.prepare(sql);
+            return new Proxy(stmt, {
+              get(st, p) {
+                const orig = Reflect.get(st, p, st);
+                if (typeof orig === 'function' && (p === 'run' || p === 'get' || p === 'all')) {
+                  return (...args: unknown[]) => {
+                    events.push({ op: String(p), sql });
+                    return (orig as (...a: unknown[]) => unknown).apply(st, args);
+                  };
+                }
+                return typeof orig === 'function' ? orig.bind(st) : orig;
+              },
+            });
+          };
+        }
+        const value = Reflect.get(target, prop, receiver);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    }) as unknown as DatabaseSync;
+
+    // Bare constructor (no timers) — runs pragmas + migrations, then enqueue writes a row.
+    const q = new DurableQueue(db, { path: ':memory:', log: createMockLogger() });
+    q.enqueue(makeEnqueueInput());
+
+    // Every migration records its version into _schema; there must be one per migration.
+    const schemaInsertIdxs = events
+      .map((e, i) => ({ e, i }))
+      .filter(({ e }) => e.op === 'run' && /INSERT INTO _schema/i.test(e.sql))
+      .map(({ i }) => i);
+    expect(schemaInsertIdxs).toHaveLength(MIGRATIONS.length);
+
+    // The first data-row write must come strictly after the last migration commits.
+    const firstDataWriteIdx = events.findIndex((e) => /INSERT INTO inbound_hl7_messages/i.test(e.sql));
+    expect(firstDataWriteIdx).toBeGreaterThan(-1);
+    expect(firstDataWriteIdx).toBeGreaterThan(Math.max(...schemaInsertIdxs));
+
+    q.close();
+  });
+
   test('enqueue inserts a queued row and round-trips a binary body', () => {
     const body = Buffer.from([0x4d, 0x53, 0x48, 0x00, 0xff, 0xfe]); // includes non-UTF-8 bytes
     const result = queue.enqueue(
