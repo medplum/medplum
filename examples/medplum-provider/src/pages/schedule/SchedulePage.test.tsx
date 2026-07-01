@@ -80,22 +80,21 @@ describe('SchedulePage', () => {
       });
     });
 
-    test('creates schedule if one does not exist', async () => {
+    test('shows the no-schedule empty state when profile has no schedule', async () => {
       medplum.searchOne = vi.fn().mockResolvedValue(undefined);
-      medplum.createResource = vi.fn().mockResolvedValue(mockSchedule);
+      medplum.createResource = vi.fn();
 
       await act(async () => {
         setup('/Calendar/Schedule');
       });
 
       await waitFor(() => {
-        expect(medplum.createResource).toHaveBeenCalledWith(
-          expect.objectContaining({
-            resourceType: 'Schedule',
-            active: true,
-          })
-        );
+        expect(screen.getByText(/No schedule found/)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Create Schedule' })).toBeInTheDocument();
       });
+
+      // Must not auto-create — the user must click the button
+      expect(medplum.createResource).not.toHaveBeenCalled();
     });
 
     test('renders calendar when schedule is loaded', async () => {
@@ -125,8 +124,88 @@ describe('SchedulePage', () => {
       // Component should handle error (may return null or show error state)
       // The exact behavior depends on error handling implementation
     });
+  });
 
-    test('handles schedule creation error gracefully', async () => {
+  describe('Loading indicator', () => {
+    test('shows a loader while searching for the profile schedule', async () => {
+      medplum.searchOne = vi.fn().mockReturnValue(new Promise(() => {}));
+
+      await act(async () => {
+        setup('/Calendar/Schedule');
+      });
+
+      // Neither the calendar nor the empty-state button should appear while loading
+      expect(screen.queryByText('Today')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Create Schedule' })).not.toBeInTheDocument();
+    });
+
+    test('shows a loader while fetching a schedule by id', () => {
+      medplum.readResource = vi.fn().mockReturnValue(new Promise(() => {}));
+
+      setup('/Calendar/Schedule/schedule-1');
+
+      expect(screen.queryByText('Today')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Create Schedule' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('No-schedule empty state', () => {
+    test('shows practitioner name in message when the reference has a display', async () => {
+      // Use DrAliceSmith so createReference produces a display name
+      medplum = new MockClient({ profile: DrAliceSmith });
+      medplum.searchOne = vi.fn().mockResolvedValue(undefined);
+      medplum.searchResources = vi.fn().mockResolvedValue([]);
+
+      await act(async () => {
+        render(
+          <MemoryRouter initialEntries={['/Calendar/Schedule']}>
+            <MedplumProvider medplum={medplum}>
+              <MantineProvider>
+                <Notifications />
+                <Routes>
+                  <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
+                  <Route path="/Calendar/Schedule" element={<SchedulePage />} />
+                </Routes>
+              </MantineProvider>
+            </MedplumProvider>
+          </MemoryRouter>
+        );
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/No schedule found for Alice Smith/)).toBeInTheDocument();
+      });
+    });
+
+    test('clicking Create Schedule creates the resource and navigates to the calendar', async () => {
+      const user = userEvent.setup();
+      medplum.searchOne = vi.fn().mockResolvedValue(undefined);
+      medplum.createResource = vi.fn().mockResolvedValue(mockSchedule);
+
+      await act(async () => {
+        setup('/Calendar/Schedule');
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Create Schedule' })).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Create Schedule' }));
+
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({ resourceType: 'Schedule', active: true })
+        );
+      });
+
+      // After creation the page navigates to the new schedule and renders the calendar
+      await waitFor(() => {
+        expect(screen.getByText('Today')).toBeInTheDocument();
+      });
+    });
+
+    test('shows an error notification and keeps the empty state when creation fails', async () => {
+      const user = userEvent.setup();
       medplum.searchOne = vi.fn().mockResolvedValue(undefined);
       medplum.createResource = vi.fn().mockRejectedValue(new Error('Creation failed'));
 
@@ -135,8 +214,17 @@ describe('SchedulePage', () => {
       });
 
       await waitFor(() => {
-        expect(medplum.createResource).toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Create Schedule' })).toBeInTheDocument();
       });
+
+      await user.click(screen.getByRole('button', { name: 'Create Schedule' }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/Creation failed/)).toBeInTheDocument();
+      });
+
+      // Empty state remains visible after a failed creation
+      expect(screen.getByRole('button', { name: 'Create Schedule' })).toBeInTheDocument();
     });
   });
 
