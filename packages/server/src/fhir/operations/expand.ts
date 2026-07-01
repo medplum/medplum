@@ -127,7 +127,7 @@ function flattenConcepts(
 
     const filter = options?.filter;
     const display = getDisplayText(concept, options?.displayLanguage);
-    if (!filter || matchesTextFilter(display, filter)) {
+    if (!filter || matchesExpansionFilter(concept.code, display, filter)) {
       result.push({ system, code: concept.code, display });
     }
   }
@@ -432,7 +432,7 @@ function applyExpansionFilters(
     query
       .whereExpr(
         new Disjunction([
-          new Condition(new Column('Coding', 'code'), '=', params.filter),
+          new Condition(new Column('Coding', 'code'), 'ILIKE', `${escapeLikeString(params.filter)}%`),
           new Conjunction(
             params.filter
               .split(/\s+/g)
@@ -484,8 +484,11 @@ function addAbstractFilter(query: SelectQuery, codeSystem: WithId<CodeSystem>): 
   return query;
 }
 
-function matchesTextFilter(text: string | undefined, filter: string): boolean {
-  return text ? text.toLowerCase().includes(filter) : false;
+function matchesExpansionFilter(code: string | undefined, display: string | undefined, filter: string): boolean {
+  if (code?.toLowerCase().startsWith(filter)) {
+    return true;
+  }
+  return display ? display.toLowerCase().includes(filter) : false;
 }
 
 function getDisplayText(

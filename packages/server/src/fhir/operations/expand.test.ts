@@ -1180,6 +1180,127 @@ describe('Expand', () => {
     });
   });
 
+  test('Code prefix match', async () => {
+    const csUrl = 'http://example.com/icd10-cs-' + randomUUID();
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'CodeSystem',
+        status: 'active',
+        url: csUrl,
+        content: 'complete',
+        concept: [
+          { code: 'Z00.00', display: 'General adult exam without abnormal findings' },
+          { code: 'Z01.411', display: 'Gynecological exam with abnormal findings' },
+          { code: 'Z01.419', display: 'Gynecological exam without abnormal findings' },
+          { code: 'J06.9', display: 'Acute upper respiratory infection, unspecified' },
+        ],
+      });
+    expect(csRes.status).toBe(201);
+
+    const vsUrl = 'http://example.com/icd10-vs-' + randomUUID();
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: vsUrl,
+        compose: {
+          include: [{ system: csUrl }],
+        },
+      });
+    expect(vsRes.status).toBe(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(vsUrl)}&filter=Z01&count=20`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(2);
+    expect(expansion.contains).toStrictEqual(
+      expect.arrayContaining([
+        { system: csUrl, code: 'Z01.411', display: 'Gynecological exam with abnormal findings' },
+        { system: csUrl, code: 'Z01.419', display: 'Gynecological exam without abnormal findings' },
+      ])
+    );
+  });
+
+  test('Code prefix match is case insensitive', async () => {
+    const csUrl = 'http://example.com/icd10-cs-' + randomUUID();
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'CodeSystem',
+        status: 'active',
+        url: csUrl,
+        content: 'complete',
+        concept: [{ code: 'Z01.411', display: 'Gynecological exam with abnormal findings' }],
+      });
+    expect(csRes.status).toBe(201);
+
+    const vsUrl = 'http://example.com/icd10-vs-' + randomUUID();
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: vsUrl,
+        compose: {
+          include: [{ system: csUrl }],
+        },
+      });
+    expect(vsRes.status).toBe(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(vsUrl)}&filter=z01.4`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(1);
+    expect(expansion.contains?.[0]).toMatchObject({ code: 'Z01.411' });
+  });
+
+  test('Code prefix match on pre-expanded ValueSet', async () => {
+    const system = 'http://example.com/icd10-cs-' + randomUUID();
+    const preexpanded: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/ValueSet/pre-expanded-prefix-' + randomUUID(),
+      expansion: {
+        timestamp: new Date().toISOString(),
+        total: 3,
+        contains: [
+          { system, code: 'Z00.00', display: 'General adult exam without abnormal findings' },
+          { system, code: 'Z01.411', display: 'Gynecological exam with abnormal findings' },
+          { system, code: 'J06.9', display: 'Acute upper respiratory infection, unspecified' },
+        ],
+      },
+    };
+    const preexpandedRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(preexpanded);
+    expect(preexpandedRes.status).toStrictEqual(201);
+
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(preexpandedRes.body.url)}&filter=Z01&count=20`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(1);
+    expect(expansion.contains?.[0]).toMatchObject({ code: 'Z01.411' });
+  });
+
   test('Include pre-expanded ValueSet', async () => {
     const preexpanded: ValueSet = {
       resourceType: 'ValueSet',
