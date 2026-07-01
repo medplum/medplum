@@ -40,7 +40,7 @@ import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
-import { systemResourceProjectId, WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL, systemResourceProjectId } from '../constants';
 import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';

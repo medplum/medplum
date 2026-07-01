@@ -4,11 +4,11 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import type { SearchRequest, WithId } from '@medplum/core';
 import {
   ContentType,
-  LogLevel,
-  Operator,
   createReference,
   generateId,
   getReferenceString,
+  LogLevel,
+  Operator,
   stringify,
 } from '@medplum/core';
 import type {
