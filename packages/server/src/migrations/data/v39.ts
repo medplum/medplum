@@ -19,9 +19,6 @@ export const migration: CustomPostDeployMigration = {
 
 // prettier-ignore
 async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
-  // Update partial index predicate to prepare for migration to replace Coding_Property unique index
-  await fns.idempotentCreateIndex(client, results, 'Coding_Property_reverse_rel_lookup_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Coding_Property_reverse_rel_lookup_idx" ON "Coding_Property" ("target", "property", "coding") WHERE ((target IS NOT NULL) AND (target > 0))`);
-  await fns.query(client, results, `DROP INDEX IF EXISTS "Coding_Property_target_property_coding_idx"`)
-
-  await fns.idempotentCreateIndex(client, results, 'ConceptMapping_map_forward_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "ConceptMapping_map_forward_idx" ON "ConceptMapping" ("conceptMap", "sourceSystem", "sourceCode", "targetSystem", "targetCode")`);
+  await fns.idempotentCreateIndex(client, results, 'Provenance___activity_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Provenance___activity_idx" ON "Provenance" USING gin ("__activity")`);
+  await fns.idempotentCreateIndex(client, results, 'Provenance___activityTextTrgm_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Provenance___activityTextTrgm_idx" ON "Provenance" USING gin (token_array_to_text("__activityText") gin_trgm_ops)`);
 }
