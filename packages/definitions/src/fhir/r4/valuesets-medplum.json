@@ -224,6 +224,55 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/project-membership-profile-type",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "project-membership-profile-type",
+        "url": "https://medplum.com/fhir/CodeSystem/project-membership-profile-type",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/project-membership-profile-type",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "Patient",
+            "display": "Patient",
+            "definition": "Patient"
+          },
+          {
+            "code": "Practitioner",
+            "display": "Practitioner",
+            "definition": "Practitioner"
+          },
+          {
+            "code": "RelatedPerson",
+            "display": "RelatedPerson",
+            "definition": "RelatedPerson"
+          },
+          {
+            "code": "Admin",
+            "display": "Admin",
+            "definition": "Project administrator"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/project-membership-profile-type",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "project-membership-profile-type",
+        "url": "https://medplum.com/fhir/ValueSet/project-membership-profile-type",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/project-membership-profile-type"
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/bot-runtime-version",
       "resource": {
         "resourceType": "CodeSystem",
