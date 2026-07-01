@@ -21,7 +21,7 @@
     "dev": "tsx watch --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./src/otel/instrumentation.ts src/index.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "migrate": "tsx src/migrations/migrate-main.ts",
+    "migrate": "npm run build --workspace=@medplum/definitions && tsx src/migrations/migrate-main.ts",
     "start": "node --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./dist/otel/instrumentation.js dist/index.js",
     "test": "vitest run --exclude src/seed.test.ts",
     "test:seed": "vitest run src/seed.test.ts --testTimeout=400000"

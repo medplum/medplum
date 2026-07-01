@@ -154,9 +154,9 @@ export interface User {
   mfaEnrolled?: boolean;
 
   /**
-   * The MFA methods the user has enrolled in. 'totp' uses an
-   * authenticator application; 'email' sends a magic link to the user's
-   * email address on login.
+   * The MFA methods the user has enrolled in. 'totp' uses an authenticator
+   * application; 'email' sends a magic link to the user's email address on
+   * login.
    */
   mfaMethod?: ('totp' | 'email')[];
 
