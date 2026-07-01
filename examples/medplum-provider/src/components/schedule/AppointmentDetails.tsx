@@ -1,19 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Divider, Group, Loader, Stack, Tooltip } from '@mantine/core';
+import { Button, Divider, Group, Loader, Stack, Text, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   createReference,
   EMPTY,
   formatDateTime,
-  formatHumanName,
   getExtension,
   getReferenceString,
   isOk,
   isReference,
   isResource,
 } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Patient, Slot } from '@medplum/fhirtypes';
 import {
   CodeableConceptDisplay,
   Form,
@@ -23,7 +22,7 @@ import {
   ResourceInput,
   useMedplum,
 } from '@medplum/react';
-import { useResource, useSearchOne } from '@medplum/react-hooks';
+import { useSearchOne } from '@medplum/react-hooks';
 import { IconFileCheck, IconNotes, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
@@ -113,14 +112,6 @@ export function AppointmentDetails(props: {
     appointment: getReferenceString(appointment),
   });
 
-  // Extract references to a Patient and a Practitioner from `Appointment.participants`; we expect
-  // one of each.
-  const participants = props.appointment.participant.map((p) => p.actor);
-  const patientRef = participants.find((r) => isReference<Patient>(r, 'Patient'));
-  const practitionerRef = participants.find((r) => isReference<Practitioner>(r, 'Practitioner'));
-
-  const patient = useResource(patientRef);
-
   const cancellable =
     appointment.status === 'booked' || appointment.status === 'pending' || appointment.status === 'proposed';
   const cancelTooltip = cancellable ? null : `Can't cancel appointment with status "${appointment.status}"`;
@@ -172,22 +163,45 @@ export function AppointmentDetails(props: {
     }
   }, [medplum, appointment, confirmable, onAppointmentUpdate, onSlotUpdate]);
 
+  const sortedParticipants = appointment.participant
+    .flatMap((participant) => {
+      const actor = participant.actor;
+      if (!isReference(actor)) {
+        return [];
+      }
+      const ref = actor.reference ?? '';
+      const lastSlash = ref.lastIndexOf('/');
+      const prevSlash = lastSlash > 0 ? ref.lastIndexOf('/', lastSlash - 1) : -1;
+      const kind = lastSlash >= 0 ? ref.slice(prevSlash + 1, lastSlash) : '';
+      return [{ actor, kind }];
+    })
+    .sort((a, b) => (a.kind === 'Patient' ? 0 : 1) - (b.kind === 'Patient' ? 0 : 1));
+
+  const hasPatient = appointment.participant.some((p) => isReference(p.actor, 'Patient'));
+
   return (
     <Stack gap="md" className={classes.AppointmentDetails}>
       <Divider />
 
-      {!patientRef && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onAppointmentUpdate} />}
+      {!hasPatient && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onAppointmentUpdate} />}
 
-      {!!patient && (
-        <Group align="center" gap="sm">
-          <MedplumLink to={patient}>
-            <ResourceAvatar value={patient} size={48} radius={48} />
-          </MedplumLink>
-          <MedplumLink to={patient} fw={800} size="lg">
-            {formatHumanName(patient.name?.[0])}
-          </MedplumLink>
-        </Group>
-      )}
+      {sortedParticipants.map(({ actor, kind }, index) => {
+        return (
+          <Group align="center" gap="sm" key={`${actor.reference ?? ''}_${index}`}>
+            <MedplumLink to={actor} tabIndex={-1}>
+              <ResourceAvatar value={actor} size={48} radius={48} />
+            </MedplumLink>
+            <div>
+              <MedplumLink to={actor} size="lg" fw={800}>
+                {actor.display ?? actor.reference}
+              </MedplumLink>
+              <Text size="xs" c="dimmed">
+                {kind}
+              </Text>
+            </div>
+          </Group>
+        );
+      })}
 
       <Divider />
 
@@ -220,8 +234,8 @@ export function AppointmentDetails(props: {
       {encounterOutcome && !isOk(encounterOutcome) && (
         <OperationOutcomeAlert outcome={encounterOutcome} title="Loading Encounter failed" />
       )}
-      {patientRef && !encounter && !encounterLoading && encounterOutcome && isOk(encounterOutcome) && (
-        <CreateEncounterForm appointment={appointment} patientRef={patientRef} practitionerRef={practitionerRef} />
+      {!encounter && !encounterLoading && encounterOutcome && isOk(encounterOutcome) && (
+        <CreateEncounterForm appointment={appointment} />
       )}
 
       <Divider />
