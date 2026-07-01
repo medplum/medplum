@@ -1,0 +1,243 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: 'Poppins', system-ui, sans-serif;
+  background: #fff;
+  padding: 40px 0 56px;
+}
+
+.container {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: 0 var(--layout-padding);
+}
+
+@media (max-width: 996px) {
+  .container {
+    padding: 0 var(--layout-padding-md);
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 0 var(--layout-padding-sm);
+  }
+}
+
+.headlineRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: start;
+  margin-bottom: 40px;
+}
+
+.headline {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 44px;
+  line-height: 1.1;
+  letter-spacing: -0.022em;
+  margin: 0;
+  color: #212529;
+}
+
+.sub {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+  color: #495057;
+  margin: 0;
+}
+
+.panel {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 16px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Rows are buttons: each jumps to its section. Hovering reveals the tier's verb
+   line and quiets the other rows (same spotlight grammar as the Foundations
+   diagram). */
+.tierRow {
+  appearance: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) 1fr auto;
+  gap: 24px;
+  align-items: center;
+  position: relative;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.panel:hover .tierRow {
+  opacity: 0.6;
+}
+
+.panel .tierRow:hover,
+.panel .tierRow:focus-visible {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.tierRow:focus-visible {
+  outline: 2px solid var(--oc-grape-8);
+  outline-offset: 2px;
+}
+
+/* Verb line + arrow: hidden at rest, revealed on row hover/focus. */
+.rowReveal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  white-space: nowrap;
+}
+
+.tierRow:hover .rowReveal,
+.tierRow:focus-visible .rowReveal {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.rowVerb {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.rowArrow {
+  font-size: 15px;
+  color: #212529;
+}
+
+@media (max-width: 996px) {
+  .rowReveal {
+    display: none;
+  }
+}
+
+.tierRowApps {
+  background: #e5dbff;
+}
+
+.tierRowCapabilities {
+  background: #f3d9fa;
+}
+
+.tierRowFoundations {
+  background: #dbe4ff;
+}
+
+.tierStripe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 12px 0 0 12px;
+}
+
+.tierStripeApps {
+  background: #845ef7;
+}
+
+.tierStripeCapabilities {
+  background: var(--oc-grape-8);
+}
+
+.tierStripeFoundations {
+  background: #4263eb;
+}
+
+.tierLabel {
+  padding-left: 8px;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  color: #212529;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  background: #fff;
+  color: #212529;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* ---- dark mode ---- */
+
+[data-theme='dark'] .section {
+  background: var(--ifm-background-color);
+}
+
+[data-theme='dark'] .headline {
+  color: var(--oc-gray-0);
+}
+
+[data-theme='dark'] .sub {
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .panel {
+  background: var(--oc-gray-8);
+  border-color: var(--oc-gray-7);
+}
+
+[data-theme='dark'] .tierRowApps {
+  background: rgba(133, 94, 247, 0.2);
+}
+
+[data-theme='dark'] .tierRowCapabilities {
+  background: rgba(190, 75, 219, 0.2);
+}
+
+[data-theme='dark'] .tierRowFoundations {
+  background: rgba(66, 99, 235, 0.2);
+}
+
+[data-theme='dark'] .tierLabel {
+  color: var(--oc-gray-1);
+}
+
+[data-theme='dark'] .pill {
+  background: var(--oc-gray-7);
+  color: var(--oc-gray-2);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .rowVerb {
+  color: var(--oc-gray-3);
+}
+
+[data-theme='dark'] .rowArrow {
+  color: var(--oc-gray-1);
+}

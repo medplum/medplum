@@ -1,0 +1,57 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.page {
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  color: #212529;
+  background: #fff;
+  width: 100%;
+  line-height: 1.55;
+}
+
+/* ---- stacked sections wrapper (Apps + Capabilities + Foundations) ---- */
+
+.stackedSections {
+  background: #fff;
+  padding: 0 0 24px;
+}
+
+.container {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: 0 var(--layout-padding);
+  /* Divider between the three-tier panel above and the Apps section below. */
+  border-top: 1px solid #e9ecef;
+}
+
+@media (max-width: 996px) {
+  .container {
+    padding: 0 var(--layout-padding-md);
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 0 var(--layout-padding-sm);
+  }
+}
+
+/* ---- dark mode ---- */
+
+[data-theme='dark'] .page {
+  background: var(--ifm-background-color);
+  color: var(--oc-gray-1);
+}
+
+[data-theme='dark'] .stackedSections {
+  background: var(--ifm-background-color);
+}
+
+[data-theme='dark'] .container {
+  border-top-color: var(--oc-gray-8);
+}
