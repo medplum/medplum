@@ -13,7 +13,7 @@ import {
   isReference,
   isResource,
 } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Patient, Slot } from '@medplum/fhirtypes';
 import {
   CodeableConceptDisplay,
   Form,
@@ -117,7 +117,6 @@ export function AppointmentDetails(props: {
   // one of each.
   const participants = props.appointment.participant.map((p) => p.actor);
   const patientRef = participants.find((r) => isReference<Patient>(r, 'Patient'));
-  const practitionerRef = participants.find((r) => isReference<Practitioner>(r, 'Practitioner'));
 
   const patient = useResource(patientRef);
 
@@ -220,8 +219,8 @@ export function AppointmentDetails(props: {
       {encounterOutcome && !isOk(encounterOutcome) && (
         <OperationOutcomeAlert outcome={encounterOutcome} title="Loading Encounter failed" />
       )}
-      {patientRef && !encounter && !encounterLoading && encounterOutcome && isOk(encounterOutcome) && (
-        <CreateEncounterForm appointment={appointment} patientRef={patientRef} practitionerRef={practitionerRef} />
+      {!encounter && !encounterLoading && encounterOutcome && isOk(encounterOutcome) && (
+        <CreateEncounterForm appointment={appointment} />
       )}
 
       <Divider />

@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Stack, Title } from '@mantine/core';
+import { Alert, Button, Stack, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Appointment, Coding, Patient, PlanDefinition, Practitioner, Reference } from '@medplum/fhirtypes';
+import { isReference } from '@medplum/core';
+import type { Appointment, Coding, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
 import { CodingInput, Form, ResourceInput, useMedplum } from '@medplum/react';
-import { IconAlertSquareRounded } from '@tabler/icons-react';
+import { IconAlertSquareRounded, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -15,25 +16,58 @@ import { PlanDefinitionSummary } from '../plandefinition/PlanDefinitionSummary';
 
 export interface CreateEncounterFormProps {
   appointment: WithId<Appointment>;
-  patientRef: Reference<Patient>;
-  practitionerRef: Reference<Practitioner> | undefined;
 }
 
 export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Element {
-  const { patientRef, practitionerRef } = props;
   const medplum = useMedplum();
   const navigate = useNavigate();
 
   const [planDefinition, setPlanDefinition] = useState<PlanDefinition | undefined>();
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
 
+  const patientRefs = props.appointment.participant
+    .map((p) => p.actor)
+    .filter((actor) => isReference<Patient>(actor, 'Patient'));
+
+  const practitionerRefs = props.appointment.participant
+    .map((p) => p.actor)
+    .filter((actor) => isReference<Practitioner>(actor, 'Practitioner'));
+
   const handleSubmit = useCallback(async () => {
-    if (!practitionerRef) {
+    if (!practitionerRefs.length) {
       showNotification({
         color: 'yellow',
         icon: <IconAlertSquareRounded />,
         title: 'Error',
         message: 'Appointment has no Practitioner participant',
+      });
+      return;
+    }
+    if (practitionerRefs.length > 1) {
+      showNotification({
+        color: 'yellow',
+        icon: <IconAlertSquareRounded />,
+        title: 'Error',
+        message: 'Appointment has too many Practitioner participants',
+      });
+      return;
+    }
+
+    if (!patientRefs.length) {
+      showNotification({
+        color: 'yellow',
+        icon: <IconAlertSquareRounded />,
+        title: 'Error',
+        message: 'Appointment has no Patient participant',
+      });
+      return;
+    }
+    if (patientRefs.length > 1) {
+      showNotification({
+        color: 'yellow',
+        icon: <IconAlertSquareRounded />,
+        title: 'Error',
+        message: 'Appointment has too many Patient participants',
       });
       return;
     }
@@ -52,17 +86,46 @@ export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Elemen
       const encounter = await createEncounter(
         medplum,
         encounterClass,
-        patientRef,
+        patientRefs[0],
         planDefinition,
         props.appointment,
-        practitionerRef
+        practitionerRefs[0]
       );
 
       navigate(encounterUrl(encounter))?.catch(console.error);
     } catch (err) {
       showErrorNotification(err);
     }
-  }, [medplum, patientRef, encounterClass, planDefinition, props.appointment, navigate, practitionerRef]);
+  }, [medplum, encounterClass, planDefinition, props.appointment, navigate, patientRefs, practitionerRefs]);
+
+  if (practitionerRefs.length > 1) {
+    return (
+      <Alert color="yellow" icon={<IconInfoCircle />}>
+        Too many Practitioners to create Encounter.
+      </Alert>
+    );
+  }
+  if (practitionerRefs.length === 0) {
+    return (
+      <Alert color="yellow" icon={<IconInfoCircle />}>
+        No Practitioner to create Encounter.
+      </Alert>
+    );
+  }
+  if (patientRefs.length > 1) {
+    return (
+      <Alert color="yellow" icon={<IconInfoCircle />}>
+        Too many Patients to create Encounter.
+      </Alert>
+    );
+  }
+  if (patientRefs.length === 0) {
+    return (
+      <Alert color="yellow" icon={<IconInfoCircle />}>
+        No Patient to create Encounter.
+      </Alert>
+    );
+  }
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -73,7 +136,7 @@ export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Elemen
           name="practitioner"
           resourceType="Practitioner"
           label="Practitioner"
-          defaultValue={practitionerRef}
+          defaultValue={practitionerRefs[0]}
           disabled={true}
           required={true}
         />
