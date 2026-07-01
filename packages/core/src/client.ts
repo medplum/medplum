@@ -4502,6 +4502,43 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     return this.post('admin/projects/' + projectId + '/invite', body);
   }
 
+  /**
+   * Resets multi-factor authentication (MFA) for a project member as an admin.
+   *
+   * Use this to recover a member who has lost access to a factor. The `method`
+   * selects which factor to reset and defaults to `'totp'` for backwards
+   * compatibility; any other enrolled factors are left in place. Resetting TOTP
+   * rotates the member's authenticator secret. The member is emailed a notice.
+   *
+   * @category Administration
+   * @param projectId - The project ID.
+   * @param membershipId - The ProjectMembership ID of the member.
+   * @param method - The MFA method to reset (`'totp'` or `'email'`). Defaults to `'totp'`.
+   * @returns Promise that resolves to an OperationOutcome.
+   */
+  async resetMemberMfa(
+    projectId: string,
+    membershipId: string,
+    method: 'totp' | 'email' = 'totp'
+  ): Promise<OperationOutcome> {
+    return this.post(`admin/projects/${projectId}/members/${membershipId}/mfa/reset`, { method });
+  }
+
+  /**
+   * Sends a password reset email to a project member as an admin.
+   *
+   * This creates a single-use password reset link and emails it to the member,
+   * mirroring the self-service password reset flow but scoped to a known member.
+   *
+   * @category Administration
+   * @param projectId - The project ID.
+   * @param membershipId - The ProjectMembership ID of the member.
+   * @returns Promise that resolves to an OperationOutcome.
+   */
+  async sendMemberPasswordReset(projectId: string, membershipId: string): Promise<OperationOutcome> {
+    return this.post(`admin/projects/${projectId}/members/${membershipId}/resetpassword`, {});
+  }
+
   private async handleTokenError(response: Response): Promise<never> {
     try {
       const error = await response.json();

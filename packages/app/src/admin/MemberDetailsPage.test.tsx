@@ -3,6 +3,7 @@
 import { cleanNotifications } from '@mantine/notifications';
 import type { Bot, Practitioner, ProjectMembership, User } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { within } from '@testing-library/react';
 import { act, fireEvent, renderAppRoutes, screen, waitFor } from '../test-utils/render';
 
 describe('MemberDetailsPage', () => {
@@ -267,5 +268,108 @@ describe('MemberDetailsPage', () => {
 
     expect(deleteSpy).not.toHaveBeenCalled();
     expect(screen.getByText('ProjectMembership Details')).toBeInTheDocument();
+  });
+
+  async function setupMember(
+    medplum: MockClient,
+    userProps: Partial<User> = {}
+  ): Promise<ProjectMembership> {
+    const practitioner = await medplum.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ given: ['Sec'], family: 'User' }],
+    });
+    const user = await medplum.createResource<User>({
+      resourceType: 'User',
+      firstName: 'Sec',
+      lastName: 'User',
+      email: 'sec@example.com',
+      project: { reference: 'Project/123' },
+      ...userProps,
+    });
+    return medplum.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/123' },
+      user: { reference: `User/${user.id}` },
+      profile: { reference: `Practitioner/${practitioner.id}` },
+    });
+  }
+
+  test('Account Security shows enrolled MFA methods for admin', async () => {
+    const medplum = createMedplum(true);
+    const membership = await setupMember(medplum, { mfaEnrolled: true, mfaMethod: ['totp', 'email'] });
+
+    renderAppRoutes(medplum, `/admin/users/${membership.id}`);
+
+    expect(await screen.findByText('Account Security')).toBeInTheDocument();
+    expect(screen.getByText('Authenticator app (TOTP)')).toBeInTheDocument();
+    // "Email" also appears as a User resource field, so assert the badge is among them.
+    expect(screen.getAllByText('Email').length).toBeGreaterThan(0);
+  });
+
+  test('Account Security hidden for non-admins', async () => {
+    const medplum = createMedplum(false);
+    const membership = await setupMember(medplum, { mfaEnrolled: true, mfaMethod: ['totp'] });
+
+    renderAppRoutes(medplum, `/admin/users/${membership.id}`);
+
+    expect(await screen.findByText('ProjectMembership Details')).toBeInTheDocument();
+    expect(screen.queryByText('Account Security')).not.toBeInTheDocument();
+  });
+
+  test('Reset MFA button disabled when not enrolled', async () => {
+    const medplum = createMedplum(true);
+    const membership = await setupMember(medplum);
+
+    renderAppRoutes(medplum, `/admin/users/${membership.id}`);
+
+    expect(await screen.findByText('Account Security')).toBeInTheDocument();
+    expect(screen.getByText('Not enrolled')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reset MFA' })).toBeDisabled();
+  });
+
+  test('Reset MFA calls resetMemberMfa with selected method', async () => {
+    const medplum = createMedplum(true);
+    const resetSpy = vi.spyOn(medplum, 'resetMemberMfa').mockResolvedValue({ resourceType: 'OperationOutcome', issue: [] });
+    const membership = await setupMember(medplum, { mfaEnrolled: true, mfaMethod: ['totp'] });
+
+    renderAppRoutes(medplum, `/admin/users/${membership.id}`);
+
+    const resetButton = await screen.findByRole('button', { name: 'Reset MFA' });
+    await act(async () => {
+      fireEvent.click(resetButton);
+    });
+
+    const dialog = await screen.findByRole('dialog');
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Reset MFA' }));
+    });
+
+    await waitFor(() => {
+      expect(resetSpy).toHaveBeenCalledWith('123', membership.id, 'totp');
+    });
+  });
+
+  test('Send password reset email calls sendMemberPasswordReset', async () => {
+    const medplum = createMedplum(true);
+    const sendSpy = vi
+      .spyOn(medplum, 'sendMemberPasswordReset')
+      .mockResolvedValue({ resourceType: 'OperationOutcome', issue: [] });
+    const membership = await setupMember(medplum);
+
+    renderAppRoutes(medplum, `/admin/users/${membership.id}`);
+
+    const sendButton = await screen.findByRole('button', { name: 'Send password reset email' });
+    await act(async () => {
+      fireEvent.click(sendButton);
+    });
+
+    const dialog = await screen.findByRole('dialog');
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Send email' }));
+    });
+
+    await waitFor(() => {
+      expect(sendSpy).toHaveBeenCalledWith('123', membership.id);
+    });
   });
 });

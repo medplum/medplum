@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
+import { within } from '@testing-library/react';
 import { act, fireEvent, renderAppRoutes, screen, waitFor } from '../test-utils/render';
 
 const medplum = new MockClient();
@@ -109,5 +110,37 @@ describe('MemberTable (Users page)', () => {
     await waitFor(() => {
       expect(screen.queryByText('Invite New User')).not.toBeInTheDocument();
     });
+  });
+
+  test('Bulk actions can reset MFA for selected members', async () => {
+    const resetSpy = vi
+      .spyOn(medplum, 'resetMemberMfa')
+      .mockResolvedValue({ resourceType: 'OperationOutcome', issue: [] });
+
+    await setup('/admin/users');
+    expect(await screen.findByText('All')).toBeInTheDocument();
+
+    // Wait for rows, then select all members via the header checkbox.
+    await screen.findAllByTestId('search-control-row');
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('all-checkbox'));
+    });
+
+    // Open the bulk actions modal.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Bulk/ }));
+    });
+
+    const dialog = await screen.findByRole('dialog');
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Reset MFA (authenticator)' }));
+    });
+
+    await waitFor(() => {
+      expect(resetSpy).toHaveBeenCalled();
+    });
+    // TOTP method is used for bulk resets.
+    expect(resetSpy.mock.calls[0][2]).toBe('totp');
+    resetSpy.mockRestore();
   });
 });
