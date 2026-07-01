@@ -366,7 +366,11 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing only those elements in the input collection that are of the given type or a subclass thereof.
    */
   ofType: (_context: AtomContext, input: TypedValue[], criteria: Atom): TypedValue[] => {
-    return input.filter((e) => e.type === (criteria as SymbolAtom).name);
+    const typeName = getTypeName(criteria);
+    if (!typeName) {
+      return [];
+    }
+    return input.filter((e) => fhirPathIs(e, typeName));
   },
 
   /*

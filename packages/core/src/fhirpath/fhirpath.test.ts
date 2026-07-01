@@ -1620,6 +1620,24 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
+  describe('testOfType', () => {
+    test('unqualified type name', () => {
+      expect(evalFhirPath('Patient.ofType(Patient).type().name', patient)).toStrictEqual(['Patient']);
+    });
+
+    test('FHIR-qualified type name', () => {
+      expect(evalFhirPath('Patient.ofType(FHIR.Patient).type().name', patient)).toStrictEqual(['Patient']);
+    });
+
+    test('FHIR-qualified type name with backticks', () => {
+      expect(evalFhirPath('Patient.ofType(FHIR.`Patient`).type().name', patient)).toStrictEqual(['Patient']);
+    });
+
+    test('non-matching type yields empty', () => {
+      expect(evalFhirPath('Patient.ofType(FHIR.Observation)', patient)).toStrictEqual([]);
+    });
+  });
+
   describe.skip('testRepeat', () => {
     test('testRepeat1', () => {
       expect(evalFhirPath('ValueSet.expansion.repeat(contains).count() = 10', valueset)).toStrictEqual([true]);
