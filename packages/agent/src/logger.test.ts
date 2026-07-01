@@ -4,6 +4,7 @@ import type { MockInstance } from 'vitest';
 
 import type { LogLevelNames } from '@medplum/core';
 import { LogLevel, parseLogLevel, sleep } from '@medplum/core';
+import { writeFileSync } from 'node:fs';
 import { mkdtemp, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -852,6 +853,196 @@ describe('Agent Logger', () => {
       // Should contain warn and error messages
       expect(logContent).toContain('Warn message');
       expect(logContent).toContain('Error message');
+    });
+  });
+
+  describe('fetchLogs pagination across files', () => {
+    let tempDir: string;
+    let originalNodeEnv: string | undefined;
+
+    beforeAll(() => {
+      console.log = vi.fn();
+    });
+
+    beforeEach(async () => {
+      tempDir = await mkdtemp(join(tmpdir(), 'medplum-fetchlogs-test-'));
+      // The DailyRotateFile transport (which backs fetchLogs' query) is only
+      // attached when NODE_ENV is not 'test'.
+      originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+    });
+
+    afterEach(async () => {
+      process.env.NODE_ENV = originalNodeEnv;
+      try {
+        await rm(tempDir, { recursive: true, force: true });
+      } catch (_error) {
+        // Ignore cleanup errors
+      }
+    });
+
+    function makeLogger(): WinstonWrapperLogger {
+      return new WinstonWrapperLogger(
+        { ...DEFAULT_LOGGER_CONFIG, logDir: tempDir, logLevel: LogLevel.DEBUG },
+        LoggerType.MAIN
+      );
+    }
+
+    // Writes raw log lines into a file named per the daily-rotate pattern so
+    // that winston's query picks it up as a rotated log file.
+    function writeLogFile(dateSuffix: string, entries: { level: string; msg: string; timestamp: string }[]): void {
+      writeRawLogFile(`medplum-agent-main-${dateSuffix}.log`, entries);
+    }
+
+    // Writes raw log lines into an arbitrarily-named file in the log dir.
+    function writeRawLogFile(name: string, entries: { level: string; msg: string; timestamp: string }[]): void {
+      writeFileSync(join(tempDir, name), entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
+    }
+
+    test('reads entries across rotated files, including logs older than 24h', async () => {
+      // These timestamps are far older than the 24h window that
+      // winston-daily-rotate-file defaults to; before the fix they were
+      // silently dropped, so a limit could never reach across older files.
+      writeLogFile('2020-01-01', [
+        { level: 'INFO', msg: 'old file entry 1', timestamp: '2020-01-01T00:00:00.000Z' },
+        { level: 'INFO', msg: 'old file entry 2', timestamp: '2020-01-01T00:00:01.000Z' },
+      ]);
+      writeLogFile('2020-01-02', [
+        { level: 'INFO', msg: 'newer file entry 1', timestamp: '2020-01-02T00:00:00.000Z' },
+        { level: 'INFO', msg: 'newer file entry 2', timestamp: '2020-01-02T00:00:01.000Z' },
+      ]);
+
+      const logger = makeLogger();
+      const { logs, hasMore, nextBefore } = await logger.fetchLogs({ limit: 10 });
+
+      const messages = logs.map((l) => l.msg);
+      expect(messages).toContain('old file entry 1');
+      expect(messages).toContain('old file entry 2');
+      expect(messages).toContain('newer file entry 1');
+      expect(messages).toContain('newer file entry 2');
+      expect(hasMore).toBe(false);
+      expect(nextBefore).toBeUndefined();
+    });
+
+    test('reads entries across files rotated by size within the same day', async () => {
+      // winston-daily-rotate-file rotates by size within a single day by
+      // appending a counter: `<name>-<date>.log`, `<name>-<date>.log.1`, etc.
+      // (and `.gz` for archived rotations). All must be read.
+      writeRawLogFile('medplum-agent-main-2020-01-01.log', [
+        { level: 'INFO', msg: 'current same-day file', timestamp: '2020-01-01T00:00:03.000Z' },
+      ]);
+      writeRawLogFile('medplum-agent-main-2020-01-01.log.1', [
+        { level: 'INFO', msg: 'size-rotated same-day file', timestamp: '2020-01-01T00:00:02.000Z' },
+      ]);
+      writeRawLogFile('medplum-agent-main-2020-01-01.log.2', [
+        { level: 'INFO', msg: 'older size-rotated same-day file', timestamp: '2020-01-01T00:00:01.000Z' },
+      ]);
+
+      const logger = makeLogger();
+      const { logs, hasMore } = await logger.fetchLogs({ limit: 10 });
+
+      const messages = logs.map((l) => l.msg);
+      expect(messages).toContain('current same-day file');
+      expect(messages).toContain('size-rotated same-day file');
+      expect(messages).toContain('older size-rotated same-day file');
+      expect(hasMore).toBe(false);
+    });
+
+    test('paginates backward across files via the before cursor with no overlap', async () => {
+      writeLogFile('2020-01-01', [
+        { level: 'INFO', msg: 'entry 1', timestamp: '2020-01-01T00:00:01.000Z' },
+        { level: 'INFO', msg: 'entry 2', timestamp: '2020-01-01T00:00:02.000Z' },
+        { level: 'INFO', msg: 'entry 3', timestamp: '2020-01-01T00:00:03.000Z' },
+      ]);
+      writeLogFile('2020-01-02', [
+        { level: 'INFO', msg: 'entry 4', timestamp: '2020-01-02T00:00:04.000Z' },
+        { level: 'INFO', msg: 'entry 5', timestamp: '2020-01-02T00:00:05.000Z' },
+      ]);
+
+      const logger = makeLogger();
+
+      // nextBefore is an opaque cursor; we assert paging behavior rather than
+      // its exact encoding.
+      const page1 = await logger.fetchLogs({ limit: 2 });
+      expect(page1.logs.map((l) => l.msg)).toStrictEqual(['entry 5', 'entry 4']);
+      expect(page1.hasMore).toBe(true);
+      expect(page1.nextBefore).toContain('2020-01-02T00:00:04.000Z');
+
+      const page2 = await logger.fetchLogs({ limit: 2, before: page1.nextBefore });
+      expect(page2.logs.map((l) => l.msg)).toStrictEqual(['entry 3', 'entry 2']);
+      expect(page2.hasMore).toBe(true);
+      expect(page2.nextBefore).toContain('2020-01-01T00:00:02.000Z');
+
+      const page3 = await logger.fetchLogs({ limit: 2, before: page2.nextBefore });
+      expect(page3.logs.map((l) => l.msg)).toStrictEqual(['entry 1']);
+      expect(page3.hasMore).toBe(false);
+      expect(page3.nextBefore).toBeUndefined();
+    });
+
+    test('pages through entries that share a single timestamp without loss or overlap', async () => {
+      // A burst of five entries all written in the same millisecond. A naive
+      // timestamp cursor cannot page through these; the composite cursor can.
+      writeLogFile('2020-01-01', [
+        { level: 'INFO', msg: 'burst 1', timestamp: '2020-01-01T00:00:00.000Z' },
+        { level: 'INFO', msg: 'burst 2', timestamp: '2020-01-01T00:00:00.000Z' },
+        { level: 'INFO', msg: 'burst 3', timestamp: '2020-01-01T00:00:00.000Z' },
+        { level: 'INFO', msg: 'burst 4', timestamp: '2020-01-01T00:00:00.000Z' },
+        { level: 'INFO', msg: 'burst 5', timestamp: '2020-01-01T00:00:00.000Z' },
+      ]);
+
+      const logger = makeLogger();
+      const seen: string[] = [];
+      let before: string | undefined;
+      // Page through with a limit of 2 until exhausted.
+      for (let i = 0; i < 10; i++) {
+        const page = await logger.fetchLogs({ limit: 2, before });
+        seen.push(...page.logs.map((l) => l.msg));
+        if (!page.hasMore) {
+          break;
+        }
+        before = page.nextBefore;
+      }
+
+      // All five entries seen exactly once, no duplicates, no drops.
+      expect(seen).toHaveLength(5);
+      expect(new Set(seen).size).toBe(5);
+      for (let i = 1; i <= 5; i++) {
+        expect(seen).toContain(`burst ${i}`);
+      }
+    });
+
+    test('fills a single limit-only page across a file boundary', async () => {
+      // Regression: a `limit` with no `before` cursor must still reach into
+      // older rotated files to fill the page. The newest file holds fewer
+      // entries than the limit, so the page can only be filled by crossing the
+      // boundary into the older file. If the query stopped spanning files when
+      // `before` is absent (e.g. by dropping the `from: epoch 0` bound), this
+      // page would be truncated to just the newest file's entries.
+      writeLogFile('2020-01-01', [
+        { level: 'INFO', msg: 'old entry 1', timestamp: '2020-01-01T00:00:01.000Z' },
+        { level: 'INFO', msg: 'old entry 2', timestamp: '2020-01-01T00:00:02.000Z' },
+        { level: 'INFO', msg: 'old entry 3', timestamp: '2020-01-01T00:00:03.000Z' },
+      ]);
+      writeLogFile('2020-01-02', [
+        { level: 'INFO', msg: 'new entry 1', timestamp: '2020-01-02T00:00:04.000Z' },
+        { level: 'INFO', msg: 'new entry 2', timestamp: '2020-01-02T00:00:05.000Z' },
+      ]);
+
+      const logger = makeLogger();
+      // No `before` cursor; limit of 4 exceeds the 2 entries in the newest file.
+      const { logs, hasMore, nextBefore } = await logger.fetchLogs({ limit: 4 });
+
+      // The page spans both files: the two newest entries plus the two most
+      // recent entries from the older file.
+      expect(logs.map((l) => l.msg)).toStrictEqual(['new entry 2', 'new entry 1', 'old entry 3', 'old entry 2']);
+      // One older entry ('old entry 1') remains beyond this page.
+      expect(hasMore).toBe(true);
+      expect(nextBefore).toContain('2020-01-01T00:00:02.000Z');
+    });
+
+    test('throws on an invalid before cursor', async () => {
+      const logger = makeLogger();
+      await expect(logger.fetchLogs({ before: 'not-a-date' })).rejects.toThrow('Invalid before cursor');
     });
   });
 });

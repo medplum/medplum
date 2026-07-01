@@ -637,6 +637,75 @@ describe('ToolsPage', () => {
     expect((await screen.findAllByText(/there is an error/i))[0]).toBeInTheDocument();
   });
 
+  test('Fetch logs -- Load More paginates with before cursor', async () => {
+    medplum = new MockClient();
+    const seenBefore: (string | undefined)[] = [];
+    medplum.router.router.add('GET', 'Agent/:id/$fetch-logs', async (req) => {
+      const before = req.query.before as string | undefined;
+      seenBefore.push(before);
+      if (!before) {
+        // First page: newest logs, more remain.
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'logs',
+                valueString: JSON.stringify({ level: 'INFO', timestamp: '2020-01-02T00:00:00.000Z', msg: 'Newest log' }),
+              },
+              { name: 'hasMore', valueBoolean: true },
+              { name: 'nextBefore', valueString: '2020-01-02T00:00:00.000Z' },
+            ],
+          },
+        ];
+      }
+      // Second page: older logs, nothing left.
+      return [
+        allOk,
+        {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'logs',
+              valueString: JSON.stringify({ level: 'INFO', timestamp: '2020-01-01T00:00:00.000Z', msg: 'Older log' }),
+            },
+            { name: 'hasMore', valueBoolean: false },
+          ],
+        },
+      ];
+    });
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Fetch logs load more',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /fetch logs/i }));
+    });
+
+    expect((await screen.findAllByText(/newest log/i))[0]).toBeInTheDocument();
+
+    // A "Load More" button should appear because hasMore was true.
+    const loadMore = await screen.findByRole('button', { name: /load more logs/i });
+
+    act(() => {
+      fireEvent.click(loadMore);
+    });
+
+    // Older logs are appended beneath the first page.
+    expect((await screen.findAllByText(/older log/i))[0]).toBeInTheDocument();
+    expect((await screen.findAllByText(/newest log/i))[0]).toBeInTheDocument();
+
+    // The second request forwarded the cursor from the first response.
+    expect(seenBefore).toStrictEqual([undefined, '2020-01-02T00:00:00.000Z']);
+  });
+
   test('Get stats -- Success', async () => {
     medplum = new MockClient();
     const channelRtt = {
