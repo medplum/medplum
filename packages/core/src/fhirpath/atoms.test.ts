@@ -134,14 +134,15 @@ describe('Atoms', () => {
 
     // Filters exclusively on type
     expect(evalFhirPath('value as Quantity', obs1)).toStrictEqual([obs1.valueQuantity]);
-    expect(() => evalFhirPath('value as Quantity', obs2)).toThrow('Expected singleton of type Quantity');
-    expect(() => evalFhirPath('value as CodeableConcept', obs1)).toThrow('Expected singleton of type CodeableConcept');
+    // A single item of the wrong type returns empty (not an error) per the FHIRPath spec
+    expect(evalFhirPath('value as Quantity', obs2)).toStrictEqual([]);
+    expect(evalFhirPath('value as CodeableConcept', obs1)).toStrictEqual([]);
     expect(evalFhirPath('value as CodeableConcept', obs2)).toStrictEqual([obs2.valueCodeableConcept]);
 
     // Empty results
     expect(evalFhirPath('component.value as Quantity', obs1)).toStrictEqual([]);
 
-    // Multiple results
-    expect(() => evalFhirPath('component.value as Quantity', obs2)).toThrow('Expected singleton of type Quantity');
+    // Multiple results still throw, since `as` requires a singleton collection
+    expect(() => evalFhirPath('component.value as Quantity', obs2)).toThrow('Expected singleton of type');
   });
 });

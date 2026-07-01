@@ -646,11 +646,14 @@ describe('FHIRPath Test Suite', () => {
     });
 
     test('testPolymorphismAsB', () => {
-      expect(() => evalFhirPath('(Observation.value as Period).unit', observation)).toThrow();
+      // The official suite flags this as a semantic error (Period has no `unit`).
+      // Medplum evaluates dynamically, so `value as Period` on a Quantity yields the
+      // empty collection (rather than throwing), and `.unit` on empty is empty.
+      expect(evalFhirPath('(Observation.value as Period).unit', observation)).toStrictEqual([]);
     });
 
     test('testPolymorphismAsBFunction', () => {
-      expect(() => evalFhirPath('Observation.value.as(Period).start', observation)).toThrow();
+      expect(evalFhirPath('Observation.value.as(Period).start', observation)).toStrictEqual([]);
     });
   });
 

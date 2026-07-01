@@ -1769,8 +1769,12 @@ export const functions: Record<string, FhirPathFunction> = {
    */
   as: (context: AtomContext, input: TypedValue[], specifier: Atom): TypedValue[] => {
     const dataType = (specifier as SymbolAtom).name;
-    const value = singleton(input, dataType);
-    return value ? [value] : [];
+    // Per the FHIRPath spec, `x as T` on a single-item collection returns the item
+    // only when it is of type T (or a subtype), otherwise it returns the empty collection.
+    // It must NOT throw on a type mismatch; `singleton` only guards against collections
+    // with more than one item (e.g. `Observation.value as Quantity` when value is a string).
+    const value = singleton(input);
+    return value && fhirPathIs(value, dataType) ? [value] : [];
   },
 
   /*
