@@ -142,9 +142,22 @@ export async function createProject(
     description: 'Default client for ' + project.name,
   });
 
-  const accessPolicy = await createDefaultPatientAccessPolicy(systemRepo, project);
+  const accessPolicy = await createPatientCompartmentAccessPolicy(systemRepo, project, 'Default Patient Access Policy');
+  const relatedPersonAccessPolicy = await createPatientCompartmentAccessPolicy(
+    systemRepo,
+    project,
+    'Default RelatedPerson Access Policy'
+  );
   project = await systemRepo.patchResource<Project>('Project', project.id, [
     { op: 'add', path: '/defaultPatientAccessPolicy', value: createReference(accessPolicy) },
+    {
+      op: 'add',
+      path: '/defaultAccessPolicies',
+      value: [
+        { profileType: 'Patient', accessPolicy: createReference(accessPolicy) },
+        { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
+      ],
+    },
   ]);
 
   if (admin) {
@@ -162,14 +175,15 @@ export async function createProject(
   return { project, client };
 }
 
-async function createDefaultPatientAccessPolicy(
+async function createPatientCompartmentAccessPolicy(
   systemRepo: SystemRepository,
-  project: WithId<Project>
+  project: WithId<Project>,
+  name: string
 ): Promise<WithId<AccessPolicy>> {
   return systemRepo.createResource<AccessPolicy>({
     resourceType: 'AccessPolicy',
     meta: { project: project.id },
-    name: 'Default Patient Access Policy',
+    name,
     compartment: { reference: '%patient' },
     resource: [
       { resourceType: 'Patient', criteria: 'Patient?_id=%patient.id' },
