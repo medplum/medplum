@@ -62,9 +62,7 @@ export function ScriptSurePharmacyDialog(props: PharmacyDialogBaseProps): JSX.El
   ]);
 
   const getExtraSearchParams = useCallback(
-    (): Pick<ScriptSurePharmacySearchParams, 'specialties'> => ({
-      specialties: specialties.length > 0 ? specialties : undefined,
-    }),
+    (): Pick<ScriptSurePharmacySearchParams, 'specialties'> => (specialties.length > 0 ? { specialties } : {}),
     [specialties]
   );
 

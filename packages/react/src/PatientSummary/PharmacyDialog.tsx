@@ -6,7 +6,7 @@ import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams } fro
 import { formatAddress, normalizeErrorString } from '@medplum/core';
 import type { Organization, Patient } from '@medplum/fhirtypes';
 import type { JSX, ReactNode } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import styles from './PharmacyDialog.module.css';
 
 /**
@@ -42,7 +42,11 @@ export interface PharmacyDialogProps {
   readonly onAddToFavorites: (params: AddFavoriteParams) => Promise<AddPharmacyResponse>;
   /** Optional fields rendered inside the search form above the submit button. */
   readonly renderBeforeSearchButton?: ReactNode;
-  /** Extra search parameters merged into the bot request (e.g. vendor-specific filters). */
+  /**
+   * Extra search parameters merged into the bot request (e.g. vendor-specific filters).
+   * `handleSearch` depends on this callback, so callers should memoize it (e.g. `useCallback`)
+   * to avoid re-creating the search handler on every render.
+   */
   readonly getExtraSearchParams?: () => Record<string, unknown>;
   /** Optional per-field placeholder overrides for the search form. */
   readonly searchPlaceholders?: PharmacySearchFieldPlaceholders;
@@ -242,10 +246,10 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
     searchPlaceholders,
   } = props;
 
-  const placeholders: Required<PharmacySearchFieldPlaceholders> = {
-    ...DEFAULT_SEARCH_PLACEHOLDERS,
-    ...searchPlaceholders,
-  };
+  const placeholders = useMemo<Required<PharmacySearchFieldPlaceholders>>(
+    () => ({ ...DEFAULT_SEARCH_PLACEHOLDERS, ...searchPlaceholders }),
+    [searchPlaceholders]
+  );
 
   const [searchResults, setSearchResults] = useState<Organization[]>([]);
   const [searching, setSearching] = useState(false);

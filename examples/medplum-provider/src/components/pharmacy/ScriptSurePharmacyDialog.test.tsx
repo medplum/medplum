@@ -110,4 +110,24 @@ describe('ScriptSurePharmacyDialog', () => {
       });
     });
   });
+
+  test('Omits specialties key when no category is selected', async () => {
+    setup();
+
+    // Deselect the default Retail category, leaving no categories selected
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Retail'));
+    });
+
+    expect(screen.getByLabelText('Retail')).not.toBeChecked();
+    expect(lastPharmacyDialogProps?.getExtraSearchParams?.()).toEqual({});
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Search'));
+    });
+
+    await waitFor(() => {
+      expect(searchPharmacies).toHaveBeenCalledWith({ zip: '19720' });
+    });
+  });
 });
