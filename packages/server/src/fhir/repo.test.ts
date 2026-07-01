@@ -421,6 +421,13 @@ describe('FHIR Repo', () => {
       }
     });
 
+    test('request method and url', async () => {
+      const history = await systemRepo.readHistory('Patient', versions.v1.id);
+      expect(history.entry).toHaveLength(2);
+      expect(history.entry?.[0]?.request).toMatchObject({ method: 'PUT', url: `Patient/${versions.v1.id}` });
+      expect(history.entry?.[1]?.request).toMatchObject({ method: 'POST', url: 'Patient' });
+    });
+
     test('with config.maxSearchOffset', async () => {
       const prevMax = getConfig().maxSearchOffset;
       getConfig().maxSearchOffset = 200;
@@ -966,12 +973,16 @@ describe('FHIR Repo', () => {
 
       const history1 = await systemRepo.readHistory('Patient', patient.id);
       expect(history1.entry?.length).toBe(1);
+      expect(history1.entry?.[0]?.request).toMatchObject({ method: 'POST', url: 'Patient' });
 
       // Delete the patient
       await systemRepo.deleteResource('Patient', patient.id);
 
       const history2 = await systemRepo.readHistory('Patient', patient.id);
       expect(history2.entry?.length).toBe(2);
+      expect(history2.entry?.[0]?.request?.method).toStrictEqual('DELETE');
+      expect(history2.entry?.[0]?.request?.url).toStrictEqual(`Patient/${patient.id}`);
+      expect(history2.entry?.[1]?.request).toMatchObject({ method: 'POST', url: 'Patient' });
 
       // Restore the patient
       await systemRepo.updateResource({ ...patient, meta: undefined });
@@ -980,11 +991,15 @@ describe('FHIR Repo', () => {
       expect(history3.entry?.length).toBe(3);
 
       const entries = history3.entry as BundleEntry[];
+      expect(entries[0].request).toMatchObject({ method: 'PUT', url: `Patient/${patient.id}` });
       expect(entries[0].response?.status).toStrictEqual('200');
       expect(entries[0].resource).toBeDefined();
+      expect(entries[1].request?.method).toStrictEqual('DELETE');
+      expect(entries[1].request?.url).toStrictEqual(`Patient/${patient.id}`);
       expect(entries[1].response?.status).toStrictEqual('410');
       expect((entries[1].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toMatch(/Deleted on /);
       expect(entries[1].resource).toBeUndefined();
+      expect(entries[2].request).toMatchObject({ method: 'POST', url: 'Patient' });
       expect(entries[2].response?.status).toStrictEqual('200');
       expect(entries[2].resource).toBeDefined();
     }));
