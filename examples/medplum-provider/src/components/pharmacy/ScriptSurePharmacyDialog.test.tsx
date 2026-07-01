@@ -4,10 +4,10 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { HomerSimpson, MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
 import type * as MedplumReactModule from '@medplum/react';
-import { useScriptSurePharmacySearch } from '@medplum/scriptsure-react';
+import { MedplumProvider } from '@medplum/react';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
+import { useScriptSurePharmacySearch } from '@medplum/scriptsure-react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';

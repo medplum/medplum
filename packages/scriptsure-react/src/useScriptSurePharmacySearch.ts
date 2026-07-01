@@ -4,8 +4,8 @@
 import type { AddFavoriteParams, AddPharmacyResponse } from '@medplum/core';
 import { isAddPharmacyResponse, isOrganizationArray } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
-import { useCallback } from 'react';
 import { useMedplum } from '@medplum/react-hooks';
+import { useCallback } from 'react';
 import { SCRIPTSURE_ADD_PATIENT_PHARMACY_BOT, SCRIPTSURE_SEARCH_PHARMACY_BOT } from './common';
 import type { ScriptSurePharmacySearchParams } from './pharmacy-search';
 
