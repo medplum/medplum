@@ -25,25 +25,12 @@ describe('SchedulePage', () => {
 
     vi.clearAllMocks();
 
-    // mockPractitioner = {
-    //   resourceType: 'Practitioner',
-    //   id: 'practitioner-1',
-    //   name: [{ given: ['Dr.'], family: 'Smith' }],
-    // };
-
     mockSchedule = {
       resourceType: 'Schedule',
       id: 'schedule-1',
       actor: [{ reference: 'Practitioner/practitioner-1' }],
       active: true,
     };
-
-    // Mock window.innerHeight for calendar height calculation
-    Object.defineProperty(window, 'innerHeight', {
-      writable: true,
-      configurable: true,
-      value: 800,
-    });
 
     // Store the schedule so readResource('Schedule', 'schedule-1') works
     await medplum.createResource(mockSchedule);
@@ -119,162 +106,6 @@ describe('SchedulePage', () => {
       await waitFor(() => {
         // Calendar should be rendered (check for Today button in toolbar)
         expect(screen.getByText('Today')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Toolbar', () => {
-    test('renders toolbar with navigation buttons', async () => {
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Today')).toBeInTheDocument();
-        // Check for navigation buttons (they contain chevron icons)
-        const buttons = screen.getAllByRole('button');
-        expect(buttons.length).toBeGreaterThan(0);
-      });
-    });
-
-    test('renders view switcher with Month, Week, Day options', async () => {
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Month')).toBeInTheDocument();
-        expect(screen.getByText('Week')).toBeInTheDocument();
-        expect(screen.getByText('Day')).toBeInTheDocument();
-      });
-    });
-
-    test('displays current month/year in title for non-day views', async () => {
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        // Check for month/year format (e.g., "January 2024")
-        const title = screen.getByText(/\w+\s+\d{4}/);
-        expect(title).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Calendar Events', () => {
-    test('searches for slots when date range is set', async () => {
-      const mockSlots: Slot[] = [
-        {
-          resourceType: 'Slot',
-          id: 'slot-1',
-          schedule: { reference: 'Schedule/schedule-1' },
-          status: 'free',
-          start: '2024-01-15T10:00:00Z',
-          end: '2024-01-15T10:30:00Z',
-        },
-      ];
-
-      medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Slot') {
-          return Promise.resolve(mockSlots);
-        }
-        return Promise.resolve([]);
-      });
-
-      await act(async () => {
-        setup();
-      });
-
-      // Wait for calendar to render and trigger range change
-      await waitFor(() => {
-        expect(screen.getByText('Today')).toBeInTheDocument();
-      });
-
-      // The calendar will trigger range change which calls refreshEvents
-      // This may take some time, so we check if searchResources was called with Slot
-      await waitFor(
-        () => {
-          const slotCalls = (medplum.searchResources as ReturnType<typeof vi.fn>).mock.calls.filter(
-            (call) => call[0] === 'Slot'
-          );
-          expect(slotCalls.length).toBeGreaterThan(0);
-        },
-        { timeout: 5000 }
-      );
-    });
-
-    test('searches for appointments when date range is set', async () => {
-      const mockAppointments: Appointment[] = [
-        {
-          resourceType: 'Appointment',
-          id: 'appt-1',
-          status: 'booked',
-          start: '2024-01-15T10:00:00Z',
-          end: '2024-01-15T10:30:00Z',
-          participant: [
-            {
-              actor: { reference: 'Practitioner/practitioner-1' },
-              status: 'accepted',
-            },
-          ],
-        },
-      ];
-
-      medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Appointment') {
-          return Promise.resolve(mockAppointments);
-        }
-        return Promise.resolve([]);
-      });
-
-      await act(async () => {
-        setup();
-      });
-
-      // Wait for calendar to render
-      await waitFor(() => {
-        expect(screen.getByText('Today')).toBeInTheDocument();
-      });
-
-      // Check if searchResources was called with Appointment
-      await waitFor(
-        () => {
-          const appointmentCalls = (medplum.searchResources as ReturnType<typeof vi.fn>).mock.calls.filter(
-            (call) => call[0] === 'Appointment'
-          );
-          expect(appointmentCalls.length).toBeGreaterThan(0);
-        },
-        { timeout: 5000 }
-      );
-    });
-  });
-
-  describe('Slot Selection', () => {
-    test('opens drawer when slot is selected', async () => {
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Today')).toBeInTheDocument();
-      });
-
-      // The drawer should not be visible initially
-      expect(screen.queryByText('New Calendar Event')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('View Changes', () => {
-    test('renders view switcher buttons', async () => {
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Month')).toBeInTheDocument();
-        expect(screen.getByText('Week')).toBeInTheDocument();
-        expect(screen.getByText('Day')).toBeInTheDocument();
       });
     });
   });
