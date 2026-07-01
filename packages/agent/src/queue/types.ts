@@ -241,12 +241,26 @@ export type DuplicateBehavior = (typeof DuplicateBehavior)[keyof typeof Duplicat
 export type EnhancedModeColumn = 'standard' | 'aaMode' | null;
 
 /**
- * A row in `inbound_hl7_messages`, decoded into typed JavaScript values.
+ * Columns present on a row in `inbound_hl7_messages` regardless of its lifecycle
+ * {@link MessageState}. Split into two groups:
  *
- * Columns that are `NULL` in SQL surface as `null` here (not `undefined`), so callers
- * can distinguish "not yet set" from "absent property."
+ * 1. **Intake / identity** — stamped once when the row is inserted and never
+ *    change (id, channel, bytes, seq_no, …).
+ * 2. **State-independent axes** — written by statements that deliberately do NOT
+ *    change `state`, so their value is orthogonal to which state the row is in:
+ *    - `ackOutcome` (SET_ACK_OUTCOME): the source-leg delivery result.
+ *    - `serverStatusCode` / `serverResponseBody` (RECORD_SERVER_RESPONSE): the
+ *      raw server reply, recorded "without changing state" (see queries.ts).
+ *    - `lastError` / `errorCode`: the free-form + machine-readable failure
+ *      classification, which can linger on a retried `queued` row and is
+ *      guaranteed non-null only on the terminal-failure members below.
+ *
+ * The columns that a *state transition itself* writes — the lifecycle timestamps
+ * (`processingStartedAt`, `sentAt`, `processedAt`, `erroredAt`) and the retry
+ * schedule (`nextAttemptAt`) — are NOT here: they are the discriminating fields,
+ * present only on the {@link InboundRow} members whose state actually sets them.
  */
-export interface InboundRow {
+interface InboundRowBase {
   id: number;
   channelName: string;
   remote: string;
@@ -258,27 +272,132 @@ export interface InboundRow {
   finalizedMessage: Buffer;
   encoding: string | null;
   enhancedMode: EnhancedModeColumn;
-  state: MessageState;
   attemptCount: number;
   /** Snapshot of the channel's guaranteed-delivery setting at intake (drives crash recovery). */
   guaranteedDelivery: boolean;
   callbackId: string;
-  serverResponseBody: Buffer | null;
-  serverStatusCode: number | null;
-  /** Source-leg delivery outcome — independent of {@link state}. See {@link AckOutcome}. */
-  ackOutcome: AckOutcome;
-  lastError: string | null;
-  errorCode: QueueErrorCode | null;
-  /** Earliest time (ms) a retry-scheduled `queued` row may be re-claimed; null unless a retry is pending. */
-  nextAttemptAt: number | null;
   seqNo: number | null;
   receivedAt: number;
-  /** When the worker claimed the row off the queue (entered `claimed`). */
-  processingStartedAt: number | null;
-  /** When the transmit request was written to the WebSocket (entered `inflight`). Null until sent. */
+  /** Source-leg delivery outcome — independent of `state`. See {@link AckOutcome}. */
+  ackOutcome: AckOutcome;
+  /** Raw server reply status, recorded independently of `state`; null until a response arrives (or if the server omitted one). */
+  serverStatusCode: number | null;
+  /** Raw server reply body, recorded independently of `state`; null until a response arrives. */
+  serverResponseBody: Buffer | null;
+  /** Human-readable failure detail. May linger on a retried `queued` row; non-null on the terminal-failure members. */
+  lastError: string | null;
+  /** Machine-readable failure classification. See {@link lastError}. */
+  errorCode: QueueErrorCode | null;
+}
+
+/**
+ * `queued` — inserted and awaiting worker dispatch, OR a retryable failure
+ * scheduled for auto-retry. Not yet claimed, so it carries none of the dispatch
+ * timestamps; a retry-scheduled row additionally sets {@link nextAttemptAt} and
+ * a lingering `lastError`/`errorCode`.
+ */
+export interface QueuedRow extends InboundRowBase {
+  state: typeof MessageState.QUEUED;
+  /** Earliest time (ms) a retry-scheduled row may be re-claimed; null for a fresh enqueue. */
+  nextAttemptAt: number | null;
+}
+
+/**
+ * `claimed` — a worker owns the row but the `agent:transmit:request` has not yet
+ * been written to the socket (`sent_at` is still unset, hence absent here).
+ */
+export interface ClaimedRow extends InboundRowBase {
+  state: typeof MessageState.CLAIMED;
+  /** When the worker claimed the row off the queue. */
+  processingStartedAt: number;
+}
+
+/** `inflight` — the request has been written to the socket and we await the server's response. */
+export interface InflightRow extends InboundRowBase {
+  state: typeof MessageState.INFLIGHT;
+  processingStartedAt: number;
+  /** When the transmit request was written to the WebSocket. */
+  sentAt: number;
+}
+
+/** `processed` — terminal success: the Bot accepted the message (server 2xx / guaranteed-mode AA/CA). */
+export interface ProcessedRow extends InboundRowBase {
+  state: typeof MessageState.PROCESSED;
+  processingStartedAt: number;
+  sentAt: number;
+  /** When the row was marked processed. */
+  processedAt: number;
+}
+
+/** `rejected` — terminal permanent failure: the Bot rejected the message itself (permanent 4xx / definitive upstream reject). */
+export interface RejectedRow extends InboundRowBase {
+  state: typeof MessageState.REJECTED;
+  processingStartedAt: number;
+  sentAt: number;
+  /** When the row was marked rejected. */
+  erroredAt: number;
+  lastError: string;
+  errorCode: QueueErrorCode;
+}
+
+/**
+ * `failed` — terminal-for-now: a transient/ambiguous Bot-leg failure. `sentAt` is
+ * null when the failure occurred before the request reached the socket (an unsent
+ * `claimed` row hit a dispatch error), non-null when it went out first (response
+ * timeout, interrupted inflight).
+ */
+export interface FailedRow extends InboundRowBase {
+  state: typeof MessageState.FAILED;
+  processingStartedAt: number;
   sentAt: number | null;
-  processedAt: number | null;
-  erroredAt: number | null;
+  /** When the row was marked failed. */
+  erroredAt: number;
+  lastError: string;
+  errorCode: QueueErrorCode;
+}
+
+/**
+ * `nacked` — intake-reject audit row: the message was NACKed before it was ever
+ * committed/dispatched, so it never acquired any dispatch timestamp (not even
+ * `errored_at`) and its ack is `not_owed`.
+ */
+export interface NackedRow extends InboundRowBase {
+  state: typeof MessageState.NACKED;
+  lastError: string;
+  errorCode: QueueErrorCode;
+}
+
+/**
+ * A row in `inbound_hl7_messages`, decoded into typed JavaScript values, as a
+ * discriminated union over {@link MessageState}. Each member exposes only the
+ * lifecycle columns that its state actually populates — e.g. a {@link QueuedRow}
+ * has no `sentAt`/`processedAt`, and only a {@link ProcessedRow} has `processedAt`.
+ * Narrow on `state` (or use {@link assertRowState}) to reach a state's columns.
+ *
+ * Columns that are `NULL` in SQL surface as `null` here (not `undefined`), so callers
+ * can distinguish "not yet set" from "absent property."
+ */
+export type InboundRow = QueuedRow | ClaimedRow | InflightRow | ProcessedRow | RejectedRow | FailedRow | NackedRow;
+
+/**
+ * Narrows a (possibly null) {@link InboundRow} to the union member for `state`,
+ * throwing if the row is null/undefined or in a different state. Lets a caller
+ * that knows a row's state — from the transition it just performed, or a test
+ * that drove the row there — reach that state's columns without hand-written
+ * narrowing, while still failing loudly if the assumption is wrong.
+ * @param row - The row to check.
+ * @param state - The state the row is expected to be in.
+ */
+export function assertRowState<S extends MessageState>(
+  row: InboundRow | null | undefined,
+  state: S
+): asserts row is Extract<InboundRow, { state: S }> {
+  if (!row) {
+    throw new Error(`Expected an inbound row in state '${state}', but got ${row === null ? 'null' : 'undefined'}`);
+  }
+  if (row.state !== state) {
+    throw new Error(`Expected inbound row id=${row.id} in state '${state}', but it is '${row.state}'`);
+  }
 }
 
 /** Input payload for {@link DurableQueue.enqueue}. */
@@ -318,4 +437,4 @@ export interface EnqueueRejectedInput extends EnqueueInput {
  * claimed, inflight, processed, rejected, or failed) — the caller compares
  * bodies to decide between replaying the prior ACK and rejecting the collision (§8).
  */
-export type EnqueueResult = { kind: 'inserted'; row: InboundRow } | { kind: 'duplicate'; existing: InboundRow };
+export type EnqueueResult = { kind: 'inserted'; row: QueuedRow } | { kind: 'duplicate'; existing: InboundRow };

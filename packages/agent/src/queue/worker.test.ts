@@ -10,7 +10,7 @@ import type { App } from '../app';
 import { createMockLogger, waitFor } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
-import { AckOutcome, MessageState, QueueErrorCode } from './types';
+import { AckOutcome, assertRowState, MessageState, QueueErrorCode } from './types';
 import type { RetryPolicy } from './worker';
 import { ChannelQueueWorker, computeRetryDelayMs, DEFAULT_RETRY_POLICY } from './worker';
 
@@ -699,9 +699,10 @@ describe('ChannelQueueWorker', () => {
     worker.start();
     await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED, 2000);
     const scheduled = queue.getById(r.id);
-    expect(scheduled?.lastError).toContain('Timed out');
-    expect(scheduled?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
-    expect(scheduled?.nextAttemptAt).toBeGreaterThan(0);
+    assertRowState(scheduled, MessageState.QUEUED);
+    expect(scheduled.lastError).toContain('Timed out');
+    expect(scheduled.errorCode).toBe(QueueErrorCode.ResponseTimeout);
+    expect(scheduled.nextAttemptAt).toBeGreaterThan(0);
     await worker.stop();
   });
 
@@ -745,10 +746,11 @@ describe('ChannelQueueWorker', () => {
       // The row returns to queued (not errored) with retry metadata.
       await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED);
       const scheduled = queue.getById(r.id);
-      expect(scheduled?.errorCode).toBe(QueueErrorCode.ServerError);
-      expect(scheduled?.lastError).toContain('503');
+      assertRowState(scheduled, MessageState.QUEUED);
+      expect(scheduled.errorCode).toBe(QueueErrorCode.ServerError);
+      expect(scheduled.lastError).toContain('503');
       // Equal jitter floors the delay at half the computed backoff.
-      expect(scheduled?.nextAttemptAt).toBeGreaterThanOrEqual(before + fastRetryPolicy.baseDelayMs / 2);
+      expect(scheduled.nextAttemptAt).toBeGreaterThanOrEqual(before + fastRetryPolicy.baseDelayMs / 2);
 
       // After the backoff, the worker re-claims the same row; succeed it.
       await waitFor(() => worker.hasInFlight(), 2000);

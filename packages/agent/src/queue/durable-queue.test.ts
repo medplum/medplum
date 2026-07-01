@@ -8,7 +8,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { createMockLogger } from '../test-utils';
 import { DurableQueue, isUniqueConstraintError } from './durable-queue';
 import { MIGRATIONS } from './schema';
-import { AckOutcome, MessageState, QueueErrorCode } from './types';
+import { AckOutcome, assertRowState, MessageState, QueueErrorCode } from './types';
 
 function makeEnqueueInput(
   overrides: Partial<Parameters<DurableQueue['enqueue']>[0]> = {}
@@ -39,6 +39,17 @@ describe('DurableQueue', () => {
     dbPath = join(dir, 'queue.sqlite');
     queue = DurableQueue.open({ path: dbPath, log: createMockLogger() });
   });
+
+  // Reads a raw column straight from SQLite. Used to assert that a state
+  // transition cleared a lifecycle column (e.g. scheduleRetry nulling sent_at)
+  // in cases where that column is now structurally absent from the state's
+  // InboundRow member, so it can't be read through the typed row.
+  function rawColumn(id: number, column: string): unknown {
+    const row = queue.getDb().prepare(`SELECT ${column} AS v FROM inbound_hl7_messages WHERE id = ?`).get(id) as
+      | { v: unknown }
+      | undefined;
+    return row?.v ?? null;
+  }
 
   afterEach(() => {
     queue.close();
@@ -222,9 +233,9 @@ describe('DurableQueue', () => {
 
     expect(queue.requeue(r1.row.id)).toBe(true);
     const requeued = queue.getById(r1.row.id);
-    expect(requeued?.state).toBe(MessageState.QUEUED);
-    expect(requeued?.attemptCount).toBe(0);
-    expect(requeued?.processingStartedAt).toBeNull();
+    assertRowState(requeued, MessageState.QUEUED);
+    expect(requeued.attemptCount).toBe(0);
+    expect(rawColumn(r1.row.id, 'processing_started_at')).toBeNull();
 
     // Original id means original FIFO position: r1 is claimed again before r2.
     expect(queue.claimNext('A')?.id).toBe(r1.row.id);
@@ -249,15 +260,15 @@ describe('DurableQueue', () => {
     expect(queue.scheduleRetry(r.row.id, 'Server returned 503', QueueErrorCode.ServerError, nextAttemptAt)).toBe(true);
 
     const rescheduled = queue.getById(r.row.id);
-    expect(rescheduled?.state).toBe(MessageState.QUEUED);
-    expect(rescheduled?.lastError).toBe('Server returned 503');
-    expect(rescheduled?.errorCode).toBe(QueueErrorCode.ServerError);
-    expect(rescheduled?.nextAttemptAt).toBe(nextAttemptAt);
-    expect(rescheduled?.processingStartedAt).toBeNull();
+    assertRowState(rescheduled, MessageState.QUEUED);
+    expect(rescheduled.lastError).toBe('Server returned 503');
+    expect(rescheduled.errorCode).toBe(QueueErrorCode.ServerError);
+    expect(rescheduled.nextAttemptAt).toBe(nextAttemptAt);
+    expect(rawColumn(r.row.id, 'processing_started_at')).toBeNull();
     // sent_at is cleared so the row reads as a clean re-queued entry.
-    expect(rescheduled?.sentAt).toBeNull();
+    expect(rawColumn(r.row.id, 'sent_at')).toBeNull();
     // Unlike requeue, the attempt still counts — it reached the server.
-    expect(rescheduled?.attemptCount).toBe(1);
+    expect(rescheduled.attemptCount).toBe(1);
 
     // scheduleRetry only applies to claimed/inflight rows; a queued row is a no-op.
     expect(queue.scheduleRetry(r.row.id, 'again', QueueErrorCode.ServerError, nextAttemptAt)).toBe(false);
@@ -283,7 +294,7 @@ describe('DurableQueue', () => {
     const reclaimed = queue.claimNext('R', now + 5000);
     expect(reclaimed?.id).toBe(r1.row.id);
     expect(reclaimed?.attemptCount).toBe(2);
-    expect(reclaimed?.nextAttemptAt).toBeNull();
+    expect(rawColumn(r1.row.id, 'next_attempt_at')).toBeNull();
 
     // And the channel resumes normal FIFO behind it.
     queue.markProcessed(r1.row.id, AckOutcome.DELIVERED);
@@ -300,12 +311,12 @@ describe('DurableQueue', () => {
 
     queue.claimNext(r.row.channelName);
     expect(queue.getById(r.row.id)?.state).toBe(MessageState.CLAIMED);
-    expect(queue.getById(r.row.id)?.sentAt).toBeNull();
+    expect(rawColumn(r.row.id, 'sent_at')).toBeNull();
 
     expect(queue.markSent('cb-sent', 1700000000000)).toBe(true);
     const sent = queue.getById(r.row.id);
-    expect(sent?.state).toBe(MessageState.INFLIGHT);
-    expect(sent?.sentAt).toBe(1700000000000);
+    assertRowState(sent, MessageState.INFLIGHT);
+    expect(sent.sentAt).toBe(1700000000000);
 
     // Idempotent: a second send (or a stray callback) doesn't re-transition.
     expect(queue.markSent('cb-sent')).toBe(false);
@@ -336,15 +347,15 @@ describe('DurableQueue', () => {
     // The markSent inside the transaction was rolled back: still `claimed`, sent_at null.
     const after = queue.getById(r.row.id);
     expect(after?.state).toBe(MessageState.CLAIMED);
-    expect(after?.sentAt).toBeNull();
+    expect(rawColumn(r.row.id, 'sent_at')).toBeNull();
 
     // And the committed path still transitions normally afterwards.
     queue.runInTransaction(() => {
       queue.markSent('cb-txn', 1700000000000);
     });
     const committed = queue.getById(r.row.id);
-    expect(committed?.state).toBe(MessageState.INFLIGHT);
-    expect(committed?.sentAt).toBe(1700000000000);
+    assertRowState(committed, MessageState.INFLIGHT);
+    expect(committed.sentAt).toBe(1700000000000);
   });
 
   test('markProcessed records the source-leg ack outcome and processed timestamp', () => {
@@ -357,9 +368,9 @@ describe('DurableQueue', () => {
 
     queue.markProcessed(r.row.id, AckOutcome.DELIVERED, 1700000000000);
     const after = queue.getById(r.row.id);
-    expect(after?.state).toBe(MessageState.PROCESSED);
-    expect(after?.processedAt).toBe(1700000000000);
-    expect(after?.ackOutcome).toBe(AckOutcome.DELIVERED);
+    assertRowState(after, MessageState.PROCESSED);
+    expect(after.processedAt).toBe(1700000000000);
+    expect(after.ackOutcome).toBe(AckOutcome.DELIVERED);
 
     // The Bot can accept the message (processed) while the source ACK fails to
     // deliver — the two legs are recorded independently.
@@ -387,11 +398,12 @@ describe('DurableQueue', () => {
     }
     queue.claimNext(f.row.channelName);
     queue.markFailed(f.row.id, 'boom', QueueErrorCode.ServerError, 1700000000123);
-    expect(queue.getById(f.row.id)?.state).toBe(MessageState.FAILED);
-    expect(queue.getById(f.row.id)?.lastError).toBe('boom');
-    expect(queue.getById(f.row.id)?.errorCode).toBe(QueueErrorCode.ServerError);
-    expect(queue.getById(f.row.id)?.erroredAt).toBe(1700000000123);
-    expect(queue.getById(f.row.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
+    const failed = queue.getById(f.row.id);
+    assertRowState(failed, MessageState.FAILED);
+    expect(failed.lastError).toBe('boom');
+    expect(failed.errorCode).toBe(QueueErrorCode.ServerError);
+    expect(failed.erroredAt).toBe(1700000000123);
+    expect(failed.ackOutcome).toBe(AckOutcome.NOT_OWED);
 
     // markRejected: permanent reject → `rejected`, ack not owed.
     const rj = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS3' }));
@@ -460,7 +472,7 @@ describe('DurableQueue', () => {
     // Claimed-but-unsent provably never left → requeued (attempt decremented, ready to re-dispatch).
     expect(queue.getById(claimedRow.row.id)?.state).toBe(MessageState.QUEUED);
     expect(queue.getById(claimedRow.row.id)?.attemptCount).toBe(0);
-    expect(queue.getById(claimedRow.row.id)?.processingStartedAt).toBeNull();
+    expect(rawColumn(claimedRow.row.id, 'processing_started_at')).toBeNull();
 
     // The untouched queued row stays queued.
     expect(queue.getById(qrow.row.id)?.state).toBe(MessageState.QUEUED);
@@ -492,10 +504,10 @@ describe('DurableQueue', () => {
     expect(queue.recoverOnStartup()).toEqual({ failed: 1, requeued: 1 });
 
     const recovered = queue.getById(guaranteed.row.id);
-    expect(recovered?.state).toBe(MessageState.QUEUED);
-    expect(recovered?.errorCode).toBe(QueueErrorCode.Interrupted);
-    expect(recovered?.sentAt).toBeNull();
-    expect(recovered?.nextAttemptAt).toBeNull();
+    assertRowState(recovered, MessageState.QUEUED);
+    expect(recovered.errorCode).toBe(QueueErrorCode.Interrupted);
+    expect(rawColumn(guaranteed.row.id, 'sent_at')).toBeNull();
+    expect(recovered.nextAttemptAt).toBeNull();
     // Immediately claimable again — the guarantee survives the restart.
     expect(queue.claimNext('G')?.id).toBe(guaranteed.row.id);
 

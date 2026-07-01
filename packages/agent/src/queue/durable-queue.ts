@@ -38,14 +38,21 @@ import {
 import { runMigrations } from './schema';
 import type {
   AckOutcome,
+  ClaimedRow,
   EnqueueInput,
   EnqueueRejectedInput,
   EnqueueResult,
   InboundRow,
   MessageState,
+  NackedRow,
   QueueErrorCode,
 } from './types';
-import { AckOutcome as AckOutcomeValues, MessageState as MessageStateValues, QueueLeaseError } from './types';
+import {
+  AckOutcome as AckOutcomeValues,
+  assertRowState,
+  MessageState as MessageStateValues,
+  QueueLeaseError,
+} from './types';
 
 /**
  * Default lease lifetime. Picked to be:
@@ -553,6 +560,8 @@ export class DurableQueue {
       if (!row) {
         throw new Error(`enqueue: inserted row id=${id} could not be re-read`);
       }
+      // ENQUEUE always inserts in the 'queued' state.
+      assertRowState(row, MessageStateValues.QUEUED);
       return { kind: 'inserted', row };
     } catch (err) {
       if (isUniqueConstraintError(err) && input.msgControlId) {
@@ -572,7 +581,7 @@ export class DurableQueue {
    * @param input - Fields to persist plus the `lastError`/`errorCode` describing why we rejected.
    * @returns The newly inserted audit row, or null if even the audit insert failed.
    */
-  enqueueRejected(input: EnqueueRejectedInput): InboundRow | null {
+  enqueueRejected(input: EnqueueRejectedInput): NackedRow | null {
     try {
       const info = this.enqueueRejectedStmt.run(
         input.channelName,
@@ -590,7 +599,10 @@ export class DurableQueue {
         input.receivedAt
       );
       this.walDirty = true;
-      return this.getById(Number(info.lastInsertRowid));
+      // ENQUEUE_REJECTED always inserts in the 'nacked' state.
+      const row = this.getById(Number(info.lastInsertRowid));
+      assertRowState(row, MessageStateValues.NACKED);
+      return row;
     } catch (err) {
       this.log.warn(`enqueueRejected failed: ${normalizeErrorString(err)}`);
       return null;
@@ -610,7 +622,7 @@ export class DurableQueue {
    *   compared against `next_attempt_at` (for tests).
    * @returns The claimed row, or `null` if the channel queue is empty or its head is backing off.
    */
-  claimNext(channelName: string, now: number = Date.now()): InboundRow | null {
+  claimNext(channelName: string, now: number = Date.now()): ClaimedRow | null {
     this.assertNotDemoted();
     // Bind `now` twice: once for processing_started_at, once for the
     // next_attempt_at backoff predicate on the outer update.
@@ -618,7 +630,9 @@ export class DurableQueue {
     if (raw) {
       this.walDirty = true;
     }
-    return raw ? rowFromSql(raw) : null;
+    // CLAIM_NEXT sets state='claimed' in the same statement (RETURNING *), so the
+    // decoded row is always a ClaimedRow.
+    return raw ? (rowFromSql(raw) as ClaimedRow) : null;
   }
 
   /**
@@ -1164,13 +1178,19 @@ export class DurableQueue {
 }
 
 /**
- * Decodes a raw SQL row into an {@link InboundRow}. Centralized so every read
- * path produces the same shape — adding a column means touching one place.
+ * Decodes a raw SQL row into the {@link InboundRow} union member matching its
+ * `state`. Centralized so every read path produces the same shape — adding a
+ * column means touching one place.
+ *
+ * The state-bound lifecycle columns are read with a non-null cast on the members
+ * whose state provably sets them (e.g. `processed_at` on a `processed` row): the
+ * transition statements in queries.ts guarantee those writes, so we trust the
+ * schema rather than re-checking at every read.
  * @param raw - The raw row object returned by `node:sqlite`.
  * @returns The decoded row.
  */
 function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
-  return {
+  const base = {
     id: raw.id as number,
     channelName: raw.channel_name as string,
     remote: raw.remote as string,
@@ -1180,26 +1200,60 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     finalizedMessage: toBuffer(raw.finalized_message),
     encoding: (raw.encoding as string | null) ?? null,
     enhancedMode: (raw.enhanced_mode as 'standard' | 'aaMode' | null) ?? null,
-    state: raw.state as MessageState,
     attemptCount: raw.attempt_count as number,
     guaranteedDelivery: Boolean(raw.guaranteed_delivery),
     callbackId: raw.callback_id as string,
+    seqNo: (raw.seq_no as number | null) ?? null,
+    receivedAt: raw.received_at as number,
+    ackOutcome: (raw.ack_outcome as AckOutcome | null) ?? AckOutcomeValues.PENDING,
+    serverStatusCode: (raw.server_status_code as number | null) ?? null,
     serverResponseBody:
       raw.server_response_body === null || raw.server_response_body === undefined
         ? null
         : toBuffer(raw.server_response_body),
-    serverStatusCode: (raw.server_status_code as number | null) ?? null,
-    ackOutcome: (raw.ack_outcome as AckOutcome | null) ?? AckOutcomeValues.PENDING,
     lastError: (raw.last_error as string | null) ?? null,
     errorCode: (raw.error_code as QueueErrorCode | null) ?? null,
-    nextAttemptAt: (raw.next_attempt_at as number | null) ?? null,
-    seqNo: (raw.seq_no as number | null) ?? null,
-    receivedAt: raw.received_at as number,
-    processingStartedAt: (raw.processing_started_at as number | null) ?? null,
-    sentAt: (raw.sent_at as number | null) ?? null,
-    processedAt: (raw.processed_at as number | null) ?? null,
-    erroredAt: (raw.errored_at as number | null) ?? null,
   };
+
+  const state = raw.state as MessageState;
+  const processingStartedAt = raw.processing_started_at as number;
+  const sentAt = (raw.sent_at as number | null) ?? null;
+
+  switch (state) {
+    case MessageStateValues.QUEUED:
+      return { ...base, state, nextAttemptAt: (raw.next_attempt_at as number | null) ?? null };
+    case MessageStateValues.CLAIMED:
+      return { ...base, state, processingStartedAt };
+    case MessageStateValues.INFLIGHT:
+      return { ...base, state, processingStartedAt, sentAt: sentAt as number };
+    case MessageStateValues.PROCESSED:
+      return { ...base, state, processingStartedAt, sentAt: sentAt as number, processedAt: raw.processed_at as number };
+    case MessageStateValues.REJECTED:
+      return {
+        ...base,
+        state,
+        processingStartedAt,
+        sentAt: sentAt as number,
+        erroredAt: raw.errored_at as number,
+        lastError: base.lastError as string,
+        errorCode: base.errorCode as QueueErrorCode,
+      };
+    case MessageStateValues.FAILED:
+      return {
+        ...base,
+        state,
+        processingStartedAt,
+        sentAt,
+        erroredAt: raw.errored_at as number,
+        lastError: base.lastError as string,
+        errorCode: base.errorCode as QueueErrorCode,
+      };
+    case MessageStateValues.NACKED:
+      return { ...base, state, lastError: base.lastError as string, errorCode: base.errorCode as QueueErrorCode };
+    default:
+      state satisfies never;
+      throw new Error(`rowFromSql: unknown row state '${String(state)}' for row id=${base.id}`);
+  }
 }
 
 function toBlob(value: Buffer | string): Buffer {
