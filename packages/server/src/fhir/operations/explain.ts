@@ -46,7 +46,7 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
   const searchReq = parseSearchRequest(params.query);
   const repo = ctx.repo.clone();
   repo.setMode(RepositoryMode.READER);
-  const selectQuery = getSelectQueryForSearch(repo, searchReq);
+  const selectQuery = await getSelectQueryForSearch(repo, searchReq);
 
   // Capture SQL query and parameters before adding EXPLAIN
   const sqlBuilder = new SqlBuilder();

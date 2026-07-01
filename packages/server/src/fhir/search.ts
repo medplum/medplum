@@ -130,7 +130,7 @@ export async function searchImpl<T extends Resource>(
   let rowCount = undefined;
   let nextResource: T | undefined;
   if (searchRequest.count > 0) {
-    const builder = getSelectQueryForSearch(repo, searchRequest, options);
+    const builder = await getSelectQueryForSearch(repo, searchRequest, options);
     ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder));
   }
 
@@ -161,7 +161,7 @@ export async function searchByReferenceImpl<T extends Resource>(
   const referenceConditions: Condition[] = [];
   const referenceColumns: Column[] = [];
 
-  const searchQuery = getSelectQueryForSearch(repo, searchRequest, {
+  const searchQuery = await getSelectQueryForSearch(repo, searchRequest, {
     addColumns: true,
     limitModifier: 0,
     resourceTypeQueryCallback: (resourceType, builder) => {
@@ -280,14 +280,14 @@ interface GetSelectQueryForSearchOptions extends GetBaseSelectQueryOptions {
   limitModifier?: number;
 }
 
-export function getSelectQueryForSearch<T extends Resource>(
+export async function getSelectQueryForSearch<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest<T>,
   options?: GetSelectQueryForSearchOptions
-): SelectQuery {
+): Promise<SelectQuery> {
   applyCountAndOffsetLimits(searchRequest);
 
-  const builder = getBaseSelectQuery(repo, searchRequest, options);
+  const builder = await getBaseSelectQuery(repo, searchRequest, options);
   addSortRules(repo, builder, searchRequest);
   const count = searchRequest.count;
   builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
@@ -398,16 +398,16 @@ interface GetBaseSelectQueryOptions {
   /** The maximum resource version to include in the search. If zero is specified, only resources with a NULL version are included. */
   maxResourceVersion?: number;
 }
-function getBaseSelectQuery(
+async function getBaseSelectQuery(
   repo: Repository,
   searchRequest: SearchRequest,
   opts?: GetBaseSelectQueryOptions
-): SelectQuery {
+): Promise<SelectQuery> {
   let builder: SelectQuery;
   if (searchRequest.types) {
     const queries: SelectQuery[] = [];
     for (const resourceType of searchRequest.types) {
-      const query = getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, opts);
+      const query = await getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, opts);
       queries.push(query);
     }
     builder = new SelectQuery('combined', new Union(...queries));
@@ -415,17 +415,17 @@ function getBaseSelectQuery(
       builder.raw('*');
     }
   } else {
-    builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, opts);
+    builder = await getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, opts);
   }
   return builder;
 }
 
-function getBaseSelectQueryForResourceType(
+async function getBaseSelectQueryForResourceType(
   repo: Repository,
   resourceType: ResourceType,
   searchRequest: SearchRequest,
   opts?: GetBaseSelectQueryOptions
-): SelectQuery {
+): Promise<SelectQuery> {
   const builder = new SelectQuery(resourceType);
   const addColumns = opts?.addColumns !== false;
   const idColumn = new Column(resourceType, 'id');
@@ -441,8 +441,8 @@ function getBaseSelectQueryForResourceType(
   if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
     repo.addDeletedFilter(builder);
   }
-  repo.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.SEARCH);
-  addSearchFilters(repo, builder, resourceType, searchRequest);
+  await repo.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.SEARCH);
+  await addSearchFilters(repo, builder, resourceType, searchRequest);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
   }
@@ -558,7 +558,7 @@ async function getSearchIncludeEntries(
 
   const includedResources = (await repo.readReferences(references)).filter((v) => isResource(v)) as WithId<Resource>[];
   if (searchParam.target && canonicalReferences.length > 0) {
-    const canonicalSearches = searchParam.target.map((resourceType) => {
+    const canonicalSearches = searchParam.target.map(async (resourceType) => {
       const searchRequest = {
         resourceType: resourceType,
         filters: [
@@ -571,7 +571,7 @@ async function getSearchIncludeEntries(
         count: DEFAULT_MAX_SEARCH_COUNT,
         offset: 0,
       };
-      const query = getSelectQueryForSearch(repo, searchRequest);
+      const query = await getSelectQueryForSearch(repo, searchRequest);
       return getSearchEntries(repo, searchRequest, query);
     });
 
@@ -621,7 +621,7 @@ async function getSearchRevIncludeEntries(
     offset: 0,
   };
 
-  const query = getSelectQueryForSearch(repo, searchRequest);
+  const query = await getSelectQueryForSearch(repo, searchRequest);
   const entries = (await getSearchEntries(repo, searchRequest, query)).entry;
   for (const entry of entries) {
     entry.search = { mode: 'include' };
@@ -887,7 +887,7 @@ export async function getCount(
  * @returns The total number of matching results.
  */
 async function getAccurateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
-  const builder = getBaseSelectQuery(repo, searchRequest, { addColumns: false });
+  const builder = await getBaseSelectQuery(repo, searchRequest, { addColumns: false });
 
   if (builder.joins.length > 0) {
     builder.raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`);
@@ -908,7 +908,7 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
  * @returns The total number of matching results.
  */
 async function getEstimateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
-  const builder = getBaseSelectQuery(repo, searchRequest);
+  const builder = await getBaseSelectQuery(repo, searchRequest);
   builder.explain = true;
 
   // See: https://wiki.postgresql.org/wiki/Count_estimate
@@ -951,13 +951,13 @@ export function clampEstimateCount(searchRequest: SearchRequest, estimateCount: 
  * @param resourceType - The type of resources requested.
  * @param searchRequest - The search request.
  */
-function addSearchFilters(
+async function addSearchFilters(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   searchRequest: SearchRequest
-): void {
-  const expr = buildSearchExpression(repo, selectQuery, resourceType, searchRequest);
+): Promise<void> {
+  const expr = await buildSearchExpression(repo, selectQuery, resourceType, searchRequest);
   if (expr) {
     selectQuery.predicate.expressions.push(expr);
   }
@@ -967,15 +967,15 @@ export function isChainedSearchFilter(filter: Filter): boolean {
   return filter.code.startsWith('_has:') || filter.code.includes('.');
 }
 
-export function buildSearchExpression(
+export async function buildSearchExpression(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   searchRequest: SearchRequest
-): Expression | undefined {
+): Promise<Expression | undefined> {
   const expressions: Expression[] = [];
   for (const filter of searchRequest.filters ?? EMPTY) {
-    const expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
+    const expr = await buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
     expressions.push(expr);
   }
   if (expressions.length === 0) {
@@ -996,13 +996,13 @@ export function buildSearchExpression(
  * @param filter - The search filter.
  * @returns The search query where expression
  */
-function buildSearchFilterExpression(
+async function buildSearchFilterExpression(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filter: Filter
-): Expression {
+): Promise<Expression> {
   if (typeof filter.value !== 'string') {
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
   }
@@ -1016,7 +1016,7 @@ function buildSearchFilterExpression(
     return buildChainedSearch(repo, selectQuery, resourceType, chain);
   }
 
-  const specialParamExpression = trySpecialSearchParameter(repo, selectQuery, resourceType, table, filter);
+  const specialParamExpression = await trySpecialSearchParameter(repo, selectQuery, resourceType, table, filter);
   if (specialParamExpression) {
     return specialParamExpression;
   }
@@ -1038,7 +1038,7 @@ function buildSearchFilterExpression(
   const impl = getSearchParameterImplementation(resourceType, param);
   switch (impl.searchStrategy) {
     case SearchStrategies.TOKEN_COLUMN:
-      return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
+      return buildTokenColumnsSearchFilter(repo, resourceType, table, param, filter);
     case SearchStrategies.LOOKUP_TABLE:
       return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
     case SearchStrategies.RANGE_COLUMN:
@@ -1127,13 +1127,13 @@ function buildNormalSearchFilterExpression(
  * @param filter - The search filter.
  * @returns True if the search parameter is a special code.
  */
-function trySpecialSearchParameter(
+async function trySpecialSearchParameter(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filter: Filter
-): Expression | undefined {
+): Promise<Expression | undefined> {
   switch (filter.code) {
     case '_id':
       return buildIdSearchFilter(
@@ -1217,15 +1217,17 @@ function trySpecialSearchParameter(
   }
 }
 
-function buildFilterParameterExpression(
+async function buildFilterParameterExpression(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filterExpression: FhirFilterExpression
-): Expression {
+): Promise<Expression> {
   if (filterExpression instanceof FhirFilterNegation) {
-    return new Negation(buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpression.child));
+    return new Negation(
+      await buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpression.child)
+    );
   } else if (filterExpression instanceof FhirFilterConnective) {
     return buildFilterParameterConnective(repo, selectQuery, resourceType, table, filterExpression);
   } else if (filterExpression instanceof FhirFilterComparison) {
@@ -1235,27 +1237,27 @@ function buildFilterParameterExpression(
   }
 }
 
-function buildFilterParameterConnective(
+async function buildFilterParameterConnective(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filterConnective: FhirFilterConnective
-): Expression {
+): Promise<Expression> {
   const expressions = [
-    buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.left),
-    buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.right),
+    await buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.left),
+    await buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.right),
   ];
   return filterConnective.keyword === 'and' ? new Conjunction(expressions) : new Disjunction(expressions);
 }
 
-function buildFilterParameterComparison(
+async function buildFilterParameterComparison(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filterComparison: FhirFilterComparison
-): Expression {
+): Promise<Expression> {
   return buildSearchFilterExpression(repo, selectQuery, resourceType, table, {
     code: filterComparison.path,
     operator: filterComparison.operator,
@@ -1666,12 +1668,12 @@ function buildCondition(
   }
 }
 
-function buildChainedSearch(
+async function buildChainedSearch(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
-): Expression {
+): Promise<Expression> {
   if (param.chain.length > 3) {
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
   }
@@ -1702,11 +1704,11 @@ function buildChainedSearch(
  * @param param - The chained search parameter.
  * @returns The WHERE clause expression for the final chained filter.
  */
-function buildChainedSearchUsingReferenceTable(
+async function buildChainedSearchUsingReferenceTable(
   repo: Repository,
   selectQuery: SelectQuery,
   param: ChainedSearchParameter
-): Expression {
+): Promise<Expression> {
   let link = param.chain[0];
   validateSearchResourceType(repo, link.targetType as ResourceType);
   let currentTable = nextChainedTable(link);
@@ -1740,7 +1742,7 @@ function buildChainedSearchUsingReferenceTable(
   innerQuery
     .where(new Column(currentTable, 'id'), '!=', null)
     .whereExpr(
-      buildSearchFilterExpression(repo, innerQuery, link.targetType as ResourceType, currentTable, param.filter)
+      await buildSearchFilterExpression(repo, innerQuery, link.targetType as ResourceType, currentTable, param.filter)
     );
   return new SqlFunction('EXISTS', [innerQuery]);
 }
