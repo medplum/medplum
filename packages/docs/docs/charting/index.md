@@ -9,6 +9,10 @@ tags:
 
 # Charting
 
+:::tip[Planning this workflow?]
+The [Charting Decision Guide](https://docs.google.com/document/d/e/2PACX-1vSq26cFI_0XfIc9UGygCc_qD3lKxj-Bf9XVNopSVq36Hgx6eoBY4ED9OAZb_OmTcdgMXIwl0HPTuTs8/pub) walks through requirements questions and FHIR modeling decisions for charting — use it alongside these docs.
+:::
+
 Charting is where clinicians produce the durable record of care – the patient summary read at every visit, the encounter notes captured during one, and the orders and follow-up that come out of it. Medplum is headless: your app owns the screens, while the underlying FHIR data model keeps the record interoperable, queryable, and reusable.
 
 ## Where to Start
