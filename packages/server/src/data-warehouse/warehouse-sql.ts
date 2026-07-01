@@ -105,7 +105,7 @@ function buildQualifiedTableIdentifier(qualifiedTable: string, minParts = 1): st
  *
  * @param connectionString - PostgreSQL connection URI or libpq keyword/value string (including `options` for session GUCs such as `statement_timeout`).
  * @param alias - Unquoted DuckDB catalog name (default `pg_db`).
- * @returns SQL to run after `INSTALL postgres` and `LOAD postgres`.
+ * @returns SQL to run after `LOAD postgres` and DuckDB Postgres connection-limit settings.
  */
 export function buildDuckdbPostgresAttachQuery(connectionString: string, alias = POSTGRES_CATALOG): string {
   const escapedConnectionString = connectionString.replaceAll("'", "''");
@@ -273,11 +273,19 @@ export function buildManagedS3TablesIcebergAttachQuery(awsS3TableArn: string): s
  * @returns SQL strings to run in order before per-table mutations.
  */
 export function buildManagedIcebergSetupQueries(options: ManagedIcebergAttachOptions): string[] {
-  const queries: string[] = [...buildManagedIcebergExtensionQueries()];
-
-  queries.push(buildManagedS3CredentialSecretQuery(options.s3Region));
-  queries.push(buildDuckdbPostgresAttachQuery(options.connectionString));
-  queries.push(buildManagedS3TablesIcebergAttachQuery(options.awsS3TableArn));
-
-  return queries;
+  return [
+    ...buildManagedIcebergExtensionQueries(),
+    buildManagedS3CredentialSecretQuery(options.s3Region),
+    /*
+     * See https://duckdb.org/docs/current/core_extensions/postgres/connection_pool
+     * the default connection pool settings are very aggressive; many connections, much parallelism
+     * That's not what we want for a sync process on a timer; we want to be gentle on our reader instances
+     */
+    'SET threads = 1',
+    'SET pg_use_ctid_scan = false',
+    'SET pg_pool_max_connections = 1',
+    "SET pg_pool_acquire_mode = 'wait'",
+    buildDuckdbPostgresAttachQuery(options.connectionString),
+    buildManagedS3TablesIcebergAttachQuery(options.awsS3TableArn),
+  ];
 }
