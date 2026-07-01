@@ -2010,6 +2010,23 @@
         "type": "reference",
         "expression": "HealthcareService.offeredIn"
       }
+    },
+    {
+      "fullUrl" : "https://medplum.com/fhir/SearchParameter/Provenance-activity",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "Provenance-activity",
+        "url" : "https://medplum.com/fhir/SearchParameter/Provenance-activity",
+        "version" : "4.0.1",
+        "name" : "activity",
+        "status" : "draft",
+        "publisher": "Medplum",
+        "description" : "Activity that occurred",
+        "code" : "activity",
+        "base" : ["Provenance"],
+        "type" : "token",
+        "expression" : "Provenance.activity"
+      }
     }
   ]
 }

@@ -62,7 +62,8 @@ export function singleton(collection: TypedValue[], type?: string): TypedValue |
   } else if (collection.length === 1 && (!type || collection[0].type === type)) {
     return collection[0];
   } else {
-    throw new Error(`Expected singleton of type ${type}, but found ${JSON.stringify(collection)}`);
+    const ofTypePhrase = type ? ` of type ${type}` : '';
+    throw new Error(`Expected singleton${ofTypePhrase}, but found ${JSON.stringify(collection)}`);
   }
 }
 

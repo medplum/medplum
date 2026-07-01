@@ -396,13 +396,33 @@ async function upsertProjectMembership(
 
   // Patients only. RelatedPerson and Practitioner invites are unchanged.
   // Also applies on upsert when no policy is provided in the request.
+  // Prefers defaultAccessPolicies over the legacy defaultPatientAccessPolicy field.
+  if (request.resourceType === 'Patient' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'Patient');
+    if (defaultPolicy) {
+      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+    } else if (project.defaultPatientAccessPolicy) {
+      // Fallback to legacy field for backwards compatibility
+      partialMembership.accessPolicy = project.defaultPatientAccessPolicy;
+    }
+  }
+
+  // Apply default membership policy for RelatedPerson invites, with patient as a parameter.
   if (
-    request.resourceType === 'Patient' &&
+    request.resourceType === 'RelatedPerson' &&
     !partialMembership.accessPolicy &&
-    !partialMembership.access?.length &&
-    project.defaultPatientAccessPolicy
+    !partialMembership.access?.length
   ) {
-    partialMembership.accessPolicy = project.defaultPatientAccessPolicy;
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'RelatedPerson');
+    const patientRef = (profile as RelatedPerson).patient;
+    if (defaultPolicy && patientRef) {
+      partialMembership.access = [
+        {
+          policy: defaultPolicy.accessPolicy,
+          parameter: [{ name: 'patient', valueReference: patientRef }],
+        },
+      ];
+    }
   }
 
   if (request.forceNewMembership) {

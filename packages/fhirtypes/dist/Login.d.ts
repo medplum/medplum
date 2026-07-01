@@ -197,8 +197,8 @@ export interface Login {
   mfaVerified?: boolean;
 
   /**
-   * Single-use 6-digit code for email-based MFA. Set when a code is
-   * issued for this login and cleared on verification.
+   * Single-use 6-digit code for email-based MFA. Set when a code is issued
+   * for this login and cleared on verification.
    */
   emailMfa?: LoginEmailMfa;
 
@@ -250,8 +250,8 @@ export interface Login {
 }
 
 /**
- * Single-use 6-digit code for email-based MFA. Set when a code is
- * issued for this login and cleared on verification.
+ * Single-use 6-digit code for email-based MFA. Set when a code is issued
+ * for this login and cleared on verification.
  */
 export interface LoginEmailMfa {
 
