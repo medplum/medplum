@@ -92,7 +92,7 @@ export interface AgentRetryDefaults {
  *   MSA-1 of AA/CA (settled) or AR/CR (terminal {@link GUARANTEED_TERMINAL_CODES}).
  *
  * guaranteedDelivery is the **default** today — see {@link DEFAULT_RETRY_POLICY}
- * for why. Operators who want exactly-once semantics opt out per channel
+ * for why. Operators who cannot tolerate duplicates should try `normal` mode
  * (`retryMode=normal`) and dedupe in their Bot.
  */
 export interface RetryPolicy {
@@ -139,8 +139,8 @@ export const DEFAULT_NORMAL_MODE_MAX_ATTEMPTS = 10;
  * transient/ephemeral one. With no reliable transient-vs-permanent signal, the
  * only safe default is to assume every error might be ephemeral and keep
  * retrying — otherwise a retryable failure would be silently dropped. The cost
- * is possible duplicate delivery; operators who need exactly-once should either
- * opt out (`retryMode=normal`) or dedupe in their Bot — e.g. record
+ * is possible duplicate delivery; operators who cannot tolerate duplicates
+ * should try `normal` mode (`retryMode=normal`) or dedupe in their Bot — e.g. record
  * processed message control IDs on a FHIR resource such as `MessageHeader` and
  * skip a control ID that has already been handled.
  */
