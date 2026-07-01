@@ -15,7 +15,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
-import { KNOWLEDGE_RESOURCE_TYPES } from './projectinit';
+import { PRACTITIONER_READONLY_RESOURCE_TYPES } from './projectinit';
 
 vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
@@ -117,9 +117,9 @@ describe('Project $init', () => {
     // Writable clinical resource types are granted explicitly
     expect(practitionerPolicy.resource).toContainEqual({ resourceType: 'Patient' });
     expect(practitionerPolicy.resource).toContainEqual({ resourceType: 'Observation' });
-    // Knowledge resource types are NOT writable (only the readonly wildcard covers them)
-    for (const knowledgeType of KNOWLEDGE_RESOURCE_TYPES) {
-      expect(practitionerPolicy.resource).not.toContainEqual({ resourceType: knowledgeType });
+    // Read-only resource types are NOT writable (only the readonly wildcard covers them)
+    for (const readonlyType of PRACTITIONER_READONLY_RESOURCE_TYPES) {
+      expect(practitionerPolicy.resource).not.toContainEqual({ resourceType: readonlyType });
     }
   });
 

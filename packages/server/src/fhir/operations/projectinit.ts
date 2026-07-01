@@ -250,14 +250,18 @@ async function createAdminAccessPolicy(
 }
 
 /**
- * Knowledge resource types that non-admin Practitioners can read but not edit.
- * These are typically curated at the project/admin level rather than by front-line users.
+ * Resource types that non-admin Practitioners can read but not edit. These are curated knowledge,
+ * terminology, and conformance resources typically managed at the project/admin level rather than
+ * by front-line users.
  */
-export const KNOWLEDGE_RESOURCE_TYPES: ResourceType[] = [
+export const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
   'MedicationKnowledge',
   'PlanDefinition',
   'ActivityDefinition',
   'ObservationDefinition',
+  'ValueSet',
+  'StructureDefinition',
+  'CodeSystem',
 ];
 
 async function createPractitionerAccessPolicy(
@@ -266,14 +270,14 @@ async function createPractitionerAccessPolicy(
   name: string
 ): Promise<WithId<AccessPolicy>> {
   // Access policies are additive (a resource is writable if *any* entry grants it), so a
-  // "write everything except the knowledge resources" policy cannot use a wildcard write entry.
+  // "write everything except the read-only resources" policy cannot use a wildcard write entry.
   // Instead, grant read to everything via a readonly wildcard, then grant full access to every
-  // writable resource type explicitly. The knowledge resource types are omitted from the writable
+  // writable resource type explicitly. The read-only resource types are omitted from the writable
   // set, leaving them read-only. Project admin and protected resource types are excluded as well,
   // since non-admins cannot write those.
   const writableResourceTypes = getResourceTypes().filter(
     (resourceType) =>
-      !KNOWLEDGE_RESOURCE_TYPES.includes(resourceType) &&
+      !PRACTITIONER_READONLY_RESOURCE_TYPES.includes(resourceType) &&
       !projectAdminResourceTypes.includes(resourceType) &&
       !protectedResourceTypes.includes(resourceType)
   );
