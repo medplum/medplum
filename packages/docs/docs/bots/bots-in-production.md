@@ -300,11 +300,16 @@ You can choose to only log certain events using the `Bot.auditEventTrigger` fiel
 
 ### Logging Destination
 
-Logging can also be limited by setting the destination that your Bot logs to. This is done using the `Bot.auditEventDestination` field. This element can be set to either `resource` or `log`.
+Bot execution `AuditEvent` entries are **always** emitted to your server logs (e.g., [AWS CloudWatch](/docs/self-hosting/aws-athena-guide), [Datadog](/docs/self-hosting/datadog)). This cannot be disabled. The `Bot.auditEventDestination` field controls only whether the `AuditEvent` is **also written to the database**.
 
-By default, `auditEventDestination` is set to `resource`. This will create an `AuditEvent` resource in the main database, which can be accessed by Medplum's API and will be visible in your app. However, the operation is slower and takes up more space. It is best practice to always start by using `resource` as it allows for easier testing and debugging of your Bot.
+| `auditEventDestination` | Logs | Database |
+| ----------------------- | ---- | -------- |
+| `resource` (default)    | ✓ always | ✓ written |
+| `log`                   | ✓ always | ✗ not written |
 
-Setting `auditEventDestination` to `log` will only output an `AuditEvent` in your existing enterprise logging infrastructure, such as [AWS Athena](/docs/self-hosting/aws-athena-guide), [Datadog](/docs/self-hosting/datadog), or others. This can make testing and debugging more difficult, but is quicker and useful for high-volume operations as it will fill up or slow down your main database.
+By default, `auditEventDestination` is `resource`, which writes the `AuditEvent` to the database in addition to logging it. This makes the event visible in the Medplum UI and queryable via the API — recommended for development and debugging.
+
+For high-volume bots, setting `auditEventDestination` to `log` prevents database writes while still preserving the full audit trail in your logging infrastructure. This avoids database growth and write overhead, at the cost of not being able to view events in the Medplum UI.
 
 ## Conclusion
 
