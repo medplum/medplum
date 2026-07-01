@@ -603,7 +603,28 @@ export class ChannelQueueWorker {
     // `undelivered`, never a Bot-leg failure, and is therefore never
     // re-dispatched. The source recovers it by retransmitting, which replays the
     // stored ACK (handleDuplicate, hl7.ts).
+    this.handleProcessed(row, response);
+  }
 
+  /**
+   * Settles a row the Bot accepted, then delivers the app-level ACK back to the
+   * source as a SEPARATE leg tracked in `ack_outcome`.
+   *
+   * The row is always marked `processed` here — Bot-leg success is already
+   * decided by the caller ({@link applyServerResponse}). Only the source-facing ACK
+   * delivery can still vary, and it never re-opens the Bot leg:
+   * - `aaMode`: the source was already acknowledged by the deferred-commit `AA`
+   *   at intake (hl7.ts `handleMessageDurable` → `sendCommitAck`), so the Bot's
+   *   app-level ACK is suppressed as a successful no-op ({@link AckOutcome.DELIVERED}).
+   * - Otherwise: {@link sendAck} attempts delivery. Success →
+   *   {@link AckOutcome.DELIVERED}; a failed send (e.g. the source closed its
+   *   socket after its own ACK) → {@link AckOutcome.UNDELIVERED}. An undelivered
+   *   ACK is NOT a failure and is never re-dispatched — the source recovers it by
+   *   retransmitting, which replays the stored ACK (hl7.ts `handleDuplicate`).
+   * @param row - The row the Bot accepted; `attemptCount` reflects the successful attempt.
+   * @param response - The Bot's transmit response, used to build the ACK sent to the source.
+   */
+  private handleProcessed(row: InboundRow, response: AgentTransmitResponse): void {
     // In aaMode the deferred-commit ACK already sent the source an `AA` at intake
     // (hl7.ts handleMessageDurable → sendCommitAck), and aaMode's contract is
     // "send AA immediately, then ignore any later app-level ACKs" (hl7 connection).
