@@ -3583,7 +3583,7 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testType', () => {
+  describe('testType', () => {
     test('testType1', () => {
       expect(evalFhirPath("1.type().namespace = 'System'", patient)).toStrictEqual([true]);
     });
@@ -3616,11 +3616,13 @@ describe('FHIRPath Test Suite', () => {
       expect(evalFhirPath('true is System.Boolean', patient)).toStrictEqual([true]);
     });
 
-    test('testType9', () => {
+    // TODO: requires System-vs-FHIR namespace semantics in type()/fhirPathIs, which are not yet implemented.
+    test.skip('testType9', () => {
       expect(evalFhirPath("Patient.active.type().namespace = 'FHIR'", patient)).toStrictEqual([true]);
     });
 
-    test('testType10', () => {
+    // TODO: requires System-vs-FHIR namespace semantics in type()/fhirPathIs, which are not yet implemented.
+    test.skip('testType10', () => {
       expect(evalFhirPath("Patient.active.type().name = 'boolean'", patient)).toStrictEqual([true]);
     });
 
@@ -3628,7 +3630,8 @@ describe('FHIRPath Test Suite', () => {
       expect(evalFhirPath('Patient.active.is(boolean)', patient)).toStrictEqual([true]);
     });
 
-    test('testType12', () => {
+    // TODO: requires System-vs-FHIR namespace semantics in type()/fhirPathIs, which are not yet implemented.
+    test.skip('testType12', () => {
       expect(evalFhirPath('Patient.active.is(Boolean).not()', patient)).toStrictEqual([true]);
     });
 
@@ -3636,7 +3639,8 @@ describe('FHIRPath Test Suite', () => {
       expect(evalFhirPath('Patient.active.is(FHIR.boolean)', patient)).toStrictEqual([true]);
     });
 
-    test('testType14', () => {
+    // TODO: requires System-vs-FHIR namespace semantics in type()/fhirPathIs, which are not yet implemented.
+    test.skip('testType14', () => {
       expect(evalFhirPath('Patient.active.is(System.Boolean).not()', patient)).toStrictEqual([true]);
     });
 
@@ -3668,7 +3672,8 @@ describe('FHIRPath Test Suite', () => {
       expect(evalFhirPath('Patient.ofType(FHIR.Patient).type().name', patient)).toStrictEqual(['Patient']);
     });
 
-    test('testType22', () => {
+    // TODO: requires System-vs-FHIR namespace semantics in type()/fhirPathIs, which are not yet implemented.
+    test.skip('testType22', () => {
       expect(evalFhirPath('Patient.is(System.Patient).not()', patient)).toStrictEqual([true]);
     });
 

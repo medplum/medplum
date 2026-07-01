@@ -39,7 +39,7 @@ const stub: FhirPathFunction = (): [] => [];
  * @param typeAtom - The type specifier atom (the right operand of `is`/`as`).
  * @returns The resolved type name, or the empty string if the atom is not a type identifier.
  */
-function getTypeName(typeAtom: Atom): string {
+export function getTypeName(typeAtom: Atom): string {
   if (typeAtom instanceof SymbolAtom) {
     return typeAtom.name;
   }
