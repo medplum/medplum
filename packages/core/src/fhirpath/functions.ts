@@ -30,6 +30,25 @@ export type FhirPathFunction = (context: AtomContext, input: TypedValue[], ...ar
  */
 const stub: FhirPathFunction = (): [] => [];
 
+/**
+ * Resolves a FHIRPath type specifier atom (as used by `is`, `as`, and `ofType`)
+ * to its type name. The specifier is either a simple identifier (`Quantity`) or a
+ * qualified identifier (`FHIR.Quantity`, `System.String`). Any other atom (a
+ * literal, arithmetic expression, etc.) does not name a type, so this returns the
+ * empty string and callers should treat the operation as yielding an empty collection.
+ * @param typeAtom - The type specifier atom (the right operand of `is`/`as`).
+ * @returns The resolved type name, or the empty string if the atom is not a type identifier.
+ */
+export function getTypeName(typeAtom: Atom): string {
+  if (typeAtom instanceof SymbolAtom) {
+    return typeAtom.name;
+  }
+  if (typeAtom instanceof DotAtom && typeAtom.left instanceof SymbolAtom && typeAtom.right instanceof SymbolAtom) {
+    return typeAtom.left.name + '.' + typeAtom.right.name;
+  }
+  return '';
+}
+
 export const functions: Record<string, FhirPathFunction> = {
   /*
    * 5.1 Existence
@@ -347,7 +366,11 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing only those elements in the input collection that are of the given type or a subclass thereof.
    */
   ofType: (_context: AtomContext, input: TypedValue[], criteria: Atom): TypedValue[] => {
-    return input.filter((e) => e.type === (criteria as SymbolAtom).name);
+    const typeName = getTypeName(criteria);
+    if (!typeName) {
+      return [];
+    }
+    return input.filter((e) => fhirPathIs(e, typeName));
   },
 
   /*
@@ -1689,12 +1712,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns True if the input element is of the desired type.
    */
   is: (_context: AtomContext, input: TypedValue[], typeAtom: Atom): TypedValue[] => {
-    let typeName = '';
-    if (typeAtom instanceof SymbolAtom) {
-      typeName = typeAtom.name;
-    } else if (typeAtom instanceof DotAtom) {
-      typeName = (typeAtom.left as SymbolAtom).name + '.' + (typeAtom.right as SymbolAtom).name;
-    }
+    const typeName = getTypeName(typeAtom);
     if (!typeName) {
       return [];
     }
@@ -1768,9 +1786,19 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns The value as the specific type.
    */
   as: (context: AtomContext, input: TypedValue[], specifier: Atom): TypedValue[] => {
-    const dataType = (specifier as SymbolAtom).name;
-    const value = singleton(input, dataType);
-    return value ? [value] : [];
+    // Per the FHIRPath spec, for `x as T`:
+    //   - if the right operand cannot be resolved to a valid type identifier, throw;
+    //   - if the input contains more than one item, throw (handled by `singleton`);
+    //   - otherwise return the item when it is of type T (or a subtype), else empty.
+    // See: https://hl7.org/fhirpath/N1/#:~:text=in%20a%20model.-,Type%20specifiers%20can%20have%20qualifiers%2C%20e.g.%20FHIR.Patient%2C%20where%20the%20qualifier%20is%20the%20name%20of%20the%20model.,-Patient.contained.all
+    const dataType = getTypeName(specifier);
+    if (!dataType) {
+      throw new Error(
+        `Expected a valid type identifier as the right operand of 'as', but found ${specifier.toString()}`
+      );
+    }
+    const value = singleton(input);
+    return value && fhirPathIs(value, dataType) ? [value] : [];
   },
 
   /*
