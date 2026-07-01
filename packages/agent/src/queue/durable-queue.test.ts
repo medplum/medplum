@@ -102,7 +102,7 @@ describe('DurableQueue', () => {
         const value = Reflect.get(target, prop, receiver);
         return typeof value === 'function' ? value.bind(target) : value;
       },
-    }) as unknown as DatabaseSync;
+    });
 
     // Bare constructor (no timers) — runs pragmas + migrations, then enqueue writes a row.
     const q = new DurableQueue(db, { path: ':memory:', log: createMockLogger() });
