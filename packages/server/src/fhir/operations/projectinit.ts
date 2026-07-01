@@ -148,6 +148,7 @@ export async function createProject(
     project,
     'Default RelatedPerson Access Policy'
   );
+  const adminAccessPolicy = await createAdminAccessPolicy(systemRepo, project, 'Default Admin Access Policy');
   project = await systemRepo.patchResource<Project>('Project', project.id, [
     { op: 'add', path: '/defaultPatientAccessPolicy', value: createReference(accessPolicy) },
     {
@@ -156,6 +157,7 @@ export async function createProject(
       value: [
         { profileType: 'Patient', accessPolicy: createReference(accessPolicy) },
         { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
+        { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
       ],
     },
   ]);
@@ -209,5 +211,19 @@ async function createPatientCompartmentAccessPolicy(
       { resourceType: 'ServiceRequest', criteria: 'ServiceRequest?_compartment=%patient' },
       { resourceType: 'Task', criteria: 'Task?_compartment=%patient' },
     ],
+  });
+}
+
+async function createAdminAccessPolicy(
+  systemRepo: SystemRepository,
+  project: WithId<Project>,
+  name: string
+): Promise<WithId<AccessPolicy>> {
+  return systemRepo.createResource<AccessPolicy>({
+    resourceType: 'AccessPolicy',
+    meta: { project: project.id },
+    name,
+    // Full read/write access to all resource types (essentially no policy).
+    resource: [{ resourceType: '*' }],
   });
 }

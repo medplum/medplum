@@ -425,6 +425,19 @@ async function upsertProjectMembership(
     }
   }
 
+  // Apply default membership policy for Practitioner invites with admin access.
+  if (
+    request.resourceType === 'Practitioner' &&
+    partialMembership.admin &&
+    !partialMembership.accessPolicy &&
+    !partialMembership.access?.length
+  ) {
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'Admin');
+    if (defaultPolicy) {
+      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+    }
+  }
+
   if (request.forceNewMembership) {
     return createProjectMembership(systemRepo, user, project, profile, partialMembership);
   }
