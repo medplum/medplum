@@ -5,16 +5,47 @@ import { showNotification } from '@mantine/notifications';
 import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams } from '@medplum/core';
 import { formatAddress, normalizeErrorString } from '@medplum/core';
 import type { Organization, Patient } from '@medplum/fhirtypes';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import styles from './PharmacyDialog.module.css';
+
+/**
+ * Placeholder text for each pharmacy search field. Vendors can override these to
+ * reflect their own API constraints (e.g. DoseSpot requires a 3-character minimum
+ * on text searches, whereas ScriptSure expects a 2-letter state and 5-digit ZIP).
+ */
+export interface PharmacySearchFieldPlaceholders {
+  readonly name?: string;
+  readonly city?: string;
+  readonly state?: string;
+  readonly zip?: string;
+  readonly phoneOrFax?: string;
+  readonly address?: string;
+  readonly ncpdpID?: string;
+}
+
+const DEFAULT_SEARCH_PLACEHOLDERS: Required<PharmacySearchFieldPlaceholders> = {
+  name: 'Enter pharmacy name (min 3 chars)',
+  city: 'City (min 3 chars)',
+  state: 'State (min 3 chars)',
+  zip: 'Zip code (min 3 chars)',
+  phoneOrFax: 'Phone or fax number',
+  address: 'Street address (min 3 chars)',
+  ncpdpID: 'National Council for Prescription Drug Programs ID',
+};
 
 export interface PharmacyDialogProps {
   readonly patient: Patient;
   readonly onSubmit: (pharmacy: Organization) => void;
   readonly onClose: () => void;
-  readonly onSearch: (params: PharmacySearchParams) => Promise<Organization[]>;
+  readonly onSearch: (params: PharmacySearchParams & Record<string, unknown>) => Promise<Organization[]>;
   readonly onAddToFavorites: (params: AddFavoriteParams) => Promise<AddPharmacyResponse>;
+  /** Optional fields rendered inside the search form above the submit button. */
+  readonly renderBeforeSearchButton?: ReactNode;
+  /** Extra search parameters merged into the bot request (e.g. vendor-specific filters). */
+  readonly getExtraSearchParams?: () => Record<string, unknown>;
+  /** Optional per-field placeholder overrides for the search form. */
+  readonly searchPlaceholders?: PharmacySearchFieldPlaceholders;
 }
 
 /**
@@ -33,9 +64,11 @@ function getPharmacyKey(pharmacy: Organization, index: number): string {
 interface SearchFormProps {
   readonly onSearch: (formData: FormData) => void;
   readonly searching: boolean;
+  readonly renderBeforeSearchButton?: ReactNode;
+  readonly placeholders: Required<PharmacySearchFieldPlaceholders>;
 }
 
-function SearchForm({ onSearch, searching }: SearchFormProps): JSX.Element {
+function SearchForm({ onSearch, searching, renderBeforeSearchButton, placeholders }: SearchFormProps): JSX.Element {
   return (
     <form
       onSubmit={(e) => {
@@ -45,17 +78,19 @@ function SearchForm({ onSearch, searching }: SearchFormProps): JSX.Element {
       }}
     >
       <Stack gap="md">
-        <TextInput name="name" label="Pharmacy Name" placeholder="Enter pharmacy name (min 3 chars)" />
+        <TextInput name="name" label="Pharmacy Name" placeholder={placeholders.name} />
         <Group grow>
-          <TextInput name="city" label="City" placeholder="City (min 3 chars)" />
-          <TextInput name="state" label="State" placeholder="State (min 3 chars)" />
+          <TextInput name="city" label="City" placeholder={placeholders.city} />
+          <TextInput name="state" label="State" placeholder={placeholders.state} />
         </Group>
         <Group grow>
-          <TextInput name="zip" label="Zip Code" placeholder="Zip code (min 3 chars)" />
-          <TextInput name="phoneOrFax" label="Phone or Fax" placeholder="Phone or fax number" />
+          <TextInput name="zip" label="Zip Code" placeholder={placeholders.zip} />
+          <TextInput name="phoneOrFax" label="Phone or Fax" placeholder={placeholders.phoneOrFax} />
         </Group>
-        <TextInput name="address" label="Address" placeholder="Street address (min 3 chars)" />
-        <TextInput name="ncpdpID" label="NCPDP ID" placeholder="National Council for Prescription Drug Programs ID" />
+        <TextInput name="address" label="Address" placeholder={placeholders.address} />
+        <TextInput name="ncpdpID" label="NCPDP ID" placeholder={placeholders.ncpdpID} />
+
+        {renderBeforeSearchButton}
 
         <Button type="submit" loading={searching}>
           Search
@@ -196,7 +231,21 @@ function SearchResults({
  * @returns The pharmacy dialog component.
  */
 export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
-  const { patient, onSubmit, onClose, onSearch, onAddToFavorites } = props;
+  const {
+    patient,
+    onSubmit,
+    onClose,
+    onSearch,
+    onAddToFavorites,
+    renderBeforeSearchButton,
+    getExtraSearchParams,
+    searchPlaceholders,
+  } = props;
+
+  const placeholders: Required<PharmacySearchFieldPlaceholders> = {
+    ...DEFAULT_SEARCH_PLACEHOLDERS,
+    ...searchPlaceholders,
+  };
 
   const [searchResults, setSearchResults] = useState<Organization[]>([]);
   const [searching, setSearching] = useState(false);
@@ -221,7 +270,18 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
         Object.entries(searchParams).filter(([_, v]) => typeof v === 'string' && v.trim() !== '')
       ) as PharmacySearchParams;
 
-      if (Object.keys(cleanParams).length === 0) {
+      const extraParams = getExtraSearchParams?.() ?? {};
+      const mergedParams = { ...cleanParams, ...extraParams };
+
+      const hasTextCriteria = Object.keys(cleanParams).length > 0;
+      const hasExtraCriteria = Object.entries(extraParams).some(([, value]) => {
+        if (Array.isArray(value)) {
+          return value.length > 0;
+        }
+        return value !== undefined && value !== null && value !== '';
+      });
+
+      if (!hasTextCriteria && !hasExtraCriteria) {
         showNotification({
           color: 'yellow',
           title: 'Search Required',
@@ -233,7 +293,7 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
       setSearching(true);
       setSelectedPharmacy(undefined);
       try {
-        const results = await onSearch(cleanParams);
+        const results = await onSearch(mergedParams);
         setSearchResults(results);
         if (results.length === 0) {
           showNotification({
@@ -252,7 +312,7 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
         setSearching(false);
       }
     },
-    [onSearch]
+    [getExtraSearchParams, onSearch]
   );
 
   const handleAddFavorite = useCallback(async () => {
@@ -296,7 +356,12 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
 
   return (
     <Box>
-      <SearchForm onSearch={(formData) => handleSearch(formData).catch(console.error)} searching={searching} />
+      <SearchForm
+        onSearch={(formData) => handleSearch(formData).catch(console.error)}
+        searching={searching}
+        renderBeforeSearchButton={renderBeforeSearchButton}
+        placeholders={placeholders}
+      />
 
       {searching && (
         <Flex justify="center" mt="xl">

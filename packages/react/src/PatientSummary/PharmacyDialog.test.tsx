@@ -542,4 +542,80 @@ describe('PharmacyDialog', () => {
       expect(onSubmit).not.toHaveBeenCalled();
     });
   });
+
+  test('Renders renderBeforeSearchButton content', async () => {
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
+
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+        renderBeforeSearchButton={<div>Extra filter slot</div>}
+      />
+    );
+
+    expect(screen.getByText('Extra filter slot')).toBeInTheDocument();
+  });
+
+  test('Merges getExtraSearchParams into search request', async () => {
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
+
+    mockOnSearch.mockResolvedValue(mockPharmacies);
+
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+        getExtraSearchParams={() => ({ specialties: ['Retail', 'MailOrder'] })}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Zip Code'), { target: { value: '19720' } });
+      fireEvent.click(screen.getByText('Search'));
+    });
+
+    await waitFor(() => {
+      expect(mockOnSearch).toHaveBeenCalledWith({
+        zip: '19720',
+        specialties: ['Retail', 'MailOrder'],
+      });
+    });
+  });
+
+  test('Allows search with only getExtraSearchParams', async () => {
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
+
+    mockOnSearch.mockResolvedValue(mockPharmacies);
+
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+        getExtraSearchParams={() => ({ specialties: ['Retail'] })}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Search'));
+    });
+
+    await waitFor(() => {
+      expect(mockOnSearch).toHaveBeenCalledWith({
+        specialties: ['Retail'],
+      });
+    });
+  });
 });
