@@ -40,7 +40,7 @@ import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
-import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
+import { systemResourceProjectId, WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
@@ -462,6 +462,11 @@ interface SubscriptionWithMetadata {
 async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<SubscriptionWithMetadata[]> {
   const projectId = project.id;
   const systemRepo = await getProjectSystemRepo(projectId);
+  // When server-scoped subscriptions are enabled, also include subscriptions that are not
+  // scoped to any project (i.e. stored in the system project) so they apply across all projects.
+  const projectFilterValue = getConfig().serverScopedSubscriptions
+    ? `${projectId},${systemResourceProjectId}`
+    : projectId;
   const restHookSubscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -469,7 +474,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       {
         code: '_project',
         operator: Operator.EQUALS,
-        value: projectId,
+        value: projectFilterValue,
       },
       {
         code: 'status',

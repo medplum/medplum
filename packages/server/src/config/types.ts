@@ -128,6 +128,15 @@ export interface MedplumServerConfig {
   /** Flag to enable pre-commit subscriptions for the interceptor pattern (default: false) */
   preCommitSubscriptionsEnabled?: boolean;
 
+  /**
+   * Flag to enable server-scoped rest-hook subscriptions (default: false).
+   * When enabled, the subscription worker evaluates not only the subscriptions within a
+   * resource's own project, but also subscriptions that are not scoped to any project
+   * (i.e. stored in the system project). This allows a single set of subscriptions to
+   * apply across every project on the server.
+   */
+  serverScopedSubscriptions?: boolean;
+
   /** Optional list of external authentication providers. */
   externalAuthProviders?: MedplumExternalAuthConfig[];
 

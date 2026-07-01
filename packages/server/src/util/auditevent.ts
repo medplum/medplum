@@ -409,7 +409,11 @@ export async function createSubscriptionAuditEvent(
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
-      project: auditedEvent.meta?.project,
+      // Scope the audit event to the triggering resource's project rather than the
+      // subscription's. For project-scoped subscriptions these are identical, but for
+      // server-scoped subscriptions (which live in the system project) this ensures the
+      // audit event still lands in the resource's own project.
+      project: resource.meta?.project ?? auditedEvent.meta?.project,
       account: auditedEvent.meta?.account,
       accounts: auditedEvent.meta?.accounts,
     },
