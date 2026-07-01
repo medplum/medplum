@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { AgentTransmitResponse, ILogger } from '@medplum/core';
+import type { AckCode, AgentTransmitResponse, ILogger } from '@medplum/core';
 import { ContentType, Hl7Message, normalizeErrorString, sleep } from '@medplum/core';
 import type { App } from '../app';
 import type { DurableQueue } from './durable-queue';
@@ -700,12 +700,12 @@ function classifyStatusCode(statusCode: number): QueueErrorCode {
  * @param body - The server response body (expected to be an HL7 ACK message).
  * @returns The uppercased MSA-1 value (e.g. 'AA', 'AE', 'AR', 'CA', 'CE', 'CR'), or undefined.
  */
-function parseAckCode(body: string | undefined): string | undefined {
+function parseAckCode(body: string | undefined): AckCode | undefined {
   if (!body) {
     return undefined;
   }
   try {
-    return Hl7Message.parse(body).getSegment('MSA')?.getField(1)?.toString()?.toUpperCase() || undefined;
+    return (Hl7Message.parse(body).getSegment('MSA')?.getField(1)?.toString()?.toUpperCase() as AckCode) || undefined;
   } catch {
     return undefined;
   }

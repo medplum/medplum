@@ -2963,7 +2963,7 @@ describe('describeAckCode', () => {
   });
 
   test('falls back gracefully for unknown or missing codes', () => {
-    expect(describeAckCode('ZZ')).toBe('ACK (ZZ)');
+    expect(describeAckCode('ZZ' as AckCode)).toBe('ACK (ZZ)');
     expect(describeAckCode(undefined)).toBe('ACK (unknown)');
   });
 });

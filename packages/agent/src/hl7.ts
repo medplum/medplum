@@ -834,7 +834,7 @@ export class AgentHl7ChannelConnection {
  * @param code - The MSA.1 acknowledgment code (already upper-cased), if present.
  * @returns A descriptive label, falling back to `ACK (<code>)` for anything unrecognized.
  */
-export function describeAckCode(code: string | undefined): string {
+export function describeAckCode(code: AckCode | undefined): string {
   switch (code) {
     case 'CA':
       return 'Commit ACK (CA)';
@@ -848,6 +848,7 @@ export function describeAckCode(code: string | undefined): string {
       return 'App Error (AE)';
     case 'AR':
       return 'App Reject (AR)';
+    case undefined:
     default:
       return `ACK (${code ?? 'unknown'})`;
   }
