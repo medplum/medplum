@@ -142,7 +142,15 @@ describe('Atoms', () => {
     // Empty results
     expect(evalFhirPath('component.value as Quantity', obs1)).toStrictEqual([]);
 
+    // Qualified type identifiers (e.g. `FHIR.Quantity`) resolve the same way
+    // See: https://hl7.org/fhirpath/N1/#:~:text=in%20a%20model.-,Type%20specifiers%20can%20have%20qualifiers%2C%20e.g.%20FHIR.Patient%2C%20where%20the%20qualifier%20is%20the%20name%20of%20the%20model.,-Patient.contained.all
+    expect(evalFhirPath('value as FHIR.Quantity', obs1)).toStrictEqual([obs1.valueQuantity]);
+
+    // A right operand that does not resolve to a valid type identifier throws,
+    // per https://hl7.org/fhirpath/N1/#astype-specifier
+    expect(() => evalFhirPath('value as 5', obs1)).toThrow('Expected a valid type identifier');
+
     // Multiple results still throw, since `as` requires a singleton collection
-    expect(() => evalFhirPath('component.value as Quantity', obs2)).toThrow('Expected singleton of type');
+    expect(() => evalFhirPath('component.value as Quantity', obs2)).toThrow('Expected singleton');
   });
 });
