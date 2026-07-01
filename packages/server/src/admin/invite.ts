@@ -427,11 +427,7 @@ async function upsertProjectMembership(
 
   // Apply default membership policy for Practitioner invites, based on whether the member is
   // an admin. Admins get the Admin default policy; everyone else gets the Practitioner default.
-  if (
-    request.resourceType === 'Practitioner' &&
-    !partialMembership.accessPolicy &&
-    !partialMembership.access?.length
-  ) {
+  if (request.resourceType === 'Practitioner' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
     const profileType = partialMembership.admin ? 'Admin' : 'Practitioner';
     const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === profileType);
     if (defaultPolicy) {
