@@ -1,0 +1,156 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: var(--landing-font-display);
+  scroll-margin-top: 80px;
+  padding: var(--landing-section-padding-y) 0;
+
+}
+
+.sectionHeader {
+  margin-bottom: var(--landing-section-header-gap);
+}
+
+.sectionHeadline {
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-section-weight);
+  font-size: var(--landing-section-size);
+  line-height: var(--landing-section-leading);
+  letter-spacing: var(--landing-section-tracking);
+  text-wrap-style: balance;
+  margin: 0 0 1rem;
+  color: var(--landing-color-heading);
+}
+
+.sectionLead {
+  font-family: var(--landing-font-display);
+  font-size: 1.125rem;
+  line-height: var(--landing-lead-leading);
+  font-weight: var(--landing-lead-weight);
+  color: var(--landing-color-body-alt);
+  margin: 0;
+  max-width: 64%;
+}
+
+.bento {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.bentoCell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  background: rgba(var(--oc-orange-0-rgb), 0.75);
+  border-radius: 1rem;
+  border: 1px solid rgba(var(--oc-orange-1-rgb), 0.5);
+  overflow: hidden;
+}
+
+[data-theme='dark'] .bentoCell {
+  background-color: #1b1b1d;
+  box-shadow: 0px 4px 40px rgba(var(--oc-indigo-1-rgb), 0.15);
+  border: 1px solid rgba(var(--oc-gray-8-rgb), 0.5);
+}
+
+.bentoText {
+  padding: 2rem 2rem 0;
+  margin-bottom: 2rem;
+}
+
+.bentoName {
+  margin: 0;
+  font-family: var(--landing-font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--oc-gray-8);
+}
+
+[data-theme='dark'] .bentoName {
+  color: var(--oc-gray-2);
+}
+
+.bentoShort {
+  margin: 0;
+  font-family: var(--landing-font-body);
+  font-size: 1rem;
+  line-height: 1.4;
+  color: rgba(var(--oc-gray-7-rgb), 0.75);
+}
+
+[data-theme='dark'] .bentoShort {
+  color: var(--oc-gray-4);
+}
+
+.bentoImageClip {
+  margin-top: auto;
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+  /* Shadow lives on the parent, not the masked SVG: a mask clips the element's
+     whole paint (box-shadow included), so the shadow must come from here. A
+     parent drop-shadow traces the child's masked alpha, so it fades on the right too. */
+  filter: drop-shadow(0px 8px 40px rgba(var(--oc-orange-3-rgb), 0.5));
+}
+
+.bentoPreviewCard {
+  position: absolute;
+  top: 0;
+  right: -5px;
+  border-top-left-radius: 16px;
+  width: 80%;
+}
+
+.bentoCell:nth-child(1) .bentoPreviewCard { transform: rotate(-1.2deg); }
+.bentoCell:nth-child(2) .bentoPreviewCard { transform: rotate(1.6deg); }
+.bentoCell:nth-child(3) .bentoPreviewCard { transform: rotate(-2deg); }
+.bentoCell:nth-child(4) .bentoPreviewCard { transform: rotate(1.2deg); }
+.bentoCell:nth-child(5) .bentoPreviewCard { transform: rotate(-1.6deg); }
+.bentoCell:nth-child(6) .bentoPreviewCard { transform: rotate(2deg); }
+.bentoCell:nth-child(7) .bentoPreviewCard { transform: rotate(-0.8deg); }
+.bentoCell:nth-child(8) .bentoPreviewCard { transform: rotate(1.6deg); }
+
+.bentoPlaceholder {
+  margin-top: auto;
+  margin: 0 2rem 2rem;
+  width: calc(100% - 4rem);
+  aspect-ratio: 16 / 10;
+  background: var(--landing-surface-inset);
+  border: 2px dashed var(--landing-border-strong);
+  border-radius: var(--landing-radius-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme='dark'] .bentoPlaceholder {
+  background: var(--landing-surface-muted);
+  border-color: var(--landing-border-strong);
+}
+
+.placeholderChip {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 11px;
+  color: var(--landing-color-muted);
+  background: var(--landing-surface-elevated);
+  border: 1px solid var(--landing-border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 996px) {
+  .sectionLead {
+    max-width: 90%;
+  }
+
+  .bento {
+    grid-template-columns: 1fr;
+  }
+}

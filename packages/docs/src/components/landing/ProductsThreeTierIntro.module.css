@@ -1,0 +1,215 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: var(--landing-font-display);
+  background: var(--landing-surface);
+  padding: 3rem 0 3.5rem;
+}
+
+.container {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: 0 var(--layout-padding);
+}
+
+@media (max-width: 996px) {
+  .container {
+    padding: 0 var(--layout-padding-md);
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 0 var(--layout-padding-sm);
+  }
+}
+
+.headlineRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: start;
+  margin-bottom: 2.5rem;
+}
+
+.headline {
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-section-weight);
+  font-size: var(--landing-section-size);
+  line-height: var(--landing-section-leading);
+  letter-spacing: var(--landing-section-tracking);
+  text-wrap-style: balance;
+  margin: 0;
+  color: var(--landing-color-heading);
+}
+
+.sub {
+  font-family: var(--landing-font-body);
+  font-size: var(--landing-lead-size);
+  line-height: var(--landing-lead-leading);
+  font-weight: var(--landing-lead-weight);
+  color: var(--landing-color-body-alt);
+  margin: 0;
+}
+
+.panel {
+  background: var(--landing-surface-inset);
+  border: 1px solid var(--landing-border);
+  border-radius: var(--landing-radius-card);
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tierRow {
+  appearance: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) 1fr auto;
+  gap: 24px;
+  align-items: center;
+  position: relative;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.panel:hover .tierRow {
+  opacity: 0.6;
+}
+
+.panel .tierRow:hover,
+.panel .tierRow:focus-visible {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.tierRow:focus-visible {
+  outline: 2px solid var(--oc-grape-8);
+  outline-offset: 2px;
+}
+
+.rowReveal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  white-space: nowrap;
+}
+
+.tierRow:hover .rowReveal,
+.tierRow:focus-visible .rowReveal {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.rowVerb {
+  font-family: var(--landing-font-body);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--landing-color-body);
+}
+
+.rowArrow {
+  font-size: 15px;
+  color: var(--landing-color-heading);
+}
+
+@media (max-width: 996px) {
+  .rowReveal {
+    display: none;
+  }
+
+  .headlineRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tierRowApps {
+  background: var(--oc-violet-1);
+}
+
+.tierRowCapabilities {
+  background: var(--oc-grape-1);
+}
+
+.tierRowFoundations {
+  background: var(--oc-indigo-1);
+}
+
+.tierStripe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 12px 0 0 12px;
+}
+
+.tierStripeApps {
+  background: var(--oc-violet-6);
+}
+
+.tierStripeCapabilities {
+  background: var(--oc-grape-8);
+}
+
+.tierStripeFoundations {
+  background: var(--oc-indigo-6);
+}
+
+.tierLabel {
+  padding-left: 8px;
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-subsection-weight);
+  font-size: var(--landing-subsection-size);
+  line-height: var(--landing-subsection-leading);
+  color: var(--landing-color-heading);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  background: var(--landing-surface-elevated);
+  color: var(--landing-color-heading);
+  font-family: var(--landing-font-display);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--landing-radius-chip);
+  border: 1px solid var(--landing-border);
+}
+
+[data-theme='dark'] .tierRowApps {
+  background: rgba(133, 94, 247, 0.2);
+}
+
+[data-theme='dark'] .tierRowCapabilities {
+  background: rgba(190, 75, 219, 0.2);
+}
+
+[data-theme='dark'] .tierRowFoundations {
+  background: rgba(66, 99, 235, 0.2);
+}
+
+[data-theme='dark'] .pill {
+  background: var(--oc-gray-7);
+  color: var(--oc-gray-2);
+  border-color: rgba(255, 255, 255, 0.08);
+}

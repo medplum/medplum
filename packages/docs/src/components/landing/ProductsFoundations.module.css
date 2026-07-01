@@ -1,0 +1,272 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: var(--landing-font-display);
+  scroll-margin-top: 80px;
+  padding: var(--landing-section-padding-y) 0;
+}
+
+.sectionHeader {
+  margin-bottom: var(--landing-section-header-gap);
+}
+
+.sectionHeadline {
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-section-weight);
+  font-size: var(--landing-section-size);
+  line-height: var(--landing-section-leading);
+  letter-spacing: var(--landing-section-tracking);
+  text-wrap-style: balance;
+  margin: 0 0 1rem;
+  color: var(--landing-color-heading);
+}
+
+.sectionLead {
+  font-family: var(--landing-font-display);
+  font-size: var(--landing-lead-size);
+  line-height: var(--landing-lead-leading);
+  font-weight: var(--landing-lead-weight);
+  color: var(--landing-color-body-alt);
+  margin: 0;
+  max-width: 64%;
+}
+
+/* Matches ProductsApps .showcaseBox */
+.detailCard {
+  margin: 0 0 20px;
+  border: 1px solid rgba(var(--oc-violet-0-rgb), 0.75);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0px 8px 24px rgba(var(--oc-violet-3-rgb), 0.15);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.detailCardMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.detailCardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin-bottom: 16px;
+}
+
+.detailCardNumber {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--oc-grape-1);
+  font-family: var(--landing-font-display);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--oc-grape-8);
+}
+
+.detailCardTitle {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--landing-font-display);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 23px;
+  letter-spacing: -0.015em;
+  color: var(--oc-gray-8);
+}
+
+.detailCardActions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 12px;
+  padding-inline: 24px;
+}
+
+.foundationNav {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.foundationNavButton {
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.foundationNavButton:hover,
+.foundationNavButton:focus-visible,
+.foundationNavButtonPeeked {
+  background: var(--oc-grape-2);
+  outline: none;
+}
+
+/* Matches top-nav search / dark-mode circle buttons */
+.circleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--oc-gray-3);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  transition: all var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+}
+
+.circleButton:hover {
+  border-color: var(--oc-grape-8);
+  color: var(--oc-grape-8);
+}
+
+.detailBody {
+  font-family: var(--landing-font-body);
+  font-size: var(--landing-body-size);
+  color: var(--landing-color-body);
+  line-height: var(--landing-body-leading);
+  letter-spacing: var(--landing-body-tracking);
+  text-wrap-style: pretty;
+  margin: 0;
+  max-width: 820px;
+}
+
+.complianceBand {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--landing-divider);
+}
+
+.complianceBandHead {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.complianceBandTitle {
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-card-title-weight);
+  font-size: var(--landing-card-title-size);
+  line-height: var(--landing-card-title-leading);
+  letter-spacing: var(--landing-card-title-tracking);
+  color: var(--landing-color-heading);
+  margin-bottom: 6px;
+}
+
+.complianceBandLead {
+  font-family: var(--landing-font-body);
+  font-size: var(--landing-label-size);
+  line-height: 1.5;
+  color: var(--landing-color-body);
+  margin: 0 auto;
+  max-width: 540px;
+}
+
+.complianceGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.complianceCard {
+  background: transparent;
+  border: none;
+  padding: 8px 4px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.complianceLogoArea {
+  height: 38px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.complianceLogoImg {
+  max-height: 38px;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.complianceName {
+  font-family: var(--landing-font-display);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--landing-color-heading);
+  line-height: 1.2;
+}
+
+.complianceSub {
+  font-family: var(--landing-font-body);
+  font-size: 12px;
+  color: var(--landing-color-muted);
+  margin-top: 1px;
+}
+
+[data-theme='dark'] .detailCard {
+  background: var(--oc-gray-8);
+  border-color: rgba(var(--oc-gray-8-rgb), 0.5);
+  box-shadow: 0px 4px 40px rgba(var(--oc-violet-1-rgb), 0.15);
+}
+
+[data-theme='dark'] .detailCardTitle {
+  color: var(--oc-gray-2);
+}
+
+[data-theme='dark'] .detailCardNumber {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .circleButton {
+  border-color: var(--oc-gray-7);
+}
+
+[data-theme='dark'] .circleButton:hover {
+  border-color: var(--oc-grape-5);
+  color: var(--oc-grape-5);
+}
+
+[data-theme='dark'] .foundationNavButton:hover,
+[data-theme='dark'] .foundationNavButton:focus-visible,
+[data-theme='dark'] .foundationNavButtonPeeked {
+  background: rgba(156, 54, 181, 0.32);
+}
+
+@media (max-width: 996px) {
+  .sectionLead {
+    max-width: 90%;
+  }
+
+  .complianceGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .complianceGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .detailCard {
+    padding: 18px;
+  }
+}

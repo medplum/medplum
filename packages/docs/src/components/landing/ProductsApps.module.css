@@ -1,0 +1,415 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: var(--landing-font-display);
+  scroll-margin-top: 80px;
+  padding: var(--landing-section-padding-y) 0;
+}
+
+.sectionIntro {
+  max-width: var(--layout-max-width);
+  margin: 0 auto var(--landing-section-header-gap);
+  padding: 0 var(--layout-padding);
+}
+
+.sectionHeadline {
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-section-weight);
+  font-size: var(--landing-section-size);
+  line-height: var(--landing-section-leading);
+  letter-spacing: var(--landing-section-tracking);
+  text-wrap-style: balance;
+  margin: 0 0 1rem;
+  color: var(--landing-color-heading);
+}
+
+.sectionLead {
+  font-family: var(--landing-font-display);
+  font-size: var(--landing-lead-size);
+  line-height: var(--landing-lead-leading);
+  font-weight: var(--landing-lead-weight);
+  color: var(--landing-color-body-alt);
+  margin: 0;
+  max-width: 64%;
+}
+
+.showcaseWrap {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: 0 var(--layout-padding);
+}
+
+.showcaseBox {
+  --showcase-surface: rgba(var(--oc-grape-0-rgb), 0.75);
+  --showcase-rail: var(--oc-gray-0);
+  border: 1px solid rgba(var(--oc-violet-0-rgb), 0.75);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0px 8px 24px rgba(var(--oc-violet-3-rgb), 0.15);
+  background: #fff;
+}
+
+.showcaseInner {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  overflow: hidden;
+}
+
+.tabBar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  /* White breathing room above the divider, matching the line-to-icon-tile gap. */
+  padding: 0 0 24px;
+  margin-bottom: 0;
+}
+
+.tab {
+  appearance: none;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.875rem;
+  padding: 24px 0px 0rem;
+  border: none;
+  border-top: 1px solid var(--landing-divider);
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: color var(--landing-transition);
+}
+
+.tabIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--oc-grape-0);
+  color: var(--oc-grape-8);
+  transition: background var(--landing-transition);
+}
+
+.tab:hover .tabName {
+  color: var(--oc-grape-8);
+}
+
+.tab:hover .tabTagline {
+  color: var(--oc-gray-6);
+
+}
+
+/* Timer fill — runs left to right along the tab's divider over 10s. */
+.tabProgress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 1px;
+  background: var(--oc-grape-7);
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation-name: tabProgress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+/* Clicked: kill the timer, lock a full purple underline. */
+.tabProgressFull {
+  transform: scaleX(1);
+  animation: none;
+}
+
+@keyframes tabProgress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.tabLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.tabName {
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-card-title-weight);
+  font-size: var(--landing-card-title-size);
+  line-height: var(--landing-card-title-leading);
+  letter-spacing: var(--landing-card-title-tracking);
+  color: var(--landing-color-heading);
+}
+
+.tabActive .tabName {
+  color: var(--oc-grape-8);
+}
+
+.tabTagline {
+  font-family: var(--landing-font-body);
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--landing-color-muted);
+}
+
+.showcaseBody {
+  background-color: var(--showcase-surface);
+  border: 1px solid rgba(var(--oc-grape-0-rgb), 0.75);
+  border-radius: 8px;
+}
+
+.appDescription {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  color: rgba(var(--oc-gray-7-rgb), 0.75);
+  margin: 0 auto;
+  padding: 4rem 1.5rem 1.5rem;
+  max-width: 720px;
+  text-align: center;
+}
+
+[data-theme='dark'] .appDescription {
+  color: var(--oc-gray-4);
+}
+
+.imageStage {
+  position: relative;
+  padding-top: 0;
+  min-height: 440px;
+  overflow: hidden;
+}
+
+.imageStack {
+  position: absolute;
+  inset: 0;
+  perspective: 1200px;
+  --stack-width: 80%;
+  --stack-top: 2.75rem;
+  --stack-back-x: 38px;
+  --stack-back-y: 30px;
+  --stack-back-rotate: 3deg;
+  --stack-back-scale: 0.94;
+  --stack-front-rotate: 1deg;
+  --stack-anim-duration: 350ms;
+  --stack-anim-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --stack-slide-from-y: 500px;
+}
+
+.stackCard {
+  position: absolute;
+  top: var(--stack-top);
+  bottom: auto;
+  left: 50%;
+  width: var(--stack-width);
+  transform-origin: center center;
+  will-change: transform;
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.stackImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  box-shadow: 0px 8px 40px rgba(var(--oc-grape-2-rgb), 0.5);
+  border: 1px solid rgba(var(--oc-grape-0-rgb), 0.75);
+  border-bottom: none;
+  background: #fff;
+}
+
+.stackFront {
+  z-index: 2;
+  transform: translate(-50%, 0) rotate(var(--stack-front-rotate)) scale(1);
+  opacity: 1;
+}
+
+/* Alt card uses mirror rotations so the two images always tilt in opposite directions. */
+.stackCardAlt {
+  --stack-front-rotate: -1deg;
+  --stack-back-rotate: -3deg;
+  --stack-back-x: 48px;
+  --stack-back-y: 80px;
+}
+
+.stackBack {
+  z-index: 1;
+  transform: translate(calc(-50% + var(--stack-back-x)), var(--stack-back-y)) rotate(var(--stack-back-rotate))
+    scale(var(--stack-back-scale));
+  opacity: 0.94;
+}
+
+.animToFront {
+  z-index: 3;
+  animation: cardToFront var(--stack-anim-duration) var(--stack-anim-ease) forwards;
+}
+
+.animToBack {
+  z-index: 2;
+  animation: cardToBack 200ms var(--stack-anim-ease) forwards;
+}
+
+/* Casual, swift shuffle: a gentle cross-slide between stacked positions, no fan-out. */
+@keyframes cardToBack {
+  0% {
+    transform: translate(-50%, 0) rotate(var(--stack-front-rotate)) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--stack-back-x)), var(--stack-back-y)) rotate(var(--stack-back-rotate))
+      scale(var(--stack-back-scale));
+    opacity: 0.94;
+  }
+}
+
+@keyframes cardToFront {
+  0% {
+    transform: translate(-50%, var(--stack-slide-from-y)) rotate(-5deg) scale(1);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, 0) rotate(var(--stack-front-rotate)) scale(1);
+    opacity: 1;
+  }
+}
+
+[data-theme='dark'] .showcaseBox {
+  --showcase-surface: var(--oc-gray-9);
+  --showcase-rail: var(--oc-gray-8);
+  background: var(--oc-gray-8);
+  border-color: rgba(var(--oc-gray-8-rgb), 0.5);
+  box-shadow: 0px 4px 40px rgba(var(--oc-violet-1-rgb), 0.15);
+}
+
+[data-theme='dark'] .showcaseInner {
+  background: var(--oc-gray-9);
+}
+
+[data-theme='dark'] .tab {
+  border-top-color: rgba(var(--oc-gray-7-rgb), 0.55);
+}
+
+[data-theme='dark'] .tabIcon {
+  background: var(--oc-grape-1);
+  color: var(--oc-grape-8);
+}
+
+
+[data-theme='dark'] .tabProgress {
+  background: var(--oc-grape-5);
+}
+
+[data-theme='dark'] .showcaseBody {
+  background-color: var(--showcase-surface);
+  border: 1px solid rgba(var(--oc-gray-7-rgb), 0.25);
+}
+
+[data-theme='dark'] .tabActive .tabName {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .tabActive .tabTagline {
+  color: var(--oc-grape-5);
+}
+
+[data-theme='dark'] .stackImage {
+  box-shadow: none;
+  border: 1px solid rgba(var(--oc-gray-7-rgb), 0.75);
+  background: #1b1b1d;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animToFront,
+  .animToBack {
+    animation: none;
+  }
+
+  .stackCard {
+    transition: none;
+  }
+}
+
+@media (max-width: 996px) {
+  .sectionIntro,
+  .showcaseWrap {
+    padding: 0 var(--layout-padding-md);
+  }
+
+  .sectionLead {
+    max-width: 90%;
+  }
+
+  .imageStage {
+    min-height: 320px;
+    padding-top: 0.5rem;
+  }
+
+  .imageStack {
+    --stack-width: 74%;
+    --stack-top: 2.25rem;
+    --stack-back-x: -16px;
+    --stack-back-y: 12px;
+    --stack-anim-duration: 350ms;
+  }
+
+  .stackImage {
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+  }
+}
+
+@media (max-width: 600px) {
+  .sectionIntro,
+  .showcaseWrap {
+    padding: 0 var(--layout-padding-sm);
+  }
+
+  .tabBar {
+    grid-template-columns: 1fr;
+    gap: 0.375rem;
+    padding: 0 0.5rem 0.5rem;
+  }
+
+  .tab {
+    gap: 0.75rem;
+    padding: 0.75rem 0.25rem 0.875rem;
+  }
+
+  .tabIcon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .appDescription {
+    padding: 1rem 1rem 0;
+  }
+
+  .imageStage {
+    min-height: 220px;
+    padding-top: 0.25rem;
+  }
+
+  .imageStack {
+    --stack-width: 80%;
+    --stack-top: 1.75rem;
+    --stack-back-x: -10px;
+    --stack-back-y: 10px;
+    --stack-anim-duration: 280ms;
+  }
+}
