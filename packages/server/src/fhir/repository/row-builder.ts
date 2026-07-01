@@ -18,7 +18,7 @@ import {
   toPeriod,
   toTypedValue,
 } from '@medplum/core';
-import type { Meta, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Meta, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import type { ArrayColumnPaddingConfig } from '../../config/types';
 import { systemResourceProjectId } from '../../constants';
@@ -34,22 +34,49 @@ import { buildTokenColumns } from '../token-column';
 
 export type ColumnValue = boolean | number | string | undefined | null;
 
+export interface DeleteHistoryContentOptions {
+  versionId: string;
+  lastUpdated: Date;
+  author: Reference;
+}
+
+export function parseHistoryContent(content: string | null | undefined): Resource {
+  return content ? (JSON.parse(content) as Resource) : ({ meta: { deleted: true } } as Resource);
+}
+
+export function buildDeleteHistoryContent(resource: Resource, options: DeleteHistoryContentOptions): string {
+  const meta: Meta = {
+    versionId: options.versionId,
+    lastUpdated: options.lastUpdated.toISOString(),
+    author: options.author,
+    deleted: true,
+  };
+  const projectId = resource.meta?.project;
+  if (projectId) {
+    meta.project = projectId;
+  }
+  return stringify({
+    resourceType: resource.resourceType,
+    id: resource.id,
+    meta,
+  });
+}
+
 export function buildDeletedResourceRow(
-  resourceType: ResourceType,
-  id: string,
-  projectId: string | undefined
+  resource: Resource,
+  lastUpdated: Date
 ): { id: string; lastUpdated: Date; deleted: boolean; projectId: string; content: string; __version: number } & Record<
   string,
   any
 > {
-  const lastUpdated = new Date();
-  const content = '';
+  const resourceType = resource.resourceType;
+  const id = resource.id as string;
   const columns = {
     id,
     lastUpdated,
     deleted: true,
-    projectId: projectId ?? systemResourceProjectId,
-    content,
+    projectId: resource.meta?.project ?? systemResourceProjectId,
+    content: '',
     __version: -1,
   };
 
