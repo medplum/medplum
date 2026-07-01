@@ -62,7 +62,7 @@ The client makes a token exchange request to the token endpoint with an extensio
 
 The response will include a Medplum access token, which you can use to access the Medplum API. The Medplum SDK also provides the [`exchangeExternalAccessToken()`](/docs/sdk/core.medplumclient.exchangeexternalaccesstoken) helper method.
 
-## Server-scoped users and the `membership_id` parameter
+## Server-scoped users and the `membership_id` parameter (self hosted only)
 
 The setup above configures the external identity provider on a single [`ClientApplication`](https://app.medplum.com/ClientApplication). Because a `ClientApplication` lives inside one [`Project`](/docs/api/fhir/medplum/project), the exchange is implicitly scoped to that project: Medplum only considers the user's [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) records **within the client's project**. For most [project-scoped users](/docs/user-management/project-vs-server-scoped-users) that resolves to a single membership and the token "just works".
 
