@@ -29,7 +29,7 @@ export function SchedulePage(): JSX.Element | null {
   const [selectedActor, setSelectedActor] = useState<Reference<Practitioner> | undefined>(
     // When mounting, if no schedule was selected via the URL parameters, default
     // to choosing the current profile.
-    !id ? createReference(profile) : undefined
+    !id && profile?.id ? createReference(profile) : undefined
   );
   const [loading, setLoading] = useState(true);
   const [readOutcome, setReadOutcome] = useState<OperationOutcome | undefined>();
@@ -103,6 +103,7 @@ export function SchedulePage(): JSX.Element | null {
           // Loading ownership transfers to the ID-loading effect on navigation.
           navigate(`/Calendar/Schedule/${foundSchedule.id}`, { replace: true })?.catch(console.error);
         } else {
+          setSchedule(undefined);
           setLoading(false);
         }
       })
@@ -116,16 +117,18 @@ export function SchedulePage(): JSX.Element | null {
     return () => {
       active = false;
     };
-  }, [selectedActor, medplum, navigate, id]);
+  }, [selectedActor, medplum, navigate]);
 
   const handleActorChange = useCallback(
     (ref: Reference | undefined) => {
       if (ref) {
         setLoading(true);
+        setReadOutcome(undefined);
         setSelectedActor(ref as Reference<Practitioner>);
       } else {
         setSelectedActor(undefined);
         setSchedule(undefined);
+        setLoading(false);
         if (id) {
           navigate('/Calendar/Schedule')?.catch(console.error);
         }
@@ -147,7 +150,7 @@ export function SchedulePage(): JSX.Element | null {
       })
       .then((created) => {
         // Loading ownership transfers to the ID-loading effect on navigation.
-        navigate(`/Calendar/Schedule/${created.id}`)?.catch(console.error);
+        navigate(`/Calendar/Schedule/${created.id}`, { replace: true })?.catch(console.error);
       })
       .catch((err) => {
         showErrorNotification(err);
@@ -207,7 +210,7 @@ export function SchedulePage(): JSX.Element | null {
             disabled={isLoadingById}
           />
         </Box>
-        {id && schedulingEnabled && (
+        {schedule && schedulingEnabled && (
           <ActionIcon
             variant="subtle"
             aria-label="Schedule settings"
