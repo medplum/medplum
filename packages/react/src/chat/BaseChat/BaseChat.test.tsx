@@ -22,6 +22,18 @@ const drAliceReference = createReference(DrAliceSmith);
 const drAliceReferenceStr = getReferenceString(drAliceReference);
 const HOMER_DR_ALICE_CHAT_QUERY = `sender=${homerReferenceStr},${drAliceReferenceStr}&recipient=${homerReferenceStr},${drAliceReferenceStr}`;
 
+const SMSWRIT_MEDIUM: Communication['medium'] = [
+  {
+    coding: [
+      {
+        system: 'https://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+        code: 'SMSWRIT',
+        display: 'SMS Written',
+      },
+    ],
+  },
+];
+
 async function createCommunication(
   medplum: MockClient,
   communicationProps?: Partial<Communication>
@@ -596,6 +608,34 @@ describe('BaseChat', () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
     medplum.setSubscriptionManager(defaultSubManager);
 
+    // Stub ResizeObserver to fire its callback immediately with a non-zero height,
+    // so parentRect.height > 0 and the scroll effect is not blocked.
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        private cb: ResizeObserverCallback;
+        constructor(cb: ResizeObserverCallback) {
+          this.cb = cb;
+        }
+        observe = vi.fn((el: Element) => {
+          this.cb(
+            [
+              {
+                contentRect: new DOMRect(0, 0, 400, 500),
+                target: el,
+                borderBoxSize: [],
+                contentBoxSize: [],
+                devicePixelContentBoxSize: [],
+              },
+            ] as ResizeObserverEntry[],
+            this
+          );
+        });
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+      }
+    );
+
     const mockScrollTo = vi.fn();
     Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
       value: mockScrollTo,
@@ -658,6 +698,8 @@ describe('BaseChat', () => {
         top: expect.any(Number),
       })
     );
+
+    vi.unstubAllGlobals();
   });
 
   test('BaseChat returns null when profile is null', async () => {
@@ -917,5 +959,119 @@ describe('BaseChat', () => {
     expect(await screen.findByText('First message with no sent date')).toBeInTheDocument();
     expect(screen.getByText('Second message with no sent date')).toBeInTheDocument();
     expect(screen.getByText('Third message with no sent date')).toBeInTheDocument();
+  });
+
+  test('SMS channel select shows when sendSmsMessage is provided and hides when not', async () => {
+    const { rerender } = await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      sendSmsMessage: vi.fn().mockResolvedValue(undefined),
+      smsPatientHasPhone: true,
+    });
+
+    expect(screen.getByDisplayValue('Chat')).toBeInTheDocument();
+
+    await rerender({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+    });
+
+    expect(screen.queryByDisplayValue('Chat')).not.toBeInTheDocument();
+  });
+
+  test('Selecting Text Message mode routes message to sendSmsMessage', async () => {
+    const sendMessage = vi.fn();
+    const sendSmsMessage = vi.fn().mockResolvedValue(undefined);
+
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage,
+      sendSmsMessage,
+      smsPatientHasPhone: true,
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByRole('option', { name: 'Text Message', hidden: true }));
+    });
+
+    const chatInput = screen.getByPlaceholderText('Type a message...');
+    act(() => {
+      fireEvent.change(chatInput, { target: { value: 'Hello via SMS!' } });
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /send message/i }));
+    });
+
+    expect(sendSmsMessage).toHaveBeenCalledWith('Hello via SMS!');
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  test('Text Message option is disabled in channel select when smsPatientHasPhone is false', async () => {
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      sendSmsMessage: vi.fn(),
+      smsPatientHasPhone: false,
+    });
+
+    expect(screen.getByRole('option', { name: 'Text Message', hidden: true })).toHaveAttribute(
+      'data-combobox-disabled',
+      'true'
+    );
+  });
+
+  test('"Text Message" badge renders on SMSWRIT-medium bubbles but not regular ones', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await createCommunication(medplum, {
+      medium: SMSWRIT_MEDIUM,
+      payload: [{ contentString: 'SMS bubble' }],
+    });
+    await createCommunication(medplum, {
+      payload: [{ contentString: 'Chat bubble' }],
+    });
+
+    await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
+
+    expect(await screen.findByText('SMS bubble')).toBeInTheDocument();
+    expect(screen.getByText('Chat bubble')).toBeInTheDocument();
+
+    expect(screen.getAllByText('Text Message').length).toBeGreaterThan(0);
+  });
+
+  test('SMS delivery status text appears under outgoing SMS bubbles', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    // in-progress → no entry in SMS_DELIVERY_LABELS → "Sending..."
+    await createCommunication(medplum, {
+      medium: SMSWRIT_MEDIUM,
+      status: 'in-progress',
+      payload: [{ contentString: 'Sending message' }],
+    });
+    // completed → "Delivered"
+    await createCommunication(medplum, {
+      medium: SMSWRIT_MEDIUM,
+      status: 'completed',
+      payload: [{ contentString: 'Delivered message' }],
+    });
+    // stopped → "Delivery failed"
+    await createCommunication(medplum, {
+      medium: SMSWRIT_MEDIUM,
+      status: 'stopped',
+      payload: [{ contentString: 'Failed message' }],
+    });
+
+    await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
+
+    expect(await screen.findByText('Sending message')).toBeInTheDocument();
+    expect(screen.getByText('Sending...')).toBeInTheDocument();
+    expect(screen.getByText('Delivered')).toBeInTheDocument();
+    expect(screen.getByText('Delivery failed')).toBeInTheDocument();
   });
 });

@@ -3,12 +3,14 @@
 import type { PaperProps } from '@mantine/core';
 import {
   ActionIcon,
+  Badge,
   Group,
   LoadingOverlay,
   Menu,
   Paper,
   Popover,
   ScrollArea,
+  Select,
   Skeleton,
   Stack,
   Text,
@@ -36,6 +38,11 @@ import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';
 import { DocumentPicker } from './DocumentPicker';
+
+const SMS_DELIVERY_LABELS: Partial<Record<string, string>> = {
+  completed: 'Delivered',
+  stopped: 'Delivery failed',
+};
 
 /**
  * Returns the URL only when its scheme is http or https, blocking javascript: / data: XSS vectors.
@@ -120,6 +127,10 @@ export interface BaseChatProps extends PaperProps {
   readonly uploadEnabled?: boolean;
   readonly attachmentSubjectRef?: Reference;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
+  /** If provided, a channel selector appears above the input allowing the user to send via SMS. */
+  readonly sendSmsMessage?: (message: string) => Promise<void>;
+  /** When true, the SMS option in the channel selector is disabled (e.g. patient has no phone number on file). */
+  readonly smsPatientHasPhone?: boolean;
 }
 
 /**
@@ -145,6 +156,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     uploadEnabled = false,
     attachmentSubjectRef,
     onViewInDocuments,
+    sendSmsMessage,
+    smsPatientHasPhone,
     ...paperProps
   } = props;
   const medplum = useMedplum();
@@ -156,6 +169,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 
   const [profile, setProfile] = useState(medplum.getProfile());
   const [reconnecting, setReconnecting] = useState(false);
+  const [smsModeSelected, setSmsModeSelected] = useState(false);
+  const smsMode = smsModeSelected && !!sendSmsMessage;
   const [loading, setLoading] = useState(true);
   const [pendingFile, setPendingFile] = useState<File | undefined>(undefined);
   const [pendingDocRef, setPendingDocRef] = useState<DocumentReference | undefined>(undefined);
@@ -240,6 +255,18 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         return;
       }
       const message = formData.message?.trim() ?? '';
+
+      if (smsMode) {
+        if (!message) {
+          return;
+        }
+        if (inputRef.current) {
+          inputRef.current.value = '';
+        }
+        sendSmsMessage?.(message).catch(console.error);
+        return;
+      }
+
       if (!message && !pendingFile && !pendingDocRef) {
         return;
       }
@@ -252,9 +279,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       sendMessage(message, pendingFile, pendingDocRef);
       setPendingFile(undefined);
       setPendingDocRef(undefined);
-      scrollToBottomRef.current = true;
     },
-    [inputDisabled, sendMessage, pendingFile, pendingDocRef]
+    [inputDisabled, smsMode, sendSmsMessage, sendMessage, pendingFile, pendingDocRef]
   );
 
   // Disabled because we can make sure this will trigger an update when local profile !== medplum.getProfile()
@@ -268,34 +294,45 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   });
 
   const [parentRef, parentRect] = useResizeObserver<HTMLDivElement>();
+  const scrollContentRef = useRef<HTMLDivElement>(null);
 
   const communicationsRef = useRef(communications);
+  // eslint-disable-next-line react-hooks/immutability, react-hooks/refs
   communicationsRef.current = communications;
-  const prevCommunicationsRef = useRef(communications);
-
-  const scrollToBottomRef = useRef(true);
 
   useEffect(() => {
-    if (communications !== prevCommunicationsRef.current) {
-      scrollToBottomRef.current = true;
+    if (!scrollAreaRef.current || parentRect.height === 0) {
+      return;
     }
-    prevCommunicationsRef.current = communications;
-  }, [communications]);
+    scrollAreaRef.current.scrollTo({
+      top: scrollAreaRef.current.scrollHeight,
+      behavior: firstScrollRef.current ? 'instant' : 'smooth',
+    });
+    firstScrollRef.current = false;
+  }, [communications, parentRect.height]);
 
+  // Re-pin to bottom when content grows (e.g. attachment previews loading in),
+  // but only if we were already near the bottom.
   useEffect(() => {
-    if (scrollToBottomRef.current) {
-      if (scrollAreaRef.current?.scrollTo) {
-        scrollAreaRef.current.scrollTo({
-          top: scrollAreaRef.current.scrollHeight,
-          // We want to skip scrolling through the whole chat on initial load,
-          // Then every time after we will do the "smooth scroll"
-          ...(firstScrollRef.current ? { duration: 0 } : { behavior: 'smooth' }),
-        });
-        firstScrollRef.current = false;
-        scrollToBottomRef.current = false;
+    const content = scrollContentRef.current;
+    const viewport = scrollAreaRef.current;
+    if (!content || !viewport) {
+      return undefined;
+    }
+
+    const observer = new ResizeObserver(() => {
+      if (firstScrollRef.current) {
+        return;
       }
-    }
-  });
+      const { scrollHeight, scrollTop, clientHeight } = viewport;
+      if (scrollHeight - scrollTop - clientHeight < 60) {
+        viewport.scrollTo({ top: scrollHeight, behavior: 'smooth' });
+      }
+    });
+
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [loading]);
 
   const myLastDeliveredId = useMemo<string>(() => {
     let i = communications.length;
@@ -345,55 +382,73 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
               visible={loading || reconnecting}
               style={{ width: parentRect.width, height: parentRect.height, position: 'absolute', zIndex: 1 }}
             />
-            {communications.map((c, i) => {
-              const prevCommunication = i > 0 ? communications[i - 1] : undefined;
-              const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
-              const currCommTime = parseSentTime(c);
-              const showDelivered = !!c.received && c.id === myLastDeliveredId;
-              const payloads = c.payload ?? [];
-              const contentRef = payloads.find((p) => p.contentReference)?.contentReference;
-              const contentAttachment = payloads.find((p) => p.contentAttachment)?.contentAttachment;
-              const hasAttachment = !!(contentRef || contentAttachment);
-              const isSender = c.sender?.reference === profileRefStr;
-              const menu = hasAttachment ? (
-                <ChatBubbleMenu
-                  contentRef={contentRef}
-                  contentAttachment={contentAttachment}
-                  onViewInDocuments={onViewInDocuments}
-                />
-              ) : null;
-              return (
-                <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
-                  {(!prevCommTime || currCommTime !== prevCommTime) && (
-                    <Text fz="xs" ta="center">
-                      {currCommTime}
-                    </Text>
-                  )}
-                  {isSender ? (
-                    <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
-                      <div className={classes.chatBubbleMenu}>{menu}</div>
-                      <ChatBubble alignment="right" communication={c} showDelivered={showDelivered} />
-                      <ResourceAvatar
-                        radius="xl"
-                        color="orange"
-                        value={c.sender}
-                        mb={!showDelivered ? 'sm' : undefined}
-                      />
-                    </Group>
-                  ) : (
-                    <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
-                      <ResourceAvatar radius="xl" value={c.sender} mb="sm" />
-                      <ChatBubble alignment="left" communication={c} />
-                      <div className={classes.chatBubbleMenu}>{menu}</div>
-                    </Group>
-                  )}
-                </Stack>
-              );
-            })}
+            <div ref={scrollContentRef}>
+              {communications.map((c, i) => {
+                const prevCommunication = i > 0 ? communications[i - 1] : undefined;
+                const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
+                const currCommTime = parseSentTime(c);
+                const showDelivered = !!c.received && c.id === myLastDeliveredId;
+                const payloads = c.payload ?? [];
+                const contentRef = payloads.find((p) => p.contentReference)?.contentReference;
+                const contentAttachment = payloads.find((p) => p.contentAttachment)?.contentAttachment;
+                const hasAttachment = !!(contentRef || contentAttachment);
+                const isSender = c.sender?.reference === profileRefStr;
+                const menu = hasAttachment ? (
+                  <ChatBubbleMenu
+                    contentRef={contentRef}
+                    contentAttachment={contentAttachment}
+                    onViewInDocuments={onViewInDocuments}
+                  />
+                ) : null;
+                return (
+                  <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
+                    {(!prevCommTime || currCommTime !== prevCommTime) && (
+                      <Text fz="xs" ta="center">
+                        {currCommTime}
+                      </Text>
+                    )}
+                    {isSender ? (
+                      <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
+                        <div className={classes.chatBubbleMenu}>{menu}</div>
+                        <ChatBubble alignment="right" communication={c} showDelivered={showDelivered} />
+                        <ResourceAvatar
+                          radius="xl"
+                          color="orange"
+                          value={c.sender}
+                          mb={!showDelivered ? 'sm' : undefined}
+                        />
+                      </Group>
+                    ) : (
+                      <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
+                        <ResourceAvatar radius="xl" value={c.sender} mb="sm" />
+                        <ChatBubble alignment="left" communication={c} />
+                        <div className={classes.chatBubbleMenu}>{menu}</div>
+                      </Group>
+                    )}
+                  </Stack>
+                );
+              })}
+            </div>
           </ScrollArea>
         )}
       </div>
       <div className={classes.chatInputContainer}>
+        {sendSmsMessage && (
+          <Select
+            mb={4}
+            size="xs"
+            classNames={{ input: classes.chatChannelSelectInput }}
+            data={[
+              { label: 'Chat', value: 'chat' },
+              { label: 'Text Message', value: 'sms', disabled: !smsPatientHasPhone },
+            ]}
+            value={smsMode ? 'sms' : 'chat'}
+            onChange={(val) => setSmsModeSelected(val === 'sms')}
+            allowDeselect={false}
+            w={120}
+            comboboxProps={{ withinPortal: true, keepMounted: true }}
+          />
+        )}
         {(pendingFile || pendingDocRef) && (
           <Group className={classes.chatPendingFile} gap={4} align="center" wrap="nowrap">
             {pendingDocRef ? <IconFileText size="0.75rem" /> : <IconPaperclip size="0.75rem" />}
@@ -516,23 +571,30 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
   const sentTime = new Date(communication.sent ?? -1);
   const seenTime = new Date(communication.received ?? -1);
   const senderResource = useResource(communication.sender);
+  const isSms = communication.medium?.some((m) => m.coding?.some((c) => c.code === 'SMSWRIT'));
   return (
     <div className={classes.chatBubbleOuterWrap}>
-      <Text
-        fz="xs"
-        mb="xs"
-        fw={500}
-        className={alignment === 'right' ? classes.chatBubbleNameRight : undefined}
-        aria-label="Sender name"
-      >
-        {senderResource ? getDisplayString(senderResource) : '[Unknown sender]'}
-        &nbsp;&middot;&nbsp;
-        <Text span c="dimmed" fz="xs">
-          {Number.isNaN(sentTime.getTime())
-            ? ''
-            : sentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+      <Group gap={6} mb="xs" justify={alignment === 'right' ? 'flex-end' : 'flex-start'} align="center" wrap="nowrap">
+        <Text
+          fz="xs"
+          fw={500}
+          className={alignment === 'right' ? classes.chatBubbleNameRight : undefined}
+          aria-label="Sender name"
+        >
+          {senderResource ? getDisplayString(senderResource) : '[Unknown sender]'}
+          &nbsp;&middot;&nbsp;
+          <Text span c="dimmed" fz="xs">
+            {Number.isNaN(sentTime.getTime())
+              ? ''
+              : sentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+          </Text>
         </Text>
-      </Text>
+        {isSms && (
+          <Badge size="xs" variant="light" color="blue">
+            Text Message
+          </Badge>
+        )}
+      </Group>
       <div
         className={
           alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
@@ -549,6 +611,11 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
           Delivered {seenTime.getHours()}:{seenTime.getMinutes().toString().length === 1 ? '0' : ''}
           {seenTime.getMinutes()}
         </div>
+      )}
+      {isSms && alignment === 'right' && (
+        <Text fz="xs" c="dimmed" ta="right">
+          {SMS_DELIVERY_LABELS[communication.status ?? ''] ?? 'Sending...'}
+        </Text>
       )}
     </div>
   );
