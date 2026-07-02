@@ -1,9 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { badRequest, createReference, created } from '@medplum/core';
+import {
+  badRequest,
+  createReference,
+  created,
+  getResourceTypes,
+  projectAdminResourceTypes,
+  protectedResourceTypes,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { AccessPolicy, ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type {
+  AccessPolicy,
+  ClientApplication,
+  Project,
+  ProjectMembership,
+  Reference,
+  ResourceType,
+  User,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
@@ -148,6 +163,12 @@ export async function createProject(
     project,
     'Default RelatedPerson Access Policy'
   );
+  const adminAccessPolicy = await createAdminAccessPolicy(systemRepo, project, 'Default Admin Access Policy');
+  const practitionerAccessPolicy = await createPractitionerAccessPolicy(
+    systemRepo,
+    project,
+    'Default Practitioner Access Policy'
+  );
   project = await systemRepo.patchResource<Project>('Project', project.id, [
     { op: 'add', path: '/defaultPatientAccessPolicy', value: createReference(accessPolicy) },
     {
@@ -156,6 +177,8 @@ export async function createProject(
       value: [
         { profileType: 'Patient', accessPolicy: createReference(accessPolicy) },
         { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
+        { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
+        { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
       ],
     },
   ]);
@@ -208,6 +231,59 @@ async function createPatientCompartmentAccessPolicy(
       { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?_compartment=%patient' },
       { resourceType: 'ServiceRequest', criteria: 'ServiceRequest?_compartment=%patient' },
       { resourceType: 'Task', criteria: 'Task?_compartment=%patient' },
+    ],
+  });
+}
+
+async function createAdminAccessPolicy(
+  systemRepo: SystemRepository,
+  project: WithId<Project>,
+  name: string
+): Promise<WithId<AccessPolicy>> {
+  return systemRepo.createResource<AccessPolicy>({
+    resourceType: 'AccessPolicy',
+    meta: { project: project.id },
+    name,
+    // Full read/write access to all resource types (essentially no policy).
+    resource: [{ resourceType: '*' }],
+  });
+}
+
+/**
+ * Knowledge resource types that non-admin Practitioners can read but not edit.
+ * These are typically curated at the project/admin level rather than by front-line users.
+ */
+export const KNOWLEDGE_RESOURCE_TYPES: ResourceType[] = [
+  'MedicationKnowledge',
+  'PlanDefinition',
+  'ActivityDefinition',
+  'ObservationDefinition',
+];
+
+async function createPractitionerAccessPolicy(
+  systemRepo: SystemRepository,
+  project: WithId<Project>,
+  name: string
+): Promise<WithId<AccessPolicy>> {
+  // Access policies are additive (a resource is writable if *any* entry grants it), so a
+  // "write everything except the knowledge resources" policy cannot use a wildcard write entry.
+  // Instead, grant read to everything via a readonly wildcard, then grant full access to every
+  // writable resource type explicitly. The knowledge resource types are omitted from the writable
+  // set, leaving them read-only. Project admin and protected resource types are excluded as well,
+  // since non-admins cannot write those.
+  const writableResourceTypes = getResourceTypes().filter(
+    (resourceType) =>
+      !KNOWLEDGE_RESOURCE_TYPES.includes(resourceType) &&
+      !projectAdminResourceTypes.includes(resourceType) &&
+      !protectedResourceTypes.includes(resourceType)
+  );
+  return systemRepo.createResource<AccessPolicy>({
+    resourceType: 'AccessPolicy',
+    meta: { project: project.id },
+    name,
+    resource: [
+      { resourceType: '*', readonly: true },
+      ...writableResourceTypes.map((resourceType) => ({ resourceType })),
     ],
   });
 }

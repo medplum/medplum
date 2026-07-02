@@ -1993,4 +1993,65 @@ describe('Admin Invite', () => {
       expect(membership.access?.[0].parameter?.[0].name).toBe('patient');
       expect(membership.access?.[0].parameter?.[0].valueReference?.reference).toBe(getReferenceString(patient));
     }));
+
+  test('Invite admin Practitioner applies Admin defaultAccessPolicies', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const adminPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Admin Policy',
+        resource: [{ resourceType: '*' }],
+      });
+      const projectWithDefault = await systemRepo.updateResource({
+        ...project,
+        defaultAccessPolicies: [{ profileType: 'Admin', accessPolicy: createReference(adminPolicy) }],
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithDefault,
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+        admin: true,
+      });
+
+      expect(membership.accessPolicy?.reference).toBe(getReferenceString(adminPolicy));
+    }));
+
+  test('Invite non-admin Practitioner applies Practitioner defaultAccessPolicies (not Admin)', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const adminPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Admin Policy',
+        resource: [{ resourceType: '*' }],
+      });
+      const practitionerPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Practitioner Policy',
+        resource: [{ resourceType: '*', readonly: true }, { resourceType: 'Patient' }],
+      });
+      const projectWithDefault = await systemRepo.updateResource({
+        ...project,
+        defaultAccessPolicies: [
+          { profileType: 'Admin', accessPolicy: createReference(adminPolicy) },
+          { profileType: 'Practitioner', accessPolicy: createReference(practitionerPolicy) },
+        ],
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithDefault,
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+      });
+
+      expect(membership.accessPolicy?.reference).toBe(getReferenceString(practitionerPolicy));
+    }));
 });
