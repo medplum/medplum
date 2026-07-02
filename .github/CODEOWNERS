@@ -5,25 +5,30 @@
 # Order is important; the last matching pattern takes the most precedence.
 # GitHub CODEOWNERS computes required reviewers per-file. The required set for a PR is the union
 # of each changed file's owner (last matching pattern wins).
+#
+# @medplum/dev is the "backdrop" team: it is listed as a co-owner on every line so a dev member's
+# approval can satisfy the code-owner requirement for any file -- a break-glass path when the
+# primary owner is unavailable. Owners on a line are alternatives, so only ONE of them needs to
+# approve.
 
-# Dev is the default owner for everything in the repo.
-* @medplum/dev
+# Core is the default owner for everything in the repo.
+* @medplum/core @medplum/dev
 
 # FDE is the default owner for the "examples" directory.
-/examples/ @medplum/fde
+/examples/ @medplum/fde @medplum/dev
 
-# Both Dev and FDE own the packages/docs directory.
-/packages/docs/ @medplum/dev @medplum/fde
+# Both Core and FDE own the packages/docs directory.
+/packages/docs/ @medplum/core @medplum/fde @medplum/dev
 
 # Product owns the frontend packages. A PR that only touches these packages
-# needs review from Product alone; touching anything else pulls in that file's owner too.
-/packages/react/ @medplum/product
-/packages/react-hooks/ @medplum/product
-/packages/app/ @medplum/product
+# needs review from Product (or dev as backdrop); touching anything else pulls in that file's owner too.
+/packages/react/ @medplum/product @medplum/dev
+/packages/react-hooks/ @medplum/product @medplum/dev
+/packages/app/ @medplum/product @medplum/dev
 
-# A PR only touching these packages needs review from Integrations alone.
-/packages/dosespot-core/ @medplum/integrations
-/packages/dosespot-react/ @medplum/integrations
-/packages/health-gorilla-core/ @medplum/integrations
-/packages/health-gorilla-react/ @medplum/integrations
-/packages/scriptsure-react/ @medplum/integrations
+# A PR only touching these packages needs review from Integrations (or dev as backdrop).
+/packages/dosespot-core/ @medplum/integrations @medplum/dev
+/packages/dosespot-react/ @medplum/integrations @medplum/dev
+/packages/health-gorilla-core/ @medplum/integrations @medplum/dev
+/packages/health-gorilla-react/ @medplum/integrations @medplum/dev
+/packages/scriptsure-react/ @medplum/integrations @medplum/dev
