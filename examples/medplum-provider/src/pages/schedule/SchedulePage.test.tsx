@@ -19,10 +19,9 @@ import { act, getByText, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { SchedulingParametersURI } from '../../utils/scheduling';
 import { toCodeableReferenceLike } from '../../utils/servicetype';
 import { SchedulePage } from './SchedulePage';
-
-const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 
 describe('SchedulePage', () => {
   let medplum: MockClient;
