@@ -322,9 +322,6 @@ async function writeMappingRows(
     const insertMappings = new InsertQuery('ConceptMapping', mappings).returnColumn('id');
     const mappingIds = await insertMappings.execute(db);
 
-    // const attributeRows = flatMapFilter(attributes, (attrs, i) =>
-    //   attrs?.map((a) => ({ ...a, mapping: mappingIds[i].id }))
-    // );
     const attributeRows: AttributeRow[] = [];
     for (let i = 0; i < mappings.length; i++) {
       const mappingId = mappingIds[i].id;
