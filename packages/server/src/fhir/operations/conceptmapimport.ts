@@ -268,7 +268,6 @@ function addRowsForMapping(
 async function prepareMappingRows(
   db: PgQueryable,
   rows: MappingRow[]
-  // attributeRows: (Omit<AttributeRow, 'mapping'>[] | undefined)[]
 ): Promise<(MappingRow & { sourceSystem: number; targetSystem: number })[]> {
   if (!rows.length) {
     return rows as Awaited<ReturnType<typeof prepareMappingRows>>;
