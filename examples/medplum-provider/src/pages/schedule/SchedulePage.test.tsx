@@ -168,6 +168,42 @@ describe('SchedulePage', () => {
       expect(screen.queryByText('Today')).not.toBeInTheDocument();
     });
 
+    test('clears the loading state when re-selecting the actor of the displayed schedule', async () => {
+      const user = userEvent.setup();
+
+      // Make the schedule's actor selectable in the ReferenceInput dropdown
+      const practitioner = {
+        resourceType: 'Practitioner',
+        id: 'practitioner-1',
+        name: [{ given: ['Jane'], family: 'Practitioner' }],
+      };
+      medplum.searchResources = vi
+        .fn()
+        .mockImplementation((resourceType: ResourceType) =>
+          Promise.resolve(resourceType === 'Practitioner' ? [practitioner] : [])
+        );
+
+      await act(async () => {
+        setup('/Calendar/Schedule/schedule-1');
+      });
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+
+      // Re-select the actor whose schedule is already displayed. The search
+      // finds schedule-1 again, so navigation would be a no-op.
+      const actorInput = screen
+        .getAllByRole('searchbox')
+        .find((el) => el.getAttribute('name') === 'schedule-actor-id') as HTMLElement;
+      await user.type(actorInput, 'Jane');
+      await user.click(await screen.findByText('Jane Practitioner'));
+
+      await waitFor(() => {
+        expect(medplum.searchOne).toHaveBeenCalledWith('Schedule', { actor: 'Practitioner/practitioner-1' });
+      });
+
+      // The spinner must clear and the calendar must remain visible
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+    });
+
     test('clears the loading state when readResource rejects during navigation', async () => {
       const origReadResource = medplum.readResource.bind(medplum);
       medplum.readResource = vi.fn().mockImplementation((resourceType: ResourceType, id: string) => {

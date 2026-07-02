@@ -100,8 +100,16 @@ export function SchedulePage(): JSX.Element | null {
           return;
         }
         if (foundSchedule?.id) {
-          // Loading ownership transfers to the ID-loading effect on navigation.
-          navigate(`/Calendar/Schedule/${foundSchedule.id}`, { replace: true })?.catch(console.error);
+          if (foundSchedule.id === id) {
+            // The found schedule is already displayed, so navigating would be a
+            // no-op and the ID-loading effect would never fire to clear the
+            // loading state. Settle here instead.
+            setSelectedActor(undefined);
+            setLoading(false);
+          } else {
+            // Loading ownership transfers to the ID-loading effect on navigation.
+            navigate(`/Calendar/Schedule/${foundSchedule.id}`, { replace: true })?.catch(console.error);
+          }
         } else {
           setSchedule(undefined);
           setLoading(false);
@@ -117,7 +125,7 @@ export function SchedulePage(): JSX.Element | null {
     return () => {
       active = false;
     };
-  }, [selectedActor, medplum, navigate]);
+  }, [selectedActor, medplum, navigate, id]);
 
   const handleActorChange = useCallback(
     (ref: Reference | undefined) => {
