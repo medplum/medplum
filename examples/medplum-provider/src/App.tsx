@@ -217,6 +217,8 @@ export function App(): JSX.Element | null {
                 <Route path="export" element={<ExportTab />} />
                 <Route path="ServiceRequest" element={<LabsPage />} />
                 <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
+                <Route path="DiagnosticReport" element={<LabsPage />} />
+                <Route path="DiagnosticReport/:diagnosticReportId" element={<LabsPage />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
                 <Route path="MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
                 <Route path="DocumentReference" element={<DocumentsPage />} />

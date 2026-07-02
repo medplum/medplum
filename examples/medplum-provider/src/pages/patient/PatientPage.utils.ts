@@ -84,7 +84,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'scriptsure', url: 'scriptsure', label: 'ScriptSure' },
   {
     id: 'labs',
-    url: 'ServiceRequest',
+    url: 'DiagnosticReport',
     label: 'Labs',
   },
   {

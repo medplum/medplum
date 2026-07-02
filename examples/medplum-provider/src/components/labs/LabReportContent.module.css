@@ -1,0 +1,14 @@
+.attachment {
+  height: 600px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+/* AttachmentDisplay renders PDFs/text in an iframe that defaults to 400px;
+   force it to fill the fixed-height container. Scoped to this container via
+   the parent class so it does not affect other attachment displays. */
+.attachment :global(div[data-testid='attachment-iframe']),
+.attachment :global(div[data-testid='attachment-iframe'] iframe) {
+  height: 600px !important;
+}
