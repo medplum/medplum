@@ -1,0 +1,71 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.nav {
+  position: sticky;
+  top: var(--ifm-navbar-height);
+  z-index: 10;
+  background: var(--landing-surface);
+  border-top: 1px solid var(--landing-divider);
+  border-bottom: 1px solid var(--landing-divider);
+}
+
+.inner {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: 0.75rem var(--layout-padding);
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.inner::-webkit-scrollbar {
+  display: none;
+}
+
+.pill {
+  font-family: var(--landing-font-display);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 0.375rem 1rem;
+  border-radius: var(--landing-radius-chip);
+  color: var(--landing-color-body);
+  text-decoration: none;
+  transition: all var(--landing-transition);
+}
+
+.pill:hover {
+  background: var(--landing-surface-muted);
+  color: var(--landing-color-heading);
+  text-decoration: none;
+}
+
+.pillActive {
+  background: var(--oc-grape-0);
+  color: var(--oc-grape-9);
+}
+
+.pillActive:hover {
+  background: var(--oc-grape-0);
+  color: var(--oc-grape-9);
+}
+
+[data-theme='dark'] .pillActive,
+[data-theme='dark'] .pillActive:hover {
+  background: var(--oc-grape-1);
+  color: var(--oc-grape-9);
+}
+
+@media screen and (max-width: 996px) {
+  .inner {
+    padding: 0.625rem var(--layout-padding-md);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .inner {
+    padding: 0.625rem var(--layout-padding-sm);
+  }
+}

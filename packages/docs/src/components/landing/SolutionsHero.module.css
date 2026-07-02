@@ -1,0 +1,126 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: var(--landing-font-display);
+  background: var(--landing-surface);
+  padding: 8rem 0 4rem;
+}
+
+.container {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: 0 var(--layout-padding);
+}
+
+.eyebrow {
+  font-size: var(--landing-label-size);
+  font-weight: var(--landing-label-weight);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--oc-grape-8);
+  margin: 0 0 1rem;
+}
+
+[data-theme='dark'] .eyebrow {
+  color: var(--oc-grape-4);
+}
+
+.headline {
+  font-weight: var(--landing-hero-weight);
+  font-size: var(--landing-hero-size);
+  line-height: var(--landing-hero-leading);
+  letter-spacing: var(--landing-hero-tracking);
+  text-wrap-style: balance;
+  color: var(--landing-color-heading);
+  margin: 0 0 1rem;
+}
+
+.lead {
+  font-size: var(--landing-lead-size);
+  line-height: var(--landing-lead-leading);
+  font-weight: var(--landing-lead-weight);
+  color: var(--landing-color-body);
+  margin: 0;
+  max-width: 640px;
+}
+
+.cta {
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--landing-stack-gap);
+}
+
+.purpleButton,
+.whiteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--landing-btn-gap);
+  font-family: inherit;
+  font-weight: var(--landing-btn-weight);
+  font-size: var(--landing-btn-size);
+  padding: var(--landing-btn-padding);
+  border-radius: var(--landing-btn-radius);
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--landing-transition);
+}
+
+.purpleButton {
+  background: var(--oc-grape-8);
+  color: #fff;
+}
+
+.purpleButton:hover {
+  background: var(--oc-grape-9);
+  color: #fff;
+  text-decoration: none;
+}
+
+.whiteButton {
+  background: #fff;
+  color: var(--landing-color-heading);
+  box-shadow: var(--landing-shadow-cta-white);
+}
+
+.whiteButton:hover {
+  background: #fff;
+  color: var(--oc-grape-8);
+  text-decoration: none;
+}
+
+[data-theme='dark'] .whiteButton {
+  background: var(--landing-surface-elevated);
+  color: var(--oc-gray-2);
+  box-shadow: var(--landing-shadow-cta-white);
+}
+
+[data-theme='dark'] .whiteButton:hover {
+  background: var(--landing-surface-elevated);
+  color: var(--oc-grape-5);
+}
+
+@media screen and (max-width: 996px) {
+  .section {
+    padding: 5rem 0 3rem;
+  }
+
+  .container {
+    padding: 0 var(--layout-padding-md);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .container {
+    padding: 0 var(--layout-padding-sm);
+  }
+
+  .cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
