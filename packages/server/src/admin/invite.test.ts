@@ -1892,4 +1892,105 @@ describe('Admin Invite', () => {
 
       expect(profile.resourceType).toStrictEqual('Practitioner');
     }));
+
+  test('Invite Patient prefers defaultAccessPolicies over legacy defaultPatientAccessPolicy', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const legacyPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Legacy Patient Policy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const newPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'New Patient Policy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const projectWithBoth = await systemRepo.updateResource({
+        ...project,
+        defaultPatientAccessPolicy: createReference(legacyPolicy),
+        defaultAccessPolicies: [{ profileType: 'Patient', accessPolicy: createReference(newPolicy) }],
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithBoth,
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+      });
+
+      expect(membership.accessPolicy?.reference).toBe(getReferenceString(newPolicy));
+    }));
+
+  test('Invite Patient falls back to legacy defaultPatientAccessPolicy when not in defaultAccessPolicies', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const legacyPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Legacy Patient Policy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const projectWithLegacyOnly = await systemRepo.updateResource({
+        ...project,
+        defaultPatientAccessPolicy: createReference(legacyPolicy),
+        defaultAccessPolicies: [
+          {
+            profileType: 'RelatedPerson',
+            accessPolicy: createReference(legacyPolicy),
+          },
+        ],
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithLegacyOnly,
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+      });
+
+      expect(membership.accessPolicy?.reference).toBe(getReferenceString(legacyPolicy));
+    }));
+
+  test('Invite RelatedPerson applies defaultAccessPolicies with patient parameter', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const relatedPersonPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default RelatedPerson Policy',
+        compartment: { reference: '%patient' },
+        resource: [{ resourceType: 'RelatedPerson', criteria: 'RelatedPerson?patient=%patient' }],
+      });
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      const projectWithDefault = await systemRepo.updateResource({
+        ...project,
+        defaultAccessPolicies: [{ profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonPolicy) }],
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithDefault,
+        resourceType: 'RelatedPerson',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+        patient: createReference(patient),
+      });
+
+      expect(membership.access).toHaveLength(1);
+      expect(membership.access?.[0].policy?.reference).toBe(getReferenceString(relatedPersonPolicy));
+      expect(membership.access?.[0].parameter).toHaveLength(1);
+      expect(membership.access?.[0].parameter?.[0].name).toBe('patient');
+      expect(membership.access?.[0].parameter?.[0].valueReference?.reference).toBe(getReferenceString(patient));
+    }));
 });
