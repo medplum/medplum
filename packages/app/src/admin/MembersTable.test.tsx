@@ -260,9 +260,11 @@ describe('MemberTable (Users page)', () => {
     const extra = await addPractitionerMembership('Extra2');
 
     window.confirm = vi.fn(() => true);
-    const deleteSpy = vi.spyOn(medplum, 'delete').mockImplementation((url: string | URL) =>
-      url.toString().includes(extra.id as string) ? Promise.reject(new Error('boom')) : Promise.resolve(undefined)
-    );
+    const deleteSpy = vi
+      .spyOn(medplum, 'delete')
+      .mockImplementation((url: string | URL) =>
+        url.toString().includes(extra.id as string) ? Promise.reject(new Error('boom')) : Promise.resolve(undefined)
+      );
 
     await setup('/admin/users');
     expect(await screen.findByText('All')).toBeInTheDocument();
