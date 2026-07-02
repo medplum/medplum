@@ -226,7 +226,7 @@ export function AppointmentDetails(props: {
                   binding="http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
                   required={true}
                   onChange={setEncounterClass}
-                  path="Encounter.type"
+                  path="Encounter.class"
                 />
 
                 <ResourceInput<PlanDefinition>

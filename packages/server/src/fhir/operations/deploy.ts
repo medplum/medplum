@@ -5,20 +5,23 @@ import {
   allOk,
   badRequest,
   ContentType,
+  createReference,
   getReferenceString,
   normalizeOperationOutcome,
   OperationOutcomeError,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Attachment, Binary, Bot } from '@medplum/fhirtypes';
+import type { Attachment, Binary, Bot, OperationOutcome } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { isBotEnabled } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
 import { deployLambdaStreaming } from '../../cloud/aws/deploystreaming';
 import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
+import { findProjectMembership } from '../../workers/utils';
 import type { Repository } from '../repo';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
@@ -37,12 +40,37 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const filename = req.body.filename ?? 'index.js';
 
   try {
-    await deployBot(ctx.repo, bot, code, filename);
+    const { warnings } = await deployBot(ctx.repo, bot, code, filename);
+    if (warnings.length > 0) {
+      const outcome: OperationOutcome = {
+        ...allOk,
+        issue: [
+          ...allOk.issue,
+          ...warnings.map((text) => ({
+            severity: 'warning' as const,
+            code: 'business-rule' as const,
+            details: { text },
+          })),
+        ],
+      };
+      return [outcome];
+    }
     return [allOk];
   } catch (err) {
     return [normalizeOperationOutcome(err)];
   }
 }
+
+const MISSING_PROJECT_WARNING = 'Could not determine Project for Bot';
+const MISSING_MEMBERSHIP_WARNING = 'Could not find ProjectMembership for Bot';
+
+/**
+ * The result of deploying a bot.
+ */
+export type DeployResult = {
+  /** Warnings surfaced to the caller, if any (e.g. a missing ProjectMembership). */
+  warnings: string[];
+};
 
 /**
  * Deploys a bot to the cloud.
@@ -50,14 +78,35 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
  * @param bot - The bot to deploy.
  * @param code - The code to deploy. If not provided, the existing code will be used.
  * @param filename - The filename to use for the code. If not provided, 'index.js' will be used.
+ * @returns A result containing a warning message if the bot is missing a Project or ProjectMembership.
  */
-export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: string, filename?: string): Promise<void> {
+export async function deployBot(
+  repo: Repository,
+  bot: WithId<Bot>,
+  code?: string,
+  filename?: string
+): Promise<DeployResult> {
   if (!code && !bot.executableCode?.url) {
     throw new OperationOutcomeError(badRequest('Bot missing executable code'));
   }
 
   if (!(await isBotEnabled(bot))) {
     throw new OperationOutcomeError(badRequest('Bots not enabled'));
+  }
+
+  const result: DeployResult = { warnings: [] };
+  if (!bot.runAsUser) {
+    const botProject = bot.meta?.project;
+    if (!botProject) {
+      result.warnings.push(MISSING_PROJECT_WARNING);
+      getLogger().warn(MISSING_PROJECT_WARNING, { botId: bot.id });
+    } else {
+      const membership = await findProjectMembership(botProject, createReference(bot));
+      if (!membership) {
+        result.warnings.push(MISSING_MEMBERSHIP_WARNING);
+        getLogger().warn(MISSING_MEMBERSHIP_WARNING, { botId: bot.id, botProject });
+      }
+    }
   }
 
   let updatedBot: WithId<Bot> | undefined;
@@ -109,4 +158,6 @@ export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: strin
   } else if (latestBot.runtimeVersion === 'fission') {
     await deployFissionBot(latestBot, codeToDeploy as string);
   }
+
+  return result;
 }

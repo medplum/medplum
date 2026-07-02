@@ -5,8 +5,10 @@ Provides the `MockClient` class and a large number of mocked endpoints and resou
 For example:
 
 - `GET fhir/R4/Patient/123` returns Homer Simpson
-- `GET fhir/R4/Practitioner/123` returns Dr. Alice Smith
-- `GET fhir/R4/Organization/123` returns Test Organization
+- `GET fhir/R4/Practitioner/124` returns Dr. Alice Smith
+- `GET fhir/R4/Organization/125` returns Test Organization
+
+Well-known resource ids are exported as constants from `@medplum/mock` (for example `MOCK_HOMER_PATIENT_ID`, `MOCK_ALICE_PRACTITIONER_ID`).
 
 ## Installation
 
@@ -20,8 +22,6 @@ Note the following peer dependencies:
 
 - [@medplum/core](https://www.npmjs.com/package/@medplum/core)
 - [@medplum/fhir-router](https://www.npmjs.com/package/@medplum/fhir-router)
-- If you want to use JSONPatch:
-  - [rfc6902](https://www.npmjs.com/package/rfc6902)
 - If you want to use GraphQL:
   - [graphql](https://www.npmjs.com/package/graphql)
   - [dataloader](https://www.npmjs.com/package/dataloader)

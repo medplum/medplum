@@ -36,7 +36,7 @@ jobs:
       id-token: write # Required for OIDC authentication with Azure Trusted Signing
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Install NSIS
         run: choco install nsis
@@ -49,7 +49,7 @@ jobs:
         run: choco install wget
 
       - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -64,7 +64,7 @@ jobs:
         run: echo "dir=$(npm config get cache)" >> ${env:GITHUB_OUTPUT}
 
       - name: Cache node modules
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         env:
           cache-name: cache-node-modules
         with:
@@ -93,7 +93,7 @@ jobs:
         run: npm run build -- --filter=@medplum/agent
 
       - name: Find signtool
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         id: find-signtool
         with:
           result-encoding: string
@@ -148,7 +148,7 @@ jobs:
 
       - name: Login to Azure
         if: ${{ inputs.sign_output }}
-        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
+        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -157,7 +157,7 @@ jobs:
 
       - name: Sign executables with Azure Trusted Signing
         if: ${{ inputs.sign_output }}
-        uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
+        uses: azure/trusted-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82 # v2.0.0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -216,7 +216,7 @@ jobs:
           echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
       - name: Upload agent installer
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: medplum-agent-installer-${{ env.MEDPLUM_VERSION }}-windows
           path: packages/agent/medplum-agent-installer-*
@@ -234,10 +234,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -246,7 +246,7 @@ jobs:
           package-manager-cache: false
 
       - name: Cache node modules
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         env:
           cache-name: cache-node-modules
         with:
@@ -305,7 +305,7 @@ jobs:
           tar -czvf ./medplum-agent-$MEDPLUM_VERSION-linux-x64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-linux-x64
 
       - name: Upload agent installer
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-x64
           path: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-x64.tar.gz
@@ -323,10 +323,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -335,7 +335,7 @@ jobs:
           package-manager-cache: false
 
       - name: Cache node modules
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         env:
           cache-name: cache-node-modules
         with:
@@ -394,7 +394,7 @@ jobs:
           tar -czvf ./medplum-agent-$MEDPLUM_VERSION-linux-arm64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-linux-arm64
 
       - name: Upload agent installer
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-arm64
           path: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-arm64.tar.gz
@@ -412,10 +412,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -424,7 +424,7 @@ jobs:
           package-manager-cache: false
 
       - name: Cache node modules
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         env:
           cache-name: cache-node-modules
         with:
@@ -483,7 +483,7 @@ jobs:
           tar -czvf ./medplum-agent-$MEDPLUM_VERSION-macos-arm64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-macos-arm64
 
       - name: Upload agent installer
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: medplum-agent-${{ env.MEDPLUM_VERSION }}-macos-arm64
           path: medplum-agent-${{ env.MEDPLUM_VERSION }}-macos-arm64.tar.gz

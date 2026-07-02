@@ -909,7 +909,7 @@ describe('Search matching', () => {
   test('Compartments', () => {
     const resource1: Patient = {
       resourceType: 'Patient',
-      meta: { compartment: [{ reference: 'Organization/123' }] },
+      meta: { compartment: [{ reference: 'Organization/125' }] },
     };
 
     const resource2: Patient = {
@@ -919,7 +919,7 @@ describe('Search matching', () => {
 
     const search1: SearchRequest = {
       resourceType: 'Patient',
-      filters: [{ code: '_compartment', operator: Operator.EQUALS, value: 'Organization/123' }],
+      filters: [{ code: '_compartment', operator: Operator.EQUALS, value: 'Organization/125' }],
     };
 
     const search2: SearchRequest = {
@@ -931,7 +931,7 @@ describe('Search matching', () => {
     // Support matching values without the resourceType prefix
     const search3: SearchRequest = {
       resourceType: 'Patient',
-      filters: [{ code: '_compartment', operator: Operator.EQUALS, value: '123' }],
+      filters: [{ code: '_compartment', operator: Operator.EQUALS, value: '125' }],
     };
 
     expect(matchesSearchRequest(resource1, search1)).toBe(true);

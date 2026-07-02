@@ -34,8 +34,8 @@ describe('Timeline', () => {
     const resource: Communication = {
       resourceType: 'Communication',
       meta: {
-        author: { reference: 'Practitioner/123' },
-        onBehalfOf: { reference: 'Practitioner/123' },
+        author: { reference: 'Practitioner/124' },
+        onBehalfOf: { reference: 'Practitioner/124' },
       },
     } as Communication;
 
@@ -59,7 +59,7 @@ describe('Timeline', () => {
     const resource: Communication = {
       resourceType: 'Communication',
       meta: {
-        author: { reference: 'Practitioner/123' },
+        author: { reference: 'Practitioner/124' },
       },
     } as Communication;
 

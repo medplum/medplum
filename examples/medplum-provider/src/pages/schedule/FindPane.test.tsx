@@ -4,15 +4,27 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { ReadablePromise } from '@medplum/core';
-import type { Appointment, CodeableConcept, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
+import type {
+  Appointment,
+  CodeableConcept,
+  Encounter,
+  HealthcareService,
+  PlanDefinition,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { createEncounter } from '../../utils/encounter';
+import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
 import { toCodeableReferenceLike } from '../../utils/servicetype';
 import { FindPane } from './FindPane';
+
+vi.mock('../../utils/encounter', () => ({ createEncounter: vi.fn() }));
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 const ServiceTypeReferenceURI = 'https://medlpum.com/fhir/service-type-reference';
@@ -105,7 +117,7 @@ describe('FindPane', () => {
   type SetupOptions = {
     schedule?: WithId<Schedule>;
     range?: { start: Date; end: Date };
-    onSuccess?: (results: { appointments: Appointment[]; slots: Slot[] }) => void;
+    onSuccess?: (results: { appointment: Appointment; slots: Slot[] }) => void;
   };
 
   const setup = (options: SetupOptions = {}): ReturnType<typeof render> => {
@@ -407,6 +419,117 @@ describe('FindPane', () => {
 
       // No scheduling params on the service or schedule, renders null
       await waitFor(() => expect(screen.getByTestId('FindPaneTestWrapper')).toBeEmptyDOMElement());
+    });
+  });
+
+  describe('Encounter navigation', () => {
+    const AMB = { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'AMB' };
+    const MOCK_ENCOUNTER: WithId<Encounter> = { resourceType: 'Encounter', id: 'enc-1', status: 'planned', class: AMB };
+
+    let serviceWithEncounterConfig: WithId<HealthcareService>;
+
+    beforeEach(async () => {
+      const planDef = await medplum.createResource<PlanDefinition>({
+        resourceType: 'PlanDefinition',
+        id: 'pd-1',
+        status: 'active',
+      });
+
+      serviceWithEncounterConfig = await medplum.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        name: 'Encounter Service',
+        extension: [
+          { url: SchedulingParametersURI, extension: [{ url: 'duration', valueDuration: { value: 30, unit: 'min' } }] },
+          { url: SchedulingEncounterCodingURI, valueCoding: AMB },
+          { url: SchedulingPlanDefinitionURI, valueReference: { reference: `PlanDefinition/${planDef.id}` } },
+        ],
+      });
+
+      // $book returns a booked appointment with exactly one practitioner and one patient so
+      // bookEncounter (inside BookAppointmentForm) will proceed to call createEncounter.
+      const bookedAppointment: Appointment = {
+        resourceType: 'Appointment',
+        id: 'booked-1',
+        status: 'booked',
+        start: '2024-01-16T10:00:00Z',
+        end: '2024-01-16T10:30:00Z',
+        participant: [
+          { actor: { reference: 'Practitioner/prac-1' }, status: 'accepted' },
+          { actor: { reference: `Patient/${HomerSimpson.id}` }, status: 'accepted' },
+        ],
+      };
+
+      medplum.post = vi.fn().mockResolvedValue({
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [{ resource: bookedAppointment }],
+      });
+
+      vi.mocked(createEncounter).mockResolvedValue(MOCK_ENCOUNTER);
+    });
+
+    // Renders FindPane inside a router that has a destination route for the encounter page
+    // so tests can assert that navigation actually happened.
+    const setupWithRoutes = (schedule: WithId<Schedule>, onSuccess = vi.fn()): void => {
+      render(
+        <MemoryRouter initialEntries={['/find']}>
+          <MedplumProvider medplum={medplum}>
+            <MantineProvider>
+              <Notifications />
+              <Routes>
+                <Route
+                  path="/find"
+                  element={<FindPane schedule={schedule} range={defaultRange} onSuccess={onSuccess} />}
+                />
+                <Route
+                  path="/Patient/:patientId/Encounter/:encounterId"
+                  element={<div data-testid="encounter-page" />}
+                />
+              </Routes>
+            </MantineProvider>
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    };
+
+    // Selects a patient and submits BookAppointmentForm.
+    const bookWithHomer = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
+      const patientInput = await screen.findByRole('searchbox');
+      await user.type(patientInput, 'Homer');
+      await waitFor(() => expect(screen.getByText('Homer Simpson')).toBeInTheDocument());
+      await user.click(screen.getByText('Homer Simpson'));
+      await user.click(screen.getByRole('button', { name: 'Create Appointment' }));
+    };
+
+    test('navigates to the encounter page and does not call onSuccess when an encounter is returned', async () => {
+      const user = userEvent.setup();
+      const onSuccess = vi.fn();
+      // Single service → auto-selected; $find returns mock appointments from the outer beforeEach.
+      setupWithRoutes(createScheduleWithServices([serviceWithEncounterConfig]), onSuccess);
+
+      // Click the first appointment slot that appeared from $find (there are two)
+      const apptButtons = await screen.findAllByRole('button', { name: /2024/i });
+      await user.click(apptButtons[0]);
+      await bookWithHomer(user);
+
+      await waitFor(() => expect(screen.getByTestId('encounter-page')).toBeInTheDocument());
+      // handleBookSuccess returns early after navigate, so onSuccess is never called
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
+
+    test('calls onSuccess and does not navigate when no encounter is returned', async () => {
+      const user = userEvent.setup();
+      const onSuccess = vi.fn();
+      // healthcareService has no encounter extensions → bookEncounter returns undefined.
+      // Single service → auto-selected, so we go straight to waiting for the appointment buttons.
+      setupWithRoutes(createScheduleWithServices([healthcareService]), onSuccess);
+
+      const apptButtons = await screen.findAllByRole('button', { name: /2024/i });
+      await user.click(apptButtons[0]);
+      await bookWithHomer(user);
+
+      await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+      expect(screen.queryByTestId('encounter-page')).not.toBeInTheDocument();
     });
   });
 

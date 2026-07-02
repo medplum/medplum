@@ -56,6 +56,10 @@ The supported options that can be specified by a Super Admin in `Project.systemS
 | `searchOnReader`               | boolean | If true, FHIR search requests (except in batch requests) are served by the reader database pool if available                                                                                                                              | false   |
 | `redactAuditEvents`            | boolean | If true, remove human-readable detail strings from AuditEvent resources saved to the database and logs                                                                                                                                    | false   |
 
+## Multi-factor authentication
+
+The MFA methods users in a Project can enroll in are controlled by the `allowedMfaMethods` key in `Project.setting`, a comma-delimited list of `totp` and/or `email`. When unset, only authenticator-app (TOTP) MFA is offered. See [Configuring allowed MFA methods](/docs/auth/mfa#configuring-allowed-mfa-methods) for details and examples, including how to enable email-based MFA.
+
 ## Project SMTP
 
 Projects can send email through their own SMTP relay instead of the server-wide email provider, configured via `Project.secret` entries. See [Project SMTP](/docs/user-management/project-smtp) for the full configuration reference. Operators can disable this fleet-wide with the [`allowProjectSmtp`](/docs/self-hosting/server-config#allowprojectsmtp) server config setting.

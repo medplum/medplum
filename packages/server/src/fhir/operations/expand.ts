@@ -61,11 +61,14 @@ type ValueSetExpandParameters = {
  */
 export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ValueSetExpandParameters>(operation, req);
-
   const filter = params.filter;
   if (filter !== undefined && typeof filter !== 'string') {
     return [badRequest('Invalid filter')];
   }
+  if (filter?.includes('\0')) {
+    throw new OperationOutcomeError(badRequest('Filter value cannot contain null bytes'));
+  }
+
   const repo = getAuthenticatedContext().repo;
   let valueSet = params.valueSet;
   if (!valueSet) {
@@ -364,6 +367,7 @@ function applyValueSetFilters(
         break;
       }
 
+      case 'exists':
       case '=':
       case 'in': {
         const property = codeSystem.property?.find((p) => p.code === condition.property);

@@ -1,0 +1,26 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.required {
+  color: var(--mantine-color-red-6);
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.dropzone {
+  border: 2px dashed var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-md);
+  padding: var(--mantine-spacing-xl) var(--mantine-spacing-md);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.dropzoneDragging {
+  border-color: var(--mantine-color-blue-5);
+  background-color: var(--mantine-color-blue-0);
+}

@@ -138,7 +138,9 @@ describe('Expunge', () => {
     if (opts.outcome === 'success') {
       expect(res.status).toBe(202);
 
-      await waitForAsyncJob(res.headers['content-location'], app, accessTokenToUse);
+      // Project expunge destroys the caller's client/membership; poll with super admin credentials.
+      const pollAccessToken = opts.superAdmin ? accessTokenToUse : superAdminAccessToken;
+      await waitForAsyncJob(res.headers['content-location'], app, pollAccessToken);
 
       const mainResourcesExists = opts.project === 'linked';
       const linkedResourcesExist = opts.project === 'main';

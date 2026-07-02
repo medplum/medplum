@@ -79,7 +79,7 @@ describe('Expand', () => {
     expect(res.body.expansion.contains[0].system).toBe(LOINC);
   });
 
-  test('Invalid filter', async () => {
+  test('Multiple filters', async () => {
     const res = await request(app)
       .get(
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
@@ -89,6 +89,18 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
     expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('filter');
+  });
+
+  test('Invalid filter', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
+          'http://hl7.org/fhir/ValueSet/observation-codes'
+        )}&filter=%00a`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('null byte');
   });
 
   test('Success', async () => {
@@ -212,7 +224,7 @@ describe('Expand', () => {
     expect(contains?.length).toBeGreaterThan(0);
     for (const code of contains as ValueSetExpansionContains[]) {
       if (code.display === null) {
-        fail(`Found null display value for coding ${code.system}|${code.code}`);
+        expect.fail(`Found null display value for coding ${code.system}|${code.code}`);
       }
     }
   });
@@ -929,6 +941,67 @@ describe('Expand', () => {
     const expansion = res2.body.expansion as ValueSetExpansion;
     expect(expansion.contains).toHaveLength(1);
     expect(expansion.contains?.[0]?.code).toStrictEqual('ERECCAP');
+  });
+
+  test('Property filter with exists=true', async () => {
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.com/fhir/ValueSet/property-filter' + randomUUID(),
+      compose: {
+        include: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm',
+            filter: [{ property: 'status', op: 'exists', value: 'true' }],
+          },
+        ],
+      },
+    };
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(valueSet);
+    expect(res1.status).toBe(201);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${valueSet.url}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toStrictEqual(200);
+    const expansion = res2.body.expansion as ValueSetExpansion;
+    // Only one code in the set has a `status` property
+    expect(expansion.contains).toHaveLength(1);
+    expect(expansion.contains?.[0]?.code).toStrictEqual('ERECCAP');
+  });
+
+  test('Property filter with exists=false', async () => {
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.com/fhir/ValueSet/property-filter' + randomUUID(),
+      compose: {
+        include: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm',
+            filter: [{ property: 'status', op: 'exists', value: 'false' }],
+          },
+        ],
+      },
+    };
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(valueSet);
+    expect(res1.status).toBe(201);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${valueSet.url}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toStrictEqual(200);
+    const expansion = res2.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(160);
+    expect(expansion.contains?.find((c) => c.code === 'ERECCAP')).toBeUndefined();
   });
 
   test('Reference to other ValueSet', async () => {

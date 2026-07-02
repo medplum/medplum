@@ -9,7 +9,6 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
-import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
@@ -18,7 +17,8 @@ import { main } from '../index';
 import { mockReadline } from './test.utils';
 
 vi.mock('node:readline');
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+
+const fetchMock = vi.spyOn(globalThis, 'fetch') as unknown as Mock;
 
 describe('init command', () => {
   const configFiles = new Set<string>();
@@ -50,8 +50,8 @@ describe('init command', () => {
   });
 
   beforeEach(() => {
-    (fetch as unknown as Mock).mockClear();
-    (fetch as unknown as Mock).mockResolvedValueOnce({
+    fetchMock.mockClear();
+    fetchMock.mockResolvedValueOnce({
       json: vi.fn().mockResolvedValueOnce([{ tag_name: 'v2.4.17' }]),
     });
 

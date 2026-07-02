@@ -1,0 +1,309 @@
+---
+slug: ble-to-fhir-anybio-medplum
+title: 'From BLE to FHIR: Streaming Clinical-Grade Biosignals with AnyBio + Medplum'
+authors: sainejob
+tags: [integration, fhir-datastore, interop]
+---
+
+If you're building a digital health product, you've probably hit the same wall everyone hits: the gap between a wearable's raw signal and a clinical-grade artifact in the EHR that is actionable by a clinician. 
+
+There's a lot of plumbing in that gap: device integration, real-time ingest, signal processing, derived metrics, provenance, governance, FHIR projection, US Core conformance, and most of it is undifferentiated infrastructure that takes a year or more to build properly.
+
+[AnyBio](https://anybio.io) handles the upstream half of that pipeline. [Medplum](https://medplum.com) handles the downstream half. 
+
+Together they give you a standards-based path from a BLE sensor on a patient's wrist to a [US-Core-conformant](https://build.fhir.org/ig/HL7/US-Core/index.html) Observation in a queryable FHIR record - and on the AnyBio side, wiring up that path is a configuration step, not an engineering project.
+
+This post walks through what each side does and how the data is shaped, then gives you two ways in: a two-minute path that exports a synthetic demo run to your own Medplum instance with zero setup, and the full production wire-up. And - because "it works in the demo" is not the same as "I'd run this in production" - how the pipeline behaves when things go wrong.
+
+{/* truncate */}
+
+## The pipeline at a glance
+
+```
+BLE device / wearable
+  -> AnyBio SDK: Web Bluetooth (browser) or iOS (real-time stream, zero-data-loss buffer)
+    -> AnyBio ingest (multi-device session handling: time-aligns and
+        deduplicates concurrent streams from multiple sensors)
+      -> Signal pipeline (DSP, partner algorithms via WASM)
+        -> Composite + derived metrics (multi-modal correlation)
+          -> Governance + audit (BAA, chain-of-custody)
+            -> FHIR projection (US Core 6.1.0, multi-coded)
+              -> Medplum (FHIR R4 transaction Bundle POST)
+```
+
+Two things worth saying up front:
+
+1. **FHIR is the delivery format, not the work.** By the time data reaches Medplum it has been through a real-time pipeline that includes provenance stamping, algorithm execution, and US Core profile validation. The "FHIR-native" claim has teeth because the pipeline is engineered around producing valid resources - not because we serialize to JSON at the end.  
+     
+2. **Medplum is the right downstream for this.** It's open-source, fully FHIR-native on R4 (4.0.1), runs a permissive but conformant validator, and - critically for development - auto-creates referenced Patient resources on first write, so you can stand up an end-to-end demo without wiring identity matching first. (More on why that's a dev-only convenience below.)
+
+## What AnyBio sends to Medplum
+
+The standard payload is a FHIR R4 **transaction Bundle** containing:
+
+- **Observation** resources - one per measurement or derived metric: vital signs, HRV, derived classifications, multi-modal composites.  
+- **DocumentReference + Attachment** - for telemetry strips (ECG, EDA, PPG waveforms) rendered as PNG/PDF artifacts.  
+- **Provenance** - chain-of-custody from device through algorithm to derived artifact.  
+- **Patient** reference - a logical reference; Medplum resolves or auto-creates it.
+
+Every Observation carries its lineage and its reproducibility metadata using **standard FHIR elements** - not custom fields:
+
+- **Multi-coded `code`** - LOINC primary, [AnyBio CodeSystem](https://api.anybio.io/fhir/CodeSystem/biosignal) secondary. The AnyBio CodeSystem lives at a public, dereferenceable canonical URL (`https://api.anybio.io/fhir/CodeSystem/biosignal`) generated from our biosignal registry, so `Coding.system` resolves to a real CodeSystem resource.  
+- **`derivedFrom`** - derived metrics reference the source Observation(s) they were computed from, so any classification traces back to the raw signal it came from. This is FHIR's standard `Observation.derivedFrom`, a `Reference(Observation)`.  
+- **`device`** - points to a `Device` resource representing the algorithm/sensor that produced the value, with the algorithm version in `Device.version` (e.g., `anybio-hrv-v3.2`). That's where reproducibility lives.  
+- **`Provenance`** - the emitted Provenance resource stamps the full device -> algorithm -> artifact chain with timestamps and version identifiers, so "which version produced this value" is answerable from the record itself.  
+- **US Core `meta.profile`** - asserted per resource type and validated in CI (details in the next section).
+
+Here's a heart-rate Observation on the wire - a primary vital sign, with a `device` reference for reproducibility:
+
+```json
+{
+  "resourceType": "Observation",
+  "status": "final",
+  "meta": {
+    "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-heart-rate"]
+  },
+  "category": [{
+    "coding": [{
+      "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+      "code": "vital-signs"
+    }]
+  }],
+  "code": {
+    "coding": [
+      { "system": "http://loinc.org", "code": "8867-4", "display": "Heart rate" },
+      { "system": "https://api.anybio.io/fhir/CodeSystem/biosignal",
+        "code": "heart-rate", "display": "Heart rate" }
+    ]
+  },
+  "subject": { "reference": "Patient/<patient-id>" },
+  "effectiveDateTime": "2026-06-15T14:32:11Z",
+  "valueQuantity": {
+    "value": 72,
+    "unit": "beats/minute",
+    "system": "http://unitsofmeasure.org",
+    "code": "/min"
+  },
+  "device": { "reference": "Device/<algorithm-device-id>" }
+}
+```
+
+A **derived** metric - say an HRV-based autonomic-state classification - links back to its sources via `derivedFrom` and names the producing pipeline via `method` and `device`:
+
+```json
+{
+  "resourceType": "Observation",
+  "status": "final",
+  "category": [{
+    "coding": [{
+      "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+      "code": "procedure"
+    }]
+  }],
+  "code": {
+    "coding": [
+      { "system": "https://api.anybio.io/fhir/CodeSystem/biosignal",
+        "code": "hrv-autonomic-state", "display": "HRV-based autonomic state" }
+    ]
+  },
+  "subject": { "reference": "Patient/<patient-id>" },
+  "effectiveDateTime": "2026-06-15T14:32:11Z",
+  "method": {
+    "coding": [
+      { "system": "https://api.anybio.io/fhir/CodeSystem/method",
+        "code": "anybio-hrv-v3.2", "display": "AnyBio HRV pipeline v3.2" }
+    ]
+  },
+  "device": { "reference": "Device/<algorithm-device-id>" },
+  "derivedFrom": [
+    { "reference": "Observation/<source-rr-interval-obs-id>" }
+  ],
+  "valueCodeableConcept": {
+    "coding": [
+      { "system": "https://api.anybio.io/fhir/CodeSystem/autonomic-state",
+        "code": "balanced", "display": "Balanced" }
+    ]
+  }
+}
+```
+
+Blood pressure is the case worth showing explicitly, because it's the classic conformance trap: there is **no top-level value**, only `component` entries. AnyBio ships it as a `us-core-blood-pressure` panel:
+
+```json
+{
+  "resourceType": "Observation",
+  "status": "final",
+  "meta": {
+    "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure"]
+  },
+  "category": [{
+    "coding": [{
+      "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+      "code": "vital-signs"
+    }]
+  }],
+  "code": {
+    "coding": [
+      { "system": "http://loinc.org", "code": "85354-9", "display": "Blood pressure panel" }
+    ]
+  },
+  "subject": { "reference": "Patient/<patient-id>" },
+  "effectiveDateTime": "2026-06-15T14:32:11Z",
+  "component": [
+    {
+      "code": { "coding": [
+        { "system": "http://loinc.org", "code": "8480-6", "display": "Systolic blood pressure" }
+      ]},
+      "valueQuantity": {
+        "value": 118, "unit": "mmHg",
+        "system": "http://unitsofmeasure.org", "code": "mm[Hg]"
+      }
+    },
+    {
+      "code": { "coding": [
+        { "system": "http://loinc.org", "code": "8462-4", "display": "Diastolic blood pressure" }
+      ]},
+      "valueQuantity": {
+        "value": 76, "unit": "mmHg",
+        "system": "http://unitsofmeasure.org", "code": "mm[Hg]"
+      }
+    }
+  ]
+}
+```
+
+Waveform artifacts ship as DocumentReference + Attachment, with the source signal coded in `category`. For dense numeric series (the raw samples behind those strips), FHIR's `valueSampledData` packs a regularly-sampled run into a single Observation — see Medplum's [Using valueSampledData for Time Series](/docs/charting/chart-data-model#using-valuesampleddata-for-time-series).
+
+## Conformance and validation - the part you can check
+
+Conformance here is structural, not aspirational, and we've tried to make every claim verifiable rather than asking you to take our word for it:
+
+- **Registry-driven projection.** Adding a new biosignal is a row in our registry, not a code change. The projection logic is identical for every signal type, which is what keeps conformance consistent across the board.  
+- **Validated in CI against the real tool.** Every resource type is validated against US Core 6.1.0 using the official **HL7 FHIR Validator** (`validator_cli.jar`), and the build fails on any validation *error*. We track warnings separately - US Core emits informational warnings even on fully conformant resources, so "zero errors" is the meaningful bar, and that's the one CI enforces.  
+- **Published conformance.** AnyBio exposes a `CapabilityStatement` describing the resources, profiles, and interactions it produces, so you can diff our asserted conformance against what actually lands in your server.
+
+**A note on the version pin.** We target **US Core 6.1.0** deliberately - not because it's the newest (it isn't; US Core is now published through 8.0.0, with 9.0.0 in ballot), but because 6.1.0 is the version aligned with ONC's (g)(10) certification criteria that production EHRs are held to. Medplum's own API is an open-source implementation of those same (g)(10) criteria, so the two line up by design. US Core remains FHIR R4-based - the move to R6 is under consideration but has no timeline - so R4 here is the standard, not a legacy choice. When the certification baseline moves, the registry-driven projection lets us re-target with a profile bump rather than a rewrite.
+
+## Try it in two minutes - no hardware, no code
+
+The fastest way to watch US-Core Observations land in your own Medplum is the Device Console demo export. It runs a synthetic biosignal scenario in your browser and ships the result to your sandbox Medplum, so you can see the conformant output end to end before wiring up a single device.
+
+1. **Sign in.** Go to [`secure.anybio.io`](https://secure.anybio.io) and sign in with Apple, Google, or Microsoft. A sandbox environment is provisioned for you automatically.  
+2. **Run the demo.** Open the **Device Console** and click **Try Demo**. AnyBio streams a synthetic scenario (ECG, PPG, HR, SpO2) in the browser and shows a live summary with the derived metrics.  
+3. **Export.** On the summary, click **Export to EHR / Medplum** and paste your sandbox Medplum **client ID**, **client secret**, and **FHIR base URL** (prefilled with `https://api.medplum.com/fhir/R4`).  
+4. **Watch it land.** AnyBio builds a US-Core **transaction Bundle** from the demo's Observations using the *same registry-driven projection production uses*, exchanges a one-shot OAuth token, and POSTs it to your Medplum. The panel reports the created resource references, or the receiver's `OperationOutcome` if Medplum rejects the Bundle.
+
+Because the demo data is **synthetic**, there is no PHI and no BAA required: it maps to Medplum's auto-create-Patient (`medplum_demo`) mode, which stands up the referenced `Patient` on first write. What lands is real and conformant, not a simplified mock - it goes through the same registry-driven projection and US Core 6.1.0 validation the production pipeline uses.
+
+The demo exports the run's scalar **Observations** (heart rate, HRV, SpO2, …) with full **Provenance** and the synthetic Patient. Waveform artifacts (`DocumentReference` telemetry strips) and panel signals like blood pressure belong to the production **episode** pipeline - which renders strips from real signal data - not the synthetic demo, so they don't appear in the demo export (blood pressure comes back in the response's `skipped` list instead).
+
+Behind the button is a single stateless call (`POST /api/v1/demo/fhir-export`) that takes the demo's features plus your pasted Medplum credentials, projects, and forwards. The credentials are used once for the token exchange and never stored, and the endpoint is locked to Medplum hosts.
+
+## Wire it for production
+
+The two-minute demo skips the upstream half (it uses synthetic data in the browser). For a real deployment, here is the full path. On the AnyBio side it is configuration, not an engineering project.
+
+### 1. Create your AnyBio account
+
+[`secure.anybio.io`](https://secure.anybio.io) -> social sign-in -> you land in the dashboard with a **sandbox** environment. Copy a **developer key** (`sk_sandbox_*`) from **Settings -> API Keys**. It is the bearer token for every AnyBio API call below.
+
+### 2. Stand up Medplum
+
+If you don't already have a Medplum project, the fastest path is the hosted version at [`app.medplum.com`](https://app.medplum.com) — [register a new project](/docs/tutorials/register) in a couple of minutes. Then create a **ClientApplication** from the **Project Admin** page; that gives you a `client_id` and `client_secret` for the [OAuth 2.0 Client Credentials flow](/docs/auth/client-credentials). Medplum's hosted FHIR base URL is `https://api.medplum.com/fhir/R4` and its token endpoint is `https://api.medplum.com/oauth2/token`; tokens are issued with a one-hour lifetime (`expires_in: 3600`).
+
+### 3. Get a biosignal flowing into AnyBio
+
+Connect a device and start streaming. The most accessible path needs no native app: **Web Bluetooth** via AnyBio's web SDK. Drop the CDN script (`https://cdn.anybio.io/biosdk-web/v1/bioui.js`), configure a `<bio-provider>` with your sandbox key, and pair a supported BLE device straight from the browser; frames stream to `POST /ingest/raw-packet`. For production real-device capture the **iOS SDK** is the native path; for no-hardware testing the **synthetics** generator simulates a device. Either way the signal attaches to an **episode** under a program/profile you enroll a patient into. That episode is what the export fires on.
+
+### 4. Register the Medplum endpoint with AnyBio
+
+Create an **OAuth provider** holding your Medplum `client_id` / `client_secret`, then register the FHIR config (credentials are referenced by FK, not inlined):
+
+```
+POST /api/v1/fhir-medplum-configs
+{
+  "base_url": "https://api.medplum.com/fhir/R4",
+  "oauth_provider_id": <id>,
+  "binding_mode": "medplum_demo"
+}
+```
+
+`binding_mode` is `medplum_demo` for development (Medplum auto-creates the `Patient`) and `provider_logical` for production, where a provider-issued logical identifier is used because patient identity is owned by an upstream EHR.
+
+### 5. Create the export and attach a trigger
+
+```
+POST /api/v1/data-exports
+{
+  "kind": "fhir_medplum",
+  "target_ref": { "kind": "fhir_medplum", "fhir_medplum_config_id": "<config-id>" }
+}
+```
+
+Then attach the export to your program by adding it to the profile's `spec.exports[]` with a trigger such as `on_episode_end`. The trigger lives on the profile binding, not on the `data_export` itself.
+
+### 6. Close an episode and verify
+
+Stream some data, then close the episode (manually or via an end-condition). `on_episode_end` fires, AnyBio builds the transaction Bundle and POSTs it to Medplum under your cached OAuth token (Redis, 1h TTL, auto-refreshed). Confirm the round-trip:
+
+```shell
+curl -X GET "https://api.medplum.com/fhir/R4/Observation?subject=Patient/<id>" \
+  -H "Authorization: Bearer <medplum-access-token>"
+```
+
+You should see the Observations AnyBio wrote, with US Core profile metadata, multi-coded `code`, the `device` and `derivedFrom` links, the Provenance resource, and any DocumentReferences for waveform artifacts.
+
+## What happens when it breaks
+
+A happy-path demo tells you the integration *can* work. Here's how it behaves when it doesn't - which is the part that decides whether you'd put it in front of patients.
+
+**Transaction Bundles are all-or-nothing.** A `transaction` Bundle either fully applies or fully rejects; one invalid resource or one broken reference fails the entire episode's export, and the server returns an `OperationOutcome` describing why. AnyBio validates the Bundle against US Core *in-pipeline before* the POST, so most of this is caught early. If Medplum still rejects it, the Bundle is quarantined with the returned `OperationOutcome` attached - so you can see exactly which resource and which constraint failed instead of reverse-engineering it from logs.
+
+**Transient failures retry; persistent ones dead-letter.** Network errors, 5xx responses, and expired tokens trigger exponential backoff with jitter and a capped retry count. A 401 refreshes the token and retries. Once retries are exhausted, the Bundle moves to a dead-letter queue and raises an alert rather than being silently dropped.
+
+**Re-fired triggers don't create duplicates.** Idempotency is the failure mode people forget until they have three copies of every heart-rate reading. If a trigger fires twice - a retry after an ambiguous timeout, a replayed episode close - the write has to be a no-op, not a duplicate. AnyBio stamps a stable business `identifier` on every resource and writes with conditional semantics: `ifNoneExist` on that identifier (the server no-ops if a matching resource already exists), or a client-assigned ID via `PUT` (a replay upserts rather than duplicates). Either way, replaying a Bundle is safe.
+
+**Late and out-of-order data resolve cleanly.** Biosignals don't always arrive in order - a buffer flush after a connectivity gap can backfill readings minutes late. Because every Observation carries its own `effectiveDateTime` and stable identifier, a late write is just an idempotent upsert keyed on time and identifier, and downstream queries order by `effectiveDateTime`, not by when the data happened to land.
+
+## Security and governance
+
+This is clinical data, so the controls matter as much as the pipeline:
+
+- **Authentication.** Client secret is fine for development; for production, JWT client assertion (RFC 7523, asymmetric keys) is the stronger option - no shared secret crosses the wire, and you can rotate keys per instance. Medplum supports both and mandates JWT-based client auth for SMART Backend Services-style integrations.  
+- **Transport and logging.** PHI travels over TLS only, and identifiers go in the request body or headers - never in URLs or query strings, so PHI never lands in access logs.  
+- **Audit.** Every write Medplum performs generates an `AuditEvent`, and Medplum can strip human-readable detail (patient names, clinical descriptions) from those events while retaining the machine-readable identifiers - so the audit trail itself isn't a disclosure risk. On top of that, AnyBio's `Provenance` gives you clinical chain-of-custody from device to derived artifact: auditing any signal back to its origin is one query.  
+- **BAA before PHI.** A Business Associate Agreement is signed before any PHI flows. The `medplum_demo` auto-create mode is dev-only for exactly this reason - it's built for synthetic and test data, not real patients.
+
+## Why this composition works
+
+- **Conformance is structural, not bolted on.** The projection is registry-driven and validated against US Core 6.1.0 in CI at zero errors. Medplum's permissive-but-conformant validator accepts that output cleanly.  
+- **Provenance survives the wire.** The Provenance resource chains device -> algorithm -> artifact with timestamps and version identifiers. Auditing a clinical signal back to its origin is a single query, not a forensics exercise.  
+- **The pipeline does the work; FHIR delivers it.** What makes AnyBio + Medplum useful isn't that FHIR works - that's table stakes. It's that real-time biosignals become US-Core-conformant clinical artifacts *before* they ever hit FHIR. The wire format is the easy part.
+
+The same conformant Bundle is also the starting point for stricter downstream EHRs: the projection is designed so that Epic and Cerner targets are a matter of adapter-specific profiling on top of the same US Core base, rather than a separate pipeline. 
+
+## What's next
+
+We're using the Medplum integration as the reference implementation for AnyBio's broader EHR integration framework. The same `ExportAdapter` pattern that wires up Medplum is what we're building other connectors with and HL7v2-over-MLLP on. If you're building on AnyBio and want to write to a different FHIR destination, the lift is configuration, not engineering.
+
+## Get started
+
+**Try it in two minutes — no hardware, no code:**
+
+1. Sign in at [secure.anybio.io](https://secure.anybio.io).
+2. Open the **Device Console** and click **Try Demo**.
+3. Click **Export to EHR / Medplum** and paste your sandbox Medplum credentials.
+
+## Related reading
+
+To go deeper on the Medplum side of the pipeline:
+
+- [Working with FHIR Data](/docs/fhir-datastore/working-with-fhir) — how Medplum stores and serves FHIR R4.
+- [Chart Data Model](/docs/charting/chart-data-model) — modeling Observations and vital signs, including [`valueSampledData` for time series](/docs/charting/chart-data-model#using-valuesampleddata-for-time-series).
+- [Commonly Used Terminologies](/docs/terminology/common-terminologies) — LOINC, SNOMED CT, and UCUM, and how multi-coded `code` works.
+- [Batch & Transaction Requests](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions) and [Conditional Batch Actions](/docs/fhir-datastore/fhir-batch-requests#conditional-batch-actions) — atomic Bundles and idempotent (`ifNoneExist`) writes.
+- [FHIR Profiles & Validation](/docs/fhir-datastore/profiles) and [Understanding USCDI Data Classes](/docs/fhir-datastore/understanding-uscdi-dataclasses) — US Core conformance.
+- [Patient Deduplication](/docs/fhir-datastore/patient-deduplication) — identity matching versus auto-create.
+- [External Files and Document References](/docs/fhir-datastore/external-documents) — storing waveform strips and other binary artifacts.
+- [Client Credentials](/docs/auth/client-credentials) and [Client Assertion (JWT)](/docs/auth/client-assertion) — OAuth for backend integrations.
+- [ONC Certification](/docs/compliance/onc) — Medplum's (g)(10) implementation.
