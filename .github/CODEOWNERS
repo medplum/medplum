@@ -1,16 +1,29 @@
 # Medplum Code Owners
 # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#codeowners-syntax
 
-# This is a comment.
 # Each line is a file pattern followed by one or more owners.
-
 # Order is important; the last matching pattern takes the most precedence.
+# GitHub CODEOWNERS computes required reviewers per-file. The required set for a PR is the union
+# of each changed file's owner (last matching pattern wins).
 
 # Dev is the default owner for everything in the repo.
 * @medplum/dev
 
 # FDE is the default owner for the "examples" directory.
-/examples/ @medplum/dev @medplum/fde
+/examples/ @medplum/fde
 
 # Both Dev and FDE own the packages/docs directory.
 /packages/docs/ @medplum/dev @medplum/fde
+
+# Product owns the frontend packages. A PR that only touches these packages
+# needs review from Product alone; touching anything else pulls in that file's owner too.
+/packages/react/ @medplum/product
+/packages/react-hooks/ @medplum/product
+/packages/app/ @medplum/product
+
+# A PR only touching these packages needs review from Integrations alone.
+/packages/dosespot-core/ @medplum/integrations
+/packages/dosespot-react/ @medplum/integrations
+/packages/health-gorilla-core/ @medplum/integrations
+/packages/health-gorilla-react/ @medplum/integrations
+/packages/scriptsure-react/ @medplum/integrations
