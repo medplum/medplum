@@ -43,6 +43,7 @@ const unguardedMembers = new Set<PropertyKey>([
   'addSecurityFilters',
   'isClosed',
   'validateBinarySecurityContext',
+  'clone',
 ]);
 
 /**
@@ -107,7 +108,6 @@ const guardedPatient: WithId<Patient> = { resourceType: 'Patient', id: NIL };
  * is rejected during a transaction callback regardless of argument validity.
  */
 const guardedInvocations: MethodInvocation[] = [
-  { name: 'clone', kind: 'method', invoke: (repo) => repo.clone() },
   { name: 'getSystemRepo', kind: 'method', invoke: (repo) => repo.getSystemRepo() },
   { name: 'setMode', kind: 'method', invoke: (repo) => repo.setMode('reader') },
   { name: 'getDatabaseClient', kind: 'method', invoke: (repo) => repo.getDatabaseClient(DatabaseMode.WRITER) },
