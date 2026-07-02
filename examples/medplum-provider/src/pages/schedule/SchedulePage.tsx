@@ -22,6 +22,7 @@ import { Calendar } from '../../components/Calendar';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
 import type { Range } from '../../types/scheduling';
+import { encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { mergeOverlappingSlots } from '../../utils/slots';
 import { FindPane } from './FindPane';
@@ -175,30 +176,30 @@ export function SchedulePage(): JSX.Element | null {
   // When an appointment is selected, navigate to the detail page
   const handleSelectAppointment = useCallback(
     async (appointment: Appointment) => {
+      if (isResourceWithId(appointment)) {
+        setAppointmentDetails(appointment);
+        appointmentDetailsHandlers.open();
+      }
+    },
+    [appointmentDetailsHandlers]
+  );
+
+  const handleDoubleClickAppointment = useCallback(
+    async (appointment: Appointment) => {
       if (!isResourceWithId(appointment)) {
         showErrorNotification("Can't navigate to unsaved appointment");
         return;
       }
-      const reference = getReferenceString(appointment);
-
       try {
-        const encounter = await medplum.searchOne('Encounter', [['appointment', reference]]);
-
-        if (!encounter) {
-          setAppointmentDetails(appointment);
-          appointmentDetailsHandlers.open();
-          return;
-        }
-
-        const patient = encounter.subject;
-        if (patient?.reference) {
-          await navigate(`/${patient.reference}/Encounter/${encounter.id}`);
+        const encounter = await medplum.searchOne('Encounter', { appointment: getReferenceString(appointment) });
+        if (encounter) {
+          await navigate(encounterUrl(encounter));
         }
       } catch (error) {
         showErrorNotification(error);
       }
     },
-    [medplum, navigate, appointmentDetailsHandlers]
+    [medplum, navigate]
   );
 
   const handleAppointmentUpdate = useCallback(
@@ -277,6 +278,7 @@ export function SchedulePage(): JSX.Element | null {
             appointments={appointments ?? []}
             onRangeChange={setRange}
             className={classes.calendar}
+            onDoubleClickAppointment={handleDoubleClickAppointment}
           />
 
           {schedule && range && (
@@ -288,6 +290,11 @@ export function SchedulePage(): JSX.Element | null {
               className={classes.findPane}
             />
           )}
+        </div>
+        <div>
+          <Text size="sm" color="dimmed" fs="italic">
+            Hint: Double-click on an appointment to jump to the encounter details.
+          </Text>
         </div>
       </Stack>
 
