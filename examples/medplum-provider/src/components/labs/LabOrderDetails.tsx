@@ -23,12 +23,13 @@ import type {
   Reference,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { AttachmentDisplay, DiagnosticReportDisplay, useMedplum, useResource } from '@medplum/react';
+import { AttachmentDisplay, useMedplum, useResource } from '@medplum/react';
 import { IconCheck, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
 import { showErrorNotification } from '../../utils/notifications';
+import { LabReportContent } from './LabReportContent';
 
 interface LabOrderDetailsProps {
   order: ServiceRequest;
@@ -802,52 +803,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             )}
 
             {/* Report Tab Content - for completed items */}
-            {activeDetailTab === 'report' && primaryReport && (
-              <Stack gap="sm" mb="xl">
-                {/* Results PDF */}
-                {primaryReport?.presentedForm && primaryReport.presentedForm.length > 0 && (
-                  <>
-                    <Stack gap="lg" mb="xl">
-                      <Text fw={800} size="md" pb="0">
-                        Lab Document
-                      </Text>
-                      <Stack gap="md">
-                        {primaryReport.presentedForm.map((form, index) => (
-                          <Stack key={index} gap="xs">
-                            <div
-                              style={{
-                                height: '600px',
-                                borderRadius: '4px',
-                                overflow: 'hidden',
-                                border: '1px solid #3C3C3C',
-                              }}
-                            >
-                              <style>
-                                {`
-                              div[data-testid="attachment-iframe"] {
-                                height: 600px !important;
-                              }
-                              div[data-testid="attachment-iframe"] iframe {
-                                height: 600px !important;
-                              }
-                            `}
-                              </style>
-                              <AttachmentDisplay value={form} />
-                            </div>
-                          </Stack>
-                        ))}
-                      </Stack>
-                    </Stack>
-                  </>
-                )}
-
-                {primaryReport.result && primaryReport.result.length > 0 && (
-                  <Stack pt="md">
-                    <DiagnosticReportDisplay value={primaryReport} />
-                  </Stack>
-                )}
-              </Stack>
-            )}
+            {activeDetailTab === 'report' && primaryReport && <LabReportContent report={primaryReport} />}
           </Stack>
         </Stack>
       </Paper>
