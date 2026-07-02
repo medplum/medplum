@@ -201,6 +201,7 @@ describe('SchedulePage', () => {
       });
 
       // The spinner must clear and the calendar must remain visible
+      await waitFor(() => expect(screen.queryByRole('progressbar')).not.toBeInTheDocument());
       await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
     });
 
