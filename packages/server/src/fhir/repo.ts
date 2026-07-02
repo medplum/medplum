@@ -42,13 +42,8 @@ import {
   toTypedValue,
   validateResourceType,
 } from '@medplum/core';
-import type {
-  CreateResourceOptions,
-  ReadHistoryOptions,
-  RepositoryMode,
-  UpdateResourceOptions,
-} from '@medplum/fhir-router';
-import { FhirRepository } from '@medplum/fhir-router';
+import type { CreateResourceOptions, ReadHistoryOptions, UpdateResourceOptions } from '@medplum/fhir-router';
+import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
@@ -119,7 +114,12 @@ import {
   getResourceCacheEntry,
   setResourceCacheEntry,
 } from './repository/resource-cache';
-import { buildDeletedResourceRow, buildResourceRow } from './repository/row-builder';
+import {
+  buildDeletedResourceRow,
+  buildDeleteHistoryContent,
+  buildResourceRow,
+  parseHistoryContent,
+} from './repository/row-builder';
 import { validateRepositoryResource } from './repository/validation';
 import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
@@ -301,8 +301,9 @@ export class Repository extends FhirRepository implements Disposable {
    *                Project.features (https://github.com/medplum/medplum/pull/9049)
    *                Login.preAuthorizedCodeHash (https://github.com/medplum/medplum/pull/9231)
    *                Project.link (https://github.com/medplum/medplum/pull/9159)
+   * 16. 06/30/26 - Added search param: Provenance-activity (https://github.com/medplum/medplum/pull/9709)
    */
-  static readonly VERSION: number = 15;
+  static readonly VERSION: number = 16;
 
   /**
    * Constructs a new Repository instance.
@@ -393,7 +394,7 @@ export class Repository extends FhirRepository implements Disposable {
 
   setMode(mode: RepositoryMode): void {
     this.assertUsable();
-    this.connection.mode = mode;
+    this.connection.setMode(mode);
   }
 
   async recordFhirQuota(points: number): Promise<void> {
@@ -452,6 +453,8 @@ export class Repository extends FhirRepository implements Disposable {
     if (options?.assignedId && resource.id && !this.context.superAdmin) {
       // NB: To be removed after proper client assigned ID support is added
       const systemRepo = this.getSystemRepo();
+      // ensure writer so the existing read goes to the writer
+      systemRepo.setMode(RepositoryMode.WRITER);
       try {
         const existing = await systemRepo.readResourceImpl(resource.resourceType, resource.id);
         if (existing) {
@@ -725,8 +728,10 @@ export class Repository extends FhirRepository implements Disposable {
       const entries: BundleEntry<T>[] = [];
 
       for (const row of rows) {
-        const resource = row.content ? this.removeHiddenFields(JSON.parse(row.content as string)) : undefined;
-        const outcome: OperationOutcome = row.content
+        const parsed = parseHistoryContent(row.content as string);
+        const isDeleted = parsed.meta?.deleted;
+        const resource = !isDeleted ? this.removeHiddenFields(parsed as T) : undefined;
+        const outcome: OperationOutcome = !isDeleted
           ? allOk
           : {
               resourceType: 'OperationOutcome',
@@ -744,8 +749,8 @@ export class Repository extends FhirRepository implements Disposable {
         entries.push({
           fullUrl: getFullUrl(resourceType, row.id),
           request: {
-            method: 'GET',
-            url: `${resourceType}/${row.id}/_history/${row.versionId}`,
+            method: isDeleted ? 'DELETE' : 'GET',
+            url: isDeleted ? `${resourceType}/${row.id}` : `${resourceType}/${row.id}/_history/${row.versionId}`,
           },
           response: {
             status: getStatus(outcome).toString(),
@@ -803,9 +808,13 @@ export class Repository extends FhirRepository implements Disposable {
         throw new OperationOutcomeError(notFound);
       }
 
-      const result = await this.authorizeBinarySecurityContext(
-        this.removeHiddenFields(JSON.parse(rows[0].content as string))
-      );
+      const parsed = parseHistoryContent(rows[0].content as string);
+      // FHIR vread of a delete version returns 410 Gone with no resource body.
+      if (parsed.meta?.deleted) {
+        throw new OperationOutcomeError(gone);
+      }
+
+      const result = (await this.authorizeBinarySecurityContext(this.removeHiddenFields(parsed as T))) as WithId<T>;
       const durationMs = Date.now() - startTime;
       this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });
       return result;
@@ -875,6 +884,8 @@ export class Repository extends FhirRepository implements Disposable {
     create: boolean,
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
+    // Promote before pre-commit validation and existing-resource reads.
+    this.setMode(RepositoryMode.WRITER);
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
     let validatedResource = this.checkResourcePermissions(resource, interaction);
     this.validateBinarySecurityContext(validatedResource);
@@ -913,6 +924,7 @@ export class Repository extends FhirRepository implements Disposable {
       lastUpdated: this.getLastUpdated(existing, validatedResource),
       author: this.getAuthor(),
       onBehalfOf: this.context.onBehalfOf,
+      deleted: undefined,
     };
 
     const result = { ...updated, meta: resultMeta };
@@ -1222,6 +1234,8 @@ export class Repository extends FhirRepository implements Disposable {
     const startTime = Date.now();
     let resource: WithId<T>;
     try {
+      // ensure existing resource read goes to the writer
+      this.setMode(RepositoryMode.WRITER);
       resource = await this.readResourceImpl<T>(resourceType, id);
     } catch (err) {
       const outcomeErr = err as OperationOutcomeError;
@@ -1265,7 +1279,21 @@ export class Repository extends FhirRepository implements Disposable {
 
       if (!this.isCacheOnly(resource)) {
         await this.ensureInTransaction(async (txRepo) => {
-          const columns = buildDeletedResourceRow(resourceType, id, resource.meta?.project);
+          // FHIR logical delete: retain history and append a new deleted version. Instance
+          // reads and vread of that version return HTTP 410 Gone; prior versions stay readable.
+          const versionId = txRepo.generateId();
+          const lastUpdated = new Date();
+
+          // Main table: empty content with deleted=true so search/read return 410, not 404.
+          const columns = buildDeletedResourceRow(resource, lastUpdated);
+
+          // History table: minimal tombstone (resourceType, id, meta.deleted) for auditing and
+          // warehouse sync. Public history bundles still omit the body and return 410 per spec.
+          const historyContent = buildDeleteHistoryContent(resource, {
+            versionId,
+            lastUpdated,
+            author: txRepo.getAuthor(),
+          });
 
           const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
           await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
@@ -1273,15 +1301,17 @@ export class Repository extends FhirRepository implements Disposable {
           await new InsertQuery(resourceType + '_History', [
             {
               id,
-              versionId: txRepo.generateId(),
+              versionId,
               lastUpdated: columns.lastUpdated,
-              content: columns.content,
+              content: historyContent,
             },
           ]).execute(client);
 
           await txRepo.deleteFromLookupTables(client, resource);
+
           const durationMs = Date.now() - startTime;
 
+          // Delete auditing via AuditEvent; FHIR does not require a searchable Provenance per delete.
           await txRepo.postCommit(async () => {
             txRepo.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });
           });
@@ -2056,6 +2086,7 @@ export class Repository extends FhirRepository implements Disposable {
       meta.account = undefined;
       meta.accounts = undefined;
       meta.compartment = undefined;
+      meta.deleted = undefined;
     }
     return input;
   }

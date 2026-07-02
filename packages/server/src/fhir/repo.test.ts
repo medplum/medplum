@@ -7,6 +7,7 @@ import {
   created,
   createReference,
   getReferenceString,
+  isGone,
   isOk,
   normalizeErrorString,
   notFound,
@@ -175,9 +176,10 @@ describe('FHIR Repo', () => {
         expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
         resetSpies();
 
+        // in reader mode, no reader pool query is made for updateResource
         await repo.updateResource({ ...auditEvent, outcomeDesc: 'updated' });
-        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1); // called to fetch existing resource; arguably incorrect and should be directed to writer
-        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
         expect(repo.mode).toBe(RepositoryMode.WRITER);
         resetSpies();
 
@@ -189,7 +191,7 @@ describe('FHIR Repo', () => {
 
         await repo.updateResource({ ...auditEvent, outcomeDesc: 'something new' });
         expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
-        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1); // called to fetch existing resource
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
         expect(repo.mode).toBe(RepositoryMode.WRITER);
       }));
   });
@@ -592,6 +594,52 @@ describe('FHIR Repo', () => {
       expect(updated.meta?.author?.reference).toStrictEqual(getReferenceString(client));
     }));
 
+  test('Create Patient ignores submitted meta.deleted', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        meta: {
+          deleted: true,
+        },
+      });
+
+      expect(patient.meta?.deleted).toBeUndefined();
+
+      const searchResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
+      });
+      expect(searchResult.entry?.length).toBe(1);
+      expect((searchResult.entry?.[0]?.resource as Patient)?.name?.[0]?.family).toStrictEqual('Smith');
+    }));
+
+  test('Update Patient ignores submitted meta.deleted', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const updated = await systemRepo.updateResource<Patient>({
+        ...patient,
+        name: [{ given: ['Alice'], family: 'Jones' }],
+        meta: {
+          ...patient.meta,
+          deleted: true,
+        },
+      });
+
+      expect(updated.meta?.deleted).toBeUndefined();
+
+      const searchResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
+      });
+      expect(searchResult.entry?.length).toBe(1);
+      expect((searchResult.entry?.[0]?.resource as Patient)?.name?.[0]?.family).toStrictEqual('Jones');
+    }));
+
   test('Create Patient as ClientApplication with no author', () =>
     withTestContext(async () => {
       const { client, repo } = await createTestProject({ withClient: true, withRepo: true });
@@ -971,6 +1019,35 @@ describe('FHIR Repo', () => {
 
       const history2 = await systemRepo.readHistory('Patient', patient.id);
       expect(history2.entry?.length).toBe(2);
+      expect(history2.entry?.[0]?.request?.method).toStrictEqual('DELETE');
+      expect(history2.entry?.[0]?.request?.url).toStrictEqual(`Patient/${patient.id}`);
+
+      const tombstoneRows = await new SelectQuery('Patient_History')
+        .column('versionId')
+        .column('content')
+        .where('id', '=', patient.id)
+        .orderBy('lastUpdated', true)
+        .limit(1)
+        .execute(systemRepo.getDatabaseClient(DatabaseMode.READER));
+      expect(tombstoneRows).toHaveLength(1);
+      const deleteVersionId = tombstoneRows[0].versionId as string;
+      const tombstone = JSON.parse(tombstoneRows[0].content as string);
+      expect(tombstone).toMatchObject({
+        resourceType: 'Patient',
+        id: patient.id,
+        meta: {
+          versionId: deleteVersionId,
+          deleted: true,
+        },
+      });
+      expect(tombstone.meta?.author?.reference).toBeDefined();
+
+      try {
+        await systemRepo.readVersion('Patient', patient.id, deleteVersionId);
+        expect.fail('Expected error');
+      } catch (err) {
+        expect(isGone((err as OperationOutcomeError).outcome)).toBe(true);
+      }
 
       // Restore the patient
       await systemRepo.updateResource({ ...patient, meta: undefined });
@@ -981,11 +1058,62 @@ describe('FHIR Repo', () => {
       const entries = history3.entry as BundleEntry[];
       expect(entries[0].response?.status).toStrictEqual('200');
       expect(entries[0].resource).toBeDefined();
+      expect(entries[1].request?.method).toStrictEqual('DELETE');
+      expect(entries[1].request?.url).toStrictEqual(`Patient/${patient.id}`);
       expect(entries[1].response?.status).toStrictEqual('410');
       expect((entries[1].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toMatch(/Deleted on /);
       expect(entries[1].resource).toBeUndefined();
       expect(entries[2].response?.status).toStrictEqual('200');
       expect(entries[2].resource).toBeDefined();
+    }));
+
+  test('Restore deleted resource', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await systemRepo.deleteResource('Patient', patient.id);
+
+      const history = await systemRepo.readHistory<Patient>('Patient', patient.id);
+      expect(
+        history.entry?.some(
+          (entry) =>
+            entry.response?.status === '410' &&
+            entry.response?.outcome?.issue?.some((issue) => issue.code === 'deleted') === true
+        ) ?? false
+      ).toBe(true);
+
+      const latestVersion = history.entry?.find((e) => e.response?.status === '200' && e.resource)?.resource as
+        | WithId<Patient>
+        | undefined;
+      expect(latestVersion).toBeDefined();
+      if (!latestVersion) {
+        throw new Error('Expected latest version');
+      }
+
+      let resourceToRestore: WithId<Patient> = latestVersion;
+      if (latestVersion.meta?.deleted) {
+        const { deleted: _deleted, ...meta } = latestVersion.meta;
+        resourceToRestore = { ...latestVersion, meta };
+      }
+      const restored = await systemRepo.updateResource(resourceToRestore);
+
+      expect(restored.name?.[0]?.family).toStrictEqual('Smith');
+      expect(restored.meta?.deleted).toBeUndefined();
+
+      const readResult = await systemRepo.readResource('Patient', patient.id);
+      expect(readResult.id).toStrictEqual(patient.id);
+
+      const searchResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
+      });
+      expect(searchResult.entry?.length).toBe(1);
+
+      const historyAfterRestore = await systemRepo.readHistory('Patient', patient.id);
+      expect(historyAfterRestore.entry?.length).toBe(3);
     }));
 
   test('Delete Binary', () =>

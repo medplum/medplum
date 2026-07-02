@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, getReferenceString } from '@medplum/core';
 import type { Login, Project, Reference, User } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -1183,6 +1183,252 @@ describe('MFA', () => {
       });
     });
   }
+
+  /**
+   * Sets (or clears) the project-level `mfaRequired` setting, which forces MFA
+   * for all users in the project.
+   * @param project - The project to update.
+   * @param value - The value for the `mfaRequired` setting.
+   */
+  async function setProjectMfaRequired(project: WithId<Project>, value: boolean): Promise<void> {
+    const systemRepo = getGlobalSystemRepo();
+    await withTestContext(async () => {
+      const current = await systemRepo.readResource<Project>('Project', project.id);
+      await systemRepo.updateResource<Project>({
+        ...current,
+        setting: [
+          ...(current.setting?.filter((s) => s.name !== 'mfaRequired') ?? []),
+          { name: 'mfaRequired', valueBoolean: value },
+        ],
+      });
+    });
+  }
+
+  /**
+   * Explicitly sets `User.mfaRequired` to a given value, used to opt a user out
+   * of a project-wide MFA requirement.
+   * @param user - The user to update.
+   * @param value - The value for `User.mfaRequired`.
+   */
+  async function setUserMfaRequired(user: WithId<User>, value: boolean): Promise<void> {
+    const systemRepo = getGlobalSystemRepo();
+    await withTestContext(async () => {
+      const current = await systemRepo.readResource<User>('User', user.id);
+      await systemRepo.updateResource<User>({ ...current, mfaRequired: value });
+    });
+  }
+
+  test('project mfaRequired setting forces MFA enrollment at login', async () => {
+    const email = `project-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { project, user } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Project',
+        lastName: 'MfaRequired',
+        projectName: `Project Mfa Required ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    // Without any requirement, login succeeds without MFA.
+    const before = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(before.body.mfaEnrollRequired).toBeUndefined();
+    expect(before.body.code).toBeDefined();
+
+    // Enabling the project setting forces MFA enrollment for the user, even
+    // though `User.mfaRequired` is unset.
+    await setProjectMfaRequired(project, true);
+    const after = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(after.body.mfaEnrollRequired).toBe(true);
+
+    // The project requirement is enforced even when the user has explicitly set
+    // `User.mfaRequired` to false; the project setting can only tighten.
+    await setUserMfaRequired(user, false);
+    const optedOut = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(optedOut.body.mfaEnrollRequired).toBe(true);
+    expect(optedOut.body.code).toBeUndefined();
+  });
+
+  test('project mfaRequired setting only tightens, never relaxes a user requirement', async () => {
+    const email = `project-mfa-tighten${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { project, user } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Project',
+        lastName: 'MfaTighten',
+        projectName: `Project Mfa Tighten ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    // The user individually requires MFA.
+    await setMfaRequired(user);
+
+    // A project setting of `false` must NOT relax the user's own requirement.
+    await setProjectMfaRequired(project, false);
+    const res = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(res.body.mfaEnrollRequired).toBe(true);
+  });
+
+  // The pure decision logic lives in `isMfaRequired` (unit-tested in
+  // utils.test.ts). These integration tests drive the full login flow so the
+  // setting is read from a real Project resource and applied at the right step.
+  // For a user with a single membership, the login is pinned to that project at
+  // `/auth/login`, so the enrollment gate fires there.
+  const SINGLE_PROJECT_MATRIX: { name: string; userMfa?: boolean; projectMfa?: boolean; enroll: boolean }[] = [
+    { name: 'user unset + project unset → not required', enroll: false },
+    { name: 'user unset + project true → required', projectMfa: true, enroll: true },
+    { name: 'user unset + project false → not required', projectMfa: false, enroll: false },
+    { name: 'user true + project unset → required', userMfa: true, enroll: true },
+    { name: 'user true + project true → required', userMfa: true, projectMfa: true, enroll: true },
+    { name: 'user true + project false → required (tightens only)', userMfa: true, projectMfa: false, enroll: true },
+    { name: 'user false + project unset → not required', userMfa: false, enroll: false },
+    { name: 'user false + project true → required (project tightens)', userMfa: false, projectMfa: true, enroll: true },
+    { name: 'user false + project false → not required', userMfa: false, projectMfa: false, enroll: false },
+  ];
+
+  test.each(SINGLE_PROJECT_MATRIX)('Single-project matrix: $name', async ({ userMfa, projectMfa, enroll }) => {
+    const email = `matrix${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { project, user } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Matrix',
+        lastName: 'User',
+        projectName: `Matrix Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    if (userMfa !== undefined) {
+      await setUserMfaRequired(user, userMfa);
+    }
+    if (projectMfa !== undefined) {
+      await setProjectMfaRequired(project, projectMfa);
+    }
+
+    const res = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(res.status).toBe(200);
+    if (enroll) {
+      expect(res.body.mfaEnrollRequired).toBe(true);
+      expect(res.body.code).toBeUndefined();
+    } else {
+      expect(res.body.mfaEnrollRequired).toBeUndefined();
+      expect(res.body.code).toBeDefined();
+    }
+  });
+
+  /**
+   * Registers the same user into two separate projects, producing a user with
+   * two memberships. Because `registerNew` reuses a user that has no
+   * `User.project`, the user is a global user who must pick a membership at
+   * `/auth/profile` after `/auth/login`.
+   * @returns The shared credentials, the user, and both projects.
+   */
+  async function registerMultiProjectUser(): Promise<{
+    email: string;
+    password: string;
+    user: WithId<User>;
+    projectA: WithId<Project>;
+    projectB: WithId<Project>;
+  }> {
+    const email = `multi-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const a = await withTestContext(() =>
+      registerNew({ firstName: 'Multi', lastName: 'ProjectA', projectName: `Multi A ${randomUUID()}`, email, password })
+    );
+    const b = await withTestContext(() =>
+      registerNew({ firstName: 'Multi', lastName: 'ProjectB', projectName: `Multi B ${randomUUID()}`, email, password })
+    );
+    return { email, password, user: a.user, projectA: a.project, projectB: b.project };
+  }
+
+  test('Multi-project: a project requirement does not leak when logging into another project', async () => {
+    const { email, password, projectA, projectB } = await registerMultiProjectUser();
+
+    // Only project A requires MFA; the user has no individual requirement.
+    await setProjectMfaRequired(projectA, true);
+
+    // The password step has no concrete project yet, so it is not gated; the
+    // user is asked to pick a membership.
+    const login = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(login.status).toBe(200);
+    expect(login.body.code).toBeUndefined();
+    expect(login.body.mfaEnrollRequired).toBeUndefined();
+    expect(login.body.memberships).toHaveLength(2);
+
+    // Selecting project B (no requirement) completes the login without MFA,
+    // even though the user also belongs to the MFA-required project A.
+    const membershipB = login.body.memberships.find((m: any) => m.project.reference === getReferenceString(projectB));
+    expect(membershipB).toBeDefined();
+    const profileRes = await request(app)
+      .post('/auth/profile')
+      .type('json')
+      .send({ login: login.body.login, profile: membershipB.id });
+    expect(profileRes.status).toBe(200);
+    expect(profileRes.body.code).toBeDefined();
+    expect(profileRes.body.mfaEnrollRequired).toBeUndefined();
+  });
+
+  test('Multi-project: logging into the MFA-required project is gated at profile selection', async () => {
+    const { email, password, projectA } = await registerMultiProjectUser();
+    await setProjectMfaRequired(projectA, true);
+
+    const login = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(login.body.memberships).toHaveLength(2);
+
+    // Selecting project A pins the login to a project that requires MFA, so the
+    // enrollment gate fires now (rather than at the password step).
+    const membershipA = login.body.memberships.find((m: any) => m.project.reference === getReferenceString(projectA));
+    expect(membershipA).toBeDefined();
+    const profileRes = await request(app)
+      .post('/auth/profile')
+      .type('json')
+      .send({ login: login.body.login, profile: membershipA.id });
+    expect(profileRes.status).toBe(200);
+    expect(profileRes.body.mfaEnrollRequired).toBe(true);
+    expect(profileRes.body.code).toBeUndefined();
+  });
+
+  test('Multi-project: a user-level requirement gates at the password step regardless of project', async () => {
+    const { email, password, user } = await registerMultiProjectUser();
+
+    // The requirement is on the user, not a project, so it applies before the
+    // user has selected which project to log in to.
+    await setUserMfaRequired(user, true);
+
+    const login = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(login.status).toBe(200);
+    expect(login.body.mfaEnrollRequired).toBe(true);
+    expect(login.body.code).toBeUndefined();
+    // Gated before the membership list is offered.
+    expect(login.body.memberships).toBeUndefined();
+  });
+
+  test('Multi-project: a project requirement is enforced even when the user has opted out', async () => {
+    const { email, password, user, projectA } = await registerMultiProjectUser();
+    await setProjectMfaRequired(projectA, true);
+    await setUserMfaRequired(user, false);
+
+    const login = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(login.body.memberships).toHaveLength(2);
+
+    // Selecting the MFA-required project gates enrollment despite the user's
+    // `mfaRequired: false`; the project setting can only tighten.
+    const membershipA = login.body.memberships.find((m: any) => m.project.reference === getReferenceString(projectA));
+    const profileRes = await request(app)
+      .post('/auth/profile')
+      .type('json')
+      .send({ login: login.body.login, profile: membershipA.id });
+    expect(profileRes.status).toBe(200);
+    expect(profileRes.body.mfaEnrollRequired).toBe(true);
+    expect(profileRes.body.code).toBeUndefined();
+  });
 
   test('enroll requires a token for TOTP', async () => {
     const email = `enroll-no-token${randomUUID()}@example.com`;

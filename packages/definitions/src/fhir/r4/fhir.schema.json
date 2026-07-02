@@ -784,6 +784,9 @@
     },
     {
       "$ref": "#/definitions/SmartHealthLinkFile"
+    },
+    {
+      "$ref": "#/definitions/LoginEmailMfa"
     }
   ],
   "definitions": {
@@ -1370,6 +1373,9 @@
         },
         {
           "$ref": "#/definitions/SmartHealthLinkFile"
+        },
+        {
+          "$ref": "#/definitions/LoginEmailMfa"
         }
       ]
     },
@@ -62083,9 +62089,12 @@
           "$ref": "#/definitions/boolean"
         },
         "mfaMethod": {
-          "description": "The MFA methods the user has enrolled in. 'totp' uses an authenticator application; 'email' sends a magic link to the user's email address on login.",
+          "description": "The MFA methods the user has enrolled in. \u0027totp\u0027 uses an authenticator application; \u0027email\u0027 sends a magic link to the user\u0027s email address on login.",
           "items": {
-            "$ref": "#/definitions/code"
+            "enum": [
+              "totp",
+              "email"
+            ]
           },
           "type": "array"
         },
