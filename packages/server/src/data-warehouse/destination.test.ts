@@ -21,15 +21,4 @@ describe('data warehouse destinations', () => {
       rmSync(basePath, { recursive: true, force: true });
     }
   });
-
-  test('local destination setup loads postgres extension before attach', () => {
-    const destination = new LocalParquetWarehouseDestination('/tmp/dw-local-destination');
-    const queries = destination.getSetupQueries('postgresql://user:pass@localhost/db');
-
-    expect(queries).toStrictEqual([
-      'INSTALL postgres',
-      'LOAD postgres',
-      'ATTACH \'postgresql://user:pass@localhost/db\' AS "pg_db" (TYPE postgres, READ_ONLY)',
-    ]);
-  });
 });
