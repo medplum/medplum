@@ -11,7 +11,7 @@ import { BaseChannel } from './channel';
 import { ChannelStatsTracker } from './channel-stats-tracker';
 import type { DurableQueue } from './queue/durable-queue';
 import type { EnqueueResult, InboundRow } from './queue/types';
-import { AckOutcome, DuplicateBehavior, QueueErrorCode } from './queue/types';
+import { AckOutcome, DuplicateBehavior, QueueErrorCode, SETTLED_MESSAGE_STATES } from './queue/types';
 import type { AgentRetryDefaults, RetryMode, RetryPolicy } from './queue/worker';
 import {
   ChannelQueueWorker,
@@ -256,6 +256,14 @@ export class AgentHl7Channel extends BaseChannel {
       this.configureHl7ServerAndConnections();
     } else {
       this.log.info(`No address change needed. Listening at ${endpoint.address}`);
+      // The rest of configureHl7ServerAndConnections' inputs are endpoint URL
+      // params, unchanged when the address string itself hasn't changed — but
+      // the retry policy ALSO depends on agent-wide channelRetryMode /
+      // channelAutoRetry* settings, which can change on their own (an operator
+      // pushes a new Agent.setting with no endpoint edit at all). Refresh it
+      // unconditionally so that reaches the running worker instead of waiting
+      // for an unrelated address change or a process restart.
+      this.refreshRetryPolicy();
     }
   }
 
@@ -306,20 +314,7 @@ export class AgentHl7Channel extends BaseChannel {
     // auto-ACKs exactly as before.
     const queueOn = this.app.getDurableQueue() !== undefined;
 
-    // Per-channel Path-2 (queue → Bot) auto-retry policy: endpoint URL params
-    // override agent-wide channelRetryMode / channelAutoRetry* settings, field by
-    // field. The worker outlives config reloads, so push the new policy at it if
-    // it's already running.
-    const retrySettings = this.app.getChannelRetrySettings();
-    this.retryPolicy = resolveRetryPolicy(retrySettings, address.searchParams, this.log);
-    // retryMode defaults to on (guaranteed), so the queue-off warning would
-    // otherwise fire for every legacy channel — only warn when a retry mode was
-    // explicitly asked for.
-    const retryExplicitlyConfigured = address.searchParams.has('retryMode') || retrySettings.mode !== undefined;
-    if (this.retryPolicy.enabled && !queueOn && retryExplicitlyConfigured) {
-      this.log.warn('retryMode is configured but the durable queue is off; auto-retry has no effect without it');
-    }
-    this.worker?.setRetryPolicy(this.retryPolicy);
+    this.refreshRetryPolicy();
 
     const connectionEnhancedMode = queueOn ? undefined : enhancedMode;
 
@@ -331,6 +326,37 @@ export class AgentHl7Channel extends BaseChannel {
       connection.hl7Connection.setEnhancedMode(connectionEnhancedMode);
       connection.hl7Connection.setMessagesPerMin(messagesPerMin);
     }
+  }
+
+  /**
+   * Resolves and pushes the channel's Path-2 (queue → Bot) auto-retry policy:
+   * endpoint URL params override agent-wide `channelRetryMode` /
+   * `channelAutoRetry*` settings, field by field (see `resolveRetryPolicy`). The
+   * worker outlives config reloads, so the new policy is pushed at it directly
+   * rather than the worker re-reading it.
+   *
+   * Split out from {@link configureHl7ServerAndConnections} — and called
+   * unconditionally by both it and {@link reloadConfig}'s no-address-change
+   * branch — because, unlike that method's other inputs (endpoint URL params,
+   * which only change when the address string itself changes), this ALSO reads
+   * agent-wide settings that can change on their own with no endpoint edit at
+   * all. Gating it behind an address change would mean an operator's
+   * settings-only update never reaches a running channel until an unrelated
+   * address edit or a process restart.
+   */
+  private refreshRetryPolicy(): void {
+    const address = new URL(this.getEndpoint().address);
+    const queueOn = this.app.getDurableQueue() !== undefined;
+    const retrySettings = this.app.getChannelRetrySettings();
+    this.retryPolicy = resolveRetryPolicy(retrySettings, address.searchParams, this.log);
+    // retryMode defaults to on (guaranteed), so the queue-off warning would
+    // otherwise fire for every legacy channel — only warn when a retry mode was
+    // explicitly asked for.
+    const retryExplicitlyConfigured = address.searchParams.has('retryMode') || retrySettings.mode !== undefined;
+    if (this.retryPolicy.enabled && !queueOn && retryExplicitlyConfigured) {
+      this.log.warn('retryMode is configured but the durable queue is off; auto-retry has no effect without it');
+    }
+    this.worker?.setRetryPolicy(this.retryPolicy);
   }
 
   getDuplicateBehavior(): DuplicateBehavior {
@@ -669,7 +695,20 @@ export class AgentHl7ChannelConnection {
     // recognizes a genuine retransmit despite the differing finalized bytes.
     if (behavior === DuplicateBehavior.IDEMPOTENT && existing.originalMessage.equals(audit.originalMessage)) {
       // Exact retransmit: replay the ACK the sender missed, then balance stats.
-      if (existing.serverResponseBody && existing.serverResponseBody.length > 0 && this.replayServerAck(existing)) {
+      //
+      // The SETTLED_MESSAGE_STATES check guards against replaying a STALE
+      // response: a `queued`/`claimed`/`inflight` row's `serverResponseBody` can
+      // still be superseded by a future attempt (auto-retry keeps it in flight
+      // rather than terminal), so it isn't yet the row's final answer. In
+      // practice `scheduleRetry` already clears the response columns when a row
+      // returns to `queued` for another try, so this is defense-in-depth rather
+      // than the only thing preventing a stale replay.
+      if (
+        existing.serverResponseBody &&
+        existing.serverResponseBody.length > 0 &&
+        SETTLED_MESSAGE_STATES.has(existing.state) &&
+        this.replayServerAck(existing)
+      ) {
         // If the original delivery failed (processed + undelivered), this
         // retransmit is what finally lands the ACK — close the source leg so the
         // row no longer reads as awaiting delivery.

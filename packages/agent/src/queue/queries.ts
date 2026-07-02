@@ -95,14 +95,19 @@ export const FIND_SEEN_BY_CONTROL_ID = `
  * blocks the whole channel (claim returns null) instead of letting younger rows
  * skip ahead. That head-of-line blocking preserves the per-channel FIFO
  * ordering guarantee across retries (see {@link SCHEDULE_RETRY}). The claim also
- * clears `next_attempt_at` so a re-claimed retry row carries no stale schedule.
+ * clears `next_attempt_at` so a re-claimed retry row carries no stale schedule,
+ * and clears `last_error`/`error_code` so a crash during THIS attempt records a
+ * fresh `interrupted` classification instead of the previous attempt's stale
+ * code (see `RECOVER_INFLIGHT`'s `COALESCE`).
  */
 export const CLAIM_NEXT = `
   UPDATE inbound_hl7_messages
      SET state = 'claimed',
          processing_started_at = ?,
          attempt_count = attempt_count + 1,
-         next_attempt_at = NULL
+         next_attempt_at = NULL,
+         last_error = NULL,
+         error_code = NULL
    WHERE id = (
      SELECT id FROM inbound_hl7_messages
       WHERE channel_name = ? AND state = 'queued'
@@ -150,19 +155,30 @@ export const RECORD_SERVER_RESPONSE = `
  * Bot accepted (2xx). state → processed regardless of the source leg; the caller
  * passes the ack_outcome (delivered / undelivered) separately so a failed return
  * ACK is recorded on its own axis, never as a Bot-leg error.
+ *
+ * The `attempt_count = ?` guard makes this write attempt-scoped: it only applies
+ * if the row is still on the exact attempt this response answers. A superseded
+ * attempt (a newer claim has already bumped `attempt_count`, or a peer took the
+ * dispatch lease) leaves the row untouched instead of settling it from a stale
+ * outcome — see the correlation note on {@link SCHEDULE_RETRY}.
  */
 export const MARK_PROCESSED = `
   UPDATE inbound_hl7_messages
      SET state = 'processed',
          ack_outcome = ?,
          processed_at = ?
-   WHERE id = ?
+   WHERE id = ? AND attempt_count = ?
 `;
 
 /**
  * Bot-leg failure: state is the caller-supplied terminal (`rejected` for a
  * permanent reject, `failed` for transient/ambiguous). No app-level ACK is owed
- * in either case, so the source leg settles to not_owed.
+ * in either case, so the source leg settles to not_owed. (When the failure code
+ * DOES carry a real app-level ACK to relay — a definitive upstream reject — the
+ * caller relays it and overwrites `ack_outcome` via {@link SET_ACK_OUTCOME}
+ * afterward; see `handleFailure` in worker.ts.)
+ *
+ * `attempt_count = ?` guard: see {@link MARK_PROCESSED}.
  */
 export const MARK_BOT_FAILED = `
   UPDATE inbound_hl7_messages
@@ -171,7 +187,7 @@ export const MARK_BOT_FAILED = `
          last_error = ?,
          error_code = ?,
          ack_outcome = 'not_owed'
-   WHERE id = ?
+   WHERE id = ? AND attempt_count = ?
 `;
 
 /**
@@ -208,19 +224,36 @@ export const REQUEUE = `
  * per-channel ordering across retries. `processing_started_at`/`sent_at` are
  * cleared so the row reads as a clean re-queued entry; the next claim re-stamps
  * them. Unlike {@link REQUEUE} (a provably-unsent `claimed` row), this keeps
- * `attempt_count` — the failed dispatch counted as a real attempt. The
- * `state IN ('claimed','inflight')` guard makes it a no-op once the row has been
- * settled elsewhere (e.g. raced with shutdown recovery).
+ * `attempt_count` — the failed dispatch counted as a real attempt.
+ *
+ * `server_status_code`/`server_response_body` are cleared too: they belong to
+ * the attempt that just failed, and a `queued` row awaiting its next attempt is
+ * NOT settled — replaying that stale response to a retransmitting source (see
+ * `handleDuplicate` in hl7.ts) would tell them a verdict the agent itself hasn't
+ * accepted yet.
+ *
+ * `state IN ('claimed', 'inflight', 'queued')` — 'queued' is included for the
+ * late-response settle path (`onServerResponse` in worker.ts), which can decide
+ * to reschedule a row that already returned to `queued` after its response
+ * timeout fired locally (the server's answer arrives after the fact). The
+ * `attempt_count = ?` guard is what makes this safe: it only applies when the
+ * row is still on the exact attempt this decision was made for. A response for
+ * an attempt the row has since moved past (a newer claim already bumped
+ * `attempt_count`) — or one settled elsewhere entirely, e.g. by a peer that took
+ * the dispatch lease — leaves the row untouched (0 rows changed) rather than
+ * corrupting a newer attempt's in-progress state with a stale decision.
  */
 export const SCHEDULE_RETRY = `
   UPDATE inbound_hl7_messages
      SET state = 'queued',
          processing_started_at = NULL,
          sent_at = NULL,
+         server_status_code = NULL,
+         server_response_body = NULL,
          last_error = ?,
          error_code = ?,
          next_attempt_at = ?
-   WHERE id = ? AND state IN ('claimed', 'inflight')
+   WHERE id = ? AND attempt_count = ? AND state IN ('claimed', 'inflight', 'queued')
 `;
 
 // --- Startup / recovery ---

@@ -61,7 +61,7 @@ import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFil
 import { DurableQueue } from './queue/durable-queue';
 import { RetentionSweeper } from './queue/retention';
 import type { AgentRetryDefaults, ChannelQueueWorker } from './queue/worker';
-import { isRetryMode } from './queue/worker';
+import { isRetryMode, parseDispatchCallback } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
@@ -1703,11 +1703,19 @@ export class App {
     // marker can never leave bytes on the wire recorded as `claimed`, since we
     // never reach the send. Keyed by callback; a no-op for legacy (non-durable)
     // sends and for any non-transmit frame, which just send.
-    const callback = message.type === 'agent:transmit:request' ? message.callback : undefined;
-    if (callback && this.durableQueue) {
+    //
+    // `message.callback` is the WIRE-level callback — for a durable dispatch it's
+    // `{callbackId}#{attempt}` (see buildDispatchCallback in queue/worker.ts), not
+    // the row's stable `callback_id` column, so it must be unwrapped before
+    // `markSent` (which is keyed by `callback_id`) can find the row. A legacy
+    // (non-durable) transmit's plain callback never reaches here — `durableQueue`
+    // is only set when every channel is using the durable path.
+    const wireCallback = message.type === 'agent:transmit:request' ? message.callback : undefined;
+    const callbackId = wireCallback ? (parseDispatchCallback(wireCallback)?.callbackId ?? wireCallback) : undefined;
+    if (callbackId && this.durableQueue) {
       const durableQueue = this.durableQueue;
       durableQueue.runInTransaction(() => {
-        durableQueue.markSent(callback);
+        durableQueue.markSent(callbackId);
         ws.send(payload);
       });
     } else {

@@ -46,6 +46,21 @@ export const MessageState = {
 export type MessageState = (typeof MessageState)[keyof typeof MessageState];
 
 /**
+ * States whose Bot-leg outcome is final — no further attempt (retry or
+ * otherwise) will ever change `last_error`/`error_code`/`server_response_body`
+ * again. Used to gate replay of a stored server response (see `handleDuplicate`
+ * in hl7.ts): a `queued`/`claimed`/`inflight` row's response fields can still be
+ * superseded by a future attempt, so replaying them to a retransmitting source
+ * would risk relaying a stale, no-longer-authoritative verdict.
+ */
+export const SETTLED_MESSAGE_STATES: ReadonlySet<MessageState> = new Set<MessageState>([
+  MessageState.PROCESSED,
+  MessageState.REJECTED,
+  MessageState.FAILED,
+  MessageState.NACKED,
+]);
+
+/**
  * Outcome of the **source leg** — delivering the app-level ACK back to the
  * sending device — tracked independently of the Bot-leg {@link MessageState}.
  *

@@ -695,28 +695,54 @@ export class DurableQueue {
    * source connection had closed). An `undelivered` row is fully processed
    * upstream and must never be re-dispatched; it recovers when the source
    * retransmits and the stored ACK is replayed (see {@link setAckOutcome}).
+   *
+   * Attempt-scoped (see {@link MARK_PROCESSED}): a no-op if `attemptCount`
+   * doesn't match the row's current attempt.
    * @param id - Row primary key.
+   * @param attemptCount - The attempt this response answers; must match the
+   *   row's current `attempt_count` for the write to apply.
    * @param ackOutcome - Source-leg result: `delivered` or `undelivered`.
    * @param now - Override for `processed_at` (for tests).
+   * @returns True if the row was settled; false if this attempt was superseded.
    */
-  markProcessed(id: number, ackOutcome: AckOutcome, now: number = Date.now()): void {
+  markProcessed(id: number, attemptCount: number, ackOutcome: AckOutcome, now: number = Date.now()): boolean {
     this.assertNotDemoted();
-    this.markProcessedStmt.run(ackOutcome, now, id);
-    this.walDirty = true;
+    const info = this.markProcessedStmt.run(ackOutcome, now, id, attemptCount);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
   }
 
   /**
    * Terminal Bot-leg transition: the server **rejected** the message itself
    * (permanent 4xx). Retrying can never help — the content must be triaged.
+   *
+   * Attempt-scoped (see {@link MARK_PROCESSED}): a no-op if `attemptCount`
+   * doesn't match the row's current attempt.
    * @param id - Row primary key.
+   * @param attemptCount - The attempt this failure answers; must match the
+   *   row's current `attempt_count` for the write to apply.
    * @param error - Human-readable error string, written to `last_error`.
    * @param errorCode - Machine-readable classification, written to `error_code`.
    * @param now - Override for `errored_at` (for tests).
+   * @returns True if the row was settled; false if this attempt was superseded.
    */
-  markRejected(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+  markRejected(
+    id: number,
+    attemptCount: number,
+    error: string,
+    errorCode: QueueErrorCode,
+    now: number = Date.now()
+  ): boolean {
     this.assertNotDemoted();
-    this.markBotFailedStmt.run(MessageStateValues.REJECTED, now, error, errorCode, id);
-    this.walDirty = true;
+    const info = this.markBotFailedStmt.run(MessageStateValues.REJECTED, now, error, errorCode, id, attemptCount);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -725,15 +751,31 @@ export class DurableQueue {
    * operator-review candidate — distinct from a `rejected` message so a future
    * retry policy can re-dispatch `failed` rows without ever touching `rejected`
    * ones (or `processed` + `undelivered` ones, whose Bot leg already succeeded).
+   *
+   * Attempt-scoped (see {@link MARK_PROCESSED}): a no-op if `attemptCount`
+   * doesn't match the row's current attempt.
    * @param id - Row primary key.
+   * @param attemptCount - The attempt this failure answers; must match the
+   *   row's current `attempt_count` for the write to apply.
    * @param error - Human-readable error string, written to `last_error`.
    * @param errorCode - Machine-readable classification, written to `error_code`.
    * @param now - Override for `errored_at` (for tests).
+   * @returns True if the row was settled; false if this attempt was superseded.
    */
-  markFailed(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+  markFailed(
+    id: number,
+    attemptCount: number,
+    error: string,
+    errorCode: QueueErrorCode,
+    now: number = Date.now()
+  ): boolean {
     this.assertNotDemoted();
-    this.markBotFailedStmt.run(MessageStateValues.FAILED, now, error, errorCode, id);
-    this.walDirty = true;
+    const info = this.markBotFailedStmt.run(MessageStateValues.FAILED, now, error, errorCode, id, attemptCount);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -750,26 +792,32 @@ export class DurableQueue {
   }
 
   /**
-   * Auto-retry transition: returns a `claimed`/`inflight` row to `queued`,
-   * scheduled to become claimable at `nextAttemptAt`. Because the row keeps its
-   * id and claims are ordered by id, it sits at the head of its channel's FIFO
-   * and blocks younger rows until it either succeeds or exhausts its attempts —
-   * preserving per-channel ordering across retries.
+   * Auto-retry transition: returns a `claimed`/`inflight`/`queued` row to
+   * `queued`, scheduled to become claimable at `nextAttemptAt`. Because the row
+   * keeps its id and claims are ordered by id, it sits at the head of its
+   * channel's FIFO and blocks younger rows until it either succeeds or exhausts
+   * its attempts — preserving per-channel ordering across retries.
    *
    * Distinct from {@link markFailed}: a retry stays `queued` (still in flight),
    * whereas `markFailed` is the terminal landing for a failure the policy is not
    * retrying. The worker decides which to call by gating the row's
    * {@link QueueErrorCode} against the retry policy (see worker.ts). Gated by the
-   * dispatch lease like the other settle ops: a demoted process must not reschedule.
+   * dispatch lease like the other settle ops: a demoted process must not
+   * reschedule. Attempt-scoped (see {@link MARK_PROCESSED}): also a no-op if
+   * `attemptCount` doesn't match the row's current attempt — this is what lets
+   * the late-response settle path (`onServerResponse` in worker.ts) call this on
+   * an already-`queued` row without risking clobbering a newer attempt.
    * @param id - Row primary key.
+   * @param attemptCount - The attempt this decision was made for; must match the
+   *   row's current `attempt_count` for the write to apply.
    * @param error - Human-readable error string, written to `last_error`.
    * @param errorCode - Machine-readable classification, written to `error_code`.
    * @param nextAttemptAt - Earliest timestamp (ms) at which the row may be claimed again.
-   * @returns True if the row was rescheduled; false if it was not in `claimed`/`inflight`.
+   * @returns True if the row was rescheduled; false if this attempt was superseded.
    */
-  scheduleRetry(id: number, error: string, errorCode: QueueErrorCode, nextAttemptAt: number): boolean {
+  scheduleRetry(id: number, attemptCount: number, error: string, errorCode: QueueErrorCode, nextAttemptAt: number): boolean {
     this.assertNotDemoted();
-    const info = this.scheduleRetryStmt.run(error, errorCode, nextAttemptAt, id);
+    const info = this.scheduleRetryStmt.run(error, errorCode, nextAttemptAt, id, attemptCount);
     if (Number(info.changes) > 0) {
       this.walDirty = true;
       return true;

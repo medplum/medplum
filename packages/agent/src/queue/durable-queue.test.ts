@@ -154,7 +154,7 @@ describe('DurableQueue', () => {
     if (r1.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.markProcessed(r1.row.id, AckOutcome.DELIVERED);
+    queue.markProcessed(r1.row.id, r1.row.attemptCount, AckOutcome.DELIVERED);
     const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP2', callbackId: 'cb-second' }));
     expect(r2.kind).toBe('duplicate');
     if (r2.kind !== 'duplicate') {
@@ -169,8 +169,11 @@ describe('DurableQueue', () => {
     if (r1.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.claimNext(r1.row.channelName);
-    queue.markFailed(r1.row.id, 'boom', QueueErrorCode.ServerError);
+    const claimedDup3 = queue.claimNext(r1.row.channelName);
+    if (!claimedDup3) {
+      throw new Error('expected claimed row');
+    }
+    queue.markFailed(claimedDup3.id, claimedDup3.attemptCount, 'boom', QueueErrorCode.ServerError);
     const r2 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP3', callbackId: 'cb-after-error' }));
     expect(r2.kind).toBe('duplicate');
   });
@@ -317,7 +320,9 @@ describe('DurableQueue', () => {
     expect(queue.getById(r.row.id)?.state).toBe(MessageState.INFLIGHT);
 
     const nextAttemptAt = Date.now() + 60_000;
-    expect(queue.scheduleRetry(r.row.id, 'Server returned 503', QueueErrorCode.ServerError, nextAttemptAt)).toBe(true);
+    expect(queue.scheduleRetry(r.row.id, 1, 'Server returned 503', QueueErrorCode.ServerError, nextAttemptAt)).toBe(
+      true
+    );
 
     const rescheduled = queue.getById(r.row.id);
     assertRowState(rescheduled, MessageState.QUEUED);
@@ -330,8 +335,9 @@ describe('DurableQueue', () => {
     // Unlike requeue, the attempt still counts — it reached the server.
     expect(rescheduled.attemptCount).toBe(1);
 
-    // scheduleRetry only applies to claimed/inflight rows; a queued row is a no-op.
-    expect(queue.scheduleRetry(r.row.id, 'again', QueueErrorCode.ServerError, nextAttemptAt)).toBe(false);
+    // scheduleRetry is attempt-scoped: a stale attempt number is a no-op even
+    // though the row is still `queued`/eligible in every other respect.
+    expect(queue.scheduleRetry(r.row.id, 0, 'again', QueueErrorCode.ServerError, nextAttemptAt)).toBe(false);
   });
 
   test('claimNext honors next_attempt_at and blocks the channel head-of-line', () => {
@@ -342,7 +348,7 @@ describe('DurableQueue', () => {
       throw new Error('expected inserted');
     }
     queue.claimNext('R', now);
-    queue.scheduleRetry(r1.row.id, 'Server returned 503', QueueErrorCode.ServerError, now + 5000);
+    queue.scheduleRetry(r1.row.id, 1, 'Server returned 503', QueueErrorCode.ServerError, now + 5000);
 
     // Head row is backing off: nothing claimable — including r2, which must NOT
     // skip ahead of r1 (per-channel FIFO ordering).
@@ -357,7 +363,7 @@ describe('DurableQueue', () => {
     expect(rawColumn(r1.row.id, 'next_attempt_at')).toBeNull();
 
     // And the channel resumes normal FIFO behind it.
-    queue.markProcessed(r1.row.id, AckOutcome.DELIVERED);
+    queue.markProcessed(r1.row.id, reclaimed?.attemptCount ?? -1, AckOutcome.DELIVERED);
     expect(queue.claimNext('R', now + 5000)?.id).toBe(r2.row.id);
   });
 
@@ -425,8 +431,11 @@ describe('DurableQueue', () => {
     }
     const claimed = queue.claimNext(r.row.channelName);
     expect(claimed?.processingStartedAt).not.toBeNull();
+    if (!claimed) {
+      throw new Error('expected claimed row');
+    }
 
-    queue.markProcessed(r.row.id, AckOutcome.DELIVERED, 1700000000000);
+    queue.markProcessed(r.row.id, claimed.attemptCount, AckOutcome.DELIVERED, 1700000000000);
     const after = queue.getById(r.row.id);
     assertRowState(after, MessageState.PROCESSED);
     expect(after.processedAt).toBe(1700000000000);
@@ -438,8 +447,11 @@ describe('DurableQueue', () => {
     if (undelivered.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.claimNext(undelivered.row.channelName);
-    queue.markProcessed(undelivered.row.id, AckOutcome.UNDELIVERED, 1700000000050);
+    const claimedUndelivered = queue.claimNext(undelivered.row.channelName);
+    if (!claimedUndelivered) {
+      throw new Error('expected claimed row');
+    }
+    queue.markProcessed(undelivered.row.id, claimedUndelivered.attemptCount, AckOutcome.UNDELIVERED, 1700000000050);
     expect(queue.getById(undelivered.row.id)?.state).toBe(MessageState.PROCESSED);
     expect(queue.getById(undelivered.row.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
     expect(queue.getById(undelivered.row.id)?.errorCode).toBeNull();
@@ -456,8 +468,11 @@ describe('DurableQueue', () => {
     if (f.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.claimNext(f.row.channelName);
-    queue.markFailed(f.row.id, 'boom', QueueErrorCode.ServerError, 1700000000123);
+    const claimedF = queue.claimNext(f.row.channelName);
+    if (!claimedF) {
+      throw new Error('expected claimed row');
+    }
+    queue.markFailed(f.row.id, claimedF.attemptCount, 'boom', QueueErrorCode.ServerError, 1700000000123);
     const failed = queue.getById(f.row.id);
     assertRowState(failed, MessageState.FAILED);
     expect(failed.lastError).toBe('boom');
@@ -470,8 +485,11 @@ describe('DurableQueue', () => {
     if (rj.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.claimNext(rj.row.channelName);
-    queue.markRejected(rj.row.id, 'bad message', QueueErrorCode.ServerRejected, 1700000000200);
+    const claimedRj = queue.claimNext(rj.row.channelName);
+    if (!claimedRj) {
+      throw new Error('expected claimed row');
+    }
+    queue.markRejected(rj.row.id, claimedRj.attemptCount, 'bad message', QueueErrorCode.ServerRejected, 1700000000200);
     expect(queue.getById(rj.row.id)?.state).toBe(MessageState.REJECTED);
     expect(queue.getById(rj.row.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
     expect(queue.getById(rj.row.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
@@ -612,10 +630,13 @@ describe('DurableQueue', () => {
     if (a.kind !== 'inserted' || b.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
-    queue.claimNext(a.row.channelName); // a → claimed
-    queue.markProcessed(a.row.id, AckOutcome.DELIVERED);
-    queue.claimNext(b.row.channelName); // b → claimed
-    queue.markFailed(b.row.id, 'x', QueueErrorCode.DispatchFailed);
+    const claimedA = queue.claimNext(a.row.channelName); // a → claimed
+    const claimedB = queue.claimNext(b.row.channelName); // b → claimed
+    if (!claimedA || !claimedB) {
+      throw new Error('expected claimed rows');
+    }
+    queue.markProcessed(a.row.id, claimedA.attemptCount, AckOutcome.DELIVERED);
+    queue.markFailed(b.row.id, claimedB.attemptCount, 'x', QueueErrorCode.DispatchFailed);
     queue.enqueueRejected({
       ...makeEnqueueInput({ msgControlId: 'CB-N' }),
       lastError: 'dup',

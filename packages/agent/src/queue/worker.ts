@@ -182,6 +182,68 @@ export function computeRetryDelayMs(policy: RetryPolicy, failedAttemptCount: num
   return Math.round(half + Math.random() * half);
 }
 
+/**
+ * Separator between a row's stable {@link InboundRow.callbackId} and the attempt
+ * number in a dispatch's wire-level callback. Chosen because `callbackId` is
+ * always `Agent/{agentId}-{uuid}` (see `AgentHl7ChannelConnection.handleMessage`)
+ * and can never itself contain `#`.
+ */
+const DISPATCH_CALLBACK_SEPARATOR = '#';
+
+/**
+ * Builds the wire-level `callback` sent on an `agent:transmit:request` for one
+ * dispatch attempt.
+ *
+ * Auto-retry means a row's `callbackId` is no longer a 1:1 correlation ID: it
+ * can be dispatched more than once, and the server response for an EARLIER
+ * attempt can arrive after a LATER attempt is already in flight (the earlier
+ * one merely timed out locally; the server may still answer it). Encoding the
+ * attempt into the wire callback lets {@link ChannelQueueWorker.onServerResponse}
+ * tell which attempt a response actually answers, instead of assuming any
+ * response bearing the row's `callbackId` must be for whichever attempt is
+ * currently pending — see DURABLE_QUEUE_ARCHITECTURE.md §4.1.
+ *
+ * The server treats `callback` as an opaque passthrough string (it only echoes
+ * it back unchanged on the response — see `ws/agent.ts` `handleTransmit`), so
+ * embedding structure into it is safe.
+ * @param callbackId - The row's stable callback ID.
+ * @param attemptCount - The attempt this dispatch represents (the row's
+ *   `attemptCount` at claim time).
+ * @returns The wire-level callback string for this attempt.
+ */
+export function buildDispatchCallback(callbackId: string, attemptCount: number): string {
+  return `${callbackId}${DISPATCH_CALLBACK_SEPARATOR}${attemptCount}`;
+}
+
+/** A wire-level dispatch callback, decoded into its row identity and attempt number. */
+export interface ParsedDispatchCallback {
+  /** The row's stable callback ID — matches {@link InboundRow.callbackId}. */
+  callbackId: string;
+  /** The attempt this response answers. */
+  attempt: number;
+}
+
+/**
+ * Inverse of {@link buildDispatchCallback}. Returns undefined for anything that
+ * doesn't match the `{callbackId}#{attempt}` shape (e.g. a legacy non-durable
+ * transmit's plain callback, or a malformed/foreign value) — the caller treats
+ * that the same as "no matching row."
+ * @param wireCallback - The `callback` echoed back on an `agent:transmit:response`.
+ * @returns The decoded `{ callbackId, attempt }`, or undefined if unparseable.
+ */
+export function parseDispatchCallback(wireCallback: string): ParsedDispatchCallback | undefined {
+  const idx = wireCallback.lastIndexOf(DISPATCH_CALLBACK_SEPARATOR);
+  if (idx <= 0 || idx === wireCallback.length - 1) {
+    return undefined;
+  }
+  const callbackId = wireCallback.slice(0, idx);
+  const attempt = Number(wireCallback.slice(idx + 1));
+  if (!Number.isInteger(attempt) || attempt < 1) {
+    return undefined;
+  }
+  return { callbackId, attempt };
+}
+
 export interface ChannelQueueWorkerOptions {
   channelName: string;
   app: App;
@@ -207,6 +269,8 @@ export interface ChannelQueueWorkerOptions {
 
 interface PendingResponse {
   row: InboundRow;
+  /** The wire-level callback sent for THIS dispatch attempt — see {@link buildDispatchCallback}. */
+  wireCallback: string;
   resolve: (response: AgentTransmitResponse) => void;
   reject: (err: Error) => void;
   timeout: NodeJS.Timeout;
@@ -333,17 +397,28 @@ export class ChannelQueueWorker {
   /**
    * Routes a server `agent:transmit:response` to its row.
    *
-   * The common case is the response to the current in-flight dispatch, which
-   * resolves the pending promise and lets {@link process} settle the row.
+   * The common case is the response to the current in-flight dispatch, matched
+   * by comparing the exact wire-level callback (row callbackId + attempt number,
+   * see {@link buildDispatchCallback}) — this resolves the pending promise and
+   * lets {@link process} settle the row.
    *
-   * A response can also arrive *late* — after the response timeout (or a requeue
-   * / worker stop) already cleared the pending dispatch and left the row
-   * `failed`. We don't discard those: the Medplum server is the authority on the
-   * Bot-leg outcome, so a late ACK/NACK for a row that errored and isn't being
-   * retried right now is applied to settle the row ({@link applyServerResponse}),
-   * exactly as if it had arrived in time. This disambiguates the ambiguous
-   * `ResponseTimeout` case — a row we couldn't classify becomes a definite
-   * `processed`/`rejected`/`failed` — and avoids a redundant re-dispatch.
+   * A response can also arrive *late* — after the response timeout already
+   * cleared the pending dispatch. Two distinct cases fall out of decoding the
+   * attempt number:
+   * - **Stale**: the response answers an EARLIER attempt than the row's current
+   *   one (a newer attempt has already been claimed and is running, or has
+   *   already settled). Auto-retry makes this reachable in a way it never was
+   *   before: the row's `callbackId` alone can't distinguish attempts, so without
+   *   the attempt number a stale response would misattribute its outcome to
+   *   whichever attempt happens to be running now. We discard it — the current
+   *   attempt's own response (or timeout) is authoritative.
+   * - **Late-for-current-attempt**: the response answers the row's CURRENT
+   *   attempt but arrived after we stopped waiting for it (the row is now
+   *   `failed`, or `queued` awaiting its own already-scheduled retry). The
+   *   Medplum server is the authority on the Bot-leg outcome, so we apply it to
+   *   settle the row ({@link applyServerResponse}) exactly as if it had arrived
+   *   in time — this disambiguates the ambiguous `ResponseTimeout` case and
+   *   avoids a redundant re-dispatch.
    * @param response - The response message received over the WS.
    * @returns True if the response was applied or resolved a pending dispatch;
    *          false if it could not be matched to a settleable row.
@@ -353,46 +428,61 @@ export class ChannelQueueWorker {
       return false;
     }
     const pending = this.pending;
-    if (pending?.row.callbackId === response.callback) {
+    if (pending?.wireCallback === response.callback) {
       clearTimeout(pending.timeout);
       this.pending = undefined;
       pending.resolve(response);
       return true;
     }
-    // No in-flight dispatch matches this callback — a late response. Look up the
-    // row it belongs to and decide whether it's still settleable.
-    const row = this.queue.findByCallback(response.callback);
+
+    const parsed = parseDispatchCallback(response.callback);
+    if (!parsed) {
+      this.log.warn(`Discarding server response with an unparseable callback (callback=${response.callback})`);
+      return false;
+    }
+    const row = this.queue.findByCallback(parsed.callbackId);
     if (!row) {
       this.log.warn(`Discarding server response with no matching row (callback=${response.callback})`);
       return false;
     }
-    if (row.state === MessageState.FAILED) {
-      // Errored earlier (most commonly a response timeout) and not currently in
-      // flight — `failed` rows are never re-claimed (claimNext only takes
-      // `queued`). The server's verdict is authoritative, so settle the row from
-      // this late response instead of leaving it ambiguous.
+    if (parsed.attempt !== row.attemptCount) {
+      // Stale: this response is for an attempt the row has since moved past.
       this.log.info(
-        `Applying late server response to errored row id=${row.id} ` +
-          `(control id=${row.msgControlId ?? 'n/a'}, status=${response.statusCode ?? 'n/a'})`
+        `Discarding stale server response for row id=${row.id}: response answers attempt ${parsed.attempt}, row is now on attempt ${row.attemptCount}`
       );
-      try {
-        this.applyServerResponse(row, response);
-      } catch (err) {
-        if (err instanceof QueueLeaseError) {
-          // A peer owns the lease now — this row is theirs to settle, not ours.
-          this.log.info(`Discarding late server response for row id=${row.id}: queue lease held by a peer`);
-          return false;
-        }
-        throw err;
-      }
-      return true;
+      return false;
     }
-    // claimed/inflight (a retry is in flight), processed/rejected (already
-    // settled), or queued/nacked — the outcome is owned elsewhere; don't double-apply.
-    this.log.warn(
-      `Discarding server response for row id=${row.id} in state '${row.state}' (callback=${response.callback})`
+    // The response answers the row's current attempt but arrived after we
+    // stopped waiting for it. Settleable exactly when nothing currently owns
+    // this attempt's outcome: `failed` (terminal-for-now, never re-claimed) or
+    // `queued` with a retry already scheduled for this same attempt.
+    const settleable =
+      row.state === MessageState.FAILED || (row.state === MessageState.QUEUED && row.nextAttemptAt !== null);
+    if (!settleable) {
+      // claimed/inflight (we lost track of our own pending dispatch — shouldn't
+      // normally happen), processed/rejected (already settled), a fresh `queued`
+      // row (never dispatched — attempt 0, unreachable here since attempt >= 1),
+      // or nacked — the outcome is owned elsewhere; don't double-apply.
+      this.log.warn(
+        `Discarding server response for row id=${row.id} in state '${row.state}' (callback=${response.callback})`
+      );
+      return false;
+    }
+    this.log.info(
+      `Applying late server response to row id=${row.id} ` +
+        `(control id=${row.msgControlId ?? 'n/a'}, state=${row.state}, status=${response.statusCode ?? 'n/a'})`
     );
-    return false;
+    try {
+      this.applyServerResponse(row, response);
+    } catch (err) {
+      if (err instanceof QueueLeaseError) {
+        // A peer owns the lease now — this row is theirs to settle, not ours.
+        this.log.info(`Discarding late server response for row id=${row.id}: queue lease held by a peer`);
+        return false;
+      }
+      throw err;
+    }
+    return true;
   }
 
   /**
@@ -441,7 +531,7 @@ export class ChannelQueueWorker {
     if (!pending) {
       return;
     }
-    if (!this.app.removeUnsentTransmit(pending.row.callbackId)) {
+    if (!this.app.removeUnsentTransmit(pending.wireCallback)) {
       return;
     }
     clearTimeout(pending.timeout);
@@ -551,16 +641,26 @@ export class ChannelQueueWorker {
       switch (ackCode) {
         case 'AR':
         case 'CR':
-          // Definitive upstream reject: terminal `rejected`, never retried.
-          this.handleFailure(
+          // Definitive upstream reject: this IS the Bot's real application-level
+          // answer (not a transport failure), so the source is owed it just like
+          // any other completed attempt — relay it, then land the row terminally
+          // `rejected`. Never retried (UpstreamRejected is the one code that
+          // stops even guaranteed mode — see GUARANTEED_TERMINAL_CODES), so the
+          // relay never risks a later contradictory ACK.
+          this.settleWithAck(
             row,
+            response,
             QueueErrorCode.UpstreamRejected,
             `Upstream rejected the message (${ackCode}): ${response.body ?? ''}`
           );
           return;
         case 'AE':
         case 'CE':
-          // Error ACK: not a definitive answer, so guaranteed mode keeps retrying.
+          // Error ACK: NOT a definitive answer, so guaranteed mode keeps
+          // retrying — deliberately withOUT relaying this ACK to the source.
+          // Relaying it now and then sending a later AA once a retry succeeds
+          // would give the source two contradictory acknowledgments for the
+          // same message.
           this.handleFailure(
             row,
             QueueErrorCode.UpstreamError,
@@ -607,41 +707,35 @@ export class ChannelQueueWorker {
   }
 
   /**
-   * Settles a row the Bot accepted, then delivers the app-level ACK back to the
-   * source as a SEPARATE leg tracked in `ack_outcome`.
+   * Delivers an app-level ACK back to the source, honoring the `aaMode`
+   * suppression rule. Pure source-leg delivery — never touches the row's
+   * Bot-leg `state`; callers combine this with whatever DB transition applies.
    *
-   * The row is always marked `processed` here — Bot-leg success is already
-   * decided by the caller ({@link applyServerResponse}). Only the source-facing ACK
-   * delivery can still vary, and it never re-opens the Bot leg:
    * - `aaMode`: the source was already acknowledged by the deferred-commit `AA`
-   *   at intake (hl7.ts `handleMessageDurable` → `sendCommitAck`), so the Bot's
-   *   app-level ACK is suppressed as a successful no-op ({@link AckOutcome.DELIVERED}).
+   *   at intake (hl7.ts `handleMessageDurable` → `sendCommitAck`), and aaMode's
+   *   contract is "send AA immediately, then ignore any later app-level ACKs"
+   *   (hl7 connection). The Bot's app-level ACK would be a redundant *second*
+   *   ACK the source is no longer listening for — a source that closes its
+   *   connection on ACK has already torn the socket down, producing spurious
+   *   "disconnected remote" / "ACK delivery failed" warnings. Suppress the send;
+   *   the outcome is a successful no-op ({@link AckOutcome.DELIVERED}), the same
+   *   convention used for other policy-suppressed sends.
    * - Otherwise: {@link sendAck} attempts delivery. Success →
    *   {@link AckOutcome.DELIVERED}; a failed send (e.g. the source closed its
    *   socket after its own ACK) → {@link AckOutcome.UNDELIVERED}. An undelivered
    *   ACK is NOT a failure and is never re-dispatched — the source recovers it by
    *   retransmitting, which replays the stored ACK (hl7.ts `handleDuplicate`).
-   * @param row - The row the Bot accepted; `attemptCount` reflects the successful attempt.
-   * @param response - The Bot's transmit response, used to build the ACK sent to the source.
+   * @param row - The row whose `enhancedMode` governs suppression.
+   * @param response - The response whose body becomes the relayed ACK.
+   * @returns Delivery outcome: `ackOk` (true = delivered) and, on a thrown send, `ackError`.
    */
-  private handleProcessed(row: InboundRow, response: AgentTransmitResponse): void {
-    // In aaMode the deferred-commit ACK already sent the source an `AA` at intake
-    // (hl7.ts handleMessageDurable → sendCommitAck), and aaMode's contract is
-    // "send AA immediately, then ignore any later app-level ACKs" (hl7 connection).
-    // The Bot's app-level AA would therefore be a redundant *second* AA the source
-    // is no longer listening for — a source that closes its connection on ACK has
-    // already torn the socket down, producing spurious "disconnected remote" /
-    // "ACK delivery failed" warnings. Suppress the second send; the source was
-    // already acknowledged, so the outcome is a successful no-op (DELIVERED), the
-    // same convention used for policy-suppressed sends.
+  private relayAckToSource(row: InboundRow, response: AgentTransmitResponse): { ackOk: boolean; ackError: unknown } {
     if (row.enhancedMode === 'aaMode') {
-      this.queue.markProcessed(row.id, AckOutcome.DELIVERED);
       this.log.debug(
-        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) processed; app-level AA suppressed (aaMode commit ACK already acknowledged the source)`
+        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) app-level ACK suppressed (aaMode commit ACK already acknowledged the source)`
       );
-      return;
+      return { ackOk: true, ackError: undefined };
     }
-
     let ackOk = false;
     let ackError: unknown;
     try {
@@ -649,7 +743,30 @@ export class ChannelQueueWorker {
     } catch (err) {
       ackError = err;
     }
-    this.queue.markProcessed(row.id, ackOk ? AckOutcome.DELIVERED : AckOutcome.UNDELIVERED);
+    return { ackOk, ackError };
+  }
+
+  /**
+   * Settles a row the Bot accepted, then delivers the app-level ACK back to the
+   * source as a SEPARATE leg tracked in `ack_outcome`.
+   *
+   * The row is always marked `processed` here — Bot-leg success is already
+   * decided by the caller ({@link applyServerResponse}).
+   * @param row - The row the Bot accepted; `attemptCount` reflects the successful attempt.
+   * @param response - The Bot's transmit response, used to build the ACK sent to the source.
+   */
+  private handleProcessed(row: InboundRow, response: AgentTransmitResponse): void {
+    const { ackOk, ackError } = this.relayAckToSource(row, response);
+    if (!this.queue.markProcessed(row.id, row.attemptCount, ackOk ? AckOutcome.DELIVERED : AckOutcome.UNDELIVERED)) {
+      // This attempt was superseded before we could record it (e.g. a peer took
+      // the dispatch lease between the response arriving and this write) — the
+      // ACK we may have just sent is the new owner's business to reconcile, not
+      // ours to also record.
+      this.log.info(
+        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) processed-state write discarded: attempt ${row.attemptCount} was already superseded`
+      );
+      return;
+    }
     if (row.attemptCount > 1) {
       this.log.info(
         `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) Bot leg succeeded after ${row.attemptCount} attempts`
@@ -659,6 +776,45 @@ export class ChannelQueueWorker {
       const detail = ackError ? `: ${normalizeErrorString(ackError)}` : '';
       this.log.warn(
         `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) processed upstream but ACK delivery to source failed${detail}; awaiting source retransmit to replay`
+      );
+    }
+  }
+
+  /**
+   * Settles a row on a **definitive upstream reject** (MSA-1 of AR/CR): relays
+   * the reject ACK to the source — it's the Bot's real application-level
+   * answer, and `UpstreamRejected` never retries, so there's no risk of a later
+   * contradictory ACK — then lands the row `rejected` via {@link handleFailure}.
+   *
+   * Distinct from {@link handleFailure}'s other callers: those describe
+   * transport/HTTP-leg failures with no app-level ACK to relay (the row settles
+   * with `ack_outcome = 'not_owed'`); this is the one failure classification
+   * that carries a real Bot answer, so the ack_outcome is overwritten to reflect
+   * whether that answer actually reached the source.
+   * @param row - The row the Bot answered with a definitive reject.
+   * @param response - The Bot's transmit response, used to build the ACK sent to the source.
+   * @param code - Always {@link QueueErrorCode.UpstreamRejected} today; threaded through {@link handleFailure} regardless.
+   * @param message - Human-readable error, written to `last_error`.
+   */
+  private settleWithAck(
+    row: InboundRow,
+    response: AgentTransmitResponse,
+    code: QueueErrorCode,
+    message: string
+  ): void {
+    const { ackOk, ackError } = this.relayAckToSource(row, response);
+    const settled = this.handleFailure(row, code, message);
+    if (!settled) {
+      // Superseded before the terminal write applied — same reasoning as
+      // handleProcessed's discard: don't touch ack_outcome for an attempt that
+      // no longer owns the row.
+      return;
+    }
+    this.queue.setAckOutcome(row.id, ackOk ? AckOutcome.DELIVERED : AckOutcome.UNDELIVERED);
+    if (!ackOk) {
+      const detail = ackError ? `: ${normalizeErrorString(ackError)}` : '';
+      this.log.warn(
+        `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) rejected upstream but ACK delivery to source failed${detail}; awaiting source retransmit to replay`
       );
     }
   }
@@ -683,11 +839,20 @@ export class ChannelQueueWorker {
    * A retry stays `queued` (via {@link DurableQueue.scheduleRetry}); otherwise the
    * terminal state is chosen by classification — permanent codes
    * ({@link PERMANENT_ERROR_CODES}) → `rejected`, everything else → `failed`.
+   *
+   * Every write here is attempt-scoped (guarded on `row.attemptCount` matching
+   * the row's CURRENT `attempt_count` — see {@link DurableQueue.scheduleRetry}):
+   * if this attempt has been superseded (a newer claim already bumped the
+   * counter, or a peer took the dispatch lease), the write is a no-op instead of
+   * corrupting whatever attempt owns the row now.
    * @param row - The row that failed; `attemptCount` reflects the attempt that just failed.
    * @param code - Classification attached at the failure site.
    * @param message - Human-readable error, written to `last_error` either way.
+   * @returns True if this call landed the row in a terminal state (`rejected` or
+   *   `failed`); false if it scheduled a retry instead, or if the write was
+   *   discarded because this attempt was superseded.
    */
-  private handleFailure(row: InboundRow, code: QueueErrorCode, message: string): void {
+  private handleFailure(row: InboundRow, code: QueueErrorCode, message: string): boolean {
     const rowDesc = `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'})`;
     const policy = this.retryPolicy;
     const retryable = policy.guaranteedDelivery
@@ -697,29 +862,42 @@ export class ChannelQueueWorker {
       const attemptsRemain = policy.maxAttempts === 0 || row.attemptCount < policy.maxAttempts;
       if (attemptsRemain) {
         const delayMs = computeRetryDelayMs(policy, row.attemptCount);
-        if (this.queue.scheduleRetry(row.id, message, code, Date.now() + delayMs)) {
+        if (this.queue.scheduleRetry(row.id, row.attemptCount, message, code, Date.now() + delayMs)) {
           const attemptDesc = `attempt ${row.attemptCount + 1}${policy.maxAttempts > 0 ? `/${policy.maxAttempts}` : ''}`;
           this.log.warn(`${rowDesc} failed (${code}), retrying in ${delayMs}ms (${attemptDesc}): ${message}`);
-          return;
+          return false;
         }
-        // Row was no longer in `claimed`/`inflight` (e.g. raced with shutdown recovery) —
-        // fall through to the terminal transition, which is a no-op for the same reason.
+        // Superseded — the terminal write below carries the same attempt_count
+        // guard, so it correctly no-ops too instead of stomping on whatever
+        // attempt owns the row now.
       } else {
         message = `${message} (${row.attemptCount} attempts exhausted)`;
       }
     }
     // Not retried (or exhausted): land on the terminal state by classification.
     if (PERMANENT_ERROR_CODES.has(code)) {
-      this.queue.markRejected(row.id, message, code);
-      this.log.error(`${rowDesc} rejected (${code}): ${message}`);
-    } else {
-      // Transient/ambiguous codes the policy isn't retrying — left for operator review.
-      this.queue.markFailed(row.id, message, code);
-      this.log.error(`${rowDesc} failed (${code}, operator review): ${message}`);
+      const applied = this.queue.markRejected(row.id, row.attemptCount, message, code);
+      if (applied) {
+        this.log.error(`${rowDesc} rejected (${code}): ${message}`);
+      } else {
+        this.log.info(`${rowDesc} rejected-state write discarded: attempt ${row.attemptCount} was already superseded`);
+      }
+      return applied;
     }
+    // Transient/ambiguous codes the policy isn't retrying — left for operator review.
+    const applied = this.queue.markFailed(row.id, row.attemptCount, message, code);
+    if (applied) {
+      this.log.error(`${rowDesc} failed (${code}, operator review): ${message}`);
+    } else {
+      this.log.info(`${rowDesc} failed-state write discarded: attempt ${row.attemptCount} was already superseded`);
+    }
+    return applied;
   }
 
   private async dispatch(row: InboundRow): Promise<AgentTransmitResponse> {
+    // Encode the attempt into the wire callback (see buildDispatchCallback) so a
+    // response can be correlated to the exact attempt it answers, not just the row.
+    const wireCallback = buildDispatchCallback(row.callbackId, row.attemptCount);
     return new Promise<AgentTransmitResponse>((resolve, reject) => {
       const timeout = setTimeout(() => {
         if (this.pending?.row.id === row.id) {
@@ -737,7 +915,7 @@ export class ChannelQueueWorker {
       if (typeof timeout.unref === 'function') {
         timeout.unref();
       }
-      this.pending = { row, resolve, reject, timeout };
+      this.pending = { row, wireCallback, resolve, reject, timeout };
 
       this.app.addToWebSocketQueue({
         type: 'agent:transmit:request',
@@ -750,7 +928,7 @@ export class ChannelQueueWorker {
         // path forwards. The channel `encoding` is wire-level only and recorded
         // on the row for reference; it does not affect the forwarded text.
         body: row.finalizedMessage.toString('utf8'),
-        callback: row.callbackId,
+        callback: wireCallback,
       });
     });
   }

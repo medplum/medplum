@@ -12,7 +12,7 @@ import { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
 import { AckOutcome, assertRowState, MessageState, QueueErrorCode } from './types';
 import type { RetryPolicy } from './worker';
-import { ChannelQueueWorker, computeRetryDelayMs, DEFAULT_RETRY_POLICY } from './worker';
+import { buildDispatchCallback, ChannelQueueWorker, computeRetryDelayMs, DEFAULT_RETRY_POLICY } from './worker';
 
 /**
  * Stub App used by worker tests. Only the surface the worker touches is implemented;
@@ -43,6 +43,9 @@ function makeStubApp(options?: { live?: boolean }): {
     addToWebSocketQueue: (msg: AgentMessage) => {
       sent.push(msg);
     },
+    // `callbackId` here is the WIRE-level callback (row callbackId + attempt, see
+    // buildDispatchCallback) — the same value the worker pushed onto `sent` and
+    // later passes to removeUnsentTransmit, so a plain string match is correct.
     removeUnsentTransmit: (callbackId: string) => {
       const index = sent.findIndex((msg) => msg.type === 'agent:transmit:request' && msg.callback === callbackId);
       if (index === -1) {
@@ -128,10 +131,12 @@ describe('ChannelQueueWorker', () => {
     });
     worker.start();
 
-    // The worker dispatches one row at a time; satisfy each in order.
+    // The worker dispatches one row at a time; satisfy each in order. Each row is
+    // dispatched exactly once here, so its wire callback is always attempt 1.
     for (const row of rows) {
-      await waitFor(() => sent.length >= 1 && (sent.at(-1) as { callback?: string }).callback === row.callbackId);
-      worker.onServerResponse(makeResponse(row.callbackId, 200));
+      const wireCallback = buildDispatchCallback(row.callbackId, 1);
+      await waitFor(() => sent.length >= 1 && (sent.at(-1) as { callback?: string }).callback === wireCallback);
+      worker.onServerResponse(makeResponse(wireCallback, 200));
       // Let the worker finish processing this row before the next dispatch.
       await waitFor(() => queue.getById(row.id)?.state === MessageState.PROCESSED);
     }
@@ -162,8 +167,8 @@ describe('ChannelQueueWorker', () => {
     worker.start();
 
     // Drains the first row normally while we hold the lease.
-    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
-    worker.onServerResponse(makeResponse(r1.callbackId, 200));
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r1.id)?.state === MessageState.PROCESSED);
 
     // A peer steals the lease. The idle worker's next claimNext throws
@@ -172,13 +177,16 @@ describe('ChannelQueueWorker', () => {
     expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
     await waitFor(() => !worker.isRunning(), 1000);
 
-    // A row enqueued after the steal is never claimed by the demoted worker.
+    // A row enqueued after the steal is never claimed by the demoted worker — it
+    // never even reaches its first dispatch attempt.
     const r2 = enqueueOne(queue, 'LD2');
     await new Promise<void>((resolve) => {
       setTimeout(resolve, 50);
     });
     expect(queue.getById(r2.id)?.state).toBe(MessageState.QUEUED);
-    expect(sent.some((m) => (m as { callback?: string }).callback === r2.callbackId)).toBe(false);
+    expect(sent.some((m) => (m as { callback?: string }).callback === buildDispatchCallback(r2.callbackId, 1))).toBe(
+      false
+    );
 
     await worker.stop();
   });
@@ -201,7 +209,7 @@ describe('ChannelQueueWorker', () => {
     worker.start();
 
     // Worker dispatches r1 and wedges awaiting a response that never comes.
-    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
+    await waitFor(() => worker.hasInFlight());
 
     // Peer steals the lease. A heartbeat tick fires the in-flight lease check, which
     // cancels the wedged dispatch — well before the 60s response timeout.
@@ -235,8 +243,8 @@ describe('ChannelQueueWorker', () => {
     });
     worker.start();
 
-    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
-    worker.onServerResponse(makeResponse(r1.callbackId, 503, 'service down'));
+    await waitFor(() => pendingRowId(worker) === r1.id);
+    worker.onServerResponse(makeResponse(currentCallback(worker), 503, 'service down'));
 
     await waitFor(() => queue.getById(r1.id)?.state === MessageState.FAILED);
     expect(queue.getById(r1.id)?.lastError).toContain('503');
@@ -244,8 +252,8 @@ describe('ChannelQueueWorker', () => {
     // 5xx is a Bot-leg failure → no source ACK is owed.
     expect(queue.getById(r1.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
 
-    await waitFor(() => worker.hasInFlight() && r2.callbackId === lastCallback(worker));
-    worker.onServerResponse(makeResponse(r2.callbackId, 200));
+    await waitFor(() => pendingRowId(worker) === r2.id);
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r2.id)?.state === MessageState.PROCESSED);
 
     await worker.stop();
@@ -269,16 +277,16 @@ describe('ChannelQueueWorker', () => {
     });
     worker.start();
 
-    await waitFor(() => worker.hasInFlight() && r1.callbackId === lastCallback(worker));
-    worker.onServerResponse(makeResponse(r1.callbackId, 422, 'bad message'));
+    await waitFor(() => pendingRowId(worker) === r1.id);
+    worker.onServerResponse(makeResponse(currentCallback(worker), 422, 'bad message'));
 
     await waitFor(() => queue.getById(r1.id)?.state === MessageState.REJECTED);
     expect(queue.getById(r1.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
     expect(queue.getById(r1.id)?.ackOutcome).toBe(AckOutcome.NOT_OWED);
 
     // 429 is the one 4xx that's transient → failed, not rejected.
-    await waitFor(() => worker.hasInFlight() && r2.callbackId === lastCallback(worker));
-    worker.onServerResponse(makeResponse(r2.callbackId, 429, 'slow down'));
+    await waitFor(() => pendingRowId(worker) === r2.id);
+    worker.onServerResponse(makeResponse(currentCallback(worker), 429, 'slow down'));
     await waitFor(() => queue.getById(r2.id)?.state === MessageState.FAILED);
     expect(queue.getById(r2.id)?.errorCode).toBe(QueueErrorCode.ServerRateLimited);
 
@@ -298,7 +306,7 @@ describe('ChannelQueueWorker', () => {
     });
     worker.start();
     await waitFor(() => worker.hasInFlight());
-    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
     // The Bot accepted it (processed); only the source-leg ACK failed. No Bot-leg
     // error code is set — a closed source connection is never an upstream failure.
@@ -325,7 +333,7 @@ describe('ChannelQueueWorker', () => {
     });
     worker.start();
     await waitFor(() => worker.hasInFlight());
-    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
     expect(sendAck).not.toHaveBeenCalled();
     expect(queue.getById(r.id)?.ackOutcome).toBe(AckOutcome.DELIVERED);
@@ -354,13 +362,13 @@ describe('ChannelQueueWorker', () => {
     });
     worker.start();
     await waitFor(() => worker.hasInFlight());
-    worker.onServerResponse(makeResponse(r1.callbackId, 200));
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r1.id)?.state === MessageState.PROCESSED);
     expect(queue.getById(r1.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
     expect(queue.getById(r1.id)?.errorCode).toBeNull();
 
     await waitFor(() => worker.hasInFlight());
-    worker.onServerResponse(makeResponse(r2.callbackId, 200));
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r2.id)?.state === MessageState.PROCESSED);
     expect(queue.getById(r2.id)?.ackOutcome).toBe(AckOutcome.DELIVERED);
     await worker.stop();
@@ -411,8 +419,9 @@ describe('ChannelQueueWorker', () => {
 
     // The server's response finally arrives, after the row already errored. The
     // server is authoritative on the Bot-leg outcome, so the row is settled from
-    // it — not discarded and left for an ambiguous re-dispatch.
-    expect(worker.onServerResponse(makeResponse(r.callbackId, 200))).toBe(true);
+    // it — not discarded and left for an ambiguous re-dispatch. The row was
+    // dispatched exactly once (attempt 1) before it timed out.
+    expect(worker.onServerResponse(makeResponse(buildDispatchCallback(r.callbackId, 1), 200))).toBe(true);
 
     const settled = queue.getById(r.id);
     expect(settled?.state).toBe(MessageState.PROCESSED);
@@ -440,7 +449,9 @@ describe('ChannelQueueWorker', () => {
     await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
     await worker.stop();
 
-    expect(worker.onServerResponse(makeResponse(r.callbackId, 422, 'bad message'))).toBe(true);
+    expect(worker.onServerResponse(makeResponse(buildDispatchCallback(r.callbackId, 1), 422, 'bad message'))).toBe(
+      true
+    );
     const settled = queue.getById(r.id);
     expect(settled?.state).toBe(MessageState.REJECTED);
     expect(settled?.errorCode).toBe(QueueErrorCode.ServerRejected);
@@ -478,7 +489,7 @@ describe('ChannelQueueWorker', () => {
     queue.releaseLease('us');
     expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
 
-    expect(worker.onServerResponse(makeResponse(r.callbackId, 200))).toBe(false);
+    expect(worker.onServerResponse(makeResponse(buildDispatchCallback(r.callbackId, 1), 200))).toBe(false);
 
     // The row is left exactly as the timeout left it — no write leaked through the
     // lease gate (state, error code, and the still-null server status all unchanged).
@@ -503,18 +514,18 @@ describe('ChannelQueueWorker', () => {
     });
     worker.start();
     await waitFor(() => worker.hasInFlight());
-    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
     await worker.stop();
 
-    // A second response for the same callback (e.g. a duplicate, or a NACK after
+    // A second response for the same attempt (e.g. a duplicate, or a NACK after
     // the row already succeeded) must not re-apply over the settled outcome.
-    expect(worker.onServerResponse(makeResponse(r.callbackId, 422))).toBe(false);
+    expect(worker.onServerResponse(makeResponse(buildDispatchCallback(r.callbackId, 1), 422))).toBe(false);
     expect(queue.getById(r.id)?.state).toBe(MessageState.PROCESSED);
     expect(sendAck).toHaveBeenCalledTimes(1);
   });
 
-  test('onServerResponse for an unknown callback returns false', () => {
+  test('onServerResponse for an unparseable callback returns false', () => {
     const { app } = makeStubApp();
     const worker = new ChannelQueueWorker({
       channelName: 'ch1',
@@ -536,6 +547,20 @@ describe('ChannelQueueWorker', () => {
     ).toBe(false);
   });
 
+  test('onServerResponse for a well-formed but unknown callback returns false', () => {
+    const { app } = makeStubApp();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      sendAck: () => true,
+    });
+    expect(
+      worker.onServerResponse(makeResponse(buildDispatchCallback('Agent/test-agent-unknown-row', 1), 200))
+    ).toBe(false);
+  });
+
   test('stop drains and prevents further claims', async () => {
     const r = enqueueOne(queue, 'STOP1');
     const { app } = makeStubApp();
@@ -549,7 +574,7 @@ describe('ChannelQueueWorker', () => {
     });
     worker.start();
     await waitFor(() => worker.hasInFlight());
-    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
 
     await worker.stop();
@@ -589,7 +614,7 @@ describe('ChannelQueueWorker', () => {
     setLive(true);
     worker.notify();
     await waitFor(() => worker.hasInFlight());
-    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
     await worker.stop();
   });
@@ -629,7 +654,7 @@ describe('ChannelQueueWorker', () => {
     setLive(true);
     worker.notify();
     await waitFor(() => worker.hasInFlight());
-    worker.onServerResponse(makeResponse(r.callbackId, 200));
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
     await worker.stop();
   });
@@ -741,7 +766,7 @@ describe('ChannelQueueWorker', () => {
 
       await waitFor(() => worker.hasInFlight());
       const before = Date.now();
-      worker.onServerResponse(makeResponse(r.callbackId, 503, 'service down'));
+      worker.onServerResponse(makeResponse(currentCallback(worker), 503, 'service down'));
 
       // The row returns to queued (not errored) with retry metadata.
       await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED);
@@ -754,7 +779,7 @@ describe('ChannelQueueWorker', () => {
 
       // After the backoff, the worker re-claims the same row; succeed it.
       await waitFor(() => worker.hasInFlight(), 2000);
-      worker.onServerResponse(makeResponse(r.callbackId, 200));
+      worker.onServerResponse(makeResponse(currentCallback(worker), 200));
       await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
       expect(queue.getById(r.id)?.attemptCount).toBe(2);
       await worker.stop();
@@ -767,20 +792,20 @@ describe('ChannelQueueWorker', () => {
       const worker = makeWorker(app, () => true);
       worker.start();
 
-      await waitFor(() => worker.hasInFlight() && lastCallback(worker) === r429.callbackId);
-      worker.onServerResponse(makeResponse(r429.callbackId, 429, 'slow down'));
+      await waitFor(() => pendingRowId(worker) === r429.id);
+      worker.onServerResponse(makeResponse(currentCallback(worker), 429, 'slow down'));
       await waitFor(() => queue.getById(r429.id)?.state === MessageState.QUEUED);
       expect(queue.getById(r429.id)?.errorCode).toBe(QueueErrorCode.ServerRateLimited);
 
       // The retrying row blocks the channel head-of-line; satisfy it first.
-      await waitFor(() => worker.hasInFlight() && lastCallback(worker) === r429.callbackId, 2000);
-      worker.onServerResponse(makeResponse(r429.callbackId, 200));
+      await waitFor(() => pendingRowId(worker) === r429.id, 2000);
+      worker.onServerResponse(makeResponse(currentCallback(worker), 200));
       await waitFor(() => queue.getById(r429.id)?.state === MessageState.PROCESSED);
 
       // A non-429 4xx never retries, even with the policy enabled — it's a
       // permanent reject (`rejected`), not the retry/review `failed` bucket.
-      await waitFor(() => worker.hasInFlight() && lastCallback(worker) === r400.callbackId, 2000);
-      worker.onServerResponse(makeResponse(r400.callbackId, 400, 'bad message'));
+      await waitFor(() => pendingRowId(worker) === r400.id, 2000);
+      worker.onServerResponse(makeResponse(currentCallback(worker), 400, 'bad message'));
       await waitFor(() => queue.getById(r400.id)?.state === MessageState.REJECTED);
       expect(queue.getById(r400.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
       await worker.stop();
@@ -794,7 +819,7 @@ describe('ChannelQueueWorker', () => {
 
       for (let attempt = 1; attempt <= 2; attempt++) {
         await waitFor(() => worker.hasInFlight(), 2000);
-        worker.onServerResponse(makeResponse(r.callbackId, 503, 'still down'));
+        worker.onServerResponse(makeResponse(currentCallback(worker), 503, 'still down'));
         await waitFor(() => queue.getById(r.id)?.state !== MessageState.CLAIMED);
       }
 
@@ -860,7 +885,7 @@ describe('ChannelQueueWorker', () => {
 
         // Answer the next dispatch definitively.
         await waitFor(() => worker.hasInFlight(), 2000);
-        worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AA')));
+        worker.onServerResponse(makeResponse(currentCallback(worker), 200, makeAckBody('AA')));
         await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
         await worker.stop();
       });
@@ -872,12 +897,12 @@ describe('ChannelQueueWorker', () => {
         worker.start();
 
         await waitFor(() => worker.hasInFlight());
-        worker.onServerResponse(makeResponse(r.callbackId, 400, 'not an hl7 ack'));
+        worker.onServerResponse(makeResponse(currentCallback(worker), 400, 'not an hl7 ack'));
         await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED);
         expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ServerRejected);
 
         await waitFor(() => worker.hasInFlight(), 2000);
-        worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AA')));
+        worker.onServerResponse(makeResponse(currentCallback(worker), 200, makeAckBody('AA')));
         await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
         expect(queue.getById(r.id)?.attemptCount).toBe(2);
         await worker.stop();
@@ -886,32 +911,41 @@ describe('ChannelQueueWorker', () => {
       test.each(['AR', 'CR'])('upstream %s is a definitive reject — terminal, no retry', async (ackCode) => {
         const r = enqueueOne(queue, `GD-${ackCode}`);
         const { app } = makeStubApp();
-        const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 0 });
+        const sendAck = vi.fn(() => true);
+        const worker = makeWorker(app, sendAck, { guaranteedDelivery: true, maxAttempts: 0 });
         worker.start();
 
         await waitFor(() => worker.hasInFlight());
-        worker.onServerResponse(makeResponse(r.callbackId, 400, makeAckBody(ackCode)));
+        worker.onServerResponse(makeResponse(currentCallback(worker), 400, makeAckBody(ackCode)));
         // A definitive upstream reject is permanent → `rejected`, never retried.
         await waitFor(() => queue.getById(r.id)?.state === MessageState.REJECTED);
         expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.UpstreamRejected);
         expect(queue.getById(r.id)?.attemptCount).toBe(1);
+        // This IS the Bot's real application-level answer (a definitive reject),
+        // so — unlike a transport/HTTP-leg failure — it is relayed to the source.
+        expect(sendAck).toHaveBeenCalledTimes(1);
+        expect(queue.getById(r.id)?.ackOutcome).toBe(AckOutcome.DELIVERED);
         await worker.stop();
       });
 
       test('upstream AE retries until a definitive AA arrives', async () => {
         const r = enqueueOne(queue, 'GD-AE');
         const { app } = makeStubApp();
-        const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 0 });
+        const sendAck = vi.fn(() => true);
+        const worker = makeWorker(app, sendAck, { guaranteedDelivery: true, maxAttempts: 0 });
         worker.start();
 
         await waitFor(() => worker.hasInFlight());
-        worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AE')));
+        worker.onServerResponse(makeResponse(currentCallback(worker), 200, makeAckBody('AE')));
         await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED);
         expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.UpstreamError);
+        // Not a definitive answer — never relayed, so a later AA isn't contradicted.
+        expect(sendAck).not.toHaveBeenCalled();
 
         await waitFor(() => worker.hasInFlight(), 2000);
-        worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AA')));
+        worker.onServerResponse(makeResponse(currentCallback(worker), 200, makeAckBody('AA')));
         await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+        expect(sendAck).toHaveBeenCalledTimes(1);
         await worker.stop();
       });
 
@@ -926,7 +960,7 @@ describe('ChannelQueueWorker', () => {
         worker.start();
 
         await waitFor(() => worker.hasInFlight());
-        worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AA')));
+        worker.onServerResponse(makeResponse(currentCallback(worker), 200, makeAckBody('AA')));
         await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
         expect(queue.getById(r.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
         expect(queue.getById(r.id)?.errorCode).toBeNull();
@@ -955,7 +989,7 @@ describe('ChannelQueueWorker', () => {
 
         for (let attempt = 1; attempt <= 2; attempt++) {
           await waitFor(() => worker.hasInFlight(), 2000);
-          worker.onServerResponse(makeResponse(r.callbackId, 200, makeAckBody('AE')));
+          worker.onServerResponse(makeResponse(currentCallback(worker), 200, makeAckBody('AE')));
           await waitFor(() => queue.getById(r.id)?.state !== MessageState.CLAIMED);
         }
 
@@ -977,12 +1011,12 @@ describe('ChannelQueueWorker', () => {
       worker.start();
 
       await waitFor(() => worker.hasInFlight());
-      worker.onServerResponse(makeResponse(r.callbackId, 503, 'down'));
+      worker.onServerResponse(makeResponse(currentCallback(worker), 503, 'down'));
       await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED);
       expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ServerError);
 
       await waitFor(() => worker.hasInFlight(), 2000);
-      worker.onServerResponse(makeResponse(r.callbackId, 200));
+      worker.onServerResponse(makeResponse(currentCallback(worker), 200));
       await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
       await worker.stop();
     });
@@ -1045,8 +1079,33 @@ describe('computeRetryDelayMs', () => {
   });
 });
 
+/**
+ * @param worker - The worker under test.
+ * @returns The wire-level callback of whatever dispatch is currently pending, if any.
+ */
 function lastCallback(worker: ChannelQueueWorker): string | undefined {
-  return (worker as unknown as { pending?: { row: InboundRow } }).pending?.row.callbackId;
+  return (worker as unknown as { pending?: { wireCallback: string } }).pending?.wireCallback;
+}
+
+/**
+ * @param worker - The worker under test.
+ * @returns The id of the row currently pending a response, if any — used to disambiguate between rows in flight sequentially.
+ */
+function pendingRowId(worker: ChannelQueueWorker): number | undefined {
+  return (worker as unknown as { pending?: { row: InboundRow } }).pending?.row.id;
+}
+
+/**
+ * Like {@link lastCallback}, but throws if nothing is pending — for call sites that need a definite `string`.
+ * @param worker - The worker under test.
+ * @returns The wire-level callback of the currently pending dispatch.
+ */
+function currentCallback(worker: ChannelQueueWorker): string {
+  const cb = lastCallback(worker);
+  if (!cb) {
+    throw new Error('expected an in-flight dispatch');
+  }
+  return cb;
 }
 
 async function sleepMs(ms: number): Promise<void> {
