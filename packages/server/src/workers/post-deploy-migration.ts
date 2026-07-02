@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { capitalize, getReferenceString, normalizeErrorString, PropertyType, toTypedValue } from '@medplum/core';
 import type { AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
-import type { Job, JobsOptions, QueueBaseOptions } from 'bullmq';
+import type { Job, JobsOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import type { PoolClient } from 'pg';
 import * as semver from 'semver';
@@ -35,7 +35,7 @@ import { getRegisteredServers } from '../server-registry';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
-  getBullmqRedisConnectionOptions,
+  defaultQueueOptions,
   getWorkerBullmqConfig,
   isJobActive,
   isJobCompatible,
@@ -53,13 +53,11 @@ function getJobDataLoggingFields(job: Job<PostDeployJobData>): Record<string, st
 }
 
 export const initPostDeployMigrationWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<PostDeployJobData>(PostDeployMigrationQueueName, {
     ...defaultOptions,
     defaultJobOptions: {
+      ...defaultOptions.defaultJobOptions,
       attempts: 1, // No retries
     },
   });

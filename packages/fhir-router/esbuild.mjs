@@ -17,7 +17,7 @@ const options = {
   tsconfig: 'tsconfig.json',
   minify: true,
   sourcemap: true,
-  external: ['@medplum/core', 'dataloader', 'rfc6902'],
+  external: ['@medplum/core', 'dataloader'],
 };
 
 esbuild

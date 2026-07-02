@@ -8,11 +8,11 @@ Medplum has achieved SOC2 Type II certification. Customers can request materials
 
 ## Materials and Usage
 
-| Resource Name     | Description                        | Access                                                                                                  |
-| ----------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Security Overview | Description of processes and tools | [medplum.com](/security)                                                         |
-| Report            | SOC2 Type2 Audit Report            | [Medplum Trust Center](https://app.vanta.com/medplum.com/trust/ybe9my9rkc6ok8yijm04h) |
-| Penetration test  | Service penetration test           | [Medplum Trust Center](https://app.vanta.com/medplum.com/trust/ybe9my9rkc6ok8yijm04h) |
+| Resource Name     | Description                        | Access                                            |
+| ----------------- | ---------------------------------- | ------------------------------------------------- |
+| Security Overview | Description of processes and tools | [medplum.com](/security)                          |
+| Report            | SOC2 Type2 Audit Report            | [Medplum Trust Center](https://trust.medplum.com) |
+| Penetration test  | Service penetration test           | [Medplum Trust Center](https://trust.medplum.com) |
 
 ## Process Notes
 

@@ -197,6 +197,12 @@ export interface Login {
   mfaVerified?: boolean;
 
   /**
+   * Single-use 6-digit code for email-based MFA. Set when a code is issued
+   * for this login and cleared on verification.
+   */
+  emailMfa?: LoginEmailMfa;
+
+  /**
    * The time at which a token will expire for this login.
    */
   expiresAt?: string;
@@ -241,4 +247,22 @@ export interface Login {
    * Optional picture URL from the external identity provider.
    */
   pictureUrl?: string;
+}
+
+/**
+ * Single-use 6-digit code for email-based MFA. Set when a code is issued
+ * for this login and cleared on verification.
+ */
+export interface LoginEmailMfa {
+
+  /**
+   * Hashed single-use 6-digit code that was emailed to the user.
+   */
+  codeHash: string;
+
+  /**
+   * The time at which the emailed code expires and can no longer be used
+   * to verify the login.
+   */
+  expiresAt: string;
 }

@@ -4,9 +4,19 @@ import type { WithId } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { deployFissionBot } from './deploy';
+import type * as FissionUtils from './utils';
+
+vi.mock('./utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof FissionUtils>();
+  return {
+    ...actual,
+    deployFissionFunction: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 describe('Deploy Fission bots', () => {
   const app = express();
@@ -28,7 +38,7 @@ describe('Deploy Fission bots', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('Success', async () => {

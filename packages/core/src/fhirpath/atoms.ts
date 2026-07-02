@@ -7,7 +7,7 @@ import type { TypedValue } from '../types';
 import { isResource, PropertyType } from '../types';
 import type { TypedValueWithPath } from '../typeschema/crawler';
 import { getTypedPropertyValueWithPath } from '../typeschema/crawler';
-import { functions } from './functions';
+import { functions, getTypeName } from './functions';
 import {
   booleanToTypedValue,
   fhirPathArrayEquals,
@@ -326,7 +326,10 @@ export class IsAtom extends InfixOperatorAtom {
     if (leftValue.length !== 1) {
       return [];
     }
-    const typeName = (this.right as SymbolAtom).name;
+    const typeName = getTypeName(this.right);
+    if (!typeName) {
+      return [];
+    }
     return booleanToTypedValue(fhirPathIs(leftValue[0], typeName));
   }
 }

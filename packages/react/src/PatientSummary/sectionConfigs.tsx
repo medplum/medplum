@@ -9,6 +9,7 @@ import type {
   Coverage,
   DiagnosticReport,
   MedicationRequest,
+  MedicationStatement,
   Observation,
   ServiceRequest,
 } from '@medplum/fhirtypes';
@@ -141,15 +142,19 @@ export const ProblemListSection: PatientSummarySectionConfig = {
   ),
 };
 
-/** Medications section — searches for MedicationRequest resources. */
+/** Medications section — searches for MedicationRequest and MedicationStatement resources. */
 export const MedicationsSection: PatientSummarySectionConfig = {
   key: 'medications',
   title: 'Medications',
-  searches: [{ key: 'medications', resourceType: 'MedicationRequest', patientParam: 'subject' }],
+  searches: [
+    { key: 'medicationRequests', resourceType: 'MedicationRequest', patientParam: 'subject' },
+    { key: 'medicationStatements', resourceType: 'MedicationStatement', patientParam: 'subject' },
+  ],
   component: ({ results, patient, onClickResource }: SectionRenderContext) => (
     <Medications
       patient={patient}
-      medicationRequests={(results['medications'] as MedicationRequest[]) || []}
+      medicationRequests={(results['medicationRequests'] as MedicationRequest[]) || []}
+      medicationStatements={(results['medicationStatements'] as MedicationStatement[]) || []}
       onClickResource={onClickResource}
     />
   ),
