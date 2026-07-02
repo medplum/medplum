@@ -10,6 +10,7 @@ import {
   indexStructureDefinitionBundle,
   isOk,
   LOINC,
+  parseSearchRequest,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type {
@@ -259,6 +260,98 @@ describe('Batch', () => {
     const results = bundle.entry as BundleEntry[];
     expect(results.length).toStrictEqual(1);
     expect(results[0].response?.status).toStrictEqual('201');
+  });
+
+  test('Process batch rejects invalid urn:uuid fullUrl and does not create dependent entry', async () => {
+    const markerIdentifier = randomUUID();
+    try {
+      await processBatch(req, repo, router, {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:not-a-valid-uuid',
+            request: { method: 'POST', url: 'Patient' },
+            resource: { resourceType: 'Patient' },
+          },
+          {
+            // References the bad fullUrl — would instantiate with a broken pointer if created
+            request: { method: 'POST', url: 'Observation' },
+            resource: {
+              resourceType: 'Observation',
+              status: 'final',
+              code: { text: 'test' },
+              subject: { reference: 'urn:uuid:not-a-valid-uuid' },
+              identifier: [{ system: 'urn:test', value: markerIdentifier }],
+            },
+          },
+          {
+            // Entirely unrelated — demonstrates the whole batch is aborted, not just affected entries
+            request: { method: 'POST', url: 'Practitioner' },
+            resource: {
+              resourceType: 'Practitioner',
+              identifier: [{ system: 'urn:test', value: markerIdentifier }],
+            },
+          },
+        ],
+      });
+      expect.fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(isOk(outcome)).toBe(false);
+      expect(outcome.issue?.[0]?.details?.text).toContain('Invalid fullUrl');
+    }
+
+    // Verify neither the dependent Observation nor the unrelated Practitioner was created
+    const observations = await repo.searchResources(
+      parseSearchRequest('Observation?identifier=urn:test|' + markerIdentifier)
+    );
+    expect(observations).toHaveLength(0);
+
+    const practitioners = await repo.searchResources(
+      parseSearchRequest('Practitioner?identifier=urn:test|' + markerIdentifier)
+    );
+    expect(practitioners).toHaveLength(0);
+  });
+
+  test('Process transaction rejects invalid urn:uuid fullUrl and does not create dependent entry', async () => {
+    const markerIdentifier = randomUUID();
+    try {
+      await processBatch(req, repo, router, {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:not-a-valid-uuid',
+            request: { method: 'POST', url: 'Patient' },
+            resource: { resourceType: 'Patient' },
+          },
+          {
+            // References the bad fullUrl — would instantiate with a broken pointer if created
+            request: { method: 'POST', url: 'Observation' },
+            resource: {
+              resourceType: 'Observation',
+              status: 'final',
+              code: { text: 'test' },
+              subject: { reference: 'urn:uuid:not-a-valid-uuid' },
+              identifier: [{ system: 'urn:test', value: markerIdentifier }],
+            },
+          },
+        ],
+      });
+      expect.fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(isOk(outcome)).toBe(false);
+      expect(outcome.issue?.[0]?.details?.text).toContain('Invalid fullUrl');
+    }
+
+    // Transaction atomicity guarantees the Observation was never committed —
+    // verify it cannot be found even though it appeared after the invalid entry.
+    const created = await repo.searchResources(
+      parseSearchRequest('Observation?identifier=urn:test|' + markerIdentifier)
+    );
+    expect(created).toHaveLength(0);
   });
 
   test('Process batch create does not rewrite identifier', async () => {
