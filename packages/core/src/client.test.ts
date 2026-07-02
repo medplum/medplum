@@ -4126,6 +4126,47 @@ describe('Client', () => {
       expect(fetch).toHaveBeenCalledTimes(4);
       expect((response as any).resourceType).toStrictEqual('Patient');
     });
+
+    test('Status polls do not resend the request body', async () => {
+      const fetch = vi.fn();
+
+      // First time, return 202 Accepted with Content-Location
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(202, {}, { 'content-location': 'https://example.com/content-location/1' })
+      );
+
+      // Second time, return 202 Accepted with Content-Location
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(202, {}, { 'content-location': 'https://example.com/content-location/1' })
+      );
+
+      // Third time, return 200 with JSON
+      fetch.mockImplementationOnce(async () => mockFetchResponse(200, { resourceType: 'AsyncJob' }));
+
+      const client = new MedplumClient({ fetch });
+      await client.startAsyncRequest('/test', {
+        method: 'POST',
+        body: '{"resourceType":"Patient"}',
+        pollStatusOnAccepted: true,
+        pollStatusPeriod: 1,
+      });
+      expect(fetch).toHaveBeenCalledTimes(3);
+
+      // The initial request carries the body and the Prefer header
+      const initialOptions = fetch.mock.calls[0][1];
+      expect(initialOptions.method).toStrictEqual('POST');
+      expect(initialOptions.body).toStrictEqual('{"resourceType":"Patient"}');
+      expect(initialOptions.headers['Prefer']).toStrictEqual('respond-async');
+
+      // Status polls must be GETs without a body (fetch throws
+      // "Request with GET/HEAD method cannot have body" otherwise)
+      // and without the Prefer header
+      for (const [, pollOptions] of fetch.mock.calls.slice(1)) {
+        expect(pollOptions.method).toStrictEqual('GET');
+        expect(pollOptions.body).toBeUndefined();
+        expect(pollOptions.headers['Prefer']).toBeUndefined();
+      }
+    });
   });
 
   describe('Token refresh', () => {

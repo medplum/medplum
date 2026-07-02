@@ -17,6 +17,7 @@ import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import type { SystemRepository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { isMfaRequired } from './utils';
 
 interface UserSession {
   id: string;
@@ -29,6 +30,7 @@ interface UserSession {
 
 interface UserSecurity {
   mfaEnrolled: boolean;
+  mfaRequired: boolean;
   sessions: UserSession[];
   memberships: Partial<ProjectMembership>[];
 }
@@ -63,6 +65,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     });
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
+      mfaRequired: isMfaRequired(user, project),
       sessions,
       memberships: memberships
         .filter((m) => m.active !== false)

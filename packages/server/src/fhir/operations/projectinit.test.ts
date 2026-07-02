@@ -81,6 +81,15 @@ describe('Project $init', () => {
     );
     expect(updatedProject.defaultPatientAccessPolicy).toBeDefined();
     expect(updatedProject.defaultPatientAccessPolicy?.reference).toMatch(/^AccessPolicy\//);
+
+    // Verify defaultAccessPolicies array is provisioned with Patient and RelatedPerson entries
+    expect(updatedProject.defaultAccessPolicies).toHaveLength(2);
+    const patientEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Patient');
+    const relatedPersonEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'RelatedPerson');
+    expect(patientEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
+    expect(relatedPersonEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
+    // Patient and RelatedPerson get separate policy instances
+    expect(patientEntry?.accessPolicy.reference).not.toBe(relatedPersonEntry?.accessPolicy.reference);
   });
 
   test('Requires project name', async () => {
