@@ -560,8 +560,12 @@ export class DurableQueue {
       if (!row) {
         throw new Error(`enqueue: inserted row id=${id} could not be re-read`);
       }
-      // ENQUEUE always inserts in the 'queued' state.
-      assertRowState(row, MessageStateValues.QUEUED);
+      // The insert (just committed above) is what durably accepted the message —
+      // this re-read only recovers the row for the caller. Don't assert it's
+      // still 'queued': a peer process sharing this DB file may have already
+      // claimed (or, in principle, settled) it between the commit and this
+      // read. That's not a failed intake, so we return whatever state it's in
+      // rather than throwing and having the caller NACK an already-committed message.
       return { kind: 'inserted', row };
     } catch (err) {
       if (isUniqueConstraintError(err) && input.msgControlId) {

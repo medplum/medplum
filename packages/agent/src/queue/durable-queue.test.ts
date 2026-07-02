@@ -138,6 +138,29 @@ describe('DurableQueue', () => {
     expect(result.row.attemptCount).toBe(0);
   });
 
+  // Regression test for a zero-downtime-upgrade race: enqueue's post-insert
+  // re-read (getById) is not part of the insert transaction, so a peer process
+  // sharing this DB file can claim the row in between. That must not surface
+  // as an enqueue failure — the insert already durably committed the message,
+  // and the caller (hl7.ts handleMessageDurable) would otherwise send the
+  // source a storage-error NACK for a message that's actively dispatching.
+  test('a peer claiming the row between insert and re-read does not fail the enqueue', () => {
+    const originalGetById = queue.getById.bind(queue);
+    const spy = vi.spyOn(queue, 'getById').mockImplementationOnce((id: number) => {
+      queue.claimNext('ch1');
+      return originalGetById(id);
+    });
+
+    const result = queue.enqueue(makeEnqueueInput({ msgControlId: 'RACE1' }));
+
+    expect(result.kind).toBe('inserted');
+    if (result.kind !== 'inserted') {
+      throw new Error('unreachable');
+    }
+    expect(result.row.state).toBe(MessageState.CLAIMED);
+    spy.mockRestore();
+  });
+
   test('duplicate insert in active window returns duplicate with the prior row', () => {
     const r1 = queue.enqueue(makeEnqueueInput({ msgControlId: 'DUP1', callbackId: 'cb-a' }));
     expect(r1.kind).toBe('inserted');

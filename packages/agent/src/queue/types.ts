@@ -451,5 +451,11 @@ export interface EnqueueRejectedInput extends EnqueueInput {
  * `(channel, msg_control_id)` already exists in a non-`nacked` state (queued,
  * claimed, inflight, processed, rejected, or failed) — the caller compares
  * bodies to decide between replaying the prior ACK and rejecting the collision (§8).
+ *
+ * `inserted`'s `row` is typed as {@link InboundRow}, not {@link QueuedRow}: the
+ * insert itself is what committed the message durably, and by the time we
+ * re-read it a peer process sharing the same DB file (e.g. during a
+ * zero-downtime-upgrade overlap) may already have claimed or even settled it.
+ * That race doesn't change the fact that intake succeeded.
  */
-export type EnqueueResult = { kind: 'inserted'; row: QueuedRow } | { kind: 'duplicate'; existing: InboundRow };
+export type EnqueueResult = { kind: 'inserted'; row: InboundRow } | { kind: 'duplicate'; existing: InboundRow };
