@@ -4,11 +4,11 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import type { SearchRequest, WithId } from '@medplum/core';
 import {
   ContentType,
-  LogLevel,
-  Operator,
   createReference,
   generateId,
   getReferenceString,
+  LogLevel,
+  Operator,
   stringify,
 } from '@medplum/core';
 import type {
@@ -37,7 +37,7 @@ import { vi } from 'vitest';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type * as Constants from '../constants';
-import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
+import { systemResourceProjectId, WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
@@ -610,6 +610,124 @@ describe('Subscription Worker', () => {
         );
       } finally {
         getConfig().allowInsecureRestHookUrl = savedConfig;
+      }
+    }));
+
+  test('Server-scoped subscription fires across projects when enabled', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/server-scoped-subscription';
+      const savedConfig = getConfig().serverScopedSubscriptions;
+      getConfig().serverScopedSubscriptions = true;
+
+      // Create a subscription with no project (i.e. server-scoped / system project)
+      const subscription = await superAdminRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription).toBeDefined();
+      // A server-scoped subscription is not scoped to any project (stored in the system project)
+      expect(subscription.meta?.project).toBeUndefined();
+
+      try {
+        // Create a patient in a regular project
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+        expect(patient.meta?.project).toBeDefined();
+        expect(patient.meta?.project).not.toStrictEqual(systemResourceProjectId);
+
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+        // The server-scoped subscription should fire for a resource in a different project.
+        // Target this specific subscription's job so other (potentially leftover) server-scoped
+        // subscriptions in the shared system project don't make the assertions non-deterministic.
+        await findAndExecSubscriptionJob(patient, 'create', subscription);
+
+        expect(fetch).toHaveBeenCalledWith(
+          url,
+          expect.objectContaining({
+            method: 'POST',
+            body: stringify(patient),
+          })
+        );
+
+        // The AuditEvent should still be scoped to the triggering resource's project,
+        // NOT the (system) project that the server-scoped subscription lives in.
+        // The project must be specified explicitly when searching with the system repo.
+        const auditEvents = await repo.getSystemRepo().searchResources<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [
+            {
+              code: '_project',
+              operator: Operator.EQUALS,
+              value: patient.meta?.project as string,
+            },
+            {
+              code: 'entity',
+              operator: Operator.EQUALS,
+              value: getReferenceString(patient),
+            },
+          ],
+        });
+        // The audit event references the server-scoped subscription that triggered it...
+        const auditEvent = auditEvents.find((e) =>
+          e.entity?.some((entity) => entity.what?.reference === getReferenceString(subscription))
+        );
+        expect(auditEvent).toBeDefined();
+        // ...but lives in the triggering resource's project, not the system project.
+        expect(auditEvent?.meta?.project).toStrictEqual(patient.meta?.project);
+        expect(auditEvent?.meta?.project).not.toStrictEqual(systemResourceProjectId);
+      } finally {
+        getConfig().serverScopedSubscriptions = savedConfig;
+        // Clean up the server-scoped subscription so it does not leak into the shared system project
+        await superAdminRepo.deleteResource('Subscription', subscription.id);
+      }
+    }));
+
+  test('Server-scoped subscription does not fire when disabled', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/server-scoped-subscription-disabled';
+      const savedConfig = getConfig().serverScopedSubscriptions;
+      // Explicitly disabled (this is also the default)
+      getConfig().serverScopedSubscriptions = false;
+
+      const subscription = await superAdminRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription.meta?.project).toBeUndefined();
+
+      try {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+        // With server-scoped subscriptions disabled, the project-less subscription is not
+        // considered for resources in other projects, so its job should never be enqueued.
+        await expect(findAndExecSubscriptionJob(patient, 'create', subscription)).rejects.toThrow('Job not found');
+        expect(fetch).not.toHaveBeenCalledWith(url, expect.anything());
+      } finally {
+        getConfig().serverScopedSubscriptions = savedConfig;
+        // Clean up the server-scoped subscription so it does not leak into the shared system project
+        await superAdminRepo.deleteResource('Subscription', subscription.id);
       }
     }));
 
