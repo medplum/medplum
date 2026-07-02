@@ -32,6 +32,13 @@ export function SchedulePage(): JSX.Element | null {
     !id ? createReference(profile) : undefined
   );
   const [loading, setLoading] = useState(true);
+  // Tracks the last ID whose fetch has settled (success or failure), so that
+  // isLoadingById clears even when readResource rejects and schedule stays stale.
+  const [resolvedId, setResolvedId] = useState<string | undefined>(undefined);
+
+  // True immediately when the URL id changes (derived, no extra render) and stays
+  // true until the fetch for that id settles or the schedule already matches.
+  const isLoadingById = Boolean(id) && schedule?.id !== id && resolvedId !== id;
 
   // ReferenceInput does not take a `value` prop, so we use this stateful `key` to trigger
   // it to remount and take new values from `initialValue` on demand. :confounded:
@@ -54,12 +61,14 @@ export function SchedulePage(): JSX.Element | null {
       })
       .catch((err) => {
         if (active) {
+          setSchedule(undefined);
           showErrorNotification(err);
         }
       })
       .finally(() => {
         if (active) {
           setLoading(false);
+          setResolvedId(id);
         }
       });
     return () => {
@@ -138,7 +147,7 @@ export function SchedulePage(): JSX.Element | null {
   const schedulingEnabled = project?.features?.includes('scheduling');
 
   let mainContent: JSX.Element | null = null;
-  if (loading) {
+  if (loading || isLoadingById) {
     mainContent = (
       <Center flex={1}>
         <Loader />
@@ -171,13 +180,14 @@ export function SchedulePage(): JSX.Element | null {
             placeholder="Switch schedule..."
             defaultValue={(schedule?.actor?.[0] ?? selectedActor) as Reference<Practitioner>}
             onChange={handleActorChange}
+            disabled={isLoadingById}
           />
         </Box>
-        {schedule && schedulingEnabled && (
+        {id && schedulingEnabled && (
           <ActionIcon
             variant="subtle"
             aria-label="Schedule settings"
-            onClick={() => navigate(`/Calendar/Schedule/${schedule.id}/settings`)}
+            onClick={() => navigate(`/Calendar/Schedule/${id}/settings`)}
           >
             <IconSettings />
           </ActionIcon>

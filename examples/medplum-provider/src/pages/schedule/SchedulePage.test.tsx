@@ -4,12 +4,20 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { createReference, ReadablePromise } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  Bundle,
+  CodeableConcept,
+  HealthcareService,
+  ResourceType,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, getByText, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { toCodeableReferenceLike } from '../../utils/servicetype';
 import { SchedulePage } from './SchedulePage';
@@ -38,21 +46,28 @@ describe('SchedulePage', () => {
     medplum.searchResources = vi.fn().mockResolvedValue([]);
   });
 
-  const setup = (initialPath = '/Calendar/Schedule/schedule-1'): ReturnType<typeof render> => {
-    return render(
-      <MemoryRouter initialEntries={[initialPath]}>
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
-              <Route path="/Calendar/Schedule" element={<SchedulePage />} />
-              <Route path="/Calendar/Schedule/:id/settings" element={<div>Settings Page</div>} />
-            </Routes>
-          </MantineProvider>
-        </MedplumProvider>
-      </MemoryRouter>
+  const setup = (
+    initialPath = '/Calendar/Schedule/schedule-1'
+  ): ReturnType<typeof render> & { navigate: ReturnType<typeof createMemoryRouter>['navigate'] } => {
+    const router = createMemoryRouter(
+      [
+        { path: '/Calendar/Schedule/:id/settings', element: <div>Settings Page</div> },
+        { path: '/Calendar/Schedule/:id', element: <SchedulePage /> },
+        { path: '/Calendar/Schedule', element: <SchedulePage /> },
+      ],
+      { initialEntries: [initialPath] }
     );
+
+    const result = render(
+      <MedplumProvider medplum={medplum}>
+        <MantineProvider>
+          <Notifications />
+          <RouterProvider router={router} />
+        </MantineProvider>
+      </MedplumProvider>
+    );
+
+    return { ...result, navigate: router.navigate.bind(router) };
   };
 
   describe('Initial Rendering', () => {
@@ -146,6 +161,47 @@ describe('SchedulePage', () => {
 
       expect(screen.queryByText('Today')).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Create Schedule' })).not.toBeInTheDocument();
+    });
+
+    test('shows a loader immediately when navigating to a different schedule id', async () => {
+      // Intercept reads for schedule-2 and keep them pending, pass through everything else
+      const origReadResource = medplum.readResource.bind(medplum);
+      medplum.readResource = vi.fn().mockImplementation((resourceType: ResourceType, id: string) => {
+        if (id === 'schedule-2') {
+          return new Promise(() => {}); // never resolves — keeps the loading state visible
+        }
+        return origReadResource(resourceType, id);
+      });
+
+      const { navigate } = setup('/Calendar/Schedule/schedule-1');
+
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+
+      // Trigger navigation without other interaction, similar to using browser "back" button
+      await act(async () => navigate('/Calendar/Schedule/schedule-2'));
+
+      expect(screen.queryByText('Today')).not.toBeInTheDocument();
+    });
+
+    test('clears the loading state when readResource rejects during navigation', async () => {
+      const origReadResource = medplum.readResource.bind(medplum);
+      medplum.readResource = vi.fn().mockImplementation((resourceType: ResourceType, id: string) => {
+        if (id === 'schedule-2') {
+          return Promise.reject(new Error('Not found'));
+        }
+        return origReadResource(resourceType, id);
+      });
+
+      const { navigate } = setup('/Calendar/Schedule/schedule-1');
+
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+      await act(async () => navigate('/Calendar/Schedule/schedule-2'));
+
+      // Spinner must clear — page must not be permanently stuck
+      await waitFor(() => expect(screen.queryByRole('progressbar')).not.toBeInTheDocument());
+
+      // It should not show a mismatched schedule
+      expect(screen.queryByText('Today')).not.toBeInTheDocument();
     });
   });
 
