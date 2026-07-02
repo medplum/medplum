@@ -2211,14 +2211,13 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
-      // Clone the repository to obtain a separate RepositoryConnection is used for two reasons
+      // Clone the repository to obtain a separate RepositoryConnection for two reasons:
       // 1. the unawaited save must outlive the current repo's connection scope, which is marked 'ended'
-      // and closed/unusable as soon as post-commit callbacks return.
+      // and closed/unusable as soon as post-commit callbacks returns (before the unawaited save completes).
       // 2. the unawaited save begins a transaction (in handleStorage) which would clash with any subsequent
-      // transactions in the current Repository and cause one of them to fail.
+      // mainline transactions started on the current Repository and cause one of them to fail.
       // To reduce AuditEvent overhead, we could consider further decoupling AuditEvent saves from request processing
-      // by pushing them onto an in-process queue (or the existing BullMQ infrastructure) drained by one long-lived writer.
-      // on an interval.
+      // by pushing them onto an in-process queue (or BullMQ) and drain/write them to the DB on an interval.
       const saveRepo = this.clone();
       saveRepo
         .updateResourceImpl(auditEvent, true)
