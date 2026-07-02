@@ -44,6 +44,8 @@ export type UseWhisperResult = {
   start: () => Promise<void>;
   stop: () => void;
   isListening: boolean;
+  muted: boolean;
+  setMuted: (value: boolean) => void;
 };
 
 export function useWhisper({
@@ -68,6 +70,18 @@ export function useWhisper({
   const startingCaptureRef = useRef(false);
   const sessionReadyRef = useRef(false);
   const capturingRef = useRef(false);
+  const [muted, setMutedState] = useState(false);
+  const mutedRef = useRef(false);
+
+  // Mute/unmute by toggling the captured mic track; keeps the warm session and worklet running
+  // (a disabled track emits silence, so the server VAD simply hears nothing).
+  const setMuted = useCallback((value: boolean) => {
+    mutedRef.current = value;
+    setMutedState(value);
+    audioStreamRef.current?.getAudioTracks().forEach((track) => {
+      track.enabled = !value;
+    });
+  }, []);
 
   // Stop capturing audio and release the microphone, but leave the WebSocket + OpenAI
   // session warm so the next start() can reuse them. This is the user-facing `stop`.
@@ -82,6 +96,10 @@ export function useWhisper({
 
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
     audioStreamRef.current = undefined;
+
+    // Each capture session starts unmuted
+    mutedRef.current = false;
+    setMutedState(false);
 
     setStatus(websocketRef.current ? 'idle' : 'disconnected');
   }, []);
@@ -373,6 +391,8 @@ export function useWhisper({
     start,
     stop: stopCapture,
     isListening: status === 'listening' || status === 'speech_started' || status === 'speech_stopped',
+    muted,
+    setMuted,
   };
 }
 
