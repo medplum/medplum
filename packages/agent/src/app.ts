@@ -1621,11 +1621,16 @@ export class App {
     }
 
     try {
-      const logs = await this.log.fetchLogs({ limit: command.limit });
+      const { logs, hasMore, nextBefore } = await this.log.fetchLogs({
+        limit: command.limit,
+        before: command.before,
+      });
       await this.sendToWebSocket({
         type: 'agent:logs:response',
         statusCode: 200,
         logs,
+        hasMore,
+        nextBefore,
         callback: command.callback,
       });
     } catch (err) {

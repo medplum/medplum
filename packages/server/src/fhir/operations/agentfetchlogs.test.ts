@@ -85,6 +85,7 @@ describe('Agent/$fetch-logs', () => {
           type: 'agent:logs:response',
           statusCode: 200,
           logs,
+          hasMore: false,
         }
       );
     }
@@ -122,7 +123,7 @@ describe('Agent/$fetch-logs', () => {
       agents[0],
       accessToken,
       'agent:logs:request',
-      { type: 'agent:logs:response', statusCode: 200, logs }
+      { type: 'agent:logs:response', statusCode: 200, logs, hasMore: false }
     );
 
     const res = await request(app)
@@ -141,6 +142,50 @@ describe('Agent/$fetch-logs', () => {
         }),
       ]),
     });
+
+    cleanup();
+  });
+
+  test('Fetch logs -- paginates with before cursor and returns hasMore/nextBefore', async () => {
+    const logs: LogMessage[] = [
+      { level: 'INFO', timestamp: '2020-01-02T00:00:01.000Z', msg: 'Older 1' },
+      { level: 'INFO', timestamp: '2020-01-02T00:00:00.000Z', msg: 'Older 2' },
+    ];
+
+    let receivedRequest: AgentLogsRequest | undefined;
+    const { cleanup } = await mockAgentResponse<AgentLogsRequest, AgentLogsResponse>(
+      agents[0],
+      accessToken,
+      'agent:logs:request',
+      { type: 'agent:logs:response', statusCode: 200, logs, hasMore: true, nextBefore: '2020-01-02T00:00:00.000Z' },
+      (req) => {
+        receivedRequest = req;
+      }
+    );
+
+    const res = await request(app)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$fetch-logs`)
+      .query({ limit: 2, before: '2020-01-02T00:00:02.000Z' })
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toBe(200);
+    const params = res.body as Parameters;
+
+    expect(params).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: expect.arrayContaining<ParametersParameter>([
+        expect.objectContaining<ParametersParameter>({
+          name: 'logs',
+          valueString: logs.map((msg) => JSON.stringify(msg)).join('\n'),
+        }),
+        expect.objectContaining<ParametersParameter>({ name: 'hasMore', valueBoolean: true }),
+        expect.objectContaining<ParametersParameter>({ name: 'nextBefore', valueString: '2020-01-02T00:00:00.000Z' }),
+      ]),
+    });
+
+    // The `before` cursor and limit should be forwarded to the agent.
+    expect(receivedRequest?.before).toBe('2020-01-02T00:00:02.000Z');
+    expect(receivedRequest?.limit).toBe(2);
 
     cleanup();
   });
