@@ -50,7 +50,8 @@ export async function mockAgentResponse<
   agent: WithId<Agent>,
   accessToken: string,
   msgType: TRequest['type'],
-  res: TResponse
+  res: TResponse,
+  onRequest?: (req: TRequest) => void
 ): Promise<MockAgentResponseHandle> {
   if (!serverPort) {
     throw new Error('Must call `configMockAgents()` before calling `mockAgentResponse()`');
@@ -74,6 +75,7 @@ export async function mockAgentResponse<
     if (!msg.callback) {
       throw new Error('No callback in message to message received');
     }
+    onRequest?.(msg);
     ws.send(JSON.stringify({ ...res, callback: msg.callback }));
   };
   ws.addEventListener('message', handler);
