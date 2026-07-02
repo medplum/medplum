@@ -165,17 +165,21 @@ export function SchedulePage(): JSX.Element | null {
     [appointmentDetailsHandlers]
   );
 
-  // When an appointment is selected, navigate to the detail page
   const handleSelectAppointment = useCallback(
-    async (appointment: Appointment) => {
-      if (isResourceWithId(appointment)) {
-        setAppointmentDetails(appointment);
-        appointmentDetailsHandlers.open();
+    (appointment: Appointment) => {
+      if (!isResourceWithId(appointment)) {
+        showErrorNotification("Can't navigate to unsaved appointment");
+        return;
       }
+      setAppointmentDetails(appointment);
+      appointmentDetailsHandlers.open();
     },
     [appointmentDetailsHandlers]
   );
 
+  // On appointment double click, check if there is a related Encounter we can
+  // jump to. If not, we let the `handleSelectAppointment` handler show the
+  // appointment details drawer and don't need to take any action here.
   const handleDoubleClickAppointment = useCallback(
     async (appointment: Appointment) => {
       if (!isResourceWithId(appointment)) {

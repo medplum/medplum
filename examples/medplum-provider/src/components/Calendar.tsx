@@ -211,8 +211,10 @@ export function Calendar(props: {
           },
         }}
         eventDidMount={(info) => {
-          eventDataRef.current.set(info.el, info.event.extendedProps as ExtendedEvent);
-          info.el.addEventListener('dblclick', handleDblClick);
+          if (onDoubleClickAppointment) {
+            eventDataRef.current.set(info.el, info.event.extendedProps as ExtendedEvent);
+            info.el.addEventListener('dblclick', handleDblClick);
+          }
         }}
       />
     </div>

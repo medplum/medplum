@@ -293,7 +293,7 @@ export function encounterUrl(encounter: WithId<Encounter>): string {
   // If the encounter subject is a Patient, deep link to the encounter
   // inside that patient's context
   if (isReference(encounter.subject, 'Patient')) {
-    return `/${encounter.subject.reference}/Encounter/${encounter.id}`;
+    return `/${encounter.subject.reference}/${getReferenceString(encounter)}`;
   }
 
   // Otherwise, link to the ResourcePage to show basic info

@@ -60,7 +60,7 @@ describe('Calendar', () => {
     onSelectInterval?: () => void;
     onSelectSlot?: (slot: Slot) => void;
     onSelectAppointment?: (appointment: Appointment) => void;
-    onDoubleClickAppointment?: (appontment: Appointment) => void;
+    onDoubleClickAppointment?: (appointment: Appointment) => void;
     onRangeChange?: (range: Range) => void;
   } = {}): ReturnType<typeof render> => {
     return render(
@@ -338,7 +338,7 @@ describe('Calendar', () => {
       await expect(onSelectSlot).toHaveBeenCalledWith(slot);
     });
 
-    test('calls onDoubleClickAppointment when double-clicing an appointment', async () => {
+    test('calls onDoubleClickAppointment when double-clicking an appointment', async () => {
       const onDoubleClickAppointment = vi.fn();
       const appointment = createAppointment();
       setup({ appointments: [appointment], onDoubleClickAppointment });
