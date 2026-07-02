@@ -452,6 +452,25 @@ describe('Patient Set Accounts Operation', () => {
     );
   });
 
+  test('Rejects async response without propagate', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'accounts',
+            valueReference: createReference(organization1),
+          },
+        ],
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue?.[0]?.details?.text).toContain('propagate');
+  });
+
   test('Removes account without extended header', async () => {
     const setTwo = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)

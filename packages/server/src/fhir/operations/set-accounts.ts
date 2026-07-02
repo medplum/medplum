@@ -89,7 +89,14 @@ export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse
   const params = parseInputParameters<SetAccountsParameters>(operation, req);
 
   const { repo } = getAuthenticatedContext();
-  if (req.headers?.['prefer'] === 'respond-async' && params.propagate) {
+  const respondAsync = req.headers?.['prefer'] === 'respond-async';
+  if (respondAsync && !params.propagate) {
+    return [
+      badRequest('Prefer: respond-async is only supported for the $set-accounts operation when propagate is true'),
+    ];
+  }
+
+  if (respondAsync) {
     const { baseUrl } = getConfig();
     const exec = new AsyncJobExecutor(repo);
     const asyncJob = await exec.init(concatUrls(baseUrl, `${resourceType}/${id}/$set-accounts`));
