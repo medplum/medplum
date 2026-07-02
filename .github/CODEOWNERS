@@ -20,13 +20,13 @@
 # Both Core and FDE own the packages/docs directory.
 /packages/docs/ @medplum/core @medplum/fde @medplum/dev
 
-# Product owns the frontend packages. A PR that only touches these packages
-# needs review from Product (or dev as backdrop); touching anything else pulls in that file's owner too.
-/packages/react/ @medplum/product @medplum/dev
-/packages/react-hooks/ @medplum/product @medplum/dev
-/packages/app/ @medplum/product @medplum/dev
+# Frontend owns the frontend packages. A PR that only touches these packages
+# needs review from Product; touching anything else pulls in that file's owner too.
+/packages/react/ @medplum/frontend @medplum/dev
+/packages/react-hooks/ @medplum/frontend @medplum/dev
+/packages/app/ @medplum/frontend @medplum/dev
 
-# A PR only touching these packages needs review from Integrations (or dev as backdrop).
+# A PR only touching these packages needs review from Integrations.
 /packages/dosespot-core/ @medplum/integrations @medplum/dev
 /packages/dosespot-react/ @medplum/integrations @medplum/dev
 /packages/health-gorilla-core/ @medplum/integrations @medplum/dev
