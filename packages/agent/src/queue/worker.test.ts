@@ -949,6 +949,46 @@ describe('ChannelQueueWorker', () => {
         await worker.stop();
       });
 
+      test('a late success for a superseded attempt is discarded; the current attempt still fails/retries normally', async () => {
+        // Attempt 1 times out locally and is retried; attempt 2 is dispatched.
+        // THEN attempt 1's response finally arrives from the server — a success.
+        // It must be discarded (the row has moved on to attempt 2), not applied
+        // as if it settled the row. Attempt 2 subsequently fails for real, which
+        // must be handled exactly as any other failure, unaffected by the stale
+        // attempt-1 response that was just discarded.
+        const r = enqueueOne(queue, 'GD-STALE-SUCCESS');
+        const { app } = makeStubApp();
+        const sendAck = vi.fn(() => true);
+        const worker = makeWorker(app, sendAck, { guaranteedDelivery: true, maxAttempts: 0 });
+        worker.start();
+
+        await waitFor(() => worker.hasInFlight());
+        const attempt1Callback = currentCallback(worker);
+        worker.onServerResponse(makeResponse(attempt1Callback, 503, 'service down'));
+        await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED);
+
+        // Attempt 2 is claimed and dispatched before attempt 1's (delayed) response
+        // shows up.
+        await waitFor(() => worker.hasInFlight(), 2000);
+        expect(currentCallback(worker)).not.toBe(attempt1Callback);
+
+        // The late attempt-1 success arrives now — discarded as stale, since it
+        // answers an attempt the row has already moved past.
+        expect(worker.onServerResponse(makeResponse(attempt1Callback, 200, makeAckBody('AA')))).toBe(false);
+        expect(queue.getById(r.id)?.state).toBe(MessageState.CLAIMED);
+        expect(sendAck).not.toHaveBeenCalled();
+
+        // Attempt 2 then fails for real — scheduled for retry like any other
+        // transient failure, with no trace of the discarded attempt-1 response.
+        worker.onServerResponse(makeResponse(currentCallback(worker), 503, 'still down'));
+        await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED);
+        const scheduled = queue.getById(r.id);
+        expect(scheduled?.errorCode).toBe(QueueErrorCode.ServerError);
+        expect(scheduled?.attemptCount).toBe(2);
+        expect(scheduled?.lastError).toContain('still down');
+        await worker.stop();
+      });
+
       test('source ACK failure is processed+undelivered, never re-dispatched — even under guaranteed delivery', async () => {
         // Guaranteed delivery retries Bot-leg failures, but a failed SOURCE ACK is
         // not a Bot-leg failure: upstream already accepted the message (AA). The
