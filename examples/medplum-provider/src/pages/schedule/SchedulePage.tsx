@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Button, Center, Group, Loader, Stack, Text } from '@mantine/core';
+import { ActionIcon, Alert, Box, Button, Center, Group, Loader, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { createReference } from '@medplum/core';
-import type { Practitioner, Reference, Schedule } from '@medplum/fhirtypes';
-import { ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconSettings } from '@tabler/icons-react';
+import { createReference, isNotFound, normalizeOperationOutcome } from '@medplum/core';
+import type { OperationOutcome, Practitioner, Reference, Schedule } from '@medplum/fhirtypes';
+import { OperationOutcomeAlert, ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconAlertCircle, IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -32,6 +32,7 @@ export function SchedulePage(): JSX.Element | null {
     !id ? createReference(profile) : undefined
   );
   const [loading, setLoading] = useState(true);
+  const [readOutcome, setReadOutcome] = useState<OperationOutcome | undefined>();
   // Tracks the last ID whose fetch has settled (success or failure), so that
   // isLoadingById clears even when readResource rejects and schedule stays stale.
   const [resolvedId, setResolvedId] = useState<string | undefined>(undefined);
@@ -55,6 +56,10 @@ export function SchedulePage(): JSX.Element | null {
       .then((s) => {
         if (active) {
           setSchedule(s);
+          setReadOutcome(undefined);
+
+          // clear selection and bump state key to make the UI re-render showing
+          // a practitioner from the schedule we just loaded.
           setSelectedActor(undefined);
           setStateKey((prev) => prev + 1);
         }
@@ -62,7 +67,13 @@ export function SchedulePage(): JSX.Element | null {
       .catch((err) => {
         if (active) {
           setSchedule(undefined);
-          showErrorNotification(err);
+          setReadOutcome(normalizeOperationOutcome(err));
+
+          // avoid showing a different practitioner's name along side
+          // the error message. Clear the selected actor state and force a
+          // re-render.
+          setSelectedActor(undefined);
+          setStateKey((prev) => prev + 1);
         }
       })
       .finally(() => {
@@ -153,6 +164,19 @@ export function SchedulePage(): JSX.Element | null {
         <Loader />
       </Center>
     );
+  } else if (readOutcome) {
+    // Special case some nicer UI for the most frequent error. Common scenario:
+    // changing project while on a permalink page for a Schedule resource, you
+    // suddenly don't have permission to see the resource you were just looking at.
+    if (isNotFound(readOutcome)) {
+      mainContent = (
+        <Alert color="red" icon={<IconAlertCircle />} title="Not Found" m="xl">
+          This schedule does not exist or you do not have permission to view it.
+        </Alert>
+      );
+    } else {
+      mainContent = <OperationOutcomeAlert outcome={readOutcome} m="xl" />;
+    }
   } else if (schedule) {
     mainContent = <ScheduleDetails schedule={schedule} />;
   } else if (selectedActor) {
