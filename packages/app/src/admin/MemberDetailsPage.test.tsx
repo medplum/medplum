@@ -303,6 +303,57 @@ describe('MemberDetailsPage', () => {
     expect(screen.getAllByText('Email').length).toBeGreaterThan(0);
   });
 
+  test('Account Security treats legacy mfaEnrolled user without mfaMethod as TOTP-only', async () => {
+    const medplum = createMedplum(true);
+    const membership = await setupMember(medplum, { mfaEnrolled: true, mfaMethod: undefined });
+
+    renderAppRoutes(medplum, `/admin/users/${membership.id}`);
+
+    expect(await screen.findByText('Account Security')).toBeInTheDocument();
+    expect(screen.getByText('Authenticator app (TOTP)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reset MFA' })).not.toBeDisabled();
+  });
+
+  test('Account Security shows Required badge when member has mfaRequired set', async () => {
+    const medplum = createMedplum(true);
+    const membership = await setupMember(medplum, { mfaRequired: true });
+
+    renderAppRoutes(medplum, `/admin/users/${membership.id}`);
+
+    expect(await screen.findByText('Account Security')).toBeInTheDocument();
+    expect(screen.getByText('Required')).toBeInTheDocument();
+  });
+
+  test('Account Security warns and disables password actions when member has no email', async () => {
+    const medplum = createMedplum(true);
+    const membership = await setupMember(medplum, { email: undefined });
+
+    renderAppRoutes(medplum, `/admin/users/${membership.id}`);
+
+    expect(await screen.findByText('Account Security')).toBeInTheDocument();
+    expect(
+      screen.getByText('This member has no email address, so password reset emails cannot be sent.')
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Send password reset email' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Set password' })).toBeDisabled();
+  });
+
+  test('Reset MFA modal defaults to email factor when only email is enrolled', async () => {
+    const medplum = createMedplum(true);
+    const membership = await setupMember(medplum, { mfaEnrolled: true, mfaMethod: ['email'] });
+
+    renderAppRoutes(medplum, `/admin/users/${membership.id}`);
+
+    const resetButton = await screen.findByRole('button', { name: 'Reset MFA' });
+    await act(async () => {
+      fireEvent.click(resetButton);
+    });
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('radio', { name: 'Email' })).toBeChecked();
+    expect(within(dialog).getByRole('radio', { name: 'Authenticator app (TOTP)' })).toBeDisabled();
+  });
+
   test('Account Security hidden for non-admins', async () => {
     const medplum = createMedplum(false);
     const membership = await setupMember(medplum, { mfaEnrolled: true, mfaMethod: ['totp'] });
