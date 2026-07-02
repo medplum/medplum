@@ -16,7 +16,7 @@ module "memorystore" {
   source  = "terraform-google-modules/memorystore/google"
   version = "~> 12.0"
 
-  name                    = "medplum-redis"
+  name                    = local.redis_name
   project_id              = var.project_id
   region                  = var.region
   memory_size_gb          = "1"

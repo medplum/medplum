@@ -1,4 +1,4 @@
-#  This file is used to define variable values for the Terraform configuration, 
+#  This file is used to define variable values for the Terraform configuration,
 # allowing customization of the infrastructure setup without modifying the main configuration files.
 
 # GCP project configuration - Change these values to use your own project, domains, region, and zone
@@ -8,6 +8,14 @@ region         = "your-region"              # e.g. "us-west1"
 zone           = "your-zone"                # e.g. "us-west1-a"
 app_domain     = "your-static-asset-domain" # e.g. "app.medplum.dev"
 storage_domain = "your-user-content-domain" # e.g. "storage.medplum.dev"
+
+# Prefix applied to every named GCP resource (VPC, GKE, Cloud SQL, Redis, buckets, etc.).
+# Change this to run multiple independent deployments in the same GCP project without
+# name collisions. Resources are named "<namespace>-...". See locals.tf.
+namespace = "medplum"
+
+# Zones for the GKE autopilot cluster - must be within `region`.
+gke_zones = ["us-west1-a", "us-west1-b"]
 
 # GKE Cluster configuration - local network CIDR block should be replaced with your own to be able to access the GKE master nodes
 
@@ -26,13 +34,14 @@ labels = {
 }
 
 
-## Default Buckets configuration
+## Buckets - keyed by logical name; the actual (globally-unique) bucket name is
+## "<namespace>-<key>" (e.g. medplum-storage, medplum-app). cdn.tf references these keys.
 gcs_buckets = {
-  medplum-storage = { # Bucket name
+  storage = {
     location                 = "US"
     public_access_prevention = "enforced"
   },
-  medplum-app = { # Bucket name
+  app = {
     location = "US"
     website = {
       main_page_suffix = "index.html"

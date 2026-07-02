@@ -20,7 +20,7 @@
 module "medplum-lb-https" {
   source                          = "GoogleCloudPlatform/lb-http/google"
   version                         = "~> 11.1"
-  name                            = "medplum-elb"
+  name                            = local.elb_name
   project                         = var.project_id
   firewall_networks               = [module.vpc.network_name]
   target_tags                     = []
@@ -67,7 +67,7 @@ module "medplum-lb-https" {
   }
 }
 resource "google_compute_url_map" "cdn_url_map" {
-  name            = "medplum-url-map"
+  name            = local.url_map_name
   project         = var.project_id
   description     = "CDN URL map to cdn_backend_bucket"
   default_service = module.medplum-lb-https.backend_services.default.self_link
@@ -103,10 +103,10 @@ resource "google_compute_url_map" "cdn_url_map" {
 }
 
 resource "google_compute_backend_bucket" "storage_bucket" {
-  name             = "medplum-cdn-backend-storage-bucket"
+  name             = local.cdn_storage_be_name
   project          = var.project_id
   description      = "Backend bucket for serving static content through CDN"
-  bucket_name      = module.buckets["medplum-storage-p"].name
+  bucket_name      = module.buckets["storage"].name
   enable_cdn       = true
   compression_mode = "DISABLED"
 
@@ -115,10 +115,10 @@ resource "google_compute_backend_bucket" "storage_bucket" {
 }
 
 resource "google_compute_backend_bucket" "apps_bucket" {
-  name             = "medplum-cdn-backend-app-bucket"
+  name             = local.cdn_app_be_name
   project          = var.project_id
   description      = "Backend bucket for serving static content through CDN"
-  bucket_name      = module.buckets["medplum-app-p"].name
+  bucket_name      = module.buckets["app"].name
   enable_cdn       = true
   compression_mode = "DISABLED"
 
@@ -128,7 +128,7 @@ resource "google_compute_backend_bucket" "apps_bucket" {
 
 
 resource "google_compute_global_address" "elb_external_ip" {
-  name         = "medplum-cdn-ip"
+  name         = local.elb_external_ip_name
   project      = var.project_id
   address_type = "EXTERNAL"
 }

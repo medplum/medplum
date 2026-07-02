@@ -17,7 +17,7 @@ module "service_accounts" {
   source     = "terraform-google-modules/service-accounts/google"
   version    = "~> 4.4.0"
   project_id = var.project_id
-  names      = ["medplum-server"]
+  names      = [local.gsa_name]
 
   project_roles = [
     "${var.project_id}=>roles/redis.admin",
@@ -44,4 +44,14 @@ resource "google_service_account_iam_member" "ksa_roles" {
   service_account_id = module.service_accounts.service_accounts[0].name
   role               = each.value
   member             = "serviceAccount:${var.project_id}.svc.id.goog[medplum/medplum-server]"
+}
+
+# Allow the runtime GSA to sign blobs for GCS V4 presigned URLs via the IAM
+# SignBlob API. Under Workload Identity the server signs without a private key,
+# which requires serviceAccountTokenCreator on the GSA itself.
+# See install-on-gcp ("presigned URLs" is a manual step on GCP).
+resource "google_service_account_iam_member" "gsa_self_sign" {
+  service_account_id = module.service_accounts.service_accounts[0].name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${module.service_accounts.service_accounts[0].email}"
 }

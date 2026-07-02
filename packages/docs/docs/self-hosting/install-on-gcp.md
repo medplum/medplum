@@ -90,6 +90,11 @@ project_id = "your-project-id"
 region     = "your-region"
 zone       = "your-zone"
 
+# Prefix applied to every named GCP resource (VPC, GKE, Cloud SQL, Redis, buckets, etc.).
+# Change this to run multiple independent Medplum deployments in the same GCP project
+# without resource-name collisions. Resources are named "<namespace>-...".
+namespace = "medplum"
+
 # Common enforced labels - Change these values to use your own labels
 labels = {
   env     = "your-environment"  # e.g., "dev", "staging", "prod"
@@ -97,6 +102,22 @@ labels = {
   owner   = "your-owner"        # e.g., "team-name", "project-owner"
 }
 ```
+
+:::caution[Using a non-default namespace]
+
+Two GCP-global resource names referenced by the Helm chart are derived from `namespace`:
+the ingress static IP (`<namespace>-external-ip`) and the Cloud Armor policy
+(`<namespace>-ingress-security-policy`). If you change `namespace` away from the default
+`medplum`, set the matching Helm values when you deploy the backend (see
+[Edit ingress values](#edit-ingress-values)):
+
+```yaml
+ingress:
+  staticIpName: <namespace>-external-ip
+  securityPolicy: <namespace>-ingress-security-policy
+```
+
+:::
 
 #### Initialize Terraform {/* #initialize-terraform-1 */}
 
@@ -138,25 +159,29 @@ gcloud secrets create config-secret --replication-policy="automatic"
 
 Create a JSON file containing your secret data. Save it as secret_data.json.
 
+Replace the domains, hosts, and password below with your own values. The database and
+Redis hosts come from the Terraform outputs (`terraform output postgres_ip_address` and
+`terraform output redis_ip_address`); the database password from `terraform output -raw db_password`.
+
 ```bash
 cat <<EOF > secret_data.json
 {
   "port": 8103,
-  "baseUrl": "http://localhost:8103/",
-  "issuer": "http://localhost:8103/",
-  "audience": "http://localhost:8103/",
-  "jwksUrl": "http://localhost:8103/.well-known/jwks.json",
-  "authorizeUrl": "http://localhost:8103/oauth2/authorize",
-  "tokenUrl": "http://localhost:8103/oauth2/token",
-  "userInfoUrl": "http://localhost:8103/oauth2/userinfo",
-  "appBaseUrl": "http://localhost:3000/",
-  "binaryStorage": "file:./binary/",
-  "storageBaseUrl": "http://localhost:8103/storage/",
+  "baseUrl": "https://api.example.com/",
+  "issuer": "https://api.example.com/",
+  "audience": "https://api.example.com/",
+  "jwksUrl": "https://api.example.com/.well-known/jwks.json",
+  "authorizeUrl": "https://api.example.com/oauth2/authorize",
+  "tokenUrl": "https://api.example.com/oauth2/token",
+  "userInfoUrl": "https://api.example.com/oauth2/userinfo",
+  "appBaseUrl": "https://app.example.com/",
+  "binaryStorage": "gs:YOUR_STORAGE_BUCKET",
+  "storageBaseUrl": "https://storage.example.com/",
   "supportEmail": "\"Medplum\" <support@medplum.com>",
-  "googleClientId": "397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com",
+  "googleClientId": "",
   "googleClientSecret": "",
-  "recaptchaSiteKey": "6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq",
-  "recaptchaSecretKey": "6LfHdsYdAAAAAH9dN154jbJ3zpQife3xaiTvPChL",
+  "recaptchaSiteKey": "",
+  "recaptchaSecretKey": "",
   "botLambdaRoleArn": "",
   "botLambdaLayerName": "medplum-bot-layer",
   "vmContextBotsEnabled": true,
@@ -168,7 +193,7 @@ cat <<EOF > secret_data.json
     "port": 5432,
     "dbname": "medplum",
     "username": "medplum",
-    "password": "medplum"
+    "password": "YOUR_DB_PASSWORD"
   },
   "redis": {
     "host": "YOUR_REDIS_HOST",
@@ -184,9 +209,11 @@ cat <<EOF > secret_data.json
 EOF
 ```
 
-- Replace **YOUR_DB_HOST** and **YOUR_REDIS_HOST** with the actual hostnames or IP addresses of your database and Redis instances.
-- Ensure the JSON content is correctly formatted and that any variables or placeholders are replaced with actual values.
-- See [Set up presigned URLs](/docs/self-hosting/presigned-urls) to set up presigned URLs
+- Replace `api.example.com`, `app.example.com`, and `storage.example.com` with your actual domains.
+- Set **`binaryStorage`** to `gs:` followed by your user-content bucket name (e.g. `gs:medplum-storage`). This is the bucket Terraform creates from the `storage` entry in `gcs_buckets`, named `<namespace>-storage`.
+- Set **`storageBaseUrl`** to your storage domain. Because it differs from `baseUrl`, the server returns GCS [presigned URLs](/docs/self-hosting/presigned-urls) for binary content rather than proxying it (see [Set up presigned URLs](#set-up-presigned-urls) below).
+- Replace **YOUR_DB_HOST**, **YOUR_REDIS_HOST**, and **YOUR_DB_PASSWORD** with the Terraform output values.
+- Ensure the JSON content is correctly formatted and that all placeholders are replaced with actual values.
 
 **3\. Add a New Secret Version with the Secret Data:**
 
@@ -296,11 +323,18 @@ Replace `[MY_CONFIG_SECRET_ID]` with the secret name created in the [Generate co
 
 ```yaml
 serviceAccount:
+  name: medplum-server
   annotations:
     iam.gke.io/gcp-service-account: [MY_GCP_SERVICE_ACCOUNT] # Your Google Cloud Platform service account e.g.: medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com
 ```
 
-Replace `[MY_GCP_SERVICE_ACCOUNT]` with your actual GCP service account, which was created by Terraform and is named `medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com`.
+Replace `[MY_GCP_SERVICE_ACCOUNT]` with your actual GCP service account, which was created by Terraform and is named `<namespace>-server@[MY_PROJECT_ID].iam.gserviceaccount.com` (e.g. `medplum-server@...` with the default namespace).
+
+:::caution[`serviceAccount.name` must be `medplum-server`]
+
+You must set `serviceAccount.name: medplum-server`. By default the chart names the Kubernetes service account after the Helm release, but Terraform binds Workload Identity to the KSA `medplum/medplum-server`. If the names don't match, the pod cannot impersonate the Google service account and will fail to read the configuration secret from Secret Manager.
+
+:::
 
 #### Edit ingress values {/* #edit-ingress-values */}
 
@@ -313,6 +347,16 @@ ingress:
 ```
 
 Replace `api.yourdomain.com` with your actual domain.
+
+If you set a non-default `namespace` in `terraform.tfvars`, also point the ingress at the namespaced static IP and Cloud Armor policy (these default to `medplum-external-ip` and `ingress-security-policy`):
+
+```yaml
+ingress:
+  deploy: true
+  domain: api.yourdomain.com
+  staticIpName: [MY_NAMESPACE]-external-ip
+  securityPolicy: [MY_NAMESPACE]-ingress-security-policy
+```
 
 #### Install the Application {/* #install-the-application */}
 
@@ -343,6 +387,22 @@ This is the backend API endpoint.
 Backend upgrades use the standard Medplum Helm upgrade process. See [Install on Kubernetes: Upgrade to a new version](/docs/self-hosting/install-on-kubernetes#upgrade-to-a-new-version).
 
 The GCP-specific settings in `values.yaml`, such as the configuration source, service account annotations, and ingress settings, continue to apply during the upgrade. This upgrades the Kubernetes backend only; frontend static assets are built and uploaded separately in the next section.
+
+### Set up presigned URLs {/* #set-up-presigned-urls */}
+
+When `storageBaseUrl` differs from `baseUrl` (as configured above), Medplum returns GCS [V4 presigned URLs](/docs/self-hosting/presigned-urls) for binary content so clients fetch directly from Cloud Storage. Under Workload Identity the server signs these URLs through the IAM [SignBlob](https://cloud.google.com/iam/docs/reference/credentials/rest/v1/projects.serviceAccounts/signBlob) API rather than with a private key, which requires the runtime service account to hold `roles/iam.serviceAccountTokenCreator` **on itself**.
+
+The Terraform configuration grants this automatically (see `service-accounts.tf`). If you provisioned the service account by other means, grant it manually:
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding \
+  <namespace>-server@[MY_PROJECT_ID].iam.gserviceaccount.com \
+  --member="serviceAccount:<namespace>-server@[MY_PROJECT_ID].iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountTokenCreator" \
+  --project=[MY_PROJECT_ID]
+```
+
+To verify, upload a `Binary` and reference it from a resource (e.g. a `Media`); reading that resource back should return a `content.url` on `https://<bucket>.storage.googleapis.com/...` containing an `X-Goog-Signature` query parameter, and fetching that URL should return the file. A missing self-binding surfaces as an `iam.serviceAccounts.signBlob` permission error in the server logs.
 
 ## Deploy the frontend (App) {/* #deploy-the-frontend-(app) */}
 

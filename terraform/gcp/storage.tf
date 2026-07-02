@@ -10,7 +10,7 @@ module "buckets" {
   source  = "terraform-google-modules/cloud-storage/google//modules/simple_bucket"
   version = "~> 6.1"
 
-  name                     = each.key
+  name                     = "${var.namespace}-${each.key}"
   project_id               = var.project_id
   location                 = each.value.location
   custom_placement_config  = each.value.custom_placement_config
