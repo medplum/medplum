@@ -161,6 +161,9 @@ describe('LabsPage', () => {
       expect(query).toBeDefined();
       expect(query).toContain('status=final');
       expect(query).toContain('_sort=-_lastUpdated');
+      // Reports legitimately reference their order via basedOn; the top-level
+      // filter applies only to the Open (ServiceRequest) tab.
+      expect(query).not.toContain('based-on');
     });
   });
 
@@ -254,14 +257,16 @@ describe('LabsPage', () => {
     });
   });
 
-  test('collapses open orders that share a requisition number', async () => {
-    const order2: ServiceRequest = { ...activeOrder, id: 'order-2', code: { text: 'Duplicate Req' } };
-    mockSearch([activeOrder, order2], []);
+  test('lists only top-level orders, excluding per-test child requests', async () => {
+    mockSearch([activeOrder], []);
     setup(`/Patient/${HomerSimpson.id}/ServiceRequest`);
 
     await waitFor(() => {
-      const shown = screen.queryAllByText('Metabolic Panel').length + screen.queryAllByText('Duplicate Req').length;
-      expect(shown).toBe(1);
+      const query = queryFor('ServiceRequest');
+      expect(query).toBeDefined();
+      // A lab order is a parent ServiceRequest plus per-test children that are
+      // basedOn the parent; the list shows one row per order.
+      expect(query).toContain('based-on:missing=true');
     });
   });
 

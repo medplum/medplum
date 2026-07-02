@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Flex, Modal, Stack, Text, Tooltip } from '@mantine/core';
-import type { SearchRequest, SortRule, WithId } from '@medplum/core';
+import type { Filter, SearchRequest, SortRule, WithId } from '@medplum/core';
 import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
 import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
 import type { ListWithDetailPaneTab } from '@medplum/react';
@@ -75,15 +75,22 @@ export function LabsPage(): JSX.Element {
     }
     setLoading(true);
     try {
-      const fetchQuery: SearchRequest = {
-        ...search,
-        filters: [...(search.filters ?? []), { code: 'subject', operator: Operator.EQUALS, value: patientReference }],
-        total: 'accurate',
-      };
+      const filters: Filter[] = [
+        ...(search.filters ?? []),
+        { code: 'subject', operator: Operator.EQUALS, value: patientReference },
+      ];
+      if (activeTab === 'open') {
+        // A lab order is a top-level ServiceRequest plus one child ServiceRequest
+        // per test (basedOn the parent), all sharing a requisition. Listing only
+        // top-level requests shows each order once, and keeps the server total
+        // (used for pagination) consistent with the rows displayed.
+        filters.push({ code: 'based-on', operator: Operator.MISSING, value: 'true' });
+      }
+      const fetchQuery: SearchRequest = { ...search, filters, total: 'accurate' };
       const results = await medplum.searchResources(resourceType, formatSearchQuery(fetchQuery), {
         cache: 'no-cache',
       });
-      setItems(activeTab === 'open' ? dedupeByRequisition(results as WithId<ServiceRequest>[]) : results);
+      setItems(results);
       setTotal(results.bundle?.total ?? results.length);
     } catch (error) {
       showErrorNotification(error);
@@ -239,27 +246,6 @@ function addDefaultLabSearchValues(search: SearchRequest, tab: LabTab): SearchRe
     sortRules: search.sortRules ?? DEFAULT_SORT_RULES,
     count: search.count ?? DEFAULT_COUNT,
   };
-}
-
-/**
- * Collapses ServiceRequests that share a requisition number into a single row,
- * keeping the first (most recently updated, since the search is sorted) entry.
- * @param orders - The open ServiceRequests to dedupe.
- * @returns The deduped list of open orders.
- */
-function dedupeByRequisition(orders: WithId<ServiceRequest>[]): WithId<ServiceRequest>[] {
-  const seenRequisitions = new Set<string>();
-  return orders.filter((order) => {
-    const requisitionNumber = order.requisition?.value;
-    if (!requisitionNumber) {
-      return true;
-    }
-    if (seenRequisitions.has(requisitionNumber)) {
-      return false;
-    }
-    seenRequisitions.add(requisitionNumber);
-    return true;
-  });
 }
 
 function EmptyLabsState({ activeTab }: { activeTab: LabTab }): JSX.Element {
