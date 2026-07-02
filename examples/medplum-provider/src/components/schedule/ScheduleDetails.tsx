@@ -60,7 +60,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
 
   // Find appointments visible in the current range
   useEffect(() => {
-    const actorRef = schedule.actor?.[0]?.reference;
+    const actorRef = schedule.actor[0]?.reference;
     if (!actorRef || !range) {
       return () => {};
     }

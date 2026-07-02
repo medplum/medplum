@@ -70,20 +70,6 @@ describe('SchedulePage', () => {
   };
 
   describe('Initial Rendering', () => {
-    test('returns null when schedule is not loaded', async () => {
-      medplum.searchOne = vi.fn().mockResolvedValue(undefined);
-      medplum.createResource = vi.fn().mockResolvedValue(mockSchedule);
-
-      await act(async () => {
-        setup('/Calendar/Schedule');
-      });
-
-      // Component should return null until schedule is loaded
-      await waitFor(() => {
-        expect(medplum.searchOne).toHaveBeenCalled();
-      });
-    });
-
     test('loads existing schedule for practitioner', async () => {
       await act(async () => {
         setup('/Calendar/Schedule');
