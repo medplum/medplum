@@ -338,22 +338,32 @@ describe('ValueSet validate-code', () => {
     expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toBeUndefined();
   });
 
-  test('Validates code present in recursive expansion', async () => {
+  test('Validates codes present in recursive expansion', async () => {
     const code = '219422003';
-    const inner = await repo.createResource<ValueSet & { url: string }>({
+    const innerA = await repo.createResource<ValueSet & { url: string }>({
       resourceType: 'ValueSet',
       status: 'unknown',
       url: `http://example.com/ValueSet/${randomUUID()}`,
-      compose: { include: [{ system: SNOMED, concept: [{ code }] }] },
+      compose: { include: [{ system: SNOMED, concept: [{ code }, { code: 'foo' }] }] },
+    });
+    const innerB = await repo.createResource<ValueSet & { url: string }>({
+      resourceType: 'ValueSet',
+      status: 'unknown',
+      url: `http://example.com/ValueSet/${randomUUID()}`,
+      compose: { include: [{ system: SNOMED, concept: [{ code }, { code: 'bar' }] }] },
     });
     const outer = await repo.createResource<ValueSet & { url: string }>({
       resourceType: 'ValueSet',
       status: 'unknown',
       url: `http://example.com/ValueSet/${randomUUID()}`,
-      compose: { include: [{ valueSet: [inner.url] }] },
+      // Outer ValueSet contains two recursively expanded inner ValueSets
+      // > If multiple value sets are specified this includes the intersection of the contents of all of the referenced value sets.
+      // @see https://build.fhir.org/valueset-definitions.html#ValueSet.compose.include.valueSet
+      compose: { include: [{ valueSet: [innerA.url, innerB.url] }] },
     });
 
-    const res = await request(app)
+    // Code present in both inner ValueSets should be validated
+    const resIntersect = await request(app)
       .post(`/fhir/R4/ValueSet/$validate-code`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -364,10 +374,27 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system: SNOMED, code } },
         ],
       });
-    expect(res.status).toBe(200);
-    expect(res.body.resourceType).toStrictEqual('Parameters');
-    const output = res.body as Parameters;
+    expect(resIntersect.status).toBe(200);
+    expect(resIntersect.body.resourceType).toStrictEqual('Parameters');
+    const output = resIntersect.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
+
+    // Code present in only one inner ValueSet is not valid
+    const resUnion = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: outer.url },
+          { name: 'coding', valueCoding: { system: SNOMED, code: 'foo' } },
+        ],
+      });
+    expect(resUnion.status).toBe(200);
+    expect(resUnion.body.resourceType).toStrictEqual('Parameters');
+    const output2 = resUnion.body as Parameters;
+    expect(output2.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
   });
 
   test('Avoids infinite loop on circular reference', async () => {
