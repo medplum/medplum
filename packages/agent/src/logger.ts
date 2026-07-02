@@ -423,7 +423,7 @@ export class WinstonWrapperLogger implements ILogger {
 
     let nextBefore: string | undefined;
     if (hasMore && logs.length > 0) {
-      const oldest = logs[logs.length - 1].timestamp;
+      const oldest = logs.at(-1).timestamp;
       // Number of returned entries sharing the oldest timestamp in this page.
       const sameTimestampInPage = logs.filter((l) => l.timestamp === oldest).length;
       // If this page continued within the same timestamp block as the incoming
