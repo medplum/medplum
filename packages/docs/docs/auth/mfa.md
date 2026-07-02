@@ -246,7 +246,7 @@ curl -X POST https://api.medplum.com/admin/projects/:projectId/members/:membersh
   </TabItem>
 </Tabs>
 
-To set a member's password directly (without emailing them), use the [`POST /admin/projects/setpassword`](/docs/api/project-admin) endpoint with the member's email — also surfaced as **Set password** in the Account Security section.
+To set a member's password directly (without emailing them), use the `POST /admin/projects/setpassword` endpoint with the member's email — also surfaced as **Set password** in the Account Security section.
 
 ## How email-based MFA works
 
