@@ -815,7 +815,13 @@ export class DurableQueue {
    * @param nextAttemptAt - Earliest timestamp (ms) at which the row may be claimed again.
    * @returns True if the row was rescheduled; false if this attempt was superseded.
    */
-  scheduleRetry(id: number, attemptCount: number, error: string, errorCode: QueueErrorCode, nextAttemptAt: number): boolean {
+  scheduleRetry(
+    id: number,
+    attemptCount: number,
+    error: string,
+    errorCode: QueueErrorCode,
+    nextAttemptAt: number
+  ): boolean {
     this.assertNotDemoted();
     const info = this.scheduleRetryStmt.run(error, errorCode, nextAttemptAt, id, attemptCount);
     if (Number(info.changes) > 0) {

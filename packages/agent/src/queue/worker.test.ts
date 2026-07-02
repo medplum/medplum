@@ -556,9 +556,9 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck: () => true,
     });
-    expect(
-      worker.onServerResponse(makeResponse(buildDispatchCallback('Agent/test-agent-unknown-row', 1), 200))
-    ).toBe(false);
+    expect(worker.onServerResponse(makeResponse(buildDispatchCallback('Agent/test-agent-unknown-row', 1), 200))).toBe(
+      false
+    );
   });
 
   test('stop drains and prevents further claims', async () => {

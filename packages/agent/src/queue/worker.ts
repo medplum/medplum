@@ -796,12 +796,7 @@ export class ChannelQueueWorker {
    * @param code - Always {@link QueueErrorCode.UpstreamRejected} today; threaded through {@link handleFailure} regardless.
    * @param message - Human-readable error, written to `last_error`.
    */
-  private settleWithAck(
-    row: InboundRow,
-    response: AgentTransmitResponse,
-    code: QueueErrorCode,
-    message: string
-  ): void {
+  private settleWithAck(row: InboundRow, response: AgentTransmitResponse, code: QueueErrorCode, message: string): void {
     const { ackOk, ackError } = this.relayAckToSource(row, response);
     const settled = this.handleFailure(row, code, message);
     if (!settled) {
