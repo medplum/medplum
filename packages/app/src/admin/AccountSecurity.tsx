@@ -64,7 +64,7 @@ export function ResetMfaModal(props: ResetMfaModalProps): JSX.Element {
   function handleSubmit(): void {
     setSubmitting(true);
     medplum
-      .resetMemberMfa(props.projectId, props.membershipId, method)
+      .post(`admin/projects/${props.projectId}/members/${props.membershipId}/mfa/reset`, { method })
       .then(() => {
         showNotification({
           color: 'green',
@@ -125,7 +125,7 @@ export function SendPasswordResetModal(props: SendPasswordResetModalProps): JSX.
   function handleSubmit(): void {
     setSubmitting(true);
     medplum
-      .sendMemberPasswordReset(props.projectId, props.membershipId)
+      .post(`admin/projects/${props.projectId}/members/${props.membershipId}/resetpassword`, {})
       .then(() => {
         showNotification({ color: 'green', message: 'Password reset email sent.' });
         props.onSuccess?.();

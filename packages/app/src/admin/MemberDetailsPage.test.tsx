@@ -324,16 +324,14 @@ describe('MemberDetailsPage', () => {
     expect(screen.getByRole('button', { name: 'Reset MFA' })).toBeDisabled();
   });
 
-  test('Reset MFA calls resetMemberMfa with selected method', async () => {
+  test('Reset MFA calls post with selected method', async () => {
     const medplum = createMedplum(true);
-    const resetSpy = vi
-      .spyOn(medplum, 'resetMemberMfa')
-      .mockResolvedValue({ resourceType: 'OperationOutcome', issue: [] });
     const membership = await setupMember(medplum, { mfaEnrolled: true, mfaMethod: ['totp'] });
 
     renderAppRoutes(medplum, `/admin/users/${membership.id}`);
 
     const resetButton = await screen.findByRole('button', { name: 'Reset MFA' });
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'OperationOutcome', issue: [] });
     await act(async () => {
       fireEvent.click(resetButton);
     });
@@ -344,20 +342,20 @@ describe('MemberDetailsPage', () => {
     });
 
     await waitFor(() => {
-      expect(resetSpy).toHaveBeenCalledWith('123', membership.id, 'totp');
+      expect(postSpy).toHaveBeenCalledWith(`admin/projects/123/members/${membership.id}/mfa/reset`, {
+        method: 'totp',
+      });
     });
   });
 
-  test('Send password reset email calls sendMemberPasswordReset', async () => {
+  test('Send password reset email calls post', async () => {
     const medplum = createMedplum(true);
-    const sendSpy = vi
-      .spyOn(medplum, 'sendMemberPasswordReset')
-      .mockResolvedValue({ resourceType: 'OperationOutcome', issue: [] });
     const membership = await setupMember(medplum);
 
     renderAppRoutes(medplum, `/admin/users/${membership.id}`);
 
     const sendButton = await screen.findByRole('button', { name: 'Send password reset email' });
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'OperationOutcome', issue: [] });
     await act(async () => {
       fireEvent.click(sendButton);
     });
@@ -368,7 +366,7 @@ describe('MemberDetailsPage', () => {
     });
 
     await waitFor(() => {
-      expect(sendSpy).toHaveBeenCalledWith('123', membership.id);
+      expect(postSpy).toHaveBeenCalledWith(`admin/projects/123/members/${membership.id}/resetpassword`, {});
     });
   });
 });

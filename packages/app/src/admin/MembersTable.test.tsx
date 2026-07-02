@@ -113,10 +113,6 @@ describe('MemberTable (Users page)', () => {
   });
 
   test('Bulk actions can reset MFA for selected members', async () => {
-    const resetSpy = vi
-      .spyOn(medplum, 'resetMemberMfa')
-      .mockResolvedValue({ resourceType: 'OperationOutcome', issue: [] });
-
     await setup('/admin/users');
     expect(await screen.findByText('All')).toBeInTheDocument();
 
@@ -132,15 +128,17 @@ describe('MemberTable (Users page)', () => {
     });
 
     const dialog = await screen.findByRole('dialog');
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'OperationOutcome', issue: [] });
     await act(async () => {
       fireEvent.click(within(dialog).getByRole('button', { name: 'Reset MFA (authenticator)' }));
     });
 
     await waitFor(() => {
-      expect(resetSpy).toHaveBeenCalled();
+      expect(postSpy).toHaveBeenCalled();
     });
     // TOTP method is used for bulk resets.
-    expect(resetSpy.mock.calls[0][2]).toBe('totp');
-    resetSpy.mockRestore();
+    expect(postSpy.mock.calls[0][0]).toMatch(/\/mfa\/reset$/);
+    expect(postSpy.mock.calls[0][1]).toEqual({ method: 'totp' });
+    postSpy.mockRestore();
   });
 });

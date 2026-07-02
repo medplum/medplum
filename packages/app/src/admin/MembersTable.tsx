@@ -171,7 +171,11 @@ function MemberBulkActionsModal(props: MemberBulkActionsModalProps): JSX.Element
           variant="outline"
           color="red"
           loading={running}
-          onClick={() => runForEach('Reset MFA for', (id) => medplum.resetMemberMfa(props.projectId, id, 'totp'))}
+          onClick={() =>
+            runForEach('Reset MFA for', (id) =>
+              medplum.post(`admin/projects/${props.projectId}/members/${id}/mfa/reset`, { method: 'totp' })
+            )
+          }
         >
           Reset MFA (authenticator)
         </Button>
@@ -179,7 +183,9 @@ function MemberBulkActionsModal(props: MemberBulkActionsModalProps): JSX.Element
           variant="outline"
           loading={running}
           onClick={() =>
-            runForEach('Sent password reset email to', (id) => medplum.sendMemberPasswordReset(props.projectId, id))
+            runForEach('Sent password reset email to', (id) =>
+              medplum.post(`admin/projects/${props.projectId}/members/${id}/resetpassword`, {})
+            )
           }
         >
           Send password reset email

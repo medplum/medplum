@@ -185,10 +185,10 @@ The endpoint returns `400` if the member is not enrolled in the requested method
 
 ```ts
 // Reset the authenticator app (TOTP) factor — the default
-await medplum.resetMemberMfa(projectId, membershipId);
+await medplum.post(`admin/projects/${projectId}/members/${membershipId}/mfa/reset`, { method: 'totp' });
 
 // Reset the email factor instead
-await medplum.resetMemberMfa(projectId, membershipId, 'email');
+await medplum.post(`admin/projects/${projectId}/members/${membershipId}/mfa/reset`, { method: 'email' });
 ```
 
   </TabItem>
@@ -223,7 +223,7 @@ Project admins can send a member a password reset email via the `POST /admin/pro
   <TabItem value="ts" label="TypeScript">
 
 ```ts
-await medplum.sendMemberPasswordReset(projectId, membershipId);
+await medplum.post(`admin/projects/${projectId}/members/${membershipId}/resetpassword`, {});
 ```
 
   </TabItem>

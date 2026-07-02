@@ -1363,44 +1363,6 @@ describe('Client', () => {
     expect(result).toBeDefined();
   });
 
-  test('Reset member MFA - defaults to totp', async () => {
-    const fetch = mockFetch(200, {});
-    const client = new MedplumClient({ fetch });
-    const result = await client.resetMemberMfa('proj1', 'mem1');
-    expect(result).toBeDefined();
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('admin/projects/proj1/members/mem1/mfa/reset'),
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ method: 'totp' }),
-      })
-    );
-  });
-
-  test('Reset member MFA - explicit method', async () => {
-    const fetch = mockFetch(200, {});
-    const client = new MedplumClient({ fetch });
-    await client.resetMemberMfa('proj1', 'mem1', 'email');
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('admin/projects/proj1/members/mem1/mfa/reset'),
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ method: 'email' }),
-      })
-    );
-  });
-
-  test('Send member password reset', async () => {
-    const fetch = mockFetch(200, {});
-    const client = new MedplumClient({ fetch });
-    const result = await client.sendMemberPasswordReset('proj1', 'mem1');
-    expect(result).toBeDefined();
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('admin/projects/proj1/members/mem1/resetpassword'),
-      expect.objectContaining({ method: 'POST' })
-    );
-  });
-
   test('HTTP GET', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
