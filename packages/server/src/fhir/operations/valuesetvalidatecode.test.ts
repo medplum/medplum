@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { ContentType, SNOMED } from '@medplum/core';
 import type { Parameters, ParametersParameter, ValueSet } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { createTestProject } from '../../test.setup';
+import type { Repository } from '../repo';
 
 const app = express();
 const system = 'http://terminology.hl7.org/CodeSystem/v3-RoleCode';
@@ -41,23 +43,20 @@ const testValueSet: ValueSet = {
 };
 
 describe('ValueSet validate-code', () => {
-  let valueSet: ValueSet;
+  let valueSet: WithId<ValueSet>;
   let accessToken: string;
+  let repo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    accessToken = await initTestAuth({ superAdmin: true });
-    expect(accessToken).toBeDefined();
-
-    const res = await request(app)
-      .post('/fhir/R4/ValueSet')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send(testValueSet);
-    expect(res.status).toStrictEqual(201);
-    valueSet = res.body as ValueSet;
+    ({ accessToken, repo } = await createTestProject({
+      project: { superAdmin: true },
+      withRepo: true,
+      withAccessToken: true,
+    }));
+    valueSet = await repo.createResource<ValueSet>(testValueSet);
   });
 
   afterAll(async () => {
@@ -337,5 +336,96 @@ describe('ValueSet validate-code', () => {
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
     expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toBeUndefined();
+  });
+
+  test('Validates codes present in recursive expansion', async () => {
+    const code = '219422003';
+    const innerA = await repo.createResource<ValueSet & { url: string }>({
+      resourceType: 'ValueSet',
+      status: 'unknown',
+      url: `http://example.com/ValueSet/${randomUUID()}`,
+      compose: { include: [{ system: SNOMED, concept: [{ code }, { code: 'foo' }] }] },
+    });
+    const innerB = await repo.createResource<ValueSet & { url: string }>({
+      resourceType: 'ValueSet',
+      status: 'unknown',
+      url: `http://example.com/ValueSet/${randomUUID()}`,
+      compose: { include: [{ system: SNOMED, concept: [{ code }, { code: 'bar' }] }] },
+    });
+    const outer = await repo.createResource<ValueSet & { url: string }>({
+      resourceType: 'ValueSet',
+      status: 'unknown',
+      url: `http://example.com/ValueSet/${randomUUID()}`,
+      // Outer ValueSet contains two recursively expanded inner ValueSets
+      // > If multiple value sets are specified this includes the intersection of the contents of all of the referenced value sets.
+      // @see https://build.fhir.org/valueset-definitions.html#ValueSet.compose.include.valueSet
+      compose: { include: [{ valueSet: [innerA.url, innerB.url] }] },
+    });
+
+    // Code present in both inner ValueSets should be validated
+    const resIntersect = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: outer.url },
+          { name: 'coding', valueCoding: { system: SNOMED, code } },
+        ],
+      });
+    expect(resIntersect.status).toBe(200);
+    expect(resIntersect.body.resourceType).toStrictEqual('Parameters');
+    const output = resIntersect.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
+
+    // Code present in only one inner ValueSet is not valid
+    const resUnion = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: outer.url },
+          { name: 'coding', valueCoding: { system: SNOMED, code: 'foo' } },
+        ],
+      });
+    expect(resUnion.status).toBe(200);
+    expect(resUnion.body.resourceType).toStrictEqual('Parameters');
+    const output2 = resUnion.body as Parameters;
+    expect(output2.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
+  });
+
+  test('Avoids infinite loop on circular reference', async () => {
+    const outerUrl = `http://example.com/ValueSet/${randomUUID()}`;
+    const inner = await repo.createResource<ValueSet & { url: string }>({
+      resourceType: 'ValueSet',
+      status: 'unknown',
+      url: `http://example.com/ValueSet/${randomUUID()}`,
+      compose: { include: [{ valueSet: [outerUrl] }] },
+    });
+    const outer = await repo.createResource<ValueSet & { url: string }>({
+      resourceType: 'ValueSet',
+      status: 'unknown',
+      url: outerUrl,
+      compose: { include: [{ valueSet: [inner.url] }] },
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: outer.url },
+          { name: 'coding', valueCoding: { system: SNOMED, code: 'foo' } },
+        ],
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toStrictEqual('Parameters');
+    const output = res.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
   });
 });
