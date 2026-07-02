@@ -25,7 +25,13 @@ export interface PrescriptionIFrameModalProps {
    * Skips auto-close if the MR was already synced when the modal opened (e.g. reopening iframe).
    */
   medicationRequestIdToWatch?: string;
-  /** Invoked when polling detects the MR was updated from the server (webhook merged). */
+  /**
+   * Multi-MR variant for the cart / Approve Queue flow: polls every id and fires
+   * {@link onFhirSynced} only once **all** of the ids that started unsynced have
+   * synced. Takes precedence over {@link medicationRequestIdToWatch} when set.
+   */
+  medicationRequestIdsToWatch?: string[];
+  /** Invoked when polling detects the watched MR(s) were updated from the server (webhook merged). */
   onFhirSynced?: () => void;
 }
 
@@ -55,9 +61,18 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
     onRefreshLaunchUrl,
     title = 'Complete prescription',
     medicationRequestIdToWatch,
+    medicationRequestIdsToWatch,
     onFhirSynced,
   } = props;
   const medplum = useMedplum();
+  // Stable, order-independent key for the set of MR ids to poll. Derived from
+  // either the multi-id (cart / Approve Queue) or single-id prop so the polling
+  // effect deps don't churn on every parent render (arrays are new each render).
+  const watchKey = [
+    ...(medicationRequestIdsToWatch ?? (medicationRequestIdToWatch ? [medicationRequestIdToWatch] : [])),
+  ]
+    .sort((a, b) => a.localeCompare(b))
+    .join(',');
   // ScriptSure widget URLs are theme-agnostic from the bot side; the modal
   // appends `darkmode=on|off` based on the active Mantine color scheme right
   // before assigning to the iframe `src`. Resolved scheme is captured once
@@ -66,8 +81,13 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
   const colorScheme = useComputedColorScheme('light');
   const [url, setUrl] = useState(() => applyDarkmode(launchUrl, colorScheme));
   const [pollTimedOut, setPollTimedOut] = useState(false);
-  /** null = not sampled yet; true = first sample was still draft/pending; false = first sample already synced (never auto-close). */
-  const pollStartedUnsyncedRef = useRef<boolean | null>(null);
+  /**
+   * null = not sampled yet; otherwise the set of watched MR ids that were still
+   * draft/pending on the first sample. Auto-close fires once every id in this set
+   * has synced. An empty set means everything was already synced on open (never
+   * auto-close).
+   */
+  const pollStartedUnsyncedRef = useRef<Set<string> | null>(null);
   const skipPollRef = useRef(false);
 
   useEffect(() => {
@@ -78,7 +98,7 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
     pollStartedUnsyncedRef.current = null;
     skipPollRef.current = false;
     setPollTimedOut(false);
-  }, [opened, medicationRequestIdToWatch]);
+  }, [opened, watchKey]);
 
   // ScriptSure's embedded widget measures its viewport once during initial
   // paint and does not re-measure unless a `resize` event fires on its window.
@@ -131,9 +151,10 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
   }, [opened, onRefreshLaunchUrl, launchUrl, colorScheme]);
 
   useEffect(() => {
-    if (!opened || !medicationRequestIdToWatch || !onFhirSynced) {
+    if (!opened || !watchKey || !onFhirSynced) {
       return undefined;
     }
+    const ids = watchKey.split(',');
     let cancelled = false;
     let intervalId: number | undefined;
     let attempts = 0;
@@ -145,35 +166,57 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
       }
     };
 
-    const tick = async (): Promise<void> => {
-      try {
-        if (skipPollRef.current) {
-          return;
-        }
-        // The poll exists to observe a webhook-driven update, so a cached
-        // read would defeat the purpose: bypass MedplumClient's request
-        // cache here.
-        const mr = await medplum.readResource('MedicationRequest', medicationRequestIdToWatch, { cache: 'reload' });
-        if (cancelled) {
-          return;
-        }
-        const syncedNow = medicationRequestLooksSynced(mr);
-        if (pollStartedUnsyncedRef.current === null) {
-          pollStartedUnsyncedRef.current = !syncedNow;
-          if (!pollStartedUnsyncedRef.current) {
-            skipPollRef.current = true;
-            stop();
+    // Reads every watched MR (cache-bypassed so a webhook-merged update is
+    // observed) and returns a per-id synced map. Ids whose read failed are
+    // omitted so the caller can tell a complete sample from a partial one.
+    const sampleSyncedById = async (): Promise<Map<string, boolean>> => {
+      const syncedById = new Map<string, boolean>();
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const mr = await medplum.readResource('MedicationRequest', id, { cache: 'reload' });
+            syncedById.set(id, medicationRequestLooksSynced(mr));
+          } catch {
+            // Leave id absent on transient failure (see attempts handling below).
           }
+        })
+      );
+      return syncedById;
+    };
+
+    const tick = async (): Promise<void> => {
+      if (skipPollRef.current) {
+        return;
+      }
+      const syncedById = await sampleSyncedById();
+      if (cancelled) {
+        return;
+      }
+
+      if (pollStartedUnsyncedRef.current === null) {
+        // Wait for a complete first sample so we don't misclassify an id whose
+        // initial read failed as "already synced".
+        if (syncedById.size < ids.length) {
           return;
         }
-        if (syncedNow) {
-          stop();
-          onFhirSynced();
+        const startedUnsynced = new Set<string>();
+        for (const [id, synced] of syncedById) {
+          if (!synced) {
+            startedUnsynced.add(id);
+          }
         }
-      } catch {
-        // Transient read failures are not counted against POLL_MAX_ATTEMPTS so a brief
-        // network blip does not cause a false timeout; the attempt counter only ticks on
-        // successful reads where sync was still pending.
+        pollStartedUnsyncedRef.current = startedUnsynced;
+        if (startedUnsynced.size === 0) {
+          skipPollRef.current = true;
+          stop();
+        }
+        return;
+      }
+
+      const stillPending = [...pollStartedUnsyncedRef.current].some((id) => !(syncedById.get(id) ?? false));
+      if (!stillPending) {
+        stop();
+        onFhirSynced();
       }
     };
 
@@ -181,7 +224,7 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
       attempts += 1;
       if (attempts >= POLL_MAX_ATTEMPTS) {
         stop();
-        if (!cancelled && pollStartedUnsyncedRef.current === true) {
+        if (!cancelled && (pollStartedUnsyncedRef.current?.size ?? 0) > 0) {
           setPollTimedOut(true);
         }
         return;
@@ -194,7 +237,7 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
       cancelled = true;
       stop();
     };
-  }, [opened, medicationRequestIdToWatch, medplum, onFhirSynced]);
+  }, [opened, watchKey, medplum, onFhirSynced]);
 
   return (
     <Modal opened={opened} onClose={onClose} size="xl" centered title={title} styles={{ body: { padding: 0 } }}>

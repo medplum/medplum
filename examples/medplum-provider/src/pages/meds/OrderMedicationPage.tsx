@@ -54,6 +54,7 @@ import {
   SCRIPTSURE_SIG_EXTENSION,
   useScriptSureOrderMedication,
 } from '@medplum/scriptsure-react';
+import { IconShoppingCart } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
@@ -77,6 +78,21 @@ export interface OrderMedicationPageProps {
   /** When set (e.g. from the patient chart), the form shows and uses this patient immediately. */
   patient?: Patient;
   onOrderComplete?: (result: { launchUrl: string; medicationRequestId?: string }) => void;
+  /**
+   * When provided, the single-medication tab shows an **Add to cart** action that
+   * creates the draft `MedicationRequest` (same shape as "Prescribe this
+   * medication") **without** calling `$order-medication` or opening a widget. The
+   * parent collects these drafts as a cart and checks them out together via the
+   * Approve Queue flow. Called with the created draft on success.
+   */
+  onAddedToCart?: (medicationRequest: WithId<MedicationRequest>) => void;
+  /**
+   * Number of medications already in the patient's cart (draft MRs). Shown as a
+   * contextual indicator next to the actions so the prescriber knows the
+   * single-med "Prescribe this medication" action does **not** send the cart.
+   * Only meaningful when {@link onAddedToCart} is set.
+   */
+  cartCount?: number;
 }
 
 function getRoutedMedIdFromMedication(m: Medication): number | undefined {
@@ -641,7 +657,7 @@ function buildFormulationSigChoices(formats: Medication[], matcher: QualifierMat
 }
 
 export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): JSX.Element {
-  const { onOrderComplete, patient: patientProp } = props;
+  const { onOrderComplete, onAddedToCart, cartCount = 0, patient: patientProp } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();
   const { searchMedications, orderMedication } = useScriptSureOrderMedication();
@@ -697,6 +713,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
   }, []);
 
   const [submitting, setSubmitting] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   useEffect(() => {
     setPatient(patientProp);
@@ -895,56 +912,104 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
     return freeSig;
   }, [sigOptions, sigIndex, freeSig]);
 
-  const submitSingle = async (): Promise<void> => {
+  /**
+   * Builds the draft `MedicationRequest` body from the current single-tab state.
+   * Shared by "Prescribe now" ({@link submitSingle}) and "Add to cart"
+   * ({@link addToCart}) so both paths persist an identical draft; the only
+   * difference is whether `$order-medication` runs afterward. Returns `undefined`
+   * (after surfacing a validation error) when required fields are missing.
+   *
+   * @returns The draft MR body to `createResource`, or `undefined` when invalid.
+   */
+  const buildSingleDraftBody = (): MedicationRequest | undefined => {
     if (!patient?.id || !requester || !selectedFormat) {
       showErrorNotification('Patient, requester, and medication are required');
-      return;
+      return undefined;
     }
     const sigLine3 = selectedSigText.trim() || 'Take as directed';
     const q = sigOptions.length > 0 && sigOptions[sigIndex] ? sigOptions[sigIndex].quantity : quantity;
     const qtyUnit =
       sigOptions.length > 0 && sigOptions[sigIndex] ? sigOptions[sigIndex].quantityQualifier : manualQtyQualifier;
 
+    return {
+      resourceType: 'MedicationRequest',
+      status: 'draft',
+      intent: 'order',
+      subject: createReference(patient),
+      requester: createReference(requester),
+      authoredOn: writtenDateYmd,
+      medicationCodeableConcept: medicationToCodeableConcept(selectedFormat, termMedication),
+      substitution: { allowedBoolean: useSubstitution },
+      reasonReference: primaryCondition?.id ? [{ reference: `Condition/${primaryCondition.id}` }] : undefined,
+      insurance: coverage?.id ? [{ reference: `Coverage/${coverage.id}` }] : undefined,
+      dosageInstruction: [
+        {
+          text: sigLine3,
+          patientInstruction: patientInstruction.trim() || undefined,
+        },
+      ],
+      note: notesPharmacist.trim() ? [{ text: notesPharmacist.trim() }] : undefined,
+      dispenseRequest: {
+        quantity: { value: q, unit: qtyUnit },
+        numberOfRepeatsAllowed: refill,
+        expectedSupplyDuration: {
+          value: daysSupply,
+          unit: 'days',
+          system: 'http://unitsofmeasure.org',
+          code: 'd',
+        },
+        validityPeriod: {
+          start: writtenDateYmd,
+          ...(fillDateYmd.trim() ? { end: fillDateYmd.trim() } : {}),
+        },
+        performer: pharmacyOrg?.id ? createReference(pharmacyOrg) : undefined,
+      },
+    };
+  };
+
+  /** Clears the medication selection so the prescriber can add the next cart line. */
+  const resetSingleMedicationSelection = (): void => {
+    setTermMedication(undefined);
+    setFormatMedications([]);
+    setSelectedFormat(undefined);
+    setSigIndex(0);
+    setFreeSig('');
+  };
+
+  const addToCart = async (): Promise<void> => {
+    if (!patient?.id) {
+      return;
+    }
+    const body = buildSingleDraftBody();
+    if (!body) {
+      return;
+    }
+    setAddingToCart(true);
+    try {
+      const created = await medplum.createResource<MedicationRequest>(body);
+      onAddedToCart?.(created);
+      resetSingleMedicationSelection();
+    } catch (e) {
+      showErrorNotification(e);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const submitSingle = async (): Promise<void> => {
+    const body = buildSingleDraftBody();
+    if (!body || !patient?.id) {
+      return;
+    }
+    const patientId = patient.id;
+
     setSubmitting(true);
     let createdMr: MedicationRequest | undefined;
     try {
-      createdMr = await medplum.createResource<MedicationRequest>({
-        resourceType: 'MedicationRequest',
-        status: 'draft',
-        intent: 'order',
-        subject: createReference(patient),
-        requester: createReference(requester),
-        authoredOn: writtenDateYmd,
-        medicationCodeableConcept: medicationToCodeableConcept(selectedFormat, termMedication),
-        substitution: { allowedBoolean: useSubstitution },
-        reasonReference: primaryCondition?.id ? [{ reference: `Condition/${primaryCondition.id}` }] : undefined,
-        insurance: coverage?.id ? [{ reference: `Coverage/${coverage.id}` }] : undefined,
-        dosageInstruction: [
-          {
-            text: sigLine3,
-            patientInstruction: patientInstruction.trim() || undefined,
-          },
-        ],
-        note: notesPharmacist.trim() ? [{ text: notesPharmacist.trim() }] : undefined,
-        dispenseRequest: {
-          quantity: { value: q, unit: qtyUnit },
-          numberOfRepeatsAllowed: refill,
-          expectedSupplyDuration: {
-            value: daysSupply,
-            unit: 'days',
-            system: 'http://unitsofmeasure.org',
-            code: 'd',
-          },
-          validityPeriod: {
-            start: writtenDateYmd,
-            ...(fillDateYmd.trim() ? { end: fillDateYmd.trim() } : {}),
-          },
-          performer: pharmacyOrg?.id ? createReference(pharmacyOrg) : undefined,
-        },
-      });
+      createdMr = await medplum.createResource<MedicationRequest>(body);
 
       const res = await orderMedication({
-        patientId: patient.id,
+        patientId,
         medicationRequestId: createdMr.id,
         conditionIds: primaryCondition?.id ? [primaryCondition.id] : [],
         coverageId: coverage?.id,
@@ -1229,9 +1294,35 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
                 setPharmacyOrg={setPharmacyOrg}
               />
 
-              <Button onClick={submitSingle} loading={submitting}>
-                Prescribe
-              </Button>
+              {onAddedToCart && cartCount > 0 && (
+                <Group gap={6} justify="center">
+                  <IconShoppingCart size={16} />
+                  <Text size="sm" c="dimmed">
+                    {cartCount} in cart — review and check out on the Draft tab
+                  </Text>
+                </Group>
+              )}
+              {onAddedToCart ? (
+                <Group grow>
+                  <Button
+                    onClick={() => {
+                      addToCart().catch(showErrorNotification);
+                    }}
+                    loading={addingToCart}
+                    disabled={submitting}
+                    leftSection={<IconShoppingCart size={16} />}
+                  >
+                    Add to cart
+                  </Button>
+                  <Button variant="default" onClick={submitSingle} loading={submitting} disabled={addingToCart}>
+                    Prescribe this medication
+                  </Button>
+                </Group>
+              ) : (
+                <Button onClick={submitSingle} loading={submitting} fullWidth>
+                  Prescribe now
+                </Button>
+              )}
             </Stack>
           </Tabs.Panel>
 
