@@ -48,6 +48,11 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
   // Otherwise, use the body
   const input = req.method === 'GET' ? parseQueryString(req.query, inputParameters) : req.body;
 
+  if (isResourceInputParam<T>(inputParameters, input)) {
+    const param = inputParameters[0];
+    return { [param.name]: validateInputParam(param, input) } as T;
+  }
+
   if (input.resourceType === 'Parameters') {
     if (!input.parameter) {
       return {} as T;
@@ -59,6 +64,18 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
       inputParameters.map((param) => [param.name, validateInputParam(param, input[param.name])])
     ) as T;
   }
+}
+
+function isResourceInputParam<T>(inputParameters: OperationDefinitionParameter[], input: unknown): T | undefined {
+  if (
+    isResource(input) &&
+    input.resourceType !== 'Parameters' &&
+    inputParameters.length === 1 &&
+    (inputParameters[0].type === 'Resource' || isResource(input, inputParameters[0].type as ResourceType))
+  ) {
+    return input as T;
+  }
+  return undefined;
 }
 
 function parseQueryString(

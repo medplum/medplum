@@ -1,72 +1,63 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest } from '@medplum/core';
+import { badRequest, isResource } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Claim } from '@medplum/fhirtypes';
+import type { Bundle, Claim } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { tryCustomOperation } from './custom';
-import { makeOperationDefinition } from './definitions';
+import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
 const CLAIM_SUBMIT_OPERATION_SETTING = 'CLAIM_SUBMIT_OPERATION';
+const PRIOR_AUTH_SUBMIT_OPERATION_SETTING = 'PRIOR_AUTH_SUBMIT_OPERATION';
 
-export const operation = makeOperationDefinition(
-  { scope: 'type-and-instance', resource: 'Claim' },
-  {
-    name: 'claim-submit',
-    code: 'submit',
-    parameter: [
-      {
-        use: 'in',
-        name: 'resource',
-        type: 'Claim',
-        min: 1,
-        max: '1',
-        documentation: 'The Claim to submit (for type-level POST).',
-      },
-      {
-        use: 'out',
-        name: 'return',
-        type: 'ClaimResponse',
-        min: 1,
-        max: '1',
-        documentation: 'The ClaimResponse returned by the underlying claim submission operation.',
-      },
-    ],
-  }
-);
+export const operation = getOperationDefinition('Claim', 'submit');
 
 interface ClaimSubmitParameters {
-  readonly resource: Claim;
+  readonly resource: Bundle | Claim;
 }
 
 /**
  * Common function to handle claim submit operations.
  *
- * Dispatches to the custom OperationDefinition named by the CLAIM_SUBMIT_OPERATION project
- * setting, passing the Claim resource as the request body. The core server stays
+ * Dispatches to the custom OperationDefinition named by the relevant project setting,
+ * passing the Claim or Bundle resource as the request body. The core server stays
  * vendor-neutral: any claim processor registers a custom OperationDefinition whose
  * implementation is a Bot, and $submit forwards to it via tryCustomOperation.
  *
  * @param req - The FHIR request.
- * @param claim - The FHIR Claim resource to submit.
+ * @param resource - The FHIR Claim or Bundle resource to submit.
  * @returns The FHIR response from the underlying custom operation.
  */
-async function handleClaimSubmit(req: FhirRequest, claim: Claim): Promise<FhirResponse> {
+async function handleClaimSubmit(req: FhirRequest, resource: Bundle | Claim): Promise<FhirResponse> {
   const { project, repo } = getAuthenticatedContext();
 
-  const customOperationCode = project.setting?.find((s) => s.name === CLAIM_SUBMIT_OPERATION_SETTING)?.valueString;
-  if (!customOperationCode) {
-    return [badRequest('Claim submit is not configured: set the CLAIM_SUBMIT_OPERATION project setting.')];
+  let claim: Claim | undefined = undefined;
+  if (isResource<Claim>(resource, 'Claim')) {
+    claim = resource;
+  } else if (isResource<Bundle>(resource, 'Bundle')) {
+    claim = resource.entry?.find((e) => isResource(e.resource, 'Claim'))?.resource as Claim | undefined;
   }
 
-  // Normalize to a type-level POST so tryCustomOperation forwards the Claim as the body,
+  if (!claim) {
+    return [badRequest('Claim submit must contain at least one Claim resource.')];
+  }
+
+  const operationSetting =
+    claim.use === 'preauthorization' ? PRIOR_AUTH_SUBMIT_OPERATION_SETTING : CLAIM_SUBMIT_OPERATION_SETTING;
+
+  const customOperationCode = project.setting?.find((s) => s.name === operationSetting)?.valueString;
+  if (!customOperationCode) {
+    return [badRequest(`Claim submit is not configured: set the ${operationSetting} project setting.`)];
+  }
+
+  // Normalize to a type-level POST so tryCustomOperation forwards the Claim or Bundle as the body,
   // regardless of whether the original request was the instance-level GET or type-level POST.
   const subRequest: FhirRequest = {
     ...req,
     method: 'POST',
     url: `/Claim/$${customOperationCode}`,
-    body: claim,
+    body: resource,
   };
   const result = await tryCustomOperation(subRequest, repo);
   if (!result) {
@@ -80,7 +71,7 @@ async function handleClaimSubmit(req: FhirRequest, claim: Claim): Promise<FhirRe
 }
 
 /**
- * Handles HTTP GET requests for the instance-level Claim $submit operation.
+ * Handles HTTP POST requests for the instance-level Claim $submit operation.
  *
  * Reads the claim from the database and dispatches it to the configured claim processor.
  *
@@ -90,7 +81,7 @@ async function handleClaimSubmit(req: FhirRequest, claim: Claim): Promise<FhirRe
  * @param req - The FHIR request.
  * @returns The FHIR response from the underlying custom operation.
  */
-export async function claimSubmitGetHandler(req: FhirRequest): Promise<FhirResponse> {
+export async function claimSubmitPostByIdHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
   const claimId = req.params.id;
 
@@ -116,10 +107,5 @@ export async function claimSubmitGetHandler(req: FhirRequest): Promise<FhirRespo
 export async function claimSubmitPostHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ClaimSubmitParameters>(operation, req);
   const claim = params.resource;
-
-  if (!claim) {
-    return [badRequest('The resource Claim is required')];
-  }
-
   return handleClaimSubmit(req, claim);
 }
