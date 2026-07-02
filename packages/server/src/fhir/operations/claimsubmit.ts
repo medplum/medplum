@@ -52,7 +52,7 @@ async function handleClaimSubmit(req: FhirRequest, resource: Bundle | Claim): Pr
   }
 
   // Normalize to a type-level POST so tryCustomOperation forwards the Claim or Bundle as the body,
-  // regardless of whether the original request was the instance-level GET or type-level POST.
+  // regardless of whether the original request was instance-level or type-level.
   const subRequest: FhirRequest = {
     ...req,
     method: 'POST',

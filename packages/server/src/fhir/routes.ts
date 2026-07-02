@@ -333,7 +333,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Claim/$export', claimExportPostHandler);
   router.add('GET', '/Claim/:id/$export', claimExportGetHandler);
 
-  // Claim $submit operation (dispatches to the custom operation configured via CLAIM_SUBMIT_OPERATION).
+  // Claim $submit operation (dispatches to the configured claim or prior auth custom operation).
   router.add('POST', '/Claim/$submit', claimSubmitPostHandler);
   router.add('POST', '/Claim/:id/$submit', claimSubmitPostByIdHandler);
 
