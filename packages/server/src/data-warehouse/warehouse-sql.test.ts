@@ -39,6 +39,12 @@ describe('warehouse SQL query builders', () => {
     expect(projected.getValues()).toStrictEqual(['']);
   });
 
+  test('buildProjectedSelectFromHistoryTable qualifies schema-prefixed source tables', () => {
+    const projected = buildProjectedSelectFromHistoryTable('dw_worker_sync_int_test.history');
+    expect(projected.toString()).toContain('FROM "pg_db"."dw_worker_sync_int_test"."history"');
+    expect(projected.getValues()).toStrictEqual(['']);
+  });
+
   test('buildCountFromHistoryTableQuery builds count query with guarded content filter', () => {
     const countQuery = buildCountFromHistoryTableQuery('Patient_History');
     expect(countQuery.toString()).toBe(
