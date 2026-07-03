@@ -178,6 +178,19 @@ export class Parser {
     return this.tokens.shift() as Token;
   }
 
+  tryConsume(expectedId?: string, expectedValue?: string): Token | undefined {
+    if (!this.tokens.length) {
+      return undefined;
+    }
+    if (expectedId && this.peek()?.id !== expectedId) {
+      return undefined;
+    }
+    if (expectedValue && this.peek()?.value !== expectedValue) {
+      return undefined;
+    }
+    return this.tokens.shift();
+  }
+
   peek(): Token | undefined {
     return this.tokens.length > 0 ? this.tokens[0] : undefined;
   }
