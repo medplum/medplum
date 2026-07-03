@@ -40,7 +40,17 @@
 *,
 *::before,
 *::after {
-  font-feature-settings: 'ss02' on, 'ss04' on;
+  font-feature-settings:
+    'ss02' on,
+    'ss04' on;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  font: inherit;
 }
 
 [data-theme='dark'] {
@@ -416,4 +426,3 @@ li.theme-doc-sidebar-item-link:not(:first-child) strong {
   background-color: var(--oc-grape-9);
   border-color: var(--oc-grape-9);
 }
-

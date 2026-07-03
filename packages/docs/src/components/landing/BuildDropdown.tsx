@@ -50,6 +50,9 @@ interface BuildDropdownProps {
 export function BuildDropdown({ triggerClassName }: BuildDropdownProps = {}): JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerClasses = triggerClassName
+    ? `${triggerClassName}${isOpen ? ` ${styles.dropdownTriggerActive}` : ''}`
+    : `${styles.dropdownTrigger}${isOpen ? ` ${styles.dropdownTriggerActive}` : ''}`;
 
   const handleMouseEnter = useCallback(() => {
     if (closeTimeoutRef.current) {
@@ -66,12 +69,28 @@ export function BuildDropdown({ triggerClassName }: BuildDropdownProps = {}): JS
   }, []);
 
   return (
-    <div className={styles.dropdownWrapper} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+    <div
+      className={styles.dropdownWrapper}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setIsOpen(false);
+        }
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <button
         type="button"
-        className={triggerClassName ?? `${styles.dropdownTrigger}${isOpen ? ` ${styles.dropdownTriggerActive}` : ''}`}
+        className={triggerClasses}
         aria-expanded={isOpen}
         aria-haspopup="true"
+        onClick={() => setIsOpen((open) => !open)}
+        onFocus={() => setIsOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            setIsOpen(false);
+          }
+        }}
       >
         Build on the Platform
         <IconChevronDown size={18} className={styles.chevron} />

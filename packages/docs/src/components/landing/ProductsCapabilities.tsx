@@ -73,8 +73,8 @@ export function ProductsCapabilities(): JSX.Element {
 
           <div className={styles.panelWrapper}>
             <div className={styles.screenshotPlaceholder}>
-              <div className={styles.placeholderChip}>placeholder</div>
-              <div className={styles.placeholderCaption}>{active.name} — pre-built UI</div>
+              <div className={styles.placeholderChip}>workflow UI</div>
+              <div className={styles.placeholderCaption}>{active.name}</div>
             </div>
           </div>
         </div>

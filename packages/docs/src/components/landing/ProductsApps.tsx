@@ -9,7 +9,7 @@ import styles from './ProductsApps.module.css';
 function ScreenshotPlaceholder({ caption }: { caption: string }): JSX.Element {
   return (
     <div className={styles.screenshotPlaceholder}>
-      <div className={styles.placeholderChip}>placeholder</div>
+      <div className={styles.placeholderChip}>custom UI</div>
       <div className={styles.placeholderCaption}>{caption}</div>
     </div>
   );
@@ -85,7 +85,7 @@ export function ProductsApps(): JSX.Element {
             See what teams have built <span aria-hidden="true">→</span>
           </Link>
         </div>
-        <ScreenshotPlaceholder caption="Your application — screenshot" />
+        <ScreenshotPlaceholder caption="Your application" />
       </div>
 
       {/* Secondary: reference implementations, demoted below the custom-app hero. */}

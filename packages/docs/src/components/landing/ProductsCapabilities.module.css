@@ -2,7 +2,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 .section {
-  font-family: 'Poppins', system-ui, sans-serif;
   scroll-margin-top: 80px;
   padding: 64px 0 80px;
   border-bottom: 1px solid #e9ecef;
@@ -13,7 +12,6 @@
 }
 
 .sectionHeadline {
-  font-family: 'Poppins', system-ui, sans-serif;
   font-weight: 600;
   font-size: 44px;
   line-height: 1.1;
@@ -23,7 +21,6 @@
 }
 
 .sectionLead {
-  font-family: 'Poppins', system-ui, sans-serif;
   font-size: 19px;
   line-height: 1.6;
   color: #495057;
@@ -91,7 +88,6 @@
 }
 
 .capabilityName {
-  font-family: 'Poppins', system-ui, sans-serif;
   font-size: 16px;
   font-weight: 600;
   color: #212529;
@@ -103,7 +99,6 @@
 }
 
 .capabilityShort {
-  font-family: 'Poppins', system-ui, sans-serif;
   font-size: 14px;
   color: #868e96;
   line-height: 1.35;
@@ -132,7 +127,7 @@
 }
 
 .placeholderChip {
-  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  font-family: var(--ifm-font-family-monospace);
   font-size: 11px;
   color: #868e96;
   background: #fff;
@@ -144,7 +139,6 @@
 }
 
 .placeholderCaption {
-  font-family: 'Poppins', system-ui, sans-serif;
   font-size: 16px;
   font-weight: 500;
   color: #868e96;

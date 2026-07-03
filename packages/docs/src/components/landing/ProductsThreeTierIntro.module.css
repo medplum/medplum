@@ -2,7 +2,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 .section {
-  font-family: 'Poppins', system-ui, sans-serif;
   background: #fff;
   padding: 40px 0 56px;
 }
@@ -34,7 +33,6 @@
 }
 
 .headline {
-  font-family: 'Poppins', system-ui, sans-serif;
   font-weight: 600;
   font-size: 44px;
   line-height: 1.1;
@@ -44,7 +42,6 @@
 }
 
 .sub {
-  font-family: 'Poppins', system-ui, sans-serif;
   font-size: 17px;
   line-height: 1.6;
   color: #495057;
@@ -118,7 +115,6 @@
 }
 
 .rowVerb {
-  font-family: 'Poppins', system-ui, sans-serif;
   font-size: 13.5px;
   font-weight: 500;
   color: #495057;
@@ -170,7 +166,6 @@
 
 .tierLabel {
   padding-left: 8px;
-  font-family: 'Poppins', system-ui, sans-serif;
   font-weight: 600;
   font-size: 20px;
   color: #212529;
@@ -185,7 +180,6 @@
 .pill {
   background: #fff;
   color: #212529;
-  font-family: 'Poppins', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 500;
   padding: 6px 12px;

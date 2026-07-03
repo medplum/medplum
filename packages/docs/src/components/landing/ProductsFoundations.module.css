@@ -2,7 +2,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 .section {
-  font-family: 'Poppins', system-ui, sans-serif;
   scroll-margin-top: 80px;
   padding: 64px 0 96px;
 }
@@ -12,7 +11,6 @@
 }
 
 .sectionHeadline {
-  font-family: 'Poppins', system-ui, sans-serif;
   font-weight: 600;
   font-size: 44px;
   line-height: 1.1;
@@ -52,7 +50,6 @@
   width: 100%;
   align-items: center;
   gap: 8px;
-  font-family: 'Poppins', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 500;
   color: #495057;
@@ -173,7 +170,6 @@
 }
 
 .complianceBandTitle {
-  font-family: 'Poppins', system-ui, sans-serif;
   font-weight: 600;
   font-size: 20px;
   color: #212529;
@@ -221,7 +217,6 @@
 }
 
 .complianceName {
-  font-family: 'Poppins', system-ui, sans-serif;
   font-weight: 600;
   font-size: 13px;
   color: #212529;
