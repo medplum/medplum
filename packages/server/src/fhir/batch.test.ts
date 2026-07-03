@@ -17,6 +17,7 @@ import type {
   UserConfiguration,
 } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
+import { DelayedError } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import type { RateLimiterRes } from 'rate-limiter-flexible';
@@ -28,6 +29,30 @@ import { runInAuthenticatedContext } from '../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import type { BatchJobData } from '../workers/batch';
 import { execBatchJob, getBatchQueue } from '../workers/batch';
+import { queueRegistry } from '../workers/utils';
+
+/**
+ * Builds a minimal mock BullMQ Job for driving execBatchJob in tests. Provides an in-memory
+ * `updateData` so the re-entrant worker can persist its progress marker, and `queueName`/`token`
+ * so graceful-shutdown/delay code paths can be exercised.
+ * @param data - The batch job data.
+ * @param overrides - Optional overrides applied on top of the defaults.
+ * @returns A mock Job usable with execBatchJob.
+ */
+function mockBatchJob(data: BatchJobData, overrides?: Record<string, unknown>): Job<BatchJobData> {
+  const job: any = {
+    id: '1',
+    data,
+    queueName: 'BatchQueue',
+    token: 'test-token',
+    async updateData(newData: BatchJobData) {
+      job.data = newData;
+    },
+    async moveToDelayed() {},
+    ...overrides,
+  };
+  return job as Job<BatchJobData>;
+}
 
 describe('Batch and Transaction processing', () => {
   const app = express();
@@ -1174,15 +1199,15 @@ describe('Batch and Transaction processing', () => {
     const outcome = res.body as OperationOutcome;
     expect(outcome.issue[0].diagnostics).toMatch('http://');
 
-    // Manually push through BullMQ job
+    // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<BatchJobData>>({
-        bundle,
-      })
+      expect.objectContaining<Partial<BatchJobData>>({ asyncJob: expect.anything() })
     );
+    const enqueued = queue.add.mock.calls[0][1] as BatchJobData & { bundle?: unknown };
+    expect(enqueued.bundle).toBeUndefined();
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
     await expect(execBatchJob(job)).resolves.toBe(undefined);
@@ -1225,15 +1250,15 @@ describe('Batch and Transaction processing', () => {
     const outcome = res.body as OperationOutcome;
     expect(outcome.issue[0].diagnostics).toMatch('http://');
 
-    // Manually push through BullMQ job
+    // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<BatchJobData>>({
-        bundle,
-      })
+      expect.objectContaining<Partial<BatchJobData>>({ asyncJob: expect.anything() })
     );
+    const enqueued = queue.add.mock.calls[0][1] as BatchJobData & { bundle?: unknown };
+    expect(enqueued.bundle).toBeUndefined();
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
     await expect(execBatchJob(job)).resolves.toBe(undefined);
@@ -1259,6 +1284,143 @@ describe('Batch and Transaction processing', () => {
     });
 
     expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  test('Async batch resumes after graceful shutdown', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [1, 2, 3, 4].map(() => ({
+        request: { method: 'POST', url: 'Patient' },
+        resource: { resourceType: 'Patient' },
+      })),
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send(bundle);
+    expect(res.status).toStrictEqual(202);
+    const outcome = res.body as OperationOutcome;
+
+    const job = mockBatchJob(queue.add.mock.calls[0][1] as BatchJobData);
+    queue.add.mockClear();
+
+    // Simulate the queue closing after the first two entries are processed. isClosing is checked
+    // at the top of each loop iteration, so returning false twice lets two entries process before
+    // the job detects shutdown and delays itself.
+    let checks = 0;
+    const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= 2);
+
+    // The delayed job re-throws DelayedError so BullMQ can re-queue it.
+    await expect(execBatchJob(job)).rejects.toBeInstanceOf(DelayedError);
+    isClosingSpy.mockRestore();
+
+    // Progress was checkpointed into the job data so a future worker can resume.
+    expect(job.data.position).toBeGreaterThan(0);
+    expect(job.data.position).toBeLessThan(4);
+
+    // The AsyncJob must still be in progress (not failed/completed) after being delayed.
+    // The status endpoint returns 202 while a job is not in a final state.
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const inProgress = await request(app)
+      .get(new URL(jobUrl).pathname)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
+      .send();
+    expect(inProgress.status).toStrictEqual(202);
+
+    // Resume on a fresh worker: it rehydrates from durable state and finishes the batch.
+    const resumeJob = mockBatchJob(job.data);
+    await expect(execBatchJob(resumeJob)).resolves.toBe(undefined);
+
+    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+    const resultsReference = asyncJob.output?.parameter?.find((p) => p.name === 'results')?.valueReference?.reference;
+    expect(resultsReference).toMatch(/^Binary\//);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/${resultsReference}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res2.status).toStrictEqual(200);
+    const results = res2.body as Bundle;
+    expect(results.type).toStrictEqual('batch-response');
+    // All four entries are present exactly once, across the pre- and post-resume runs.
+    expect(results.entry).toHaveLength(4);
+    expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201', '201']);
+  });
+
+  test('Async batch makes partial results available when cancelled', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [1, 2, 3, 4].map(() => ({
+        request: { method: 'POST', url: 'Patient' },
+        resource: { resourceType: 'Patient' },
+      })),
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send(bundle);
+    expect(res.status).toStrictEqual(202);
+    const outcome = res.body as OperationOutcome;
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const asyncJobId = new URL(jobUrl).pathname.split('/').at(-2) as string;
+
+    const job = mockBatchJob(queue.add.mock.calls[0][1] as BatchJobData);
+    queue.add.mockClear();
+
+    // Process two entries, then delay (simulating a shutdown) to leave durable partial state.
+    let checks = 0;
+    const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= 2);
+    await expect(execBatchJob(job)).rejects.toBeInstanceOf(DelayedError);
+    isClosingSpy.mockRestore();
+    const processedBeforeCancel = job.data.position as number;
+    expect(processedBeforeCancel).toBeGreaterThan(0);
+
+    // Cancel the AsyncJob out of band.
+    const cancelRes = await request(app)
+      .post(`/fhir/R4/AsyncJob/${asyncJobId}/$cancel`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(cancelRes.status).toStrictEqual(200);
+
+    // Resuming a cancelled job must not process further entries; it publishes partial results.
+    const resumeJob = mockBatchJob(job.data);
+    await expect(execBatchJob(resumeJob)).resolves.toBe(undefined);
+
+    const cancelled = await request(app)
+      .get(new URL(jobUrl).pathname)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
+      .send();
+    expect(cancelled.status).toStrictEqual(200);
+    expect(cancelled.body.status).toStrictEqual('cancelled');
+    const partialRef = cancelled.body.output?.parameter?.find((p: any) => p.name === 'partialResults')?.valueReference
+      ?.reference;
+    expect(partialRef).toMatch(/^Binary\//);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/${partialRef}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res2.status).toStrictEqual(200);
+    const partial = res2.body as Bundle;
+    expect(partial.type).toStrictEqual('batch-response');
+    // Only the entries processed before cancellation have results; the rest are absent.
+    expect(partial.entry?.filter(Boolean)).toHaveLength(processedBeforeCancel);
   });
 
   test('Transaction bundle account propagation', async () => {
@@ -1521,13 +1683,15 @@ describe('Batch and Transaction processing', () => {
     const outcome = res.body as OperationOutcome;
     expect(outcome.issue[0].diagnostics).toMatch('http://');
 
-    // Manually push through BullMQ job
+    // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<BatchJobData>>({ bundle: batch })
+      expect.objectContaining<Partial<BatchJobData>>({ asyncJob: expect.anything() })
     );
+    const enqueued = queue.add.mock.calls[0][1] as BatchJobData & { bundle?: unknown };
+    expect(enqueued.bundle).toBeUndefined();
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
     let count = 0;

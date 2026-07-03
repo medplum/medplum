@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Event, WithId } from '@medplum/core';
 import {
-  append,
   badRequest,
   getReferenceString,
   getStatus,
@@ -39,6 +38,45 @@ type BundlePreprocessInfo = {
 };
 
 /**
+ * A JSON-serializable form of `BundlePreprocessInfo`, where `resourceTypes` is an
+ * array rather than a `Set` so it can be persisted to durable storage.
+ */
+export type SerializableBundleInfo = {
+  ordering: number[];
+  requiresStrongTransaction: boolean;
+  updates: number;
+};
+
+/**
+ * The durable, JSON-serializable state produced by preprocessing a batch bundle. This is
+ * everything required to (re)hydrate a {@link BatchProcessor} and resume processing after a
+ * server restart or worker crash, EXCEPT the progress marker (the index into `bundleInfo.ordering`
+ * of the next entry to process) and the per-entry results produced so far, both of which the
+ * caller (e.g. the async batch worker) is responsible for persisting separately.
+ *
+ * @see BatchProcessor.preprocess
+ * @see BatchProcessor.fromState
+ */
+export interface BatchInitialState {
+  /**
+   * The preprocessed bundle. During preprocessing the bundle is mutated in place: `create`
+   * entries are assigned resource IDs and conditional `update`/`delete` URLs are rewritten to
+   * absolute references. This mutated form MUST be persisted and reloaded verbatim — re-running
+   * preprocessing on the original bundle would assign fresh random IDs and break references to
+   * resources that were already created.
+   */
+  bundle: Bundle;
+  bundleInfo: SerializableBundleInfo;
+  resolvedIdentities: Record<string, string>;
+  /**
+   * Result entries produced during preprocessing itself (i.e. error responses for malformed
+   * entries in a non-transaction bundle), keyed by their index in the original bundle. These
+   * entries are never re-processed, so they are captured here rather than in per-entry progress.
+   */
+  preprocessResults: Record<number, BundleEntry>;
+}
+
+/**
  * Processes a FHIR batch request.
  *
  * See: https://www.hl7.org/fhir/http.html#transaction
@@ -61,13 +99,33 @@ export async function processBatch(
 /**
  * The BatchProcessor class contains the state for processing a batch/transaction bundle.
  * In particular, it tracks rewritten IDs as necessary.
+ *
+ * The processor supports two modes of operation:
+ *
+ * 1. One-shot via {@link BatchProcessor.run}, used for synchronous batch/transaction requests.
+ *    This preprocesses and then processes every entry within a single call.
+ *
+ * 2. Re-entrant, used by the async batch worker. The caller drives processing one entry at a
+ *    time via {@link BatchProcessor.preprocess}, {@link BatchProcessor.hasMoreEntries}, and
+ *    {@link BatchProcessor.processNextEntry}, persisting durable state ({@link BatchInitialState},
+ *    progress marker, and per-entry results) as it goes. After a restart the processor is
+ *    rehydrated via {@link BatchProcessor.fromState} and processing resumes from the persisted
+ *    marker. Only `batch` bundles are re-entrant; `transaction` bundles must use {@link BatchProcessor.run}.
  */
-class BatchProcessor {
+export class BatchProcessor {
   private readonly router: FhirRouter;
   private repo: FhirRepository;
-  private readonly bundle: Bundle;
+  private bundle: Bundle;
   private readonly req: FhirRequest;
-  private readonly resolvedIdentities: Record<string, string>;
+  private resolvedIdentities: Record<string, string>;
+  private bundleInfo: BundlePreprocessInfo | undefined;
+  private resultEntries: (BundleEntry | OperationOutcome)[];
+  /** Index into `bundleInfo.ordering` of the next entry to process. */
+  private position: number;
+  /** Indices (into the original bundle) of results produced since the last {@link BatchProcessor.takePendingResults} call. */
+  private pendingIndices: number[];
+  /** Error messages accumulated across processed entries, for the post-batch telemetry event. */
+  private readonly errors: string[];
 
   /**
    * Creates a batch processor.
@@ -82,38 +140,177 @@ class BatchProcessor {
     this.bundle = bundle;
     this.req = req;
     this.resolvedIdentities = Object.create(null);
+    this.resultEntries = new Array(bundle.entry?.length ?? 0);
+    this.position = 0;
+    this.pendingIndices = [];
+    this.errors = [];
   }
 
   /**
-   * Processes a FHIR batch request.
+   * Rehydrates a batch processor from previously-persisted durable state so that processing can
+   * resume after a server restart or worker crash. Intended for the re-entrant (async batch)
+   * flow; the caller is responsible for loading the {@link BatchInitialState} and progress marker
+   * from durable storage, and for assembling the final response bundle from the durably-persisted
+   * result entries (this instance only tracks results produced in the current run).
+   * @param router - The FHIR router.
+   * @param repo - The FHIR repository.
+   * @param req - The request for the batch.
+   * @param initialState - The durable state produced by {@link BatchProcessor.preprocess}.
+   * @param position - The index into `bundleInfo.ordering` of the next entry to process.
+   * @returns A batch processor positioned to resume at `position`.
+   */
+  static fromState(
+    router: FhirRouter,
+    repo: FhirRepository,
+    req: FhirRequest,
+    initialState: BatchInitialState,
+    position: number
+  ): BatchProcessor {
+    const processor = new BatchProcessor(router, repo, initialState.bundle, req);
+    processor.resolvedIdentities = initialState.resolvedIdentities;
+    processor.bundleInfo = {
+      ...initialState.bundleInfo,
+    };
+    processor.position = position;
+    return processor;
+  }
+
+  /**
+   * Processes a FHIR batch request in a single call.
    * @returns The bundle response.
    */
   async run(): Promise<Bundle> {
+    await this.preprocess();
+    const bundleInfo = this.bundleInfo as BundlePreprocessInfo;
+
+    if (!this.isTransaction()) {
+      return this.processEntriesAndBuild();
+    }
+
+    return this.repo.withTransaction((txRepo) => this.withRepo(txRepo, () => this.processEntriesAndBuild()), {
+      serializable: bundleInfo.requiresStrongTransaction,
+    });
+  }
+
+  /**
+   * Validates and preprocesses the bundle, scanning entries to resolve identities, rewrite
+   * conditional references, and compute processing order.
+   *
+   * For the re-entrant flow, the returned {@link BatchInitialState} should be persisted to
+   * durable storage before processing entries so that the processor can be rehydrated via
+   * {@link BatchProcessor.fromState} after a restart.
+   * @returns The durable initial state for the batch.
+   */
+  async preprocess(): Promise<BatchInitialState> {
     const bundleType = this.bundle.type;
     if (bundleType !== 'batch' && bundleType !== 'transaction') {
       throw new OperationOutcomeError(badRequest('Unrecognized bundle type: ' + bundleType));
     }
 
-    const resultEntries: (BundleEntry | OperationOutcome)[] = new Array(this.bundle.entry?.length ?? 0);
-    const bundleInfo = await this.preprocessBundle(resultEntries);
+    this.bundleInfo = await this.preprocessBundle(this.resultEntries);
 
-    if (!this.isTransaction()) {
-      return this.processBatch(bundleInfo, resultEntries);
-    }
-
-    if (bundleInfo.updates > maxUpdates) {
-      throw new OperationOutcomeError(badRequest('Transaction contains more update operations than allowed'));
-    }
-    if (bundleInfo.requiresStrongTransaction && resultEntries.length > maxSerializableTransactionEntries) {
-      throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
-    }
-
-    return this.repo.withTransaction(
-      (txRepo) => this.withRepo(txRepo, () => this.processBatch(bundleInfo, resultEntries)),
-      {
-        serializable: bundleInfo.requiresStrongTransaction,
+    if (this.isTransaction()) {
+      if (this.bundleInfo.updates > maxUpdates) {
+        throw new OperationOutcomeError(badRequest('Transaction contains more update operations than allowed'));
       }
-    );
+      if (this.bundleInfo.requiresStrongTransaction && this.resultEntries.length > maxSerializableTransactionEntries) {
+        throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
+      }
+    }
+
+    // Capture any result entries produced during preprocessing itself (error responses for
+    // malformed entries). These are never re-processed, so they belong in the initial state.
+    const preprocessResults: Record<number, BundleEntry> = Object.create(null);
+    for (let i = 0; i < this.resultEntries.length; i++) {
+      if (this.resultEntries[i]) {
+        preprocessResults[i] = this.resultEntries[i];
+      }
+    }
+
+    return {
+      bundle: this.bundle,
+      bundleInfo: {
+        ordering: this.bundleInfo.ordering,
+        requiresStrongTransaction: this.bundleInfo.requiresStrongTransaction,
+        updates: this.bundleInfo.updates,
+      },
+      resolvedIdentities: this.resolvedIdentities,
+      preprocessResults,
+    };
+  }
+
+  /**
+   * @returns True if there are more entries to process, i.e. {@link BatchProcessor.processNextEntry} should be
+   * called again.
+   */
+  hasMoreEntries(): boolean {
+    return this.bundleInfo !== undefined && this.position < this.bundleInfo.ordering.length;
+  }
+
+  /**
+   * @returns The index into `bundleInfo.ordering` of the next entry to process. This is the
+   * progress marker that should be persisted (together with the result entries produced so far)
+   * to allow resuming via {@link BatchProcessor.fromState}.
+   */
+  getPosition(): number {
+    return this.position;
+  }
+
+  /**
+   * Returns the result entries produced since the last call (keyed by their index in the
+   * original bundle) and clears the pending buffer. The caller persists these to durable
+   * storage as a checkpoint before advancing the durable progress marker.
+   * @returns Newly-produced result entries, keyed by original bundle index.
+   */
+  takePendingResults(): Record<number, BundleEntry> {
+    const out: Record<number, BundleEntry> = Object.create(null);
+    for (const index of this.pendingIndices) {
+      out[index] = this.resultEntries[index];
+    }
+    this.pendingIndices = [];
+    return out;
+  }
+
+  private async processEntriesAndBuild(): Promise<Bundle> {
+    this.dispatchPreEvent();
+    while (this.hasMoreEntries()) {
+      await this.processNextEntry();
+    }
+    this.dispatchPostEvent();
+    return this.buildResultBundle();
+  }
+
+  private dispatchPreEvent(): void {
+    const preEvent: BatchEvent = {
+      type: 'batch',
+      bundleType: this.bundle.type,
+      count: this.bundle.entry?.length,
+      size: JSON.stringify(this.bundle).length,
+    };
+    this.router.dispatchEvent(preEvent);
+  }
+
+  private dispatchPostEvent(): void {
+    const postEvent: BatchEvent = {
+      type: 'batch',
+      bundleType: this.bundle.type,
+      errors: this.errors.length ? this.errors : undefined,
+    };
+    this.router.dispatchEvent(postEvent);
+  }
+
+  /**
+   * Assembles the response bundle from the result entries recorded on this instance. Used by the
+   * one-shot {@link BatchProcessor.run} flow. The re-entrant flow instead assembles the final bundle from durably
+   * persisted results via {@link buildBatchResponseBundle}.
+   * @returns The bundle response.
+   */
+  private buildResultBundle(): Bundle {
+    return {
+      resourceType: 'Bundle',
+      type: `${this.bundle.type}-response` as Bundle['type'],
+      entry: this.resultEntries,
+    };
   }
 
   /**
@@ -364,69 +561,60 @@ class BatchProcessor {
   }
 
   /**
-   * Processes a FHIR batch request.
-   * @param bundleInfo - The preprocessed Bundle information.
-   * @param resultEntries - The array of results.
-   * @returns The bundle response.
+   * Processes the next entry in the bundle ordering (the entry at the current progress marker),
+   * recording its result and advancing the marker.
+   *
+   * For `batch` bundles, per-entry errors are captured as error result entries and processing
+   * continues; a 429 (rate limit) terminates the batch, filling all remaining entries with the
+   * rate-limit outcome. For `transaction` bundles, any entry error is thrown so the enclosing
+   * transaction rolls back.
+   *
+   * Must be called only after {@link BatchProcessor.preprocess} or {@link BatchProcessor.fromState}. Callers should guard with
+   * {@link BatchProcessor.hasMoreEntries}.
    */
-  private async processBatch(
-    bundleInfo: BundlePreprocessInfo,
-    resultEntries: (BundleEntry | OperationOutcome)[]
-  ): Promise<Bundle> {
-    const bundleType = this.bundle.type;
-
+  async processNextEntry(): Promise<void> {
+    const bundleInfo = this.bundleInfo;
+    if (!bundleInfo) {
+      throw new Error('processNextEntry called before preprocess()/fromState()');
+    }
     const entries = this.bundle.entry;
     if (!entries) {
       throw new OperationOutcomeError(badRequest('Missing bundle entry'));
     }
-
-    const preEvent: BatchEvent = {
-      type: 'batch',
-      bundleType,
-      count: entries.length,
-      size: JSON.stringify(this.bundle).length,
-    };
-    this.router.dispatchEvent(preEvent);
-
-    let errors: string[] | undefined;
-    for (let n = 0; n < bundleInfo.ordering.length; n++) {
-      const entryIndex = bundleInfo.ordering[n];
-      const entry = entries[entryIndex];
-      const rewritten = this.rewriteIdsInObject(entry);
-      try {
-        resultEntries[entryIndex] = await this.processBatchEntry(rewritten);
-      } catch (err: any) {
-        if (this.isTransaction()) {
-          throw err;
-        }
-
-        errors = append(errors, err.message);
-        if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 429) {
-          // Rate limit reached; terminate batch and finish to avoid further load on server
-          for (let i = n; i < bundleInfo.ordering.length; i++) {
-            const entryIndex = bundleInfo.ordering[i];
-            resultEntries[entryIndex] = buildBundleResponse(err.outcome);
-          }
-          break;
-        }
-
-        resultEntries[entryIndex] = buildBundleResponse(normalizeOperationOutcome(err));
-        continue;
-      }
+    if (this.position >= bundleInfo.ordering.length) {
+      return;
     }
 
-    const postEvent: BatchEvent = {
-      type: 'batch',
-      bundleType,
-      errors,
-    };
-    this.router.dispatchEvent(postEvent);
+    const n = this.position;
+    const entryIndex = bundleInfo.ordering[n];
+    const entry = entries[entryIndex];
+    const rewritten = this.rewriteIdsInObject(entry);
+    try {
+      this.setResult(entryIndex, await this.processBatchEntry(rewritten));
+      this.position = n + 1;
+    } catch (err: any) {
+      if (this.isTransaction()) {
+        throw err;
+      }
 
-    return {
-      resourceType: 'Bundle',
-      type: `${bundleType}-response` as Bundle['type'],
-      entry: resultEntries,
-    };
+      this.errors.push(err.message);
+      if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 429) {
+        // Rate limit reached; terminate batch and finish to avoid further load on server
+        for (let i = n; i < bundleInfo.ordering.length; i++) {
+          this.setResult(bundleInfo.ordering[i], buildBundleResponse(err.outcome));
+        }
+        this.position = bundleInfo.ordering.length;
+        return;
+      }
+
+      this.setResult(entryIndex, buildBundleResponse(normalizeOperationOutcome(err)));
+      this.position = n + 1;
+    }
+  }
+
+  private setResult(index: number, entry: BundleEntry): void {
+    this.resultEntries[index] = entry;
+    this.pendingIndices.push(index);
   }
 
   /**
@@ -605,6 +793,31 @@ function buildBundleResponse(outcome: OperationOutcome, resource?: Resource): Bu
       location: isOk(outcome) && resource?.id ? getReferenceString(resource) : undefined,
     },
     resource,
+  };
+}
+
+/**
+ * Assembles a batch/transaction response bundle from result entries that were collected across
+ * multiple re-entrant processing runs and persisted to durable storage. Used by the async batch
+ * worker to build the final (or a partial) response bundle from checkpointed results.
+ * @param bundleType - The type of the request bundle (`batch` or `transaction`).
+ * @param entryCount - The number of entries in the original request bundle.
+ * @param results - The result entries, keyed by their index in the original request bundle.
+ * @returns The response bundle, with one entry per original request entry.
+ */
+export function buildBatchResponseBundle(
+  bundleType: Bundle['type'],
+  entryCount: number,
+  results: Record<number, BundleEntry>
+): Bundle {
+  const entry: BundleEntry[] = new Array(entryCount);
+  for (let i = 0; i < entryCount; i++) {
+    entry[i] = results[i];
+  }
+  return {
+    resourceType: 'Bundle',
+    type: `${bundleType}-response` as Bundle['type'],
+    entry,
   };
 }
 
