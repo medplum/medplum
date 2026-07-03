@@ -26,9 +26,21 @@ const CAPABILITY_ICONS: Record<string, ComponentType<{ size?: number; color?: st
   IconClipboardList,
 };
 
+const CAPABILITY_IMAGES: Record<string, string> = {
+  'Intake & Registration': '/img/products/intake.webp',
+  Scheduling: '/img/products/scheduling.webp',
+  Charting: '/img/products/charting.webp',
+  'Diagnostic Orders': '/img/products/diagnostic-orders.webp',
+  Medications: '/img/products/medications.webp',
+  'Care Coordination': '/img/products/care-plans.webp',
+  'Messaging & Communications': '/img/products/messaging.webp',
+  'Billing & Payments': '/img/products/billing.webp',
+};
+
 export function ProductsCapabilities(): JSX.Element {
   const [activeIdx, setActiveIdx] = useState(0);
   const active = CAPABILITIES[activeIdx];
+  const activeImage = CAPABILITY_IMAGES[active.name];
 
   return (
     <div id="capabilities" className={styles.section}>
@@ -72,10 +84,7 @@ export function ProductsCapabilities(): JSX.Element {
           </ul>
 
           <div className={styles.panelWrapper}>
-            <div className={styles.screenshotPlaceholder}>
-              <div className={styles.placeholderChip}>workflow UI</div>
-              <div className={styles.placeholderCaption}>{active.name}</div>
-            </div>
+            <img className={styles.screenshot} src={activeImage} alt={`${active.name} workflow UI`} />
           </div>
         </div>
       </div>

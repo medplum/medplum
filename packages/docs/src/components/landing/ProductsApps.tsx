@@ -33,6 +33,11 @@ function AppHeroImage({ src, alt, zoom }: AppScreenshot): JSX.Element {
 }
 
 const APP_SCREENSHOTS: Record<string, AppScreenshot> = {
+  custom: {
+    src: '/img/products/custom-ehr.webp',
+    alt: 'Custom EHR application built on Medplum',
+    zoom: '100%',
+  },
   provider: {
     src: '/img/provider/medplum-provider-app-cover-image.webp',
     alt: 'Medplum Provider App',
@@ -85,7 +90,7 @@ export function ProductsApps(): JSX.Element {
             See what teams have built <span aria-hidden="true">→</span>
           </Link>
         </div>
-        <ScreenshotPlaceholder caption="Your application" />
+        <AppHeroImage {...APP_SCREENSHOTS.custom} />
       </div>
 
       {/* Secondary: reference implementations, demoted below the custom-app hero. */}
