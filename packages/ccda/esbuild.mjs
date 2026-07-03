@@ -20,7 +20,7 @@ const options = {
   define: {
     'import.meta.env.NODE_ENV': '"production"',
   },
-  external: ['@mantine/core', 'fast-xml-parser'],
+  external: ['@mantine/core', 'fast-xml-parser', 'path-expression-matcher'],
 };
 
 esbuild
