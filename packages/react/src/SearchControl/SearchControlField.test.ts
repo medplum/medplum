@@ -19,4 +19,23 @@ describe('getFieldDefinitions', () => {
     expect(identifierField?.searchParams?.length).toBe(1);
     expect(identifierField?.searchParams?.find((sp) => sp.code === 'identifier')).toBeDefined();
   });
+
+  test('DiagnosticReport conclusion does not match conclusionCode search parameter', () => {
+    const fieldDefs = getFieldDefinitions({
+      resourceType: 'DiagnosticReport',
+      fields: ['conclusion', 'conclusionCode'],
+    });
+
+    expect(fieldDefs.length).toBe(2);
+    const conclusionField = fieldDefs.find((field) => field.name === 'conclusion');
+    const conclusionCodeField = fieldDefs.find((field) => field.name === 'conclusionCode');
+
+    expect(conclusionField?.elementDefinition?.path).toBe('DiagnosticReport.conclusion');
+    expect(conclusionField?.searchParams).toBeUndefined();
+
+    expect(conclusionCodeField?.elementDefinition?.path).toBe('DiagnosticReport.conclusionCode');
+    expect(conclusionCodeField?.searchParams?.length).toBe(1);
+    expect(conclusionCodeField?.searchParams?.[0]?.code).toBe('conclusion');
+    expect(conclusionCodeField?.searchParams?.[0]?.expression).toBe('DiagnosticReport.conclusionCode');
+  });
 });
