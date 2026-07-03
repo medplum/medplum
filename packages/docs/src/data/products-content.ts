@@ -178,7 +178,7 @@ export const FEATURED_APPS = ALL_APPS.slice(0, 2);
 export const COMPLIANCE: ComplianceItem[] = [
   { label: 'HIPAA', sub: 'Compliant', img: '/img/compliance/HIPAA-Asclepius.svg' },
   { label: 'SOC 2', sub: 'Type 2', img: '/img/compliance/soc.png' },
-  { label: 'HITRUST', sub: 'CSF Certified', img: '/img/compliance/HITRUST.svg' },
+  { label: 'HITRUST', sub: 'CSF Certified', img: '/img/compliance/hitrust.svg' },
   { label: 'ONC (+ HTI-4)', sub: '(g)(10) Certified', img: '/img/compliance/ONC-Certified-HealthIT.png' },
   { label: 'ISO 9001', sub: 'Quality Mgmt', img: '/img/compliance/ISO.svg' },
   { label: '21 CFR Part 11', sub: 'FDA', img: '/img/compliance/FDA.svg' },
