@@ -52,6 +52,7 @@ describe('Calendar', () => {
     onSelectInterval,
     onSelectSlot,
     onSelectAppointment,
+    onDoubleClickAppointment,
     onRangeChange,
   }: {
     slots?: Slot[];
@@ -59,6 +60,7 @@ describe('Calendar', () => {
     onSelectInterval?: () => void;
     onSelectSlot?: (slot: Slot) => void;
     onSelectAppointment?: (appointment: Appointment) => void;
+    onDoubleClickAppointment?: (appointment: Appointment) => void;
     onRangeChange?: (range: Range) => void;
   } = {}): ReturnType<typeof render> => {
     return render(
@@ -68,6 +70,7 @@ describe('Calendar', () => {
         onSelectInterval={onSelectInterval}
         onSelectSlot={onSelectSlot}
         onSelectAppointment={onSelectAppointment}
+        onDoubleClickAppointment={onDoubleClickAppointment}
         onRangeChange={onRangeChange}
       />
     );
@@ -260,7 +263,7 @@ describe('Calendar', () => {
       expect(screen.getByText(/John Doe/)).toBeInTheDocument();
 
       await userEvent.click(screen.getByText(/John Doe/));
-      expect(onSelectAppointment).toHaveBeenCalledWith(appointment);
+      await expect(onSelectAppointment).toHaveBeenCalledWith(appointment);
     });
 
     test('renders multiple appointments', async () => {
@@ -301,7 +304,7 @@ describe('Calendar', () => {
 
       expect(screen.getByText('Available')).toBeInTheDocument();
       await userEvent.click(screen.getByText('Available'));
-      expect(onSelectSlot).toHaveBeenCalledWith(slot);
+      await expect(onSelectSlot).toHaveBeenCalledWith(slot);
       expect(onSelectAppointment).not.toHaveBeenCalled();
       expect(onSelectInterval).not.toHaveBeenCalled();
     });
@@ -332,7 +335,16 @@ describe('Calendar', () => {
       setup({ slots: [slot], onSelectSlot });
 
       await userEvent.click(screen.getByText('Available'));
-      expect(onSelectSlot).toHaveBeenCalledWith(slot);
+      await expect(onSelectSlot).toHaveBeenCalledWith(slot);
+    });
+
+    test('calls onDoubleClickAppointment when double-clicking an appointment', async () => {
+      const onDoubleClickAppointment = vi.fn();
+      const appointment = createAppointment();
+      setup({ appointments: [appointment], onDoubleClickAppointment });
+
+      await userEvent.dblClick(screen.getByText(/John Doe/));
+      await expect(onDoubleClickAppointment).toHaveBeenCalledWith(appointment);
     });
 
     test('filters out entered-in-error slots', async () => {
