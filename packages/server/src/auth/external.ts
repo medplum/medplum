@@ -260,6 +260,10 @@ async function verifyExternalCode(
   code: string,
   codeVerifier: string | undefined
 ): Promise<Record<string, unknown>> {
+  if (!idp.tokenUrl) {
+    throw new OperationOutcomeError(badRequest('Missing token URL for external identity provider'));
+  }
+
   const headers: HeadersInit = {
     Accept: ContentType.JSON,
     'Accept-Encoding': 'identity',
@@ -276,6 +280,10 @@ async function verifyExternalCode(
   }
 
   if (idp.tokenAuthMethod === OAuthTokenAuthMethod.ClientSecretPost) {
+    if (!idp.clientId || !idp.clientSecret) {
+      throw new OperationOutcomeError(badRequest('Missing client ID or client secret for external identity provider'));
+    }
+
     params.append('client_id', idp.clientId);
     params.append('client_secret', idp.clientSecret);
   } else {
