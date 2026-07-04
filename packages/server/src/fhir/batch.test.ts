@@ -39,10 +39,7 @@ import { queueRegistry } from '../workers/utils';
  * @param overrides - Optional overrides applied on top of the defaults.
  * @returns A mock Job usable with execBatchJob.
  */
-function mockBatchJob(
-  data: ReentrantBatchJobData,
-  overrides?: Record<string, unknown>
-): Job<ReentrantBatchJobData> {
+function mockBatchJob(data: ReentrantBatchJobData, overrides?: Record<string, unknown>): Job<ReentrantBatchJobData> {
   const job: any = {
     id: '1',
     data,

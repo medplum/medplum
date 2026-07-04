@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString } from '@medplum/core';
 import type { WithId } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import type { AsyncJob, Binary, Bundle } from '@medplum/fhirtypes';
-import { DelayedError, Worker } from 'bullmq';
 import type { Job } from 'bullmq';
+import { DelayedError, Worker } from 'bullmq';
 import type { Mock } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getUserConfiguration } from '../auth/me';
@@ -21,13 +21,7 @@ import type { AuthState } from '../oauth/middleware';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, streamToString, withTestContext } from '../test.setup';
 import type { LegacyBatchJobData, ReentrantBatchJobData } from './batch';
-import {
-  execBatchJob,
-  execLegacyBatchJob,
-  getBatchQueue,
-  initBatchWorker,
-  queueBatchProcessing,
-} from './batch';
+import { execBatchJob, execLegacyBatchJob, getBatchQueue, initBatchWorker, queueBatchProcessing } from './batch';
 import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
 
@@ -59,7 +53,12 @@ function makeReentrantJob(
 }
 
 function makeLegacyJob(data: LegacyBatchJobData): Job<LegacyBatchJobData> {
-  return { id: 'legacy-job', name: 'BatchJobData', data, queueName: 'BatchQueue' } as unknown as Job<LegacyBatchJobData>;
+  return {
+    id: 'legacy-job',
+    name: 'BatchJobData',
+    data,
+    queueName: 'BatchQueue',
+  } as unknown as Job<LegacyBatchJobData>;
 }
 
 const singleEntryBundle = (): Bundle => ({
@@ -141,9 +140,8 @@ describe('Batch worker', () => {
 
   // Reads the Bundle referenced by a `results`/`partialResults` output parameter.
   async function readResultsBundle(asyncJob: AsyncJob): Promise<Bundle> {
-    const ref = asyncJob.output?.parameter?.find(
-      (p) => p.name === 'results' || p.name === 'partialResults'
-    )?.valueReference?.reference;
+    const ref = asyncJob.output?.parameter?.find((p) => p.name === 'results' || p.name === 'partialResults')
+      ?.valueReference?.reference;
     if (!ref) {
       throw new Error('No results reference on AsyncJob output');
     }
@@ -186,7 +184,9 @@ describe('Batch worker', () => {
           expect.objectContaining({
             name: 'outcome',
             resource: expect.objectContaining({
-              issue: [expect.objectContaining({ code: 'invalid', details: { text: expect.stringContaining('pergola') } })],
+              issue: [
+                expect.objectContaining({ code: 'invalid', details: { text: expect.stringContaining('pergola') } }),
+              ],
             }),
           }),
         ]);
@@ -206,9 +206,7 @@ describe('Batch worker', () => {
         const finished = await readAsyncJob(asyncJob.id);
         expect(finished.status).toStrictEqual('error');
         // Partial results and the error are attached to the output (plus the failJob outcome).
-        expect(finished.output?.parameter?.map((p) => p.name)).toEqual(
-          expect.arrayContaining(['results', 'error'])
-        );
+        expect(finished.output?.parameter?.map((p) => p.name)).toEqual(expect.arrayContaining(['results', 'error']));
         expect(cleanupSpy).toHaveBeenCalled();
       }));
 
@@ -394,9 +392,7 @@ describe('Batch worker', () => {
         const asyncJob = await createAsyncJob();
         const job = makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState });
 
-        const writeSpy = vi
-          .spyOn(getBinaryStorage(), 'writeBinary')
-          .mockRejectedValue(new Error('storage exploded'));
+        const writeSpy = vi.spyOn(getBinaryStorage(), 'writeBinary').mockRejectedValue(new Error('storage exploded'));
 
         await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
 
