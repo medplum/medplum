@@ -74,7 +74,7 @@ interface BaseBatchJobData {
   readonly traceId?: string;
 }
 
-interface LegacyBatchJobData extends BaseBatchJobData {
+export interface LegacyBatchJobData extends BaseBatchJobData {
   readonly asyncJob: WithId<AsyncJob>;
   readonly bundle: Bundle;
 }
@@ -489,7 +489,7 @@ function countBundleErrors(bundle: Bundle): number {
  * @deprecated Processes legacy jobs. Can be removed in v5.2+
  * @param job - The BullMQ job instance.
  */
-async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
+export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
   const bundle = job.data.bundle;
   const { login, project, membership } = job.data.authState;
   const logger = getLogger();
