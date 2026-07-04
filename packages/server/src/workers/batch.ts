@@ -103,7 +103,7 @@ export type BatchJobData = LegacyBatchJobData | ReentrantBatchJobData;
 const queueName = 'BatchQueue';
 const jobName = 'BatchJobData';
 
-const defaultCheckpointEntries = 50;
+const defaultCheckpointEntries = 4;
 const defaultCheckpointIntervalMs = 5000;
 
 export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
