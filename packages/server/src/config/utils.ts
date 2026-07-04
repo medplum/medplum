@@ -37,6 +37,8 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
+  config.dispatchEnabled ??= true;
+  config.subscriptionsEnabled ??= true;
   config.autoDownloadEnabled ??= true;
   config.base64BinaryMaxBytes ??= 1 * 1024 * 1024; // 1 MB default cap for base64Binary
   config.inlineAttachmentsMaxTotalBytes ??= 0;

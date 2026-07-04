@@ -102,6 +102,7 @@ describe('Subscription Worker', () => {
   beforeEach(async () => {
     fetchMock.mockClear();
     getConfig().allowUnsafeOutbound = false;
+    getConfig().subscriptionsEnabled = true;
 
     // Create one simple project with no advanced features enabled
     const { client, repo: _repo } = await withTestContext(() =>
@@ -189,6 +190,34 @@ describe('Subscription Worker', () => {
       await repo.deleteResource('Patient', patient.id);
 
       await findAndExecSubscriptionJob(patient, 'delete');
+    }));
+
+  test('Does not send subscriptions when disabled', () =>
+    withTestContext(async () => {
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'https://example.com/subscription',
+        },
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const subscriptionQueue = getSubscriptionQueue();
+      expect(subscriptionQueue).toBeDefined();
+      (subscriptionQueue?.add as Mock).mockClear();
+
+      getConfig().subscriptionsEnabled = false;
+      await addSubscriptionJobs(patient, undefined, { project: repo.currentProject(), interaction: 'create' });
+
+      expect(subscriptionQueue?.add).not.toHaveBeenCalled();
     }));
 
   test('Status code 201', () =>

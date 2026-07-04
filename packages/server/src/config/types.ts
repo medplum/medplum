@@ -122,6 +122,12 @@ export interface MedplumServerConfig {
   /** Optional threshold in milliseconds for logging and recording high idle time within transactions */
   idleInTransactionLogThresholdMs?: number;
 
+  /** Flag to enable/disable the background worker dispatch service. (default 'true' for enabled) */
+  dispatchEnabled?: boolean;
+
+  /** Flag to enable/disable FHIR subscriptions. (default 'true' for enabled) */
+  subscriptionsEnabled?: boolean;
+
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
 
@@ -216,6 +222,9 @@ export interface MedplumServerConfig {
    * Do not enable in hosted or cloud-managed environments.
    */
   allowUnsafeOutbound?: boolean;
+
+  /** Optional list of enabled search parameters by SearchParameter.id.  Default is all search parameters enabled. */
+  enabledSearchParameters?: string[];
 }
 
 export interface SubscriptionAutoDisableTrigger {
