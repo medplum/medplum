@@ -2487,6 +2487,65 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(patientEntry?.search?.extension).toHaveLength(2);
     }));
 
+  test('Include with versioned reference records source', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const order = await repo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        subject: { reference: `Patient/${patient.id}/_history/${patient.meta?.versionId}` },
+      });
+      const bundle = await repo.search({
+        resourceType: 'ServiceRequest',
+        include: [
+          {
+            resourceType: 'ServiceRequest',
+            searchParam: 'subject',
+          },
+        ],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id }],
+      });
+      expect(bundleContains(bundle, patient)).toMatchObject<BundleEntry>({
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(order) },
+            },
+          ],
+        },
+      });
+    }));
+
+  test('Match entries are never annotated with source extensions', () =>
+    withTestContext(async () => {
+      const identifier = randomUUID();
+      const patientB = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ value: identifier }],
+      });
+      const patientA = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ value: identifier }],
+        link: [{ other: createReference(patientB), type: 'replaces' }],
+      });
+      const bundle = await repo.search({
+        resourceType: 'Patient',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+        include: [
+          {
+            resourceType: 'Patient',
+            searchParam: 'link',
+          },
+        ],
+      });
+      expect(bundle.entry).toHaveLength(2);
+      expect(bundleContains(bundle, patientA)?.search).toStrictEqual({ mode: 'match' });
+      expect(bundleContains(bundle, patientB)?.search).toStrictEqual({ mode: 'match' });
+    }));
+
   test('Include canonical success', () =>
     withTestContext(async () => {
       const canonicalURL = 'http://example.com/fhir/Questionnaire/PHQ-9/' + randomUUID();
@@ -2558,8 +2617,18 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
       expect(bundle.total).toStrictEqual(1);
       expect(bundleContains(bundle, plan)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
-      expect(bundleContains(bundle, activity1)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
-      expect(bundleContains(bundle, activity2)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      const planSourceExtension = [
+        {
+          url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+          valueReference: { reference: getReferenceString(plan) },
+        },
+      ];
+      expect(bundleContains(bundle, activity1)).toMatchObject<BundleEntry>({
+        search: { mode: 'include', extension: planSourceExtension },
+      });
+      expect(bundleContains(bundle, activity2)).toMatchObject<BundleEntry>({
+        search: { mode: 'include', extension: planSourceExtension },
+      });
     }));
 
   test('Include references invalid search param', async () =>
@@ -3079,6 +3148,23 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(
         bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
       ).toStrictEqual(expected);
+
+      // Revinclude sources on :iterate rounds point at the immediate parent, which may itself be an
+      // included resource rather than a match
+      const observation3Entry = bundle.entry?.find((e) => e.resource?.id === observation3.id);
+      expect(observation3Entry?.search?.extension).toStrictEqual([
+        {
+          url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+          valueReference: { reference: `Patient/${linked2.id}` },
+        },
+      ]);
+      const observation4Entry = bundle.entry?.find((e) => e.resource?.id === observation4.id);
+      expect(observation4Entry?.search?.extension).toStrictEqual([
+        {
+          url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+          valueReference: { reference: `Observation/${observation2.id}` },
+        },
+      ]);
     }));
 
   test('_include depth limit', () =>

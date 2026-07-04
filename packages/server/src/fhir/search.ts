@@ -95,6 +95,12 @@ export const minCursorBasedSearchPageSize = 20;
 
 const canonicalReferenceTypes: string[] = [PropertyType.canonical, PropertyType.uri];
 
+/**
+ * Extension URL used on `Bundle.entry.search` of `_include`/`_revinclude` entries to record the
+ * resource(s) whose reference caused the entry to be included, one `valueReference` per source,
+ * deduplicated. On `:iterate` rounds the source is the immediate parent, which may itself be an
+ * included resource rather than a match. Match entries never carry this extension.
+ */
 export const SEARCH_ENTRY_SOURCE_EXTENSION_URL = 'https://medplum.com/fhir/StructureDefinition/search-entry-source';
 
 type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
@@ -574,11 +580,12 @@ async function getSearchIncludeEntries(
     const fhirPathResult = evalFhirPathTyped(parsedExpression, [toTypedValue(sourceResource)]);
     for (const result of fhirPathResult) {
       if (result.type === PropertyType.Reference && result.value.reference) {
-        references.set(result.value.reference, result.value);
-        addSourceReference(referenceSources, result.value.reference, sourceReference);
+        const targetReference = unversionedReference(result.value.reference);
+        references.set(targetReference, result.value);
+        addSourceReference(referenceSources, targetReference, sourceReference);
       } else if (canonicalReferenceTypes.includes(result.type)) {
         canonicalReferences.add(result.value);
-        addSourceReference(canonicalReferenceSources, result.value, sourceReference);
+        addSourceReference(canonicalReferenceSources, unversionedCanonical(result.value), sourceReference);
       }
     }
   }
@@ -688,9 +695,9 @@ function getSearchParamSourceReferences(
   for (const value of fhirPathResult) {
     let targetReference: string | undefined;
     if (value.type === PropertyType.Reference) {
-      targetReference = value.value.reference;
+      targetReference = value.value.reference ? unversionedReference(value.value.reference) : undefined;
     } else if (canonicalReferenceTypes.includes(value.type)) {
-      targetReference = value.value;
+      targetReference = unversionedCanonical(value.value);
     }
     if (targetReference) {
       result.push(...getSourceReferences(sourceReferences, targetReference));
@@ -746,6 +753,14 @@ function mergeSearchSourceExtensions(targetEntry: BundleEntry | undefined, sourc
         : []
     )
   );
+}
+
+function unversionedReference(reference: string): string {
+  return reference.split('/_history/')[0];
+}
+
+function unversionedCanonical(canonical: string): string {
+  return canonical.split('|')[0];
 }
 
 function addSourceReference(
