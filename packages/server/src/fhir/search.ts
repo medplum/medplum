@@ -1,6 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { FhirFilterExpression, Filter, IncludeTarget, SearchRequest, SortRule, WithId } from '@medplum/core';
+import type {
+  FhirFilterExpression,
+  FhirPathAtom,
+  Filter,
+  IncludeTarget,
+  SearchRequest,
+  SortRule,
+  WithId,
+} from '@medplum/core';
 import {
   AccessPolicyInteraction,
   badRequest,
@@ -494,7 +502,9 @@ async function getExtraEntries<T extends Resource>(
 ): Promise<void> {
   let base: Resource[] = resources;
   let iterateOnly = false;
-  const seen = new Set<string>(resources.map((r) => `${r.resourceType}/${r.id}`));
+  // Maps references of all resources in the bundle to their entry, or undefined for match entries,
+  // which never carry source extensions
+  const seen = new Map<string, BundleEntry | undefined>(resources.map((r) => [`${r.resourceType}/${r.id}`, undefined]));
   let depth = 0;
 
   while (base.length > 0) {
@@ -519,10 +529,10 @@ async function getExtraEntries<T extends Resource>(
       const ref = `${resource.resourceType}/${resource.id}`;
       if (!seen.has(ref)) {
         entries.push(entry);
+        seen.set(ref, entry);
       } else {
-        mergeSearchSourceExtensions(entries, entry);
+        mergeSearchSourceExtensions(seen.get(ref), entry);
       }
-      seen.add(ref);
     }
 
     iterateOnly = true; // Only consider :iterate params on iterations after the first
@@ -550,8 +560,9 @@ async function getSearchIncludeEntries(
     throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
   }
 
-  const references: Reference[] = [];
-  const canonicalReferences: string[] = [];
+  const parsedExpression = parseFhirPath(searchParam.expression as string);
+  const references = new Map<string, Reference>();
+  const canonicalReferences = new Set<string>();
   const referenceSources = new Map<string, Set<string>>();
   const canonicalReferenceSources = new Map<string, Set<string>>();
   for (const sourceResource of resources) {
@@ -560,20 +571,22 @@ async function getSearchIncludeEntries(
       continue;
     }
 
-    const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, [toTypedValue(sourceResource)]);
+    const fhirPathResult = evalFhirPathTyped(parsedExpression, [toTypedValue(sourceResource)]);
     for (const result of fhirPathResult) {
-      if (result.type === PropertyType.Reference) {
-        references.push(result.value);
+      if (result.type === PropertyType.Reference && result.value.reference) {
+        references.set(result.value.reference, result.value);
         addSourceReference(referenceSources, result.value.reference, sourceReference);
       } else if (canonicalReferenceTypes.includes(result.type)) {
-        canonicalReferences.push(result.value);
+        canonicalReferences.add(result.value);
         addSourceReference(canonicalReferenceSources, result.value, sourceReference);
       }
     }
   }
 
-  const includedResources = (await repo.readReferences(references)).filter((v) => isResource(v)) as WithId<Resource>[];
-  if (searchParam.target && canonicalReferences.length > 0) {
+  const includedResources = (await repo.readReferences(Array.from(references.values()))).filter((v) =>
+    isResource(v)
+  ) as WithId<Resource>[];
+  if (searchParam.target && canonicalReferences.size > 0) {
     const canonicalSearches = searchParam.target.map((resourceType) => {
       const searchRequest = {
         resourceType: resourceType,
@@ -581,7 +594,7 @@ async function getSearchIncludeEntries(
           {
             code: 'url',
             operator: Operator.EQUALS,
-            value: canonicalReferences.join(','),
+            value: Array.from(canonicalReferences).join(','),
           },
         ],
         count: DEFAULT_MAX_SEARCH_COUNT,
@@ -630,6 +643,7 @@ async function getSearchRevIncludeEntries(
   const isCanonical =
     getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL;
   const sourceReferences = getRevIncludeSourceReferences(resources, isCanonical);
+  const parsedExpression = parseFhirPath(searchParam.expression as string);
   const references = isCanonical
     ? flatMapFilter(resources, (r) => getCanonicalUrl(r))
     : resources.map(getReferenceString);
@@ -646,7 +660,7 @@ async function getSearchRevIncludeEntries(
     entry.search = { mode: 'include' };
     addSearchSourceExtensions(
       entry,
-      getSearchParamSourceReferences(searchParam, entry.resource as Resource, sourceReferences)
+      getSearchParamSourceReferences(parsedExpression, entry.resource as Resource, sourceReferences)
     );
   }
   return entries;
@@ -665,12 +679,12 @@ function getRevIncludeSourceReferences(resources: Resource[], isCanonical: boole
 }
 
 function getSearchParamSourceReferences(
-  searchParam: SearchParameter,
+  parsedExpression: FhirPathAtom,
   resource: Resource,
   sourceReferences: Map<string, Set<string>>
 ): string[] {
   const result: string[] = [];
-  const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, [toTypedValue(resource)]);
+  const fhirPathResult = evalFhirPathTyped(parsedExpression, [toTypedValue(resource)]);
   for (const value of fhirPathResult) {
     let targetReference: string | undefined;
     if (value.type === PropertyType.Reference) {
@@ -713,17 +727,9 @@ function addSearchSourceExtensions(entry: BundleEntry, sourceReferences: string[
   ];
 }
 
-function mergeSearchSourceExtensions(entries: BundleEntry[], sourceEntry: BundleEntry): void {
-  const targetResource = sourceEntry.resource;
+function mergeSearchSourceExtensions(targetEntry: BundleEntry | undefined, sourceEntry: BundleEntry): void {
   const sourceExtensions = sourceEntry.search?.extension?.filter((e) => e.url === SEARCH_ENTRY_SOURCE_EXTENSION_URL);
-  if (!targetResource || !sourceExtensions?.length) {
-    return;
-  }
-
-  const targetEntry = entries.find(
-    (entry) => entry.resource?.resourceType === targetResource.resourceType && entry.resource.id === targetResource.id
-  );
-  if (!targetEntry || targetEntry.search?.mode !== 'include') {
+  if (!targetEntry || !sourceExtensions?.length) {
     return;
   }
 

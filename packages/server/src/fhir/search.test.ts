@@ -2402,6 +2402,12 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(result.entry?.[0]?.resource?.id).toStrictEqual(observation.id);
     }));
 
+  test('Search entry source extension URL is a stable public contract', () => {
+    expect(SEARCH_ENTRY_SOURCE_EXTENSION_URL).toStrictEqual(
+      'https://medplum.com/fhir/StructureDefinition/search-entry-source'
+    );
+  });
+
   test('Include references success', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
@@ -2650,6 +2656,52 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
     }));
 
+  test('Reverse include records all matching source resources', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+      const practitioner1 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Homer'], family }],
+      });
+      const practitioner2 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Marge'], family }],
+      });
+      const provenance = await repo.createResource<Provenance>({
+        resourceType: 'Provenance',
+        target: [createReference(practitioner1), createReference(practitioner2)],
+        agent: [{ who: createReference(practitioner1) }],
+        recorded: new Date().toISOString(),
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'Practitioner',
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+        revInclude: [
+          {
+            resourceType: 'Provenance',
+            searchParam: 'target',
+          },
+        ],
+      });
+
+      const provenanceEntry = bundleContains(bundle, provenance);
+      expect(provenanceEntry).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(provenanceEntry?.search?.extension).toEqual(
+        expect.arrayContaining([
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: getReferenceString(practitioner1) },
+          },
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: getReferenceString(practitioner2) },
+          },
+        ])
+      );
+      expect(provenanceEntry?.search?.extension).toHaveLength(2);
+    }));
+
   test('Reverse include canonical', () =>
     withTestContext(async () => {
       const canonicalURL = 'http://example.com/fhir/Questionnaire/PHQ-9/' + randomUUID();
@@ -2866,6 +2918,23 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(
         bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
       ).toStrictEqual(expected);
+
+      // practitioner2 is included by linked2 on one iteration and re-encountered via linked3 on the next;
+      // its deduplicated entry must accumulate both source references
+      const practitioner2Entry = bundle.entry?.find((e) => e.resource?.id === practitioner2.id);
+      expect(practitioner2Entry?.search?.extension).toEqual(
+        expect.arrayContaining([
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: `Patient/${linked2.id}` },
+          },
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: `Patient/${linked3.id}` },
+          },
+        ])
+      );
+      expect(practitioner2Entry?.search?.extension).toHaveLength(2);
     }));
 
   test('_revinclude:iterate', () =>
