@@ -892,17 +892,39 @@ async function execBot(
   const body = interaction === 'delete' ? { deletedResource: resource } : resource;
   const headers = buildRestHookHeaders(job, subscription, resource, interaction, JSON.stringify(body));
 
-  await executeBot({
-    subscription,
-    bot,
-    runAs,
-    requester,
-    input: body,
-    contentType: ContentType.FHIR_JSON,
-    requestTime,
-    traceId: ctx.traceId,
-    headers,
-  });
+  try {
+    const result = await executeBot({
+      subscription,
+      bot,
+      runAs,
+      requester,
+      input: body,
+      contentType: ContentType.FHIR_JSON,
+      requestTime,
+      traceId: ctx.traceId,
+      headers,
+    });
+    await createSubscriptionAuditEvent(
+      systemRepo,
+      resource,
+      requestTime,
+      result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
+      `Attempt ${job.attemptsMade} bot execution ${result.success ? 'succeeded' : 'failed'}`,
+      subscription,
+      bot
+    );
+  } catch (ex) {
+    await createSubscriptionAuditEvent(
+      systemRepo,
+      resource,
+      requestTime,
+      AuditEventOutcome.MinorFailure,
+      `Attempt ${job.attemptsMade} received error ${ex}`,
+      subscription,
+      bot
+    );
+    throw ex;
+  }
 }
 
 async function catchJobError(
