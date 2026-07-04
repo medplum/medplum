@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+// =============================================================================
+// CQL
+// =============================================================================
+
 /**
  * The root production rule is library, which specifies the overall structure for a library file.
  *
@@ -78,9 +82,9 @@ export interface CqlOperandDefinition {
 
 export type CqlStatement = CqlExpressionDefinition | CqlContextDefinition | CqlFunctionDefinition;
 
-/*
- * ELM
- */
+// =============================================================================
+// ELM — Library structure
+// =============================================================================
 
 export interface ElmFile {
   library: ElmLibrary;
@@ -91,16 +95,35 @@ export interface ElmLibrary {
   identifier: ElmIdentifier;
   schemaIdentifier: ElmIdentifier;
   usings: ElmUsings;
-  includes: ElmIncludes;
-  parameters: ElmParameters;
-  contexts: ElmContexts;
+  includes?: ElmIncludes;
+  parameters?: ElmParameters;
+  codeSystems?: ElmCodeSystems;
+  valueSets?: ElmValueSets;
+  codes?: ElmCodes;
+  concepts?: ElmConcepts;
+  contexts?: ElmContexts;
   statements: ElmStatements;
 }
 
-export interface ElmAnnotation {
+export interface ElmCqlToElmInfoAnnotation {
+  type: 'CqlToElmInfo';
   translatorOptions: string;
-  type: string;
 }
+
+export interface ElmCqlToElmErrorAnnotation {
+  type: 'CqlToElmError';
+  libraryId?: string;
+  libraryVersion?: string;
+  startLine?: number;
+  startChar?: number;
+  endLine?: number;
+  endChar?: number;
+  message?: string;
+  errorType?: string;
+  errorSeverity?: string;
+}
+
+export type ElmAnnotation = ElmCqlToElmInfoAnnotation | ElmCqlToElmErrorAnnotation;
 
 export interface ElmIdentifier {
   id: string;
@@ -137,9 +160,56 @@ export interface ElmParameterDef {
   parameterTypeSpecifier: ElmTypeSpecifier;
 }
 
-export interface ElmTypeSpecifier {
+export interface ElmCodeSystems {
+  def: ElmCodeSystemDef[];
+}
+
+export interface ElmCodeSystemDef {
   name: string;
+  id: string;
+  version?: string;
+  accessLevel?: string;
+}
+
+export interface ElmValueSets {
+  def: ElmValueSetDef[];
+}
+
+export interface ElmValueSetDef {
+  name: string;
+  id: string;
+  version?: string;
+  accessLevel?: string;
+}
+
+export interface ElmCodes {
+  def: ElmCodeDef[];
+}
+
+export interface ElmCodeDef {
+  name: string;
+  id: string;
+  display?: string;
+  accessLevel?: string;
+  codeSystem: { name: string; version?: string };
+}
+
+export interface ElmConcepts {
+  def: ElmConceptDef[];
+}
+
+export interface ElmConceptDef {
+  name: string;
+  display: string;
+  accessLevel?: string;
+  code: [{ name: string; version?: string }];
+}
+
+export interface ElmTypeSpecifier {
   type: string;
+  name?: string;
+  elementType?: ElmTypeSpecifier;
+  pointType?: ElmTypeSpecifier;
 }
 
 export interface ElmContexts {
@@ -168,15 +238,178 @@ export interface ElmOperand {
   operandTypeSpecifier: ElmTypeSpecifier;
 }
 
-export interface ElmSingletonFrom {
-  type: 'SingletonFrom';
+// =============================================================================
+// ELM — Expression shapes
+//
+// Structural building blocks. The generic type parameter T constrains `type`
+// so that narrowing (`if (expr.type === 'Not')`) still works on the union.
+// =============================================================================
+
+/** Nullary ops: no operands, no additional fields. */
+export interface ElmNullaryOp<T extends string> {
+  type: T;
+}
+
+/** Single `operand: ElmExpression` — no other unique fields. */
+export interface ElmUnaryOp<T extends string> {
+  type: T;
   operand: ElmExpression;
 }
 
-// export interface ElmOperand {
-//   dataType: string;
-//   type: string;
-// }
+/** Array `operand: ElmExpression[]` — no other unique fields. */
+export interface ElmNaryOp<T extends string> {
+  type: T;
+  operand: ElmExpression[];
+}
+
+/** Single `name` field used for all *Ref node types. */
+export interface ElmNameRef<T extends string> {
+  type: T;
+  name: string;
+}
+
+/** Single `source: ElmExpression` field (Last, Max, Distinct, Flatten use this in actual translator output). */
+export interface ElmSourceOp<T extends string> {
+  type: T;
+  source: ElmExpression;
+}
+
+// =============================================================================
+// ELM — Collapsed union members
+// =============================================================================
+
+export type ElmNullaryExpression = ElmNullaryOp<'Null' | 'Today' | 'Now'>;
+
+/** Unary ops: single `operand`, no additional fields. */
+export type ElmUnaryExpression = ElmUnaryOp<
+  | 'Not'
+  | 'IsNull'
+  | 'Exists'
+  | 'Flatten'
+  | 'Distinct'
+  | 'End'
+  | 'SingletonFrom'
+  | 'ExpandValueSet'
+  | 'ToDateTime'
+  | 'ToList'
+>;
+
+/** N-ary ops: `operand` array, no additional fields. */
+export type ElmNaryExpression = ElmNaryOp<
+  | 'Equal'
+  | 'And'
+  | 'Or'
+  | 'Add'
+  | 'Union'
+  | 'Coalesce'
+  | 'Concatenate'
+  | 'In'
+  | 'Overlaps'
+  | 'Subtract'
+  | 'After'
+  | 'Equivalent'
+  | 'Except'
+  | 'EndsWith'
+>;
+
+/** Ref nodes: just a `name`, optionally a `libraryName` is handled by ElmFunctionRef separately. */
+export type ElmRefExpression = ElmNameRef<
+  | 'ExpressionRef'
+  | 'OperandRef'
+  | 'AliasRef'
+  | 'QueryLetRef'
+  | 'CodeRef'
+  | 'ConceptRef'
+  | 'ParameterRef'
+  | 'IdentifierRef'
+  | 'ValueSetRef'
+>;
+
+/** Source ops: single `source` field rather than `operand`. */
+export type ElmSourceExpression = ElmSourceOp<'First' | 'Last' | 'Min' | 'Max'>;
+
+// =============================================================================
+// ELM — Individual expression interfaces (unique fields)
+// =============================================================================
+
+export interface ElmLiteral {
+  type: 'Literal';
+  valueType: string;
+  value: string;
+}
+
+export interface ElmProperty {
+  type: 'Property';
+  path: string;
+  scope?: string;
+  source?: ElmExpression;
+}
+
+export interface ElmRetrieve {
+  type: 'Retrieve';
+  dataType: string;
+  codeProperty?: string;
+  codeComparator?: string;
+  codes?: ElmExpression;
+}
+
+/** FunctionRef gets its own interface because of the optional `libraryName`. */
+export interface ElmFunctionRef {
+  type: 'FunctionRef';
+  libraryName?: string;
+  name: string;
+  operand: ElmExpression[];
+}
+
+export interface ElmIndexer {
+  type: 'Indexer';
+  operand: [ElmExpression, ElmExpression];
+}
+
+export interface ElmAs {
+  type: 'As';
+  operand: ElmExpression;
+  asType?: string;
+  asTypeSpecifier?: ElmTypeSpecifier;
+  strict?: boolean;
+}
+
+export interface ElmIf {
+  type: 'If';
+  condition: ElmExpression;
+  then: ElmExpression;
+  else: ElmExpression;
+}
+
+export interface ElmInterval {
+  type: 'Interval';
+  lowClosed: boolean;
+  highClosed: boolean;
+  low: ElmExpression;
+  high: ElmExpression;
+}
+
+export interface ElmList {
+  type: 'List';
+  element: ElmExpression[];
+}
+
+export interface ElmInstance {
+  type: 'Instance';
+  classType: string;
+  // element: ElmExpression[];
+  element: ElmTupleElement[];
+}
+
+export interface ElmTuple {
+  type: 'Tuple';
+  element: ElmTupleElement[];
+}
+
+export interface ElmTupleElement {
+  name: string;
+  value: ElmExpression;
+}
 
 export interface ElmSubstring {
   type: 'Substring';
@@ -194,7 +427,9 @@ export interface ElmCombine {
 export interface ElmQuery {
   type: 'Query';
   source: ElmQuerySource[];
-  relationship: [];
+  let?: ElmQueryLet[];
+  relationship?: [];
+  sort?: ElmQuerySort;
   where?: ElmExpression;
   return?: ElmQueryReturn;
 }
@@ -204,88 +439,47 @@ export interface ElmQuerySource {
   expression: ElmExpression;
 }
 
-export interface ElmQueryReturn {
+export interface ElmQueryLet {
+  identifier: string;
   expression: ElmExpression;
 }
 
-export interface ElmProperty {
-  type: 'Property';
-  path: string;
-  scope?: string;
-  source?: ElmExpression;
+export interface ElmQuerySort {
+  by: ElmQuerySortBy[];
 }
 
-export interface ElmOperandRef {
-  type: 'OperandRef';
-  name: string;
+export interface ElmQuerySortBy {
+  type: 'ByExpression';
+  direction: 'asc' | 'desc';
+  expression: ElmExpression;
 }
 
-export interface ElmToday {
-  type: 'Today';
+export interface ElmQueryReturn {
+  distinct?: boolean;
+  expression: ElmExpression;
 }
 
-export interface ElmExpressionRef {
-  type: 'ExpressionRef';
-  name: string;
-}
-
-export interface ElmRetrieve {
-  type: 'Retrieve';
-  dataType: string;
-}
-
-export interface ElmFunctionRef {
-  type: 'FunctionRef';
-  libraryName?: string;
-  name: string;
-  operand: ElmExpression[];
-}
-
-export interface ElmIndexer {
-  type: 'Indexer';
-  operand: ElmExpression[];
-}
-
-export interface ElmLiteral {
-  type: 'Literal';
-  valueType: string;
-  value: string;
-}
-
-export interface ElmCoalesce {
-  type: 'Coalesce';
-  operand: ElmExpression[];
-}
-
-export interface ElmConcatenate {
-  type: 'Concatenate';
-  operand: ElmExpression[];
-}
-
-export interface ElmParameterRef {
-  type: 'ParameterRef';
-  name: string;
-}
-
-export interface ElmEqual {
-  type: 'Equal';
-  operand: ElmExpression[];
-}
+// =============================================================================
+// ELM — Top-level expression union
+// =============================================================================
 
 export type ElmExpression =
-  | ElmSingletonFrom
-  | ElmSubstring
-  | ElmCombine
-  | ElmQuery
+  | ElmNullaryExpression
+  | ElmUnaryExpression
+  | ElmNaryExpression
+  | ElmRefExpression
+  | ElmSourceExpression
+  | ElmLiteral
   | ElmProperty
-  | ElmOperandRef
-  | ElmToday
-  | ElmExpressionRef
   | ElmRetrieve
   | ElmFunctionRef
   | ElmIndexer
-  | ElmLiteral
-  | ElmCoalesce
-  | ElmConcatenate
-  | ElmParameterRef
-  | ElmEqual;
+  | ElmAs
+  | ElmIf
+  | ElmInterval
+  | ElmList
+  | ElmInstance
+  | ElmTuple
+  | ElmSubstring
+  | ElmCombine
+  | ElmQuery;
