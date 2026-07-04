@@ -12,7 +12,7 @@ import {
 } from '@medplum/core';
 import type { BatchInitialState, FhirRequest } from '@medplum/fhir-router';
 import { BatchProcessor, buildBatchResponseBundle, FhirRouter } from '@medplum/fhir-router';
-import type { AsyncJob, Binary, Bundle, Parameters } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bundle, Parameters, UserConfiguration } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
@@ -68,11 +68,19 @@ import {
  * └──────────────────────────────────────────────────────────────────────────────────────────┘
  */
 
-export interface BatchJobData {
-  readonly asyncJob: WithId<AsyncJob>;
+interface BaseBatchJobData {
   readonly authState: Readonly<AuthState>;
   readonly requestId?: string;
   readonly traceId?: string;
+}
+
+interface LegacyBatchJobData extends BaseBatchJobData {
+  readonly asyncJob: WithId<AsyncJob>;
+  readonly bundle: Bundle;
+}
+
+export interface ReentrantBatchJobData extends BaseBatchJobData {
+  readonly asyncJobId: string;
   /**
    * Index into the preprocessed ordering of the next entry to process. `undefined` on the initial
    * enqueue (before the bundle has been preprocessed). Updated via `job.updateData` at each
@@ -89,6 +97,8 @@ export interface BatchJobData {
   /** Max milliseconds elapsed between checkpoints. Defaults to {@link defaultCheckpointIntervalMs}. */
   readonly checkpointIntervalMs?: number;
 }
+
+export type BatchJobData = LegacyBatchJobData | ReentrantBatchJobData;
 
 const queueName = 'BatchQueue';
 const jobName = 'BatchJobData';
@@ -113,7 +123,15 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       queueName,
       (job) => {
         const { authState, requestId, traceId } = job.data;
-        return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJob(job));
+        return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
+          if ('asyncJob' in job.data) {
+            return execLegacyBatchJob(job as Job<LegacyBatchJobData>);
+          } else if ('asyncJobId' in job.data) {
+            return execBatchJob(job as Job<ReentrantBatchJobData>);
+          } else {
+            throw TypeError('Unrecognized BatchJobData', { cause: job.data });
+          }
+        });
       },
       {
         ...defaultOptions,
@@ -122,45 +140,55 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       }
     );
 
-    worker.on('failed', async (job, err) => {
+    worker.on('failed', async (job, failedErr) => {
       if (!job) {
         return;
       }
 
       // A delayed/re-queued job is not a failure; nothing to do.
-      if (err instanceof DelayedError) {
+      if (failedErr instanceof DelayedError) {
         return;
       }
 
       // This fires only when the job could not be recovered by re-entrant resume (e.g. it stalled
       // more than maxStalledCount times). Mark the AsyncJob failed if it is still in progress and
       // clean up any durable checkpoint state.
-      const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
-      const store = new BatchCheckpointStore(job.data.asyncJob.id);
-      try {
-        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJob.id);
-        if (isJobActive(asyncJob)) {
-          await new AsyncJobExecutor(systemRepo, asyncJob).failJob(err ?? undefined);
-        }
-      } catch (readErr) {
-        // Fall back to failing with the stale snapshot if the job could not be re-read.
-        await new AsyncJobExecutor(systemRepo, job.data.asyncJob).failJob(err ?? undefined).catch(() => {});
-        getLogger().error('Async batch failed handler could not refresh AsyncJob', {
-          asyncJob: job.data.asyncJob.id,
-          error: normalizeErrorString(readErr),
-        });
+
+      if ('asyncJob' in job.data && job.data.asyncJob) {
+        job.data satisfies LegacyBatchJobData;
+        const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
+        const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
+        await exec.failJob();
+        return;
+      } else if (!('asyncJobId' in job.data) || !job.data.asyncJobId) {
+        getLogger().error('Unrecognized BatchJobData', { jobData: job.data });
+        return;
       }
-      await store.cleanup(job.data.chunkSeq ?? 0);
+
+      job.data satisfies ReentrantBatchJobData;
+      try {
+        const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
+        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
+        if (isJobActive(asyncJob)) {
+          await new AsyncJobExecutor(systemRepo, asyncJob).failJob(failedErr ?? undefined);
+        }
+      } finally {
+        const store = new BatchCheckpointStore(job.data.asyncJobId);
+        await store.cleanup(job.data.chunkSeq ?? 0);
+      }
     });
-    addVerboseQueueLogging<BatchJobData>(queue, worker, (job) => ({
-      asyncJob: getReferenceString(job.data.asyncJob),
-      project: getReferenceString(job.data.authState.project),
-      profile: job.data.authState.profile && getReferenceString(job.data.authState.profile),
-      membership: getReferenceString(job.data.authState.membership),
-      onBehalfOf: job.data.authState.onBehalfOf && getReferenceString(job.data.authState.onBehalfOf),
-      onBehalfOfMembership:
-        job.data.authState.onBehalfOfMembership && getReferenceString(job.data.authState.onBehalfOfMembership),
-    }));
+    addVerboseQueueLogging<BatchJobData>(queue, worker, (job) => {
+      const asyncJobRef = 'asyncJob' in job.data ? job.data.asyncJob : { id: job.data.asyncJobId };
+      return {
+        asyncJob: getReferenceString(asyncJobRef),
+        project: getReferenceString(job.data.authState.project),
+        profile: job.data.authState.profile && getReferenceString(job.data.authState.profile),
+        membership: getReferenceString(job.data.authState.membership),
+        onBehalfOf: job.data.authState.onBehalfOf && getReferenceString(job.data.authState.onBehalfOf),
+        onBehalfOfMembership:
+          job.data.authState.onBehalfOfMembership && getReferenceString(job.data.authState.onBehalfOfMembership),
+      };
+    });
   }
 
   return { queue, worker, name: queueName };
@@ -177,15 +205,15 @@ export function getBatchQueue(): Queue<BatchJobData> | undefined {
 
 /**
  * Adds a batch job to the queue.
- * @param job - The batch job details.
+ * @param jobData - The batch job details.
  * @returns The enqueued job.
  */
-async function addBatchJobData(job: BatchJobData): Promise<Job<BatchJobData>> {
+async function addBatchJobData(jobData: ReentrantBatchJobData): Promise<Job<BatchJobData>> {
   const queue = queueRegistry.get<BatchJobData>(queueName);
   if (!queue) {
     throw new Error(`Job queue ${queueName} not available`);
   }
-  return queue.add(jobName, job);
+  return queue.add(jobName, jobData);
 }
 
 export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<AsyncJob>): Promise<Job<BatchJobData>> {
@@ -194,65 +222,18 @@ export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<Asyn
   // in the BullMQ job data (see https://github.com/medplum/medplum/issues/9124). The worker loads
   // it on the first run to preprocess.
   await new BatchCheckpointStore(asyncJob.id).saveInputBundle(bundle);
-  return addBatchJobData({ asyncJob, authState, requestId, traceId });
+  return addBatchJobData({ asyncJobId: asyncJob.id, authState, requestId, traceId });
 }
 
 /**
  * Builds the submitting user's repository for processing batch entries.
- * @param systemRepo - The system repository.
  * @param authState - The auth state captured when the batch was submitted.
+ * @param userConfig - The user's configuration.
  * @returns The user's repository.
  */
-async function getBatchUserRepo(systemRepo: SystemRepository, authState: Readonly<AuthState>): Promise<Repository> {
+async function getBatchUserRepo(authState: Readonly<AuthState>, userConfig: UserConfiguration): Promise<Repository> {
   const { login, project, membership } = authState;
-  const userConfig = await getUserConfiguration(systemRepo, project, membership);
   return getRepoForLogin({ login, project, membership, userConfig }, true);
-}
-
-function makeBatchRequest(): FhirRequest {
-  return {
-    method: 'POST',
-    url: '/',
-    pathname: '',
-    params: Object.create(null),
-    query: Object.create(null),
-    body: undefined,
-  };
-}
-
-/**
- * Assembles the response bundle from durably-persisted result entries and uploads it as a Binary
- * for async retrieval. Used for the final (complete) result as well as partial results when a job
- * is cancelled or fails; in the partial case, entries not yet processed are absent from the bundle.
- * @param repo - The user's repository (used to create the Binary).
- * @param store - The checkpoint store.
- * @param initialState - The preprocessed initial state.
- * @param chunkSeq - The number of result chunks written so far.
- * @returns The uploaded Binary and the assembled response bundle.
- */
-async function assembleResultBundle(
-  repo: Repository,
-  store: BatchCheckpointStore,
-  initialState: BatchInitialState,
-  chunkSeq: number
-): Promise<{ binary: Binary; bundle: Bundle }> {
-  const results = await store.loadAllResults(chunkSeq);
-  // Include error results produced during preprocessing (they are not part of any result chunk).
-  Object.assign(results, initialState.preprocessResults);
-  const entryCount = initialState.bundle.entry?.length ?? 0;
-  const bundle = buildBatchResponseBundle(initialState.bundle.type, entryCount, results);
-  const binary = await uploadBinaryData(repo, JSON.stringify(bundle), { contentType: ContentType.FHIR_JSON });
-  return { binary, bundle };
-}
-
-function countBundleErrors(bundle: Bundle): number {
-  let errors = 0;
-  for (const entry of bundle.entry ?? []) {
-    if (!entry?.response?.outcome || !isOk(entry.response.outcome)) {
-      errors++;
-    }
-  }
-  return errors;
 }
 
 /**
@@ -268,40 +249,44 @@ function countBundleErrors(bundle: Bundle): number {
  * state cleaned up) and swallowed so the job is not blindly re-executed from the beginning.
  * @param job - The batch job details.
  */
-export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
-  const { asyncJob, authState } = job.data;
+export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<void> {
+  const { authState } = job.data;
   const logger = getLogger();
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
-  const store = new BatchCheckpointStore(asyncJob.id);
-  const exec = new AsyncJobExecutor(systemRepo, asyncJob);
-
+  const store = new BatchCheckpointStore(job.data.asyncJobId);
+  let asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
   let chunkSeq = job.data.chunkSeq ?? 0;
+
+  if (!isJobActive(asyncJob)) {
+    await finalizeInterrupted(job, systemRepo, store, asyncJob, chunkSeq, authState);
+    return;
+  }
+
+  const exec = new AsyncJobExecutor(systemRepo, asyncJob);
+  let userConfig: UserConfiguration | undefined;
+  let userRepo: Repository | undefined;
   let initialState: BatchInitialState | undefined;
 
   try {
-    // Detect out-of-band cancellation (or an already-finished job) before doing any work.
-    let current = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
-    if (!isJobActive(current)) {
-      logger.info('Async batch job is no longer active; making partial results available', {
-        jobId: job.id,
-        asyncJob: asyncJob.id,
-        status: current.status,
-      });
-      await finalizeInterrupted(systemRepo, store, current, chunkSeq, authState);
-      return;
-    }
+    userConfig = await getUserConfiguration(systemRepo, authState.project, authState.membership);
+    userRepo = await getBatchUserRepo(authState, userConfig);
 
-    const repo = await getBatchUserRepo(systemRepo, authState);
     const router = new FhirRouter();
-    const req = makeBatchRequest();
+    const req: FhirRequest = {
+      method: 'POST',
+      url: '/',
+      pathname: '',
+      params: Object.create(null),
+      query: Object.create(null),
+      body: undefined,
+    };
 
     let processor: BatchProcessor;
-    let position = job.data.position;
-
-    if (position === undefined) {
+    let position: number;
+    if (job.data.position === undefined) {
       // First run: load the raw bundle, preprocess it, and persist the initial state.
       const bundle = await store.loadInputBundle();
-      processor = new BatchProcessor(router, repo, bundle, req);
+      processor = new BatchProcessor(router, userRepo, bundle, req);
       initialState = await processor.preprocess();
       await store.saveInitialState(initialState);
       position = 0;
@@ -310,7 +295,8 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
     } else {
       // Resume: rehydrate the processor from durably-persisted state.
       initialState = await store.loadInitialState();
-      processor = BatchProcessor.fromState(router, repo, req, initialState, position);
+      position = job.data.position;
+      processor = BatchProcessor.fromState(router, userRepo, req, initialState, position);
     }
 
     const checkpointEntries = job.data.checkpointEntries ?? defaultCheckpointEntries;
@@ -349,15 +335,9 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
       if (sinceCheckpoint >= checkpointEntries || Date.now() - lastCheckpointTime >= checkpointIntervalMs) {
         await checkpoint();
 
-        // Detect out-of-band cancellation between checkpoints and make partial results available.
-        current = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
-        if (!isJobActive(current)) {
-          logger.info('Async batch job cancelled mid-flight; making partial results available', {
-            jobId: job.id,
-            asyncJob: asyncJob.id,
-            status: current.status,
-          });
-          await finalizeInterrupted(systemRepo, store, current, chunkSeq, authState);
+        asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+        if (!isJobActive(asyncJob)) {
+          await finalizeInterrupted(job, systemRepo, store, asyncJob, chunkSeq, authState);
           return;
         }
       }
@@ -367,7 +347,7 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
     await checkpoint();
 
     // Assemble the complete response bundle and upload it as a Binary for async retrieval.
-    const { binary, bundle } = await assembleResultBundle(repo, store, initialState, chunkSeq);
+    const { binary, bundle } = await assembleResultBundle(userRepo, store, initialState, chunkSeq);
     const errors = countBundleErrors(bundle);
     logger.info('Completed async batch request', {
       jobId: job.id,
@@ -381,22 +361,24 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
       parameter: [{ name: 'results', valueReference: createReference(binary) }],
     });
     await store.cleanup(chunkSeq);
-  } catch (err: any) {
-    // A DelayedError means the job was intentionally re-queued; propagate it for BullMQ to handle
-    // and leave durable state in place so the resumed job can continue.
+  } catch (err) {
+    // DelayedError means the job was intentionally re-queued; propagate for BullMQ to handle
+    // Assume job data and state have been updated before the throw, so no cleanup is needed.
     if (err instanceof DelayedError) {
       throw err;
     }
 
-    logger.error('Async batch unhandled exception', err);
+    logger.error('Async batch unhandled exception', err instanceof Error ? err : { err });
     // Preserve a structured OperationOutcomeError (e.g. a bad bundle rejected during preprocessing)
     // rather than masking it as a generic server error.
-    const failErr = err instanceof OperationOutcomeError ? err : new OperationOutcomeError(serverError(err));
-    // Best-effort: attach whatever partial results were persisted, then fail the job and clean up.
+    const failErr =
+      err instanceof OperationOutcomeError
+        ? err
+        : new OperationOutcomeError(serverError(new Error(normalizeErrorString(err))));
     try {
-      if (initialState) {
-        const repo = await getBatchUserRepo(systemRepo, authState);
-        const { binary } = await assembleResultBundle(repo, store, initialState, chunkSeq);
+      if (userRepo && initialState) {
+        // attach whatever partial results were persisted and fail the job
+        const { binary } = await assembleResultBundle(userRepo.clone(), store, initialState, chunkSeq);
         await exec
           .failJob(failErr, {
             resourceType: 'Parameters',
@@ -405,9 +387,13 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
               { name: 'error', valueString: normalizeErrorString(err) },
             ],
           })
-          .catch(() => {});
+          .catch((err) => {
+            logger.error('Could not fail async job with partial results', err);
+          });
       } else {
-        await exec.failJob(failErr).catch(() => {});
+        await exec.failJob(failErr).catch((err) => {
+          logger.error('Could not fail async job', err);
+        });
       }
     } finally {
       await store.cleanup(chunkSeq);
@@ -420,6 +406,7 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
  * results were persisted and records them on the AsyncJob's output without changing its status,
  * then cleans up durable state. Best-effort: an interrupted job's status was set by another party,
  * so a conflicting update is ignored.
+ * @param job - The BullMQ job instance.
  * @param systemRepo - The system repository.
  * @param store - The checkpoint store.
  * @param asyncJob - The (refreshed) AsyncJob, in a terminal/cancelled state.
@@ -427,6 +414,7 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
  * @param authState - The auth state captured when the batch was submitted.
  */
 async function finalizeInterrupted(
+  job: Job<ReentrantBatchJobData>,
   systemRepo: SystemRepository,
   store: BatchCheckpointStore,
   asyncJob: WithId<AsyncJob>,
@@ -434,8 +422,14 @@ async function finalizeInterrupted(
   authState: Readonly<AuthState>
 ): Promise<void> {
   try {
+    getLogger().info('Async batch job cancelled mid-flight; making partial results available', {
+      jobId: job.id,
+      asyncJob: asyncJob.id,
+      status: asyncJob.status,
+    });
     const initialState = await store.loadInitialState();
-    const repo = await getBatchUserRepo(systemRepo, authState);
+    const userConfig = await getUserConfiguration(systemRepo, authState.project, authState.membership);
+    const repo = await getBatchUserRepo(authState, userConfig);
     const { binary, bundle } = await assembleResultBundle(repo, store, initialState, chunkSeq);
     const output: Parameters = {
       resourceType: 'Parameters',
@@ -453,5 +447,114 @@ async function finalizeInterrupted(
     });
   } finally {
     await store.cleanup(chunkSeq);
+  }
+}
+
+/**
+ * Assembles the response bundle from durably-persisted result entries and uploads it as a Binary
+ * for async retrieval. Used for the final (complete) result as well as partial results when a job
+ * is cancelled or fails; in the partial case, entries not yet processed are absent from the bundle.
+ * @param repo - The user's repository (used to create the Binary).
+ * @param store - The checkpoint store.
+ * @param initialState - The preprocessed initial state.
+ * @param chunkSeq - The number of result chunks written so far.
+ * @returns The uploaded Binary and the assembled response bundle.
+ */
+async function assembleResultBundle(
+  repo: Repository,
+  store: BatchCheckpointStore,
+  initialState: BatchInitialState,
+  chunkSeq: number
+): Promise<{ binary: Binary; bundle: Bundle }> {
+  const results = await store.loadAllResults(chunkSeq);
+  // Include error results produced during preprocessing (they are not part of any result chunk).
+  Object.assign(results, initialState.preprocessResults);
+  const entryCount = initialState.bundle.entry?.length ?? 0;
+  const bundle = buildBatchResponseBundle(initialState.bundle.type, entryCount, results);
+  const binary = await uploadBinaryData(repo, JSON.stringify(bundle), { contentType: ContentType.FHIR_JSON });
+  return { binary, bundle };
+}
+
+function countBundleErrors(bundle: Bundle): number {
+  let errors = 0;
+  for (const entry of bundle.entry ?? []) {
+    if (!entry?.response?.outcome || !isOk(entry.response.outcome)) {
+      errors++;
+    }
+  }
+  return errors;
+}
+
+/**
+ * @deprecated Processes legacy jobs. Can be removed in v5.2+
+ * @param job - The BullMQ job instance.
+ */
+async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
+  const bundle = job.data.bundle;
+  const { login, project, membership } = job.data.authState;
+  const logger = getLogger();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
+
+  // Prepare the original submitting user's repo
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
+  const router = new FhirRouter();
+  const req: FhirRequest = {
+    method: 'POST',
+    url: '/',
+    pathname: '',
+    params: Object.create(null),
+    query: Object.create(null),
+    body: bundle,
+  };
+
+  const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
+
+  // Intentionally swallow all errors thrown during or after execution of the batch request, since we do NOT want to
+  // execute part or all of the batch more than once.
+  // If this function does not throw an error, the job will be considered "successful" and not requeued
+  try {
+    const [outcome, result] = await router.handleRequest(req, repo);
+
+    // Update the async job with system repo
+    if (isOk(outcome)) {
+      // Upload resulting Bundle JSON as Binary for async retrieval
+      const binary = await uploadBinaryData(repo, JSON.stringify(result), { contentType: ContentType.FHIR_JSON });
+
+      const bundle = result as Bundle;
+      if (!bundle.entry) {
+        return;
+      }
+
+      let errors = 0;
+      for (const entry of bundle.entry) {
+        if (!entry.response?.outcome || !isOk(entry.response.outcome)) {
+          errors++;
+        }
+      }
+
+      logger.info('Completed async batch request', {
+        jobId: job.id,
+        asyncJob: job.data.asyncJob.id,
+        results: getReferenceString(binary),
+        entries: bundle.entry.length,
+        errors,
+      });
+      await exec.completeJob({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'results', valueReference: createReference(binary) }],
+      });
+    } else {
+      logger.warn('Async batch request failed', {
+        jobId: job.id,
+        asyncJob: job.data.asyncJob.id,
+        outcome,
+      });
+      await exec.failJob(new OperationOutcomeError(outcome));
+    }
+  } catch (err: any) {
+    logger.error(`Async batch unhandled exception`, err);
+    // Try to mark AsyncJob as failed, best effort
+    await exec.failJob(new OperationOutcomeError(serverError(err))).catch(() => {});
   }
 }

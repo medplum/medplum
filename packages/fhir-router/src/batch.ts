@@ -31,17 +31,7 @@ const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a
 
 type BundleEntryIdentity = { placeholder: string; reference: string };
 
-type BundlePreprocessInfo = {
-  ordering: number[];
-  requiresStrongTransaction: boolean;
-  updates: number;
-};
-
-/**
- * A JSON-serializable form of `BundlePreprocessInfo`, where `resourceTypes` is an
- * array rather than a `Set` so it can be persisted to durable storage.
- */
-export type SerializableBundleInfo = {
+export type BundlePreprocessInfo = {
   ordering: number[];
   requiresStrongTransaction: boolean;
   updates: number;
@@ -66,7 +56,7 @@ export interface BatchInitialState {
    * resources that were already created.
    */
   bundle: Bundle;
-  bundleInfo: SerializableBundleInfo;
+  bundleInfo: BundlePreprocessInfo;
   resolvedIdentities: Record<string, string>;
   /**
    * Result entries produced during preprocessing itself (i.e. error responses for malformed

@@ -38,7 +38,7 @@ export class BatchCheckpointStore {
   }
 
   private inputKey(): string {
-    return `${this.keyPrefix}/input.json`;
+    return `${this.keyPrefix}/inputBundle.json`;
   }
 
   private stateKey(): string {
