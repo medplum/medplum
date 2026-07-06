@@ -94,7 +94,8 @@ export function AppRoutes(): JSX.Element {
           <Route path="bots/:membershipId" element={<MemberDetailsPage />} />
           <Route path="bots/new" element={<CreateBotPage />} />
           <Route path="bots" element={<BotsPage />} />
-          <Route path="custom-operations" element={<CustomOperationsPage />} />
+          <Route path="operations" element={<CustomOperationsPage />} />
+          <Route path="operations/:operationId" element={<CustomOperationsPage />} />
           <Route path="clients/:membershipId" element={<MemberDetailsPage />} />
           <Route path="clients/new" element={<CreateClientPage />} />
           <Route path="clients" element={<ClientsPage />} />
