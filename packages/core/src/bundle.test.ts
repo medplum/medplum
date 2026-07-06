@@ -379,6 +379,36 @@ describe('Bundle tests', () => {
       expect(attachmentUrl).toMatch(/^urn:uuid:/);
     });
 
+    test('does not rewrite non-attachment url fields', () => {
+      const binaryId = '11111111-1111-1111-1111-111111111111';
+      const extensionUrl = `Binary/${binaryId}`;
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Binary',
+              id: binaryId,
+              contentType: 'text/plain',
+            },
+          },
+          {
+            resource: {
+              resourceType: 'Patient',
+              id: '22222222-2222-2222-2222-222222222222',
+              extension: [{ url: extensionUrl, valueBoolean: true }],
+            },
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+      const patientEntry = result.entry?.find((e) => e.resource?.resourceType === 'Patient');
+
+      expect((patientEntry?.resource as Patient)?.extension?.[0]?.url).toBe(extensionUrl);
+    });
+
     test('Synthea collection bundle (Abbott509) should not fail topological sort', () => {
       // given
       const syntheaPath = join(
