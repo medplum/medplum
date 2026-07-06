@@ -293,6 +293,11 @@ export function useWhisper({
         noiseSuppression: true,
       },
     });
+    // Honor a mute set while idle: fresh tracks are enabled by default, which would leave the
+    // mic hot while the hook still reports muted.
+    audioStream.getAudioTracks().forEach((track) => {
+      track.enabled = !mutedRef.current;
+    });
     audioStreamRef.current = audioStream;
     return audioStream;
   }, []);
