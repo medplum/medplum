@@ -303,11 +303,14 @@ describe('MemberTable (Users page)', () => {
       project: { reference: 'Project/123' },
     });
     const project = await client.readResource('Project', '123');
-    await client.updateResource({ ...project, setting: [{ name: 'allowedMfaMethods', valueString: allowedMfaMethods }] });
+    await client.updateResource({
+      ...project,
+      setting: [{ name: 'allowedMfaMethods', valueString: allowedMfaMethods }],
+    });
     return client;
   }
 
-  test('Shows MFA enrollment columns reflecting each member\'s enrolled factors', async () => {
+  test("Shows MFA enrollment columns reflecting each member's enrolled factors", async () => {
     // Project allows both authenticator and email MFA.
     const client = await setupMfaClient('totp,email');
     // The member (User/123) is enrolled in TOTP but not email.
