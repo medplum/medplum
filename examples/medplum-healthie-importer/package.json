@@ -37,7 +37,7 @@
     "dotenv": "17.4.2",
     "esbuild": "0.28.1",
     "fast-glob": "3.3.3",
-    "tsx": "4.22.4",
+    "tsx": "4.22.5",
     "typescript": "6.0.3",
     "vitest": "4.1.9"
   }
