@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { isError } from './outcomes';
+import { isError, normalizeErrorString } from './outcomes';
 
 /*
  * Once upon a time, we used Winston, and that was fine.
@@ -134,7 +134,7 @@ export class Logger implements ILogger {
     }
 
     this.write(
-      JSON.stringify({
+      stringifyLogMessage({
         level: LogLevelNames[level],
         timestamp: new Date().toISOString(),
         msg: this.prefix ? `${this.prefix}${msg}` : msg,
@@ -143,6 +143,51 @@ export class Logger implements ILogger {
       })
     );
   }
+}
+
+/**
+ * Stringifies a log message so that logging never throws.
+ *
+ * Log data can carry arbitrary object graphs, such as an error referencing a live HTTP request,
+ * which JSON.stringify rejects for circular references, BigInt values, or throwing getters.
+ * Circular references are replaced with "[Circular]"; any other serialization failure falls back
+ * to a minimal message.
+ * @param logMessage - The log message to stringify.
+ * @returns The JSON string representation of the log message.
+ */
+function stringifyLogMessage(logMessage: Record<string, any>): string {
+  try {
+    return JSON.stringify(logMessage);
+  } catch {
+    try {
+      return JSON.stringify(logMessage, createCircularReplacer());
+    } catch (err) {
+      const { level, timestamp, msg } = logMessage;
+      return JSON.stringify({ level, timestamp, msg, loggerError: normalizeErrorString(err) });
+    }
+  }
+}
+
+/**
+ * Creates a JSON.stringify replacer function that replaces circular references with "[Circular]".
+ * @returns A replacer function for use with JSON.stringify.
+ */
+function createCircularReplacer(): (this: unknown, key: string, value: unknown) => unknown {
+  const ancestors: unknown[] = [];
+  return function (this: unknown, _key: string, value: unknown): unknown {
+    if (typeof value !== 'object' || value === null) {
+      return value;
+    }
+    // `this` is the parent of `value`; pop until the stack is the chain from the root to `value`
+    while (ancestors.length > 0 && ancestors[ancestors.length - 1] !== this) {
+      ancestors.pop();
+    }
+    if (ancestors.includes(value)) {
+      return '[Circular]';
+    }
+    ancestors.push(value);
+    return value;
+  };
 }
 
 export function parseLogLevel(level: string): LogLevel {
