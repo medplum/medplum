@@ -21,6 +21,7 @@ import {
   OperationOutcomeAlert,
   ResourceAvatar,
   ResourceInput,
+  ResourceName,
   useMedplum,
 } from '@medplum/react';
 import { useSearchOne } from '@medplum/react-hooks';
@@ -194,9 +195,7 @@ export function AppointmentDetails(props: {
               <ResourceAvatar value={actor} size={48} radius={48} />
             </MedplumLink>
             <div>
-              <MedplumLink to={actor} size="lg" fw={800}>
-                {actor.display ?? actor.reference}
-              </MedplumLink>
+              <ResourceName value={actor} size="lg" fw={800} link />
               <Text size="xs" c="dimmed">
                 {resourceType}
               </Text>
