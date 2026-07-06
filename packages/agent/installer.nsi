@@ -381,8 +381,17 @@ Section Uninstall
     # Uninstall the Start menu shortcuts
     RMDir /r /REBOOTOK "$SMPROGRAMS\${APP_NAME}"
 
-    # Delete the files
-    RMDir /r /REBOOTOK "$INSTDIR"
+    # Delete installer-managed files, but preserve runtime logs in $INSTDIR for retention.
+    Delete /REBOOTOK "$INSTDIR\agent.properties"
+    Delete /REBOOTOK "$INSTDIR\upgrade.json"
+    Delete /REBOOTOK "$INSTDIR\uninstall.exe"
+    Delete /REBOOTOK "$INSTDIR\README.md"
+    Delete /REBOOTOK "$INSTDIR\medplum-agent-*-win64.exe"
+    Delete /REBOOTOK "$INSTDIR\shawl-*-win64.exe"
+    Delete /REBOOTOK "$INSTDIR\shawl-*-legal.txt"
+
+    # Remove the install directory only if no logs or other runtime files remain.
+    RMDir /REBOOTOK "$INSTDIR"
 
     # Unregister the program
     DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}"
