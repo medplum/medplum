@@ -128,8 +128,8 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
         <p>This agent is already on version {targetVersion}.</p>
       ) : (
         <p>
-          Are you sure you want to {isDowngrade ? 'downgrade' : 'upgrade'} this agent from version {version} to
-          version {targetVersion}?
+          Are you sure you want to {isDowngrade ? 'downgrade' : 'upgrade'} this agent from version {version} to version{' '}
+          {targetVersion}?
         </p>
       )}
       <Group>
