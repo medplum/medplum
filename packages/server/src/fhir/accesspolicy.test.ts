@@ -3258,6 +3258,26 @@ describe('reconcileDefaultAccessPolicy', () => {
     expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(adminDefault);
   });
 
+  test('Switching to admin is a no-op when there is no Admin default', () => {
+    // A project with a Practitioner default but no Admin default (e.g. a project created before
+    // the Admin default existed). Promoting the member to admin must not change their policy.
+    const projectWithoutAdminDefault: Project = {
+      resourceType: 'Project',
+      defaultAccessPolicies: [{ profileType: 'Practitioner', accessPolicy: practitionerDefault }],
+    };
+    const membership: ProjectMembership = {
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/123' },
+      user: { reference: 'User/123' },
+      profile: { reference: 'Practitioner/123' },
+      admin: true,
+      accessPolicy: practitionerDefault,
+    };
+    expect(reconcileDefaultAccessPolicy(projectWithoutAdminDefault, membership).accessPolicy).toStrictEqual(
+      practitionerDefault
+    );
+  });
+
   test('No-op when membership has no access policy', () => {
     const membership: ProjectMembership = {
       resourceType: 'ProjectMembership',

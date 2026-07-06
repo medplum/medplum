@@ -2054,4 +2054,59 @@ describe('Admin Invite', () => {
 
       expect(membership.accessPolicy?.reference).toBe(getReferenceString(practitionerPolicy));
     }));
+
+  test('Invite admin Practitioner applies no policy when there is no Admin default', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      // A project with some defaults, but none for the Admin role.
+      const patientPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Patient Policy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const projectWithoutAdminDefault = await systemRepo.updateResource({
+        ...project,
+        defaultAccessPolicies: [{ profileType: 'Patient', accessPolicy: createReference(patientPolicy) }],
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithoutAdminDefault,
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+        admin: true,
+      });
+
+      expect(membership.accessPolicy).toBeUndefined();
+    }));
+
+  test('Invite non-admin Practitioner applies no policy when there is no Practitioner default', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      // A project with some defaults, but none for the Practitioner role.
+      const patientPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Patient Policy',
+        resource: [{ resourceType: 'Patient' }],
+      });
+      const projectWithoutPractitionerDefault = await systemRepo.updateResource({
+        ...project,
+        defaultAccessPolicies: [{ profileType: 'Patient', accessPolicy: createReference(patientPolicy) }],
+      });
+
+      const { membership } = await inviteUser({
+        project: projectWithoutPractitionerDefault,
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+      });
+
+      expect(membership.accessPolicy).toBeUndefined();
+    }));
 });
