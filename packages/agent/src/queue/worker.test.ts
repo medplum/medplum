@@ -480,7 +480,13 @@ describe('ChannelQueueWorker', () => {
       sendAck: () => {
         if (!superseded) {
           superseded = true;
-          requeuedByPeer = queue.scheduleRetry(r.id, 1, 'peer took over', QueueErrorCode.ServerError, Date.now() - 1000);
+          requeuedByPeer = queue.scheduleRetry(
+            r.id,
+            1,
+            'peer took over',
+            QueueErrorCode.ServerError,
+            Date.now() - 1000
+          );
           peerAttempt = queue.claimNext('ch1')?.attemptCount;
         }
         return true;
