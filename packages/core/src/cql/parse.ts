@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Parser } from '../fhirlexer/parse';
+import { LiteralAtom } from '../fhirpath/atoms';
 import { OperatorPrecedence, initFhirPathParserBuilder } from '../fhirpath/parse';
+import { IfAtom, IntervalAtom } from './atoms';
 import { tokenize } from './tokenize';
 import type {
   CqlAccessModifier,
@@ -55,7 +57,7 @@ class CqlParser {
     const directive: CqlDirective = {
       identifier: this.parser.consume('Symbol').value,
     };
-    if (this.parser.tryConsume(':')) {
+    if (this.parser.match(':')) {
       directive.value = this.parser.consume('String').value;
     }
     if (!this.result.directives) {
@@ -67,9 +69,9 @@ class CqlParser {
   private parseLibrary(): void {
     // libraryDefinition
     //     : 'library' qualifiedIdentifier ('version' versionSpecifier)?
-    this.parser.consume('Symbol', 'library');
+    this.parser.consume('library');
     this.result.qualifiedIdentifier = this.parser.consume('Symbol').value;
-    if (this.parser.tryConsume('Symbol', 'version')) {
+    if (this.parser.match('version')) {
       this.result.versionSpecifier = this.parser.consume('String').value;
     }
   }
@@ -77,14 +79,14 @@ class CqlParser {
   private parseUsing(): void {
     // usingDefinition
     //     : 'using' qualifiedIdentifier ('version' versionSpecifier)? ('called' localIdentifier)?
-    this.parser.consume('Symbol', 'using');
+    this.parser.consume('using');
     const using: CqlUsingDefinition = {
       qualifiedIdentifier: this.parser.consume('Symbol').value,
     };
-    if (this.parser.tryConsume('Symbol', 'version')) {
+    if (this.parser.match('version')) {
       using.versionSpecifier = this.parser.consume('String').value;
     }
-    if (this.parser.tryConsume('Symbol', 'called')) {
+    if (this.parser.match('called')) {
       using.localIdentifier = this.parser.consume('Symbol').value;
     }
     if (!this.result.definitions) {
@@ -96,17 +98,17 @@ class CqlParser {
   private parseInclude(): void {
     // includeDefinition
     //     : 'include' qualifiedIdentifier ('version' versionSpecifier)? ('called' localIdentifier)? ('bind' tupleSelector)?
-    this.parser.consume('Symbol', 'include');
+    this.parser.consume('include');
     const include: CqlIncludeDefinition = {
       qualifiedIdentifier: this.parser.consume('Symbol').value,
     };
-    if (this.parser.tryConsume('Symbol', 'version')) {
+    if (this.parser.match('version')) {
       include.versionSpecifier = this.parser.consume('String').value;
     }
-    if (this.parser.tryConsume('Symbol', 'called')) {
+    if (this.parser.match('called')) {
       include.localIdentifier = this.parser.consume('Symbol').value;
     }
-    if (this.parser.tryConsume('Symbol', 'bind')) {
+    if (this.parser.match('bind')) {
       include.tupleSelector = this.parser.consume('Symbol').value;
     }
     if (!this.result.definitions) {
@@ -117,7 +119,7 @@ class CqlParser {
 
   private parseStatement(): CqlStatement {
     let result: CqlStatement | undefined = undefined;
-    if (this.parser.tryConsume('Symbol', 'define')) {
+    if (this.parser.match('define')) {
       result = this.parseDefine();
     }
 
@@ -129,15 +131,18 @@ class CqlParser {
       return result;
     }
 
-    throw new Error('Unsupported statement');
+    console.log('Unsupported statement:', this.parser.peek());
+    console.log('Current state:', JSON.stringify(this.result, null, 2));
+    console.log('Remaining tokens:', this.parser.tokens);
+    throw new Error(`Unsupported statement: ${this.parser.peek()?.value}`);
   }
 
   private parseDefine(): CqlStatement {
     const accessModifier = this.parseAccessModifier();
-    const fluent = this.parser.tryConsume('Symbol', 'fluent');
+    const fluent = this.parser.match('fluent');
     let result: CqlStatement;
-    if (this.parser.tryConsume('Symbol', 'function')) {
-      result = this.parseFunctionDefinition(accessModifier, fluent !== undefined);
+    if (this.parser.match('function')) {
+      result = this.parseFunctionDefinition(accessModifier, fluent);
     } else {
       result = this.parseExpressionDefinition(accessModifier);
     }
@@ -147,7 +152,7 @@ class CqlParser {
   private parseAccessModifier(): CqlAccessModifier | undefined {
     const next = this.parser.peek()?.value;
     if (next === 'public' || next === 'private') {
-      this.parser.consume('Symbol', next);
+      this.parser.consume(next);
       return next;
     }
     return undefined;
@@ -167,28 +172,26 @@ class CqlParser {
       identifier: this.parser.consume('Symbol').value,
       operands: [],
     };
-    this.parser.consume('Symbol', '(');
+    this.parser.consume('(', '(');
 
-    while (this.parser.peek()?.id !== 'Symbol' || this.parser.peek()?.value !== ')') {
+    while (this.parser.peek()?.id !== ')') {
       const operand: CqlOperandDefinition = {
         referentialIdentifier: this.parser.consume('Symbol').value,
-        typeSpecifier: this.parser.consume('Symbol').value,
+        typeSpecifier: this.parseTypeSpecifier(),
       };
       result.operands.push(operand);
-      if (this.parser.peek()?.value === ',') {
-        this.parser.consume('Symbol', ',');
-      }
+      this.parser.match(',');
     }
 
-    this.parser.consume('Symbol', ')');
+    this.parser.consume(')');
 
-    if (this.parser.tryConsume('Symbol', 'returns')) {
-      result.returnType = this.parser.consume('Symbol').value;
+    if (this.parser.match('returns')) {
+      result.returnType = this.parseTypeSpecifier();
     }
 
-    this.parser.consume('Symbol', ':');
+    this.parser.consume(':');
 
-    if (this.parser.tryConsume('Symbol', 'external')) {
+    if (this.parser.match('external')) {
       result.isExternal = true;
     } else {
       result.functionBody = this.parseExpression();
@@ -209,6 +212,106 @@ class CqlParser {
     return expression;
   }
 
+  private parseTypeSpecifier(): string {
+    // typeSpecifier
+    //     : namedTypeSpecifier
+    //     | listTypeSpecifier
+    //     | intervalTypeSpecifier
+    //     | tupleTypeSpecifier
+    //     | choiceTypeSpecifier
+    const next = this.parser.peek()?.value;
+    switch (next) {
+      case 'List':
+        return this.parseListTypeSpecifier();
+      case 'Interval':
+        return this.parseIntervalTypeSpecifier();
+      case 'Tuple':
+        return this.parseTupleTypeSpecifier();
+      case 'Choice':
+        return this.parseChoiceTypeSpecifier();
+      default:
+        return this.parseNamedTypeSpecifier();
+    }
+  }
+
+  private parseNamedTypeSpecifier(): string {
+    // namedTypeSpecifier
+    //     : (qualifier '.')* referentialOrTypeNameIdentifier
+    //     ;
+    let result = '';
+    while (this.parser.peek()?.id === 'Symbol') {
+      result += this.parser.consume('Symbol').value;
+      if (!this.parser.match('.')) {
+        break;
+      }
+    }
+    return result;
+  }
+
+  private parseListTypeSpecifier(): string {
+    // listTypeSpecifier
+    //     : 'List' '<' typeSpecifier '>'
+    //     ;
+    this.parser.consume('List');
+    this.parser.consume('<');
+    const type = this.parseTypeSpecifier();
+    this.parser.consume('>');
+    return `List<${type}>`;
+  }
+
+  private parseIntervalTypeSpecifier(): string {
+    //     : 'Interval' '<' typeSpecifier '>'
+    //     ;
+    this.parser.consume('Interval');
+    this.parser.consume('<');
+    const type = this.parseTypeSpecifier();
+    this.parser.consume('>');
+    return `Interval<${type}>`;
+  }
+
+  private parseTupleTypeSpecifier(): string {
+    // tupleTypeSpecifier
+    //     : 'Tuple' '{' (tupleElementDefinition (',' tupleElementDefinition)*)? '}'
+    //     ;
+    this.parser.consume('Tuple');
+    this.parser.consume('{');
+    const elements: string[] = [];
+    while (this.parser.peek()?.value !== '}') {
+      elements.push(this.parseTupleElementDefinition());
+      if (!this.parser.match(',')) {
+        break;
+      }
+    }
+    this.parser.consume('}');
+    return `Tuple<{${elements.join(', ')}}>`;
+  }
+
+  private parseTupleElementDefinition(): string {
+    // tupleElementDefinition
+    //     : referentialIdentifier typeSpecifier
+    //     ;
+    const identifier = this.parser.consume('Symbol').value;
+    const type = this.parseTypeSpecifier();
+    return `${identifier}: ${type}`;
+  }
+
+  private parseChoiceTypeSpecifier(): string {
+    // choiceTypeSpecifier
+    //     : 'Choice' '<' typeSpecifier (',' typeSpecifier)* '>'
+    //     ;
+    this.parser.consume('Choice');
+    this.parser.consume('<');
+    const types: string[] = [];
+    while (this.parser.peek()?.value !== '>') {
+      types.push(this.parseTypeSpecifier());
+      if (!this.parser.match(',')) {
+        break;
+      }
+    }
+    this.parser.consume('>');
+    return `Choice<${types.join(', ')}>`;
+  }
+
   private parseExpression(): any {
     // todo
     return this.parser.consumeAndParse();
@@ -217,7 +320,27 @@ class CqlParser {
 
 const cqlParserBuilder = initFhirPathParserBuilder()
   .registerInfix('->', { precedence: OperatorPrecedence.Arrow })
-  .registerInfix(';', { precedence: OperatorPrecedence.Semicolon });
+  .registerInfix(';', { precedence: OperatorPrecedence.Semicolon })
+  .registerPrefix('null', { parse: () => new LiteralAtom({ type: 'null', value: null }) })
+  .registerPrefix('if', {
+    parse(parser: Parser) {
+      const condition = parser.consumeAndParse();
+      parser.consume('then');
+      const thenExpr = parser.consumeAndParse();
+      const elseExpr = parser.match('else') ? parser.consumeAndParse() : undefined;
+      return new IfAtom(condition, thenExpr, elseExpr);
+    },
+  })
+  .registerPrefix('Interval', {
+    parse(parser: Parser) {
+      parser.consume('[');
+      const start = parser.consumeAndParse();
+      parser.consume(',');
+      const end = parser.consumeAndParse();
+      parser.consume(']');
+      return new IntervalAtom(start, end);
+    },
+  });
 
 /**
  * Parses a CQL document into an AST.

@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import type { Bundle } from '@medplum/fhirtypes';
+import { readFile } from 'fs/promises';
 import { LiteralAtom } from '../fhirpath/atoms';
 import { toTypedValue } from '../fhirpath/utils';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
+import { IfAtom } from './atoms';
 import { parseCql } from './parse';
 import type { CqlLibrary } from './types';
 
@@ -43,5 +45,53 @@ describe('CQL parser', () => {
     };
 
     expect(parseCql(input)).toStrictEqual(expected);
+  });
+
+  test('Interval', () => {
+    const input = `
+    library FHIRHelpers version '4.0.0'
+
+    using FHIR version '4.0.0'
+
+    define function ToInterval(period FHIR.Period):
+        if period is null then
+            null
+        else
+            Interval[period."start".value, period."end".value]
+    `;
+
+    const expected: CqlLibrary = {
+      qualifiedIdentifier: 'FHIRHelpers',
+      versionSpecifier: '4.0.0',
+      definitions: [
+        {
+          qualifiedIdentifier: 'FHIR',
+          versionSpecifier: '4.0.0',
+        },
+      ],
+      statements: [
+        {
+          accessModifier: undefined,
+          fluent: false,
+          identifier: 'ToInterval',
+          operands: [
+            {
+              referentialIdentifier: 'period',
+              typeSpecifier: 'FHIRPeriod',
+            },
+          ],
+          functionBody: expect.any(IfAtom),
+        },
+      ],
+    };
+
+    expect(parseCql(input)).toStrictEqual(expected);
+  });
+
+  test.each(['FHIRHelpers-4.0.0'])('Parse %s', async (filename) => {
+    const path = `./src/cql/__fixtures__/${filename}.cql`;
+    const input = await readFile(path, 'utf8');
+    const result = parseCql(input);
+    expect(result).toBeDefined();
   });
 });
