@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { JSX } from 'react';
+import { useId } from 'react';
 
 export interface LogoProps {
   readonly size: number;
@@ -9,15 +10,28 @@ export interface LogoProps {
 
 export function Logo(props: LogoProps): JSX.Element {
   const overrideUrl = import.meta.env.MEDPLUM_LOGO_URL;
+  const maskId = 'msLogo' + useId().replace(/:/g, '');
   if (overrideUrl) {
     return <img src={overrideUrl} alt="Logo" style={{ maxHeight: props.size }} />;
   }
+  // MedsScript mark: a diagonal prescription capsule with a medical cross knocked out.
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" style={{ width: props.size, height: props.size }}>
-      <title>Medplum Logo</title>
-      <path
-        fill={props.fill ?? '#9c36b5'}
-        d="M84 56c-3-15-15-24-23-28l5-10c8 2 14 8 20 14 0-12 1-16 5-21 8-9 13-9 41-9 0 7 1 18-3 24-7 9-16 7-41 8 5 8 7 14 8 22 36-24 74-7 74 39 0 42-40 83-80 83s-80-41-80-83c0-46 38-63 74-39Zm-3 43H65c-4 0-7 3-7 7v4c0 4 3 7 7 7h16v16c0 4 3 7 7 7h4c4 0 7-3 7-7v-16h16c4 0 7-3 7-7v-4c0-4-3-7-7-7H99V83c0-4-3-7-7-7h-4c-4 0-7 3-7 7z"
+      <title>MedsScript Logo</title>
+      <mask id={maskId}>
+        <rect x="0" y="0" width="180" height="180" fill="white" />
+        <rect x="80" y="50" width="20" height="80" rx="7" fill="black" />
+        <rect x="50" y="80" width="80" height="20" rx="7" fill="black" />
+      </mask>
+      <rect
+        x="20"
+        y="64"
+        width="140"
+        height="52"
+        rx="26"
+        fill={props.fill ?? '#0d9488'}
+        transform="rotate(-45 90 90)"
+        mask={`url(#${maskId})`}
       />
     </svg>
   );

@@ -1,0 +1,74 @@
+name: Deploy MedsScript
+
+# Deploys the MedsScript web app to S3 + CloudFront on every push to main.
+# Auth uses GitHub OIDC -> IAM role (no stored AWS keys).
+# Server (Fargate) is NOT deployed here; it runs the published medplum image.
+# To also deploy a custom server image, add an ECR build/push + ECS update job.
+
+concurrency:
+  group: medsscript-deploy
+  cancel-in-progress: false
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-west-2
+  AWS_ROLE: arn:aws:iam::291706265368:role/medplum-github-deploy
+  APP_BUCKET: app.medsscript.com
+  APP_DISTRIBUTION_ID: EN1W2NJGW6RZG
+
+jobs:
+  deploy-app:
+    name: Build & deploy web app
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npx turbo build --filter=@medplum/app --force
+        env:
+          MEDPLUM_BASE_URL: https://api.medsscript.com/
+          MEDPLUM_REGISTER_ENABLED: 'false'
+          MEDPLUM_AWS_TEXTRACT_ENABLED: 'false'
+          GOOGLE_CLIENT_ID: ''
+          RECAPTCHA_SITE_KEY: ''
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload to S3
+        run: |
+          set -euo pipefail
+          # Hashed assets: long-lived immutable cache
+          aws s3 sync packages/app/dist "s3://${APP_BUCKET}/" \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude index.html --exclude robots.txt
+          # Entry files: never cache so new deploys show immediately
+          aws s3 cp packages/app/dist/index.html "s3://${APP_BUCKET}/index.html" \
+            --cache-control "no-cache" --content-type "text/html"
+          aws s3 cp packages/app/dist/robots.txt "s3://${APP_BUCKET}/robots.txt" \
+            --cache-control "no-cache" --content-type "text/plain"
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${APP_DISTRIBUTION_ID}" \
+            --paths "/*"
