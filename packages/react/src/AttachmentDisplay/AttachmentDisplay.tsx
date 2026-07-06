@@ -14,12 +14,14 @@ export interface AttachmentDisplayProps {
 }
 
 export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | null {
-  const { contentType, url: uncachedUrl, title } = props.value ?? {};
-  const url = useCachedBinaryUrl(uncachedUrl);
+  const { contentType, data, url: uncachedUrl, title } = props.value ?? {};
+  const cachedUrl = useCachedBinaryUrl(uncachedUrl);
 
-  if (!url) {
+  if (!cachedUrl && !data) {
     return null;
   }
+
+  const url = cachedUrl ?? `data:${contentType};base64,${data}`;
 
   return (
     <div data-testid="attachment-display">

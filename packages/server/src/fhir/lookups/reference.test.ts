@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import type { Observation, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
@@ -49,7 +50,7 @@ describe('ReferenceTable', () => {
   describe('batchInsertRows', () => {
     test('returns early for empty values without querying DB', async () => {
       const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
-      const querySpy = jest.spyOn(client, 'query');
+      const querySpy = vi.spyOn(client, 'query');
 
       await refTable.batchInsertRows(client, 'Observation', []);
 
@@ -61,7 +62,7 @@ describe('ReferenceTable', () => {
   describe('batchIndexResources', () => {
     test('returns early for empty resources array', async () => {
       const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
-      const querySpy = jest.spyOn(client, 'query');
+      const querySpy = vi.spyOn(client, 'query');
 
       // Should not throw and should return early
       await expect(refTable.batchIndexResources(client, [], true)).resolves.toBeUndefined();
@@ -215,7 +216,7 @@ describe('ReferenceTable', () => {
       };
 
       const extractError = new Error('Test extraction error');
-      const extractValuesSpy = jest.spyOn(refTable, 'extractValues').mockImplementation(() => {
+      const extractValuesSpy = vi.spyOn(refTable, 'extractValues').mockImplementation(() => {
         throw extractError;
       });
 

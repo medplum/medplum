@@ -1,0 +1,17 @@
+.container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: var(--mantine-spacing-sm);
+}
+
+.calendarPane {
+  flex-grow: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.findPane {
+  flex-basis: 25%;
+}

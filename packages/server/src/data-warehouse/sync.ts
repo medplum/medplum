@@ -30,11 +30,8 @@ export interface SyncOptions {
 }
 
 export interface SyncTableResult {
-  icebergTable: string;
-  postgresTable: string;
   destination: string;
   rowsInserted: number;
-  watermarkDurationMs: number;
   syncDurationMs: number;
 }
 
@@ -64,84 +61,20 @@ type WarehouseSyncDuckdbConnection = DuckdbConnection & {
   closeSync(): void;
 };
 
-async function runWarehouseTableSync(
-  connection: WarehouseSyncDuckdbConnection,
+/**
+ * Opens a fresh DuckDB instance/connection backed by a throwaway temp directory,
+ * runs the destination setup queries, invokes `fn`, and tears everything down
+ * afterwards. A new database is created and destroyed for each invocation.
+ * @param options - The sync options.
+ * @param sourceConnectionString - The Postgres source connection string.
+ * @param fn - Callback invoked with the ready-to-use DuckDB connection.
+ * @returns The value returned by `fn`.
+ */
+async function withWarehouseConnection<T>(
   options: SyncOptions,
-  namespace: string
-): Promise<SyncTableResult[]> {
-  const tables: SyncTableResult[] = [];
-
-  const tablesTotal = options.warehouseSources.length;
-
-  globalLogger.info('Starting data warehouse sync', {
-    tablesTotal,
-    startDate: options.startDate,
-    includeResourceTypes: options.includeResourceTypes,
-    excludeResourceTypes: options.excludeResourceTypes,
-    subsystem: 'data-warehouse-sync',
-  });
-
-  for (const [index, spec] of options.warehouseSources.entries()) {
-    const { icebergTable, postgresTable } = spec;
-    const tablesCompleted = index + 1;
-    const watermarkStartTime = Date.now();
-    const sourcePredicate = buildWarehouseSourcePredicate(options, spec, namespace);
-    const watermarkEndTime = Date.now();
-    const syncStartTime = Date.now();
-    const destination = options.destination.getDestinationName(spec);
-    await options.destination.ensureTargetExists(spec, namespace);
-
-    const rowsInserted = await options.destination.writeRows(connection, {
-      tableSpec: spec,
-      namespace,
-      sourcePredicate,
-    });
-
-    const syncEndTime = Date.now();
-
-    globalLogger.debug(`Data warehouse table sync completed for table=${icebergTable}`, {
-      tablesCompleted,
-      tablesTotal,
-      icebergTable,
-      destination,
-      rowsInserted,
-      subsystem: 'data-warehouse-sync',
-    });
-
-    if (options.onProgress) {
-      await options.onProgress(
-        `Completed ${icebergTable} (${rowsInserted} rows, table ${tablesCompleted}/${tablesTotal})`,
-        {
-          tablesCompleted,
-          tablesTotal,
-          icebergTable,
-          destination,
-          rowsInserted,
-        }
-      );
-    }
-
-    tables.push({
-      icebergTable,
-      postgresTable,
-      destination,
-      rowsInserted,
-      watermarkDurationMs: watermarkEndTime - watermarkStartTime,
-      syncDurationMs: syncEndTime - syncStartTime,
-    });
-  }
-
-  return tables;
-}
-
-export async function syncData(options: SyncOptions): Promise<SyncResult> {
-  if (!options.warehouseSources.length) {
-    throw new Error('warehouseSources must include at least one table.');
-  }
-
-  const sourceConnectionString = getSyncSourceConnectionString(options);
-  const namespace = options.namespace ?? DEFAULT_NAMESPACE;
-
+  sourceConnectionString: string,
+  fn: (connection: WarehouseSyncDuckdbConnection) => Promise<T>
+): Promise<T> {
   let connection: WarehouseSyncDuckdbConnection | undefined;
   let instance: DuckDBInstance | undefined;
   let duckdbTempDir: string | undefined;
@@ -155,8 +88,7 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
       await connection.run(q);
     }
 
-    const tables = await runWarehouseTableSync(connection, options, namespace);
-    return { tables };
+    return await fn(connection);
   } finally {
     try {
       connection?.closeSync();
@@ -185,4 +117,108 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
       }
     }
   }
+}
+
+async function syncWarehouseTable(
+  connection: WarehouseSyncDuckdbConnection,
+  options: SyncOptions,
+  spec: WarehouseSourceTable,
+  namespace: string,
+  index: number,
+  tablesTotal: number
+): Promise<SyncTableResult> {
+  const tablesCompleted = index + 1;
+  const destination = options.destination.getDestinationName(spec);
+
+  globalLogger.info(`Data warehouse table sync starting for table=${destination}`, {
+    tableIndex: tablesCompleted,
+    tablesTotal,
+    destination,
+    startDate: options.startDate,
+    subsystem: 'data-warehouse-sync',
+  });
+
+  const sourcePredicate = buildWarehouseSourcePredicate(options, spec, namespace);
+  const syncStartTime = Date.now();
+
+  await options.destination.ensureTargetExists(spec, namespace);
+
+  const rowsInserted = await options.destination.writeRows(connection, {
+    tableSpec: spec,
+    namespace,
+    sourcePredicate,
+  });
+
+  const syncEndTime = Date.now();
+  const syncDurationMs = syncEndTime - syncStartTime;
+
+  globalLogger.info(`Data warehouse table sync completed for table=${destination}`, {
+    tableIndex: tablesCompleted,
+    tablesCompleted,
+    tablesTotal,
+    destination,
+    rowsInserted,
+    syncDurationMs,
+    startDate: options.startDate,
+    subsystem: 'data-warehouse-sync',
+  });
+
+  if (options.onProgress) {
+    await options.onProgress(
+      `Completed ${destination} (${rowsInserted} rows, table ${tablesCompleted}/${tablesTotal})`,
+      {
+        tablesCompleted,
+        tablesTotal,
+        destination,
+        rowsInserted,
+      }
+    );
+  }
+
+  return {
+    destination,
+    rowsInserted,
+    syncDurationMs,
+  };
+}
+
+async function runWarehouseTableSync(
+  options: SyncOptions,
+  namespace: string,
+  sourceConnectionString: string
+): Promise<SyncTableResult[]> {
+  const tables: SyncTableResult[] = [];
+
+  const tablesTotal = options.warehouseSources.length;
+
+  globalLogger.info('Starting data warehouse sync', {
+    tablesTotal,
+    startDate: options.startDate,
+    includeResourceTypes: options.includeResourceTypes,
+    excludeResourceTypes: options.excludeResourceTypes,
+    subsystem: 'data-warehouse-sync',
+  });
+
+  for (const [index, spec] of options.warehouseSources.entries()) {
+    // Close and re-open the DuckDB database between tables so each table sync
+    // runs against a fresh instance/connection and temp directory.
+    const result = await withWarehouseConnection(options, sourceConnectionString, (connection) =>
+      syncWarehouseTable(connection, options, spec, namespace, index, tablesTotal)
+    );
+    tables.push(result);
+  }
+
+  return tables;
+}
+
+export async function syncData(options: SyncOptions): Promise<SyncResult> {
+  if (!options.warehouseSources.length) {
+    throw new Error('warehouseSources must include at least one table.');
+  }
+
+  const sourceConnectionString = getSyncSourceConnectionString(options);
+  const namespace = options.namespace ?? DEFAULT_NAMESPACE;
+
+  const tables = await runWarehouseTableSync(options, namespace, sourceConnectionString);
+  return { tables };
 }

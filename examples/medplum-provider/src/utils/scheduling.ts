@@ -3,7 +3,7 @@
 import { generateId, getExtension, getIdentifier, setIdentifier } from '@medplum/core';
 import type { HealthcareService, Identifier, Resource, Schedule } from '@medplum/fhirtypes';
 
-const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
+export const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 const MedplumSchedulingTransientIdentifierURI = 'https://medplum.com/fhir/scheduling-transient-id';
 export const SchedulingEncounterCodingURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingEncounterCoding';
 export const SchedulingPlanDefinitionURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingPlanDefinition';

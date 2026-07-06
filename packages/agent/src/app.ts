@@ -58,6 +58,9 @@ import { AgentHl7Channel } from './hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
+import { DurableQueue } from './queue/durable-queue';
+import { RetentionSweeper } from './queue/retention';
+import type { ChannelQueueWorker } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
@@ -75,6 +78,33 @@ async function execAsync(
       }
       resolve({ stdout, stderr });
     });
+  });
+}
+
+/** Upper bound on how long {@link App.stop} waits for clients/channels to drain. */
+const STOP_DRAIN_TIMEOUT_MS = 10_000;
+
+/**
+ * Resolves to `'timeout'` if `promise` doesn't settle within `ms`. The timer is
+ * cleared when the promise settles first, so the common path leaves nothing
+ * keeping the event loop alive.
+ * @param promise - The promise to wait on.
+ * @param ms - Maximum time to wait, in milliseconds.
+ * @returns The promise's value, or the literal `'timeout'`.
+ */
+function raceWithTimeout<T>(promise: Promise<T>, ms: number): Promise<T | 'timeout'> {
+  return new Promise<T | 'timeout'>((resolve, reject) => {
+    const timer = setTimeout(() => resolve('timeout'), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
   });
 }
 
@@ -114,6 +144,8 @@ export class App {
   private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
   private lastHeartbeatSentTime: number = -1;
+  private durableQueue: DurableQueue | undefined;
+  private retentionSweeper: RetentionSweeper | undefined;
   // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
   // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
   // the PID before start()). An upgrading agent stays non-primary until it wins the PID from the
@@ -319,12 +351,17 @@ export class App {
       binaryType: 'nodebuffer',
     });
 
-    this.webSocket.addEventListener('error', () => {
+    this.webSocket.addEventListener('error', (event) => {
       if (!this.shutdown) {
-        // This event is only fired when WebSocket closes due to some kind of error
-        // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
-        // The error event seems to never contain an actual error though
-        this.log.error('WebSocket closed due to an error');
+        // This event fires when the WebSocket closes due to some kind of error
+        // (https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event), but it ALSO
+        // fires when one of our own event handlers throws synchronously: Node rethrows that
+        // exception out of the listener, and `ReconnectingWebSocket` surfaces it here. The raw
+        // `error_event` from the underlying socket rarely carries a real error, but
+        // `ReconnectingWebSocket` normalizes the event so `error` is always a real `Error` — so
+        // log it rather than discarding it.
+        const error = event.error;
+        this.log.error('WebSocket closed due to an error', error);
       }
     });
 
@@ -347,6 +384,9 @@ export class App {
       if (!this.shutdown && this.live) {
         this.live = false;
         this.log.info('WebSocket closed');
+        // Give in-flight queue dispatches whose transmit request never hit the
+        // wire a chance to return to `queued` instead of timing out into `errored`.
+        this.forEachChannelWorker((worker) => worker.onWebSocketDisconnect());
       }
     });
 
@@ -367,6 +407,9 @@ export class App {
             this.notLiveHeartbeats = 0;
             this.outstandingHeartbeats = 0;
             this.startWebSocketWorker();
+            // Wake the channel queue workers — their loops idle (without
+            // claiming rows) while the connection is down.
+            this.forEachChannelWorker((worker) => worker.notify());
             this.log.info('Successfully connected to Medplum server');
             break;
           case 'agent:heartbeat:request':
@@ -389,10 +432,16 @@ export class App {
             if (!command.callback) {
               this.log.warn('Transmit response missing callback');
             }
+            // First, see if this response belongs to a durable-queue worker.
+            // Workers own their callback IDs end-to-end; if any worker claims
+            // this response, we skip the legacy in-memory path entirely.
+            if (this.routeServerResponseToWorker(command)) {
+              break;
+            }
             if (this.config?.status !== 'active') {
               this.sendAgentDisabledError(command);
               // We check the existence of a statusCode for backwards compat
-            } else if (!(command.statusCode && command.statusCode >= 400)) {
+            } else if (command.statusCode === undefined || command.statusCode < 400) {
               this.addToHl7Queue(command);
             } else {
               // Log error
@@ -502,6 +551,16 @@ export class App {
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
     const maxClientsPerRemote = agent?.setting?.find((setting) => setting.name === 'maxClientsPerRemote')?.valueInteger;
     const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
+    const durableQueueOn = agent?.setting?.find((setting) => setting.name === 'durableQueue')?.valueBoolean ?? false;
+    const queueDbPath = agent?.setting?.find((setting) => setting.name === 'queueDbPath')?.valueString;
+    const queueRetentionDays = agent?.setting?.find((setting) => setting.name === 'queueRetentionDays')?.valueInteger;
+    const queueRetentionMaxMb = agent?.setting?.find((setting) => setting.name === 'queueRetentionMaxMb')?.valueInteger;
+    const queueErroredRetentionDays = agent?.setting?.find(
+      (setting) => setting.name === 'queueErroredRetentionDays'
+    )?.valueInteger;
+    const queueSweepIntervalSecs = agent?.setting?.find(
+      (setting) => setting.name === 'queueSweepIntervalSecs'
+    )?.valueInteger;
 
     // If the keepAlive setting changed, we need to reset the pools we have
     if (this.keepAlive !== keepAlive) {
@@ -544,8 +603,174 @@ export class App {
       this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
     }
 
+    this.reconcileDurableQueue({
+      durableQueueOn,
+      queueDbPath,
+      queueRetentionDays,
+      queueRetentionMaxMb,
+      queueErroredRetentionDays,
+      queueSweepIntervalSecs,
+    });
+
     const startPromises = await this.hydrateListeners();
     return { listenersStarted: this.waitForChannelsToStart(startPromises) };
+  }
+
+  /**
+   * Opens, closes, or reconfigures the durable queue based on the latest config.
+   *
+   * Toggling `durableQueue` between true and false at runtime triggers a queue
+   * open/close. Toggling other queue settings (retention, sweep interval) starts
+   * a fresh {@link RetentionSweeper} against the existing DB without reopening it.
+   *
+   * Changing `queueDbPath` while the queue is already open is intentionally NOT
+   * supported — that would require moving / closing the existing DB. Operators
+   * who need to change the path should disable the queue, then re-enable with the
+   * new path.
+   * @param args - The current queue-related settings drawn from the Agent resource.
+   * @param args.durableQueueOn - Master switch — true to open the queue, false to close it.
+   * @param args.queueDbPath - Optional override for the DB file path (defaults to `<logDir>/medplum-agent-queue.sqlite`).
+   * @param args.queueRetentionDays - Time-based retention window for `processed` rows, in days.
+   * @param args.queueRetentionMaxMb - Soft cap on DB size, in MiB.
+   * @param args.queueErroredRetentionDays - Floor on `errored` / `nacked` retention, in days.
+   * @param args.queueSweepIntervalSecs - How often the retention sweeper runs, in seconds.
+   */
+  private reconcileDurableQueue(args: {
+    durableQueueOn: boolean;
+    queueDbPath: string | undefined;
+    queueRetentionDays: number | undefined;
+    queueRetentionMaxMb: number | undefined;
+    queueErroredRetentionDays: number | undefined;
+    queueSweepIntervalSecs: number | undefined;
+  }): void {
+    if (!args.durableQueueOn) {
+      if (this.durableQueue) {
+        this.log.info('durableQueue disabled — closing queue.');
+        this.retentionSweeper?.stop();
+        this.retentionSweeper = undefined;
+        // close() stops the dispatch-lease loop and releases the lease before
+        // tearing down the DB handle.
+        this.durableQueue.close();
+        this.durableQueue = undefined;
+      }
+      return;
+    }
+
+    if (!this.durableQueue) {
+      const path = args.queueDbPath ?? this.defaultQueueDbPath();
+      try {
+        this.durableQueue = DurableQueue.open({ path, log: this.log });
+        this.log.info(`Durable queue opened at ${path}.`);
+      } catch (err) {
+        this.log.error(`Failed to open durable queue at ${path}: ${normalizeErrorString(err)}`);
+        this.durableQueue = undefined;
+        return;
+      }
+    }
+
+    // (The WAL-checkpoint loop is owned by the queue itself — DurableQueue.open()
+    // starts it and close() tears it down. See DurableQueue.startCheckpointLoop.)
+
+    // Start the dispatch-lease loop — it'll attempt acquisition immediately and,
+    // on success, the callback runs recoverOnStartup() + brings up channel
+    // workers. If a peer (e.g. an old agent in the upgrade overlap) holds the
+    // lease, we sit as a follower until the lease is free, then take over.
+    // startDispatchLease is idempotent, so calling it on every heartbeat tick is
+    // safe — it won't restart an already-running loop.
+    this.durableQueue.startDispatchLease(() => this.onBecameQueueLeader());
+
+    // (Re)start the retention sweeper with the latest settings. The sweeper runs
+    // regardless of leadership because its only writes are DELETEs of terminal
+    // rows; both processes running it concurrently is wasteful but not unsafe.
+    // (We could gate it on leadership too — left ungated for now since the cost
+    // during the brief overlap is small.)
+    this.retentionSweeper?.stop();
+    this.retentionSweeper = new RetentionSweeper({
+      queue: this.durableQueue,
+      log: this.log,
+      retentionDays: args.queueRetentionDays,
+      maxSizeMb: args.queueRetentionMaxMb,
+      erroredRetentionDays: args.queueErroredRetentionDays,
+      sweepIntervalSecs: args.queueSweepIntervalSecs,
+    });
+    this.retentionSweeper.start();
+  }
+
+  /**
+   * Called by the {@link DurableQueue} dispatch-lease loop the first time we take the lease.
+   *
+   * This is the single point that runs `recoverOnStartup` and spins up the
+   * channel workers. Both depend on us being the only writer — running them at
+   * raw queue-open time would race with any peer that still holds the lease.
+   *
+   * Re-entrancy: if we lose and regain the lease later, this fires again. The
+   * recovery sweep is idempotent (no `claimed`/`inflight` rows means no work), and
+   * `maybeStartWorker` is a no-op if the worker is already running.
+   */
+  private onBecameQueueLeader(): void {
+    const queue = this.durableQueue;
+    if (!queue) {
+      return;
+    }
+    const recovered = queue.recoverOnStartup();
+    if (recovered.requeued > 0 || recovered.failed > 0) {
+      this.log.info(
+        `Acquired queue lease — recovered interrupted rows: ${recovered.requeued} requeued (unsent), ` +
+          `${recovered.failed} failed (ambiguous, in-flight).`
+      );
+    }
+    // Tell every HL7 channel to start its worker now that we're leader. Collect
+    // any failures so one bad channel can't stop the others from starting, then
+    // surface them together.
+    const errors: Error[] = [];
+    for (const channel of this.channels.values()) {
+      if (channel instanceof AgentHl7Channel) {
+        try {
+          channel.onBecameQueueLeader();
+        } catch (err) {
+          errors.push(err as Error);
+        }
+      }
+    }
+    if (errors.length > 0) {
+      throw new Error(`Failed to start ${errors.length} HL7 channel worker(s) after acquiring queue lease`, {
+        cause: errors,
+      });
+    }
+  }
+
+  /** @returns True when this agent currently holds the durable-queue lease. */
+  isQueueLeader(): boolean {
+    return this.durableQueue?.isLeader() ?? false;
+  }
+
+  /**
+   * Default location for the queue DB file when no override is provided.
+   *
+   * Co-locating with the main logger's log directory keeps everything an
+   * operator needs to mount a persistent volume in one place. The fallback is
+   * the current working directory — same default an unconfigured agent uses.
+   * @returns Absolute path to the default queue DB file.
+   */
+  private defaultQueueDbPath(): string {
+    const baseDir =
+      (isWinstonWrapperLogger(this.log) && (this.log as unknown as { logDir?: string }).logDir) || process.cwd();
+    // Manual join to avoid pulling in node:path solely for this — the agent
+    // doesn't need to support exotic path normalizations here.
+    const sep = baseDir.endsWith('/') || baseDir.endsWith('\\') ? '' : '/';
+    return `${baseDir}${sep}medplum-agent-queue.sqlite`;
+  }
+
+  /**
+   * @returns The opened {@link DurableQueue}, or undefined when the queue setting
+   * is off. This is the OPEN handle, valid regardless of leadership — for intake,
+   * maintenance (WAL checkpoint, retention sweep), and diagnostics. For the
+   * dispatch path, gate worker startup on {@link DurableQueue.isLeader} (the cheap
+   * optimistic check); the authoritative gate is implicit in the dispatch ops
+   * themselves, which throw `QueueLeaseError` once a peer holds the lease.
+   */
+  getDurableQueue(): DurableQueue | undefined {
+    return this.durableQueue;
   }
 
   getStats(): AgentStats {
@@ -577,6 +802,51 @@ export class App {
       outstandingHeartbeats: this.outstandingHeartbeats,
       channelStats,
       clientStats,
+      ...(this.durableQueue ? { durableQueue: this.getDurableQueueStats(this.durableQueue) } : {}),
+    };
+  }
+
+  /**
+   * Snapshot of durable-queue health, surfaced in `agent:stats:response`.
+   *
+   * Structured to fit the `AgentStatValue` shape — 3 nested levels of primitive
+   * records — so `AgentStats`'s index signature stays satisfied. Null sentinels
+   * become `-1` for the same reason ("never swept" reads as -1 on the wire).
+   *
+   * The field is only included when the queue is on; consumers that detect its
+   * absence know the queue is disabled, which is more honest than reporting a
+   * zeroed structure that a dashboard could misread as "queue on but idle."
+   * @param queue - The opened durable queue to read counters from.
+   * @returns A primitive-friendly snapshot fit for `AgentStats`.
+   */
+  private getDurableQueueStats(
+    queue: DurableQueue
+  ): Record<string, number | boolean | Record<string, number | Record<string, number>>> {
+    const counts = queue.countByState();
+    const channelDepth: Record<string, Record<string, number>> = {};
+    for (const channel of this.channels.values()) {
+      if (channel instanceof AgentHl7Channel) {
+        const d = queue.getChannelDepth(channel.getDefinition().name);
+        channelDepth[channel.getDefinition().name] = {
+          queued: d.queued,
+          claimed: d.claimed,
+          inflight: d.inflight,
+          // -1 means "no queued rows" (a zero-aged-row would be 0).
+          oldestQueuedAgeMs: d.oldestQueuedAgeMs ?? -1,
+        };
+      }
+    }
+    const lastResult = this.retentionSweeper?.getLastResult();
+    return {
+      enabled: true,
+      isLeader: this.isQueueLeader(),
+      dbSizeBytes: queue.getDbSizeBytes(),
+      countsByState: counts,
+      channelDepth,
+      // -1 means "never swept yet."
+      lastSweepAt: this.retentionSweeper?.getLastSweepAt() ?? -1,
+      lastSweepDeletedProcessed: lastResult?.deletedProcessed ?? -1,
+      lastSweepDeletedErrored: lastResult?.deletedErrored ?? -1,
     };
   }
 
@@ -857,12 +1127,57 @@ export class App {
       this.webSocket = undefined;
     }
 
+    // Drain clients and channels with a bounded wait. The durable-queue teardown
+    // below must run no matter what happens here — skipping it leaves the WAL
+    // unflushed and the lease held until its TTL expires — so a hung or throwing
+    // stop must not be allowed to block shutdown indefinitely.
+    try {
+      const drained = await raceWithTimeout(this.drainForStop(), STOP_DRAIN_TIMEOUT_MS);
+      if (drained === 'timeout') {
+        this.log.warn(
+          `Timed out after ${STOP_DRAIN_TIMEOUT_MS}ms waiting for clients/channels to stop — proceeding with shutdown.`
+        );
+      }
+    } catch (err) {
+      this.log.error(`Error while stopping clients/channels: ${normalizeErrorString(err)}`);
+    }
+
+    // Channels drain their own workers in stop() above, so by the time we get
+    // here no worker is touching the DB and it's safe to tear down.
+    if (this.retentionSweeper) {
+      this.retentionSweeper.stop();
+      this.retentionSweeper = undefined;
+    }
+    // close() releases the dispatch lease BEFORE tearing down the DB handle, so a
+    // waiting peer can take over immediately rather than waiting for our TTL to expire.
+    if (this.durableQueue) {
+      this.durableQueue.close();
+      this.durableQueue = undefined;
+    }
+
+    this.log.info('Medplum service stopped successfully');
+  }
+
+  /**
+   * Closes all outbound HL7 client pools, then stops every channel. Factored out
+   * of {@link App.stop} so the whole drain can be raced against a single timeout.
+   *
+   * Uses allSettled rather than all: one channel failing to stop must not
+   * abandon the wait on its siblings — the durable-queue DB is closed right
+   * after this returns, so every channel that *can* drain must finish first.
+   */
+  private async drainForStop(): Promise<void> {
     if (this.hl7Clients.size !== 0) {
       const poolClosePromises = [];
       for (const pool of this.hl7Clients.values()) {
         poolClosePromises.push(pool.closeAll());
       }
-      await Promise.all(poolClosePromises);
+      const poolResults = await Promise.allSettled(poolClosePromises);
+      for (const result of poolResults) {
+        if (result.status === 'rejected') {
+          this.log.error(`Error while closing HL7 client pool: ${normalizeErrorString(result.reason)}`);
+        }
+      }
       this.hl7Clients.clear();
     }
 
@@ -870,14 +1185,97 @@ export class App {
     for (const channel of this.channels.values()) {
       channelStopPromises.push(channel.stop());
     }
-    await Promise.all(channelStopPromises);
+    const results = await Promise.allSettled(channelStopPromises);
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        this.log.error(`Error while stopping channel: ${normalizeErrorString(result.reason)}`);
+      }
+    }
+  }
 
-    this.log.info('Medplum service stopped successfully');
+  /**
+   * Dispatches an `agent:transmit:response` to the owning channel's worker, if any.
+   * @param response - The response message received over the agent WebSocket.
+   * @returns True if a worker claimed the response (caller should stop here);
+   *          false if no worker matched and legacy handling should run.
+   */
+  private routeServerResponseToWorker(response: AgentTransmitResponse): boolean {
+    if (!this.durableQueue) {
+      return false;
+    }
+    if (!response.channel) {
+      return false;
+    }
+    const channel = this.channels.get(response.channel);
+    if (!(channel instanceof AgentHl7Channel) || !channel.worker) {
+      return false;
+    }
+    // This channel is owned end-to-end by its durable-queue worker: when the
+    // queue is on, inbound messages never use the legacy in-memory path, so
+    // their responses must not either. Consume the response here unconditionally.
+    // If the worker has no matching in-flight row — e.g. a late response that
+    // arrived after the response timeout already errored/requeued the row, or
+    // after a requeue/worker stop cleared the pending dispatch — onServerResponse
+    // logs and drops it. Returning true regardless prevents it from falling
+    // through to addToHl7Queue, which would re-send a stale ACK to the source.
+    channel.worker.onServerResponse(response);
+    return true;
   }
 
   addToWebSocketQueue(message: AgentMessage): void {
     this.webSocketQueue.push(message);
     this.startWebSocketWorker();
+  }
+
+  /** @returns True when the agent WebSocket is connected and the server has acknowledged the connect request. */
+  isLive(): boolean {
+    return this.live;
+  }
+
+  /**
+   * Removes a not-yet-sent `agent:transmit:request` from the WebSocket queue.
+   *
+   * Used by {@link ChannelQueueWorker.onWebSocketDisconnect} to decide whether
+   * an in-flight row can be safely requeued: a request still in this queue
+   * provably never reached the server. A request not found here was either
+   * already written to the socket or is mid-send — both ambiguous, so the
+   * caller must treat `false` as "may have been delivered".
+   * @param callbackId - The `callback` ID of the transmit request to remove.
+   * @returns True if the request was found and removed before being sent.
+   */
+  removeUnsentTransmit(callbackId: string): boolean {
+    const index = this.webSocketQueue.findIndex(
+      (msg) => msg.type === 'agent:transmit:request' && msg.callback === callbackId
+    );
+    if (index === -1) {
+      return false;
+    }
+    this.webSocketQueue.splice(index, 1);
+    return true;
+  }
+
+  /**
+   * Invokes `fn` for every channel that currently has a durable-queue worker running.
+   *
+   * Collects any failures so one worker throwing can't stop `fn` from reaching the
+   * rest, then surfaces them together as an aggregate error with the collected
+   * errors as its `cause`.
+   * @param fn - Callback applied to each running {@link ChannelQueueWorker}.
+   */
+  private forEachChannelWorker(fn: (worker: ChannelQueueWorker) => void): void {
+    const errors: Error[] = [];
+    for (const channel of this.channels.values()) {
+      if (channel instanceof AgentHl7Channel && channel.worker) {
+        try {
+          fn(channel.worker);
+        } catch (err) {
+          errors.push(err as Error);
+        }
+      }
+    }
+    if (errors.length > 0) {
+      throw new Error(`Failed to run channel worker callback for ${errors.length} channel(s)`, { cause: errors });
+    }
   }
 
   addToHl7Queue(message: AgentMessage): void {
@@ -1223,11 +1621,16 @@ export class App {
     }
 
     try {
-      const logs = await this.log.fetchLogs({ limit: command.limit });
+      const { logs, hasMore, nextBefore } = await this.log.fetchLogs({
+        limit: command.limit,
+        before: command.before,
+      });
       await this.sendToWebSocket({
         type: 'agent:logs:response',
         statusCode: 200,
         logs,
+        hasMore,
+        nextBefore,
         callback: command.callback,
       });
     } catch (err) {
@@ -1241,7 +1644,8 @@ export class App {
   }
 
   private async sendToWebSocket(message: AgentMessage): Promise<void> {
-    if (!this.webSocket) {
+    const ws = this.webSocket;
+    if (!ws) {
       throw new Error('WebSocket not connected');
     }
     if ('accessToken' in message) {
@@ -1250,7 +1654,28 @@ export class App {
       await this.medplum.refreshIfExpired();
       message.accessToken = this.medplum.getAccessToken();
     }
-    this.webSocket.send(JSON.stringify(message));
+    const payload = JSON.stringify(message);
+
+    // For a durable-queue dispatch, putting the request on the wire is the
+    // Phase A → B transition: flip its row from `claimed` to `inflight` and stamp
+    // sent_at, so crash recovery can tell a provably-unsent row (safe to requeue)
+    // from an ambiguous in-flight one. We do the marker first and the socket write
+    // inside the SAME transaction: if the write throws (e.g. socket not OPEN), the
+    // marker rolls back and the row stays `claimed` instead of a phantom `inflight`
+    // that no bytes ever backed. This also closes the converse window — a failed
+    // marker can never leave bytes on the wire recorded as `claimed`, since we
+    // never reach the send. Keyed by callback; a no-op for legacy (non-durable)
+    // sends and for any non-transmit frame, which just send.
+    const callback = message.type === 'agent:transmit:request' ? message.callback : undefined;
+    if (callback && this.durableQueue) {
+      const durableQueue = this.durableQueue;
+      durableQueue.runInTransaction(() => {
+        durableQueue.markSent(callback);
+        ws.send(payload);
+      });
+    } else {
+      ws.send(payload);
+    }
   }
 
   private sendAgentDisabledError(command: AgentTransmitRequest | AgentTransmitResponse): void {

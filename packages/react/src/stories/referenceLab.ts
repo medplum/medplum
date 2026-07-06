@@ -579,7 +579,7 @@ export const CreatinineObservation: Observation = {
   issued: '2013-04-04T14:34:00+01:00',
   performer: [
     {
-      reference: 'Practitioner/123',
+      reference: 'Practitioner/124',
       display: 'Dr. Alice Smith',
     },
   ],
@@ -621,7 +621,7 @@ export const CreatinineObservation: Observation = {
   note: [
     {
       text: 'Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM',
-      authorReference: { reference: 'Practitioner/123', display: 'Dr. Alice Smith' },
+      authorReference: { reference: 'Practitioner/124', display: 'Dr. Alice Smith' },
     },
     {
       text: 'Previously reported as 10 mg/dL on 2/1/2023, 8:40:14 PM Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
@@ -652,7 +652,7 @@ export const ExampleReport: DiagnosticReport = {
   issued: '2013-03-11T10:28:00+01:00',
   performer: [
     {
-      reference: 'Organization/123',
+      reference: 'Organization/125',
       display: 'Test Organization',
     },
   ],

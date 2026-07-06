@@ -28,6 +28,7 @@ import { PatientIntakeQuestionnairePage } from './pages/PatientIntakeQuestionnai
 import { QuestionnairePage } from './pages/QuestionnairePage';
 import { ScreeningQuestionnairePage } from './pages/ScreeningQuestionnairePage';
 import { SignOutPage } from './pages/SignOutPage';
+import { SmartHealthLinksPage } from './pages/SmartHealthLinksPage';
 
 export function Router(): JSX.Element {
   return (
@@ -59,6 +60,7 @@ export function Router(): JSX.Element {
         <Route path="action-items/:itemId" element={<ActionItem />} />
       </Route>
       <Route path="get-care" element={<GetCare />} />
+      <Route path="smart-health-links" element={<SmartHealthLinksPage />} />
       <Route path="account" element={<AccountPage />}>
         <Route index element={<Navigate replace to="/account/profile" />} />
         <Route path="profile" element={<Profile />} />
