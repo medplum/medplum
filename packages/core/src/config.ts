@@ -222,6 +222,11 @@ export interface MedplumInfraConfig {
   mtlsWafIpSetArn?: string;
   baseUrl: string;
   maxAzs: number;
+  /**
+   * Number of NAT gateways to create. Defaults to one per AZ (`maxAzs`) for high availability.
+   * Set to 1 to reduce cost in non-production environments.
+   */
+  natGateways?: number;
   rdsInstances: number;
   rdsInstanceType: string;
   rdsInstanceVersion?: string;

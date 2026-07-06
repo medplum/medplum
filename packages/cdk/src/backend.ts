@@ -88,6 +88,7 @@ export class BackEnd extends Construct {
       // Create VPC
       this.vpc = new ec2.Vpc(this, 'VPC', {
         maxAzs: config.maxAzs,
+        natGateways: config.natGateways,
         flowLogs: {
           cloudwatch: {
             destination: ec2.FlowLogDestination.toCloudWatchLogs(vpcFlowLogs),

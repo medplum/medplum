@@ -1,0 +1,401 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:group-medshiftrx",
+      "resource": {
+        "resourceType": "Organization",
+        "identifier": [{ "system": "https://medsscript.com/group", "value": "medshiftrx" }],
+        "name": "MedShiftRX Group",
+        "type": [{ "text": "group" }]
+      },
+      "request": { "method": "PUT", "url": "Organization?identifier=https://medsscript.com/group|medshiftrx" }
+    },
+    {
+      "fullUrl": "urn:uuid:clinic-vitalcore",
+      "resource": {
+        "resourceType": "Organization",
+        "identifier": [{ "system": "https://medsscript.com/clinic", "value": "vitalcore" }],
+        "name": "Vital Core Wellness",
+        "type": [{ "text": "clinic" }],
+        "partOf": { "reference": "urn:uuid:group-medshiftrx", "display": "MedShiftRX Group" },
+        "address": [{ "city": "Yorba Linda", "state": "CA", "country": "US" }]
+      },
+      "request": { "method": "PUT", "url": "Organization?identifier=https://medsscript.com/clinic|vitalcore" }
+    },
+    {
+      "fullUrl": "urn:uuid:accesspolicy-clinic",
+      "resource": {
+        "resourceType": "AccessPolicy",
+        "name": "Clinic Scoped Access - Vital Core",
+        "compartment": { "reference": "urn:uuid:clinic-vitalcore" },
+        "resource": [
+          { "resourceType": "Patient", "criteria": "Patient?_compartment=%organization" },
+          { "resourceType": "Observation", "criteria": "Observation?_compartment=%organization" },
+          { "resourceType": "DiagnosticReport", "criteria": "DiagnosticReport?_compartment=%organization" },
+          { "resourceType": "MedicationRequest", "criteria": "MedicationRequest?_compartment=%organization" },
+          { "resourceType": "ServiceRequest", "criteria": "ServiceRequest?_compartment=%organization" },
+          { "resourceType": "CarePlan", "criteria": "CarePlan?_compartment=%organization" },
+          { "resourceType": "QuestionnaireResponse", "criteria": "QuestionnaireResponse?_compartment=%organization" },
+          { "resourceType": "Questionnaire", "readonly": true },
+          { "resourceType": "PlanDefinition", "readonly": true }
+        ],
+        "variable": [
+          { "name": "organization", "type": "Organization" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "AccessPolicy?name=Clinic%20Scoped%20Access%20-%20Vital%20Core" }
+    },
+
+    {
+      "fullUrl": "urn:uuid:plan-starter",
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/billing-plan", "value": "starter" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "billing-plan" }] },
+        "extension": [
+          { "url": "https://medsscript.com/plan-name", "valueString": "Starter" },
+          { "url": "https://medsscript.com/monthly-fee-usd", "valueDecimal": 199 },
+          { "url": "https://medsscript.com/per-transaction-fee-usd", "valueDecimal": 3.0 }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/billing-plan|starter" }
+    },
+    {
+      "fullUrl": "urn:uuid:plan-growth",
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/billing-plan", "value": "growth" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "billing-plan" }] },
+        "extension": [
+          { "url": "https://medsscript.com/plan-name", "valueString": "Growth" },
+          { "url": "https://medsscript.com/monthly-fee-usd", "valueDecimal": 499 },
+          { "url": "https://medsscript.com/per-transaction-fee-usd", "valueDecimal": 2.0 }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/billing-plan|growth" }
+    },
+    {
+      "fullUrl": "urn:uuid:plan-scale",
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/billing-plan", "value": "scale" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "billing-plan" }] },
+        "extension": [
+          { "url": "https://medsscript.com/plan-name", "valueString": "Scale" },
+          { "url": "https://medsscript.com/monthly-fee-usd", "valueDecimal": 999 },
+          { "url": "https://medsscript.com/per-transaction-fee-usd", "valueDecimal": 1.25 }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/billing-plan|scale" }
+    },
+
+    {
+      "fullUrl": "urn:uuid:q-intake",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "identifier": [{ "system": "https://medsscript.com/questionnaire", "value": "new-patient-intake" }],
+        "name": "NewPatientIntake",
+        "title": "New Patient Intake",
+        "status": "active",
+        "subjectType": ["Patient"],
+        "item": [
+          { "linkId": "demographics", "text": "Demographics", "type": "group", "item": [
+            { "linkId": "dob", "text": "Date of birth", "type": "date", "required": true },
+            { "linkId": "sex", "text": "Sex assigned at birth", "type": "choice", "answerOption": [
+              { "valueString": "Male" }, { "valueString": "Female" }, { "valueString": "Intersex" } ] },
+            { "linkId": "height_in", "text": "Height (inches)", "type": "integer" },
+            { "linkId": "weight_lb", "text": "Weight (lb)", "type": "integer" }
+          ] },
+          { "linkId": "history", "text": "Medical history", "type": "group", "item": [
+            { "linkId": "conditions", "text": "Current medical conditions", "type": "text" },
+            { "linkId": "medications", "text": "Current medications", "type": "text" },
+            { "linkId": "allergies", "text": "Known allergies", "type": "text" }
+          ] },
+          { "linkId": "consent_tele", "text": "I consent to telehealth services", "type": "boolean", "required": true }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Questionnaire?identifier=https://medsscript.com/questionnaire|new-patient-intake" }
+    },
+    {
+      "fullUrl": "urn:uuid:q-glp1",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "identifier": [{ "system": "https://medsscript.com/questionnaire", "value": "glp1-eligibility" }],
+        "name": "GLP1Eligibility",
+        "title": "GLP-1 Weight Management Eligibility",
+        "status": "active",
+        "subjectType": ["Patient"],
+        "item": [
+          { "linkId": "bmi", "text": "Current BMI", "type": "decimal", "required": true },
+          { "linkId": "comorbid", "text": "Weight-related comorbidity (e.g. HTN, T2DM, dyslipidemia)?", "type": "boolean" },
+          { "linkId": "pregnant", "text": "Currently pregnant or breastfeeding?", "type": "boolean", "required": true },
+          { "linkId": "mtc_history", "text": "Personal/family history of medullary thyroid carcinoma or MEN2?", "type": "boolean", "required": true },
+          { "linkId": "pancreatitis", "text": "History of pancreatitis?", "type": "boolean" },
+          { "linkId": "prior_glp1", "text": "Prior GLP-1 therapy?", "type": "choice", "answerOption": [
+            { "valueString": "None" }, { "valueString": "Semaglutide" }, { "valueString": "Tirzepatide" }, { "valueString": "Other" } ] }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Questionnaire?identifier=https://medsscript.com/questionnaire|glp1-eligibility" }
+    },
+
+    {
+      "fullUrl": "urn:uuid:pd-sema",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "identifier": [{ "system": "https://medsscript.com/protocol", "value": "semaglutide-titration" }],
+        "name": "SemaglutideTitration",
+        "title": "Semaglutide Titration Protocol",
+        "status": "active",
+        "type": { "text": "clinical-protocol" },
+        "description": "Baseline panel, monthly titrated therapy, and quarterly monitoring for 503A compounded semaglutide. Starter template — review clinically before use.",
+        "action": [
+          { "title": "Baseline", "description": "Baseline metabolic panel + eligibility review (month 0)", "timingTiming": { "repeat": { "count": 1 } } },
+          { "title": "Month 1 — 0.25 mg weekly", "description": "Initiate semaglutide 0.25 mg SC weekly" },
+          { "title": "Month 2 — 0.5 mg weekly", "description": "Titrate to 0.5 mg SC weekly if tolerated" },
+          { "title": "Month 3 — retest + 1.0 mg", "description": "Quarterly monitoring panel; titrate to 1.0 mg weekly if indicated" },
+          { "title": "Quarterly monitoring", "description": "Repeat monitoring panel every 3 months", "timingTiming": { "repeat": { "frequency": 1, "period": 3, "periodUnit": "mo" } } }
+        ]
+      },
+      "request": { "method": "PUT", "url": "PlanDefinition?identifier=https://medsscript.com/protocol|semaglutide-titration" }
+    },
+    {
+      "fullUrl": "urn:uuid:pd-trt",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "identifier": [{ "system": "https://medsscript.com/protocol", "value": "trt-standard" }],
+        "name": "TRTStandard",
+        "title": "TRT Protocol (Standard)",
+        "status": "active",
+        "type": { "text": "clinical-protocol" },
+        "description": "Baseline hormone panel, therapy, and quarterly monitoring for testosterone replacement. Starter template — review clinically before use.",
+        "action": [
+          { "title": "Baseline hormone + CBC/PSA panel", "description": "Total/free testosterone, estradiol, CBC, PSA, lipid panel" },
+          { "title": "Initiate therapy", "description": "Begin prescribed testosterone regimen" },
+          { "title": "6-week recheck", "description": "Trough testosterone + symptom review" },
+          { "title": "Quarterly monitoring", "description": "Hormone panel, CBC (hematocrit), PSA every 3 months", "timingTiming": { "repeat": { "frequency": 1, "period": 3, "periodUnit": "mo" } } }
+        ]
+      },
+      "request": { "method": "PUT", "url": "PlanDefinition?identifier=https://medsscript.com/protocol|trt-standard" }
+    },
+
+    {
+      "fullUrl": "urn:uuid:pd-hrt-womens",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "identifier": [{ "system": "https://medsscript.com/protocol", "value": "hrt-womens" }],
+        "name": "HRTWomens",
+        "title": "HRT Protocol (Women's)",
+        "status": "active",
+        "type": { "text": "clinical-protocol" },
+        "description": "Baseline hormone panel, therapy initiation, follow-up, and quarterly monitoring for women's hormone replacement therapy. Starter template — review clinically before use.",
+        "action": [
+          { "title": "Baseline hormone panel", "description": "Estradiol, FSH, progesterone, TSH, lipid panel; review menopausal status and contraindications", "timingTiming": { "repeat": { "count": 1 } } },
+          { "title": "Therapy initiation", "description": "Initiate prescribed estrogen/progesterone regimen at lowest effective dose" },
+          { "title": "6–8 week follow-up", "description": "Symptom review, tolerability, and dose adjustment as indicated" },
+          { "title": "Quarterly monitoring", "description": "Hormone panel and symptom review every 3 months", "timingTiming": { "repeat": { "frequency": 1, "period": 3, "periodUnit": "mo" } } }
+        ]
+      },
+      "request": { "method": "PUT", "url": "PlanDefinition?identifier=https://medsscript.com/protocol|hrt-womens" }
+    },
+    {
+      "fullUrl": "urn:uuid:pd-bpc157",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "identifier": [{ "system": "https://medsscript.com/protocol", "value": "peptide-bpc157" }],
+        "name": "PeptideBPC157",
+        "title": "BPC-157 Peptide Recovery Protocol",
+        "status": "active",
+        "type": { "text": "clinical-protocol" },
+        "description": "Intake/eligibility, cycle start, mid-cycle check, and cycle completion/reassessment for BPC-157 peptide recovery therapy. Research peptide — starter template, review clinically before use.",
+        "action": [
+          { "title": "Intake & eligibility", "description": "Review indication, contraindications, and informed consent for research peptide use", "timingTiming": { "repeat": { "count": 1 } } },
+          { "title": "Cycle start", "description": "Initiate BPC-157 dosing per prescribed regimen" },
+          { "title": "Mid-cycle check", "description": "Tolerability and response assessment at ~4 weeks" },
+          { "title": "Cycle completion & reassessment", "description": "End-of-cycle review and decision on repeat cycle", "timingTiming": { "repeat": { "frequency": 1, "period": 3, "periodUnit": "mo" } } }
+        ]
+      },
+      "request": { "method": "PUT", "url": "PlanDefinition?identifier=https://medsscript.com/protocol|peptide-bpc157" }
+    },
+    {
+      "fullUrl": "urn:uuid:pd-ipamorelin",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "identifier": [{ "system": "https://medsscript.com/protocol", "value": "peptide-ipamorelin" }],
+        "name": "PeptideIpamorelin",
+        "title": "Ipamorelin/CJC-1295 Protocol",
+        "status": "active",
+        "type": { "text": "clinical-protocol" },
+        "description": "Baseline IGF-1, initiation, titration, and quarterly labs for Ipamorelin/CJC-1295 growth hormone secretagogue therapy. Research peptide — starter template, review clinically before use.",
+        "action": [
+          { "title": "Baseline IGF-1", "description": "Baseline IGF-1, fasting glucose, and contraindication review", "timingTiming": { "repeat": { "count": 1 } } },
+          { "title": "Initiation", "description": "Initiate Ipamorelin/CJC-1295 at starting dose per regimen" },
+          { "title": "Titration", "description": "Assess response and titrate dose at ~4–6 weeks if tolerated" },
+          { "title": "Quarterly labs", "description": "Repeat IGF-1 and metabolic labs every 3 months", "timingTiming": { "repeat": { "frequency": 1, "period": 3, "periodUnit": "mo" } } }
+        ]
+      },
+      "request": { "method": "PUT", "url": "PlanDefinition?identifier=https://medsscript.com/protocol|peptide-ipamorelin" }
+    },
+    {
+      "fullUrl": "urn:uuid:pd-metabolic-quarterly",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "identifier": [{ "system": "https://medsscript.com/protocol", "value": "metabolic-panel-quarterly" }],
+        "name": "MetabolicPanelQuarterly",
+        "title": "Quarterly Metabolic Monitoring Panel",
+        "status": "active",
+        "type": { "text": "clinical-protocol" },
+        "description": "Diagnostics-driven protocol scheduling a baseline metabolic panel plus repeat panels every 3 months. Starter template — review clinically before use.",
+        "action": [
+          { "title": "Baseline metabolic panel", "description": "Comprehensive metabolic panel, lipid panel, HbA1c, CBC at baseline", "timingTiming": { "repeat": { "count": 1 } } },
+          { "title": "Quarterly repeat panel", "description": "Repeat metabolic, lipid, and HbA1c panels every 3 months", "timingTiming": { "repeat": { "frequency": 1, "period": 3, "periodUnit": "mo" } } }
+        ]
+      },
+      "request": { "method": "PUT", "url": "PlanDefinition?identifier=https://medsscript.com/protocol|metabolic-panel-quarterly" }
+    },
+    {
+      "fullUrl": "urn:uuid:pd-microbiome",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "identifier": [{ "system": "https://medsscript.com/protocol", "value": "microbiome-baseline" }],
+        "name": "MicrobiomeBaseline",
+        "title": "Microbiome Assessment Protocol",
+        "status": "active",
+        "type": { "text": "clinical-protocol" },
+        "description": "Kit collection, lab processing, results review, and retest at 6 months for gut microbiome assessment. Starter template — review clinically before use.",
+        "action": [
+          { "title": "Kit collection", "description": "Ship collection kit and confirm sample collection per instructions", "timingTiming": { "repeat": { "count": 1 } } },
+          { "title": "Lab processing", "description": "Sample received and processed by reference laboratory" },
+          { "title": "Results review", "description": "Clinician review of microbiome report and patient consultation" },
+          { "title": "Retest at 6 months", "description": "Repeat microbiome assessment at 6 months", "timingTiming": { "repeat": { "frequency": 1, "period": 6, "periodUnit": "mo" } } }
+        ]
+      },
+      "request": { "method": "PUT", "url": "PlanDefinition?identifier=https://medsscript.com/protocol|microbiome-baseline" }
+    },
+
+    {
+      "fullUrl": "urn:uuid:q-trt-intake",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "identifier": [{ "system": "https://medsscript.com/questionnaire", "value": "trt-intake" }],
+        "name": "TRTIntake",
+        "title": "TRT / Men's Health Intake",
+        "status": "active",
+        "subjectType": ["Patient"],
+        "item": [
+          { "linkId": "symptoms", "text": "Symptoms", "type": "group", "item": [
+            { "linkId": "low_energy", "text": "Persistent fatigue or low energy?", "type": "boolean" },
+            { "linkId": "low_libido", "text": "Reduced libido or sexual function?", "type": "boolean" },
+            { "linkId": "mood", "text": "Mood changes or difficulty concentrating?", "type": "boolean" }
+          ] },
+          { "linkId": "history", "text": "Medical history", "type": "group", "item": [
+            { "linkId": "prior_trt", "text": "Prior testosterone therapy?", "type": "choice", "answerOption": [
+              { "valueString": "None" }, { "valueString": "Injections" }, { "valueString": "Topical/gel" }, { "valueString": "Pellets" }, { "valueString": "Other" } ] },
+            { "linkId": "medications", "text": "Current medications and supplements", "type": "text" },
+            { "linkId": "allergies", "text": "Known allergies", "type": "text" }
+          ] },
+          { "linkId": "safety", "text": "Safety & contraindications", "type": "group", "item": [
+            { "linkId": "prostate_cancer", "text": "History of prostate or breast cancer?", "type": "boolean", "required": true },
+            { "linkId": "elevated_hct", "text": "History of elevated hematocrit or polycythemia?", "type": "boolean", "required": true },
+            { "linkId": "cardiac", "text": "History of heart attack, stroke, or blood clots?", "type": "boolean", "required": true },
+            { "linkId": "fertility", "text": "Planning to father children in the near future?", "type": "boolean", "required": true },
+            { "linkId": "sleep_apnea", "text": "Diagnosed or suspected sleep apnea?", "type": "boolean" }
+          ] },
+          { "linkId": "consent_tele", "text": "I consent to telehealth evaluation for hormone therapy", "type": "boolean", "required": true }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Questionnaire?identifier=https://medsscript.com/questionnaire|trt-intake" }
+    },
+    {
+      "fullUrl": "urn:uuid:q-hrt-intake",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "identifier": [{ "system": "https://medsscript.com/questionnaire", "value": "hrt-intake" }],
+        "name": "HRTIntake",
+        "title": "HRT / Women's Health Intake",
+        "status": "active",
+        "subjectType": ["Patient"],
+        "item": [
+          { "linkId": "menstrual", "text": "Menstrual & menopausal status", "type": "group", "item": [
+            { "linkId": "last_period", "text": "Date of last menstrual period", "type": "date" },
+            { "linkId": "meno_status", "text": "Menopausal status", "type": "choice", "answerOption": [
+              { "valueString": "Premenopausal" }, { "valueString": "Perimenopausal" }, { "valueString": "Postmenopausal" }, { "valueString": "Surgical (hysterectomy/oophorectomy)" } ] },
+            { "linkId": "symptoms", "text": "Current symptoms (hot flashes, sleep, mood, etc.)", "type": "text" }
+          ] },
+          { "linkId": "history", "text": "Medical history", "type": "group", "item": [
+            { "linkId": "prior_hrt", "text": "Prior hormone replacement therapy?", "type": "boolean" },
+            { "linkId": "medications", "text": "Current medications and supplements", "type": "text" },
+            { "linkId": "allergies", "text": "Known allergies", "type": "text" }
+          ] },
+          { "linkId": "safety", "text": "Safety & contraindications", "type": "group", "item": [
+            { "linkId": "pregnant", "text": "Currently pregnant or breastfeeding?", "type": "boolean", "required": true },
+            { "linkId": "breast_cancer", "text": "Personal history of breast or uterine cancer?", "type": "boolean", "required": true },
+            { "linkId": "clots", "text": "History of blood clots, stroke, or DVT/PE?", "type": "boolean", "required": true },
+            { "linkId": "liver", "text": "History of liver disease?", "type": "boolean", "required": true },
+            { "linkId": "vaginal_bleeding", "text": "Any unexplained vaginal bleeding?", "type": "boolean", "required": true }
+          ] },
+          { "linkId": "consent_tele", "text": "I consent to telehealth evaluation for hormone therapy", "type": "boolean", "required": true }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Questionnaire?identifier=https://medsscript.com/questionnaire|hrt-intake" }
+    },
+    {
+      "fullUrl": "urn:uuid:q-peptide-intake",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "identifier": [{ "system": "https://medsscript.com/questionnaire", "value": "peptide-intake" }],
+        "name": "PeptideIntake",
+        "title": "Peptide Therapy Intake",
+        "status": "active",
+        "subjectType": ["Patient"],
+        "item": [
+          { "linkId": "goals", "text": "Therapy goals & interest", "type": "group", "item": [
+            { "linkId": "interest", "text": "Peptide of interest", "type": "choice", "answerOption": [
+              { "valueString": "BPC-157" }, { "valueString": "Ipamorelin/CJC-1295" }, { "valueString": "Other" }, { "valueString": "Not sure" } ] },
+            { "linkId": "goal", "text": "Primary goal (recovery, wellness, body composition, etc.)", "type": "text" }
+          ] },
+          { "linkId": "history", "text": "Medical history", "type": "group", "item": [
+            { "linkId": "prior_peptides", "text": "Prior peptide therapy?", "type": "boolean" },
+            { "linkId": "medications", "text": "Current medications and supplements", "type": "text" },
+            { "linkId": "allergies", "text": "Known allergies", "type": "text" }
+          ] },
+          { "linkId": "safety", "text": "Safety & contraindications", "type": "group", "item": [
+            { "linkId": "cancer_active", "text": "Active or recent history of cancer?", "type": "boolean", "required": true },
+            { "linkId": "pregnant", "text": "Currently pregnant or breastfeeding?", "type": "boolean", "required": true },
+            { "linkId": "diabetes", "text": "Diagnosed with diabetes or abnormal blood glucose?", "type": "boolean" },
+            { "linkId": "research_ack", "text": "I understand these are research peptides not FDA-approved for this use", "type": "boolean", "required": true }
+          ] },
+          { "linkId": "consent_tele", "text": "I consent to telehealth evaluation for peptide therapy", "type": "boolean", "required": true }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Questionnaire?identifier=https://medsscript.com/questionnaire|peptide-intake" }
+    },
+    {
+      "fullUrl": "urn:uuid:q-telehealth-consent",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "identifier": [{ "system": "https://medsscript.com/questionnaire", "value": "telehealth-consent" }],
+        "name": "TelehealthConsent",
+        "title": "Telehealth Consent",
+        "status": "active",
+        "subjectType": ["Patient"],
+        "item": [
+          { "linkId": "consent", "text": "Telehealth consent", "type": "group", "item": [
+            { "linkId": "understand_nature", "text": "I understand the nature and limitations of telehealth services", "type": "boolean", "required": true },
+            { "linkId": "no_guarantee", "text": "I understand no specific outcome or diagnosis is guaranteed", "type": "boolean", "required": true },
+            { "linkId": "privacy", "text": "I acknowledge the privacy and security policies for telehealth", "type": "boolean", "required": true },
+            { "linkId": "records", "text": "I consent to the electronic storage of my health records", "type": "boolean", "required": true },
+            { "linkId": "emergency", "text": "I understand telehealth is not for emergencies and I should call 911 in an emergency", "type": "boolean", "required": true },
+            { "linkId": "prescribing", "text": "I understand prescribing is at the provider's clinical discretion", "type": "boolean", "required": true }
+          ] },
+          { "linkId": "acknowledgement", "text": "Acknowledgement", "type": "group", "item": [
+            { "linkId": "signature_name", "text": "Full legal name (electronic signature)", "type": "string", "required": true },
+            { "linkId": "consent_date", "text": "Date of consent", "type": "date", "required": true }
+          ] }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Questionnaire?identifier=https://medsscript.com/questionnaire|telehealth-consent" }
+    }
+  ]
+}

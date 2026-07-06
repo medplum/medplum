@@ -1,0 +1,258 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ActionIcon, Box, Button, Flex, Group, Menu, Modal, Paper, SegmentedControl, Stack, Text } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { formatDate, formatHumanName } from '@medplum/core';
+import type { Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import { IconChevronDown, IconLock, IconLockOpen, IconShieldCheck } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { useState } from 'react';
+import { ChartNoteStatus } from '../../types/encounter';
+import { EncounterCoverageEligibilityModal } from './EncounterCoverageEligibilityModal';
+import { SignLockDialog } from './SignLockDialog';
+
+interface EncounterHeaderProps {
+  encounter: Encounter;
+  practitioner?: Practitioner | undefined;
+  chartNoteStatus?: ChartNoteStatus;
+  onStatusChange?: (status: Encounter['status']) => void;
+  onTabChange?: (tab: string) => void;
+  onSign?: (practitioner: Reference<Practitioner>, lock: boolean) => void;
+  onSignLock?: (practitioner: Reference<Practitioner>) => void;
+}
+
+export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
+  const {
+    encounter,
+    practitioner,
+    chartNoteStatus = ChartNoteStatus.Unsigned,
+    onStatusChange,
+    onTabChange,
+    onSign,
+  } = props;
+  const [status, setStatus] = useState<Encounter['status']>(encounter.status);
+  const [activeTab, setActiveTab] = useState('notes');
+  const [confirmOpened, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
+  const [signOpened, { open: openSign, close: closeSign }] = useDisclosure(false);
+  const [insuranceOpened, { open: openInsurance, close: closeInsurance }] = useDisclosure(false);
+
+  const handleStatusChange = (newStatus: Encounter['status']): void => {
+    if (newStatus === 'cancelled') {
+      openConfirm();
+      return;
+    }
+
+    setStatus(newStatus);
+    onStatusChange?.(newStatus);
+  };
+
+  const confirmStatusChange = (): void => {
+    setStatus('cancelled');
+    onStatusChange?.('cancelled');
+    closeConfirm();
+  };
+
+  const onConfirmSign = (practitioner: Reference<Practitioner>, lock: boolean): void => {
+    onSign?.(practitioner, lock);
+    closeSign();
+  };
+
+  const handleTabChange = (tab: string): void => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
+
+  const handleSign = (): void => {
+    if (chartNoteStatus === ChartNoteStatus.SignedAndLocked) {
+      return;
+    }
+    openSign();
+  };
+
+  const handleCheckEligibility = (): void => {
+    openInsurance();
+  };
+
+  const patientSubject = encounter.subject as Reference<Patient> | undefined;
+
+  const practitionerName = practitioner?.name?.[0] ? formatHumanName(practitioner.name[0]) : 'Unknown Provider';
+  const formattedDate = formatDate(encounter.period?.start);
+  const encounterDetail = formattedDate ? `${formattedDate} · ${practitionerName}` : practitionerName;
+
+  const renderMenuItems = (): JSX.Element | null => {
+    if (status === 'planned') {
+      return (
+        <>
+          <Menu.Item onClick={() => handleStatusChange('arrived')}>Arrived</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('in-progress')}>In Progress</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('finished')}>Finished</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
+          <Menu.Divider />
+        </>
+      );
+    }
+
+    if (status === 'arrived') {
+      return (
+        <>
+          <Menu.Item onClick={() => handleStatusChange('in-progress')}>In Progress</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('finished')}>Finished</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
+          <Menu.Divider />
+        </>
+      );
+    }
+
+    if (status === 'in-progress') {
+      return (
+        <>
+          <Menu.Item onClick={() => handleStatusChange('finished')}>Finished</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
+        </>
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <>
+      <Paper shadow="sm" p={0}>
+        <Flex justify="space-between" align="center" p="lg">
+          <Stack gap={0}>
+            <Text fw={800} size="lg">
+              {encounter.basedOn?.[0]?.display || 'Visit'}
+            </Text>
+            <Text fw={500} size="xs" c="dimmed">
+              {encounterDetail}
+            </Text>
+          </Stack>
+          <Group>
+            <Button
+              variant="light"
+              color="blue"
+              radius="xl"
+              size="sm"
+              leftSection={<IconShieldCheck size={16} />}
+              onClick={handleCheckEligibility}
+            >
+              Insurance Eligibility
+            </Button>
+            {status === 'cancelled' || status === 'finished' ? (
+              <>
+                {status === 'finished' && chartNoteStatus === ChartNoteStatus.Unsigned && (
+                  <ActionIcon
+                    radius="xl"
+                    variant="transparent"
+                    size={32}
+                    className="outline-icon-button"
+                    onClick={handleSign}
+                  >
+                    <IconLock size={16} />
+                  </ActionIcon>
+                )}
+
+                {status === 'finished' && chartNoteStatus === ChartNoteStatus.Signed && (
+                  <ActionIcon
+                    radius="xl"
+                    variant="transparent"
+                    size={32}
+                    className="outline-icon-button"
+                    onClick={handleSign}
+                  >
+                    <IconLockOpen size={16} />
+                  </ActionIcon>
+                )}
+
+                {status === 'finished' && chartNoteStatus === ChartNoteStatus.SignedAndLocked && (
+                  <ActionIcon radius="xl" variant="filled" color="blue" onClick={handleSign}>
+                    <IconLock size={16} />
+                  </ActionIcon>
+                )}
+
+                <Button variant="light" color={getStatusColor(status)} radius="xl" size="sm">
+                  {getStatusDisplay(status)}
+                </Button>
+              </>
+            ) : (
+              <Menu position="bottom-end" shadow="md">
+                <Menu.Target>
+                  <Button
+                    variant="light"
+                    color={getStatusColor(status)}
+                    rightSection={<IconChevronDown size={16} />}
+                    radius="xl"
+                    size="sm"
+                  >
+                    {getStatusDisplay(status)}
+                  </Button>
+                </Menu.Target>
+
+                <Menu.Dropdown>{renderMenuItems()}</Menu.Dropdown>
+              </Menu>
+            )}
+          </Group>
+        </Flex>
+
+        <Box px="md" pb="md">
+          <SegmentedControl
+            value={activeTab}
+            onChange={handleTabChange}
+            data={[
+              { label: 'Note & Tasks', value: 'notes' },
+              { label: 'Details & Billing', value: 'details' },
+            ]}
+            fullWidth
+            radius="md"
+            size="md"
+          />
+        </Box>
+      </Paper>
+
+      <Modal opened={confirmOpened} onClose={closeConfirm}>
+        <Text size="lg" fw={500}>
+          Are you sure you want to cancel this encounter?
+        </Text>
+        <Text size="sm" c="dimmed" mt="xs">
+          This action cannot be undone.
+        </Text>
+        <Group justify="flex-end" mt="xl" gap="xs">
+          <Button onClick={closeConfirm} color="red" variant="outline">
+            No, keep it
+          </Button>
+          <Button onClick={confirmStatusChange} color="red">
+            Yes, cancel it
+          </Button>
+        </Group>
+      </Modal>
+
+      <Modal opened={signOpened} onClose={closeSign} title="Signing As">
+        <SignLockDialog onSign={onConfirmSign} />
+      </Modal>
+
+      {patientSubject && (
+        <EncounterCoverageEligibilityModal patient={patientSubject} opened={insuranceOpened} onClose={closeInsurance} />
+      )}
+    </>
+  );
+};
+
+const getStatusColor = (status: Encounter['status']): string => {
+  if (status === 'finished') {
+    return 'green';
+  }
+  if (status === 'cancelled') {
+    return 'red';
+  }
+  if (status === 'arrived' || status === 'in-progress' || status === 'planned') {
+    return 'blue';
+  }
+  return 'gray';
+};
+
+const getStatusDisplay = (status: Encounter['status']): string => {
+  return status
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};

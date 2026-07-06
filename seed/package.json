@@ -1,0 +1,15 @@
+{
+  "name": "medsscript-seed",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "tsx seed.ts"
+  },
+  "dependencies": {
+    "@medplum/core": "5.1.23",
+    "@medplum/fhirtypes": "5.1.23"
+  },
+  "devDependencies": {
+    "tsx": "4.19.2"
+  }
+}

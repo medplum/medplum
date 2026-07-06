@@ -1,0 +1,26 @@
+.resourceBox {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+[data-mantine-color-scheme='light'] .resourceBox {
+  background-color: var(--mantine-color-gray-0);
+}
+
+[data-mantine-color-scheme='dark'] .resourceBox {
+  background-color: var(--mantine-color-dark-6);
+}
+
+[data-mantine-color-scheme='light'] .resourceBox:hover {
+  background-color: var(--mantine-color-gray-1);
+}
+
+[data-mantine-color-scheme='dark'] .resourceBox:hover {
+  background-color: var(--mantine-color-dark-5);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+

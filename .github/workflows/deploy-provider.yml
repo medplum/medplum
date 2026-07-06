@@ -1,0 +1,66 @@
+name: Deploy MedsScript Provider
+
+# Builds the standalone provider app (apps/provider) and deploys it to
+# provider.medsscript.com (S3 + CloudFront) on push to main. OIDC auth, no keys.
+
+concurrency:
+  group: medsscript-provider-deploy
+  cancel-in-progress: false
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/provider/**'
+      - '.github/workflows/deploy-provider.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-west-2
+  AWS_ROLE: arn:aws:iam::291706265368:role/medplum-github-deploy
+  APP_BUCKET: provider.medsscript.com
+  APP_DISTRIBUTION_ID: E16HDYLGEY9K0R
+
+jobs:
+  deploy-provider:
+    name: Build & deploy provider app
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install (standalone)
+        working-directory: apps/provider
+        run: npm install
+
+      - name: Build
+        working-directory: apps/provider
+        run: npm run build
+        env:
+          MEDPLUM_BASE_URL: https://api.medsscript.com/
+          MEDPLUM_REGISTER_ENABLED: 'false'
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload + invalidate
+        working-directory: apps/provider
+        run: |
+          set -euo pipefail
+          aws s3 sync dist "s3://${APP_BUCKET}/" \
+            --cache-control "public,max-age=31536000,immutable" --exclude index.html
+          aws s3 cp dist/index.html "s3://${APP_BUCKET}/index.html" \
+            --cache-control "no-cache" --content-type "text/html"
+          aws cloudfront create-invalidation \
+            --distribution-id "${APP_DISTRIBUTION_ID}" --paths "/*"
