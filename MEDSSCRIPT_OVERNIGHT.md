@@ -1,38 +1,62 @@
 # MedsScript — Overnight Progress & Morning Brief
 
-_Autonomous build session. I made scoped decisions myself and staged anything
-needing your approval below. Nothing was merged to `main` (so no auto-deploys
-fired) — review the PR, then merge when happy._
+_Autonomous build session. Everything is committed to branch
+**`medsscript-branding-and-cicd`** and pushed — **not merged to `main`**, so no
+auto-deploys fired. Review the diff, then merge when happy. Static apps were
+deployed manually (URLs below) so you can click around now._
 
 ## ✅ Live right now
-- **API**: https://api.medsscript.com (`/healthcheck` ok, postgres+redis)
-- **Admin app**: https://app.medsscript.com (base Medplum, super-admin)
-- **Provider portal**: https://provider.medsscript.com (MedsScript-branded, standalone)
-- Backend trimmed for non-prod: **1 NAT gateway**, 1 Aurora t3.medium, 1 Fargate task (2 GB), 1 Redis node.
+| URL | What |
+|---|---|
+| https://api.medsscript.com | Medplum API (healthcheck ok) |
+| https://app.medsscript.com | Base Medplum admin (super-admin) |
+| https://provider.medsscript.com | **MedsScript clinic portal** — teal-themed, Protocols, Billing, Marketplace |
+| https://patient.medsscript.com | **MedsScript patient portal** — rebranded |
 
-## 🟢 Decisions I made autonomously (FYI — flag any you disagree with)
-- **Tenancy**: group = Medplum `Project`, clinic = `Organization`, isolation via `AccessPolicy` (MSO pattern). Chosen for shared-marketplace + clinic-switching + PHI-safe.
-- **App hosting**: each app standalone under `apps/*` on the **published** `@medplum` SDK; `medplum/` core stays pristine. Static → S3+CloudFront (~$0).
-- **Billing model**: transaction = Rx + diagnostic orders + marketplace orders; subscription **per clinic**. Plans seeded: Starter/Growth/Scale.
-- **CORS**: server `allowedOrigins` now lists provider + localhost:3001 (app auto-allowed).
+Non-prod backend trimmed: **1 NAT gateway**, 1 Aurora t3.medium, 1 Fargate task (2 GB), 1 Redis node. The two apps cost ~$0 (CloudFront free tier).
 
-## 🔴 Needs YOU in the morning (staged — did not block on these)
-1. **Run the seed** — needs a ClientApplication credential (I can't use your login). Steps in `seed/README.md`.
-2. **Deploy the Bots** — Bot deploy needs auth; code is in `bots/`, deploy steps in `bots/README.md`.
-3. **Clinical review** — questionnaire/protocol content are starter templates; a prescriber should review doses/schedules.
-4. **AccessPolicy review** — validate `seed/seed-bundle.json` AccessPolicy vs `examples/medplum-mso-demo` before real PHI.
-5. **External integration creds** (later phases): Shopify, Stripe, GoHighLevel, Oura/Whoop, pharmacy APIs.
+## 🛠️ Built tonight (branch `medsscript-branding-and-cicd`)
+- **`apps/provider`** — standalone clinic portal (published `@medplum` SDK): MedsScript teal theme + logo, **Protocols** page (list PlanDefinitions → enroll patient = CarePlan), **Billing** dashboard (plan cards, this-month ChargeItems, invoices), **Marketplace** catalog + client-side cart (gated on instance mode), `MEDPLUM_INSTANCE_MODE` flag (marketplace|api).
+- **`apps/patient`** — standalone patient portal from foomedical, rebranded to MedsScript.
+- **`seed/`** — one re-runnable FHIR transaction, **31 resources**: demo group + clinic + AccessPolicy, 3 billing plans, 6 questionnaires, 7 clinical protocols, 12 catalog products. Uploader script + README.
+- **`bots/`** — platform billing: `meter-transaction` (Rx/diagnostic → ChargeItem per clinic) + `monthly-invoice` (aggregate + subscription → Invoice). Type-checks clean.
+- **`.github/workflows/deploy-provider.yml`** — provider auto-deploy on push to main (OIDC).
+- **cdk** — new `natGateways` config knob; non-prod set to 1.
+- Server CORS `allowedOrigins` now includes provider + patient (+ localhosts for dev).
 
-## 🛠️ Built tonight
-_(updated as work lands — see PR for the diff)_
+## 📊 Phase status
+| Phase | State |
+|---|---|
+| 0 — Provider scaffold | ✅ done, deployed |
+| 1 — Group/clinic tenancy (MSO) | 🟡 expressed as code in the seed (Org + AccessPolicy); enrollment flows + Project-per-group not built |
+| 2 — Whitelabel theming + instance mode | ✅ provider themed + mode flag; per-group dynamic theming not built |
+| 3 — Marketplace & ordering | 🟡 catalog + cart done; **checkout/order submission deferred** |
+| 3.5 — Platform billing | 🟡 bots + clinic dashboard done; **owner (cross-clinic) dashboard + Stripe not built**; bots not deployed |
+| 4 — Fulfillment / pharmacy routing | ⬜ not started (needs Shopify/pharmacy creds) |
+| 5 — Protocols/subscriptions/revenue | 🟡 protocols page done; subscriptions/revenue split not built |
+| 6 — Patient portal | ✅ live (foomedical base); custom surfaces (wearables, protocol timeline) not built |
+| 7 — Integrations & AI | ⬜ not started (needs external creds) |
 
-- ✅ **Provider app** (`apps/provider`) + **Protocols page** (list PlanDefinitions, enroll patient → CarePlan). Deployed at provider.medsscript.com. **Committed.**
-- ✅ **Seed** expanded to 19 resources: demo group/clinic + AccessPolicy, 3 billing plans, **6 questionnaires** (intake, GLP-1, TRT, HRT, peptide, telehealth consent), **7 protocols** (semaglutide, TRT, HRT, BPC-157, ipamorelin, metabolic panel, microbiome). **Committed.**
-- ✅ **CI**: `deploy-provider.yml` (provider → provider.medsscript.com on push to main). **Committed.**
-- ✅ **Cost**: NAT gateways 2→1 via new `natGateways` config knob. **Committed + deployed.**
-- 🔄 **Patient portal** (`apps/patient`, from foomedical) — building. Hosting (cert+bucket for patient.medsscript.com) pre-provisioned.
-- 🔄 **Billing/metering Bots** (`bots/`) — building (meter-transaction + monthly-invoice).
+## 🟢 Decisions I made (flag any you'd change)
+- Tenancy = group→Project, clinic→Organization, isolation via AccessPolicy (MSO).
+- Apps standalone under `apps/*` on published SDK; `medplum/` core stays pristine.
+- Billing: transaction = Rx + diagnostic + marketplace order; subscription per clinic; plans Starter/Growth/Scale.
+- Catalog + billing plans modeled as FHIR `Basic` with `medsscript.com` extensions (no core changes).
+- Marketplace nav/route gated by `MEDPLUM_INSTANCE_MODE` (default `marketplace`).
 
-### Phase status
-- Phase 0 (provider scaffold) ✅ · Phase 1 (tenancy) 🟡 seeded as code · Phase 2 (theming/instance-mode) ⏳ next
-- Phase 3 (marketplace) ⏳ · Phase 3.5 (billing) 🟡 bots building · Phase 6 (patient portal) 🟡 building
+## 🔴 Your inputs needed (nothing blocked on these overnight)
+1. **Run the seed** — needs a ClientApplication credential (I can't use your login):
+   ```
+   cd medplum/seed && npm install
+   MEDPLUM_BASE_URL=https://api.medsscript.com/ MEDPLUM_CLIENT_ID=<id> MEDPLUM_CLIENT_SECRET=<secret> npm run seed
+   ```
+   (Create the client in app.medsscript.com → Project → Client Applications.)
+2. **Deploy the Bots** — steps in `bots/README.md` (create Bot + Subscriptions on MedicationRequest/ServiceRequest + cron for monthly-invoice). Needs auth.
+3. **Review the Bot assumptions** — esp. clinic↔plan mapping + how a clinic is derived from a transaction (listed in `bots/README.md`).
+4. **Clinical review** — questionnaires/protocol doses are starter templates; a prescriber should review.
+5. **AccessPolicy review** — validate the seed AccessPolicy vs `examples/medplum-mso-demo` before real PHI.
+6. **Merge the PR** to enable provider auto-deploy on push.
+7. **Later-phase creds** — Shopify, Stripe, GoHighLevel, Oura/Whoop, pharmacy APIs.
+
+## ⏭️ Suggested next (when you're back)
+Checkout/order flow (Phase 3), owner cross-clinic billing dashboard + Stripe (Phase 3.5), fulfillment bots (Phase 4). I paused these because they either need product decisions or external credentials.
