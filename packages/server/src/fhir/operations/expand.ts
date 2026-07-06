@@ -190,11 +190,11 @@ async function computeExpansion(
           includedValueSet,
           {
             ...params,
-            count: maxCount - expansion.length,
+            count: include.system || include.concept ? MAX_EXPANSION_SIZE : maxCount - expansion.length,
           },
           terminologyResources
         );
-        expansion.push(...nestedExpansion);
+        expansion.push(...filterExpansionByInclude(nestedExpansion, include).slice(0, maxCount - expansion.length));
 
         if (expansion.length >= maxCount) {
           // Skip further expansion
@@ -234,6 +234,21 @@ async function computeExpansion(
   }
 
   return expansion;
+}
+
+export function filterExpansionByInclude(
+  expansion: ValueSetExpansionContains[],
+  include: ValueSetComposeInclude
+): ValueSetExpansionContains[] {
+  let result = expansion;
+  if (include.system) {
+    result = result.filter((concept) => concept.system === include.system);
+  }
+  if (include.concept) {
+    const allowedConcepts = new Set(include.concept.map((concept) => concept.code));
+    result = result.filter((concept) => allowedConcepts.has(concept.code));
+  }
+  return result;
 }
 
 async function includeInExpansion(

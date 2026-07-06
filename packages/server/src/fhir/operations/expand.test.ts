@@ -1262,6 +1262,60 @@ describe('Expand', () => {
     );
   });
 
+  test('Include pre-expanded ValueSet with concept filter', async () => {
+    const preexpanded: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'http://example.com/ValueSet/pre-expanded-filtered-' + randomUUID(),
+      expansion: {
+        timestamp: new Date().toISOString(),
+        contains: [
+          { system: 'http://loinc.org', code: '8480-6', display: 'Systolic BP - Reported' },
+          { system: 'http://loinc.org', code: '8462-4', display: 'Diastolic BP - Reported' },
+          { system: 'http://loinc.org', code: '8310-5', display: 'Body temperature' },
+          { system: SNOMED, code: '75367002', display: 'Blood pressure' },
+        ],
+      },
+    };
+    const preexpandedRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(preexpanded);
+    expect(preexpandedRes.status).toStrictEqual(201);
+    const preexpandedValueSet = preexpandedRes.body as ValueSet;
+
+    const include: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'http://example.com/ValueSet/include-expanded-filtered-' + randomUUID(),
+      compose: {
+        include: [
+          {
+            valueSet: [preexpandedValueSet.url as string],
+            system: 'http://loinc.org',
+            concept: [{ code: '8462-4' }],
+          },
+        ],
+      },
+    };
+    const valueSetRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(include);
+    expect(valueSetRes.status).toStrictEqual(201);
+    const valueSet = valueSetRes.body as ValueSet;
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { system: 'http://loinc.org', code: '8462-4', display: 'Diastolic BP - Reported' },
+    ]);
+  });
+
   test('Resolve synonyms', async () => {
     const codeSystem: CodeSystem = {
       resourceType: 'CodeSystem',
