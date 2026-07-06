@@ -251,6 +251,41 @@ Subscriptions with Bot endpoints will only execute once and will not retry on fa
 }
 ```
 
+### Retry timing and backoff
+
+Retries are not immediate. Medplum spaces them out using **exponential backoff with jitter**, which is important to understand when planning for downtime in the destination service that receives the webhook.
+
+- **Base delay:** the first retry is delayed ~20 seconds after the initial failure.
+- **Exponential growth:** each subsequent delay doubles (20s → 40s → 80s → 160s → …).
+- **Maximum delay:** the delay between attempts is capped at **8 hours**.
+- **Jitter:** a random factor of ±10% is applied to each delay to avoid thundering-herd retries, so actual times may vary slightly from the values below.
+
+Because retries back off exponentially, increasing `subscription-max-attempts` extends the total retry window super-linearly. The following table shows approximately how long Medplum will keep retrying (from the first failure until the last attempt) for a given `subscription-max-attempts` value:
+
+| `subscription-max-attempts` | Approx. total retry window |
+| --------------------------- | -------------------------- |
+| 4 (default)                 | ~2 minutes                 |
+| 6                           | ~10 minutes                |
+| 8                           | ~40 minutes                |
+| 10                          | ~3 hours                   |
+| 12                          | ~11 hours                  |
+| 15                          | ~1.5 days                  |
+| 18 (max)                    | ~2.5 days                  |
+
+### Planning for downtime in the destination service
+
+If the system receiving your webhook (for example, an external API, integration engine, or your own backend) experiences downtime, the retry policy is what determines whether the event is eventually delivered or lost:
+
+- With the **default of 4 attempts**, retries are exhausted in roughly **2 minutes**. This is only enough to survive brief, transient blips (e.g. a momentary network error or a quick restart).
+- To survive longer outages (maintenance windows, multi-hour incidents), raise `subscription-max-attempts`. For example, `12` covers roughly an 11-hour outage, and the maximum of `18` covers roughly 2.5 days.
+- Once the maximum number of attempts is exhausted, the event is **not** retried again and the notification is effectively dropped. Medplum does not queue events indefinitely.
+
+For each attempt, an [`AuditEvent`](/docs/api/fhir/resources/auditevent) records the outcome (unless configured for [log-only destination](#auditevent-destination)), so you can inspect delivery history and failures at `https://app.medplum.com/Subscription/<id>/event`.
+
+:::caution[Note]
+A higher `subscription-max-attempts` value increases resilience to downstream downtime, but it also means failing subscriptions stay active in the queue longer. For high-volume subscriptions, consider pairing longer retry windows with the [log-only AuditEvent destination](#auditevent-destination) to limit database growth.
+:::
+
 ## Custom Status Codes
 
 HTTP status codes can be customized to determine the success of the subscription operation.
