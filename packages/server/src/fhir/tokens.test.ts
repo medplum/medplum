@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, getReferenceString, getSearchParameter, Operator, SNOMED } from '@medplum/core';
+import { createReference, getReferenceString, getSearchParameter, Operator } from '@medplum/core';
 import type {
   Bundle,
   Condition,
@@ -684,46 +684,82 @@ describe('Missing/present', () => {
   );
 });
 
-test.each([[Operator.IN], [Operator.NOT_IN]])('Condition.code :%s search', (operator) =>
+test.each([
+  [Operator.IN, true],
+  [Operator.NOT_IN, false],
+] as const)('Condition.code :%s search', (operator, matchesIncluded) =>
   withTestContext(async () => {
-    // ValueSet: http://hl7.org/fhir/ValueSet/condition-code
-    // compose includes codes from http://snomed.info/sct
-    // but does not include codes from https://example.com
+    const csUuid = randomUUID();
+    const vsUuid = randomUUID();
+    const csUrl = 'https://example.com/cs-' + csUuid;
+    const vsUrl = 'https://example.com/vs-' + vsUuid;
 
     const p = await systemRepo.createResource({
       resourceType: 'Patient',
       name: [{ family: randomUUID() }],
     });
 
-    await systemRepo.createResource<Condition>({
+    const included = await systemRepo.createResource<Condition>({
       resourceType: 'Condition',
       subject: createReference(p),
-      code: { coding: [{ system: SNOMED, code: '165002' }] },
+      code: {
+        coding: [{ system: csUrl, code: 'included-code' }],
+      },
     });
 
-    await systemRepo.createResource<Condition>({
+    const excluded = await systemRepo.createResource<Condition>({
       resourceType: 'Condition',
       subject: createReference(p),
-      code: { coding: [{ system: 'https://example.com', code: 'test' }] },
+      code: {
+        coding: [{ system: csUrl, code: 'excluded-code' }],
+      },
     });
 
-    await expect(
-      systemRepo.search({
-        resourceType: 'Condition',
-        filters: [
+    await systemRepo.createResource({
+      resourceType: 'CodeSystem',
+      url: csUrl,
+      status: 'active',
+      content: 'complete',
+      concept: [{ code: 'included-code', display: 'Included Code' }],
+    } as any);
+
+    await systemRepo.createResource<any>({
+      resourceType: 'ValueSet',
+      url: vsUrl,
+      status: 'active',
+      compose: {
+        include: [
           {
-            code: 'subject',
-            operator: Operator.EQUALS,
-            value: getReferenceString(p),
-          },
-          {
-            code: 'code',
-            operator: operator,
-            value: 'http://hl7.org/fhir/ValueSet/condition-code',
+            system: csUrl,
+            concept: [{ code: 'included-code' }],
           },
         ],
-      })
-    ).rejects.toThrow('Invalid modifier');
+      },
+    });
+
+    const result = await systemRepo.search({
+      resourceType: 'Condition',
+      filters: [
+        {
+          code: 'subject',
+          operator: Operator.EQUALS,
+          value: getReferenceString(p),
+        },
+        {
+          code: 'code',
+          operator: operator,
+          value: vsUrl,
+        },
+      ],
+    });
+
+    if (matchesIncluded) {
+      expect(bundleContains(result, included)).toBeDefined();
+      expect(bundleContains(result, excluded)).toBeUndefined();
+    } else {
+      expect(bundleContains(result, included)).toBeUndefined();
+      expect(bundleContains(result, excluded)).toBeDefined();
+    }
   })
 );
 

@@ -44,11 +44,14 @@ import type {
   Resource,
   ResourceType,
   SearchParameter,
+  ValueSet,
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
 import { DatabaseMode } from '../database';
+import { expandValueSet } from './operations/expand';
 import { clamp } from './operations/utils/parameters';
+import { findTerminologyResource } from './operations/utils/terminology';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
 import { parseHistoryContent } from './repository/row-builder';
@@ -125,6 +128,14 @@ export async function searchImpl<T extends Resource>(
   options?: SearchOptions
 ): Promise<Bundle<WithId<T>>> {
   validateSearchResourceTypes(repo, searchRequest);
+
+  if (searchRequest.filters) {
+    searchRequest = {
+      ...searchRequest,
+      filters: await expandValueSetInFilters(repo, searchRequest.resourceType, searchRequest.filters),
+    };
+  }
+
   applyCountAndOffsetLimits(searchRequest);
 
   let entry = undefined;
@@ -157,6 +168,13 @@ export async function searchByReferenceImpl<T extends Resource>(
   referenceValues: string[]
 ): Promise<Record<string, WithId<T>[]>> {
   validateSearchResourceTypes(repo, searchRequest);
+
+  if (searchRequest.filters) {
+    searchRequest = {
+      ...searchRequest,
+      filters: await expandValueSetInFilters(repo, searchRequest.resourceType, searchRequest.filters),
+    };
+  }
 
   // Hold on to references to parts of the SelectQuery that need to be modified per reference value
   const referenceConditions: Condition[] = [];
@@ -1952,4 +1970,62 @@ function splitChainedSearch(chain: string): string[] {
 
 function getCanonicalUrl(resource: Resource): string | undefined {
   return (resource as Resource & { url?: string }).url;
+}
+
+async function expandValueSetInFilters(
+  repo: Repository,
+  resourceType: ResourceType,
+  filters: Filter[]
+): Promise<Filter[]> {
+  const result: Filter[] = [];
+  for (const filter of filters) {
+    if (filter.operator !== Operator.IN && filter.operator !== Operator.NOT_IN) {
+      result.push(filter);
+      continue;
+    }
+
+    const param = getSearchParameter(resourceType, filter.code);
+    if (!param || param.type !== 'token') {
+      result.push(filter);
+      continue;
+    }
+
+    let valueSet: ValueSet;
+    try {
+      valueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', filter.value);
+    } catch {
+      result.push(filter);
+      continue;
+    }
+
+    try {
+      const expandedValueSet = await expandValueSet(repo, valueSet, { count: 1000 });
+      const expansion =
+        expandedValueSet.expansion?.contains?.filter(
+          (c): c is { system: string; code: string } => !!c.system && !!c.code
+        ) ?? [];
+      if (expansion.length === 0) {
+        if (filter.operator === Operator.NOT_IN) {
+          continue;
+        }
+        result.push({
+          code: filter.code,
+          operator: Operator.EQUALS,
+          value: '|',
+        });
+        continue;
+      }
+
+      const values = expansion.map((entry) => `${entry.system}|${entry.code}`);
+      result.push({
+        code: filter.code,
+        operator: filter.operator === Operator.IN ? Operator.EQUALS : Operator.NOT_EQUALS,
+        value: values.join(','),
+      });
+    } catch {
+      result.push(filter);
+      continue;
+    }
+  }
+  return result;
 }
