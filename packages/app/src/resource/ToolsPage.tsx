@@ -8,6 +8,7 @@ import {
   Divider,
   Group,
   Modal,
+  NativeSelect,
   NumberInput,
   Table,
   TextInput,
@@ -16,7 +17,14 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import type { AgentChannelStats, AgentStats } from '@medplum/core';
-import { ContentType, fetchLatestVersionString, formatDateTime, normalizeErrorString } from '@medplum/core';
+import {
+  ContentType,
+  compareVersions,
+  fetchAllVersionStrings,
+  fetchLatestVersionString,
+  formatDateTime,
+  normalizeErrorString,
+} from '@medplum/core';
 import type { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
 import { Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
 import { IconCheck, IconRouter } from '@tabler/icons-react';
@@ -24,19 +32,28 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 
+// Number of older, and separately newer, versions to offer alongside the current and latest versions.
+const VERSION_HISTORY_LENGTH = 5;
+
+const DOWNGRADE_WARNING =
+  'The Medplum Agent is frequently patched with new features and bugfixes. Downgrading your agent can result in ' +
+  'picking up old bugs or losing features you may be relying on. Are you sure you want to downgrade?';
+
 type UpgradeConfirmContentProps = {
   readonly opened: boolean;
   readonly close: () => void;
   readonly version: string | undefined;
   readonly loadingStatus: boolean;
   readonly handleStatus: () => void;
-  readonly handleUpgrade: (force: boolean) => void;
+  readonly handleUpgrade: (force: boolean, version: string) => void;
 };
 
 function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
   const { opened, close, version, loadingStatus, handleStatus, handleUpgrade } = props;
 
   const [latestVersionString, setLatestVersionString] = useState<string>();
+  const [availableVersions, setAvailableVersions] = useState<string[]>();
+  const [selectedVersion, setSelectedVersion] = useState<string>();
   const [shouldForceUpgrade, setShouldForceUpgrade] = useState(false);
 
   useEffect(() => {
@@ -44,15 +61,20 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
       if (!latestVersionString) {
         fetchLatestVersionString('app-tools-page').then(setLatestVersionString).catch(console.error);
       }
+      if (!availableVersions) {
+        fetchAllVersionStrings('app-tools-page')
+          .then(setAvailableVersions)
+          .catch((err) => {
+            console.error(err);
+            setAvailableVersions([]);
+          });
+      }
       handleStatus();
     }
-  }, [opened, latestVersionString, handleStatus]);
+  }, [opened, latestVersionString, availableVersions, handleStatus]);
 
-  // If we don't have the latest version string
-  // The current agent version
-  // Or if we are still loading something
-  // Show loading
-  if (!(latestVersionString && version && !loadingStatus)) {
+  // If we don't yet know the current agent version, or are still loading it, show loading.
+  if (!version || loadingStatus) {
     return <Loading />;
   }
 
@@ -60,23 +82,58 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
     return <p>Unable to determine the current version of the agent. Check the network connectivity of the agent.</p>;
   }
 
-  if (version.startsWith(latestVersionString)) {
-    return <p>This agent is already on the latest version ({latestVersionString}).</p>;
+  // Otherwise, wait on the latest version string and the full version list before rendering
+  // the version picker.
+  if (!(latestVersionString && availableVersions)) {
+    return <Loading />;
+  }
+
+  // Defaults to the latest version until the user picks something else.
+  const targetVersion = selectedVersion ?? latestVersionString;
+
+  const newerVersions = availableVersions.filter((v) => compareVersions(v, version) > 0);
+  const olderVersions = availableVersions.filter((v) => compareVersions(v, version) < 0);
+  const upgradeChoices = newerVersions.slice(0, VERSION_HISTORY_LENGTH);
+  const downgradeChoices = olderVersions.slice(0, VERSION_HISTORY_LENGTH);
+  const versionChoices = upgradeChoices.includes(latestVersionString)
+    ? [...upgradeChoices, ...downgradeChoices]
+    : [latestVersionString, ...upgradeChoices, ...downgradeChoices];
+
+  const selectData = versionChoices.map((v) => ({
+    value: v,
+    label: v === latestVersionString ? `${v} (Latest)` : v,
+  }));
+
+  const isDowngrade = compareVersions(targetVersion, version) < 0;
+  const isSameVersion = compareVersions(targetVersion, version) === 0;
+
+  function onConfirmClick(): void {
+    if (isDowngrade && !window.confirm(DOWNGRADE_WARNING)) {
+      return;
+    }
+    handleUpgrade(shouldForceUpgrade, targetVersion);
+    close();
   }
 
   return (
     <>
-      <p>
-        Are you sure you want to upgrade this agent from version {version} to version {latestVersionString}?
-      </p>
+      <NativeSelect
+        label="Target Version"
+        data={selectData}
+        value={targetVersion}
+        onChange={(e) => setSelectedVersion(e.currentTarget.value)}
+        mb="sm"
+      />
+      {isSameVersion ? (
+        <p>This agent is already on version {targetVersion}.</p>
+      ) : (
+        <p>
+          Are you sure you want to {isDowngrade ? 'downgrade' : 'upgrade'} this agent from version {version} to
+          version {targetVersion}?
+        </p>
+      )}
       <Group>
-        <Button
-          onClick={() => {
-            handleUpgrade(shouldForceUpgrade);
-            close();
-          }}
-          aria-label="Confirm upgrade"
-        >
+        <Button onClick={onConfirmClick} aria-label="Confirm upgrade">
           Confirm Upgrade
         </Button>
         <Checkbox label="Force" onChange={(e) => setShouldForceUpgrade(e.currentTarget.checked)} />
@@ -252,10 +309,11 @@ export function ToolsPage(): JSX.Element | null {
   }, [medplum, id]);
 
   const handleUpgrade = useCallback(
-    (force: boolean) => {
+    (force: boolean, targetVersion: string) => {
       setUpgrading(true);
       const upgradeUrl = medplum.fhirUrl('Agent', id, '$upgrade');
       upgradeUrl.searchParams.set('force', String(force));
+      upgradeUrl.searchParams.set('version', targetVersion);
       medplum
         .get(upgradeUrl, { cache: 'reload' })
         .then((_result: Bundle<Parameters>) => {

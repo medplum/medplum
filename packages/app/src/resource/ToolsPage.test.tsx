@@ -16,6 +16,7 @@ import {
 } from '@medplum/core';
 import type { Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type * as ReactDom from 'react-dom';
 import type { Mock } from 'vitest';
@@ -46,6 +47,53 @@ function mockFetch(
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
     });
+  });
+}
+
+const ALL_RELEASE_VERSIONS = [
+  '3.2.14',
+  '3.2.13',
+  '3.2.12',
+  '3.2.11',
+  '3.2.10',
+  '3.2.9',
+  '3.2.8',
+  '3.2.7',
+  '3.2.6',
+  '3.2.5',
+  '3.2.4',
+  '3.2.3',
+  '3.2.2',
+  '3.2.1',
+  '3.2.0',
+].map((version) => ({
+  tag_name: `v${version}`,
+  version,
+  published_at: '2024-01-01T00:00:00.000Z',
+}));
+
+function mockUpgradeReleasesFetch(): Mock {
+  return mockFetch(200, (url) => {
+    if (url.startsWith(`${MEDPLUM_RELEASES_URL}/latest`)) {
+      return {
+        tag_name: 'v3.2.14',
+        assets: [
+          {
+            url: 'https://api.github.com/repos/medplum/medplum/releases/assets/193665170',
+            id: 193665170,
+            name: 'medplum-agent-3.2.14-linux',
+            browser_download_url:
+              'https://github.com/medplum/medplum/releases/download/v3.2.14/medplum-agent-3.2.14-linux',
+          },
+        ],
+      };
+    }
+
+    if (url.startsWith(`${MEDPLUM_RELEASES_URL}/all.json`)) {
+      return { versions: ALL_RELEASE_VERSIONS };
+    }
+
+    throw new Error('Expected Github releases URL to be called');
   });
 }
 
@@ -262,24 +310,7 @@ describe('ToolsPage', () => {
 
   test('Upgrade -- Success', async () => {
     clearReleaseCache();
-    globalThis.fetch = mockFetch(200, (url) => {
-      if (url.startsWith(`${MEDPLUM_RELEASES_URL}/latest`)) {
-        return {
-          tag_name: 'v3.2.14',
-          assets: [
-            {
-              url: 'https://api.github.com/repos/medplum/medplum/releases/assets/193665170',
-              id: 193665170,
-              name: 'medplum-agent-3.2.14-linux',
-              browser_download_url:
-                'https://github.com/medplum/medplum/releases/download/v3.2.14/medplum-agent-3.2.14-linux',
-            },
-          ],
-        };
-      }
-
-      throw new Error('Expected Github releases URL to be called');
-    });
+    globalThis.fetch = mockUpgradeReleasesFetch();
 
     medplum = new MockClient();
     medplum.router.router.add('GET', 'Agent/:id/$status', async () => [
@@ -336,6 +367,9 @@ describe('ToolsPage', () => {
       screen.findByText('Are you sure you want to upgrade this agent from version 3.2.13 to version 3.2.14?')
     ).resolves.toBeInTheDocument();
 
+    // Defaults to the latest version.
+    expect(screen.getByLabelText('Target Version')).toHaveValue('3.2.14');
+
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /confirm upgrade/i }));
     });
@@ -343,26 +377,182 @@ describe('ToolsPage', () => {
     await expect(screen.findByText('Success')).resolves.toBeInTheDocument();
   });
 
+  test('Upgrade -- Select a specific version to upgrade to', async () => {
+    clearReleaseCache();
+    globalThis.fetch = mockUpgradeReleasesFetch();
+
+    medplum = new MockClient();
+    medplum.router.router.add('GET', 'Agent/:id/$status', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'status', valueCode: 'connected' },
+          { name: 'version', valueString: '3.2.6' },
+          { name: 'lastUpdated', valueCode: new Date().toISOString() },
+        ],
+      },
+    ]);
+    medplum.router.router.add('GET', 'Agent/:id/$upgrade', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [],
+      },
+    ]);
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Upgrade specific version',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
+    });
+
+    await act(async () => {
+      await sleep(150);
+    });
+
+    await expect(
+      screen.findByText('Are you sure you want to upgrade this agent from version 3.2.6 to version 3.2.14?')
+    ).resolves.toBeInTheDocument();
+
+    const versionSelect = screen.getByLabelText('Target Version');
+    // The latest version is called out in its option label.
+    expect(within(versionSelect).getByRole('option', { name: '3.2.14 (Latest)' })).toBeInTheDocument();
+    // Of the 8 versions newer than current (3.2.7 .. 3.2.14), only the latest 5 (closest to
+    // latest) are offered. Of the 6 versions older than current (3.2.0 .. 3.2.5), only the
+    // nearest 5 (closest to current) are offered.
+    const optionValues = within(versionSelect)
+      .getAllByRole('option')
+      .map((option) => (option as HTMLOptionElement).value);
+    expect(optionValues).toStrictEqual([
+      '3.2.14',
+      '3.2.13',
+      '3.2.12',
+      '3.2.11',
+      '3.2.10',
+      '3.2.5',
+      '3.2.4',
+      '3.2.3',
+      '3.2.2',
+      '3.2.1',
+    ]);
+
+    act(() => {
+      fireEvent.change(versionSelect, { target: { value: '3.2.11' } });
+    });
+
+    await expect(
+      screen.findByText('Are you sure you want to upgrade this agent from version 3.2.6 to version 3.2.11?')
+    ).resolves.toBeInTheDocument();
+
+    const medplumGetSpy = vi.spyOn(medplum, 'get');
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /confirm upgrade/i }));
+    });
+
+    const upgradeUrl = medplum.fhirUrl('Agent', agent.id as string, '$upgrade');
+    upgradeUrl.searchParams.set('force', 'false');
+    upgradeUrl.searchParams.set('version', '3.2.11');
+    expect(medplumGetSpy).toHaveBeenCalledWith(upgradeUrl, expect.objectContaining({ cache: 'reload' }));
+
+    await expect(screen.findByText('Success')).resolves.toBeInTheDocument();
+    medplumGetSpy.mockRestore();
+  });
+
+  test('Upgrade -- Downgrade requires confirmation', async () => {
+    clearReleaseCache();
+    globalThis.fetch = mockUpgradeReleasesFetch();
+
+    medplum = new MockClient();
+    medplum.router.router.add('GET', 'Agent/:id/$status', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'status', valueCode: 'connected' },
+          { name: 'version', valueString: '3.2.13' },
+          { name: 'lastUpdated', valueCode: new Date().toISOString() },
+        ],
+      },
+    ]);
+    medplum.router.router.add('GET', 'Agent/:id/$upgrade', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [],
+      },
+    ]);
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Downgrade confirmation',
+      status: 'active',
+    });
+
+    setup(`/${getReferenceString(agent)}/tools`);
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
+    });
+
+    await act(async () => {
+      await sleep(150);
+    });
+
+    const versionSelect = await screen.findByLabelText('Target Version');
+
+    act(() => {
+      fireEvent.change(versionSelect, { target: { value: '3.2.10' } });
+    });
+
+    await expect(
+      screen.findByText('Are you sure you want to downgrade this agent from version 3.2.13 to version 3.2.10?')
+    ).resolves.toBeInTheDocument();
+
+    // User declines the downgrade warning: no upgrade request should be sent.
+    const medplumGetSpy = vi.spyOn(medplum, 'get');
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /confirm upgrade/i }));
+    });
+
+    expect(confirmSpy).toHaveBeenCalledWith(
+      'The Medplum Agent is frequently patched with new features and bugfixes. Downgrading your agent can result in ' +
+        'picking up old bugs or losing features you may be relying on. Are you sure you want to downgrade?'
+    );
+    expect(medplumGetSpy).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ cache: 'reload' }));
+
+    // User accepts the downgrade warning: the upgrade request should now be sent with the older version.
+    confirmSpy.mockReturnValueOnce(true);
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /confirm upgrade/i }));
+    });
+
+    const upgradeUrl = medplum.fhirUrl('Agent', agent.id as string, '$upgrade');
+    upgradeUrl.searchParams.set('force', 'false');
+    upgradeUrl.searchParams.set('version', '3.2.10');
+    expect(medplumGetSpy).toHaveBeenCalledWith(upgradeUrl, expect.objectContaining({ cache: 'reload' }));
+
+    await expect(screen.findByText('Success')).resolves.toBeInTheDocument();
+
+    confirmSpy.mockRestore();
+    medplumGetSpy.mockRestore();
+  });
+
   test('Upgrade -- Already up-to-date', async () => {
     clearReleaseCache();
-    globalThis.fetch = mockFetch(200, (url) => {
-      if (url.startsWith(`${MEDPLUM_RELEASES_URL}/latest`)) {
-        return {
-          tag_name: 'v3.2.14',
-          assets: [
-            {
-              url: 'https://api.github.com/repos/medplum/medplum/releases/assets/193665170',
-              id: 193665170,
-              name: 'medplum-agent-3.2.14-linux',
-              browser_download_url:
-                'https://github.com/medplum/medplum/releases/download/v3.2.14/medplum-agent-3.2.14-linux',
-            },
-          ],
-        };
-      }
-
-      throw new Error('Expected Github releases URL to be called');
-    });
+    globalThis.fetch = mockUpgradeReleasesFetch();
 
     medplum = new MockClient();
     medplum.router.router.add('GET', 'Agent/:id/$status', async () => [
@@ -415,11 +605,12 @@ describe('ToolsPage', () => {
       await sleep(150);
     });
 
-    await expect(
-      screen.findByText('This agent is already on the latest version (3.2.14).')
-    ).resolves.toBeInTheDocument();
+    await expect(screen.findByText('This agent is already on version 3.2.14.')).resolves.toBeInTheDocument();
 
-    expect(screen.queryByRole('button', { name: /confirm upgrade/i })).not.toBeInTheDocument();
+    // The version picker (defaulting to latest) and confirm button remain available, so the
+    // user can still choose to downgrade even though they're already on the latest version.
+    expect(screen.getByLabelText('Target Version')).toHaveValue('3.2.14');
+    expect(screen.getByRole('button', { name: /confirm upgrade/i })).toBeInTheDocument();
   });
 
   test('Upgrade -- Unable to get version', async () => {
@@ -501,24 +692,7 @@ describe('ToolsPage', () => {
 
   test('Upgrade -- Error', async () => {
     clearReleaseCache();
-    globalThis.fetch = mockFetch(200, (url) => {
-      if (url.startsWith(`${MEDPLUM_RELEASES_URL}/latest`)) {
-        return {
-          tag_name: 'v3.2.14',
-          assets: [
-            {
-              url: 'https://api.github.com/repos/medplum/medplum/releases/assets/193665170',
-              id: 193665170,
-              name: 'medplum-agent-3.2.14-linux',
-              browser_download_url:
-                'https://github.com/medplum/medplum/releases/download/v3.2.14/medplum-agent-3.2.14-linux',
-            },
-          ],
-        };
-      }
-
-      throw new Error('Expected Github releases URL to be called');
-    });
+    globalThis.fetch = mockUpgradeReleasesFetch();
 
     medplum = new MockClient();
     medplum.router.router.add('GET', 'Agent/:id/$status', async () => [
@@ -580,6 +754,7 @@ describe('ToolsPage', () => {
 
     const upgradeUrl = medplum.fhirUrl('Agent', agent.id as string, '$upgrade');
     upgradeUrl.searchParams.set('force', 'false');
+    upgradeUrl.searchParams.set('version', '3.2.14');
 
     expect(medplumGetSpy).toHaveBeenCalledWith(upgradeUrl, expect.objectContaining({ cache: 'reload' }));
 

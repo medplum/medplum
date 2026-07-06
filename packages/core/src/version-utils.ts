@@ -98,6 +98,24 @@ export function isValidMedplumSemver(version: string): boolean {
 }
 
 /**
+ * Compares two Medplum semver version strings, ignoring any trailing commit-hash suffix.
+ * @param a - The first version to compare.
+ * @param b - The second version to compare.
+ * @returns A negative number if `a` is older than `b`, a positive number if `a` is newer than `b`, or `0` if they resolve to the same release.
+ */
+export function compareVersions(a: string, b: string): number {
+  const aParts = a.split('-')[0].split('.').map(Number);
+  const bParts = b.split('-')[0].split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const diff = (aParts[i] ?? 0) - (bParts[i] ?? 0);
+    if (diff !== 0) {
+      return diff;
+    }
+  }
+  return 0;
+}
+
+/**
  * Tests that a given version string is a valid existing Medplum release version.
  * @param appName - The name of the app to check the version for.
  * @param version - A version to be checked against the existing Medplum repo releases.
@@ -126,6 +144,36 @@ export async function fetchLatestVersionString(appName: string): Promise<string>
     throw new Error(`Invalid release name found. Release tag '${latest.tag_name}' did not start with 'v'`);
   }
   return latest.tag_name.slice(1);
+}
+
+/**
+ * Fetches the version strings for all published Medplum releases.
+ * @param appName - The name of the app to fetch the release list for.
+ * @param params - An optional list of key-value pairs to be appended to the URL query string.
+ * @returns An array of version strings (without the leading `v`), sorted from newest to oldest.
+ */
+export async function fetchAllVersionStrings(appName: string, params?: Record<string, string>): Promise<string[]> {
+  const url = new URL(`${MEDPLUM_RELEASES_URL}/all.json`);
+  url.searchParams.set('a', appName);
+  url.searchParams.set('c', MEDPLUM_VERSION);
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
+  }
+  const res = await fetch(url.toString());
+  if (res.status !== 200) {
+    let message: string | undefined;
+    try {
+      message = ((await res.json()) as { message: string }).message;
+    } catch (err) {
+      console.error(`Failed to parse message from body: ${normalizeErrorString(err)}`);
+    }
+    throw new Error(`Received status code ${res.status} while fetching all release versions. Message: ${message}`);
+  }
+  const response = (await res.json()) as { versions?: { version: string }[] };
+  const versions = (response.versions ?? []).map((release) => release.version).filter(isValidMedplumSemver);
+  return versions.sort(compareVersions).reverse();
 }
 
 /**
