@@ -9,7 +9,7 @@ import { useState } from 'react';
 import type { JSX } from 'react';
 import { Link, useNavigate } from 'react-router';
 import classes from './Header.module.css';
-import { Logo } from './Logo';
+import { MedsScriptLogo } from './MedsScriptLogo';
 
 const navigation = [
   { name: 'Health Record', href: '/health-record' },
@@ -30,7 +30,10 @@ export function Header(): JSX.Element {
       <Container>
         <div className={classes.inner}>
           <UnstyledButton className={classes.logoButton} onClick={() => navigate('/')?.catch(console.error)}>
-            <Logo width={240} />
+            <Group gap={8} align="center" wrap="nowrap">
+              <MedsScriptLogo size={40} />
+              <span style={{ fontSize: '1.375rem', fontWeight: 700, color: '#0d9488' }}>MedsScript</span>
+            </Group>
           </UnstyledButton>
           <Group gap={5} className={classes.links}>
             {navigation.map((link) => (

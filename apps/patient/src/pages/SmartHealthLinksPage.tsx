@@ -43,7 +43,7 @@ export function SmartHealthLinksPage(): JSX.Element {
   const medplum = useMedplum();
   const patient = medplum.getProfile() as WithId<Patient>;
   const [mode, setMode] = useState<SmartHealthLinkMode>('direct');
-  const [label, setLabel] = useState('FooMedical patient share');
+  const [label, setLabel] = useState('MedsScript patient share');
   const [recipient, setRecipient] = useState('Verona Health System');
   const [passcode, setPasscode] = useState('');
   const [includeQrCode, setIncludeQrCode] = useState(true);

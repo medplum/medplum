@@ -33,7 +33,7 @@ import {
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
-import { Logo } from '../../components/Logo';
+import { MedsScriptLogo } from '../../components/MedsScriptLogo';
 import classes from './Header.module.css';
 
 const mockdata = [
@@ -99,7 +99,10 @@ export function Header(): JSX.Element {
         <Container h="100%">
           <Group justify="space-between" h="100%">
             <UnstyledButton className={classes.logoButton} onClick={() => navigate('/')?.catch(console.error)}>
-              <Logo width={240} />
+              <Group gap={8} align="center" wrap="nowrap">
+                <MedsScriptLogo size={40} />
+                <span style={{ fontSize: '1.375rem', fontWeight: 700, color: '#0d9488' }}>MedsScript</span>
+              </Group>
             </UnstyledButton>
 
             <Group style={{ height: '100%' }} gap={0} className={classes.hiddenMobile}>

@@ -18,6 +18,20 @@ const medplum = new MedplumClient({
 });
 
 const theme = createTheme({
+  colors: {
+    teal: [
+      '#f0fdfa',
+      '#ccfbf1',
+      '#99f6e4',
+      '#5eead4',
+      '#2dd4bf',
+      '#14b8a6',
+      '#0d9488',
+      '#0f766e',
+      '#0d9488',
+      '#134e4a',
+    ],
+  },
   primaryColor: 'teal',
   primaryShade: 8,
   fontSizes: {
