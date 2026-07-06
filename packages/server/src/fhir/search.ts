@@ -2120,7 +2120,11 @@ async function expandValueSetInFilters(
     }
 
     const param = getSearchParameter(resourceType, filter.code);
+<<<<<<< HEAD
     if (param?.type !== 'token') {
+=======
+    if (!param || param.type !== 'token') {
+>>>>>>> 621a2be68 (feat: implement :in/:not-in search modifier for token params)
       result.push(filter);
       continue;
     }
