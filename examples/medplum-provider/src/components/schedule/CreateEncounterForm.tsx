@@ -65,31 +65,26 @@ export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Elemen
     }
   }, [medplum, encounterClass, planDefinition, props.appointment, navigate, patientRefs, practitionerRefs]);
 
+  const warnings: string[] = [];
+
   if (practitionerRefs.length > 1) {
-    return (
-      <Alert color="yellow" icon={<IconInfoCircle />}>
-        Too many Practitioners to create Encounter.
-      </Alert>
-    );
+    warnings.push('Too many Practitioners to create Encounter.');
   }
   if (practitionerRefs.length === 0) {
-    return (
-      <Alert color="yellow" icon={<IconInfoCircle />}>
-        No Practitioner to create Encounter.
-      </Alert>
-    );
+    warnings.push('No Practitioner to create Encounter.');
   }
   if (patientRefs.length > 1) {
-    return (
-      <Alert color="yellow" icon={<IconInfoCircle />}>
-        Too many Patients to create Encounter.
-      </Alert>
-    );
+    warnings.push('Too many Patients to create Encounter.');
   }
   if (patientRefs.length === 0) {
+    warnings.push('No Patient to create Encounter.');
+  }
+  if (warnings.length) {
     return (
-      <Alert color="yellow" icon={<IconInfoCircle />}>
-        No Patient to create Encounter.
+      <Alert color="yellow" icon={<IconInfoCircle />} title="Can't create Encounter">
+        {warnings.map((warning) => (
+          <div key={warning}>{warning}</div>
+        ))}
       </Alert>
     );
   }

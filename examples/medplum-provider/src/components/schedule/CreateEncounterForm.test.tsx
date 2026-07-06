@@ -106,6 +106,23 @@ describe('CreateEncounterForm', () => {
     expect(screen.queryByText('Set Up Encounter')).not.toBeInTheDocument();
   });
 
+  test('shows alert when multiple patients are in appointment.participants', async () => {
+    const patientful = {
+      ...appointment,
+      participant: [
+        ...appointment.participant,
+        {
+          actor: { reference: 'Patient/patient-2' },
+          status: 'accepted',
+        },
+      ],
+    } satisfies Appointment;
+    setup(patientful);
+
+    expect(screen.getByText('Too many Patients to create Encounter.')).toBeInTheDocument();
+    expect(screen.queryByText('Set Up Encounter')).not.toBeInTheDocument();
+  });
+
   test('when required fields are not filled', async () => {
     setup(appointment);
 
