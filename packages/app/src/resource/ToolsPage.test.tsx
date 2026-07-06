@@ -97,6 +97,49 @@ function mockUpgradeReleasesFetch(): Mock {
   });
 }
 
+const VERSION_SEARCH_PLACEHOLDER = 'Search versions...';
+
+// The version picker is an AsyncAutocomplete: the currently-selected version renders as a
+// removable Pill (hiding the search input) rather than as a native <select> value, so picking a
+// different version means removing that pill first to reveal the search input again.
+async function removeSelectedVersionPill(): Promise<void> {
+  // Mantine marks the Pill's remove button aria-hidden (it's primarily reached via Backspace),
+  // so it must be looked up with `hidden: true` to be found by role at all.
+  const removeButton = within(screen.getByTestId('selected-items')).getByRole('button', { hidden: true });
+  await act(async () => {
+    fireEvent.click(removeButton);
+  });
+}
+
+// Reveals the curated default option list (no search text) by clicking the now-empty input.
+async function openDefaultVersionOptions(): Promise<void> {
+  await removeSelectedVersionPill();
+  const input = screen.getByPlaceholderText(VERSION_SEARCH_PLACEHOLDER);
+  await act(async () => {
+    fireEvent.click(input);
+  });
+  // AsyncAutocomplete debounces loadOptions by 100ms.
+  await act(async () => {
+    await sleep(150);
+  });
+}
+
+// Removes the current pill, searches, and clicks the matching option in the results dropdown.
+async function pickVersion(searchText: string, optionLabel: string): Promise<void> {
+  await removeSelectedVersionPill();
+  const input = screen.getByPlaceholderText(VERSION_SEARCH_PLACEHOLDER);
+  await act(async () => {
+    fireEvent.change(input, { target: { value: searchText } });
+  });
+  await act(async () => {
+    await sleep(150);
+  });
+  const option = within(screen.getByTestId('options')).getByText(optionLabel);
+  await act(async () => {
+    fireEvent.click(option);
+  });
+}
+
 describe('ToolsPage', () => {
   let agent: Agent;
   let medplum: MockClient;
@@ -368,7 +411,7 @@ describe('ToolsPage', () => {
     ).resolves.toBeInTheDocument();
 
     // Defaults to the latest version.
-    expect(screen.getByLabelText('Target Version')).toHaveValue('3.2.14');
+    expect(within(screen.getByTestId('selected-items')).getByText('3.2.14 (Latest)')).toBeInTheDocument();
 
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /confirm upgrade/i }));
@@ -422,31 +465,39 @@ describe('ToolsPage', () => {
       screen.findByText('Are you sure you want to upgrade this agent from version 3.2.6 to version 3.2.14?')
     ).resolves.toBeInTheDocument();
 
-    const versionSelect = screen.getByLabelText('Target Version');
+    await openDefaultVersionOptions();
+    const optionsDropdown = screen.getByTestId('options');
     // The latest version is called out in its option label.
-    expect(within(versionSelect).getByRole('option', { name: '3.2.14 (Latest)' })).toBeInTheDocument();
+    expect(within(optionsDropdown).getByText('3.2.14 (Latest)')).toBeInTheDocument();
     // Of the 8 versions newer than current (3.2.7 .. 3.2.14), only the latest 5 (closest to
     // latest) are offered. Of the 6 versions older than current (3.2.0 .. 3.2.5), only the
-    // nearest 5 (closest to current) are offered.
-    const optionValues = within(versionSelect)
-      .getAllByRole('option')
-      .map((option) => (option as HTMLOptionElement).value);
-    expect(optionValues).toStrictEqual([
-      '3.2.14',
-      '3.2.13',
-      '3.2.12',
-      '3.2.11',
-      '3.2.10',
-      '3.2.5',
-      '3.2.4',
-      '3.2.3',
-      '3.2.2',
-      '3.2.1',
-    ]);
+    // nearest 5 (closest to current) are offered — 10 curated options total, not all 15 releases.
+    for (const version of ['3.2.13', '3.2.12', '3.2.11', '3.2.10', '3.2.5', '3.2.4', '3.2.3', '3.2.2', '3.2.1']) {
+      expect(within(optionsDropdown).getByText(version)).toBeInTheDocument();
+    }
+    // Versions further than 5 away in either direction are not part of the curated default list.
+    expect(within(optionsDropdown).queryByText('3.2.9')).not.toBeInTheDocument();
+    expect(within(optionsDropdown).queryByText('3.2.0')).not.toBeInTheDocument();
 
-    act(() => {
-      fireEvent.change(versionSelect, { target: { value: '3.2.11' } });
+    // Searching filters across the *entire* known version history, not just the curated list.
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText(VERSION_SEARCH_PLACEHOLDER), { target: { value: '3.2.0' } });
     });
+    await act(async () => {
+      await sleep(150);
+    });
+    expect(within(screen.getByTestId('options')).getByText('3.2.0')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(within(screen.getByTestId('options')).getByText('3.2.0'));
+    });
+
+    await expect(
+      screen.findByText('Are you sure you want to downgrade this agent from version 3.2.6 to version 3.2.0?')
+    ).resolves.toBeInTheDocument();
+
+    // Switch to picking an upgrade target instead, to exercise the non-downgrade confirm path.
+    await pickVersion('3.2.11', '3.2.11');
 
     await expect(
       screen.findByText('Are you sure you want to upgrade this agent from version 3.2.6 to version 3.2.11?')
@@ -508,11 +559,7 @@ describe('ToolsPage', () => {
       await sleep(150);
     });
 
-    const versionSelect = await screen.findByLabelText('Target Version');
-
-    act(() => {
-      fireEvent.change(versionSelect, { target: { value: '3.2.10' } });
-    });
+    await pickVersion('3.2.10', '3.2.10');
 
     await expect(
       screen.findByText('Are you sure you want to downgrade this agent from version 3.2.13 to version 3.2.10?')
@@ -609,7 +656,7 @@ describe('ToolsPage', () => {
 
     // The version picker (defaulting to latest) and confirm button remain available, so the
     // user can still choose to downgrade even though they're already on the latest version.
-    expect(screen.getByLabelText('Target Version')).toHaveValue('3.2.14');
+    expect(within(screen.getByTestId('selected-items')).getByText('3.2.14 (Latest)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /confirm upgrade/i })).toBeInTheDocument();
   });
 

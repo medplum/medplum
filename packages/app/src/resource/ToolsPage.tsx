@@ -8,7 +8,6 @@ import {
   Divider,
   Group,
   Modal,
-  NativeSelect,
   NumberInput,
   Table,
   TextInput,
@@ -26,7 +25,8 @@ import {
   normalizeErrorString,
 } from '@medplum/core';
 import type { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
-import { Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
+import type { AsyncAutocompleteOption } from '@medplum/react';
+import { AsyncAutocomplete, Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
 import { IconCheck, IconRouter } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -99,13 +99,23 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
     ? [...upgradeChoices, ...downgradeChoices]
     : [latestVersionString, ...upgradeChoices, ...downgradeChoices];
 
-  const selectData = versionChoices.map((v) => ({
-    value: v,
-    label: v === latestVersionString ? `${v} (Latest)` : v,
-  }));
-
   const isDowngrade = compareVersions(targetVersion, version) < 0;
   const isSameVersion = compareVersions(targetVersion, version) === 0;
+
+  function toVersionOption(v: string): AsyncAutocompleteOption<string> {
+    return { value: v, label: v === latestVersionString ? `${v} (Latest)` : v, resource: v };
+  }
+
+  // With no search input, offer the curated list (latest + nearby versions). Otherwise,
+  // search across every known version, not just the curated list.
+  const allVersions: string[] = availableVersions;
+  async function loadVersionOptions(input: string): Promise<string[]> {
+    if (!input) {
+      return versionChoices;
+    }
+    const query = input.toLowerCase();
+    return allVersions.filter((v) => v.toLowerCase().includes(query));
+  }
 
   function onConfirmClick(): void {
     if (isDowngrade && !window.confirm(DOWNGRADE_WARNING)) {
@@ -117,12 +127,19 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
 
   return (
     <>
-      <NativeSelect
+      <AsyncAutocomplete<string>
         label="Target Version"
-        data={selectData}
-        value={targetVersion}
-        onChange={(e) => setSelectedVersion(e.currentTarget.value)}
-        mb="sm"
+        placeholder="Search versions..."
+        defaultValue={targetVersion}
+        toOption={toVersionOption}
+        loadOptions={loadVersionOptions}
+        onChange={([next]) => {
+          if (next) {
+            setSelectedVersion(next);
+          }
+        }}
+        maxValues={1}
+        clearable={false}
       />
       {isSameVersion ? (
         <p>This agent is already on version {targetVersion}.</p>
