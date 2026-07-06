@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider, createTheme } from '@mantine/core';
+import { MantineProvider, createTheme, type MantineColorsTuple } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
@@ -20,7 +20,25 @@ const medplum = new MedplumClient({
   autoBatchTime: 100,
 });
 
+// MedsScript brand teal, anchored on #0d9488 (shade index 6 = default filled color).
+const medsscriptTeal: MantineColorsTuple = [
+  '#e6f7f4',
+  '#d0eeea',
+  '#a1ddd4',
+  '#6fccbd',
+  '#48bda9',
+  '#2fb39d',
+  '#0d9488', // brand teal
+  '#0b8377',
+  '#077366',
+  '#016054',
+];
+
 const theme = createTheme({
+  primaryColor: 'medsscript-teal',
+  colors: {
+    'medsscript-teal': medsscriptTeal,
+  },
   headings: {
     sizes: {
       h1: {

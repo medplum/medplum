@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
-import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
+import { AppShell, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconApps,
   IconBook2,
+  IconBuildingStore,
   IconCalendarEvent,
   IconChecklist,
   IconClipboardCheck,
@@ -13,6 +14,7 @@ import {
   IconPill,
   IconPrinter,
   IconQrcode,
+  IconReceipt,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
@@ -20,8 +22,10 @@ import {
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
+import { MedsScriptLogo } from './components/MedsScriptLogo';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
+import { isMarketplaceMode } from './config';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
 
@@ -51,6 +55,7 @@ import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { ScriptSureTab } from './pages/patient/ScriptSureTab';
 import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
+import { BillingPage } from './pages/BillingPage';
 import { ProtocolsPage } from './pages/ProtocolsPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
@@ -95,7 +100,7 @@ export function App(): JSX.Element | null {
 
   return (
     <AppShell
-      logo={<Logo size={24} />}
+      logo={<MedsScriptLogo size={24} />}
       pathname={location.pathname}
       searchParams={searchParams}
       layoutVersion="v2"
@@ -135,6 +140,10 @@ export function App(): JSX.Element | null {
                   },
                   { icon: <IconPrinter />, label: 'Faxes', href: '/Fax/Communication' },
                   { icon: <IconChecklist />, label: 'Protocols', href: '/protocols' },
+                  { icon: <IconReceipt />, label: 'Billing', href: '/billing' },
+                  ...(isMarketplaceMode()
+                    ? [{ icon: <IconBuildingStore />, label: 'Marketplace', href: '/marketplace' }]
+                    : []),
                 ],
               },
               {
@@ -255,6 +264,7 @@ export function App(): JSX.Element | null {
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
               <Route path="/protocols" element={<ProtocolsPage />} />
+              <Route path="/billing" element={<BillingPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>
