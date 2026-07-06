@@ -485,6 +485,32 @@ describe('DurableQueue', () => {
     expect(queue.getById(undelivered.row.id)?.ackOutcome).toBe(AckOutcome.DELIVERED);
   });
 
+  test('markProcessed is attempt-scoped: a stale attempt number is a no-op', () => {
+    // markProcessed guards on attempt_count (MARK_PROCESSED's `attempt_count = ?`),
+    // the same guard as scheduleRetry above. This is what lets the worker's
+    // handleProcessed safely discard a processed-state write for an attempt a peer
+    // has already superseded: the write returns false and leaves the row untouched,
+    // rather than stamping a stale `processed` over the newer attempt.
+    const r = queue.enqueue(makeEnqueueInput({ msgControlId: 'STALE-PROC' }));
+    if (r.kind !== 'inserted') {
+      throw new Error('expected inserted');
+    }
+    const claimed = queue.claimNext(r.row.channelName);
+    expect(claimed?.attemptCount).toBe(1);
+
+    // A response answering attempt 0 (already moved past) matches nothing → false,
+    // and the row keeps its pre-write state (`claimed`), never becoming processed.
+    expect(queue.markProcessed(r.row.id, 0, AckOutcome.DELIVERED)).toBe(false);
+    const after = queue.getById(r.row.id);
+    assertRowState(after, MessageState.CLAIMED);
+    expect(after.ackOutcome).toBe(AckOutcome.PENDING);
+
+    // The write for the current attempt still applies (the guard is precise, not a
+    // blanket refusal): attempt 1 settles the row processed+delivered.
+    expect(queue.markProcessed(r.row.id, 1, AckOutcome.DELIVERED)).toBe(true);
+    expect(queue.getById(r.row.id)?.state).toBe(MessageState.PROCESSED);
+  });
+
   test('markRejected and markFailed set the terminal Bot-leg state, error, and not_owed ack', () => {
     // markFailed: transient Bot-leg failure → `failed`, ack not owed.
     const f = queue.enqueue(makeEnqueueInput({ msgControlId: 'TS2' }));

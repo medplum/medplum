@@ -374,6 +374,146 @@ describe('ChannelQueueWorker', () => {
     await worker.stop();
   });
 
+  test('a failed source ACK (sendAck returns false) warns with the retransmit-replay recovery contract', async () => {
+    // The ackOk=false branch of handleProcessed: the Bot accepted the message but
+    // the app-level ACK could not be delivered to the source (a closed socket,
+    // NOT a thrown send). The row is sound as processed+undelivered — never a
+    // Bot-leg error — and the worker must emit the operator-facing recovery signal
+    // (the row recovers only when the source retransmits and the stored ACK is
+    // replayed, hl7.ts handleDuplicate). sendAck returned rather than threw, so
+    // there is no error detail appended to the warning.
+    const r = enqueueOne(queue, 'ACKWARN-FALSE');
+    const { app } = makeStubApp();
+    const log = createMockLogger();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log,
+      sendAck: () => false,
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    expect(queue.getById(r.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
+
+    const warning = vi
+      .mocked(log.warn)
+      .mock.calls.map((c) => String(c[0]))
+      .find((m) => m.includes('ACK delivery to source failed'));
+    expect(warning).toBeDefined();
+    expect(warning).toContain('awaiting source retransmit to replay');
+    // sendAck returned false (no throw) → no error detail: the phrase reads
+    // "...failed;" with the semicolon immediately after, not "...failed: <err>".
+    expect(warning).toContain('ACK delivery to source failed;');
+    await worker.stop();
+  });
+
+  test('a thrown source ACK (sendAck throws) warns with the thrown-error detail appended', async () => {
+    // Same ackOk=false branch, but exercising the `ackError` sub-branch: when the
+    // send THROWS (rather than returning false), relayAckToSource captures the
+    // error and handleProcessed appends it to the warning as ": <detail>". The row
+    // is still sound as processed+undelivered; the throw must not settle it as a
+    // Bot-leg failure.
+    const r = enqueueOne(queue, 'ACKWARN-THROW');
+    const { app } = makeStubApp();
+    const log = createMockLogger();
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log,
+      sendAck: () => {
+        throw new Error('socket gone');
+      },
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
+    await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+    expect(queue.getById(r.id)?.ackOutcome).toBe(AckOutcome.UNDELIVERED);
+    expect(queue.getById(r.id)?.errorCode).toBeNull();
+
+    const warning = vi
+      .mocked(log.warn)
+      .mock.calls.map((c) => String(c[0]))
+      .find((m) => m.includes('ACK delivery to source failed'));
+    expect(warning).toBeDefined();
+    // The thrown error is normalized and appended as a detail after a colon.
+    expect(warning).toContain('ACK delivery to source failed:');
+    expect(warning).toContain('socket gone');
+    expect(warning).toContain('awaiting source retransmit to replay');
+    await worker.stop();
+  });
+
+  test('markProcessed returning false (attempt superseded mid-handleProcessed) discards the write, leaving the row to the new owner', async () => {
+    // The superseded-discard branch of handleProcessed. A peer can take the
+    // dispatch lease and re-claim the row in the window between this worker's
+    // server response arriving and its processed-state write. That write is
+    // attempt-scoped (markProcessed guards on attempt_count), so when the attempt
+    // has been superseded markProcessed returns false and handleProcessed must
+    // discard: it must NOT stamp a stale `processed` over the peer's newer attempt,
+    // and the ACK it already relayed is the new owner's business to reconcile.
+    //
+    // sendAck runs inside handleProcessed, BEFORE the markProcessed write — the
+    // exact window a peer could supersede this attempt — so it is where we inject
+    // the peer. We simulate the peer's takeover the only way the queue bumps an
+    // attempt: requeue the in-flight attempt (attempt_count stays 1) then re-claim
+    // it (attempt_count -> 2). The subsequent markProcessed(id, attempt=1) then
+    // matches nothing and no-ops. (Assertions can't live inside sendAck: relayAck
+    // ToSource wraps it in try/catch and would swallow a thrown expectation as an
+    // ackError — so we capture the peer's results and assert them afterward.)
+    const r = enqueueOne(queue, 'SUPERSEDE1');
+    const { app } = makeStubApp();
+    const log = createMockLogger();
+    let superseded = false;
+    let requeuedByPeer: boolean | undefined;
+    let peerAttempt: number | undefined;
+    const worker = new ChannelQueueWorker({
+      channelName: 'ch1',
+      app,
+      queue,
+      log,
+      sendAck: () => {
+        if (!superseded) {
+          superseded = true;
+          requeuedByPeer = queue.scheduleRetry(r.id, 1, 'peer took over', QueueErrorCode.ServerError, Date.now() - 1000);
+          peerAttempt = queue.claimNext('ch1')?.attemptCount;
+        }
+        return true;
+      },
+      idlePollMs: 10,
+    });
+    worker.start();
+    await waitFor(() => worker.hasInFlight());
+    worker.onServerResponse(makeResponse(currentCallback(worker), 200));
+
+    // handleProcessed observed markProcessed=false and logged the discard.
+    await waitFor(() =>
+      vi
+        .mocked(log.info)
+        .mock.calls.map((c) => String(c[0]))
+        .some((m) => m.includes('processed-state write discarded'))
+    );
+
+    // The peer's takeover landed exactly as intended (guards the simulation itself).
+    expect(requeuedByPeer).toBe(true);
+    expect(peerAttempt).toBe(2);
+
+    // The stale attempt-1 processed write was discarded: the row is NOT `processed`
+    // — it stays where the peer left it, `claimed` on attempt 2, never overwritten.
+    const after = queue.getById(r.id);
+    assertRowState(after, MessageState.CLAIMED);
+    expect(after.attemptCount).toBe(2);
+    // markProcessed no-op'd, so our attempt never recorded a source-leg outcome;
+    // the row still reads `pending` (its enqueue default), not delivered/undelivered.
+    expect(after.ackOutcome).toBe(AckOutcome.PENDING);
+    await worker.stop();
+  });
+
   test('response timeout marks the row failed', async () => {
     const r = enqueueOne(queue, 'TIMEOUT');
     const { app } = makeStubApp();
