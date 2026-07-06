@@ -56,6 +56,7 @@ import { ScriptSureTab } from './pages/patient/ScriptSureTab';
 import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
 import { BillingPage } from './pages/BillingPage';
+import { MarketplacePage } from './pages/MarketplacePage';
 import { ProtocolsPage } from './pages/ProtocolsPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
@@ -265,6 +266,7 @@ export function App(): JSX.Element | null {
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
               <Route path="/protocols" element={<ProtocolsPage />} />
               <Route path="/billing" element={<BillingPage />} />
+              {isMarketplaceMode() && <Route path="/marketplace" element={<MarketplacePage />} />}
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>

@@ -396,6 +396,174 @@
         ]
       },
       "request": { "method": "PUT", "url": "Questionnaire?identifier=https://medsscript.com/questionnaire|telehealth-consent" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "semaglutide-503a" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "Semaglutide (503A compounded)" },
+          { "url": "https://medsscript.com/item-category", "valueString": "503A" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 249 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per month" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|semaglutide-503a" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "tirzepatide-503a" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "Tirzepatide (503A compounded)" },
+          { "url": "https://medsscript.com/item-category", "valueString": "503A" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 399 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per month" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|tirzepatide-503a" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "bpc-157" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "BPC-157" },
+          { "url": "https://medsscript.com/item-category", "valueString": "peptide" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 89 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per vial" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|bpc-157" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "tb-500" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "TB-500" },
+          { "url": "https://medsscript.com/item-category", "valueString": "peptide" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 99 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per vial" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|tb-500" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "ipamorelin-cjc-1295" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "Ipamorelin/CJC-1295" },
+          { "url": "https://medsscript.com/item-category", "valueString": "peptide" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 129 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per vial" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|ipamorelin-cjc-1295" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "pt-141" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "PT-141" },
+          { "url": "https://medsscript.com/item-category", "valueString": "peptide" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 79 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per vial" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|pt-141" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "ghk-cu" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "GHK-Cu" },
+          { "url": "https://medsscript.com/item-category", "valueString": "peptide" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 109 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per vial" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|ghk-cu" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "glp-metabolic-panel-kit" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "GLP Metabolic Panel Kit" },
+          { "url": "https://medsscript.com/item-category", "valueString": "diagnostic" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 149 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per kit" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|glp-metabolic-panel-kit" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "trt-hormone-panel-kit" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "TRT Hormone Panel Kit" },
+          { "url": "https://medsscript.com/item-category", "valueString": "diagnostic" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 159 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per kit" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|trt-hormone-panel-kit" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "hrt-hormone-panel-kit" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "HRT Hormone Panel Kit" },
+          { "url": "https://medsscript.com/item-category", "valueString": "diagnostic" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 159 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per kit" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|hrt-hormone-panel-kit" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "microbiome-kit" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "Microbiome Kit" },
+          { "url": "https://medsscript.com/item-category", "valueString": "diagnostic" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 199 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per kit" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|microbiome-kit" }
+    },
+    {
+      "resource": {
+        "resourceType": "Basic",
+        "identifier": [{ "system": "https://medsscript.com/catalog", "value": "genetic-methylation-panel" }],
+        "code": { "coding": [{ "system": "https://medsscript.com/resource-type", "code": "catalog-item" }] },
+        "extension": [
+          { "url": "https://medsscript.com/item-name", "valueString": "Genetic Methylation Panel" },
+          { "url": "https://medsscript.com/item-category", "valueString": "diagnostic" },
+          { "url": "https://medsscript.com/item-price-usd", "valueDecimal": 249 },
+          { "url": "https://medsscript.com/item-unit", "valueString": "per kit" }
+        ]
+      },
+      "request": { "method": "PUT", "url": "Basic?identifier=https://medsscript.com/catalog|genetic-methylation-panel" }
     }
   ]
 }
