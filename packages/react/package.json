@@ -92,7 +92,7 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.3",
     "@vueless/storybook-dark-mode": "10.0.8",
-    "chromatic": "17.8.0",
+    "chromatic": "18.0.1",
     "dotenv": "17.4.2",
     "jsqr": "1.4.0",
     "postcss": "8.5.16",
