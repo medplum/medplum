@@ -21,6 +21,7 @@ export function UsersPage(): JSX.Element {
         profileTypeOptions={profileTypeOptions}
         fields={['user', 'profile', 'profile-type', 'accessPolicy', 'userConfiguration', 'active', 'admin']}
         bulkActions
+        showMfaEnrollment
         toolbarLeft={
           <Button
             component={MedplumLink}

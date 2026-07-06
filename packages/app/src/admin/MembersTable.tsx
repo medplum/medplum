@@ -1,14 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Modal, SegmentedControl, Stack, Text } from '@mantine/core';
+import { Badge, Button, Group, Modal, SegmentedControl, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
 import { normalizeErrorString, Operator } from '@medplum/core';
+import type { Bundle, ProjectMembership, Resource, User } from '@medplum/fhirtypes';
+import type { SearchControlExtraColumn, SearchLoadEvent } from '@medplum/react';
 import { SearchControl, useMedplum } from '@medplum/react';
 import type { JSX, ReactNode } from 'react';
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { getProjectId } from '../utils';
+import type { MfaMethod } from './mfa';
+import { getAllowedMfaMethods, getEnrolledMfaMethods } from './mfa';
 
 export interface ProfileTypeOption {
   readonly label: string;
@@ -26,6 +30,28 @@ export interface MemberTableProps {
    * members. Applies to one or many selected rows.
    */
   readonly bulkActions?: boolean;
+  /**
+   * When true, appends a read-only enrollment column for each MFA method the project
+   * allows (see the `allowedMfaMethods` project setting): "Authenticator MFA" for TOTP
+   * and "Email MFA" for email. Only meaningful for tables of human users; requires
+   * project admin access to read the members' User resources.
+   */
+  readonly showMfaEnrollment?: boolean;
+}
+
+const MFA_ENROLLMENT_COLUMN_NAMES: Record<MfaMethod, string> = {
+  totp: 'Authenticator MFA',
+  email: 'Email MFA',
+};
+
+/**
+ * Returns the bare id of a membership's `User/{id}` reference, if it has one.
+ * @param membership - The ProjectMembership row resource.
+ * @returns The user id, or undefined when the membership has no User reference.
+ */
+function getMemberUserId(membership: Resource): string | undefined {
+  const ref = (membership as ProjectMembership).user?.reference;
+  return ref?.startsWith('User/') ? ref.slice('User/'.length) : undefined;
 }
 
 export function MemberTable(props: MemberTableProps): JSX.Element {
@@ -37,6 +63,91 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   const [actionsOpened, setActionsOpened] = useState(false);
   // Bumping this key remounts SearchControl to refresh results after a bulk change.
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const { showMfaEnrollment } = props;
+  const [allowedMfaMethods, setAllowedMfaMethods] = useState<MfaMethod[] | undefined>();
+  const [memberUsers, setMemberUsers] = useState<Record<string, User>>({});
+
+  // Load the project's allowed MFA methods to decide which enrollment columns to show.
+  useEffect(() => {
+    if (!showMfaEnrollment || !projectId) {
+      return;
+    }
+    medplum
+      .get(`admin/projects/${projectId}`)
+      .then((result) => setAllowedMfaMethods(getAllowedMfaMethods(result.project?.setting)))
+      .catch(() => setAllowedMfaMethods(undefined));
+  }, [medplum, projectId, showMfaEnrollment]);
+
+  // After each search load, batch-read the member Users so the enrollment columns can
+  // reflect each member's enrolled factors. Users the admin cannot read (e.g.
+  // server-scoped users) are omitted from the batch and render as unknown ("—").
+  const handleLoad = useCallback(
+    (e: SearchLoadEvent): void => {
+      if (!showMfaEnrollment) {
+        return;
+      }
+      const ids = Array.from(
+        new Set(
+          (e.response.entry ?? [])
+            .map((entry) => (entry.resource ? getMemberUserId(entry.resource) : undefined))
+            .filter((id): id is string => id !== undefined)
+        )
+      );
+      if (ids.length === 0) {
+        setMemberUsers({});
+        return;
+      }
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: ids.map((id) => ({ request: { method: 'GET', url: `User/${id}` } })),
+      };
+      medplum
+        .executeBatch(bundle)
+        .then((result) => {
+          const users: Record<string, User> = {};
+          for (const entry of result.entry ?? []) {
+            const resource = entry.resource;
+            if (resource?.resourceType === 'User' && resource.id) {
+              users[resource.id] = resource;
+            }
+          }
+          setMemberUsers(users);
+        })
+        .catch(() => setMemberUsers({}));
+    },
+    [medplum, showMfaEnrollment]
+  );
+
+  const extraColumns = useMemo<SearchControlExtraColumn[] | undefined>(() => {
+    if (!showMfaEnrollment || !allowedMfaMethods || allowedMfaMethods.length === 0) {
+      return undefined;
+    }
+    return allowedMfaMethods.map((method) => ({
+      name: MFA_ENROLLMENT_COLUMN_NAMES[method],
+      renderCell: (resource: Resource): ReactNode => {
+        const userId = getMemberUserId(resource);
+        const user = userId ? memberUsers[userId] : undefined;
+        if (!user) {
+          return (
+            <Text c="dimmed" size="sm">
+              —
+            </Text>
+          );
+        }
+        return getEnrolledMfaMethods(user).includes(method) ? (
+          <Badge color="green" variant="light">
+            Enrolled
+          </Badge>
+        ) : (
+          <Badge color="gray" variant="light">
+            Not enrolled
+          </Badge>
+        );
+      },
+    }));
+  }, [showMfaEnrollment, allowedMfaMethods, memberUsers]);
 
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'ProjectMembership',
@@ -84,6 +195,8 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
         search={search}
         onClick={(e) => navigate(`./${e.resource.id}`)}
         onChange={(e) => setSearch(e.definition)}
+        onLoad={handleLoad}
+        extraColumns={extraColumns}
         checkboxesEnabled={props.bulkActions}
         onBulk={
           props.bulkActions

@@ -8,29 +8,8 @@ import type { User } from '@medplum/fhirtypes';
 import { Form, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-
-export type MfaMethod = 'totp' | 'email';
-
-const MFA_METHOD_LABELS: Record<MfaMethod, string> = {
-  totp: 'Authenticator app (TOTP)',
-  email: 'Email',
-};
-
-/**
- * Returns the MFA methods a user is enrolled in. Users enrolled before `User.mfaMethod`
- * existed are treated as TOTP-only, mirroring the server's `getEnrolledMfaMethods`.
- * @param user - The user to inspect, if loaded.
- * @returns The enrolled MFA methods, or an empty array.
- */
-function getEnrolledMfaMethods(user: User | undefined): MfaMethod[] {
-  if (!user) {
-    return [];
-  }
-  if (user.mfaMethod && user.mfaMethod.length > 0) {
-    return user.mfaMethod;
-  }
-  return user.mfaEnrolled ? ['totp'] : [];
-}
+import type { MfaMethod } from './mfa';
+import { getEnrolledMfaMethods, MFA_METHOD_LABELS } from './mfa';
 
 export interface ResetMfaModalProps {
   readonly opened: boolean;
