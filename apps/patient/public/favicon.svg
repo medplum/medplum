@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>MedsScript</title>
+  <defs>
+    <mask id="crossKO">
+      <rect x="0" y="0" width="512" height="512" fill="white"/>
+      <rect x="228" y="150" width="56" height="212" rx="18" fill="black"/>
+      <rect x="150" y="228" width="212" height="56" rx="18" fill="black"/>
+    </mask>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="#0d9488"/>
+  <g mask="url(#crossKO)">
+    <rect x="86" y="212" width="340" height="126" rx="63" fill="#ffffff" transform="rotate(-45 256 256)"/>
+  </g>
+</svg>

@@ -25,3 +25,14 @@ fired) — review the PR, then merge when happy._
 
 ## 🛠️ Built tonight
 _(updated as work lands — see PR for the diff)_
+
+- ✅ **Provider app** (`apps/provider`) + **Protocols page** (list PlanDefinitions, enroll patient → CarePlan). Deployed at provider.medsscript.com. **Committed.**
+- ✅ **Seed** expanded to 19 resources: demo group/clinic + AccessPolicy, 3 billing plans, **6 questionnaires** (intake, GLP-1, TRT, HRT, peptide, telehealth consent), **7 protocols** (semaglutide, TRT, HRT, BPC-157, ipamorelin, metabolic panel, microbiome). **Committed.**
+- ✅ **CI**: `deploy-provider.yml` (provider → provider.medsscript.com on push to main). **Committed.**
+- ✅ **Cost**: NAT gateways 2→1 via new `natGateways` config knob. **Committed + deployed.**
+- 🔄 **Patient portal** (`apps/patient`, from foomedical) — building. Hosting (cert+bucket for patient.medsscript.com) pre-provisioned.
+- 🔄 **Billing/metering Bots** (`bots/`) — building (meter-transaction + monthly-invoice).
+
+### Phase status
+- Phase 0 (provider scaffold) ✅ · Phase 1 (tenancy) 🟡 seeded as code · Phase 2 (theming/instance-mode) ⏳ next
+- Phase 3 (marketplace) ⏳ · Phase 3.5 (billing) 🟡 bots building · Phase 6 (patient portal) 🟡 building
