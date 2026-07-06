@@ -103,7 +103,7 @@ export type BatchJobData = LegacyBatchJobData | ReentrantBatchJobData;
 const queueName = 'BatchQueue';
 const jobName = 'BatchJobData';
 
-const defaultCheckpointEntries = 4;
+const defaultCheckpointEntries = 10;
 const defaultCheckpointIntervalMs = 5000;
 
 export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
@@ -129,7 +129,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
           } else if ('asyncJobId' in job.data) {
             return execBatchJob(job as Job<ReentrantBatchJobData>);
           } else {
-            throw TypeError('Unrecognized BatchJobData', { cause: job.data });
+            throw new TypeError('Unrecognized BatchJobData', { cause: job.data });
           }
         });
       },
@@ -347,13 +347,18 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
     await checkpoint();
 
     // Assemble the complete response bundle and upload it as a Binary for async retrieval.
-    const { binary, bundle } = await assembleResultBundle(userRepo, store, initialState, chunkSeq);
-    const errors = countBundleErrors(bundle);
+    const { binary, bundle: resultBundle } = await assembleResultBundle(
+      userRepo.clone(),
+      store,
+      initialState,
+      chunkSeq
+    );
+    const errors = countBundleErrors(resultBundle);
     logger.info('Completed async batch request', {
       jobId: job.id,
       asyncJob: asyncJob.id,
       results: getReferenceString(binary),
-      entries: bundle.entry?.length,
+      entries: resultBundle.entry?.length,
       errors,
     });
     await exec.completeJob({

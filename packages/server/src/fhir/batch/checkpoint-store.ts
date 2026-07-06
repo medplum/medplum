@@ -7,6 +7,8 @@ import { globalLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 
+const STORE_CONCURRENCY = 4;
+
 /**
  * Durable storage for the in-flight state of a re-entrant async batch, backed by object storage.
  *
@@ -49,6 +51,33 @@ export class BatchCheckpointStore {
     return `${this.keyPrefix}/results/${seq}.json`;
   }
 
+  private async writeFile(key: string, contentType: string, data: string): Promise<void> {
+    const startTime = Date.now();
+    await getBinaryStorage().writeFile(key, contentType, data);
+    const duration = Date.now() - startTime;
+    globalLogger.info('BatchCheckpointStore write', {
+      keyPrefix: this.keyPrefix,
+      key,
+      contentType,
+      size: data.length,
+      durationMs: duration,
+    });
+  }
+
+  private async readFile(key: string): Promise<string> {
+    const startTime = Date.now();
+    const stream = await getBinaryStorage().readFile(key);
+    const data = await readStreamToString(stream);
+    const duration = Date.now() - startTime;
+    globalLogger.info('BatchCheckpointStore read', {
+      keyPrefix: this.keyPrefix,
+      key,
+      size: data.length,
+      durationMs: duration,
+    });
+    return data;
+  }
+
   /**
    * Persists the raw input bundle to object storage. Called by the request handler before the job
    * is enqueued so that the (potentially large) bundle travels out-of-band from the BullMQ job data
@@ -56,7 +85,7 @@ export class BatchCheckpointStore {
    * @param bundle - The raw input bundle.
    */
   async saveInputBundle(bundle: Bundle): Promise<void> {
-    await getBinaryStorage().writeFile(this.inputKey(), ContentType.JSON, JSON.stringify(bundle));
+    await this.writeFile(this.inputKey(), ContentType.JSON, JSON.stringify(bundle));
   }
 
   /**
@@ -64,8 +93,7 @@ export class BatchCheckpointStore {
    * @returns The raw input bundle.
    */
   async loadInputBundle(): Promise<Bundle> {
-    const stream = await getBinaryStorage().readFile(this.inputKey());
-    return JSON.parse(await readStreamToString(stream)) as Bundle;
+    return JSON.parse(await this.readFile(this.inputKey())) as Bundle;
   }
 
   /**
@@ -73,7 +101,7 @@ export class BatchCheckpointStore {
    * @param state - The durable initial state.
    */
   async saveInitialState(state: BatchInitialState): Promise<void> {
-    await getBinaryStorage().writeFile(this.stateKey(), ContentType.JSON, JSON.stringify(state));
+    await this.writeFile(this.stateKey(), ContentType.JSON, JSON.stringify(state));
   }
 
   /**
@@ -81,8 +109,7 @@ export class BatchCheckpointStore {
    * @returns The durable initial state.
    */
   async loadInitialState(): Promise<BatchInitialState> {
-    const stream = await getBinaryStorage().readFile(this.stateKey());
-    return JSON.parse(await readStreamToString(stream)) as BatchInitialState;
+    return JSON.parse(await this.readFile(this.stateKey())) as BatchInitialState;
   }
 
   /**
@@ -92,7 +119,7 @@ export class BatchCheckpointStore {
    * @param results - Result entries produced since the last checkpoint, keyed by original bundle index.
    */
   async saveResultChunk(seq: number, results: Record<number, BundleEntry>): Promise<void> {
-    await getBinaryStorage().writeFile(this.chunkKey(seq), ContentType.JSON, JSON.stringify(results));
+    await this.writeFile(this.chunkKey(seq), ContentType.JSON, JSON.stringify(results));
   }
 
   /**
@@ -101,12 +128,15 @@ export class BatchCheckpointStore {
    * @returns All persisted result entries, keyed by original bundle index.
    */
   async loadAllResults(chunkCount: number): Promise<Record<number, BundleEntry>> {
-    const storage = getBinaryStorage();
     const all: Record<number, BundleEntry> = Object.create(null);
-    for (let seq = 0; seq < chunkCount; seq++) {
-      const stream = await storage.readFile(this.chunkKey(seq));
-      Object.assign(all, JSON.parse(await readStreamToString(stream)) as Record<number, BundleEntry>);
-    }
+    const chunkSeqs = Array.from({ length: chunkCount }, (_, i) => i);
+    await this.runWithConcurrency(
+      chunkSeqs,
+      async (seq) => {
+        Object.assign(all, JSON.parse(await this.readFile(this.chunkKey(seq))) as Record<number, BundleEntry>);
+      },
+      { concurrency: STORE_CONCURRENCY, logMsg: 'BatchCheckpointStore loadAllResults' }
+    );
     return all;
   }
 
@@ -122,15 +152,55 @@ export class BatchCheckpointStore {
     for (let seq = 0; seq < chunkCount; seq++) {
       keys.push(this.chunkKey(seq));
     }
-    for (const key of keys) {
-      try {
-        await storage.deleteFile(key);
-      } catch (err) {
-        globalLogger.warn('Failed to clean up async batch checkpoint object', {
-          key,
-          error: normalizeErrorString(err),
-        });
-      }
+    await this.runWithConcurrency(
+      keys,
+      async (key) => {
+        try {
+          await storage.deleteFile(key);
+        } catch (err) {
+          globalLogger.warn('Failed to clean up async batch checkpoint object', {
+            key,
+            error: normalizeErrorString(err),
+          });
+        }
+      },
+      { concurrency: STORE_CONCURRENCY, logMsg: 'BatchCheckpointStore cleanup' }
+    );
+  }
+  private async runWithConcurrency<T>(
+    jobs: T[],
+    callback: (job: T) => Promise<void>,
+    options: RunWithConcurrencyOptions
+  ): Promise<void> {
+    let nextIndex = 0;
+    const concurrency = options.concurrency;
+    const workerCount = Math.min(jobs.length, concurrency);
+
+    const startTime = Date.now();
+    // invoke and wait for `workerCount` while loop workers to complete
+    // each worker processes items off the `items` queue one at a time until the queue is empty
+    await Promise.all(
+      Array.from({ length: workerCount }, async () => {
+        while (nextIndex < jobs.length) {
+          const job = jobs[nextIndex++];
+          await callback(job);
+        }
+      })
+    );
+
+    if (options?.logMsg) {
+      globalLogger.info(options.logMsg, {
+        keyPrefix: this.keyPrefix,
+        jobCount: jobs.length,
+        durationMs: Date.now() - startTime,
+      });
     }
   }
+}
+
+interface RunWithConcurrencyOptions {
+  /** Number of jobs to run in parallel. */
+  concurrency: number;
+  /** Optional message to log after jobs complete along with stats */
+  logMsg?: string;
 }

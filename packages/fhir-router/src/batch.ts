@@ -166,7 +166,7 @@ export class BatchProcessor {
   }
 
   /**
-   * Processes a FHIR batch request in a single call.
+   * Processes a FHIR batch or transaction request in a single call.
    * @returns The bundle response.
    */
   async run(): Promise<Bundle> {
@@ -264,7 +264,7 @@ export class BatchProcessor {
   private async processEntriesAndBuild(): Promise<Bundle> {
     this.dispatchPreEvent();
     while (this.hasMoreEntries()) {
-      await this.processNextEntry();
+      await this.processNextEntryImpl();
     }
     this.dispatchPostEvent();
     return this.buildResultBundle();
@@ -556,13 +556,29 @@ export class BatchProcessor {
    *
    * For `batch` bundles, per-entry errors are captured as error result entries and processing
    * continues; a 429 (rate limit) terminates the batch, filling all remaining entries with the
-   * rate-limit outcome. For `transaction` bundles, any entry error is thrown so the enclosing
-   * transaction rolls back.
+   * rate-limit outcome.
    *
-   * Must be called only after {@link BatchProcessor.preprocess} or {@link BatchProcessor.fromState}. Callers should guard with
-   * {@link BatchProcessor.hasMoreEntries}.
+   * Must be called only after {@link BatchProcessor.preprocess} or {@link BatchProcessor.fromState}.
+   * Callers should guard with {@link BatchProcessor.hasMoreEntries}. The re-entrant flow only supports
+   * `batch` semantics. For `transaction` bundles, use {@link BatchProcessor.run}.
    */
   async processNextEntry(): Promise<void> {
+    if (this.isTransaction()) {
+      throw new Error('Re-entrant batch processing does not support transaction semantics');
+    }
+    await this.processNextEntryImpl();
+  }
+
+  /**
+   * Processes the next entry in the bundle ordering (the entry at the current progress marker),
+   * recording its result and advancing the marker.
+   *
+   * For `batch` bundles, per-entry errors are captured as error result entries and processing
+   * continues; a 429 (rate limit) terminates the batch, filling all remaining entries with the
+   * rate-limit outcome. For `transaction` bundles, any entry error is thrown so the enclosing
+   * transaction rolls back.
+   */
+  private async processNextEntryImpl(): Promise<void> {
     const bundleInfo = this.bundleInfo;
     if (!bundleInfo) {
       throw new Error('processNextEntry called before preprocess()/fromState()');
