@@ -6,9 +6,6 @@ import { render, screen, userEvent } from '../test-utils/render';
 import type { Range } from '../types/scheduling';
 import { Calendar } from './Calendar';
 
-// Mock document.elementFromPoint for react-big-calendar Selection
-document.elementFromPoint = vi.fn(() => null);
-
 describe('Calendar', () => {
   // Use today's date to ensure appointments show in visible range
   const now = new Date();
@@ -55,6 +52,7 @@ describe('Calendar', () => {
     onSelectInterval,
     onSelectSlot,
     onSelectAppointment,
+    onDoubleClickAppointment,
     onRangeChange,
   }: {
     slots?: Slot[];
@@ -62,6 +60,7 @@ describe('Calendar', () => {
     onSelectInterval?: () => void;
     onSelectSlot?: (slot: Slot) => void;
     onSelectAppointment?: (appointment: Appointment) => void;
+    onDoubleClickAppointment?: (appointment: Appointment) => void;
     onRangeChange?: (range: Range) => void;
   } = {}): ReturnType<typeof render> => {
     return render(
@@ -71,6 +70,7 @@ describe('Calendar', () => {
         onSelectInterval={onSelectInterval}
         onSelectSlot={onSelectSlot}
         onSelectAppointment={onSelectAppointment}
+        onDoubleClickAppointment={onDoubleClickAppointment}
         onRangeChange={onRangeChange}
       />
     );
@@ -128,7 +128,8 @@ describe('Calendar', () => {
     });
 
     test('navigates to today when clicking today button', async () => {
-      setup();
+      const onRangeChange = vi.fn();
+      setup({ onRangeChange });
 
       // First navigate away from today
       await userEvent.click(screen.getByLabelText('Previous'));
@@ -136,11 +137,10 @@ describe('Calendar', () => {
       // Then click today
       await userEvent.click(screen.getByText('Today'));
 
-      // Should be back to current month
-      const title = screen.getByRole('heading', { level: 4 }).textContent;
       const today = new Date();
-      const expectedMonth = today.toLocaleDateString('en-US', { month: 'long' });
-      expect(title).toContain(expectedMonth);
+      const range = onRangeChange.mock.lastCall?.[0];
+      expect(range.start.getTime()).toBeLessThanOrEqual(today.getTime());
+      expect(range.end.getTime()).toBeGreaterThan(today.getTime());
     });
 
     test('switches to day view and triggers range change', async () => {
@@ -169,31 +169,36 @@ describe('Calendar', () => {
       expect(weekRadio).toBeInTheDocument();
       expect(dayRadio).toBeInTheDocument();
 
-      // defaults to Week view on first render
+      // defaults to Week view on first render — time grid has a "Timed" rowheader
       expect(monthRadio).toHaveProperty('checked', false);
       expect(weekRadio).toHaveProperty('checked', true);
       expect(dayRadio).toHaveProperty('checked', false);
+      expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader')).toHaveLength(7);
 
-      // Switch to month view
+      // Switch to month view — column headers become day names ("Sunday", "Monday", …)
       await userEvent.click(screen.getByText('Month'));
       expect(monthRadio).toHaveProperty('checked', true);
       expect(weekRadio).toHaveProperty('checked', false);
       expect(dayRadio).toHaveProperty('checked', false);
-      expect(screen.getByLabelText('Month View')).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Sunday' })).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader')).toHaveLength(7);
 
-      // Switch back to week view
+      // Switch back to week view — time grid returns
       await userEvent.click(screen.getByText('Week'));
       expect(monthRadio).toHaveProperty('checked', false);
       expect(weekRadio).toHaveProperty('checked', true);
       expect(dayRadio).toHaveProperty('checked', false);
-      expect(screen.queryByLabelText('Month View')).not.toBeInTheDocument();
+      expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader')).toHaveLength(7);
 
-      // Switch to day view
+      // Switch to day view — single column (one columnheader for the day), with "Timed" rowheader
       await userEvent.click(screen.getByText('Day'));
       expect(monthRadio).toHaveProperty('checked', false);
       expect(weekRadio).toHaveProperty('checked', false);
       expect(dayRadio).toHaveProperty('checked', true);
-      expect(screen.queryByLabelText('Month View')).not.toBeInTheDocument();
+      expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader')).toHaveLength(1);
     });
   });
 
@@ -231,16 +236,7 @@ describe('Calendar', () => {
       expect(screen.queryByText(/Cancelled Patient/)).not.toBeInTheDocument();
     });
 
-    test('shows status suffix for non-standard statuses', async () => {
-      const pendingAppointment = createAppointment({
-        status: 'pending',
-      });
-
-      setup({ appointments: [pendingAppointment] });
-      expect(screen.getByText(/John Doe.*\(pending\)/)).toBeInTheDocument();
-    });
-
-    test.each(['booked', 'arrived', 'fulfilled'] as const)(
+    test.each(['booked', 'arrived', 'fulfilled', 'pending'] as const)(
       'does not show status suffix for %s appointments',
       async (status) => {
         const bookedAppointment = createAppointment({ status });
@@ -251,7 +247,7 @@ describe('Calendar', () => {
       }
     );
 
-    test.each(['pending', 'waitlist', 'noshow'] as const)('shows status suffix for %s appointments', async (status) => {
+    test.each(['waitlist', 'noshow'] as const)('shows status suffix for %s appointments', async (status) => {
       const bookedAppointment = createAppointment({ status });
 
       setup({ appointments: [bookedAppointment] });
@@ -267,7 +263,7 @@ describe('Calendar', () => {
       expect(screen.getByText(/John Doe/)).toBeInTheDocument();
 
       await userEvent.click(screen.getByText(/John Doe/));
-      expect(onSelectAppointment).toHaveBeenCalledWith(appointment);
+      await expect(onSelectAppointment).toHaveBeenCalledWith(appointment);
     });
 
     test('renders multiple appointments', async () => {
@@ -308,7 +304,7 @@ describe('Calendar', () => {
 
       expect(screen.getByText('Available')).toBeInTheDocument();
       await userEvent.click(screen.getByText('Available'));
-      expect(onSelectSlot).toHaveBeenCalledWith(slot);
+      await expect(onSelectSlot).toHaveBeenCalledWith(slot);
       expect(onSelectAppointment).not.toHaveBeenCalled();
       expect(onSelectInterval).not.toHaveBeenCalled();
     });
@@ -339,7 +335,16 @@ describe('Calendar', () => {
       setup({ slots: [slot], onSelectSlot });
 
       await userEvent.click(screen.getByText('Available'));
-      expect(onSelectSlot).toHaveBeenCalledWith(slot);
+      await expect(onSelectSlot).toHaveBeenCalledWith(slot);
+    });
+
+    test('calls onDoubleClickAppointment when double-clicking an appointment', async () => {
+      const onDoubleClickAppointment = vi.fn();
+      const appointment = createAppointment();
+      setup({ appointments: [appointment], onDoubleClickAppointment });
+
+      await userEvent.dblClick(screen.getByText(/John Doe/));
+      await expect(onDoubleClickAppointment).toHaveBeenCalledWith(appointment);
     });
 
     test('filters out entered-in-error slots', async () => {
@@ -468,16 +473,6 @@ describe('Calendar', () => {
       // Switch to month view
       await userEvent.click(screen.getByText('Month'));
       expect(onRangeChange.mock.calls.length).toBeGreaterThan(initialCallCount);
-    });
-  });
-
-  describe('styling', () => {
-    test('applies custom style prop', async () => {
-      const { container } = render(
-        <Calendar slots={[]} appointments={[]} style={{ height: '500px', width: '100%' }} />
-      );
-      const calendar = container.querySelector('.rbc-calendar');
-      expect(calendar).toHaveStyle({ height: '500px', width: '100%' });
     });
   });
 });

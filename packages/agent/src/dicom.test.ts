@@ -85,12 +85,17 @@ describe('DICOM', () => {
     // C-STORE
     //
 
+    // Use a fresh client (and therefore a fresh association) for the C-STORE.
+    // Reusing the C-ECHO client races the new request against the prior
+    // association's socket teardown, which intermittently surfaces as a
+    // "write after end" networkError or a ProcessingFailure (0x0110) status.
+    const storeClient = new dimse.Client();
     const storeResponse = await new Promise<dimse.responses.CStoreResponse>((resolve, reject) => {
       const request = new dimse.requests.CStoreRequest(path.resolve(__dirname, '../testdata/sample-sr.dcm'));
       request.on('response', resolve);
-      client.on('networkError', reject);
-      client.addRequest(request);
-      client.send('localhost', 8104, 'SCU', 'ANY-SCP');
+      storeClient.on('networkError', reject);
+      storeClient.addRequest(request);
+      storeClient.send('localhost', 8104, 'SCU', 'ANY-SCP');
     });
 
     expect(storeResponse).toBeDefined();
@@ -101,6 +106,7 @@ describe('DICOM', () => {
     expect(storeCommandDataset?.getElement('Status')).toStrictEqual(0);
 
     client.clearRequests();
+    storeClient.clearRequests();
     await app.stop();
     mockServer.stop();
   }, 10000);

@@ -1,9 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Communication, Resource } from '@medplum/fhirtypes';
-import { sortByDateAndPriority } from './date';
+import { compareByLastUpdatedDescending, sortByDateAndPriority } from './date';
 
 describe('Date utils', () => {
+  test('Compare by lastUpdated descending', () => {
+    const input: Resource[] = [
+      { resourceType: 'Patient', id: 'old', meta: { lastUpdated: '2001-01-01T00:00:00.000Z' } },
+      { resourceType: 'Patient', id: 'missing' },
+      { resourceType: 'Patient', id: 'new', meta: { lastUpdated: '2003-03-03T00:00:00.000Z' } },
+      { resourceType: 'Patient', id: 'middle', meta: { lastUpdated: '2002-02-02T00:00:00.000Z' } },
+    ];
+
+    input.sort(compareByLastUpdatedDescending);
+
+    expect(input.map((resource) => resource.id)).toEqual(['new', 'middle', 'old', 'missing']);
+  });
+
   test('Sort by date', () => {
     const input: Resource[] = [
       { resourceType: 'Patient', meta: { lastUpdated: '2003-03-03T00:00:00.000Z' } },

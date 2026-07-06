@@ -30,18 +30,19 @@ import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import type * as NodeFs from 'node:fs';
-import { existsSync, openSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, openSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
-import { platform } from 'node:os';
-import { resolve } from 'node:path';
+import { platform, tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
 import { AgentByteStreamChannel } from './bytestream';
 import type * as AgentConstants from './constants';
-import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
+import type { AgentHl7ChannelConnection } from './hl7';
+import { AgentHl7Channel } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
-import { createEndpointWithRandomPort, getFreePort } from './test-utils';
+import { createEndpointWithRandomPort, getFreePort, waitFor } from './test-utils';
 import { buildManifest, mockFetchForUpgrader } from './upgrader-test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
@@ -342,6 +343,274 @@ describe('App', () => {
     mockServer.stop();
   });
 
+  test('Attempt to reconnect when WebSocket is open but agent never becomes live', async () => {
+    const state = {
+      connectRequestCount: 0,
+      respondToConnect: false,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          state.connectRequestCount += 1;
+          // Simulate the server failing to process the connect request (e.g. a transient error
+          // while validating the token or reading the Agent resource) -- the socket stays open
+          // but no `agent:connect:response` is ever sent
+          if (state.respondToConnect) {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          }
+        }
+        // Keep answering heartbeats so that, once we're live, the connection stays up and the
+        // final liveness assertion isn't racing against the missed-heartbeat reconnect.
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // Bail out of the polling loops after this long so a regression fails on the assertions below
+    // (with a useful message) instead of hanging until the whole test times out.
+    const WAIT_TIMEOUT_MS = 5000;
+
+    // Wait for the first connect request, which goes unanswered -- the agent is stuck
+    // open-but-not-live
+    let deadline = Date.now() + WAIT_TIMEOUT_MS;
+    while (state.connectRequestCount < 1 && Date.now() < deadline) {
+      await sleep(50);
+    }
+    expect(state.connectRequestCount).toBeGreaterThanOrEqual(1);
+    expect(app.getStats().live).toBe(false);
+
+    // The agent should notice it never became live and force a reconnect, which re-sends the
+    // connect request -- this time we answer it, so the agent should fully recover to live
+    state.respondToConnect = true;
+    deadline = Date.now() + WAIT_TIMEOUT_MS;
+    while (!app.getStats().live && Date.now() < deadline) {
+      await sleep(50);
+    }
+
+    expect(state.connectRequestCount).toBeGreaterThanOrEqual(2);
+    expect(app.getStats().live).toBe(true);
+
+    await app.stop();
+    mockServer.stop();
+  });
+
+  test('WebSocket queue worker recovers after a failed send', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      live: false,
+      transmitRequestCount: 0,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        }
+        if (command.type === 'agent:transmit:request') {
+          state.transmitRequestCount += 1;
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    // Long heartbeat period so the heartbeat retry doesn't interfere with this test --
+    // recovery should be driven by the next enqueued message alone
+    app.heartbeatPeriod = 30_000;
+    await app.start();
+
+    // Wait for the WebSocket to connect and the agent to become live
+    while (!state.mySocket) {
+      await sleep(50);
+    }
+    while (!app.getStats().live) {
+      await sleep(50);
+    }
+
+    // Channel messages carry an accessToken, which makes the queue worker refresh the token
+    // before sending. Make the next refresh fail, like when the token endpoint is unreachable
+    const refreshSpy = vi.spyOn(medplum, 'refreshIfExpired').mockRejectedValueOnce(new Error('Network failure'));
+
+    const transmitRequest = {
+      type: 'agent:transmit:request',
+      accessToken: 'placeholder',
+      channel: 'test',
+      remote: 'mllp://127.0.0.1:9001',
+      contentType: ContentType.HL7_V2,
+      body: 'MSH|^~\\&|A|B|C|D|20240101000000||ADT^A01|1|P|2.5\r',
+    } satisfies AgentTransmitRequest;
+
+    app.addToWebSocketQueue(transmitRequest);
+
+    // Wait for the failed send attempt
+    while (refreshSpy.mock.calls.length < 1) {
+      await sleep(50);
+    }
+    await sleep(100);
+    expect(state.transmitRequestCount).toStrictEqual(0);
+
+    // Queueing the next message must restart the worker and drain BOTH messages
+    // (the failed message was put back on the queue)
+    app.addToWebSocketQueue({ ...transmitRequest, body: transmitRequest.body.replace('|1|', '|2|') });
+
+    while (state.transmitRequestCount < 2) {
+      await sleep(50);
+    }
+    expect(state.transmitRequestCount).toStrictEqual(2);
+
+    refreshSpy.mockRestore();
+    await app.stop();
+    mockServer.stop();
+  });
+
+  test('Reconnects when sending the connect request throws (token refresh fails)', async () => {
+    const state = {
+      connectRequestCount: 0,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          state.connectRequestCount += 1;
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        }
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    // The connect request carries an accessToken, so `sendToWebSocket` refreshes the token before
+    // sending. Make the first refresh fail -- like when the token endpoint is briefly unreachable
+    // right after a network blip. The send throws inside the `open` handler; an uncaught error there
+    // would crash the process. Instead it's logged, the agent stays not-live, and the heartbeat
+    // forces a reconnect that re-sends the connect request (this time the refresh succeeds).
+    const refreshSpy = vi.spyOn(medplum, 'refreshIfExpired').mockRejectedValueOnce(new Error('Network failure'));
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // The first connect attempt fails before reaching the server, so no connect request is recorded
+    // until the reconnect re-sends it with a working token.
+    while (!app.getStats().live) {
+      await sleep(50);
+    }
+
+    expect(refreshSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(state.connectRequestCount).toBeGreaterThanOrEqual(1);
+    expect(app.getStats().live).toBe(true);
+
+    refreshSpy.mockRestore();
+    await app.stop();
+    mockServer.stop();
+  });
+
+  test('WebSocket queue worker is restarted by the heartbeat after a failed send', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      transmitRequestCount: 0,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        }
+        // Keep responding to heartbeats so the connection stays live and the queue recovery is
+        // driven purely by the heartbeat retry -- not by a reconnect re-draining the queue.
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+        }
+        if (command.type === 'agent:transmit:request') {
+          state.transmitRequestCount += 1;
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    // Short heartbeat period so the heartbeat retry kicks in quickly. Recovery here must come from
+    // the heartbeat alone -- no second message is enqueued to restart the worker.
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    while (!state.mySocket) {
+      await sleep(50);
+    }
+    while (!app.getStats().live) {
+      await sleep(50);
+    }
+
+    // Channel messages carry an accessToken, which makes the queue worker refresh the token
+    // before sending. Make the next refresh fail, like when the token endpoint is unreachable.
+    const refreshSpy = vi.spyOn(medplum, 'refreshIfExpired').mockRejectedValueOnce(new Error('Network failure'));
+
+    const transmitRequest = {
+      type: 'agent:transmit:request',
+      accessToken: 'placeholder',
+      channel: 'test',
+      remote: 'mllp://127.0.0.1:9001',
+      contentType: ContentType.HL7_V2,
+      body: 'MSH|^~\\&|A|B|C|D|20240101000000||ADT^A01|1|P|2.5\r',
+    } satisfies AgentTransmitRequest;
+
+    app.addToWebSocketQueue(transmitRequest);
+
+    // Nothing else is enqueued, so the only thing that can restart the worker (which cleared itself
+    // after the failed send put the message back on the queue) is the heartbeat's queue check.
+    while (state.transmitRequestCount < 1) {
+      await sleep(50);
+    }
+    expect(state.transmitRequestCount).toStrictEqual(1);
+
+    // The first send failed on the token refresh and requeued the message; the heartbeat retry
+    // refreshed again and re-sent it -- so the token was refreshed at least twice for this message.
+    expect(refreshSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+    refreshSpy.mockRestore();
+    await app.stop();
+    mockServer.stop();
+  });
+
   test('Empty endpoint URL', async () => {
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -453,6 +722,283 @@ describe('App', () => {
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unsupported endpoint type: foo:'));
     console.log = originalConsoleLog;
+  });
+
+  // The durable-queue wiring in app.ts (reconcileDurableQueue → open/close the DB,
+  // start/stop the lease manager) has no direct coverage in app.test.ts; it's only
+  // exercised indirectly by the queue integration suite. This pins the toggle
+  // itself: flipping the `durableQueue` setting across a reloadConfig opens the
+  // queue (and, as the sole process, acquires the lease) and closes it again.
+  test('durableQueue setting toggles the queue on and off across reloadConfig', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotAgentReloadResponse: false,
+    };
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+          case 'agent:reloadconfig:response':
+            state.gotAgentReloadResponse = true;
+            break;
+          default:
+            break;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const dir = mkdtempSync(join(tmpdir(), 'dq-toggle-'));
+    const dbPath = join(dir, 'queue.sqlite');
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Toggle Agent',
+      status: 'active',
+      channel: [],
+      setting: [
+        { name: 'durableQueue', valueBoolean: false },
+        { name: 'queueDbPath', valueString: dbPath },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    app.heartbeatPeriod = 100;
+    await app.start();
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Updates the durableQueue setting, sends a reloadconfig request, waits for the ack.
+    async function reloadWith(durableQueueOn: boolean): Promise<void> {
+      await medplum.updateResource<Agent>({
+        ...agent,
+        setting: [
+          { name: 'durableQueue', valueBoolean: durableQueueOn },
+          { name: 'queueDbPath', valueString: dbPath },
+        ],
+      });
+      state.gotAgentReloadResponse = false;
+      state.mySocket?.send(
+        JSON.stringify({
+          type: 'agent:reloadconfig:request',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentReloadConfigRequest)
+      );
+      const start = Date.now();
+      while (!state.gotAgentReloadResponse) {
+        if (Date.now() - start > 3000) {
+          throw new Error('Timed out waiting for reloadconfig:response');
+        }
+        await sleep(50);
+      }
+    }
+
+    // Starts OFF: no queue handle, not a leader, no DB file on disk.
+    expect(app.getDurableQueue()).toBeUndefined();
+    expect(app.isQueueLeader()).toBe(false);
+    expect(existsSync(dbPath)).toBe(false);
+
+    // Flip ON → the queue opens, the DB file is created, and (as the only process)
+    // we acquire the lease.
+    await reloadWith(true);
+    expect(app.getDurableQueue()).toBeDefined();
+    expect(existsSync(dbPath)).toBe(true);
+    const leaderStart = Date.now();
+    while (!app.isQueueLeader()) {
+      if (Date.now() - leaderStart > 5000) {
+        throw new Error('Did not become queue leader after enabling durableQueue');
+      }
+      await sleep(25);
+    }
+
+    // Flip OFF → the queue closes and the lease is released.
+    await reloadWith(false);
+    expect(app.getDurableQueue()).toBeUndefined();
+    expect(app.isQueueLeader()).toBe(false);
+
+    await app.stop();
+    mockServer.stop();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test('onBecameQueueLeader starts every HL7 channel worker even when one throws, then rethrows', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+
+    // Stub the durable queue so onBecameQueueLeader gets past the early return and
+    // recovery sweep without touching a real DB.
+    (app as any).durableQueue = {
+      recoverOnStartup: vi.fn(() => ({ requeued: 0, failed: 0 })),
+      isLeader: () => true,
+    };
+
+    // Three HL7 channels where the middle one throws. instanceof must pass, so we
+    // build them off the real prototype and only stub onBecameQueueLeader.
+    const boom = new Error('channel-2 failed to start its worker');
+    function makeHl7Channel(impl: () => void): AgentHl7Channel {
+      const channel = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+      (channel as any).onBecameQueueLeader = vi.fn(impl);
+      return channel;
+    }
+    const channel1 = makeHl7Channel(() => undefined);
+    const channel2 = makeHl7Channel(() => {
+      throw boom;
+    });
+    const channel3 = makeHl7Channel(() => undefined);
+
+    // A non-HL7 channel must be skipped entirely.
+    const nonHl7Channel = { onBecameQueueLeader: vi.fn() };
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', channel1],
+      ['hl7-2', channel2],
+      ['non-hl7', nonHl7Channel],
+      ['hl7-3', channel3],
+    ]);
+
+    let thrown: unknown;
+    try {
+      (app as any).onBecameQueueLeader();
+    } catch (err) {
+      thrown = err;
+    }
+
+    // We made it through the entire array despite channel2 throwing in the middle.
+    expect(channel1.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    expect(channel2.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    expect(channel3.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    // The non-HL7 channel is never asked to start a worker.
+    expect(nonHl7Channel.onBecameQueueLeader).not.toHaveBeenCalled();
+
+    // And we threw at the end, carrying the collected errors as the cause.
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).cause).toEqual([boom]);
+  });
+
+  test('onBecameQueueLeader does not throw when all HL7 channel workers start cleanly', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    (app as any).durableQueue = {
+      recoverOnStartup: vi.fn(() => ({ requeued: 0, failed: 0 })),
+      isLeader: () => true,
+    };
+
+    const channel1 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    (channel1 as any).onBecameQueueLeader = vi.fn();
+    const channel2 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    (channel2 as any).onBecameQueueLeader = vi.fn();
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', channel1],
+      ['hl7-2', channel2],
+    ]);
+
+    expect(() => (app as any).onBecameQueueLeader()).not.toThrow();
+    expect(channel1.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    expect(channel2.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+  });
+
+  test('forEachChannelWorker runs every worker even when one throws, then rethrows aggregate error', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+
+    // Build HL7 channels (instanceof must pass) with a stubbed worker. The middle
+    // worker throws on onWebSocketDisconnect.
+    const boom = new Error('worker-2 failed onWebSocketDisconnect');
+    function makeHl7ChannelWithWorker(impl: () => void): { channel: AgentHl7Channel; onWebSocketDisconnect: any } {
+      const channel = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+      const onWebSocketDisconnect = vi.fn(impl);
+      (channel as any).worker = { onWebSocketDisconnect };
+      return { channel, onWebSocketDisconnect };
+    }
+    const worker1 = makeHl7ChannelWithWorker(() => undefined);
+    const worker2 = makeHl7ChannelWithWorker(() => {
+      throw boom;
+    });
+    const worker3 = makeHl7ChannelWithWorker(() => undefined);
+
+    // An HL7 channel with no worker is skipped (loop guards on `channel.worker`).
+    const channelWithoutWorker = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    (channelWithoutWorker as any).worker = undefined;
+    // A non-HL7 channel is skipped entirely, worker or not.
+    const nonHl7Channel = { worker: { onWebSocketDisconnect: vi.fn() } };
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', worker1.channel],
+      ['hl7-2', worker2.channel],
+      ['hl7-no-worker', channelWithoutWorker],
+      ['non-hl7', nonHl7Channel],
+      ['hl7-3', worker3.channel],
+    ]);
+
+    let thrown: unknown;
+    try {
+      (app as any).forEachChannelWorker((worker: any) => worker.onWebSocketDisconnect());
+    } catch (err) {
+      thrown = err;
+    }
+
+    // We reached every worker despite worker2 throwing in the middle.
+    expect(worker1.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
+    expect(worker2.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
+    expect(worker3.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
+    // The non-HL7 channel's worker is never touched.
+    expect(nonHl7Channel.worker.onWebSocketDisconnect).not.toHaveBeenCalled();
+
+    // And we threw at the end with the collected errors as the cause.
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).cause).toEqual([boom]);
+  });
+
+  test('forEachChannelWorker does not throw when every worker callback succeeds', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+
+    const channel1 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    const notify1 = vi.fn();
+    (channel1 as any).worker = { notify: notify1 };
+    const channel2 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    const notify2 = vi.fn();
+    (channel2 as any).worker = { notify: notify2 };
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', channel1],
+      ['hl7-2', channel2],
+    ]);
+
+    expect(() => (app as any).forEachChannelWorker((worker: any) => worker.notify())).not.toThrow();
+    expect(notify1).toHaveBeenCalledTimes(1);
+    expect(notify2).toHaveBeenCalledTimes(1);
   });
 
   test('Reload config', async () => {
@@ -2500,18 +3046,17 @@ describe('App', () => {
       }
 
       // Each phase gets its own deadline; surfaces any agent error to aid debugging.
-      async function waitFor(predicate: () => boolean, description: string): Promise<void> {
-        for (let i = 0; i < 25; i++) {
-          if (predicate()) {
-            return;
-          }
-          if (state.agentError) {
-            throw new Error(`Unexpected agent error while waiting for ${description}: ${state.agentError.body}`);
-          }
-          await sleep(100);
-        }
-        throw new Error(`Timeout while waiting for ${description}`);
-      }
+      const waitForPhase = (predicate: () => boolean, description: string): Promise<void> =>
+        waitFor(
+          () => {
+            if (state.agentError) {
+              throw new Error(`Unexpected agent error while waiting for ${description}: ${state.agentError.body}`);
+            }
+            return predicate();
+          },
+          2500,
+          description
+        );
 
       // Phase 1: agent is already on the latest version, so this upgrade is a no-op.
       state.mySocket.send(
@@ -2521,7 +3066,7 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      await waitFor(() => state.upgradeResponseCount >= 1, 'no-op upgrade response');
+      await waitForPhase(() => state.upgradeResponseCount >= 1, 'no-op upgrade response');
 
       // No upgrade should have been spawned for the no-op
       expect(spawnSpy).not.toHaveBeenCalled();
@@ -2542,11 +3087,11 @@ describe('App', () => {
         } satisfies AgentUpgradeRequest)
       );
 
-      await waitFor(() => Boolean(child), 'child to spawn');
+      await waitForPhase(() => Boolean(child), 'child to spawn');
 
       await sleep(100);
       (child as MockChildProcess).emit('message', { type: 'STARTED' });
-      await waitFor(() => state.disconnectCalled, 'disconnect');
+      await waitForPhase(() => state.disconnectCalled, 'disconnect');
 
       // The second request must re-fetch `latest`, see the new version, and actually upgrade
       expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade'], {

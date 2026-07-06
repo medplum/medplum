@@ -114,12 +114,12 @@ describe('SuperAdminAsyncJobPage', () => {
     isSuperAdminVal = true;
     asyncJobBundleEntry = PENDING_BUNDLE_ENTRY;
     medplum = new MedplumClient({ fetch: mockFetch, baseUrl: BASE_URL });
-    jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => isSuperAdminVal);
+    vi.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => isSuperAdminVal);
   });
 
   afterEach(async () => {
     await act(async () => notifications.clean());
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('Renders page title', async () => {
@@ -156,7 +156,7 @@ describe('SuperAdminAsyncJobPage', () => {
   });
 
   test('Renders migrations table and start migration', async () => {
-    const startAsyncJobSpy = jest.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce({});
+    const startAsyncJobSpy = vi.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce({});
     await setup(medplum);
 
     await waitFor(() => screen.getByText('Refresh'));

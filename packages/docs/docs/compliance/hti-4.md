@@ -1,4 +1,4 @@
-# HTI-4/CMS-0057-F
+# HTI-4 & CMS-0057-F
 
 The "Health Data, Technology, and Interoperability" (HTI-4) rule is a new ONC regulation finalized on July 31, 2025, becoming effective October 1, 2025. This rule modernizes the entire prescribing workflow by mandating new technical certifications across all certified health IT systems, shifting key interoperability functions from optional features to mandatory requirements for certification.
 
@@ -6,11 +6,11 @@ The regulation aims to reduce administrative burden and clinician burnout relate
 
 Medplum can be used for both [CMS-0057-F](https://www.cms.gov/files/document/fact-sheet-cms-interoperability-and-prior-authorization-final-rule-cms-0057-f.pdf) and [CMS-9115-F](https://www.cms.gov/files/document/cms-9115-f.pdf) compliance. Medplum flexibly supports both scenarios through use of our terminology services, FHIR profiles, and other key infrastructure primitives.
 
-Medplum is pursuing certification for all three technical mandates for payor and provider organizations. Reach out to [hello@medplum.com](mailto:hello@medplum.com) if you are interested in learning more.
+Medplum is pursuing certification for all [three mandatory criteria](/docs/integration/electronic-prior-auth) for payer, intermediary, and provider organizations. Reach out to [hello@medplum.com](mailto:hello@medplum.com) if you are interested in learning more.
 
-##  Technical Mandates
+## Mandatory Criteria
 
-HTI-4 updates the ONC Certification Program by linking three critical criteria that work together to create a seamless, automated workflow:
+HTI-4 updates the ONC Certification Program by linking three mandatory criteria that work together to create a seamless, automated workflow:
 
 ### e-Prescribing (eRx) Update
 
@@ -22,7 +22,7 @@ A new, mandatory criterion requiring the NCPDP RTPB v13 standard for cost transp
 
 ### Electronic Prior Authorization (ePA)
 
-Three new mandatory criteria based on HL7 FHIR APIs for medical benefits automation. This fully automates ePA by requiring EHRs to support:
+Three new FHIR API criteria based on HL7 FHIR standards for medical benefits automation. This fully automates ePA by requiring EHRs to support:
 - **CRD** (Coverage Requirements Discovery)
 - **DTR** (Documentation Templates & Rules)
 - **PAS** (Prior Authorization Support)
@@ -59,5 +59,6 @@ A parallel CMS rule (CMS-0057-F) forces payers to build the other side of the FH
 - [ONC API Resource Guide](https://onc-healthit.github.io/api-resource-guide/)
 - [Medplum Bulk FHIR Implementation](/docs/api/fhir/operations/bulk-fhir)
 - [CDS Hooks](/docs/integration/cds-hooks)
+- [Electronic Prior Authorization](/docs/integration/electronic-prior-auth)
 - [DaVinci IG for Notifications](http://hl7.org/fhir/us/davinci-alerts/)
 - [DaVinci Project](https://confluence.hl7.org/display/DVP)

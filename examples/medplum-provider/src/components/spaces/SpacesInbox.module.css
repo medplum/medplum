@@ -135,6 +135,16 @@
   border-bottom-left-radius: 4px;
 }
 
+.contextBubble {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--mantine-radius-xl);
+  background-color: light-dark(var(--mantine-color-blue-1), var(--mantine-color-blue-9));
+  color: light-dark(var(--mantine-color-blue-7), var(--mantine-color-blue-2));
+  max-width: 100%;
+}
+
 /* Scroll to bottom button */
 .scrollToBottomWrapper {
   position: absolute;
@@ -145,6 +155,7 @@
   justify-content: center;
   z-index: 20;
   pointer-events: none;
+  padding-bottom: var(--mantine-spacing-md);
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -156,8 +167,7 @@
 /* Input Area */
 .inputArea {
   position: relative;
-  padding: var(--mantine-spacing-xl);
-  background: linear-gradient(to top, var(--mantine-color-body) 80%, rgba(255, 255, 255, 0));
+  padding: 0 var(--mantine-spacing-xl) calc(3 * var(--mantine-spacing-md));
   display: flex;
   justify-content: center;
 }
@@ -166,17 +176,19 @@
   width: 100%;
   max-width: 800px;
   position: relative;
-  background-color: var(--mantine-color-white);
-  border-radius: var(--mantine-radius-xl);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--mantine-color-gray-2);
-  padding: var(--mantine-spacing-xs);
-  transition: box-shadow 0.2s ease;
 }
 
-.inputWrapper:focus-within {
-  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
-  border-color: var(--mantine-color-blue-3);
+.inputDisclaimer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(3 * var(--mantine-spacing-md));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
 }
 
 /* Resource Panel */
@@ -276,15 +288,6 @@
 [data-mantine-color-scheme="dark"] .assistantMessage .messageContent {
   background-color: var(--mantine-color-dark-6);
   color: var(--mantine-color-gray-1);
-}
-
-[data-mantine-color-scheme="dark"] .inputArea {
-  background: linear-gradient(to top, var(--mantine-color-dark-9) 80%, rgba(0, 0, 0, 0));
-}
-
-[data-mantine-color-scheme="dark"] .inputWrapper {
-  background-color: var(--mantine-color-dark-7);
-  border: 1px solid var(--mantine-color-dark-4);
 }
 
 [data-mantine-color-scheme="dark"] .resourcePanel {

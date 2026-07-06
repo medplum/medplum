@@ -5,7 +5,10 @@ import { useMedplum } from '@medplum/react';
 import { useEffect, useRef, useState } from 'react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
-import { EHR_SCOPE, MEDPLUM_CLIENT_ID, SMART_HEALTH_IT_CLIENT_ID } from '../config';
+
+const MEDPLUM_CLIENT_ID = import.meta.env.MEDPLUM_CLIENT_ID || 'your-client-id';
+const SMART_HEALTH_IT_CLIENT_ID = 'your-client-id'; // No need to set; Sandbox accepts any client ID
+const EHR_SCOPE = 'launch launch/patient patient/*.read offline_access';
 
 interface SmartConfiguration {
   authorization_endpoint: string;

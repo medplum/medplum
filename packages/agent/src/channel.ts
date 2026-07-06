@@ -9,7 +9,7 @@ export interface Channel {
   readonly channelLog: ILogger;
   start(): Promise<void>;
   stop(): Promise<void>;
-  sendToRemote(message: AgentTransmitResponse): void;
+  sendToRemote(message: AgentTransmitResponse): boolean;
   reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void>;
   getDefinition(): AgentChannel;
   getEndpoint(): Endpoint;
@@ -30,7 +30,7 @@ export abstract class BaseChannel implements Channel {
   abstract readonly channelLog: ILogger;
   abstract start(): Promise<void>;
   abstract stop(): Promise<void>;
-  abstract sendToRemote(message: AgentTransmitResponse): void;
+  abstract sendToRemote(message: AgentTransmitResponse): boolean;
   abstract reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void>;
 
   getDefinition(): AgentChannel {

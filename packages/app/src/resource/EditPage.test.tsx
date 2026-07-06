@@ -33,7 +33,7 @@ describe('EditPage', () => {
   }
 
   test('Edit tab renders', async () => {
-    await setup('/Practitioner/123/edit');
+    await setup('/Practitioner/124/edit');
     expect(await screen.findByText('Edit')).toBeInTheDocument();
   });
 
@@ -56,7 +56,7 @@ describe('EditPage', () => {
   });
 
   test('Delete button on edit page', async () => {
-    await setup('/Practitioner/123/edit');
+    await setup('/Practitioner/124/edit');
 
     const moreActions = screen.getByLabelText('More actions');
     expect(moreActions).toBeDefined();
@@ -74,7 +74,7 @@ describe('EditPage', () => {
   });
 
   test('Patch button on edit page', async () => {
-    await setup('/Practitioner/123/edit');
+    await setup('/Practitioner/124/edit');
 
     const moreActions = screen.getByLabelText('More actions');
     expect(moreActions).toBeDefined();

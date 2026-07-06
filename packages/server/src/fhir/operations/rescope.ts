@@ -145,14 +145,14 @@ async function rescopeUserToProject(
   const targetRef = createReference(targetProject);
 
   return systemRepo.withTransaction(
-    async () => {
+    async (txRepo) => {
       // We re-read the User to make sure we have the most up-to-date version
-      const rereadUser = await systemRepo.readResource<User>('User', user.id);
+      const rereadUser = await txRepo.readResource<User>('User', user.id);
 
       // Ensure the User has no ProjectMembership outside the target project.
       // Owning a User in one project while they hold memberships in others would
       // leave those other projects with references they cannot administer.
-      const memberships = await systemRepo.searchResources<ProjectMembership>({
+      const memberships = await txRepo.searchResources<ProjectMembership>({
         resourceType: 'ProjectMembership',
         count: 2,
         filters: [
@@ -166,7 +166,7 @@ async function rescopeUserToProject(
         );
       }
 
-      return systemRepo.updateResource({
+      return txRepo.updateResource({
         ...rereadUser,
         meta: { ...rereadUser.meta, project: targetProject.id },
         project: targetRef,
@@ -187,8 +187,8 @@ async function rescopeUserToProject(
 async function rescopeUserToServer(ctx: AuthenticatedRequestContext, user: WithId<User>): Promise<WithId<User>> {
   const systemRepo = ctx.systemRepo;
 
-  return systemRepo.withTransaction(async () => {
-    const rereadUser = await systemRepo.readResource<User>('User', user.id);
+  return systemRepo.withTransaction(async (txRepo) => {
+    const rereadUser = await txRepo.readResource<User>('User', user.id);
     if (!rereadUser.project) {
       throw new OperationOutcomeError(badRequest('User is already server-scoped'));
     }
@@ -196,6 +196,6 @@ async function rescopeUserToServer(ctx: AuthenticatedRequestContext, user: WithI
     delete rereadUser.project;
     delete rereadUser.meta?.project;
 
-    return systemRepo.updateResource(rereadUser);
+    return txRepo.updateResource(rereadUser);
   });
 }

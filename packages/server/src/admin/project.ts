@@ -68,10 +68,21 @@ projectAdminRouter.get('/:projectId', async (req: Request, res: Response) => {
     project: {
       id: project.id,
       name: project.name,
+      setting: project.setting,
       secret: project.secret,
       site: project.site,
     },
   });
+});
+
+projectAdminRouter.post('/:projectId/settings', async (req: Request, res: Response) => {
+  const ctx = getAuthenticatedContext();
+  const result = await ctx.repo.updateResource({
+    ...ctx.project,
+    setting: req.body,
+  });
+
+  res.json(result);
 });
 
 projectAdminRouter.post('/:projectId/secrets', async (req: Request, res: Response) => {
@@ -141,10 +152,10 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
   // Check if the user is project-scoped (has a project field matching the current project)
   if (user.project?.reference === getReferenceString(ctx.project)) {
     // Wrap search and delete operations in a transaction
-    await systemRepo.withTransaction(async () => {
+    await systemRepo.withTransaction(async (txRepo) => {
       // Check if there are other ProjectMemberships for this user
       // (search before deleting to get accurate count)
-      const otherMemberships = await systemRepo.searchResources<ProjectMembership>({
+      const otherMemberships = await txRepo.searchResources<ProjectMembership>({
         resourceType: 'ProjectMembership',
         filters: [
           {
@@ -157,12 +168,12 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
       });
 
       // Delete the ProjectMembership
-      await systemRepo.deleteResource('ProjectMembership', membershipId);
+      await txRepo.deleteResource('ProjectMembership', membershipId);
 
       // Delete the User resource if it's project-scoped and this was their only membership
       // (project-scoped users should only have memberships in one project)
       if (otherMemberships.length === 1 && otherMemberships[0].id === membershipId) {
-        await systemRepo.deleteResource('User', user.id);
+        await txRepo.deleteResource('User', user.id);
       }
     });
   } else {
@@ -204,18 +215,22 @@ projectAdminRouter.post('/:projectId/members/:membershipId/mfa/reset', async (re
   });
 
   if (user.email) {
-    await sendEmail(systemRepo, {
-      to: user.email,
-      subject: 'Your multi-factor authentication has been reset',
-      text: [
-        `Hello ${user.firstName ?? user.email},`,
-        '',
-        'A project administrator has reset your multi-factor authentication (MFA) enrollment.',
-        'You will need to re-enroll the next time you sign in.',
-        '',
-        'If you did not expect this change, please contact your administrator immediately.',
-      ].join('\n'),
-    });
+    await sendEmail(
+      systemRepo,
+      {
+        to: user.email,
+        subject: 'Your multi-factor authentication has been reset',
+        text: [
+          `Hello ${user.firstName ?? user.email},`,
+          '',
+          'A project administrator has reset your multi-factor authentication (MFA) enrollment.',
+          'You will need to re-enroll the next time you sign in.',
+          '',
+          'If you did not expect this change, please contact your administrator immediately.',
+        ].join('\n'),
+      },
+      ctx.project
+    );
   }
 
   sendOutcome(res, allOk);

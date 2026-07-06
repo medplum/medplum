@@ -11,14 +11,16 @@ import type {
   Resource,
   Schedule,
 } from '@medplum/fhirtypes';
+import { Temporal } from 'temporal-polyfill';
+import { getLogger } from '../../../logger';
 import {
   assertExtensionBoolean,
   assertExtensionCode,
   assertExtensionDuration,
-  assertExtensionReference,
   assertExtensionTime,
   getExtensions,
 } from '../../../util/extension';
+import { LayeredDict } from '../../../util/layereddict';
 import type { WithPath } from '../../../util/withpath';
 import { getPath, withPath } from '../../../util/withpath';
 
@@ -69,6 +71,7 @@ export type SchedulingParametersExtensionExtension =
   | { url: 'duration'; valueDuration: HardDuration }
   | { url: 'service'; valueReference: Reference<HealthcareService> & { reference: string } }
   | { url: 'timezone'; valueCode: string }
+  | { url: 'alignmentTimezone'; valueCode: string }
   | {
       url: 'availability';
       extension: (AvailabilityR4AvailableTime | AvailabilityR4NotAvailableTime)[];
@@ -87,15 +90,23 @@ type SchedulingParametersAvailability = {
   availableEndTime: WallClockTime;
 };
 
-export type SchedulingParameters = {
+type BaseSchedulingParameters = {
   availability: SchedulingParametersAvailability[];
   bufferBefore: number; // minutes
   bufferAfter: number; // minutes
   alignmentInterval: number; // minutes
   alignmentOffset: number; // minutes
-  duration: number; // minutes
   service: Reference<HealthcareService> & { reference: string };
   timezone?: string;
+  alignmentTimezone: string;
+};
+
+type ServiceSchedulingParameters = BaseSchedulingParameters & {
+  duration?: number; // minutes
+};
+
+export type SchedulingParameters = BaseSchedulingParameters & {
+  duration: number; // minutes
 };
 
 // FHIR Convention: when end <= start, the end time is interpreted as being in
@@ -107,8 +118,24 @@ const alwaysAvailable: SchedulingParametersAvailability = {
   availableEndTime: '00:00:00',
 };
 
-function isReferenceTo<T extends Resource>(reference: Reference<T>, resource: WithId<T>): boolean {
-  if (!reference.reference) {
+// Default values applied to HealthcareService SchedulingParameters (indirectly
+// applied to Schedule SchedulingParameters which inherit from HealthcareService
+// when not specified).
+const SERVICE_DEFAULTS = Object.freeze({
+  availability: [alwaysAvailable],
+  alignmentInterval: 60,
+  bufferBefore: 0,
+  bufferAfter: 0,
+  alignmentOffset: 0,
+  alignmentTimezone: 'Etc/UTC',
+});
+
+// This is a `Temporal.Instant` singleton that we instantiate once for
+// performance.
+const epochInstant = Temporal.Instant.fromEpochMilliseconds(0);
+
+function isReferenceTo<T extends Resource>(reference: Reference<T> | undefined, resource: WithId<T>): boolean {
+  if (!reference?.reference) {
     return false;
   }
   const [refType, id] = reference.reference.split('/');
@@ -126,6 +153,11 @@ function durationToMinutes(extension: WithPath<Extension>): number {
   if (value === undefined) {
     throw new OperationOutcomeError(badRequest('Got duration without value', getPath(extension)));
   }
+
+  if (value < 0) {
+    throw new OperationOutcomeError(badRequest('Got duration with negative value', getPath(extension)));
+  }
+
   switch (unit) {
     case 'wk':
       return value * 60 * 24 * 7;
@@ -140,24 +172,20 @@ function durationToMinutes(extension: WithPath<Extension>): number {
   }
 }
 
-function atMostOne<T extends object>(arr: WithPath<T>[], attribute: string): WithPath<T> | undefined {
-  if (arr.length > 1) {
-    throw new OperationOutcomeError(
-      badRequest(
-        `Scheduling parameter attribute '${attribute}' has too many values`,
-        arr.map((obj) => getPath(obj))
-      )
-    );
+function assertValidTimezone(ext: WithPath<Extension>): void {
+  assertExtensionCode(ext);
+  // Check that we can build a Temporal.ZonedDateTime with the given timezone.
+  // Note that this accepts non-canonical timezone identifiers (example:
+  // "US/Pacific" is an alias for "America/Los_Angeles"), and is
+  // case-insensitive (we accept "america/los_angeles" as valid).
+  try {
+    epochInstant.toZonedDateTimeISO(ext.valueCode);
+  } catch {
+    throw new OperationOutcomeError(badRequest(`Invalid timezone '${ext.valueCode}'`, getPath(ext)));
   }
-  return arr[0];
 }
 
-function exactlyOne<T extends object>(arr: WithPath<T>[], attribute: string, options: { path?: string }): WithPath<T> {
-  if (arr.length < 1) {
-    throw new OperationOutcomeError(
-      badRequest(`Required scheduling parameter attribute '${attribute}' is missing`, options.path)
-    );
-  }
+function atMostOne<T extends object>(arr: WithPath<T>[], attribute: string): WithPath<T> | undefined {
   if (arr.length > 1) {
     throw new OperationOutcomeError(
       badRequest(
@@ -184,103 +212,37 @@ function exactlyZero(arr: WithPath<object>[], attribute: string, resourceType: s
 // work on complex types like `Availability`. We restrict this to a subset of
 // keys from SchedulingParameters that we know contain primitive types.
 function assertAllMatch(
-  values: WithPath<SchedulingParameters>[],
-  attribute: 'duration' | 'alignmentInterval' | 'alignmentOffset'
+  values: LayeredDict<SchedulingParameters>[],
+  attribute: 'duration' | 'alignmentInterval' | 'alignmentOffset' | 'alignmentTimezone'
 ): void {
   if (values.length <= 1) {
     return;
   }
-  const mismatched = values.find((value) => value[attribute] !== values[0][attribute]);
+  const mismatched = values.find((value) => value.get(attribute) !== values[0].get(attribute));
   if (mismatched) {
     throw new OperationOutcomeError(
       badRequest(`Scheduling parameters attribute '${attribute}' does not match`, [
-        // We special case these a little bit - SchedulingParameters
-        // attributes come from nested extensions, not direct attribute access
-        `${getPath(values[0])}.extension('${attribute}')`,
-        `${getPath(mismatched)}.extension('${attribute}')`,
+        values[0].getPath(attribute),
+        mismatched.getPath(attribute),
       ])
     );
   }
 }
 
-export function chooseSchedulingParameterGroup(
-  schedules: WithPath<WithId<Schedule>>[],
-  healthcareService: WithPath<WithId<HealthcareService>>
-): Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters>> {
-  const serviceParams = parseSchedulingParametersExtensions(healthcareService).at(0);
-  const result = new Map<WithPath<WithId<Schedule>>, WithPath<SchedulingParameters>>();
-
-  for (const schedule of schedules) {
-    const params = parseSchedulingParametersExtensions(schedule).find((parameters) =>
-      isReferenceTo(parameters.service, healthcareService)
-    );
-
-    // prefer schedule-specific overrides matching the requested service type,
-    // fall back to service-defined parameters otherwise.
-    const value = params ?? serviceParams;
-    if (!value) {
-      throw new OperationOutcomeError(
-        badRequest('No SchedulingParameters found on Schedule or HealthcareService', [
-          getPath(schedule),
-          getPath(healthcareService),
-        ])
-      );
-    }
-
-    result.set(schedule, value);
-  }
-
-  return result;
-}
-
 export function extractCommonParameters(
-  schedulingParameters: WithPath<SchedulingParameters>[]
-): Pick<SchedulingParameters, 'duration' | 'alignmentInterval' | 'alignmentOffset'> {
+  schedulingParameters: LayeredDict<SchedulingParameters>[]
+): Pick<SchedulingParameters, 'duration' | 'alignmentInterval' | 'alignmentOffset' | 'alignmentTimezone'> {
   assertAllMatch(schedulingParameters, 'duration');
   assertAllMatch(schedulingParameters, 'alignmentInterval');
   assertAllMatch(schedulingParameters, 'alignmentOffset');
+  assertAllMatch(schedulingParameters, 'alignmentTimezone');
 
   return {
-    duration: schedulingParameters[0].duration,
-    alignmentInterval: schedulingParameters[0].alignmentInterval,
-    alignmentOffset: schedulingParameters[0].alignmentOffset,
+    duration: schedulingParameters[0].get('duration'),
+    alignmentInterval: schedulingParameters[0].get('alignmentInterval'),
+    alignmentOffset: schedulingParameters[0].get('alignmentOffset'),
+    alignmentTimezone: schedulingParameters[0].get('alignmentTimezone'),
   };
-}
-
-/**
- * Given a Schedule and a HealthcareService, return the SchedulingParameters to
- * use.
- *
- * Priority order (highest to lowest):
- *  1. Entries from the Schedule matching the requested service-type
- *  2. Entries from HealthcareService
- *
- * @param schedule - Schedule resource
- * @param healthcareService - HealthcareService resource
- * @returns SchedulingParameters
- */
-export function chooseSchedulingParameters(
-  schedule: WithPath<Schedule>,
-  healthcareService: WithPath<WithId<HealthcareService>>
-): WithPath<SchedulingParameters> | undefined {
-  const scheduleSchedulingParameters = parseSchedulingParametersExtensions(schedule);
-
-  // Top priority: entries on the schedule pointing at this service
-  const specificMatch = scheduleSchedulingParameters.find((schedulingParameters) =>
-    isReferenceTo(schedulingParameters.service, healthcareService)
-  );
-
-  if (specificMatch) {
-    return specificMatch;
-  }
-
-  // Return the first scheduling extension on HealthcareService
-  const healthcareServiceSchedulingParameters = parseSchedulingParametersExtensions(healthcareService);
-  if (healthcareServiceSchedulingParameters.length) {
-    return healthcareServiceSchedulingParameters[0];
-  }
-
-  return undefined;
 }
 
 // Convert a single availability extension into SchedulingParametersAvailability entries.
@@ -381,90 +343,181 @@ function extractAvailability(
   return undefined;
 }
 
-/**
- * @param resource - A Schedule or HealthcareService to extract scheduling information from
- * @returns SchedulingParameters[] - An array of objects describing scheduling configuration
- */
-export function parseSchedulingParametersExtensions(
-  resource: WithPath<Schedule> | WithPath<HealthcareService>
-): WithPath<SchedulingParameters>[] {
-  const extensions = getExtensions(resource, SchedulingParametersURI);
+// Extracts alignmentInterval from an extension: converts the 0→60 sentinel
+// ("align to the hour") and rejects values > 1440 min (one day), since the
+// per-day grid anchoring in findAlignedSlotTimes makes longer intervals meaningless.
+function extractAlignmentInterval(ext: WithPath<Extension>): number {
+  const value = durationToMinutes(ext);
+  if (value === 0) {
+    return 60;
+  }
+  if (value > 1440) {
+    throw new OperationOutcomeError(badRequest('alignmentInterval cannot exceed 1440 minutes (1 day)', getPath(ext)));
+  }
+  return value;
+}
 
-  // Holds scheduling parameters extracted from attributes of the resource, to be merged into
-  // each extension on the resource
-  const resourceParameters: Partial<SchedulingParameters> = {};
-  if (resource.resourceType === 'HealthcareService') {
-    // Note: `resource.availableTime` could be explicitly set to `[]`, in which
-    // case we interpret this as "no availability" instead of falling back to
-    // the default "always available"
-    if (resource.availableTime) {
-      resourceParameters.availability = resource.availableTime.map(extractAvailability).filter(isDefined);
-    } else {
-      // if no availability constraint exists, default to "always available"
-      resourceParameters.availability = [alwaysAvailable];
-    }
+// Get SchedulingParameters from a HealthcareService or throw
+export function getHealthcareServiceSchedulingParameters(
+  healthcareService: WithPath<HealthcareService>
+): LayeredDict<ServiceSchedulingParameters> {
+  const defaultsLayer = withPath(
+    {
+      service: createReference(healthcareService),
+      ...SERVICE_DEFAULTS,
+    },
+    getPath(healthcareService)
+  );
+
+  let result: LayeredDict<ServiceSchedulingParameters> = LayeredDict.from(defaultsLayer);
+
+  // HealthcareService stores availability in a native field, read it from there.
+  // Note: explicitly setting this field to an empty array makes this default to "never" available.
+  if (healthcareService.availableTime) {
+    result = result.addLayer(
+      withPath(
+        {
+          availability: healthcareService.availableTime.map(extractAvailability).filter(isDefined),
+        },
+        getPath(healthcareService)
+      )
+    );
   }
 
-  return extensions.map((extension) => {
-    const path = getPath(extension);
-    const duration = exactlyOne(getExtensions(extension, 'duration'), 'duration', { path });
+  const extensions = getExtensions(healthcareService, SchedulingParametersURI);
+  if (extensions.length === 0) {
+    // Proposal: make this an error before scheduling GA launch. Consider
+    // making `duration` a required field at the same time. This would simplify
+    // the type logic (`duration` could always be guaranteed, removing the
+    // difference between ServiceSchedulingParameters and SchedulingParameters.
+    getLogger().warn('HealthcareService used for scheduling operation without SchedulingParameters extension');
+    return result;
+  }
+  if (extensions.length > 1) {
+    throw new OperationOutcomeError(
+      badRequest('HealthcareService has too many scheduling parameters extensions', getPath(healthcareService))
+    );
+  }
+  const extension = extensions[0];
 
-    let availability: SchedulingParametersAvailability[];
-    const rawAvailability = getExtensions(extension, 'availability');
-    if (resource.resourceType === 'Schedule') {
-      if (rawAvailability.length) {
-        availability = rawAvailability.flatMap(extractAvailabilityR4);
-      } else {
-        // if no availability constraint exists, default to "always available"
-        availability = [alwaysAvailable];
-      }
-    } else {
-      exactlyZero(rawAvailability, 'availability', resource.resourceType);
-      availability = resourceParameters.availability ?? [];
-    }
+  const durationExt = atMostOne(getExtensions(extension, 'duration'), 'duration');
+  const bufferBeforeExt = atMostOne(getExtensions(extension, 'bufferBefore'), 'bufferBefore');
+  const bufferAfterExt = atMostOne(getExtensions(extension, 'bufferAfter'), 'bufferAfter');
+  const alignmentOffsetExt = atMostOne(getExtensions(extension, 'alignmentOffset'), 'alignmentOffset');
+  const alignmentIntervalExt = atMostOne(getExtensions(extension, 'alignmentInterval'), 'alignmentInterval');
+  const alignmentTimezoneExt = atMostOne(getExtensions(extension, 'alignmentTimezone'), 'alignmentTimezone');
+  const timezoneExt = atMostOne(getExtensions(extension, 'timezone'), 'timezone');
 
-    const bufferBefore = atMostOne(getExtensions(extension, 'bufferBefore'), 'bufferBefore');
-    const bufferAfter = atMostOne(getExtensions(extension, 'bufferAfter'), 'bufferAfter');
-    const alignmentOffset = atMostOne(getExtensions(extension, 'alignmentOffset'), 'alignmentOffset');
-    const rawAlignmentInterval = atMostOne(getExtensions(extension, 'alignmentInterval'), 'alignmentInterval');
+  // `service` sub-extension not allowed in HealthcareService; implied by resource
+  exactlyZero(getExtensions(extension, 'service'), 'service', healthcareService.resourceType);
 
-    const timezone = atMostOne(getExtensions(extension, 'timezone'), 'timezone');
-    if (timezone) {
-      assertExtensionCode(timezone);
-    }
+  // `availability` sub-extension not allowed in HealthcareService; use `HealthcareService.availableTime` instead
+  exactlyZero(getExtensions(extension, 'availability'), 'availability', healthcareService.resourceType);
 
-    // `service` is expected in Schedule, not allowed in HealthcareService
-    let service: Reference<HealthcareService> & { reference: string };
-    const rawService = getExtensions(extension, 'service');
-    if (resource.resourceType === 'HealthcareService') {
-      exactlyZero(rawService, 'service', resource.resourceType);
-      service = createReference(resource);
-    } else {
-      const serviceExt = exactlyOne(rawService, 'service', { path });
-      assertExtensionReference<HealthcareService>(serviceExt, 'HealthcareService');
-      service = serviceExt.valueReference;
-    }
+  if (timezoneExt) {
+    assertValidTimezone(timezoneExt);
+  }
 
-    // default alignmentInterval is "on the hour" (0)
-    let alignmentInterval = rawAlignmentInterval ? durationToMinutes(rawAlignmentInterval) : 0;
+  if (alignmentTimezoneExt) {
+    assertValidTimezone(alignmentTimezoneExt);
+  }
 
-    // Convert "on the hour" alignment from the structure (0) to one usable as a modulus (60)
-    alignmentInterval = alignmentInterval === 0 ? 60 : alignmentInterval;
-
-    return withPath(
+  return result.patchLayer(
+    withPath(
       {
-        service, // Reference to a HealthcareService these parameters are used for
-        availability, // HealthcareService.availableTime or `availability` extension parameter
-
-        // These attributes always come from the extension
-        bufferBefore: bufferBefore ? durationToMinutes(bufferBefore) : 0,
-        bufferAfter: bufferAfter ? durationToMinutes(bufferAfter) : 0,
-        alignmentInterval,
-        alignmentOffset: alignmentOffset ? durationToMinutes(alignmentOffset) : 0,
-        duration: durationToMinutes(duration),
-        timezone: timezone?.valueCode,
+        ...(durationExt && { duration: durationToMinutes(durationExt) }),
+        ...(bufferBeforeExt && { bufferBefore: durationToMinutes(bufferBeforeExt) }),
+        ...(bufferAfterExt && { bufferAfter: durationToMinutes(bufferAfterExt) }),
+        ...(alignmentOffsetExt && { alignmentOffset: durationToMinutes(alignmentOffsetExt) }),
+        ...(alignmentIntervalExt && { alignmentInterval: extractAlignmentInterval(alignmentIntervalExt) }),
+        ...(alignmentTimezoneExt && { alignmentTimezone: alignmentTimezoneExt.valueCode }),
+        ...(timezoneExt && { timezone: timezoneExt.valueCode }),
       },
       getPath(extension)
+    )
+  );
+}
+
+// Get SchedulingParameters for a Schedule/HealthcareService pairing.
+export function getScheduleSchedulingParameters(
+  schedule: WithPath<Schedule>,
+  healthcareService: WithPath<WithId<HealthcareService>>,
+  serviceParameters?: LayeredDict<ServiceSchedulingParameters>
+): LayeredDict<SchedulingParameters> {
+  // Parameters not set at the Schedule level get inherited from the Service level.
+  // We accept parsed serviceParameters as an optional input so that multi-scheduling
+  // endpoints can perform that parsing once and have the value be reused.
+  const defaultParameters = serviceParameters ?? getHealthcareServiceSchedulingParameters(healthcareService);
+
+  const extensions = getExtensions(schedule, SchedulingParametersURI).filter((extension) => {
+    const serviceExt = getExtensions(extension, 'service');
+    return serviceExt.some((ext) => isReferenceTo(ext.valueReference, healthcareService));
+  });
+
+  // If we didn't find an extension on the schedule for this service, use the
+  // service-derived values directly.
+  if (extensions.length === 0) {
+    // The only value we don't have a default for is `duration`, ensure it was
+    // set in the service layer or fail.
+    return defaultParameters.refine((p): asserts p is SchedulingParameters => {
+      if (p.duration === undefined) {
+        throw new OperationOutcomeError(
+          badRequest("Scheduling parameter attribute 'duration' is missing", [
+            getPath(healthcareService),
+            getPath(schedule),
+          ])
+        );
+      }
+    });
+  }
+
+  // If there are multiple matching extensions, the intention is unclear; abort.
+  if (extensions.length > 1) {
+    throw new OperationOutcomeError(
+      badRequest('Schedule has too many scheduling parameters extensions', getPath(schedule))
     );
+  }
+  const extension = extensions[0];
+  const durationExt = atMostOne(getExtensions(extension, 'duration'), 'duration');
+  const bufferBeforeExt = atMostOne(getExtensions(extension, 'bufferBefore'), 'bufferBefore');
+  const bufferAfterExt = atMostOne(getExtensions(extension, 'bufferAfter'), 'bufferAfter');
+  const alignmentOffsetExt = atMostOne(getExtensions(extension, 'alignmentOffset'), 'alignmentOffset');
+  const alignmentIntervalExt = atMostOne(getExtensions(extension, 'alignmentInterval'), 'alignmentInterval');
+  const alignmentTimezoneExt = atMostOne(getExtensions(extension, 'alignmentTimezone'), 'alignmentTimezone');
+  const timezoneExt = atMostOne(getExtensions(extension, 'timezone'), 'timezone');
+
+  if (timezoneExt) {
+    assertValidTimezone(timezoneExt);
+  }
+
+  if (alignmentTimezoneExt) {
+    assertValidTimezone(alignmentTimezoneExt);
+  }
+
+  // The "availability" sub-extension uses format that mirrors
+  // `HealthcareService.availableTime` attribute. When Medplum moves to FHIR
+  // R5+, this can use the native `Availability` Metadata type instead.
+  const availabilityExt = getExtensions(extension, 'availability');
+
+  const layer = withPath(
+    {
+      ...(availabilityExt.length && { availability: availabilityExt.flatMap(extractAvailabilityR4) }),
+      ...(durationExt && { duration: durationToMinutes(durationExt) }),
+      ...(bufferBeforeExt && { bufferBefore: durationToMinutes(bufferBeforeExt) }),
+      ...(bufferAfterExt && { bufferAfter: durationToMinutes(bufferAfterExt) }),
+      ...(alignmentOffsetExt && { alignmentOffset: durationToMinutes(alignmentOffsetExt) }),
+      ...(alignmentIntervalExt && { alignmentInterval: extractAlignmentInterval(alignmentIntervalExt) }),
+      ...(alignmentTimezoneExt && { alignmentTimezone: alignmentTimezoneExt.valueCode }),
+      ...(timezoneExt && { timezone: timezoneExt.valueCode }),
+    },
+    getPath(extension)
+  );
+
+  return defaultParameters.patchLayer(layer).refine((p): asserts p is SchedulingParameters => {
+    if (p.duration === undefined) {
+      throw new OperationOutcomeError(
+        badRequest("Scheduling parameter attribute 'duration' is missing", [getPath(schedule)])
+      );
+    }
   });
 }

@@ -157,6 +157,10 @@ export function assert(condition: unknown, msg?: string): asserts condition {
   }
 }
 
+function absorbLateSocketError(): void {
+  // Intentionally empty -- see usage in _disconnect()
+}
+
 function cloneEvent(e: Event): Event {
   // The generic clone below relies on the DOM `(type, eventInitDict)` constructor convention, which
   // native events follow. Our polyfilled `CloseEvent`/`ErrorEvent` use non-standard signatures
@@ -494,6 +498,9 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
     const { maxRetries = DEFAULT.maxRetries, connectionTimeout = DEFAULT.connectionTimeout } = this._options;
 
     if (this._retryCount >= maxRetries) {
+      // Release the lock so a later explicit reconnect() (which resets the retry counter)
+      // can still establish a new connection.
+      this._connectLock = false;
       this._debug('max retries reached', this._retryCount, '>=', maxRetries);
       return;
     }
@@ -541,9 +548,15 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
     if (!this._ws) {
       return;
     }
+    const ws = this._ws;
     this._removeListeners();
+    // The abandoned socket can still emit 'error' after close() -- e.g. the `ws` library aborts a
+    // still-CONNECTING handshake and emits 'error' on the next tick, after this method returns.
+    // On an EventEmitter-backed implementation, an 'error' event with no listeners is thrown as an
+    // uncaught exception and kills the process, so keep a no-op listener attached.
+    ws.addEventListener('error', absorbLateSocketError);
     try {
-      this._ws.close(code, reason);
+      ws.close(code, reason);
       this._handleClose(new Events.CloseEvent(code, reason, this));
     } catch (_error) {
       // ignore

@@ -220,6 +220,8 @@ Refer to [this blog post](/blog/demystifying-fhir-systems#identifiers-1) for bes
 
 Using the identifier system allows you to simplify your healthcare applications by consolidating data in a single resource, while allowing different systems to access the data by different ID schemes.
 
+When generating MRNs for new patients, store the value in `Patient.identifier` with a stable `system` URL for the assigning authority. You can use an MRN from a source system during migration, use the Medplum `Patient.id` as the durable patient number for new applications, or assign an MRN from a bot or backend workflow when the `Patient` is created. If you generate MRNs automatically, make the workflow idempotent: if the patient already has an identifier for your MRN system, do not create a second one.
+
 <details>
 <summary>
 Example: [`Patient`][patient] with two medical record numbers (MRNs)
@@ -262,9 +264,6 @@ The example `Patient` below has three identifiers: **an SSN and two MRN identifi
 
 </details>
 
-
-
-
 ## ValueSets
 
 <div className="responsive-iframe-wrapper">
@@ -273,9 +272,7 @@ The example `Patient` below has three identifiers: **an SSN and two MRN identifi
 
 <br/>
 
-
 ValueSets are a collection of codes that are used to represent a concept. They act as filters or subsets of larger terminology systems (like SNOMED CT, LOINC, or ICD-10) to specify exactly which codes are appropriate for a specific use case. They are defined by a `system` and a `concept` array. The `concept` array contains the codes that are part of the ValueSet.
-
 
 ```json
 {

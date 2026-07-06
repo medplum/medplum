@@ -4,7 +4,6 @@ import { BackgroundImage, Box, SimpleGrid } from '@mantine/core';
 import { SignInForm } from '@medplum/react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
-import { MEDPLUM_GOOGLE_CLIENT_ID, MEDPLUM_PROJECT_ID } from '../config';
 
 export function SignInPage(): JSX.Element {
   const navigate = useNavigate();
@@ -12,8 +11,9 @@ export function SignInPage(): JSX.Element {
     <SimpleGrid cols={2}>
       <Box pt={100} pb={200}>
         <SignInForm
-          projectId={MEDPLUM_PROJECT_ID}
-          googleClientId={MEDPLUM_GOOGLE_CLIENT_ID}
+          projectId={import.meta.env.MEDPLUM_PROJECT_ID}
+          googleClientId={import.meta.env.GOOGLE_CLIENT_ID}
+          clientId={import.meta.env.MEDPLUM_CLIENT_ID}
           onSuccess={() => navigate('/')?.catch(console.error)}
         >
           <h2>Sign in to Foo Medical</h2>

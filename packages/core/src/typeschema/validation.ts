@@ -360,7 +360,7 @@ class ResourceValidator implements CrawlerVisitor {
         choiceOfTypeElements[choiceOfTypeElementName] = key;
         continue;
       }
-      if (!(key in properties) && !(key.startsWith('_') && key.slice(1) in properties)) {
+      if (!(key in properties) && !(key.startsWith('_') && key.slice(1) in properties) && object[key] !== undefined) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
       }
     }

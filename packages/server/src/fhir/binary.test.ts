@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
+import { ContentType, createReference } from '@medplum/core';
 import type { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import express from 'express';
 import type { Duplex } from 'stream';
@@ -214,11 +214,21 @@ describe('Binary', () => {
     expect(res.status).toBe(201);
 
     const binary = res.body;
+
+    const res1 = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res1.status).toBe(201);
+
+    const patient = res1.body;
+
     const res2 = await request(app)
       .put('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ ...binary, securityContext: { reference: 'Patient/123' } });
+      .send({ ...binary, securityContext: createReference(patient) });
     expect(res2.status).toBe(200);
 
     const res3 = await request(app)
@@ -226,7 +236,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', ContentType.FHIR_JSON);
     expect(res3.status).toBe(200);
-    expect(res3.body.securityContext.reference).toStrictEqual('Patient/123');
+    expect(res3.body.securityContext.reference).toStrictEqual(`Patient/${patient.id}`);
   });
 
   test('Invalid Binary JSON', async () => {

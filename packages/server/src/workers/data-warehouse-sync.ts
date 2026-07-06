@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Job, QueueBaseOptions } from 'bullmq';
+import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { S3TablesWarehouseDestination } from '../cloud/aws/data-warehouse-destination';
 import type { MedplumServerConfig } from '../config/types';
@@ -20,7 +20,7 @@ import {
 } from '../database';
 import { globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { addVerboseQueueLogging, getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { addVerboseQueueLogging, defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 export interface DataWarehouseSyncJobData {
   trigger: 'scheduler';
@@ -73,13 +73,10 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
     return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
   }
 
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<DataWarehouseSyncJobData>(DataWarehouseSyncQueueName, {
     ...defaultOptions,
-    defaultJobOptions: { attempts: 1 },
+    defaultJobOptions: { ...defaultOptions.defaultJobOptions, attempts: 1 },
   });
 
   const workerBullmq = getWorkerBullmqConfig(config, 'data-warehouse-sync') ?? {};
@@ -171,6 +168,7 @@ export async function processDataWarehouseSyncJob(
         globalLogger.info('Skipping data warehouse sync; another sync is in progress', {
           jobId: job.id,
           trigger: job.data.trigger,
+          startDate: syncConfig?.startDate,
           subsystem: 'data-warehouse-sync',
         });
         return;
@@ -185,10 +183,8 @@ export async function processDataWarehouseSyncJob(
         },
       });
 
-      let watermarkDurationSeconds = 0;
       let syncDurationSeconds = 0;
       for (const table of result.tables) {
-        watermarkDurationSeconds += table.watermarkDurationMs / 1000;
         syncDurationSeconds += table.syncDurationMs / 1000;
       }
 
@@ -201,12 +197,12 @@ export async function processDataWarehouseSyncJob(
       globalLogger.info('Data warehouse sync completed', {
         jobId: job.id,
         trigger: job.data.trigger,
+        startDate: syncOptions.startDate,
         tablesSynced: tables.length,
         tablesWithRows,
         tablesEmpty,
         rowsInserted,
-        tableCounts: Object.fromEntries(tables.map((t) => [t.icebergTable, t.rowsInserted])),
-        watermarkDurationSeconds,
+        tableCounts: Object.fromEntries(tables.map((t) => [t.destination, t.rowsInserted])),
         syncDurationSeconds,
         jobStartTime: jobStartTime.toISOString(),
         jobEndTime: jobEndTime.toISOString(),
@@ -219,6 +215,7 @@ export async function processDataWarehouseSyncJob(
         trigger: job.data.trigger,
         destination: syncConfig?.destination,
         namespace: syncConfig?.namespace,
+        startDate: syncConfig?.startDate,
         err,
         subsystem: 'data-warehouse-sync',
       });

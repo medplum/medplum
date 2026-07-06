@@ -1,22 +1,34 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import type { WithId } from '@medplum/core';
 import { ContentType, getReferenceString } from '@medplum/core';
+import type { Project, ProjectSetting } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import { simpleParser } from 'mailparser';
-import type { Transporter } from 'nodemailer';
-import nodemailer from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
 import { sendEmail } from './email';
+
+const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
+  const mockSendMail = vi.fn().mockResolvedValue({ messageId: '123' });
+  const mockCreateTransport = vi.fn(() => ({ sendMail: mockSendMail }));
+  return { mockCreateTransport, mockSendMail };
+});
+
+vi.mock('nodemailer', () => ({
+  createTransport: mockCreateTransport,
+  default: { createTransport: mockCreateTransport },
+}));
 
 describe('Email', () => {
   const systemRepo = getGlobalSystemRepo();
@@ -54,7 +66,7 @@ describe('Email', () => {
     });
 
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -79,7 +91,7 @@ describe('Email', () => {
     });
 
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -104,7 +116,7 @@ describe('Email', () => {
     });
 
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -130,7 +142,7 @@ describe('Email', () => {
       ],
     });
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -156,7 +168,7 @@ describe('Email', () => {
     });
 
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -173,7 +185,7 @@ describe('Email', () => {
     });
 
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -194,7 +206,7 @@ describe('Email', () => {
       text: 'Hello Alice',
     });
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -234,7 +246,7 @@ describe('Email', () => {
       ],
     });
     expect(mockSESv2Client.send.callCount).toBe(1);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
 
@@ -263,7 +275,7 @@ describe('Email', () => {
     ).rejects.toThrow('Not found');
 
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Block file path', async () => {
@@ -282,7 +294,7 @@ describe('Email', () => {
     ).rejects.toThrow('Invalid email options: File access rejected for ./package.json');
 
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Catch invalid options', async () => {
@@ -301,7 +313,7 @@ describe('Email', () => {
     ).rejects.toThrow(/Invalid email options/);
 
     expect(mockSESv2Client.send.callCount).toBe(0);
-    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
   test('Send via SMTP', async () => {
@@ -313,22 +325,210 @@ describe('Email', () => {
       password: 'pass',
     };
 
-    const sendMail = jest.fn().mockResolvedValue({ messageId: '123' });
-    const createTransportSpy = jest.spyOn(nodemailer, 'createTransport');
-    createTransportSpy.mockReturnValue({ sendMail } as unknown as Transporter);
+    mockCreateTransport.mockClear();
+    mockSendMail.mockClear();
 
-    const toAddresses = 'alice@example.com';
-    await sendEmail(systemRepo, {
-      to: toAddresses,
-      cc: 'bob@example.com',
-      subject: 'Hello',
-      text: 'Hello Alice',
+    try {
+      const toAddresses = 'alice@example.com';
+      await sendEmail(systemRepo, {
+        to: toAddresses,
+        cc: 'bob@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+      });
+
+      expect(mockCreateTransport).toHaveBeenCalledTimes(1);
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      expect(mockSESv2Client.send.callCount).toBe(0);
+    } finally {
+      config.smtp = undefined;
+    }
+  });
+
+  describe('Project SMTP', () => {
+    function makeProject(secrets: ProjectSetting[]): WithId<Project> {
+      return { resourceType: 'Project', id: randomUUID(), secret: secrets };
+    }
+
+    const baseSecrets: ProjectSetting[] = [
+      { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+      { name: 'smtpPort', valueInteger: 587 },
+      { name: 'smtpUsername', valueString: 'projectuser' },
+      { name: 'smtpPassword', valueString: 'projectpass' },
+      { name: 'smtpFromAddress', valueString: 'noreply@project.example.com' },
+    ];
+
+    beforeEach(() => {
+      mockSendMail.mockReset();
+      mockSendMail.mockResolvedValue({ messageId: '123' });
+      mockCreateTransport.mockClear();
     });
 
-    expect(createTransportSpy).toHaveBeenCalledTimes(1);
-    expect(sendMail).toHaveBeenCalledTimes(1);
-    expect(mockSESv2Client.send.callCount).toBe(0);
+    afterEach(() => {
+      getConfig().allowProjectSmtp = undefined;
+      getConfig().smtp = undefined;
+    });
 
-    config.smtp = undefined;
+    test('Uses project SMTP transport when configured', async () => {
+      const project = makeProject(baseSecrets);
+      await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
+
+      expect(mockCreateTransport).toHaveBeenCalledTimes(1);
+      expect(mockCreateTransport).toHaveBeenCalledWith(
+        expect.objectContaining({
+          host: 'smtp.project.example.com',
+          port: 587,
+          secure: false,
+          auth: { user: 'projectuser', pass: 'projectpass' },
+        })
+      );
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      expect(mockSESv2Client.send.callCount).toBe(0);
+    });
+
+    test('Infers secure for port 465', async () => {
+      const project = makeProject([
+        { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+        { name: 'smtpPort', valueInteger: 465 },
+        { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpPassword', valueString: 'projectpass' },
+        { name: 'smtpFromAddress', valueString: 'noreply@project.example.com' },
+      ]);
+      await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
+
+      expect(mockCreateTransport).toHaveBeenCalledWith(expect.objectContaining({ port: 465, secure: true }));
+    });
+
+    test('Explicit smtpSecure overrides port inference', async () => {
+      const project = makeProject([
+        { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+        { name: 'smtpPort', valueInteger: 465 },
+        { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpPassword', valueString: 'projectpass' },
+        { name: 'smtpFromAddress', valueString: 'noreply@project.example.com' },
+        { name: 'smtpSecure', valueBoolean: false },
+      ]);
+      await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
+
+      expect(mockCreateTransport).toHaveBeenCalledWith(expect.objectContaining({ port: 465, secure: false }));
+    });
+
+    test('From address approved by project sender list', async () => {
+      const project = makeProject([
+        { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+        { name: 'smtpPort', valueInteger: 587 },
+        { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpPassword', valueString: 'projectpass' },
+        { name: 'smtpFromAddress', valueString: 'default@project.example.com' },
+        { name: 'smtpApprovedSenders', valueString: 'sender@project.example.com' },
+      ]);
+      await sendEmail(
+        systemRepo,
+        { from: 'sender@project.example.com', to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' },
+        project
+      );
+
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      expect(mockSendMail.mock.calls[0][0].from).toBe('sender@project.example.com');
+    });
+
+    test('Server-approved sender not accepted under project list', async () => {
+      const project = makeProject([
+        { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+        { name: 'smtpPort', valueInteger: 587 },
+        { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpPassword', valueString: 'projectpass' },
+        { name: 'smtpFromAddress', valueString: 'default@project.example.com' },
+        { name: 'smtpApprovedSenders', valueString: 'sender@project.example.com' },
+      ]);
+      // 'no-reply@example.com' is the server-approved sender, but not in the project list
+      await sendEmail(
+        systemRepo,
+        { from: 'no-reply@example.com', to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' },
+        project
+      );
+
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      expect(mockSendMail.mock.calls[0][0].from).toBe('default@project.example.com');
+    });
+
+    test('Missing smtpFromAddress fails loudly', async () => {
+      const project = makeProject([
+        { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+        { name: 'smtpPort', valueInteger: 587 },
+        { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpPassword', valueString: 'projectpass' },
+      ]);
+      await expect(
+        sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project)
+      ).rejects.toThrow('Project SMTP configuration is incomplete or invalid');
+
+      expect(mockSendMail).not.toHaveBeenCalled();
+      expect(mockSESv2Client.send.callCount).toBe(0);
+    });
+
+    test('Falls back to server transport when project SMTP not configured', async () => {
+      getConfig().smtp = {
+        host: 'smtp.server.example.com',
+        port: 587,
+        username: 'serveruser',
+        password: 'serverpass',
+      };
+      const project = makeProject([{ name: 'OPENAI_API_KEY', valueString: 'unrelated' }]);
+      await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
+
+      expect(mockCreateTransport).toHaveBeenCalledWith(expect.objectContaining({ host: 'smtp.server.example.com' }));
+      expect(mockSESv2Client.send.callCount).toBe(0);
+    });
+
+    test('Misconfigured project SMTP fails loudly', async () => {
+      const project = makeProject([
+        { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+        { name: 'smtpPort', valueInteger: 587 },
+        { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpFromAddress', valueString: 'noreply@project.example.com' },
+        // Missing smtpPassword
+      ]);
+      await expect(
+        sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project)
+      ).rejects.toThrow('Project SMTP configuration is incomplete or invalid');
+
+      expect(mockSendMail).not.toHaveBeenCalled();
+      expect(mockSESv2Client.send.callCount).toBe(0);
+    });
+
+    test('Logs and rethrows on project SMTP send failure', async () => {
+      const loggerErrorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+      mockSendMail.mockRejectedValue(new Error('Connection refused'));
+      const project = makeProject(baseSecrets);
+
+      try {
+        await expect(
+          sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project)
+        ).rejects.toThrow('Connection refused');
+
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          'Project SMTP send failed',
+          expect.objectContaining({
+            projectId: project.id,
+            host: 'smtp.project.example.com',
+            port: 587,
+            err: 'Connection refused',
+          })
+        );
+      } finally {
+        loggerErrorSpy.mockRestore();
+      }
+    });
+
+    test('Kill-switch disables project SMTP', async () => {
+      getConfig().allowProjectSmtp = false;
+      const project = makeProject(baseSecrets);
+      await sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice' }, project);
+
+      // Falls through to AWS SES (the configured emailProvider)
+      expect(mockSendMail).not.toHaveBeenCalled();
+      expect(mockSESv2Client.send.callCount).toBe(1);
+    });
   });
 });

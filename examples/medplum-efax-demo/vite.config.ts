@@ -8,16 +8,13 @@ import { defineConfig } from 'vite';
 
 dns.setDefaultResultOrder('verbatim');
 
-const envDefaultsPath = path.join(__dirname, '.env.defaults');
-const envPath = path.join(__dirname, '.env');
-
-if (!existsSync(envPath) && existsSync(envDefaultsPath)) {
-  copyFileSync(envDefaultsPath, envPath);
+if (!existsSync(path.join(__dirname, '.env'))) {
+  copyFileSync(path.join(__dirname, '.env.defaults'), path.join(__dirname, '.env'));
 }
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  envPrefix: ['MEDPLUM_', 'GOOGLE_'],
+  envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_'],
   plugins: [react()],
   server: {
     host: 'localhost',

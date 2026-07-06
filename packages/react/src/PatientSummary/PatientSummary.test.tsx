@@ -488,6 +488,10 @@ describe('PatientSummary', () => {
 
     expect(MedicationsSection.key).toBe('medications');
     expect(MedicationsSection.title).toBe('Medications');
+    expect(MedicationsSection.searches).toEqual([
+      { key: 'medicationRequests', resourceType: 'MedicationRequest', patientParam: 'subject' },
+      { key: 'medicationStatements', resourceType: 'MedicationStatement', patientParam: 'subject' },
+    ]);
 
     expect(LabsSection.key).toBe('labs');
     expect(LabsSection.searches).toHaveLength(2);

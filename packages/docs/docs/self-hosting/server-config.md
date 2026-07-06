@@ -316,11 +316,23 @@ Optional SMTP email settings to use SMTP for email. See [Sending SMTP Emails](/d
 
 **Default:** None
 
+#### smtp.secure
+
+Optional flag to use TLS when connecting to the SMTP relay (TLS-on-connect, as opposed to STARTTLS upgrade). Set to `true` for relays using implicit TLS, typically on port 465.
+
+**Default:** `false`
+
 ### emailProvider
 
 Optional email provider setting. Can be one of: `'none'`, `'awsses'`, `'smtp'`.
 
 **Default:** `'awsses'` if in AWS, otherwise `'none'`
+
+### allowProjectSmtp
+
+Optional flag to allow projects to send email through their own SMTP relay, configured via `Project.secret` entries. See [Project SMTP](/docs/user-management/project-smtp) for more details. Set to `false` to force all emails through the server-wide email provider.
+
+**Default:** `true`
 
 ### bullmq
 

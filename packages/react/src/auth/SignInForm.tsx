@@ -12,7 +12,9 @@ import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
 import type { ChooseScopeFormProps } from './ChooseScopeForm';
 import { ChooseScopeForm } from './ChooseScopeForm';
-import { MfaForm } from './MfaForm';
+import { MfaEnrollForm } from './MfaEnrollForm';
+import type { MfaMethod } from './MfaForm';
+import { MfaVerificationForm } from './MfaVerificationForm';
 import { NewProjectForm } from './NewProjectForm';
 
 export interface SignInFormProps extends BaseLoginRequest {
@@ -56,7 +58,11 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
   const loginRequested = useRef(false);
   const [mfaEnrollRequired, setMfaEnrollRequired] = useState(false);
   const [enrollQrCode, setEnrollQrCode] = useState<string>();
+  const [enrollMethods, setEnrollMethods] = useState<MfaMethod[]>();
   const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaMethods, setMfaMethods] = useState<MfaMethod[]>();
+  const [mfaEmail, setMfaEmail] = useState<string>();
+  const [mfaEmailMode, setMfaEmailMode] = useState(false);
   const [memberships, setMemberships] = useState<ProjectMembership[]>();
 
   const handleCode = useCallback(
@@ -81,7 +87,23 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     (response: LoginAuthenticationResponse): void => {
       setMfaEnrollRequired(!!response.mfaEnrollRequired);
       setEnrollQrCode(response.enrollQrCode);
+      setEnrollMethods(response.allowedMfaMethods);
       setMfaRequired(!!response.mfaRequired);
+
+      if (response.mfaRequired) {
+        const methods = response.mfaMethods;
+        setMfaMethods(methods);
+        setMfaEmail(response.email);
+        // When email is the only enrolled method, the server has already sent
+        // the verification code, so show the code entry form directly.
+        if (methods?.length === 1 && methods[0] === 'email') {
+          setMfaEmailMode(true);
+        }
+      } else {
+        setMfaMethods(undefined);
+        setMfaEmail(undefined);
+        setMfaEmailMode(false);
+      }
 
       if (response.login) {
         setLogin(response.login);
@@ -101,6 +123,23 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     },
     [chooseScopes, handleCode]
   );
+
+  const requestEmailCode = useCallback(async (): Promise<void> => {
+    if (!login) {
+      return;
+    }
+    await medplum.post('auth/mfa/send-email', { login });
+  }, [medplum, login]);
+
+  const enrollEmail = useCallback((): void => {
+    if (!login) {
+      return;
+    }
+    medplum
+      .post<LoginAuthenticationResponse>('auth/mfa/login-enroll', { login, method: 'email' })
+      .then(handleAuthResponse)
+      .catch((err: unknown) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }, [medplum, login, handleAuthResponse]);
 
   const handleScopeResponse = useCallback(
     (response: LoginAuthenticationResponse): void => {
@@ -139,17 +178,19 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               {props.children}
             </AuthenticationForm>
           );
-        } else if (mfaEnrollRequired && enrollQrCode) {
+        } else if (mfaEnrollRequired) {
           return (
-            <MfaForm
-              title="Enroll in MFA"
-              description="Scan this QR code with your authenticator app."
-              buttonText="Enroll"
+            <MfaEnrollForm
+              allowedMethods={enrollMethods ?? ['totp']}
               qrCodeUrl={enrollQrCode}
-              onSubmit={async (fields) => {
+              onEnrollEmail={enrollEmail}
+              totpTitle="Enroll in MFA"
+              totpDescription="Scan this QR code with your authenticator app."
+              onEnrollTotp={async (token) => {
                 const res = await medplum.post<LoginAuthenticationResponse>('auth/mfa/login-enroll', {
                   login: login,
-                  token: fields.token,
+                  method: 'totp',
+                  token,
                 });
                 handleAuthResponse(res);
               }}
@@ -157,14 +198,15 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
           );
         } else if (mfaRequired) {
           return (
-            <MfaForm
-              title="Enter MFA code"
-              description="Enter the code from your authenticator app."
-              buttonText="Submit Code"
-              onSubmit={async (fields) => {
+            <MfaVerificationForm
+              methods={mfaMethods ?? []}
+              email={mfaEmail}
+              initialEmailMode={mfaEmailMode}
+              onRequestEmailCode={requestEmailCode}
+              onSubmit={async (token) => {
                 const res = await medplum.post<LoginAuthenticationResponse>('auth/mfa/verify', {
                   login: login,
-                  token: fields.token,
+                  token,
                 });
                 handleAuthResponse(res);
               }}

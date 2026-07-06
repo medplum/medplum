@@ -15,6 +15,12 @@ Medplum implements a custom `$set-accounts` operation to manage account referenc
 
 This operation sets the target resource's `meta.accounts` references and optionally propagates changes to resources in that resources's compartment. This is useful when you need to ensure consistent `meta.accounts` access across all resources related to a patient, for example.
 
+## Required access
+
+Calling `$set-accounts` requires explicit permission to run the operation. Generic read, create, update, or delete access to the target resource type does not automatically grant access to `$set-accounts`.
+
+If a `User`, `Bot`, or `ClientApplication` receives `403 Forbidden` when calling `$set-accounts`, confirm that the principal's access configuration grants the operation in addition to the resource interactions needed for the target resources.
+
 :::warning[]
 
 It is recommended that you run this operation with `Prefer: respond-async` header to avoid any timeouts while waiting for resources in patient compartment to update.

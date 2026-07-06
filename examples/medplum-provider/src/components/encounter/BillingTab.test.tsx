@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { ReadablePromise, WithId } from '@medplum/core';
 import type {
+  Bot,
   ChargeItem,
   ChargeItemDefinition,
   Claim,
@@ -991,13 +992,28 @@ describe('BillingTab', () => {
       total: [{ category: { coding: [{ code: 'submitted' }] }, amount: { value: 100 } }],
     };
 
-    // The Candid card requires BillingTab to find an existing Claim (searchOne) and then its
-    // ClaimResponse (searchOne). Seed both: mockClaim for the Claim lookup, claimResponse for the rest.
+    const candidUrlBot: WithId<Bot> = {
+      resourceType: 'Bot',
+      id: 'candid-url-bot',
+      identifier: [{ system: 'https://medplum.com/integrations/candid-health', value: 'get-candid-claim-portal-url' }],
+    };
+
+    const candidClaimUrl = 'https://app-staging.joincandidhealth.com/claims/candid-encounter-123';
+
+    // The Candid card requires BillingTab to find an existing Claim (searchOne), its ClaimResponse
+    // (searchOne), and the deployed URL bot (searchOne on Bot). ClaimSubmittedPanel then executes that
+    // bot to resolve the portal URL, so stub executeBot to return it.
     const mockSearchOneWithClaimResponse = (claimResponse: WithId<ClaimResponse>): void => {
       vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string) =>
-        Promise.resolve(resourceType === 'Claim' ? mockClaim : claimResponse)) as (
+        Promise.resolve(
+          (resourceType === 'Claim' && mockClaim) || (resourceType === 'Bot' && candidUrlBot) || claimResponse
+        )) as (
         resourceType: string
-      ) => ReadablePromise<WithId<Claim> | WithId<ClaimResponse> | undefined>);
+      ) => ReadablePromise<WithId<Claim> | WithId<ClaimResponse> | WithId<Bot> | undefined>);
+      vi.spyOn(medplum, 'executeBot').mockResolvedValue({
+        encounterId: 'candid-encounter-123',
+        url: candidClaimUrl,
+      });
     };
 
     test('shows Candid claim card when a ClaimResponse exists', async () => {
