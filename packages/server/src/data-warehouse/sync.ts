@@ -43,12 +43,13 @@ function getSyncSourceConnectionString(options: SyncOptions): string {
   return buildPgConnectionURI(options.database);
 }
 
-export function buildWarehouseSourcePredicate(
+export async function buildWarehouseSourcePredicate(
+  connection: DuckdbConnection,
   options: SyncOptions,
   tableSpec: WarehouseSourceTable,
   namespace: string
-): Expression | undefined {
-  const destinationPredicate = options.destination.buildSourcePredicate(tableSpec, namespace);
+): Promise<Expression | undefined> {
+  const destinationPredicate = await options.destination.buildSourcePredicate(connection, tableSpec, namespace);
   if (!options.startDate) {
     return destinationPredicate;
   }
@@ -84,7 +85,7 @@ async function withWarehouseConnection<T>(
     const duckdbDatabasePath = join(duckdbTempDir, 'warehouse.duckdb');
     instance = await DuckDBInstance.create(duckdbDatabasePath);
     connection = await instance.connect();
-    for (const q of options.destination.getSetupQueries(sourceConnectionString)) {
+    for (const q of options.destination.getSetupQueries()) {
       await connection.run(q);
     }
 
@@ -124,6 +125,7 @@ async function syncWarehouseTable(
   options: SyncOptions,
   spec: WarehouseSourceTable,
   namespace: string,
+  sourceConnectionString: string,
   index: number,
   tablesTotal: number
 ): Promise<SyncTableResult> {
@@ -138,10 +140,15 @@ async function syncWarehouseTable(
     subsystem: 'data-warehouse-sync',
   });
 
-  const sourcePredicate = buildWarehouseSourcePredicate(options, spec, namespace);
   const syncStartTime = Date.now();
 
   await options.destination.ensureTargetExists(spec, namespace);
+
+  const sourcePredicate = await buildWarehouseSourcePredicate(connection, options, spec, namespace);
+
+  for (const query of options.destination.getPostgresAttachQueries(sourceConnectionString)) {
+    await connection.run(query);
+  }
 
   const rowsInserted = await options.destination.writeRows(connection, {
     tableSpec: spec,
@@ -203,7 +210,7 @@ async function runWarehouseTableSync(
     // Close and re-open the DuckDB database between tables so each table sync
     // runs against a fresh instance/connection and temp directory.
     const result = await withWarehouseConnection(options, sourceConnectionString, (connection) =>
-      syncWarehouseTable(connection, options, spec, namespace, index, tablesTotal)
+      syncWarehouseTable(connection, options, spec, namespace, sourceConnectionString, index, tablesTotal)
     );
     tables.push(result);
   }

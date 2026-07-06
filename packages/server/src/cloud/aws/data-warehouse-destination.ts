@@ -10,14 +10,16 @@ import type {
 } from '../../data-warehouse/destination';
 import type { DuckdbConnection } from '../../data-warehouse/warehouse-sql';
 import {
+  buildDuckdbPostgresAttachQuery,
   buildInsertIntoSelectQuery,
   buildManagedIcebergQualifiedTable,
   buildManagedIcebergSetupQueries,
-  buildMaxLastUpdatedWatermarkPredicate,
   buildSelectFromHistoryTableQuery,
   runParameterizedWarehouseSql,
+  runParameterizedWarehouseSqlReadAll,
 } from '../../data-warehouse/warehouse-sql';
 import type { Expression } from '../../fhir/sql';
+import { Condition, SelectQuery, SqlBuilder } from '../../fhir/sql';
 import { createS3TablesClient, tableExists } from './data-warehouse-client';
 
 export class S3TablesWarehouseDestination implements DataWarehouseDestination {
@@ -33,12 +35,15 @@ export class S3TablesWarehouseDestination implements DataWarehouseDestination {
     this.s3TablesClient = createS3TablesClient(s3Region);
   }
 
-  getSetupQueries(connectionString: string): string[] {
+  getSetupQueries(): string[] {
     return buildManagedIcebergSetupQueries({
-      connectionString,
       s3Region: this.s3Region,
       awsS3TableArn: this.awsS3TableArn,
     });
+  }
+
+  getPostgresAttachQueries(connectionString: string): string[] {
+    return [buildDuckdbPostgresAttachQuery(connectionString)];
   }
 
   async ensureTargetExists(tableSpec: WarehouseSourceTable, namespace: string): Promise<void> {
@@ -50,12 +55,23 @@ export class S3TablesWarehouseDestination implements DataWarehouseDestination {
     }
   }
 
-  buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): Expression {
+  async buildSourcePredicate(
+    connection: DuckdbConnection,
+    tableSpec: WarehouseSourceTable,
+    namespace: string
+  ): Promise<Expression | undefined> {
     const qualifiedIceberg = buildManagedIcebergQualifiedTable(namespace, tableSpec.icebergTable);
-    // Incremental sync: only Postgres rows newer than the latest row already in Iceberg.
-    // When the Iceberg table is empty (or MAX is NULL), `lastUpdated > NULL` would be unknown for every row,
-    // so we treat a NULL watermark as "no high-water mark" and include all source rows instead of a sentinel timestamp.
-    return buildMaxLastUpdatedWatermarkPredicate(qualifiedIceberg);
+    const safeQualifiedTableName = qualifiedIceberg.split('.').join('"."');
+    const watermarkQuery = new SqlBuilder();
+    watermarkQuery.appendExpression(new SelectQuery(safeQualifiedTableName).raw('MAX(last_updated) AS watermark'));
+    const result = await runParameterizedWarehouseSqlReadAll(connection, watermarkQuery);
+    const row = result.getRowObjectsJson()[0] as { watermark?: string | null } | undefined;
+    const watermark = row?.watermark ?? null;
+    if (watermark === null) {
+      return undefined;
+    }
+
+    return new Condition('lastUpdated', '>', watermark);
   }
 
   async writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<number> {
