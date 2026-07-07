@@ -466,7 +466,7 @@ describe('$find/$book component integration tests', () => {
             status: 'busy',
             start: slotStart,
             end: slotEnd,
-            schedule: { reference: 'Schedule/schedule-1' },
+            schedule: { reference: 'Schedule/alice-smith-schedule' },
           },
         },
         {
@@ -477,7 +477,7 @@ describe('$find/$book component integration tests', () => {
             status: 'busy-unavailable',
             start: slotEnd,
             end: bufferEnd,
-            schedule: { reference: 'Schedule/schedule-1' },
+            schedule: { reference: 'Schedule/alice-smith-schedule' },
           },
         },
       ],

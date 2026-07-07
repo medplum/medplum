@@ -3,7 +3,6 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { ReadablePromise } from '@medplum/core';
 import type {
   Appointment,
   CodeableConcept,
@@ -19,6 +18,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { SchedulingAPI } from '../../hooks/useSchedulingResources';
 import { createEncounter } from '../../utils/encounter';
 import {
   SchedulingEncounterCodingURI,
@@ -72,21 +72,6 @@ describe('FindPane', () => {
     medplum = new MockClient();
     vi.clearAllMocks();
 
-    // Mock the $find operation
-    const originalGet = medplum.get.bind(medplum);
-    medplum.get = vi.fn().mockImplementation((url, options) => {
-      if (url.toString().includes('$find')) {
-        return new ReadablePromise(
-          Promise.resolve({
-            resourceType: 'Bundle',
-            type: 'searchset',
-            entry: mockAppointments.map((appointment) => ({ resource: appointment })),
-          })
-        );
-      }
-      return originalGet(url, options);
-    });
-
     healthcareService = await medplum.createResource<HealthcareService>({
       resourceType: 'HealthcareService',
       name: 'Annual Checkup',
@@ -116,35 +101,46 @@ describe('FindPane', () => {
     });
   });
 
+  const buildSchedulingAPI = (overrides: Partial<SchedulingAPI> = {}): SchedulingAPI => ({
+    book: vi.fn(),
+    cancel: vi.fn(),
+    confirm: vi.fn(),
+    find: vi.fn().mockResolvedValue(mockAppointments),
+    updateAppointment: vi.fn(),
+    ...overrides,
+  });
+
   type SetupOptions = {
     schedule?: WithId<Schedule>;
     range?: { start: Date; end: Date };
     onSuccess?: (results: { appointment: Appointment; slots: Slot[] }) => void;
+    schedulingAPI?: Partial<SchedulingAPI>;
   };
 
-  const setup = (options: SetupOptions = {}): ReturnType<typeof render> => {
+  const setup = (options: SetupOptions = {}): ReturnType<typeof render> & { schedulingAPI: SchedulingAPI } => {
     const {
       schedule = createScheduleWithServices([healthcareService, healthcareService2]),
       range = defaultRange,
       onSuccess = vi.fn(),
     } = options;
+    const schedulingAPI = buildSchedulingAPI(options.schedulingAPI);
 
-    return render(
+    const result = render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
             <div data-testid="FindPaneTestWrapper">
-              <FindPane schedule={schedule} range={range} onSuccess={onSuccess} />
+              <FindPane schedule={schedule} range={range} onSuccess={onSuccess} schedulingAPI={schedulingAPI} />
             </div>
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
     );
+    return { ...result, schedulingAPI };
   };
 
   test('it renders null when there are no schedulable service types on the Schedule', async () => {
-    // schedule.serviceType is missing, no schedulable services
     const schedule = {
       resourceType: 'Schedule',
       id: 'schedule-123',
@@ -176,37 +172,42 @@ describe('FindPane', () => {
   });
 
   describe('HealthcareService Selection', () => {
-    test('fetches appointments when a service type is selected', async () => {
+    test('calls schedulingAPI.find when a service type is selected', async () => {
       const user = userEvent.setup();
-
+      let schedulingAPI!: SchedulingAPI;
       await act(async () => {
-        setup();
+        ({ schedulingAPI } = setup());
       });
 
       await user.click(screen.getByText('Annual Checkup'));
 
-      // check that Appointment/$find was called
-      expect(medplum.get).toHaveBeenCalledWith(
-        expect.objectContaining({ href: expect.stringContaining('Appointment/$find') }),
-        expect.any(Object)
+      await waitFor(() =>
+        expect(schedulingAPI.find).toHaveBeenCalledWith(
+          expect.objectContaining({
+            healthcareService: expect.objectContaining({ id: healthcareService.id }),
+          })
+        )
       );
+    });
 
-      // check that it was called with the service-type-reference parameter
-      expect(medplum.get).toHaveBeenCalledWith(
-        expect.objectContaining({
-          href: expect.stringContaining(
-            `service-type-reference=${encodeURIComponent(`HealthcareService/${healthcareService.id}`)}`
-          ),
-        }),
-        expect.any(Object)
-      );
+    test('passes the range to schedulingAPI.find', async () => {
+      const user = userEvent.setup();
+      let schedulingAPI!: SchedulingAPI;
+      await act(async () => {
+        ({ schedulingAPI } = setup());
+      });
 
-      // check that the schedule reference is included
-      expect(medplum.get).toHaveBeenCalledWith(
-        expect.objectContaining({
-          href: expect.stringContaining(`schedule=${encodeURIComponent('Schedule/schedule-1')}`),
-        }),
-        expect.any(Object)
+      await user.click(screen.getByText('Annual Checkup'));
+
+      await waitFor(() =>
+        expect(schedulingAPI.find).toHaveBeenCalledWith(
+          expect.objectContaining({
+            range: expect.objectContaining({
+              start: expect.any(Date),
+              end: expect.any(Date),
+            }),
+          })
+        )
       );
     });
 
@@ -280,9 +281,6 @@ describe('FindPane', () => {
       // Should immediately show the service type name, not the selection UI
       expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
       expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
-
-      // Should fetch slots automatically
-      expect(medplum.get).toHaveBeenCalled();
     });
 
     test('does not show dismiss button when auto-selected with single option', async () => {
@@ -340,39 +338,42 @@ describe('FindPane', () => {
       const user = userEvent.setup();
 
       await act(async () => {
-        setup();
+        setup({ schedulingAPI: { find: vi.fn().mockRejectedValue(new Error('Network error')) } });
       });
 
-      medplum.get = vi.fn().mockRejectedValue(new Error('Network error'));
-
       await user.click(screen.getByText('Annual Checkup'));
-      expect(medplum.get).toHaveBeenCalled();
 
-      // Error notification should be shown
-      expect(screen.getByText(/Network error/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/Network error/i)).toBeInTheDocument();
+      });
     });
   });
 
   describe('Search Parameters', () => {
-    test('includes start and end dates in API call', async () => {
+    test('passes start and end dates to schedulingAPI.find', async () => {
       const user = userEvent.setup();
       const range = {
         start: new Date('2024-02-01T00:00:00Z'),
         end: new Date('2024-02-07T23:59:59Z'),
       };
 
+      let schedulingAPI!: SchedulingAPI;
       await act(async () => {
-        setup({ range });
+        ({ schedulingAPI } = setup({ range }));
       });
 
       await user.click(screen.getByText('Annual Checkup'));
 
-      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls
-        .map((call) => call[0])
-        .find((url) => url.toString().includes('$find'));
-
-      expect(callUrl?.href).toContain('start=');
-      expect(callUrl?.href).toContain('end=');
+      await waitFor(() =>
+        expect(schedulingAPI.find).toHaveBeenCalledWith(
+          expect.objectContaining({
+            range: expect.objectContaining({
+              start: expect.any(Date),
+              end: expect.any(Date),
+            }),
+          })
+        )
+      );
     });
   });
 
@@ -430,6 +431,18 @@ describe('FindPane', () => {
 
     let serviceWithEncounterConfig: WithId<HealthcareService>;
 
+    const bookedAppointment: Appointment = {
+      resourceType: 'Appointment',
+      id: 'booked-1',
+      status: 'booked',
+      start: '2024-01-16T10:00:00Z',
+      end: '2024-01-16T10:30:00Z',
+      participant: [
+        { actor: { reference: 'Practitioner/prac-1' }, status: 'accepted' },
+        { actor: { reference: `Patient/${HomerSimpson.id}` }, status: 'accepted' },
+      ],
+    };
+
     beforeEach(async () => {
       const planDef = await medplum.createResource<PlanDefinition>({
         resourceType: 'PlanDefinition',
@@ -447,32 +460,14 @@ describe('FindPane', () => {
         ],
       });
 
-      // $book returns a booked appointment with exactly one practitioner and one patient so
-      // bookEncounter (inside BookAppointmentForm) will proceed to call createEncounter.
-      const bookedAppointment: Appointment = {
-        resourceType: 'Appointment',
-        id: 'booked-1',
-        status: 'booked',
-        start: '2024-01-16T10:00:00Z',
-        end: '2024-01-16T10:30:00Z',
-        participant: [
-          { actor: { reference: 'Practitioner/prac-1' }, status: 'accepted' },
-          { actor: { reference: `Patient/${HomerSimpson.id}` }, status: 'accepted' },
-        ],
-      };
-
-      medplum.post = vi.fn().mockResolvedValue({
-        resourceType: 'Bundle',
-        type: 'collection',
-        entry: [{ resource: bookedAppointment }],
-      });
-
       vi.mocked(createEncounter).mockResolvedValue(MOCK_ENCOUNTER);
     });
 
-    // Renders FindPane inside a router that has a destination route for the encounter page
-    // so tests can assert that navigation actually happened.
-    const setupWithRoutes = (schedule: WithId<Schedule>, onSuccess = vi.fn()): void => {
+    const setupWithRoutes = (
+      schedule: WithId<Schedule>,
+      onSuccess = vi.fn(),
+      schedulingAPI = buildSchedulingAPI()
+    ): void => {
       render(
         <MemoryRouter initialEntries={['/find']}>
           <MedplumProvider medplum={medplum}>
@@ -481,7 +476,14 @@ describe('FindPane', () => {
               <Routes>
                 <Route
                   path="/find"
-                  element={<FindPane schedule={schedule} range={defaultRange} onSuccess={onSuccess} />}
+                  element={
+                    <FindPane
+                      schedule={schedule}
+                      range={defaultRange}
+                      onSuccess={onSuccess}
+                      schedulingAPI={schedulingAPI}
+                    />
+                  }
                 />
                 <Route
                   path="/Patient/:patientId/Encounter/:encounterId"
@@ -506,10 +508,12 @@ describe('FindPane', () => {
     test('navigates to the encounter page and does not call onSuccess when an encounter is returned', async () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
-      // Single service → auto-selected; $find returns mock appointments from the outer beforeEach.
-      setupWithRoutes(createScheduleWithServices([serviceWithEncounterConfig]), onSuccess);
 
-      // Click the first appointment slot that appeared from $find (there are two)
+      const schedulingAPI = buildSchedulingAPI({
+        book: vi.fn().mockResolvedValue({ appointment: bookedAppointment, slots: [] }),
+      });
+      setupWithRoutes(createScheduleWithServices([serviceWithEncounterConfig]), onSuccess, schedulingAPI);
+
       const apptButtons = await screen.findAllByRole('button', { name: /2024/i });
       await user.click(apptButtons[0]);
       await bookWithHomer(user);
@@ -522,9 +526,11 @@ describe('FindPane', () => {
     test('calls onSuccess and does not navigate when no encounter is returned', async () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
-      // healthcareService has no encounter extensions → bookEncounter returns undefined.
-      // Single service → auto-selected, so we go straight to waiting for the appointment buttons.
-      setupWithRoutes(createScheduleWithServices([healthcareService]), onSuccess);
+
+      const schedulingAPI = buildSchedulingAPI({
+        book: vi.fn().mockResolvedValue({ appointment: bookedAppointment, slots: [] }),
+      });
+      setupWithRoutes(createScheduleWithServices([healthcareService]), onSuccess, schedulingAPI);
 
       const apptButtons = await screen.findAllByRole('button', { name: /2024/i });
       await user.click(apptButtons[0]);
@@ -539,14 +545,11 @@ describe('FindPane', () => {
     test('passes abort signal to API call', async () => {
       const user = userEvent.setup();
 
-      await act(async () => {
-        setup();
-      });
+      const { schedulingAPI } = await act(async () => setup());
 
       await user.click(screen.getByText('Annual Checkup'));
-      expect(medplum.get).toHaveBeenCalledWith(
-        expect.objectContaining({ href: expect.stringContaining('$find') }),
-        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      expect(schedulingAPI.find).toHaveBeenCalledWith(
+        expect.objectContaining({ abortSignal: expect.any(AbortSignal) })
       );
     });
   });

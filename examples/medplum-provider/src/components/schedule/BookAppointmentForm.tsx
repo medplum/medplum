@@ -2,18 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import {
-  createReference,
-  EMPTY,
-  formatPeriod,
-  getExtensionValue,
-  isCoding,
-  isDefined,
-  isReference,
-} from '@medplum/core';
+import { createReference, formatPeriod, getExtensionValue, isCoding, isReference } from '@medplum/core';
 import type {
   Appointment,
-  Bundle,
   Encounter,
   HealthcareService,
   Patient,
@@ -24,15 +15,13 @@ import type {
 import { Form, ResourceInput, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
+import type { SchedulingAPI } from '../../hooks/useSchedulingResources';
 import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import {
-  SchedulingEncounterCodingURI,
-  SchedulingPlanDefinitionURI,
-  SchedulingTransientIdentifier,
-} from '../../utils/scheduling';
+import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
 
 type BookAppointmentFormProps = {
+  schedulingAPI: SchedulingAPI;
   appointment: Appointment;
   healthcareService: HealthcareService;
   onSuccess?: (result: {
@@ -48,7 +37,7 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
-  const { appointment, healthcareService, onSuccess } = props;
+  const { appointment, healthcareService, onSuccess, schedulingAPI } = props;
 
   const bookEncounter = useCallback(
     async (appointment: WithId<Appointment>): Promise<WithId<Encounter> | undefined> => {
@@ -113,45 +102,25 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
         ],
       } satisfies Appointment;
 
-      // Remove any transient identifiers we added for use in the UI before submitting
-      SchedulingTransientIdentifier.remove(booking);
-
       try {
-        const data = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
-          medplum.fhirUrl('Appointment', '$book'),
-          {
-            resourceType: 'Parameters',
-            parameter: [{ name: 'appointment', resource: booking }],
-          }
-        );
-        medplum.invalidateSearches('Appointment');
-        medplum.invalidateSearches('Slot');
-
-        const resources = data.entry?.map((entry) => entry.resource).filter(isDefined) ?? EMPTY;
-        const slots = resources.filter(
-          (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Slot> => obj.resourceType === 'Slot'
-        );
-        const appointment = resources.find(
-          (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Appointment> => obj.resourceType === 'Appointment'
-        );
-
-        if (appointment) {
-          let encounter: WithId<Encounter> | undefined;
-          try {
-            encounter = await bookEncounter(appointment);
-          } catch (err) {
-            // If we couldn't load the plan definition or create the encounter for
-            // some reason, we log the error but ignore it. The viewer can decide how
-            // to proceed and manually create the encounter.
-            console.error(err);
-          }
-          await onSuccess?.({ appointment, slots, patient, encounter });
+        const { appointment, slots } = await schedulingAPI.book(booking);
+        let encounter: WithId<Encounter> | undefined;
+        try {
+          encounter = await bookEncounter(appointment);
+        } catch (err) {
+          // If we couldn't load the plan definition or create the encounter for
+          // some reason, we log the error but ignore it. The viewer can decide how
+          // to proceed and manually create the encounter.
+          console.error(err);
         }
+        await onSuccess?.({ appointment, slots, patient, encounter });
+      } catch (err) {
+        showErrorNotification(err);
       } finally {
         setLoading(false);
       }
     },
-    [medplum, appointment, bookEncounter, onSuccess]
+    [appointment, bookEncounter, onSuccess, schedulingAPI]
   );
 
   const handleSubmit = useCallback(async () => {

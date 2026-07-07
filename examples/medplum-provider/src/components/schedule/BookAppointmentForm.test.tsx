@@ -3,13 +3,14 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Appointment, Bundle, Encounter, HealthcareService, PlanDefinition, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Encounter, HealthcareService, PlanDefinition, Slot } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { SchedulingAPI } from '../../hooks/useSchedulingResources';
 import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
@@ -52,10 +53,19 @@ describe('BookAppointmentForm', () => {
       encounter: Encounter | undefined;
     }) => void;
     healthcareService?: HealthcareService;
+    schedulingAPI?: Partial<SchedulingAPI>;
   };
 
   const setup = async (options: SetupOptions = {}): Promise<void> => {
     const { onSuccess, healthcareService = defaultHealthcareService } = options;
+    const schedulingAPI: SchedulingAPI = {
+      book: vi.fn(),
+      cancel: vi.fn(),
+      confirm: vi.fn(),
+      find: vi.fn(),
+      updateAppointment: vi.fn(),
+      ...(options.schedulingAPI ?? {}),
+    };
     await act(async () => {
       render(
         <MemoryRouter>
@@ -66,6 +76,7 @@ describe('BookAppointmentForm', () => {
                 appointment={appointment}
                 healthcareService={healthcareService}
                 onSuccess={onSuccess}
+                schedulingAPI={schedulingAPI}
               />
             </MantineProvider>
           </MedplumProvider>
@@ -87,55 +98,38 @@ describe('BookAppointmentForm', () => {
     expect(screen.getByText(/2026/)).toBeInTheDocument();
   });
 
-  test('does not call $book when no patient is selected', async () => {
+  test('does not call book when no patient is selected', async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
-    medplum.post = vi.fn();
+    const bookMock = vi.fn();
 
-    await setup({ onSuccess });
+    await setup({ onSuccess, schedulingAPI: { book: bookMock } });
 
     await user.click(screen.getByRole('button', { name: 'Create Appointment' }));
 
-    expect(medplum.post).not.toHaveBeenCalled();
+    expect(bookMock).not.toHaveBeenCalled();
     expect(onSuccess).not.toHaveBeenCalled();
   });
 
-  test('calls $book with correct parameters when patient is selected', async () => {
+  test('calls schedulingAPI.book with booking that includes the selected patient', async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
 
-    const mockBookResponse: Bundle<Appointment | Slot> = {
-      resourceType: 'Bundle',
-      type: 'collection',
-      entry: [
-        {
-          resource: {
-            resourceType: 'Appointment',
-            id: 'appointment-1',
-            status: 'booked',
-            start,
-            end,
-            participant: [],
-          },
-        },
-        {
-          resource: {
-            resourceType: 'Slot',
-            id: 'slot-1',
-            status: 'busy',
-            start,
-            end,
-            schedule: { reference: 'Schedule/schedule-1' },
-          },
-        },
-      ],
+    const bookedAppointment: WithId<Appointment> = {
+      resourceType: 'Appointment',
+      id: 'appointment-1',
+      status: 'booked',
+      start,
+      end,
+      participant: [],
     };
+    const bookMock = vi.fn().mockResolvedValue({
+      appointment: bookedAppointment,
+      slots: [],
+    });
 
-    medplum.post = vi.fn().mockResolvedValue(mockBookResponse);
+    await setup({ onSuccess, schedulingAPI: { book: bookMock } });
 
-    await setup({ onSuccess });
-
-    // Select a patient via the ResourceInput autocomplete
     const patientInput = screen.getByRole('searchbox');
     await user.type(patientInput, 'Homer');
 
@@ -144,29 +138,20 @@ describe('BookAppointmentForm', () => {
     });
     await user.click(screen.getByText('Homer Simpson'));
 
-    // Submit the form
     await user.click(screen.getByRole('button', { name: 'Create Appointment' }));
 
-    // Verify the $book call
-    expect(medplum.post).toHaveBeenCalledWith(
-      new URL('https://example.com/fhir/R4/Appointment/$book'),
+    await waitFor(() => expect(bookMock).toHaveBeenCalled());
+
+    expect(bookMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'appointment',
-            resource: expect.objectContaining({
-              resourceType: 'Appointment',
-              participant: expect.arrayContaining([
-                expect.objectContaining({
-                  actor: expect.objectContaining({ reference: `Patient/${HomerSimpson.id}` }),
-                  status: 'needs-action',
-                  required: 'required',
-                }),
-              ]),
-            }),
-          },
-        ],
+        resourceType: 'Appointment',
+        participant: expect.arrayContaining([
+          expect.objectContaining({
+            actor: expect.objectContaining({ reference: `Patient/${HomerSimpson.id}` }),
+            status: 'needs-action',
+            required: 'required',
+          }),
+        ]),
       })
     );
   });
@@ -175,7 +160,7 @@ describe('BookAppointmentForm', () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
 
-    const bookedAppointment: Appointment = {
+    const bookedAppointment: WithId<Appointment> = {
       resourceType: 'Appointment',
       id: 'appointment-1',
       status: 'booked',
@@ -184,7 +169,7 @@ describe('BookAppointmentForm', () => {
       participant: [],
     };
 
-    const busySlot: Slot = {
+    const busySlot: WithId<Slot> = {
       resourceType: 'Slot',
       id: 'slot-1',
       status: 'busy',
@@ -193,7 +178,7 @@ describe('BookAppointmentForm', () => {
       schedule: { reference: 'Schedule/schedule-1' },
     };
 
-    const bufferAfterSlot: Slot = {
+    const bufferAfterSlot: WithId<Slot> = {
       resourceType: 'Slot',
       id: 'slot-2',
       status: 'busy-unavailable',
@@ -202,15 +187,12 @@ describe('BookAppointmentForm', () => {
       schedule: { reference: 'Schedule/schedule-1' },
     };
 
-    const mockBookResponse: Bundle<Appointment | Slot> = {
-      resourceType: 'Bundle',
-      type: 'collection',
-      entry: [{ resource: bookedAppointment }, { resource: busySlot }, { resource: bufferAfterSlot }],
-    };
+    const bookMock = vi.fn().mockResolvedValue({
+      appointment: bookedAppointment,
+      slots: [busySlot, bufferAfterSlot],
+    });
 
-    medplum.post = vi.fn().mockResolvedValue(mockBookResponse);
-
-    await setup({ onSuccess });
+    await setup({ onSuccess, schedulingAPI: { book: bookMock } });
 
     const patientInput = screen.getByRole('searchbox');
     await user.type(patientInput, 'Homer');
@@ -232,14 +214,13 @@ describe('BookAppointmentForm', () => {
     });
   });
 
-  test('shows error notification when $book fails', async () => {
+  test('shows error notification when book fails', async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
     const bookError = new Error('Network error');
+    const bookMock = vi.fn().mockRejectedValue(bookError);
 
-    medplum.post = vi.fn().mockRejectedValue(bookError);
-
-    await setup({ onSuccess });
+    await setup({ onSuccess, schedulingAPI: { book: bookMock } });
 
     const patientInput = screen.getByRole('searchbox');
     await user.type(patientInput, 'Homer');
@@ -260,16 +241,10 @@ describe('BookAppointmentForm', () => {
   test('shows loading state while booking is in-flight', async () => {
     const user = userEvent.setup();
 
-    // Use a promise we control to keep the booking in-flight
-    let resolveBook: (value: Bundle) => void;
-    medplum.post = vi.fn().mockImplementation(
-      () =>
-        new Promise<Bundle>((resolve) => {
-          resolveBook = resolve;
-        })
-    );
+    const bookResolvers = Promise.withResolvers<{ appointment: WithId<Appointment>; slots: WithId<Slot>[] }>();
+    const bookMock = vi.fn().mockReturnValue(bookResolvers.promise);
 
-    await setup();
+    await setup({ schedulingAPI: { book: bookMock } });
 
     const patientInput = screen.getByRole('searchbox');
     await user.type(patientInput, 'Homer');
@@ -281,19 +256,26 @@ describe('BookAppointmentForm', () => {
 
     await user.click(screen.getByRole('button', { name: 'Create Appointment' }));
 
-    // While the request is in-flight, the submit button should be disabled with a loading indicator
     const button = screen.getByRole('button', { name: 'Create Appointment' });
     await waitFor(() => {
       expect(button).toBeDisabled();
       expect(button).toHaveAttribute('data-loading', 'true');
     });
 
-    // Resolve the booking to clean up
     await act(async () => {
-      resolveBook({ resourceType: 'Bundle', type: 'collection', entry: [] });
+      bookResolvers.resolve({
+        appointment: {
+          resourceType: 'Appointment',
+          id: 'appointment-1',
+          status: 'booked',
+          start,
+          end,
+          participant: [],
+        },
+        slots: [],
+      });
     });
 
-    // After completion, the button should no longer be loading
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Create Appointment' })).not.toBeDisabled();
     });
@@ -317,8 +299,7 @@ describe('BookAppointmentForm', () => {
       ],
     };
 
-    // Appointment returned by $book with exactly one practitioner and one patient
-    const bookedAppointmentWithParticipants: Appointment = {
+    const bookedAppointmentWithParticipants: WithId<Appointment> = {
       resourceType: 'Appointment',
       id: 'appointment-1',
       status: 'booked',
@@ -330,22 +311,19 @@ describe('BookAppointmentForm', () => {
       ],
     };
 
-    const makeBookResponse = (appt: Appointment): Bundle<Appointment | Slot> => ({
-      resourceType: 'Bundle',
-      type: 'collection',
-      entry: [{ resource: appt }],
-    });
-
     test('creates encounter and passes it to onSuccess when healthcareService has required extensions', async () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
       const mockEncounter: Encounter = { resourceType: 'Encounter', id: 'enc-1', status: 'planned', class: {} };
 
-      medplum.post = vi.fn().mockResolvedValue(makeBookResponse(bookedAppointmentWithParticipants));
+      const bookMock = vi.fn().mockResolvedValue({
+        appointment: bookedAppointmentWithParticipants,
+        slots: [],
+      });
       vi.spyOn(medplum, 'readReference').mockResolvedValue(planDefinition);
       vi.mocked(createEncounter).mockResolvedValue(mockEncounter as Encounter & { id: string });
 
-      await setup({ onSuccess, healthcareService: healthcareServiceWithEncounter });
+      await setup({ onSuccess, healthcareService: healthcareServiceWithEncounter, schedulingAPI: { book: bookMock } });
 
       const patientInput = screen.getByRole('searchbox');
       await user.type(patientInput, 'Homer');
@@ -370,9 +348,12 @@ describe('BookAppointmentForm', () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
 
-      medplum.post = vi.fn().mockResolvedValue(makeBookResponse(bookedAppointmentWithParticipants));
+      const bookMock = vi.fn().mockResolvedValue({
+        appointment: bookedAppointmentWithParticipants,
+        slots: [],
+      });
 
-      await setup({ onSuccess, healthcareService: defaultHealthcareService });
+      await setup({ onSuccess, healthcareService: defaultHealthcareService, schedulingAPI: { book: bookMock } });
 
       const patientInput = screen.getByRole('searchbox');
       await user.type(patientInput, 'Homer');
@@ -396,9 +377,12 @@ describe('BookAppointmentForm', () => {
         extension: [{ url: SchedulingPlanDefinitionURI, valueReference: { reference: 'PlanDefinition/pd-1' } }],
       };
 
-      medplum.post = vi.fn().mockResolvedValue(makeBookResponse(bookedAppointmentWithParticipants));
+      const bookMock = vi.fn().mockResolvedValue({
+        appointment: bookedAppointmentWithParticipants,
+        slots: [],
+      });
 
-      await setup({ onSuccess, healthcareService: hcsWithoutCoding });
+      await setup({ onSuccess, healthcareService: hcsWithoutCoding, schedulingAPI: { book: bookMock } });
 
       const patientInput = screen.getByRole('searchbox');
       await user.type(patientInput, 'Homer');
@@ -416,7 +400,7 @@ describe('BookAppointmentForm', () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
 
-      const apptTwoPractitioners: Appointment = {
+      const apptTwoPractitioners: WithId<Appointment> = {
         ...bookedAppointmentWithParticipants,
         participant: [
           { actor: { reference: 'Practitioner/prac-1' }, status: 'accepted' },
@@ -425,10 +409,10 @@ describe('BookAppointmentForm', () => {
         ],
       };
 
-      medplum.post = vi.fn().mockResolvedValue(makeBookResponse(apptTwoPractitioners));
+      const bookMock = vi.fn().mockResolvedValue({ appointment: apptTwoPractitioners, slots: [] });
       vi.spyOn(medplum, 'readReference').mockResolvedValue(planDefinition);
 
-      await setup({ onSuccess, healthcareService: healthcareServiceWithEncounter });
+      await setup({ onSuccess, healthcareService: healthcareServiceWithEncounter, schedulingAPI: { book: bookMock } });
 
       const patientInput = screen.getByRole('searchbox');
       await user.type(patientInput, 'Homer');
@@ -446,7 +430,7 @@ describe('BookAppointmentForm', () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
 
-      const apptTwoPatients: Appointment = {
+      const apptTwoPatients: WithId<Appointment> = {
         ...bookedAppointmentWithParticipants,
         participant: [
           { actor: { reference: 'Practitioner/prac-1' }, status: 'accepted' },
@@ -455,10 +439,10 @@ describe('BookAppointmentForm', () => {
         ],
       };
 
-      medplum.post = vi.fn().mockResolvedValue(makeBookResponse(apptTwoPatients));
+      const bookMock = vi.fn().mockResolvedValue({ appointment: apptTwoPatients, slots: [] });
       vi.spyOn(medplum, 'readReference').mockResolvedValue(planDefinition);
 
-      await setup({ onSuccess, healthcareService: healthcareServiceWithEncounter });
+      await setup({ onSuccess, healthcareService: healthcareServiceWithEncounter, schedulingAPI: { book: bookMock } });
 
       const patientInput = screen.getByRole('searchbox');
       await user.type(patientInput, 'Homer');
@@ -477,11 +461,14 @@ describe('BookAppointmentForm', () => {
       const onSuccess = vi.fn();
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-      medplum.post = vi.fn().mockResolvedValue(makeBookResponse(bookedAppointmentWithParticipants));
+      const bookMock = vi.fn().mockResolvedValue({
+        appointment: bookedAppointmentWithParticipants,
+        slots: [],
+      });
       vi.spyOn(medplum, 'readReference').mockResolvedValue(planDefinition);
       vi.mocked(createEncounter).mockRejectedValue(new Error('PlanDefinition $apply failed'));
 
-      await setup({ onSuccess, healthcareService: healthcareServiceWithEncounter });
+      await setup({ onSuccess, healthcareService: healthcareServiceWithEncounter, schedulingAPI: { book: bookMock } });
 
       const patientInput = screen.getByRole('searchbox');
       await user.type(patientInput, 'Homer');

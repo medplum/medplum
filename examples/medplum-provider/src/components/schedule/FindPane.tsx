@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { EMPTY, formatDateTime, getReferenceString, isDefined } from '@medplum/core';
-import type { Appointment, Bundle, Encounter, HealthcareService, Patient, Schedule, Slot } from '@medplum/fhirtypes';
+import { EMPTY, formatDateTime } from '@medplum/core';
+import type { Appointment, Encounter, HealthcareService, Patient, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
+import type { SchedulingAPI } from '../../hooks/useSchedulingResources';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
@@ -23,6 +24,7 @@ type FindPaneProps = {
   range: Range;
   onSuccess: (results: { appointment: WithId<Appointment>; slots: WithId<Slot>[] }) => void;
   className?: string;
+  schedulingAPI: SchedulingAPI;
 };
 
 function HealthcareServiceDisplay(props: { value: HealthcareService }): JSX.Element {
@@ -50,7 +52,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   const [appointments, setAppointments] = useState<readonly Appointment[] | undefined>(undefined);
   const [chosenAppointment, setChosenAppointment] = useState<Appointment | undefined>(undefined);
   const [selectedHealthcareService, setSelectedHealthcareService] = useState<WithId<HealthcareService> | undefined>();
-  const { schedule, range, onSuccess } = props;
+  const { schedule, range, onSuccess, schedulingAPI } = props;
 
   const [healthcareServices, setHealthcareServices] = useState<WithId<HealthcareService>[] | undefined>();
 
@@ -91,56 +93,47 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   const earliestSchedulable = useSchedulingStartsAt({ minimumNoticeMinutes: 30 });
 
   useEffect(() => {
-    if (!schedule || !selectedHealthcareService) {
+    if (!selectedHealthcareService) {
       return () => {};
     }
 
     // Compute search range
     const searchStart = range.start < earliestSchedulable ? earliestSchedulable : range.start;
     const searchEnd = searchStart < range.end ? range.end : new Date(searchStart.getTime() + ONE_WEEK_MS);
-    const start = searchStart.toISOString();
-    const end = searchEnd.toISOString();
 
     let completed = false;
     const controller = new AbortController();
     const signal = controller.signal;
 
-    const url = medplum.fhirUrl('Appointment', '$find');
-    url.searchParams.append('start', start);
-    url.searchParams.append('end', end);
-    url.searchParams.append('service-type-reference', getReferenceString(selectedHealthcareService));
-    url.searchParams.append('schedule', getReferenceString(schedule));
-
-    medplum
-      .get<Bundle<Appointment>>(url, { signal })
-      .then(
-        (bundle) => {
-          if (signal.aborted) {
-            return;
-          }
-          if (bundle.entry) {
-            bundle.entry.forEach((entry) => entry.resource && SchedulingTransientIdentifier.set(entry.resource));
-            setAppointments(bundle.entry.map((entry) => entry.resource).filter(isDefined));
-          } else {
-            setAppointments([]);
-          }
-        },
-        (error) => {
-          if (!signal.aborted) {
-            setAppointments([]);
-            showErrorNotification(error);
-          }
+    schedulingAPI
+      .find({
+        healthcareService: selectedHealthcareService,
+        range: { start: searchStart, end: searchEnd },
+        abortSignal: signal,
+      })
+      .then((appointments) => {
+        if (signal.aborted) {
+          return;
         }
-      )
+        setAppointments(appointments);
+      })
+      .catch((err) => {
+        if (signal.aborted) {
+          return;
+        }
+        setAppointments([]);
+        showErrorNotification(err);
+      })
       .finally(() => {
         completed = true;
       });
+
     return () => {
       if (!completed) {
         controller.abort();
       }
     };
-  }, [medplum, schedule, selectedHealthcareService, range, earliestSchedulable]);
+  }, [schedulingAPI, selectedHealthcareService, range, earliestSchedulable]);
 
   const handleDismiss = useCallback(() => {
     setSelectedHealthcareService(undefined);
@@ -187,6 +180,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
           appointment={chosenAppointment}
           healthcareService={selectedHealthcareService}
           onSuccess={handleBookSuccess}
+          schedulingAPI={props.schedulingAPI}
         />
       </Stack>
     );

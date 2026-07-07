@@ -3,15 +3,17 @@
 import { Drawer, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
-import { EMPTY, getReferenceString, isDefined, isReference, isResourceWithId, resolveId } from '@medplum/core';
+import { getReferenceString, isReference, isResourceWithId } from '@medplum/core';
 import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Calendar } from '../../components/Calendar';
+import { OutcomeAlert } from '../../components/OutcomeAlert';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
+import { useSchedulingResources } from '../../hooks/useSchedulingResources';
 import type { Range } from '../../types/scheduling';
 import { encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
@@ -31,56 +33,12 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
   const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
   const [appointmentDetailsOpened, appointmentDetailsHandlers] = useDisclosure(false);
   const [range, setRange] = useState<Range | undefined>(undefined);
-  const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
-  const [appointments, setAppointments] = useState<WithId<Appointment>[] | undefined>(undefined);
 
   const [appointmentSlot, setAppointmentSlot] = useState<Range>();
   const [appointmentDetails, setAppointmentDetails] = useState<WithId<Appointment> | undefined>(undefined);
 
-  useEffect(() => {
-    if (!range) {
-      return () => {};
-    }
-    let active = true;
-
-    medplum
-      .searchResources('Slot', [
-        ['_count', '1000'],
-        ['schedule', getReferenceString(schedule)],
-        ['start', `ge${range.start.toISOString()}`],
-        ['start', `le${range.end.toISOString()}`],
-        ['status:not', 'entered-in-error'],
-      ])
-      .then((rawSlots) => active && setSlots(rawSlots))
-      .catch((error: unknown) => active && showErrorNotification(error));
-
-    return () => {
-      active = false;
-    };
-  }, [medplum, schedule, range]);
-
-  // Find appointments visible in the current range
-  useEffect(() => {
-    const actorRef = schedule.actor[0]?.reference;
-    if (!actorRef || !range) {
-      return () => {};
-    }
-    let active = true;
-
-    medplum
-      .searchResources('Appointment', [
-        ['_count', '1000'],
-        ['actor', actorRef],
-        ['date', `ge${range.start.toISOString()}`],
-        ['date', `le${range.end.toISOString()}`],
-      ])
-      .then((appointments) => active && setAppointments(appointments))
-      .catch((error: unknown) => active && showErrorNotification(error));
-
-    return () => {
-      active = false;
-    };
-  }, [medplum, schedule, range]);
+  const schedules = useMemo(() => [schedule], [schedule]);
+  const { slots, appointments, schedulingAPI, operationOutcome } = useSchedulingResources(schedules, range);
 
   const practitioner = schedule.actor.find((actor) => isReference<Practitioner>(actor, 'Practitioner'));
 
@@ -117,10 +75,8 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
 
   const handleBookSuccess = useCallback(
     (results: { appointment: WithId<Appointment>; slots: Slot[] }) => {
-      setAppointments((state) => [...(state ?? EMPTY), results.appointment]);
       setAppointmentDetails(results.appointment);
       appointmentDetailsHandlers.open();
-      setSlots((state) => results.slots.concat(state ?? EMPTY));
     },
     [appointmentDetailsHandlers]
   );
@@ -160,25 +116,13 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
 
   const handleAppointmentUpdate = useCallback(
     (updated: WithId<Appointment>) => {
-      setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
       setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
       if (updated.status === 'cancelled') {
         appointmentDetailsHandlers.close();
-
-        // If the appointment was cancelled with `$cancel`, it also
-        // soft-deleted the related slots. Remove them from our local state.
-        if (updated.slot) {
-          const ids = new Set(updated.slot.map((ref) => resolveId(ref)).filter(isDefined));
-          setSlots((state) => state?.filter((slot) => slot.id && !ids.has(slot.id)));
-        }
       }
     },
     [appointmentDetailsHandlers]
   );
-
-  const handleSlotUpdate = useCallback((updated: WithId<Slot>) => {
-    setSlots((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
-  }, []);
 
   const mergedSlots = useMemo(() => mergeOverlappingSlots(slots ?? []), [slots]);
 
@@ -186,6 +130,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     <>
       <div className={classes.container}>
         <Stack className={classes.calendarPane}>
+          <OutcomeAlert outcome={operationOutcome} />
           <Calendar
             onSelectInterval={handleSelectInterval}
             onSelectAppointment={handleSelectAppointment}
@@ -207,6 +152,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
             range={range}
             onSuccess={handleBookSuccess}
             className={classes.findPane}
+            schedulingAPI={schedulingAPI}
           />
         )}
       </div>
@@ -238,7 +184,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
           <AppointmentDetails
             appointment={appointmentDetails}
             onAppointmentUpdate={handleAppointmentUpdate}
-            onSlotUpdate={handleSlotUpdate}
+            schedulingAPI={schedulingAPI}
           />
         )}
       </Drawer>

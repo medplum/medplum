@@ -11,26 +11,19 @@ import {
   getReferenceString,
   isOk,
   isReference,
-  isResource,
 } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
-import {
-  CodeableConceptDisplay,
-  Form,
-  MedplumLink,
-  OperationOutcomeAlert,
-  ResourceAvatar,
-  ResourceInput,
-  useMedplum,
-} from '@medplum/react';
+import type { Appointment, CodeableConcept, Patient, Practitioner } from '@medplum/fhirtypes';
+import { CodeableConceptDisplay, Form, MedplumLink, ResourceAvatar, ResourceInput } from '@medplum/react';
 import { useResource, useSearchOne } from '@medplum/react-hooks';
 import { IconFileCheck, IconNotes, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router';
+import type { SchedulingAPI } from '../../hooks/useSchedulingResources';
 import { encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { ServiceTypeReferenceURI } from '../../utils/servicetype';
+import { OutcomeAlert } from '../OutcomeAlert';
 import classes from './AppointmentDetails.module.css';
 import { CreateEncounterForm } from './CreateEncounterForm';
 
@@ -49,14 +42,14 @@ function ServiceTypeDisplay(props: { value: CodeableConcept }): JSX.Element {
 
 type UpdateAppointmentFormProps = {
   appointment: WithId<Appointment>;
-  onUpdate: (appointment: WithId<Appointment>) => void;
+  updateAppointment: (appointment: WithId<Appointment>) => Promise<WithId<Appointment>>;
+  onAppointmentUpdate: (appointment: WithId<Appointment>) => void;
 };
 
 function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
-  const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient | undefined>(undefined);
 
-  const { appointment, onUpdate } = props;
+  const { appointment, updateAppointment, onAppointmentUpdate } = props;
   const handleSubmit = useCallback(async () => {
     if (!patient) {
       return;
@@ -72,15 +65,12 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
       ],
     } satisfies Appointment;
 
-    let result: WithId<Appointment>;
     try {
-      result = await medplum.updateResource(updated);
+      onAppointmentUpdate(await updateAppointment(updated));
     } catch (error) {
       showErrorNotification(error);
-      return;
     }
-    onUpdate?.(result);
-  }, [medplum, patient, appointment, onUpdate]);
+  }, [patient, appointment, updateAppointment, onAppointmentUpdate]);
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -101,13 +91,16 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
   );
 }
 
+function isConfirmable(appointment: Appointment): boolean {
+  return appointment.status === 'pending';
+}
+
 export function AppointmentDetails(props: {
   appointment: WithId<Appointment>;
+  schedulingAPI: SchedulingAPI;
   onAppointmentUpdate: (appointment: WithId<Appointment>) => void;
-  onSlotUpdate: (slot: WithId<Slot>) => void;
 }): JSX.Element {
-  const { appointment, onAppointmentUpdate, onSlotUpdate } = props;
-  const medplum = useMedplum();
+  const { appointment, schedulingAPI, onAppointmentUpdate } = props;
 
   const [encounter, encounterLoading, encounterOutcome] = useSearchOne('Encounter', {
     appointment: getReferenceString(appointment),
@@ -129,54 +122,43 @@ export function AppointmentDetails(props: {
   const handleCancel = useCallback(async () => {
     setCancelLoading(true);
     try {
-      const updated = await medplum.post<WithId<Appointment>>(
-        medplum.fhirUrl('Appointment', appointment.id, '$cancel')
-      );
-      medplum.invalidateSearches('Appointment');
-      medplum.invalidateSearches('Slot');
-      onAppointmentUpdate(updated);
+      const result = await schedulingAPI.cancel(appointment);
+      onAppointmentUpdate(result);
     } catch (err) {
       showErrorNotification(err);
     } finally {
       setCancelLoading(false);
     }
-  }, [medplum, appointment, onAppointmentUpdate]);
+  }, [schedulingAPI, onAppointmentUpdate, appointment]);
 
-  const confirmable = appointment.status === 'pending';
   const [confirmLoading, setConfirmLoading] = useState(false);
   const handleConfirm = useCallback(async () => {
-    if (!confirmable) {
+    if (!isConfirmable(appointment)) {
       console.error(new Error(`handleConfirm called from non confirmable status '${appointment.status}'`));
       return;
     }
     setConfirmLoading(true);
     try {
-      const updated = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
-        medplum.fhirUrl('Appointment', appointment.id, '$confirm')
-      );
-      medplum.invalidateSearches('Appointment');
-      medplum.invalidateSearches('Slot');
-      const updatedResources = updated.entry?.map((entry) => entry.resource) ?? EMPTY;
-      const updatedAppointment = updatedResources.find((res) => isResource<Appointment>(res, 'Appointment'));
-      const updatedSlots = updatedResources.filter((res) => isResource<Slot>(res, 'Slot'));
-      if (updatedAppointment) {
-        onAppointmentUpdate(updatedAppointment);
-      }
-      for (const updatedSlot of updatedSlots) {
-        onSlotUpdate(updatedSlot);
-      }
+      const result = await schedulingAPI.confirm(appointment);
+      onAppointmentUpdate(result.appointment);
     } catch (err) {
       showErrorNotification(err);
     } finally {
       setConfirmLoading(false);
     }
-  }, [medplum, appointment, confirmable, onAppointmentUpdate, onSlotUpdate]);
+  }, [schedulingAPI, onAppointmentUpdate, appointment]);
 
   return (
     <Stack gap="md" className={classes.AppointmentDetails}>
       <Divider />
 
-      {!patientRef && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onAppointmentUpdate} />}
+      {!patientRef && (
+        <UpdateAppointmentForm
+          appointment={props.appointment}
+          updateAppointment={schedulingAPI.updateAppointment}
+          onAppointmentUpdate={props.onAppointmentUpdate}
+        />
+      )}
 
       {!!patient && (
         <Group align="center" gap="sm">
@@ -217,9 +199,7 @@ export function AppointmentDetails(props: {
           <Loader size="sm" />
         </Group>
       )}
-      {encounterOutcome && !isOk(encounterOutcome) && (
-        <OperationOutcomeAlert outcome={encounterOutcome} title="Loading Encounter failed" />
-      )}
+      <OutcomeAlert outcome={encounterOutcome} title="Encounter Loading Issue" />
       {patientRef && !encounter && !encounterLoading && encounterOutcome && isOk(encounterOutcome) && (
         <CreateEncounterForm appointment={appointment} patientRef={patientRef} practitionerRef={practitionerRef} />
       )}
@@ -237,7 +217,7 @@ export function AppointmentDetails(props: {
           View Encounter
         </Button>
       )}
-      {confirmable && (
+      {isConfirmable(appointment) && (
         <Button
           loading={confirmLoading}
           onClick={handleConfirm}
