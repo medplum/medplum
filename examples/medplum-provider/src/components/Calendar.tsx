@@ -10,12 +10,13 @@ import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
 import { Button, Group, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
+import { useDebouncedCallback } from '@mantine/hooks';
 import { EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Range } from '../types/scheduling';
 import { assertNever } from '../utils/assert';
 import classes from './Calendar.module.css';
@@ -65,14 +66,15 @@ export function Calendar(props: {
   onSelectInterval?: (slotInfo: Range) => void;
   onSelectSlot?: (slot: Slot) => void;
   onSelectAppointment?: (appointment: Appointment) => void;
+  onDoubleClickAppointment?: (appointment: Appointment) => void;
   onRangeChange?: (range: Range) => void;
   className?: string;
 }): JSX.Element {
   const colorScheme = useComputedColorScheme();
   const controller = useCalendarController();
-  const { onSelectAppointment, onSelectSlot } = props;
+  const { onSelectAppointment, onSelectSlot, onDoubleClickAppointment } = props;
 
-  const handleSelectEvent = useCallback(
+  const handleSelectEventRaw = useCallback(
     (event: EventApi) => {
       const ext = event.extendedProps as ExtendedEvent;
       if (ext.type === 'appointment') {
@@ -85,6 +87,29 @@ export function Calendar(props: {
     },
     [onSelectAppointment, onSelectSlot]
   );
+
+  // Add slight delay to click handler to permit double-clicks to register
+  const handleSelectEventDebounced = useDebouncedCallback(handleSelectEventRaw, 100);
+
+  const handleSelectEvent = onDoubleClickAppointment ? handleSelectEventDebounced : handleSelectEventRaw;
+
+  // FullCalendar creates new elements on each render rather than recycling them,
+  // so dblclick listeners are cleaned up automatically when the old element is GC'd
+  // — no eventWillUnmount teardown needed. The WeakMap and callback Ref let the
+  // single stable listener read the latest event data and prop without being
+  // re-registered on every render.
+  const eventDataRef = useRef(new WeakMap<Element, ExtendedEvent>());
+  const onDoubleClickRef = useRef(onDoubleClickAppointment);
+  useEffect(() => {
+    onDoubleClickRef.current = onDoubleClickAppointment;
+  }, [onDoubleClickAppointment]);
+
+  const handleDblClick = useCallback((e: Event) => {
+    const ext = eventDataRef.current.get(e.currentTarget as Element);
+    if (ext?.type === 'appointment') {
+      onDoubleClickRef.current?.(ext.appointment);
+    }
+  }, []);
 
   const events = useMemo(() => {
     const appointmentIndex = props.appointments.reduce<Record<string, Appointment>>((acc, appointment) => {
@@ -184,6 +209,12 @@ export function Calendar(props: {
           timeGridDay: {
             allDaySlot: false,
           },
+        }}
+        eventDidMount={(info) => {
+          if (onDoubleClickAppointment) {
+            eventDataRef.current.set(info.el, info.event.extendedProps as ExtendedEvent);
+            info.el.addEventListener('dblclick', handleDblClick);
+          }
         }}
       />
     </div>

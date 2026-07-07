@@ -202,6 +202,9 @@ export function ToolsPage(): JSX.Element | null {
   const [lastPing, setLastPing] = useState<string | undefined>();
   const [pinging, setPinging] = useState(false);
   const [logs, setLogs] = useState<string | undefined>();
+  const [logsHasMore, setLogsHasMore] = useState(false);
+  const [logsNextBefore, setLogsNextBefore] = useState<string | undefined>();
+  const [logLimit, setLogLimit] = useState(20);
   const [stats, setStats] = useState<AgentStats | undefined>();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
 
@@ -264,25 +267,49 @@ export function ToolsPage(): JSX.Element | null {
     [medplum, id]
   );
 
-  const handleFetchLogs = useCallback(
-    (formData: Record<string, string>) => {
+  const fetchLogsPage = useCallback(
+    (limit: number, before?: string): void => {
       setFetchingLogs(true);
-      const limit = formData.logLimit || 20;
+      const url = medplum.fhirUrl('Agent', id, '$fetch-logs');
+      url.searchParams.set('limit', String(limit));
+      if (before) {
+        url.searchParams.set('before', before);
+      }
       medplum
-        .get(medplum.fhirUrl('Agent', id, `$fetch-logs${limit !== undefined ? `?limit=${limit}` : ''}`), {
-          cache: 'reload',
-        })
+        .get(url, { cache: 'reload' })
         .then((result: Parameters) => {
-          const param = result?.parameter?.find((param) => param.name === 'logs');
-          if (param) {
-            setLogs(param?.valueString);
-          }
+          const pageLogs = result?.parameter?.find((param) => param.name === 'logs')?.valueString;
+          const hasMore = result?.parameter?.find((param) => param.name === 'hasMore')?.valueBoolean ?? false;
+          const nextBefore = result?.parameter?.find((param) => param.name === 'nextBefore')?.valueString;
+          // When paging with a cursor, append the older page beneath the existing
+          // logs; otherwise replace with the fresh first page.
+          setLogs((prev) => {
+            if (before && prev) {
+              return pageLogs ? `${prev}\n${pageLogs}` : prev;
+            }
+            return pageLogs;
+          });
+          setLogsHasMore(hasMore);
+          setLogsNextBefore(nextBefore);
         })
         .catch((err) => showError(normalizeErrorString(err)))
         .finally(() => setFetchingLogs(false));
     },
     [medplum, id]
   );
+
+  const handleFetchLogs = useCallback(
+    (formData: Record<string, string>) => {
+      const limit = Number(formData.logLimit) || 20;
+      setLogLimit(limit);
+      fetchLogsPage(limit);
+    },
+    [fetchLogsPage]
+  );
+
+  const handleLoadMoreLogs = useCallback(() => {
+    fetchLogsPage(logLimit, logsNextBefore);
+  }, [fetchLogsPage, logLimit, logsNextBefore]);
 
   const handleFetchStats = useCallback(() => {
     setFetchingStats(true);
@@ -405,6 +432,19 @@ export function ToolsPage(): JSX.Element | null {
           >
             Fetch Logs
           </Button>
+          {logsHasMore ? (
+            <Button
+              mt={22}
+              type="button"
+              variant="default"
+              onClick={handleLoadMoreLogs}
+              loading={fetchingLogs}
+              disabled={working && !fetchingLogs}
+              aria-label="Load more logs"
+            >
+              Load More
+            </Button>
+          ) : null}
         </Group>
       </Form>
       <Divider my="lg" />
