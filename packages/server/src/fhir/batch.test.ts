@@ -65,7 +65,16 @@ describe('Batch and Transaction processing', () => {
     // throttle timing, so zero the delay to avoid real sleeps that slow the suite down.
     config.asyncDelayScaling = 0;
     await initApp(app, config);
-    accessToken = await initTestAuth({ project: { features: ['transaction-bundles'] }, membership: { admin: true } });
+    accessToken = await initTestAuth({
+      project: {
+        features: ['transaction-bundles'],
+        // Opt in to re-entrant async batch processing (see workers/batch.ts). The async batch tests
+        // below exercise the re-entrant worker (checkpoints, resume, cancellation); without this
+        // flag the project defaults to the legacy single-shot path.
+        systemSetting: [{ name: 'reentrantAsyncBatch', valueBoolean: true }],
+      },
+      membership: { admin: true },
+    });
   });
 
   afterEach(() => {
@@ -1649,6 +1658,8 @@ describe('Batch and Transaction processing', () => {
         systemSetting: [
           { name: 'userFhirQuota', valueInteger: 200 },
           { name: 'enableFhirQuota', valueBoolean: true },
+          // Opt in to re-entrant async batch processing (see workers/batch.ts).
+          { name: 'reentrantAsyncBatch', valueBoolean: true },
         ],
       },
     });
