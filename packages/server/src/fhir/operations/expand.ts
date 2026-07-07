@@ -161,7 +161,8 @@ async function computeExpansion(
   repo: Repository,
   valueSet: ValueSet,
   params: ValueSetExpandParameters,
-  terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>> = Object.create(null)
+  terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>> = Object.create(null),
+  constraint?: Pick<ValueSetComposeInclude, 'system' | 'concept'>
 ): Promise<ValueSetExpansionContains[]> {
   const preExpansion = valueSet.expansion;
   if (
@@ -170,7 +171,7 @@ async function computeExpansion(
     (!preExpansion.total || preExpansion.total === preExpansion.contains.length)
   ) {
     // Full expansion is already available, use that
-    return filterIncludedConcepts(preExpansion.contains, params);
+    return filterExpansionByConstraint(filterIncludedConcepts(preExpansion.contains, params), constraint);
   }
 
   if (!valueSet.compose?.include.length) {
@@ -180,8 +181,13 @@ async function computeExpansion(
   const maxCount = params.count ?? MAX_EXPANSION_SIZE;
   const expansion: ValueSetExpansionContains[] = [];
   for (const include of valueSet.compose.include) {
-    if (include.valueSet) {
-      for (const url of include.valueSet) {
+    const constrainedInclude = constrainInclude(include, constraint);
+    if (!constrainedInclude) {
+      continue;
+    }
+
+    if (constrainedInclude.valueSet) {
+      for (const url of constrainedInclude.valueSet) {
         const includedValueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
         terminologyResources[includedValueSet.url as string] = includedValueSet;
 
@@ -190,11 +196,12 @@ async function computeExpansion(
           includedValueSet,
           {
             ...params,
-            count: include.system || include.concept ? MAX_EXPANSION_SIZE : maxCount - expansion.length,
+            count: maxCount - expansion.length,
           },
-          terminologyResources
+          terminologyResources,
+          getIncludeConstraint(constrainedInclude)
         );
-        expansion.push(...filterExpansionByInclude(nestedExpansion, include).slice(0, maxCount - expansion.length));
+        expansion.push(...nestedExpansion.slice(0, maxCount - expansion.length));
 
         if (expansion.length >= maxCount) {
           // Skip further expansion
@@ -203,7 +210,7 @@ async function computeExpansion(
       }
       continue;
     }
-    if (!include.system) {
+    if (!constrainedInclude.system) {
       throw new OperationOutcomeError(
         badRequest('Missing system URL for ValueSet include', 'ValueSet.compose.include.system')
       );
@@ -215,12 +222,12 @@ async function computeExpansion(
     }
 
     const codeSystem =
-      (terminologyResources[include.system] as WithId<CodeSystem>) ??
-      (await findTerminologyResource(repo, 'CodeSystem', include.system));
-    terminologyResources[include.system] = codeSystem;
+      (terminologyResources[constrainedInclude.system] as WithId<CodeSystem>) ??
+      (await findTerminologyResource(repo, 'CodeSystem', constrainedInclude.system));
+    terminologyResources[constrainedInclude.system] = codeSystem;
 
-    if (include.concept) {
-      const filteredCodings = filterIncludedConcepts(include.concept, params, include.system);
+    if (constrainedInclude.concept) {
+      const filteredCodings = filterIncludedConcepts(constrainedInclude.concept, params, constrainedInclude.system);
       const validCodings = await validateCodings(codeSystem, filteredCodings, params);
       for (const c of validCodings) {
         if (c) {
@@ -229,26 +236,58 @@ async function computeExpansion(
         }
       }
     } else {
-      await includeInExpansion(include, expansion, codeSystem, params);
+      await includeInExpansion(constrainedInclude, expansion, codeSystem, params);
     }
   }
 
   return expansion;
 }
 
-export function filterExpansionByInclude(
+function getIncludeConstraint(include: ValueSetComposeInclude): Pick<ValueSetComposeInclude, 'system' | 'concept'> {
+  return { system: include.system, concept: include.concept };
+}
+
+function filterExpansionByConstraint(
   expansion: ValueSetExpansionContains[],
-  include: ValueSetComposeInclude
+  constraint?: Pick<ValueSetComposeInclude, 'system' | 'concept'>
 ): ValueSetExpansionContains[] {
   let result = expansion;
-  if (include.system) {
-    result = result.filter((concept) => concept.system === include.system);
+  if (constraint?.system) {
+    result = result.filter((concept) => concept.system === constraint.system);
   }
-  if (include.concept) {
-    const allowedConcepts = new Set(include.concept.map((concept) => concept.code));
+  if (constraint?.concept) {
+    const allowedConcepts = new Set(constraint.concept.map((concept) => concept.code));
     result = result.filter((concept) => allowedConcepts.has(concept.code));
   }
   return result;
+}
+
+export function constrainInclude(
+  include: ValueSetComposeInclude,
+  constraint?: Pick<ValueSetComposeInclude, 'system' | 'concept'>
+): ValueSetComposeInclude | undefined {
+  if (!constraint?.system && !constraint?.concept) {
+    return include;
+  }
+
+  if (include.system && constraint.system && include.system !== constraint.system) {
+    return undefined;
+  }
+
+  let concept = include.concept;
+  if (constraint.concept) {
+    if (concept) {
+      const allowedCodes = new Set(constraint.concept.map((c) => c.code));
+      concept = concept.filter((c) => allowedCodes.has(c.code));
+      if (concept.length === 0) {
+        return undefined;
+      }
+    } else {
+      concept = constraint.concept;
+    }
+  }
+
+  return { ...include, system: include.system ?? constraint.system, concept };
 }
 
 async function includeInExpansion(

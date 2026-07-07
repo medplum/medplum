@@ -1,25 +1,43 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { filterExpansionByInclude } from './expand';
+import type { ValueSetComposeInclude } from '@medplum/fhirtypes';
+import { constrainInclude } from './expand';
 
-describe('filterExpansionByInclude', () => {
-  test('filters included ValueSet expansion by system and concepts', () => {
-    const expansion: ValueSetExpansionContains[] = [
-      { system: 'http://loinc.org', code: '8480-6', display: 'Systolic BP - Reported' },
-      { system: 'http://loinc.org', code: '8462-4', display: 'Diastolic BP - Reported' },
-      { system: 'http://loinc.org', code: '8310-5', display: 'Body temperature' },
-      { system: 'http://snomed.info/sct', code: '75367002', display: 'Blood pressure' },
-    ];
-
+describe('constrainInclude', () => {
+  test('adds inherited system and concept constraints to nested ValueSet includes', () => {
     expect(
-      filterExpansionByInclude(expansion, {
-        valueSet: ['http://example.com/ValueSet/vitals'],
-        system: 'http://loinc.org',
-        concept: [{ code: '8462-4' }],
-      })
-    ).toStrictEqual<ValueSetExpansionContains[]>([
-      { system: 'http://loinc.org', code: '8462-4', display: 'Diastolic BP - Reported' },
-    ]);
+      constrainInclude(
+        { valueSet: ['http://example.com/ValueSet/vitals'] },
+        { system: 'http://loinc.org', concept: [{ code: '8462-4' }] }
+      )
+    ).toStrictEqual<ValueSetComposeInclude>({
+      valueSet: ['http://example.com/ValueSet/vitals'],
+      system: 'http://loinc.org',
+      concept: [{ code: '8462-4' }],
+    });
+  });
+
+  test('intersects inherited concept constraints with include concepts', () => {
+    expect(
+      constrainInclude(
+        {
+          system: 'http://loinc.org',
+          concept: [
+            { code: '8480-6', display: 'Systolic BP - Reported' },
+            { code: '8462-4', display: 'Diastolic BP - Reported' },
+          ],
+        },
+        { system: 'http://loinc.org', concept: [{ code: '8462-4' }] }
+      )
+    ).toStrictEqual<ValueSetComposeInclude>({
+      system: 'http://loinc.org',
+      concept: [{ code: '8462-4', display: 'Diastolic BP - Reported' }],
+    });
+  });
+
+  test('skips includes from other systems', () => {
+    expect(
+      constrainInclude({ system: 'http://snomed.info/sct' }, { system: 'http://loinc.org' })
+    ).toBeUndefined();
   });
 });
