@@ -16,17 +16,18 @@ describe('data warehouse destinations', () => {
         icebergTable: 'patient_history',
       });
       expect(table).toContain('patient_history.parquet');
-      expect(destination.buildSourcePredicate({ postgresTable: 'a', icebergTable: 'a' }, 'default')).toBeUndefined();
+      await expect(
+        destination.buildSourcePredicate({} as never, { postgresTable: 'a', icebergTable: 'a' }, 'default')
+      ).resolves.toBeUndefined();
     } finally {
       rmSync(basePath, { recursive: true, force: true });
     }
   });
 
-  test('local destination setup loads postgres extension before attach', () => {
+  test('local destination attaches postgres after setup', () => {
     const destination = new LocalParquetWarehouseDestination('/tmp/dw-local-destination');
-    const queries = destination.getSetupQueries('postgresql://user:pass@localhost/db');
-
-    expect(queries).toStrictEqual([
+    expect(destination.getSetupQueries()).toStrictEqual([]);
+    expect(destination.getPostgresAttachQueries('postgresql://user:pass@localhost/db')).toStrictEqual([
       'INSTALL postgres',
       'LOAD postgres',
       'ATTACH \'postgresql://user:pass@localhost/db\' AS "pg_db" (TYPE postgres, READ_ONLY)',
