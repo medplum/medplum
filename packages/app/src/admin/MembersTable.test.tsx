@@ -325,7 +325,7 @@ describe('MemberTable (Users page)', () => {
     renderAppRoutes(client, '/admin/users');
     await screen.findAllByTestId('search-control-row');
 
-    expect(await screen.findByText('Authenticator MFA')).toBeInTheDocument();
+    expect(await screen.findByText('Authenticator')).toBeInTheDocument();
     expect(screen.getByText('Email MFA')).toBeInTheDocument();
     expect((await screen.findAllByText('Enrolled')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Not enrolled').length).toBeGreaterThan(0);
@@ -342,7 +342,7 @@ describe('MemberTable (Users page)', () => {
     renderAppRoutes(client, '/admin/users');
     await screen.findAllByTestId('search-control-row');
 
-    expect(await screen.findByText('Authenticator MFA')).toBeInTheDocument();
+    expect(await screen.findByText('Authenticator')).toBeInTheDocument();
     expect(screen.queryByText('Email MFA')).not.toBeInTheDocument();
 
     batchSpy.mockRestore();
@@ -359,7 +359,7 @@ describe('MemberTable (Users page)', () => {
     );
 
     await screen.findAllByTestId('search-control-row');
-    expect(screen.queryByText('Authenticator MFA')).not.toBeInTheDocument();
+    expect(screen.queryByText('Authenticator')).not.toBeInTheDocument();
     expect(screen.queryByText('Email MFA')).not.toBeInTheDocument();
     // No member Users are fetched when the columns are disabled.
     expect(batchSpy).not.toHaveBeenCalled();

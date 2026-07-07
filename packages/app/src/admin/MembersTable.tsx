@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Button, Group, Modal, SegmentedControl, Stack, Text } from '@mantine/core';
+import { Button, Group, Modal, SegmentedControl, Stack, Text, VisuallyHidden } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
 import { normalizeErrorString, Operator } from '@medplum/core';
 import type { Bundle, ProjectMembership, Resource, User } from '@medplum/fhirtypes';
 import type { SearchControlExtraColumn, SearchLoadEvent } from '@medplum/react';
 import { SearchControl, useMedplum } from '@medplum/react';
+import { IconCheck, IconX } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -32,7 +33,7 @@ export interface MemberTableProps {
   readonly bulkActions?: boolean;
   /**
    * When true, appends a read-only enrollment column for each MFA method the project
-   * allows (see the `allowedMfaMethods` project setting): "Authenticator MFA" for TOTP
+   * allows (see the `allowedMfaMethods` project setting): "Authenticator" for TOTP
    * and "Email MFA" for email. Only meaningful for tables of human users; requires
    * project admin access to read the members' User resources.
    */
@@ -40,7 +41,7 @@ export interface MemberTableProps {
 }
 
 const MFA_ENROLLMENT_COLUMN_NAMES: Record<MfaMethod, string> = {
-  totp: 'Authenticator MFA',
+  totp: 'Authenticator',
   email: 'Email MFA',
 };
 
@@ -121,32 +122,59 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   );
 
   const extraColumns = useMemo<SearchControlExtraColumn[] | undefined>(() => {
-    if (!showMfaEnrollment || !allowedMfaMethods || allowedMfaMethods.length === 0) {
+    if (!showMfaEnrollment) {
       return undefined;
     }
-    return allowedMfaMethods.map((method) => ({
-      name: MFA_ENROLLMENT_COLUMN_NAMES[method],
-      renderCell: (resource: Resource): ReactNode => {
-        const userId = getMemberUserId(resource);
-        const user = userId ? memberUsers[userId] : undefined;
-        if (!user) {
-          return (
-            <Text c="dimmed" size="sm">
-              —
-            </Text>
+    const columns: SearchControlExtraColumn[] = [
+      {
+        name: 'Project-scoped',
+        renderCell: (resource: Resource): ReactNode => {
+          const userId = getMemberUserId(resource);
+          const user = userId ? memberUsers[userId] : undefined;
+          return user?.project ? (
+            <>
+              <IconCheck color="var(--mantine-color-blue-6)" aria-hidden="true" />
+              <VisuallyHidden>Project-scoped</VisuallyHidden>
+            </>
+          ) : (
+            <>
+              <IconX color="var(--mantine-color-gray-6)" aria-hidden="true" />
+              <VisuallyHidden>Not project-scoped</VisuallyHidden>
+            </>
           );
-        }
-        return getEnrolledMfaMethods(user).includes(method) ? (
-          <Badge color="green" variant="light">
-            Enrolled
-          </Badge>
-        ) : (
-          <Badge color="gray" variant="light">
-            Not enrolled
-          </Badge>
-        );
+        },
       },
-    }));
+    ];
+    if (allowedMfaMethods && allowedMfaMethods.length > 0) {
+      columns.push(
+        ...allowedMfaMethods.map((method) => ({
+          name: MFA_ENROLLMENT_COLUMN_NAMES[method],
+          renderCell: (resource: Resource): ReactNode => {
+            const userId = getMemberUserId(resource);
+            const user = userId ? memberUsers[userId] : undefined;
+            if (!user) {
+              return (
+                <Text c="dimmed" size="sm">
+                  —
+                </Text>
+              );
+            }
+            return getEnrolledMfaMethods(user).includes(method) ? (
+              <>
+                <IconCheck color="var(--mantine-color-blue-6)" aria-hidden="true" />
+                <VisuallyHidden>Enrolled</VisuallyHidden>
+              </>
+            ) : (
+              <>
+                <IconX color="var(--mantine-color-gray-6)" aria-hidden="true" />
+                <VisuallyHidden>Not enrolled</VisuallyHidden>
+              </>
+            );
+          },
+        }))
+      );
+    }
+    return columns;
   }, [showMfaEnrollment, allowedMfaMethods, memberUsers]);
 
   const [search, setSearch] = useState<SearchRequest>({
