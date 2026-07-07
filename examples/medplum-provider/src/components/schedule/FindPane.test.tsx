@@ -17,6 +17,8 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createEncounter } from '../../utils/encounter';
@@ -122,6 +124,27 @@ describe('FindPane', () => {
     onSuccess?: (results: { appointment: Appointment; slots: Slot[] }) => void;
   };
 
+  // The selected HealthcareService is now hoisted to <ScheduleDetails>, so tests
+  // drive FindPane through a stateful harness that owns that state the same way.
+  type FindPaneHarnessProps = {
+    schedule: WithId<Schedule>;
+    range: { start: Date; end: Date };
+    onSuccess: (results: { appointment: Appointment; slots: Slot[] }) => void;
+  };
+
+  const FindPaneHarness = (props: FindPaneHarnessProps): JSX.Element => {
+    const [healthcareService, setHealthcareService] = useState<WithId<HealthcareService> | undefined>(undefined);
+    return (
+      <FindPane
+        schedule={props.schedule}
+        range={props.range}
+        onSuccess={props.onSuccess}
+        healthcareService={healthcareService}
+        onSelectHealthcareService={setHealthcareService}
+      />
+    );
+  };
+
   const setup = (options: SetupOptions = {}): ReturnType<typeof render> => {
     const {
       schedule = createScheduleWithServices([healthcareService, healthcareService2]),
@@ -135,7 +158,7 @@ describe('FindPane', () => {
           <MantineProvider>
             <Notifications />
             <div data-testid="FindPaneTestWrapper">
-              <FindPane schedule={schedule} range={range} onSuccess={onSuccess} />
+              <FindPaneHarness schedule={schedule} range={range} onSuccess={onSuccess} />
             </div>
           </MantineProvider>
         </MedplumProvider>
@@ -241,18 +264,6 @@ describe('FindPane', () => {
   });
 
   describe('Dismiss Functionality', () => {
-    test('shows dismiss button when service type is selected and multiple options exist', async () => {
-      const user = userEvent.setup();
-
-      await act(async () => {
-        setup();
-      });
-
-      await user.click(screen.getByText('Annual Checkup'));
-
-      expect(screen.getByLabelText('Clear selection')).toBeInTheDocument();
-    });
-
     test('clears selection when dismissed', async () => {
       const user = userEvent.setup();
 
@@ -266,36 +277,6 @@ describe('FindPane', () => {
       await user.click(screen.getByLabelText('Clear selection'));
 
       expect(screen.getByText('Schedule…')).toBeInTheDocument();
-    });
-  });
-
-  describe('Auto-Selection with Single Service', () => {
-    test('auto-selects when there is exactly one schedulable service', async () => {
-      const schedule = createScheduleWithServices([healthcareService]);
-
-      await act(async () => {
-        setup({ schedule });
-      });
-
-      // Should immediately show the service type name, not the selection UI
-      expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-      expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
-
-      // Should fetch slots automatically
-      expect(medplum.get).toHaveBeenCalled();
-    });
-
-    test('does not show dismiss button when auto-selected with single option', async () => {
-      const schedule = createScheduleWithServices([healthcareService]);
-
-      await act(async () => {
-        setup({ schedule });
-      });
-
-      expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-
-      // Dismiss button should not be present
-      expect(screen.queryByLabelText('Clear selection')).not.toBeInTheDocument();
     });
   });
 
@@ -481,7 +462,7 @@ describe('FindPane', () => {
               <Routes>
                 <Route
                   path="/find"
-                  element={<FindPane schedule={schedule} range={defaultRange} onSuccess={onSuccess} />}
+                  element={<FindPaneHarness schedule={schedule} range={defaultRange} onSuccess={onSuccess} />}
                 />
                 <Route
                   path="/Patient/:patientId/Encounter/:encounterId"
@@ -506,8 +487,11 @@ describe('FindPane', () => {
     test('navigates to the encounter page and does not call onSuccess when an encounter is returned', async () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
-      // Single service → auto-selected; $find returns mock appointments from the outer beforeEach.
+      // $find returns mock appointments from the outer beforeEach.
       setupWithRoutes(createScheduleWithServices([serviceWithEncounterConfig]), onSuccess);
+
+      // Select the service to trigger the $find search
+      await user.click(await screen.findByText('Encounter Service'));
 
       // Click the first appointment slot that appeared from $find (there are two)
       const apptButtons = await screen.findAllByRole('button', { name: /2024/i });
@@ -523,8 +507,10 @@ describe('FindPane', () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
       // healthcareService has no encounter extensions → bookEncounter returns undefined.
-      // Single service → auto-selected, so we go straight to waiting for the appointment buttons.
       setupWithRoutes(createScheduleWithServices([healthcareService]), onSuccess);
+
+      // Select the service to trigger the $find search
+      await user.click(await screen.findByText('Annual Checkup'));
 
       const apptButtons = await screen.findAllByRole('button', { name: /2024/i });
       await user.click(apptButtons[0]);

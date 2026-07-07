@@ -497,11 +497,11 @@ describe('$find/$book component integration tests', () => {
       setup('/Calendar/Schedule/alice-smith-schedule');
     });
 
-    // Pane header shows selected service type
-    expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
+    // Select the service type to trigger the $find search
+    await user.click(screen.getByText('Annual Checkup'));
 
     // Click on an appointment button from the find pane
-    const slotButtons = screen.getAllByText(/1\/16\/2024/);
+    const slotButtons = await screen.findAllByText(/1\/16\/2024/);
     expect(slotButtons.length).toEqual(1);
     await user.click(slotButtons[0]);
 

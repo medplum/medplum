@@ -123,3 +123,7 @@
     color: var(--cal-color);
   }
 }
+
+.nonBusinessHours {
+  background-color: light-dark(#0000000A, #FFFFFF2A)
+}
