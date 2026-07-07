@@ -5,10 +5,12 @@ import { ReadablePromise } from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import type { RenderHookResult } from '@testing-library/react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SchedulingTransientIdentifier } from '../utils/scheduling';
+import type { UseSchedulingResourcesResult } from './useSchedulingResources';
 import { useSchedulingResources } from './useSchedulingResources';
 
 describe('useSchedulingResources', () => {
@@ -77,8 +79,12 @@ describe('useSchedulingResources', () => {
       };
 
       medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Slot') return Promise.resolve([mockSlot]);
-        if (resourceType === 'Appointment') return Promise.resolve([mockAppointment]);
+        if (resourceType === 'Slot') {
+          return Promise.resolve([mockSlot]);
+        }
+        if (resourceType === 'Appointment') {
+          return Promise.resolve([mockAppointment]);
+        }
         return Promise.resolve([]);
       });
 
@@ -91,16 +97,18 @@ describe('useSchedulingResources', () => {
     });
 
     test('searches slots with correct schedule reference and date range', async () => {
-      medplum.searchResources = vi.fn().mockResolvedValue([]);
+      const searchMock = vi.fn().mockResolvedValue([]);
+      medplum.searchResources = searchMock;
 
       const { result } = renderHook(() => useSchedulingResources(schedules, range), { wrapper });
       await waitFor(() => expect(result.current.loading).toBe(false));
 
-      const slotCall = (medplum.searchResources as ReturnType<typeof vi.fn>).mock.calls.find(
-        (args: unknown[]) => args[0] === 'Slot'
-      );
+      const slotCall = searchMock.mock.calls.find((args: unknown[]) => args[0] === 'Slot');
       expect(slotCall).toBeDefined();
-      const [, slotParams] = slotCall!;
+      if (!slotCall) {
+        return;
+      }
+      const [, slotParams] = slotCall;
       expect(slotParams).toContainEqual(['schedule', 'Schedule/schedule-1']);
       expect(slotParams).toContainEqual(['start', `ge${range.start.toISOString()}`]);
       expect(slotParams).toContainEqual(['status:not', 'entered-in-error']);
@@ -116,7 +124,10 @@ describe('useSchedulingResources', () => {
         (args: unknown[]) => args[0] === 'Appointment'
       );
       expect(apptCall).toBeDefined();
-      const [, apptParams] = apptCall!;
+      if (!apptCall) {
+        return;
+      }
+      const [, apptParams] = apptCall;
       expect(apptParams).toContainEqual(['actor', 'Practitioner/prac-1']);
       expect(apptParams).toContainEqual(['date', `ge${range.start.toISOString()}`]);
     });
@@ -148,7 +159,9 @@ describe('useSchedulingResources', () => {
 
       let slotCallCount = 0;
       medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Slot') return Promise.resolve(slotCallCount++ === 0 ? [slot1] : [slot2]);
+        if (resourceType === 'Slot') {
+          return Promise.resolve(slotCallCount++ === 0 ? [slot1] : [slot2]);
+        }
         return Promise.resolve([]);
       });
 
@@ -173,7 +186,9 @@ describe('useSchedulingResources', () => {
       }));
 
       medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Slot') return Promise.resolve(slots);
+        if (resourceType === 'Slot') {
+          return Promise.resolve(slots);
+        }
         return Promise.resolve([]);
       });
 
@@ -210,10 +225,14 @@ describe('useSchedulingResources', () => {
       participant: [],
     };
 
-    const setupWithData = async () => {
+    const setupWithData = async (): Promise<RenderHookResult<UseSchedulingResourcesResult, void>> => {
       medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Slot') return Promise.resolve([existingSlot]);
-        if (resourceType === 'Appointment') return Promise.resolve([existingAppointment]);
+        if (resourceType === 'Slot') {
+          return Promise.resolve([existingSlot]);
+        }
+        if (resourceType === 'Appointment') {
+          return Promise.resolve([existingAppointment]);
+        }
         return Promise.resolve([]);
       });
 
@@ -389,8 +408,12 @@ describe('useSchedulingResources', () => {
       };
 
       medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Slot') return Promise.resolve([slotToCancel, otherSlot]);
-        if (resourceType === 'Appointment') return Promise.resolve([appointmentToCancel]);
+        if (resourceType === 'Slot') {
+          return Promise.resolve([slotToCancel, otherSlot]);
+        }
+        if (resourceType === 'Appointment') {
+          return Promise.resolve([appointmentToCancel]);
+        }
         return Promise.resolve([]);
       });
 
@@ -435,8 +458,12 @@ describe('useSchedulingResources', () => {
       };
 
       medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Slot') return Promise.resolve([pendingSlot]);
-        if (resourceType === 'Appointment') return Promise.resolve([pendingAppointment]);
+        if (resourceType === 'Slot') {
+          return Promise.resolve([pendingSlot]);
+        }
+        if (resourceType === 'Appointment') {
+          return Promise.resolve([pendingAppointment]);
+        }
         return Promise.resolve([]);
       });
 
@@ -505,7 +532,9 @@ describe('useSchedulingResources', () => {
       };
 
       medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Appointment') return Promise.resolve([existing]);
+        if (resourceType === 'Appointment') {
+          return Promise.resolve([existing]);
+        }
         return Promise.resolve([]);
       });
 
@@ -526,7 +555,7 @@ describe('useSchedulingResources', () => {
   });
 
   describe('find()', () => {
-    const setupWithEmptyData = async () => {
+    const setupWithEmptyData = async (): Promise<RenderHookResult<UseSchedulingResourcesResult, void>> => {
       medplum.searchResources = vi.fn().mockResolvedValue([]);
       const hookResult = renderHook(() => useSchedulingResources(schedules, range), { wrapper });
       await waitFor(() => expect(hookResult.result.current.loading).toBe(false));
@@ -556,11 +585,14 @@ describe('useSchedulingResources', () => {
         .find((url: URL) => url.toString().includes('$find'));
 
       expect(callUrl).toBeDefined();
-      expect(callUrl!.href).toContain('start=');
-      expect(callUrl!.href).toContain('end=');
-      expect(callUrl!.href).toContain('service-type-reference=');
-      expect(callUrl!.href).toContain(encodeURIComponent('HealthcareService/hcs-1'));
-      expect(callUrl!.href).toContain(encodeURIComponent('Schedule/schedule-1'));
+      if (!callUrl) {
+        return;
+      }
+      expect(callUrl.href).toContain('start=');
+      expect(callUrl.href).toContain('end=');
+      expect(callUrl.href).toContain('service-type-reference=');
+      expect(callUrl.href).toContain(encodeURIComponent('HealthcareService/hcs-1'));
+      expect(callUrl.href).toContain(encodeURIComponent('Schedule/schedule-1'));
     });
 
     test('passes abort signal to the HTTP call', async () => {

@@ -13,7 +13,7 @@ import {
 } from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, OperationOutcome, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Range } from '../types/scheduling';
 import { SchedulingTransientIdentifier } from '../utils/scheduling';
 
@@ -101,6 +101,8 @@ export function useSchedulingResources(
   const medplum = useMedplum();
   const [schedulingResources, setSchedulingResources] = useState<SchedulingResources[] | undefined>();
   const [operationOutcome, setOperationOutcome] = useState<OperationOutcome>();
+  // Appointments booked while a fetch is in-flight; merged into results when the fetch lands.
+  const pendingBooksRef = useRef<{ appointment: WithId<Appointment>; slots: WithId<Slot>[] }[]>([]);
 
   useEffect(() => {
     if (!range) {
@@ -114,7 +116,34 @@ export function useSchedulingResources(
     Promise.all(schedules.map((schedule) => fetchSchedulingResources(medplum, schedule, range)))
       .then((results) => {
         if (active) {
-          setSchedulingResources(results);
+          const pending = pendingBooksRef.current.splice(0);
+          const merged =
+            pending.length === 0
+              ? results
+              : results.map((resourceRow) => {
+                  let appts = resourceRow.appointments;
+                  let slots = resourceRow.slots;
+                  for (const { appointment, slots: pendingSlots } of pending) {
+                    const sm = new Map<string, WithId<Slot>[]>();
+                    for (const s of pendingSlots) {
+                      const id = resolveId(s.schedule);
+                      if (id) {
+                        const group = sm.get(id) ?? [];
+                        group.push(s);
+                        sm.set(id, group);
+                      }
+                    }
+                    const slotsForRow = sm.get(resourceRow.schedule.id);
+                    if (slotsForRow?.length) {
+                      appts = [...appts, appointment];
+                      slots = [...slots, ...slotsForRow];
+                    }
+                  }
+                  return appts === resourceRow.appointments
+                    ? resourceRow
+                    : { ...resourceRow, appointments: appts, slots };
+                });
+          setSchedulingResources(merged);
 
           const foundAllResources = results.every(
             (resourceRow) => resourceRow.slots.length < PAGE_SIZE && resourceRow.appointments.length < PAGE_SIZE
@@ -209,21 +238,31 @@ export function useSchedulingResources(
         throw new Error('$book succeeded but did not return an Appointment');
       }
 
-      const scheduleMap = new Map(createdSlots.map((slot) => [resolveId(slot.schedule), slot]));
+      const scheduleMap = new Map<string, WithId<Slot>[]>();
+      for (const slot of createdSlots) {
+        const id = resolveId(slot.schedule);
+        if (id) {
+          const group = scheduleMap.get(id) ?? [];
+          group.push(slot);
+          scheduleMap.set(id, group);
+        }
+      }
 
       setSchedulingResources((resources) => {
         if (!resources) {
+          // Fetch is in-flight; queue so the booking is merged when the fetch lands.
+          pendingBooksRef.current.push({ appointment: createdAppointment, slots: createdSlots });
           return undefined;
         }
         return resources.map((resourceRow) => {
-          const createdSlot = scheduleMap.get(resourceRow.schedule.id);
-          if (!createdSlot) {
+          const slotsForRow = scheduleMap.get(resourceRow.schedule.id);
+          if (!slotsForRow?.length) {
             return resourceRow;
           }
           return {
             ...resourceRow,
             appointments: [...resourceRow.appointments, createdAppointment],
-            slots: [...resourceRow.slots, createdSlot],
+            slots: [...resourceRow.slots, ...slotsForRow],
           };
         });
       });
@@ -347,7 +386,7 @@ export function useSchedulingResources(
 
   return {
     schedulingResources,
-    loading: operationOutcome === undefined,
+    loading: range !== undefined && operationOutcome === undefined,
     operationOutcome,
     schedulingAPI,
     slots,
