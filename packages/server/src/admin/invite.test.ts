@@ -2059,15 +2059,24 @@ describe('Admin Invite', () => {
     withTestContext(async () => {
       const { project } = await createTestProject();
       const systemRepo = await getProjectSystemRepo(project);
-      // A project with some defaults, but none for the Admin role.
+      // A project with some defaults, including a Practitioner default, but none for the Admin role.
+      // The Practitioner default must NOT be selected for an admin invite.
       const patientPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
+      const practitionerPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Practitioner Policy',
+        resource: [{ resourceType: '*', readonly: true }, { resourceType: 'Patient' }],
+      });
       const projectWithoutAdminDefault = await systemRepo.updateResource({
         ...project,
-        defaultAccessPolicies: [{ profileType: 'Patient', accessPolicy: createReference(patientPolicy) }],
+        defaultAccessPolicies: [
+          { profileType: 'Patient', accessPolicy: createReference(patientPolicy) },
+          { profileType: 'Practitioner', accessPolicy: createReference(practitionerPolicy) },
+        ],
       });
 
       const { membership } = await inviteUser({
@@ -2087,15 +2096,24 @@ describe('Admin Invite', () => {
     withTestContext(async () => {
       const { project } = await createTestProject();
       const systemRepo = await getProjectSystemRepo(project);
-      // A project with some defaults, but none for the Practitioner role.
+      // A project with some defaults, including an Admin default, but none for the Practitioner role.
+      // The Admin default must NOT be selected for a non-admin Practitioner invite.
       const patientPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
+      const adminPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Default Admin Policy',
+        resource: [{ resourceType: '*' }],
+      });
       const projectWithoutPractitionerDefault = await systemRepo.updateResource({
         ...project,
-        defaultAccessPolicies: [{ profileType: 'Patient', accessPolicy: createReference(patientPolicy) }],
+        defaultAccessPolicies: [
+          { profileType: 'Patient', accessPolicy: createReference(patientPolicy) },
+          { profileType: 'Admin', accessPolicy: createReference(adminPolicy) },
+        ],
       });
 
       const { membership } = await inviteUser({

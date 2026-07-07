@@ -138,74 +138,86 @@ export async function createProject(
   const config = getConfig();
 
   log.info('Project creation request received', { name: projectName });
-  let project = await systemRepo.createResource<Project>({
-    resourceType: 'Project',
-    name: projectName,
-    owner: admin ? createReference(admin) : undefined,
-    strictMode: true,
-    features: config.defaultProjectFeatures,
-    systemSetting: config.defaultProjectSystemSetting,
-  });
 
-  log.info('Project created', {
-    id: project.id,
-    name: projectName,
-  });
-  const client = await createClient(systemRepo, {
-    project,
-    name: project.name + ' Default Client',
-    description: 'Default client for ' + project.name,
-  });
+  // Pre-generate the project ID so the default access policies (which reference the project via
+  // meta.project) can be created first, then the Project can be created in a single write with its
+  // default policies already set. Running it all in one transaction keeps the resource history to a
+  // single Project version instead of a create followed by a patch.
+  const projectId = randomUUID();
 
-  const accessPolicy = await createPatientCompartmentAccessPolicy(systemRepo, project, 'Default Patient Access Policy');
-  const relatedPersonAccessPolicy = await createPatientCompartmentAccessPolicy(
-    systemRepo,
-    project,
-    'Default RelatedPerson Access Policy'
-  );
-  const adminAccessPolicy = await createAdminAccessPolicy(systemRepo, project, 'Default Admin Access Policy');
-  const practitionerAccessPolicy = await createPractitionerAccessPolicy(
-    systemRepo,
-    project,
-    'Default Practitioner Access Policy'
-  );
-  project = await systemRepo.patchResource<Project>('Project', project.id, [
-    { op: 'add', path: '/defaultPatientAccessPolicy', value: createReference(accessPolicy) },
-    {
-      op: 'add',
-      path: '/defaultAccessPolicies',
-      value: [
-        { profileType: 'Patient', accessPolicy: createReference(accessPolicy) },
-        { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
-        { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
-        { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
-      ],
-    },
-  ]);
-
-  if (admin) {
-    const profile = await createProfile(
-      systemRepo,
-      project,
-      'Practitioner',
-      admin.firstName,
-      admin.lastName,
-      admin.email
+  return systemRepo.withTransaction(async (txRepo) => {
+    const patientAccessPolicy = await createPatientCompartmentAccessPolicy(
+      txRepo,
+      projectId,
+      'Default Patient Access Policy'
     );
-    const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });
-    return { project, profile, membership, client };
-  }
-  return { project, client };
+    const relatedPersonAccessPolicy = await createPatientCompartmentAccessPolicy(
+      txRepo,
+      projectId,
+      'Default RelatedPerson Access Policy'
+    );
+    const adminAccessPolicy = await createAdminAccessPolicy(txRepo, projectId, 'Default Admin Access Policy');
+    const practitionerAccessPolicy = await createPractitionerAccessPolicy(
+      txRepo,
+      projectId,
+      'Default Practitioner Access Policy'
+    );
+
+    const project = await txRepo.createResource<Project>(
+      {
+        resourceType: 'Project',
+        id: projectId,
+        name: projectName,
+        owner: admin ? createReference(admin) : undefined,
+        strictMode: true,
+        features: config.defaultProjectFeatures,
+        systemSetting: config.defaultProjectSystemSetting,
+        defaultPatientAccessPolicy: createReference(patientAccessPolicy),
+        defaultAccessPolicies: [
+          { profileType: 'Patient', accessPolicy: createReference(patientAccessPolicy) },
+          { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
+          { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
+          { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
+        ],
+      },
+      { assignedId: true }
+    );
+
+    log.info('Project created', {
+      id: project.id,
+      name: projectName,
+    });
+
+    const client = await createClient(txRepo, {
+      project,
+      name: project.name + ' Default Client',
+      description: 'Default client for ' + project.name,
+    });
+
+    if (admin) {
+      const profile = await createProfile(
+        txRepo,
+        project,
+        'Practitioner',
+        admin.firstName,
+        admin.lastName,
+        admin.email
+      );
+      const membership = await createProjectMembership(txRepo, admin, project, profile, { admin: true });
+      return { project, profile, membership, client };
+    }
+    return { project, client };
+  });
 }
 
 async function createPatientCompartmentAccessPolicy(
   systemRepo: SystemRepository,
-  project: WithId<Project>,
+  projectId: string,
   name: string
 ): Promise<WithId<AccessPolicy>> {
   return systemRepo.createResource<AccessPolicy>({
     resourceType: 'AccessPolicy',
-    meta: { project: project.id },
+    meta: { project: projectId },
     name,
     compartment: { reference: '%patient' },
     resource: [
@@ -237,12 +249,12 @@ async function createPatientCompartmentAccessPolicy(
 
 async function createAdminAccessPolicy(
   systemRepo: SystemRepository,
-  project: WithId<Project>,
+  projectId: string,
   name: string
 ): Promise<WithId<AccessPolicy>> {
   return systemRepo.createResource<AccessPolicy>({
     resourceType: 'AccessPolicy',
-    meta: { project: project.id },
+    meta: { project: projectId },
     name,
     // Full read/write access to all resource types (essentially no policy).
     resource: [{ resourceType: '*' }],
@@ -266,7 +278,7 @@ export const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
 
 async function createPractitionerAccessPolicy(
   systemRepo: SystemRepository,
-  project: WithId<Project>,
+  projectId: string,
   name: string
 ): Promise<WithId<AccessPolicy>> {
   // Access policies are additive (a resource is writable if *any* entry grants it), so a
@@ -283,7 +295,7 @@ async function createPractitionerAccessPolicy(
   );
   return systemRepo.createResource<AccessPolicy>({
     resourceType: 'AccessPolicy',
-    meta: { project: project.id },
+    meta: { project: projectId },
     name,
     resource: [
       { resourceType: '*', readonly: true },
