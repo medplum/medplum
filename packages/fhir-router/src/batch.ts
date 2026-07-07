@@ -105,7 +105,7 @@ export async function processBatch(
 export class BatchProcessor {
   private readonly router: FhirRouter;
   private repo: FhirRepository;
-  private bundle: Bundle;
+  private readonly bundle: Bundle;
   private readonly req: FhirRequest;
   private resolvedIdentities: Record<string, string>;
   private bundleInfo: BundlePreprocessInfo | undefined;
@@ -250,9 +250,14 @@ export class BatchProcessor {
    * Returns the result entries produced since the last call (keyed by their index in the
    * original bundle) and clears the pending buffer. The caller persists these to durable
    * storage as a checkpoint before advancing the durable progress marker.
-   * @returns Newly-produced result entries, keyed by original bundle index.
+   * @returns Newly-produced result entries, keyed by original bundle index or `undefined`
+   * if no new entries were produced.
    */
-  takePendingResults(): Record<number, BundleEntry> {
+  takePendingResults(): Record<number, BundleEntry> | undefined {
+    if (this.pendingIndices.length === 0) {
+      return undefined;
+    }
+
     const out: Record<number, BundleEntry> = Object.create(null);
     for (const index of this.pendingIndices) {
       out[index] = this.resultEntries[index];

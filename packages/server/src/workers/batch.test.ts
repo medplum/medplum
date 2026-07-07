@@ -259,7 +259,9 @@ describe('Batch worker', () => {
         const initialState = await processor.preprocess();
         await store.saveInitialState(initialState);
         await processor.processNextEntry();
-        await store.saveResultChunk(0, processor.takePendingResults());
+        const pending = processor.takePendingResults();
+        assert(pending);
+        await store.saveResultChunk(0, pending);
 
         // Cancel the job, then run: it should not process further, only publish partial results.
         await repo.patchResource('AsyncJob', asyncJob.id, [{ op: 'add', path: '/status', value: 'cancelled' }]);

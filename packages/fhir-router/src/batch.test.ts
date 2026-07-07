@@ -1440,7 +1440,9 @@ describe('Batch', () => {
       while (processor.hasMoreEntries()) {
         await processor.processNextEntry();
         // Checkpoint: persist newly produced results and the advanced progress marker.
-        Object.assign(results, processor.takePendingResults());
+        const pending = processor.takePendingResults();
+        assert(pending);
+        Object.assign(results, pending);
         processed++;
 
         if (crashAfter !== undefined && !crashed && processed === crashAfter && processor.hasMoreEntries()) {
@@ -1520,7 +1522,10 @@ describe('Batch', () => {
       // Process the first entry, then take its results (checkpoint) and record the position.
       await processor.processNextEntry();
       const firstResults = processor.takePendingResults();
+      assert(firstResults);
       expect(Object.keys(firstResults)).toHaveLength(1);
+      const secondTake = processor.takePendingResults();
+      expect(secondTake).toBeUndefined();
       const resumePosition = processor.getPosition();
       expect(resumePosition).toStrictEqual(1);
 
@@ -1530,7 +1535,9 @@ describe('Batch', () => {
       const producedIndices = new Set<number>();
       while (resumed.hasMoreEntries()) {
         await resumed.processNextEntry();
-        for (const index of Object.keys(resumed.takePendingResults())) {
+        const pending = resumed.takePendingResults();
+        assert(pending);
+        for (const index of Object.keys(pending)) {
           producedIndices.add(Number(index));
         }
       }

@@ -311,7 +311,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
     // progress marker. This ordering guarantees the marker never moves past an unpersisted result.
     const checkpoint = async (): Promise<void> => {
       const pending = processor.takePendingResults();
-      if (Object.keys(pending).length > 0) {
+      if (pending) {
         await store.saveResultChunk(chunkSeq, pending);
         chunkSeq++;
       }

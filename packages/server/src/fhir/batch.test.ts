@@ -1322,8 +1322,7 @@ describe('Batch and Transaction processing', () => {
     isClosingSpy.mockRestore();
 
     // Progress was checkpointed into the job data so a future worker can resume.
-    expect(job.data.position).toBeGreaterThan(0);
-    expect(job.data.position).toBeLessThan(4);
+    expect(job.data.position).toStrictEqual(3);
 
     // The AsyncJob must still be in progress (not failed/completed) after being delayed.
     // The status endpoint returns 202 while a job is not in a final state.
