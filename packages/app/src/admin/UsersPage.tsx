@@ -20,7 +20,6 @@ export function UsersPage(): JSX.Element {
       <MemberTable
         profileTypeOptions={profileTypeOptions}
         fields={['user', 'profile', 'profile-type', 'accessPolicy', 'userConfiguration', 'active', 'admin']}
-        bulkActions
         showMfaEnrollment
         toolbarLeft={
           <Button
