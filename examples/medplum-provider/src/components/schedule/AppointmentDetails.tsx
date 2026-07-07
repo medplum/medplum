@@ -8,6 +8,7 @@ import {
   formatDateTime,
   getExtension,
   getReferenceString,
+  isDefined,
   isOk,
   isReference,
   isResource,
@@ -115,7 +116,11 @@ export function AppointmentDetails(props: {
     {
       appointment: getReferenceString(appointment),
     },
-    { debounceMs: 0 }
+    {
+      // Disable debouncer for faster encounter loading. This search is not driven by
+      // keyboard input and so won't benefit from debouncing.
+      debounceMs: 0,
+    }
   );
 
   const cancellable =
@@ -170,17 +175,20 @@ export function AppointmentDetails(props: {
   }, [medplum, appointment, confirmable, onAppointmentUpdate, onSlotUpdate]);
 
   const sortedParticipants = appointment.participant
-    .flatMap((participant) => {
+    .map((participant) => {
       const actor = participant.actor;
       if (!isReference(actor)) {
-        return [];
+        return undefined;
       }
       const [resourceType] = parseReference(actor);
-      return [{ actor, resourceType }];
+      return { actor, resourceType };
     })
+    .filter(isDefined)
     .sort((a, b) => (a.resourceType === 'Patient' ? 0 : 1) - (b.resourceType === 'Patient' ? 0 : 1));
 
-  const hasPatient = appointment.participant.some((p) => isReference(p.actor, 'Patient'));
+  // If there is a "Patient" participant, we sorted it to the front of the list, so we can
+  // check just the first entry.
+  const hasPatient = sortedParticipants[0]?.resourceType === 'Patient';
 
   return (
     <Stack gap="md" className={classes.AppointmentDetails}>
