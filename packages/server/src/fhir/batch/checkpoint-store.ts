@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ILogger } from '@medplum/core';
 import { ContentType, normalizeErrorString } from '@medplum/core';
 import type { BatchInitialState } from '@medplum/fhir-router';
 import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
-import { globalLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 
@@ -34,9 +34,11 @@ const STORE_CONCURRENCY = 4;
  */
 export class BatchCheckpointStore {
   private readonly keyPrefix: string;
+  private readonly logger: ILogger;
 
-  constructor(asyncJobId: string) {
+  constructor(asyncJobId: string, logger: ILogger) {
     this.keyPrefix = `system/async-batch/${asyncJobId}`;
+    this.logger = logger;
   }
 
   private inputKey(): string {
@@ -55,10 +57,8 @@ export class BatchCheckpointStore {
     const startTime = Date.now();
     await getBinaryStorage().writeFile(key, contentType, data);
     const duration = Date.now() - startTime;
-    globalLogger.info('BatchCheckpointStore write', {
-      keyPrefix: this.keyPrefix,
+    this.logger.info('BatchCheckpointStore write', {
       key,
-      contentType,
       size: data.length,
       durationMs: duration,
     });
@@ -69,8 +69,7 @@ export class BatchCheckpointStore {
     const stream = await getBinaryStorage().readFile(key);
     const data = await readStreamToString(stream);
     const duration = Date.now() - startTime;
-    globalLogger.info('BatchCheckpointStore read', {
-      keyPrefix: this.keyPrefix,
+    this.logger.info('BatchCheckpointStore read', {
       key,
       size: data.length,
       durationMs: duration,
@@ -123,9 +122,11 @@ export class BatchCheckpointStore {
   }
 
   /**
-   * Reads back all result chunks and merges them into a single map keyed by original bundle index.
-   * @param chunkCount - The number of chunks written so far (chunks `0` through `chunkCount - 1`).
-   * @returns All persisted result entries, keyed by original bundle index.
+   * Reads back the first `chunkCount` result chunks and merges them into a single map keyed by
+   * original bundle index. A caller that already holds recently-written chunks in memory may pass
+   * a smaller count to read back only the chunks it is missing.
+   * @param chunkCount - The number of leading chunks to read (chunks `0` through `chunkCount - 1`).
+   * @returns The persisted result entries from those chunks, keyed by original bundle index.
    */
   async loadAllResults(chunkCount: number): Promise<Record<number, BundleEntry>> {
     const all: Record<number, BundleEntry> = Object.create(null);
@@ -158,7 +159,7 @@ export class BatchCheckpointStore {
         try {
           await storage.deleteFile(key);
         } catch (err) {
-          globalLogger.warn('Failed to clean up async batch checkpoint object', {
+          this.logger.warn('BatchCheckpointStore failed to clean up object', {
             key,
             error: normalizeErrorString(err),
           });
@@ -175,21 +176,23 @@ export class BatchCheckpointStore {
     let nextIndex = 0;
     const concurrency = options.concurrency;
     const workerCount = Math.min(jobs.length, concurrency);
-
     const startTime = Date.now();
-    // invoke and wait for `workerCount` while loop workers to complete
-    // each worker processes items off the `items` queue one at a time until the queue is empty
-    await Promise.all(
-      Array.from({ length: workerCount }, async () => {
-        while (nextIndex < jobs.length) {
-          const job = jobs[nextIndex++];
-          await callback(job);
-        }
-      })
-    );
+
+    if (jobs.length) {
+      // invoke and wait for `workerCount` while loop workers to complete
+      // each worker processes items off the `items` queue one at a time until the queue is empty
+      await Promise.all(
+        Array.from({ length: workerCount }, async () => {
+          while (nextIndex < jobs.length) {
+            const job = jobs[nextIndex++];
+            await callback(job);
+          }
+        })
+      );
+    }
 
     if (options?.logMsg) {
-      globalLogger.info(options.logMsg, {
+      this.logger.info(options.logMsg, {
         keyPrefix: this.keyPrefix,
         jobCount: jobs.length,
         durationMs: Date.now() - startTime,

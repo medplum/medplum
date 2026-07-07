@@ -129,7 +129,7 @@ describe('Batch worker', () => {
     status: AsyncJob['status'] = 'accepted'
   ): Promise<{ asyncJob: WithId<AsyncJob>; job: Job<ReentrantBatchJobData> }> {
     const asyncJob = await createAsyncJob(status);
-    await new BatchCheckpointStore(asyncJob.id).saveInputBundle(bundle);
+    await new BatchCheckpointStore(asyncJob.id, globalLogger).saveInputBundle(bundle);
     const job = makeReentrantJob({ asyncJobId: asyncJob.id, authState, ...extra });
     return { asyncJob, job };
   }
@@ -243,7 +243,7 @@ describe('Batch worker', () => {
       withTestContext(async () => {
         const bundle = multiEntryBundle(3);
         const asyncJob = await createAsyncJob();
-        const store = new BatchCheckpointStore(asyncJob.id);
+        const store = new BatchCheckpointStore(asyncJob.id, globalLogger);
         await store.saveInputBundle(bundle);
 
         // Pre-populate durable state: preprocessed initial state plus one processed entry.
@@ -288,7 +288,7 @@ describe('Batch worker', () => {
 
         // Cancel the AsyncJob as a side effect of the first checkpoint write, so the subsequent
         // in-loop status re-read observes the cancellation and finalizes mid-flight.
-        const store = new BatchCheckpointStore(asyncJob.id);
+        const store = new BatchCheckpointStore(asyncJob.id, globalLogger);
         const realSaveResultChunk = store.saveResultChunk.bind(store);
         let saves = 0;
         vi.spyOn(BatchCheckpointStore.prototype, 'saveResultChunk').mockImplementation(async (seq, results) => {
@@ -424,7 +424,7 @@ describe('Batch worker', () => {
         expect(enqueued.bundle).toBeUndefined();
 
         // The bundle was persisted to durable storage.
-        const stored = await new BatchCheckpointStore(asyncJob.id).loadInputBundle();
+        const stored = await new BatchCheckpointStore(asyncJob.id, globalLogger).loadInputBundle();
         expect(stored).toStrictEqual(bundle);
       });
     });

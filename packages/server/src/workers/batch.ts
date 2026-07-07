@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { ILogger, WithId } from '@medplum/core';
 import {
   ContentType,
   createReference,
@@ -173,13 +173,15 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
           await new AsyncJobExecutor(systemRepo, asyncJob).failJob(failedErr ?? undefined);
         }
       } finally {
-        const store = new BatchCheckpointStore(job.data.asyncJobId);
+        const logger = getBatchLogger(job.data.asyncJobId, job.id);
+        const store = new BatchCheckpointStore(job.data.asyncJobId, logger);
         await store.cleanup(job.data.chunkSeq ?? 0);
       }
     });
     addVerboseQueueLogging<BatchJobData>(queue, worker, (job) => {
       const asyncJobRef = 'asyncJob' in job.data ? job.data.asyncJob : { id: job.data.asyncJobId };
       return {
+        subsystem: BATCH_LOGGER_SUBSYSTEM,
         asyncJob: getReferenceString(asyncJobRef),
         project: getReferenceString(job.data.authState.project),
         profile: job.data.authState.profile && getReferenceString(job.data.authState.profile),
@@ -221,7 +223,7 @@ export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<Asyn
   // Persist the (potentially large) input bundle to durable object storage rather than carrying it
   // in the BullMQ job data (see https://github.com/medplum/medplum/issues/9124). The worker loads
   // it on the first run to preprocess.
-  await new BatchCheckpointStore(asyncJob.id).saveInputBundle(bundle);
+  await new BatchCheckpointStore(asyncJob.id, getBatchLogger(asyncJob.id)).saveInputBundle(bundle);
   return addBatchJobData({ asyncJobId: asyncJob.id, authState, requestId, traceId });
 }
 
@@ -251,9 +253,9 @@ async function getBatchUserRepo(authState: Readonly<AuthState>, userConfig: User
  */
 export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<void> {
   const { authState } = job.data;
-  const logger = getLogger();
+  const logger = getBatchLogger(job.data.asyncJobId, job.id);
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
-  const store = new BatchCheckpointStore(job.data.asyncJobId);
+  const store = new BatchCheckpointStore(job.data.asyncJobId, logger);
   let asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
   let chunkSeq = job.data.chunkSeq ?? 0;
 
@@ -297,6 +299,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
       initialState = await store.loadInitialState();
       position = job.data.position;
       processor = BatchProcessor.fromState(router, userRepo, req, initialState, position);
+      logger.info('resuming from checkpoint', { position, chunkSeq });
     }
 
     const checkpointEntries = job.data.checkpointEntries ?? defaultCheckpointEntries;
@@ -313,6 +316,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
         chunkSeq++;
       }
       await job.updateData({ ...job.data, position: processor.getPosition(), chunkSeq });
+      logger.info('checkpoint', { position: processor.getPosition(), chunkSeq });
       sinceCheckpoint = 0;
       lastCheckpointTime = Date.now();
     };
@@ -320,11 +324,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
     while (processor.hasMoreEntries()) {
       // Graceful shutdown: checkpoint and re-queue so a future worker resumes where we left off.
       if (queueRegistry.isClosing(job.queueName)) {
-        logger.info('Async batch job detected queue is closing; delaying', {
-          jobId: job.id,
-          asyncJob: asyncJob.id,
-          position: processor.getPosition(),
-        });
+        logger.info('delaying since queue is closing', { position: processor.getPosition() });
         await checkpoint();
         await moveToDelayedAndThrow(job, 'Async batch delayed since queue is closing');
       }
@@ -354,9 +354,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
       chunkSeq
     );
     const errors = countBundleErrors(resultBundle);
-    logger.info('Completed async batch request', {
-      jobId: job.id,
-      asyncJob: asyncJob.id,
+    logger.info('completed processing batch', {
       results: getReferenceString(binary),
       entries: resultBundle.entry?.length,
       errors,
@@ -373,7 +371,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
       throw err;
     }
 
-    logger.error('Async batch unhandled exception', err instanceof Error ? err : { err });
+    logger.error('unhandled exception', err instanceof Error ? err : { err });
     // Preserve a structured OperationOutcomeError (e.g. a bad bundle rejected during preprocessing)
     // rather than masking it as a generic server error.
     const failErr =
@@ -497,7 +495,7 @@ function countBundleErrors(bundle: Bundle): number {
 export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
   const bundle = job.data.bundle;
   const { login, project, membership } = job.data.authState;
-  const logger = getLogger();
+  const logger = getBatchLogger(job.data.asyncJob.id, job.id);
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
 
   // Prepare the original submitting user's repo
@@ -539,8 +537,6 @@ export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<
       }
 
       logger.info('Completed async batch request', {
-        jobId: job.id,
-        asyncJob: job.data.asyncJob.id,
         results: getReferenceString(binary),
         entries: bundle.entry.length,
         errors,
@@ -550,11 +546,7 @@ export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<
         parameter: [{ name: 'results', valueReference: createReference(binary) }],
       });
     } else {
-      logger.warn('Async batch request failed', {
-        jobId: job.id,
-        asyncJob: job.data.asyncJob.id,
-        outcome,
-      });
+      logger.warn('Async batch request failed', { outcome });
       await exec.failJob(new OperationOutcomeError(outcome));
     }
   } catch (err: any) {
@@ -562,4 +554,18 @@ export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<
     // Try to mark AsyncJob as failed, best effort
     await exec.failJob(new OperationOutcomeError(serverError(err))).catch(() => {});
   }
+}
+
+const BATCH_LOGGER_SUBSYSTEM = 'async-batch';
+
+function getBatchLogger(asyncJobId: string, jobId?: string): ILogger {
+  const baseLogger = getLogger();
+  const metadata: Record<string, string> = {
+    subsystem: BATCH_LOGGER_SUBSYSTEM,
+    asyncJob: 'AsyncJob/' + asyncJobId,
+  };
+  if (jobId) {
+    metadata.jobId = jobId;
+  }
+  return baseLogger.clone({ metadata });
 }

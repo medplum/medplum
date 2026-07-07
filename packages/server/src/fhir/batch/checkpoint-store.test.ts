@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { ILogger } from '@medplum/core';
 import type { BatchInitialState } from '@medplum/fhir-router';
 import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
 import { loadTestConfig } from '../../config/loader';
+import { globalLogger } from '../../logger';
 import { initBinaryStorage } from '../../storage/loader';
 import { BatchCheckpointStore } from './checkpoint-store';
 
@@ -11,6 +13,8 @@ describe('BatchCheckpointStore', () => {
     const config = await loadTestConfig();
     initBinaryStorage(config.binaryStorage);
   });
+
+  const logger: ILogger = globalLogger;
 
   function makeInitialState(): BatchInitialState {
     return {
@@ -22,7 +26,7 @@ describe('BatchCheckpointStore', () => {
   }
 
   test('Input bundle round-trips', async () => {
-    const store = new BatchCheckpointStore('input-test');
+    const store = new BatchCheckpointStore('input-test', logger);
     const bundle: Bundle = { resourceType: 'Bundle', type: 'batch', entry: [] };
     await store.saveInputBundle(bundle);
     expect(await store.loadInputBundle()).toStrictEqual(bundle);
@@ -30,7 +34,7 @@ describe('BatchCheckpointStore', () => {
   });
 
   test('Initial state round-trips', async () => {
-    const store = new BatchCheckpointStore('state-test');
+    const store = new BatchCheckpointStore('state-test', logger);
     const state = makeInitialState();
     await store.saveInitialState(state);
     expect(await store.loadInitialState()).toStrictEqual(state);
@@ -38,7 +42,7 @@ describe('BatchCheckpointStore', () => {
   });
 
   test('Result chunks accumulate and merge by index', async () => {
-    const store = new BatchCheckpointStore('chunks-test');
+    const store = new BatchCheckpointStore('chunks-test', logger);
     const chunk0: Record<number, BundleEntry> = {
       0: { response: { status: '201' } },
       2: { response: { status: '200' } },
@@ -54,7 +58,7 @@ describe('BatchCheckpointStore', () => {
   });
 
   test('cleanup removes all objects and is safe to call again', async () => {
-    const store = new BatchCheckpointStore('cleanup-test');
+    const store = new BatchCheckpointStore('cleanup-test', logger);
     await store.saveInputBundle({ resourceType: 'Bundle', type: 'batch' });
     await store.saveInitialState(makeInitialState());
     await store.saveResultChunk(0, { 0: { response: { status: '201' } } });
