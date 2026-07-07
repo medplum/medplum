@@ -60,6 +60,10 @@ describe('Batch and Transaction processing', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    // Async batches throttle by sleeping `points * asyncDelayScaling` ms per DB op in the async
+    // authenticated context (see Repository.recordFhirQuota). These tests exercise behavior, not
+    // throttle timing, so zero the delay to avoid real sleeps that slow the suite down.
+    config.asyncDelayScaling = 0;
     await initApp(app, config);
     accessToken = await initTestAuth({ project: { features: ['transaction-bundles'] }, membership: { admin: true } });
   });
@@ -1315,14 +1319,15 @@ describe('Batch and Transaction processing', () => {
     // at the top of each loop iteration, so returning false twice lets two entries process before
     // the job detects shutdown and delays itself.
     let checks = 0;
-    const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= 2);
+    const closeAfterChecks = 2;
+    const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= closeAfterChecks);
 
     // The delayed job re-throws DelayedError so BullMQ can re-queue it.
     await expect(execBatchJob(job)).rejects.toBeInstanceOf(DelayedError);
     isClosingSpy.mockRestore();
 
     // Progress was checkpointed into the job data so a future worker can resume.
-    expect(job.data.position).toStrictEqual(3);
+    expect(job.data.position).toStrictEqual(closeAfterChecks);
 
     // The AsyncJob must still be in progress (not failed/completed) after being delayed.
     // The status endpoint returns 202 while a job is not in a final state.
@@ -1708,7 +1713,7 @@ describe('Batch and Transaction processing', () => {
 
       return {
         remainingPoints: 200 - count * 100, // Allow every third call
-        msBeforeNext: 20, // Wait for one fake timers tick before next retry
+        msBeforeNext: 20,
         consumedPoints: 100,
         isFirstInDuration: false,
       } as RateLimiterRes;
@@ -1722,10 +1727,9 @@ describe('Batch and Transaction processing', () => {
       () => execBatchJob(job)
     );
 
-    // Must wait here, but `RateLimiterRedis` uses TTL time from Redis `PTTL` command
-
     await expect(jobResult).resolves.toBe(undefined);
-    // Rate limits should not actually be consumed
+    // In async context the rate limiter is bypassed entirely (the worker self-throttles via
+    // Repository.recordFhirQuota instead), so RateLimiterRedis.consume must never be called.
     expect(consumeMock).toHaveBeenCalledTimes(0);
 
     const jobUrl = outcome.issue[0].diagnostics as string;
