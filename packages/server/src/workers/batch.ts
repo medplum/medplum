@@ -210,7 +210,7 @@ export function getBatchQueue(): Queue<BatchJobData> | undefined {
  * @param jobData - The batch job details.
  * @returns The enqueued job.
  */
-async function addBatchJobData(jobData: ReentrantBatchJobData): Promise<Job<BatchJobData>> {
+async function addBatchJobData(jobData: BatchJobData): Promise<Job<BatchJobData>> {
   const queue = queueRegistry.get<BatchJobData>(queueName);
   if (!queue) {
     throw new Error(`Job queue ${queueName} not available`);
@@ -225,6 +225,15 @@ export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<Asyn
   // it on the first run to preprocess.
   await new BatchCheckpointStore(asyncJob.id, getBatchLogger(asyncJob.id)).saveInputBundle(bundle);
   return addBatchJobData({ asyncJobId: asyncJob.id, authState, requestId, traceId });
+}
+
+export async function queueLegacyBatchProcessing(
+  bundle: Bundle,
+  asyncJob: WithId<AsyncJob>
+): Promise<Job<BatchJobData>> {
+  const { authentication: authState, requestId, traceId } = getAuthenticatedContext();
+  const jobData: LegacyBatchJobData = { asyncJob, bundle, authState, requestId, traceId };
+  return addBatchJobData(jobData);
 }
 
 /**
