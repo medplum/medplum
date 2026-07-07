@@ -26,10 +26,11 @@ export function DocumentsPage(): JSX.Element {
   const [uploadOpened, { open: openUpload, close: closeUpload }] = useDisclosure(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // The URL query string is the source of truth for the FULL search sent to the Medplum
-  // client — every filter (subject, status, document source), sort, count, offset, and total.
-  // Missing pieces are defaulted here, and the effect below pins the normalized query back
-  // into the URL so the address bar always shows exactly what is fetched.
+  // The URL is the source of truth for the FULL search sent to the Medplum client — filters,
+  // sort, count, offset, and total. The subject filter is the one exception: the patient is
+  // already in the path, so it stays out of the query string. Missing pieces are defaulted
+  // here, and the effect below pins the normalized query back into the URL so the address bar
+  // always shows exactly what is fetched.
   const { search, activeSource } = useMemo<{ search: SearchRequest; activeSource?: DocumentSourceOption }>(() => {
     const parsed = parseSearchRequest(`DocumentReference${location.search}`);
     // subject and status are page invariants — always rebuilt from the route, never trusted
@@ -54,12 +55,20 @@ export function DocumentsPage(): JSX.Element {
     return { search, activeSource: matchDocumentSourceOption(search.filters) };
   }, [location.search, patientId]);
 
+  // Serializes a search for the URL: the subject filter is dropped because the patient id is
+  // carried by the path.
+  const toQuery = useCallback(
+    (s: SearchRequest): string =>
+      formatSearchQuery({ ...s, filters: (s.filters ?? []).filter((f) => f.code !== 'subject') }),
+    []
+  );
+
   // Pin the normalized search into the URL (history replace) whenever the URL is missing any
   // part of it. formatSearchQuery is deterministic, so this converges after one redirect, and
   // the pinned search is deep-equal to the pre-redirect one, so ResourceBoard's memoized
   // search does not refetch.
   useEffect(() => {
-    const query = formatSearchQuery(search);
+    const query = toQuery(search);
     if (query === location.search) {
       return;
     }
@@ -67,7 +76,7 @@ export function DocumentsPage(): JSX.Element {
       ? `/Patient/${patientId}/DocumentReference/${documentId}`
       : `/Patient/${patientId}/DocumentReference`;
     navigate(`${path}${query}`, { replace: true })?.catch(console.error);
-  }, [search, location.search, documentId, patientId, navigate]);
+  }, [search, toQuery, location.search, documentId, patientId, navigate]);
 
   // Keep the current pagination query when navigating to a document.
   const docUri = useCallback(
@@ -116,10 +125,10 @@ export function DocumentsPage(): JSX.Element {
       if (source) {
         filters.push(...source.filters);
       }
-      const query = formatSearchQuery({ ...search, filters, offset: 0 });
+      const query = toQuery({ ...search, filters, offset: 0 });
       navigate(`/Patient/${patientId}/DocumentReference${query}`)?.catch(console.error);
     },
-    [search, patientId, navigate]
+    [search, toQuery, patientId, navigate]
   );
 
   const patientRef: Reference<Patient> = { reference: `Patient/${patientId}` };
@@ -169,9 +178,7 @@ export function DocumentsPage(): JSX.Element {
           </Box>
         }
         onSelectFirst={(doc) => navigate(docUri(doc.id), { replace: true })?.catch(console.error)}
-        onChange={(s) =>
-          navigate(`/Patient/${patientId}/DocumentReference${formatSearchQuery(s)}`)?.catch(console.error)
-        }
+        onChange={(s) => navigate(`/Patient/${patientId}/DocumentReference${toQuery(s)}`)?.catch(console.error)}
         onError={showErrorNotification}
       />
 

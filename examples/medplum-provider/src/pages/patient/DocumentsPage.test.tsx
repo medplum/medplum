@@ -101,8 +101,9 @@ describe('DocumentsPage', () => {
     const url = navigatedUrls().find((u) => u.includes('_sort=-_lastUpdated')) as string;
     expect(url).toContain('_count=20');
     expect(url).toContain('_total=accurate');
-    expect(url).toContain(`subject=${encodeURIComponent(`Patient/${patientId}`)}`);
     expect(url).toContain('status:not=entered-in-error');
+    // The patient is carried by the path, so the subject filter stays out of the query string.
+    expect(url).not.toContain('subject=');
   });
 
   const LAB_FILTER_PARAM = `identifier=${encodeURIComponent('https://www.healthgorilla.com|')}`;
