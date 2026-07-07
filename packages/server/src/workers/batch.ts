@@ -269,7 +269,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   let chunkSeq = job.data.chunkSeq ?? 0;
 
   if (!isJobActive(asyncJob)) {
-    await finalizeInterrupted(job, systemRepo, store, asyncJob, chunkSeq, authState);
+    await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState);
     return;
   }
 
@@ -346,7 +346,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
 
         asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
         if (!isJobActive(asyncJob)) {
-          await finalizeInterrupted(job, systemRepo, store, asyncJob, chunkSeq, authState);
+          await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState);
           return;
         }
       }
@@ -418,7 +418,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
  * results were persisted and records them on the AsyncJob's output without changing its status,
  * then cleans up durable state. Best-effort: an interrupted job's status was set by another party,
  * so a conflicting update is ignored.
- * @param job - The BullMQ job instance.
+ * @param logger - The logger instance.
  * @param systemRepo - The system repository.
  * @param store - The checkpoint store.
  * @param asyncJob - The (refreshed) AsyncJob, in a terminal/cancelled state.
@@ -426,7 +426,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
  * @param authState - The auth state captured when the batch was submitted.
  */
 async function finalizeInterrupted(
-  job: Job<ReentrantBatchJobData>,
+  logger: ILogger,
   systemRepo: SystemRepository,
   store: BatchCheckpointStore,
   asyncJob: WithId<AsyncJob>,
@@ -434,9 +434,7 @@ async function finalizeInterrupted(
   authState: Readonly<AuthState>
 ): Promise<void> {
   try {
-    getLogger().info('Async batch job cancelled mid-flight; making partial results available', {
-      jobId: job.id,
-      asyncJob: asyncJob.id,
+    logger.info('Async batch job cancelled mid-flight; making partial results available', {
       status: asyncJob.status,
     });
     const initialState = await store.loadInitialState();
@@ -453,8 +451,7 @@ async function finalizeInterrupted(
     // Best-effort: another party set this job's status, so a conflicting update is ignored.
     await updateAsyncJobOutput(systemRepo, asyncJob, output).catch(() => {});
   } catch (err) {
-    getLogger().warn('Could not assemble partial results for interrupted async batch', {
-      asyncJob: asyncJob.id,
+    logger.warn('Could not assemble partial results for interrupted async batch', {
       error: normalizeErrorString(err),
     });
   } finally {
