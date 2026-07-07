@@ -136,31 +136,33 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
     ];
     if (allowedMfaMethods && allowedMfaMethods.length > 0) {
       columns.push(
-        ...allowedMfaMethods.map((method) => ({
-          name: MFA_ENROLLMENT_COLUMN_NAMES[method],
-          renderCell: (resource: Resource): ReactNode => {
-            const userId = getMemberUserId(resource);
-            const user = userId ? memberUsers[userId] : undefined;
-            if (!user) {
-              return (
-                <Text c="dimmed" size="sm">
-                  —
-                </Text>
+        ...allowedMfaMethods
+          .toSorted((a, b) => b.localeCompare(a))
+          .map((method) => ({
+            name: MFA_ENROLLMENT_COLUMN_NAMES[method],
+            renderCell: (resource: Resource): ReactNode => {
+              const userId = getMemberUserId(resource);
+              const user = userId ? memberUsers[userId] : undefined;
+              if (!user) {
+                return (
+                  <Text c="dimmed" size="sm">
+                    —
+                  </Text>
+                );
+              }
+              return getEnrolledMfaMethods(user).includes(method) ? (
+                <>
+                  <IconCheck color="var(--mantine-color-blue-6)" aria-hidden="true" />
+                  <VisuallyHidden>Enrolled</VisuallyHidden>
+                </>
+              ) : (
+                <>
+                  <IconX color="var(--mantine-color-gray-6)" aria-hidden="true" />
+                  <VisuallyHidden>Not enrolled</VisuallyHidden>
+                </>
               );
-            }
-            return getEnrolledMfaMethods(user).includes(method) ? (
-              <>
-                <IconCheck color="var(--mantine-color-blue-6)" aria-hidden="true" />
-                <VisuallyHidden>Enrolled</VisuallyHidden>
-              </>
-            ) : (
-              <>
-                <IconX color="var(--mantine-color-gray-6)" aria-hidden="true" />
-                <VisuallyHidden>Not enrolled</VisuallyHidden>
-              </>
-            );
-          },
-        }))
+            },
+          }))
       );
     }
     return columns;
