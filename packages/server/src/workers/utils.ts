@@ -308,3 +308,5 @@ export function defaultQueueOptions(config: MedplumServerConfig): QueueOptions {
     },
   };
 }
+
+export class CancelledError extends Error {}
