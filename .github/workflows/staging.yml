@@ -107,14 +107,54 @@ jobs:
         env:
           SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.STAGING_DOCKERHUB_REPOSITORY }}
 
-      - name: Deploy Server
-        run: ./scripts/deploy-server.sh
+      - name: Get Server Task Definition
+        id: server-task-definition
+        run: |
+          task_definition="$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --query 'services[0].taskDefinition' --output text)"
+          echo "task-definition=$task_definition" >> "$GITHUB_OUTPUT"
         env:
-          AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
           ECS_CLUSTER: ${{ secrets.STAGING_ECS_CLUSTER }}
           ECS_SERVICE: ${{ secrets.STAGING_ECS_SERVICE }}
-          WORKER_ECS_CLUSTER: ${{ secrets.STAGING_WORKER_ECS_CLUSTER }}
-          WORKER_ECS_SERVICE: ${{ secrets.STAGING_WORKER_ECS_SERVICE }}
+
+      - name: Render Server Task Definition
+        id: render-server-task-definition
+        uses: aws-actions/amazon-ecs-render-task-definition@138c24f321fdbdf7edee4a685519d253cae2cdea # v1.9.0
+        with:
+          task-definition-arn: ${{ steps.server-task-definition.outputs.task-definition }}
+          container-name: MedplumTaskDefinition
+          image: ${{ secrets.STAGING_DOCKERHUB_REPOSITORY }}:${{ github.sha }}
+
+      - name: Deploy Server Task Definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@c465972ecbd160473f22e683363b422a5412a3de # v2.6.3
+        with:
+          task-definition: ${{ steps.render-server-task-definition.outputs.task-definition }}
+          cluster: ${{ secrets.STAGING_ECS_CLUSTER }}
+          service: ${{ secrets.STAGING_ECS_SERVICE }}
+
+      - name: Get Worker Task Definition
+        id: worker-task-definition
+        run: |
+          task_definition="$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --query 'services[0].taskDefinition' --output text)"
+          echo "task-definition=$task_definition" >> "$GITHUB_OUTPUT"
+        env:
+          ECS_CLUSTER: ${{ secrets.STAGING_WORKER_ECS_CLUSTER }}
+          ECS_SERVICE: ${{ secrets.STAGING_WORKER_ECS_SERVICE }}
+
+      - name: Render Worker Task Definition
+        id: render-worker-task-definition
+        uses: aws-actions/amazon-ecs-render-task-definition@138c24f321fdbdf7edee4a685519d253cae2cdea # v1.9.0
+        with:
+          task-definition-arn: ${{ steps.worker-task-definition.outputs.task-definition }}
+          container-name: BackgroundJobsWorkerContainer
+          image: ${{ secrets.STAGING_DOCKERHUB_REPOSITORY }}:${{ github.sha }}
+
+      - name: Deploy Worker Task Definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@c465972ecbd160473f22e683363b422a5412a3de # v2.6.3
+        with:
+          task-definition: ${{ steps.render-worker-task-definition.outputs.task-definition }}
+          cluster: ${{ secrets.STAGING_WORKER_ECS_CLUSTER }}
+          service: ${{ secrets.STAGING_WORKER_ECS_SERVICE }}
+
       - name: Deploy bot layer
         run: ./scripts/deploy-bot-layer.sh
         env:
