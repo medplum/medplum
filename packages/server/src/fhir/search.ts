@@ -1985,7 +1985,7 @@ async function expandValueSetInFilters(
     }
 
     const param = getSearchParameter(resourceType, filter.code);
-    if (!param || param.type !== 'token') {
+    if (param?.type !== 'token') {
       result.push(filter);
       continue;
     }
