@@ -7,6 +7,8 @@ import '@testing-library/jest-dom';
 import { MemoryStorage, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import crypto from 'crypto';
+import { TextEncoder } from 'util';
 import { vi } from 'vitest';
 
 const { getComputedStyle } = window;
@@ -25,6 +27,14 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })),
+});
+
+Object.defineProperty(global, 'TextEncoder', {
+  value: TextEncoder,
+});
+
+Object.defineProperty(global.self, 'crypto', {
+  value: crypto.webcrypto,
 });
 
 class ResizeObserver {

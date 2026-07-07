@@ -20,7 +20,7 @@ describe('StructureDefinition $expand-profile', () => {
       const sd = USCoreStructureDefinitions.find((sd) => sd.url === profileUrl);
 
       if (!sd) {
-        fail(`could not find structure definition for ${profileUrl}`);
+        expect.fail(`could not find structure definition for ${profileUrl}`);
       }
       const res = await request(app)
         .post(`/fhir/R4/StructureDefinition`)

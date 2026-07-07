@@ -47,3 +47,5 @@ export * as v35 from './v35';
 export * as v36 from './v36';
 export * as v37 from './v37';
 export * as v38 from './v38';
+export * as v39 from './v39';
+export * as v40 from './v40';

@@ -689,7 +689,13 @@ function buildCodingPropertyTable(result: SchemaDefinition): void {
       { name: 'value', type: 'TEXT', notNull: true },
     ],
     indexes: [
-      { columns: ['target', 'property', 'coding'], indexType: 'btree', unique: false, where: 'target IS NOT NULL' },
+      {
+        columns: ['target', 'property', 'coding'],
+        indexType: 'btree',
+        unique: false,
+        where: '(target IS NOT NULL) AND (target > 0)',
+        indexNameOverride: 'Coding_Property_reverse_rel_lookup_idx',
+      },
       { columns: ['coding', 'property'], indexType: 'btree', unique: false, indexNameSuffix: '_idx' },
       {
         columns: ['property', 'value', 'coding', 'target'],
@@ -737,10 +743,9 @@ function buildConceptMappingTable(result: SchemaDefinition): void {
     ],
     indexes: [
       {
-        indexNameOverride: 'ConceptMapping_map_source_target_idx',
+        indexNameOverride: 'ConceptMapping_map_forward_idx',
         indexType: 'btree',
         columns: ['conceptMap', 'sourceSystem', 'sourceCode', 'targetSystem', 'targetCode'],
-        unique: true,
       },
       {
         indexNameOverride: 'ConceptMapping_map_reverse_idx',

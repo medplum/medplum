@@ -1,0 +1,125 @@
+.wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar {
+  flex-grow: 1;
+  /* Prevent FullCalendar from entering a redraw loop
+   * when the flex-container shifts size;
+   * @see https://github.com/fullcalendar/fullcalendar/issues/8076
+   */
+  min-width: 0;
+}
+
+/* Very narrow 7-column calendars are impossible to read. Set a larger minimum
+ * width even if that requires scrolling on small viewports.
+ */
+:global(.dayGridMonth).calendar,
+:global(.timeGridWeek).calendar {
+  min-width: 480px;
+}
+
+:global(.dayGridMonth).calendar .listItemEventBefore {
+  display: none;
+}
+
+
+/* Make it clearer that events are clickable */
+.interactiveEvent {
+  cursor: pointer;
+}
+
+/* Put more important title info first */
+.eventTitle { order: 1; }
+.eventTime { order: 2 }
+
+/* Tweak event layout: title can span multiple lines */
+.eventInner { overflow: hidden; }
+.eventTitle {
+  white-space: normal;
+  overflow: visible;
+}
+
+/* Formatting tweaks */
+.eventTitle { font-weight: 500; }
+.eventTime { font-size: 10px; }
+
+.shortEvent  {
+  .eventInner {
+    flex-direction: column;
+    align-items: inherit;
+  }
+}
+
+.backgroundEventInner > div {
+  opacity: 1;
+}
+
+
+/* For short background events (typical for before/after buffer slots), reduce
+ * the vertical padding and shrink the font size so that they overflow less
+ * often. */
+.backgroundEvent {
+  container-type: size;
+}
+@container (height < 50px) {
+  .backgroundEventInner > div {
+    font-size: 10px;
+    padding-top: 2px;
+  }
+}
+
+/* round off background events a little bit */
+.backgroundEvent {
+  border-radius: var(--mantine-radius-sm);
+}
+
+/* Keep "today" column highlighting similar to react-big-calendar default style */
+:root {
+  --fc-classic-today: #b8e0ff4d;
+
+  [data-color-scheme=dark] {
+    --fc-classic-today: #406e934d;
+  }
+}
+
+/* appointments and slots can be styled by status */
+.appointment {
+  --cal-color: light-dark(var(--mantine-color-white), var(--mantine-color-white));
+  --cal-background-color: light-dark(var(--mantine-color-blue-6), var(--mantine-color-blue-8));
+}
+.slot {
+  --cal-color: light-dark(var(--mantine-color-dark-4), var(--mantine-color-gray-4));
+  --cal-background-color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-gray-7));
+}
+
+:global(.dayGridMonth) .event:hover {
+  background-color: var(--cal-background-color);
+}
+
+
+.appointment.pending {
+  --cal-color: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-6));
+  --cal-background-color: light-dark(var(--mantine-color-white), var(--mantine-color-black));
+
+  /* pending: outlined with border color */
+  border: 1px solid var(--cal-color);
+}
+
+.slot.free {
+  --cal-color: light-dark(var(--mantine-color-dark-7), var(--mantine-color-gray-1));
+  --cal-background-color: light-dark(var(--mantine-color-green-1), var(--mantine-color-green-9));
+}
+
+.event,
+.backgroundEvent {
+  background-color: var(--cal-background-color);
+  .eventInner {
+    color: var(--cal-color);
+  }
+  .backgroundEventInner > div {
+    color: var(--cal-color);
+  }
+}

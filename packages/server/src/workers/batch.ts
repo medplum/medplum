@@ -24,7 +24,7 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { addVerboseQueueLogging, defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,
@@ -78,6 +78,15 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
       await exec.failJob();
     });
+    addVerboseQueueLogging<BatchJobData>(queue, worker, (job) => ({
+      asyncJob: getReferenceString(job.data.asyncJob),
+      project: getReferenceString(job.data.authState.project),
+      profile: job.data.authState.profile && getReferenceString(job.data.authState.profile),
+      membership: getReferenceString(job.data.authState.membership),
+      onBehalfOf: job.data.authState.onBehalfOf && getReferenceString(job.data.authState.onBehalfOf),
+      onBehalfOfMembership:
+        job.data.authState.onBehalfOfMembership && getReferenceString(job.data.authState.onBehalfOfMembership),
+    }));
   }
 
   return { queue, worker, name: queueName };

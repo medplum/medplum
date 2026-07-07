@@ -49,6 +49,7 @@ export default defineConfig({
     },
     setupFiles: ['./src/test.setup.ts'],
     testTimeout: 120_000,
+    pool: 'threads',
     fakeTimers: {
       /*
        * Advance mocked timers automatically (e.g. debounced search inputs) instead of
@@ -56,11 +57,5 @@ export default defineConfig({
        */
       shouldAdvanceTime: true,
     },
-    /*
-     * Run test files sequentially in isolated fork processes. App tests share global
-     * FHIR indexes and jsdom polyfills from test.setup.ts; parallel file runs cause flaky tests
-     */
-    pool: 'forks',
-    fileParallelism: false,
   },
 });

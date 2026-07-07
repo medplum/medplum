@@ -6,14 +6,30 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import stream from 'node:stream';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
-import * as awsDeploy from '../../cloud/aws/deploy';
+import type * as AwsDeploy from '../../cloud/aws/deploy';
+import { DEFAULT_LAMBDA_TIMEOUT } from '../../cloud/aws/deploy';
 import { loadTestConfig } from '../../config/loader';
 import * as storage from '../../storage/loader';
 import type { BinaryStorage } from '../../storage/types';
 import { createTestProject, withTestContext } from '../../test.setup';
 import * as streamUtils from '../../util/streams';
+
+const deployMocks = vi.hoisted(() => ({
+  getLambdaTimeoutForBot: vi.fn(),
+  deployLambda: vi.fn(),
+}));
+
+vi.mock('../../cloud/aws/deploy', async (importOriginal) => {
+  const actual = await importOriginal<typeof AwsDeploy>();
+  return {
+    ...actual,
+    getLambdaTimeoutForBot: deployMocks.getLambdaTimeoutForBot,
+    deployLambda: deployMocks.deployLambda,
+  };
+});
 
 const MOCK_PRESIGNED_URL = 'https://example.com/presigned';
 
@@ -45,9 +61,8 @@ describe('Deploy', () => {
   });
 
   beforeEach(() => {
-    jest
-      .spyOn(awsDeploy, 'getLambdaTimeoutForBot')
-      .mockImplementation(async (_bot: Bot) => awsDeploy.DEFAULT_LAMBDA_TIMEOUT);
+    deployMocks.getLambdaTimeoutForBot.mockResolvedValue(DEFAULT_LAMBDA_TIMEOUT);
+    deployMocks.deployLambda.mockResolvedValue(undefined);
   });
 
   afterAll(async () => {
@@ -55,7 +70,7 @@ describe('Deploy', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('Deploy bot with executableCode attached', async () => {
@@ -67,15 +82,13 @@ describe('Deploy', () => {
     `;
 
     const mockBinaryStorage = new MockBinaryStorage();
-    jest.spyOn(storage, 'getBinaryStorage').mockImplementation(() => mockBinaryStorage as unknown as BinaryStorage);
+    vi.spyOn(storage, 'getBinaryStorage').mockImplementation(() => mockBinaryStorage as unknown as BinaryStorage);
     const binaryStorage = storage.getBinaryStorage();
-    const readBinarySpy = jest.spyOn(binaryStorage, 'readBinary');
+    const readBinarySpy = vi.spyOn(binaryStorage, 'readBinary');
 
-    const readStreamToStringSpy = jest
+    const readStreamToStringSpy = vi
       .spyOn(streamUtils, 'readStreamToString')
       .mockImplementation(() => Promise.resolve(code));
-
-    const deployLambdaSpy = jest.spyOn(awsDeploy, 'deployLambda').mockImplementation();
 
     // Create Binary to serve as storage for code attachment
     const res1 = await request(app)
@@ -128,7 +141,7 @@ describe('Deploy', () => {
       })
     );
     expect(readStreamToStringSpy).toHaveBeenCalledWith(expect.any(Object));
-    expect(deployLambdaSpy).toHaveBeenCalledWith(
+    expect(deployMocks.deployLambda).toHaveBeenCalledWith(
       expect.objectContaining({
         resourceType: 'Bot',
         name: 'Test Bot',
@@ -140,8 +153,6 @@ describe('Deploy', () => {
   });
 
   test('Deploy bot with code parameter', async () => {
-    const deployLambdaSpy = jest.spyOn(awsDeploy, 'deployLambda').mockImplementation(jest.fn());
-
     const code = `
       export async function handler() {
         console.log('input', input);
@@ -171,7 +182,7 @@ describe('Deploy', () => {
         code,
       });
     expect(res2.status).toBe(200);
-    expect(deployLambdaSpy).toHaveBeenCalledWith(
+    expect(deployMocks.deployLambda).toHaveBeenCalledWith(
       expect.objectContaining({
         resourceType: 'Bot',
         name: 'Test Bot',
@@ -214,8 +225,6 @@ describe('Deploy', () => {
   });
 
   test('Deploy bot without ProjectMembership returns warning', async () => {
-    const deployLambdaSpy = jest.spyOn(awsDeploy, 'deployLambda').mockImplementation(jest.fn());
-
     const code = `
       export async function handler() {
         console.log('input', input);
@@ -245,7 +254,7 @@ describe('Deploy', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code });
     expect(res2.status).toBe(200);
-    expect(deployLambdaSpy).toHaveBeenCalled();
+    expect(deployMocks.deployLambda).toHaveBeenCalled();
 
     // Verify the response includes both the OK status and the warning
     expect(res2.body.issue).toHaveLength(2);
@@ -257,8 +266,6 @@ describe('Deploy', () => {
   });
 
   test('Deploy bot with runAsUser skips ProjectMembership check', async () => {
-    const deployLambdaSpy = jest.spyOn(awsDeploy, 'deployLambda').mockImplementation(jest.fn());
-
     const code = `
       export async function handler() {
         console.log('input', input);
@@ -291,7 +298,7 @@ describe('Deploy', () => {
         code,
       });
     expect(res2.status).toBe(200);
-    expect(deployLambdaSpy).toHaveBeenCalled();
+    expect(deployMocks.deployLambda).toHaveBeenCalled();
 
     // Verify no warning is returned since runAsUser bypasses the ProjectMembership check
     expect(res2.body.issue).toHaveLength(1);

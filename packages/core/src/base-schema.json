@@ -4262,6 +4262,20 @@
           }
         ]
       },
+      "userInfoMode": {
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "userInfoApiKey": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
       "clientId": {
         "min": 1,
         "type": [

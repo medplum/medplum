@@ -5,14 +5,15 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
-jest.mock('hibp');
-const fetchMock = jest.spyOn(globalThis, 'fetch') as unknown as jest.Mock;
-
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('New project', () => {
@@ -28,8 +29,8 @@ describe('New project', () => {
   beforeEach(async () => {
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
     fetchMock.mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
     setupRecaptchaMock(true);
   });
 

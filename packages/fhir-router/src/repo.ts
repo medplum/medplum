@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SearchRequest, SortRule, WithId } from '@medplum/core';
+import type { Operation, SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   EMPTY,
   OperationOutcomeError,
   Operator,
   allOk,
+  applyPatch,
   badRequest,
   created,
   deepClone,
@@ -20,8 +21,6 @@ import {
   stringify,
 } from '@medplum/core';
 import type { Bundle, OperationOutcome, Parameters, Reference, Resource } from '@medplum/fhirtypes';
-import type { Operation } from 'rfc6902';
-import { applyPatch } from 'rfc6902';
 
 export type CreateResourceOptions = {
   assignedId?: boolean;
