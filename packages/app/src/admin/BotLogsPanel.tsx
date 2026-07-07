@@ -11,7 +11,6 @@ import {
   Loader,
   ScrollArea,
   SegmentedControl,
-  Switch,
   Text,
   TextInput,
   Tooltip,
@@ -21,10 +20,9 @@ import type { AuditEvent, Bot } from '@medplum/fhirtypes';
 import { MedplumLink, useMedplum } from '@medplum/react';
 import { IconExternalLink, IconRefresh, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const DURATION_EXTENSION_URL = 'https://medplum.com/fhir/StructureDefinition/durationMs';
-const AUTO_REFRESH_INTERVAL_MS = 10_000;
 
 type StatusFilter = 'all' | 'success' | 'error';
 
@@ -103,7 +101,6 @@ export function BotLogsPanel(props: BotLogsPanelProps): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [query, setQuery] = useState('');
-  const [autoRefresh, setAutoRefresh] = useState(false);
   const [expandedId, setExpandedId] = useState<string | undefined>();
 
   const botId = bot.id;
@@ -130,16 +127,6 @@ export function BotLogsPanel(props: BotLogsPanelProps): JSX.Element {
     setLoading(true);
     loadLogs().catch(console.error);
   }, [loadLogs]);
-
-  const autoRefreshRef = useRef(loadLogs);
-  autoRefreshRef.current = loadLogs;
-  useEffect(() => {
-    if (!autoRefresh) {
-      return undefined;
-    }
-    const interval = setInterval(() => autoRefreshRef.current().catch(console.error), AUTO_REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
 
   const filteredLogs = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -178,12 +165,6 @@ export function BotLogsPanel(props: BotLogsPanelProps): JSX.Element {
             { label: 'Success', value: 'success' },
             { label: 'Errors', value: 'error' },
           ]}
-        />
-        <Switch
-          size="xs"
-          label="Live"
-          checked={autoRefresh}
-          onChange={(e) => setAutoRefresh(e.currentTarget.checked)}
         />
         <Tooltip label="Refresh">
           <ActionIcon variant="subtle" size="sm" onClick={() => loadLogs().catch(console.error)}>

@@ -25,7 +25,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { formatSearchQuery, getExtension, normalizeErrorString, Operator } from '@medplum/core';
+import { formatSearchQuery, getExtension, normalizeErrorString, normalizeOperationOutcome, Operator } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
 import type { Bot, OperationDefinition, OperationDefinitionParameter, Parameters, Resource, ResourceType } from '@medplum/fhirtypes';
 import { DateTimeInput, MedplumLink, ReferenceInput, ResourceInput, sendCommand, useMedplum } from '@medplum/react';
@@ -114,6 +114,8 @@ const EDITOR_COMMAND_TIMEOUT_MS = 10_000;
  * reply we cannot guarantee, so an un-timed `sendCommand` can hang forever.
  * @param frame - The target iframe (may be null if not yet mounted).
  * @param command - The command to send to the editor.
+ * @param command.command - The command name.
+ * @param command.value - The optional command payload.
  * @returns The command result.
  */
 async function sendCommandWithTimeout<R = unknown>(
@@ -125,9 +127,9 @@ async function sendCommandWithTimeout<R = unknown>(
   }
   return Promise.race([
     sendCommand<unknown, R>(frame, command),
-    new Promise<R>((_resolve, reject) =>
-      setTimeout(() => reject(new Error('Timed out communicating with the editor')), EDITOR_COMMAND_TIMEOUT_MS)
-    ),
+    new Promise<R>((_resolve, reject) => {
+      setTimeout(() => reject(new Error('Timed out communicating with the editor')), EDITOR_COMMAND_TIMEOUT_MS);
+    }),
   ]);
 }
 
@@ -143,6 +145,24 @@ function pushToEditor(frame: HTMLIFrameElement | null, value: string): void {
     return;
   }
   sendCommandWithTimeout(frame, { command: 'setValue', value }).catch(console.error);
+}
+
+/**
+ * Pretty-prints a value for the JSON response editor. Objects are serialized with
+ * two-space indentation; strings that already contain JSON are parsed and
+ * re-serialized so a stringified payload is beautified rather than shown minified.
+ * @param value - The value to format.
+ * @returns The beautified JSON string (or the original string if it is not JSON).
+ */
+function formatJson(value: unknown): string {
+  if (typeof value === 'string') {
+    try {
+      return JSON.stringify(JSON.parse(value), null, 2);
+    } catch {
+      return value;
+    }
+  }
+  return JSON.stringify(value, null, 2);
 }
 
 export function CustomOperationsPage(): JSX.Element {
@@ -233,7 +253,7 @@ export function CustomOperationsPage(): JSX.Element {
         if (isBot) {
           group = CUSTOM_GROUP;
           try {
-            bot = await medplum.readReference<Bot>({ reference: botRef as string });
+            bot = await medplum.readReference<Bot>({ reference: botRef });
           } catch {
             // bot may not be accessible
           }
@@ -263,7 +283,7 @@ export function CustomOperationsPage(): JSX.Element {
     if (!item.operation.id) {
       return;
     }
-    navigate(`${OPERATIONS_PATH}/${item.operation.id}`);
+    navigate(`${OPERATIONS_PATH}/${item.operation.id}`)?.catch(console.error);
   }, [navigate]);
 
   const applySelection = useCallback((item: OperationWithBot) => {
@@ -370,7 +390,7 @@ export function CustomOperationsPage(): JSX.Element {
         response = await medplum.post(url.toString(), body, 'application/fhir+json');
       }
 
-      const responseStr = JSON.stringify(response, null, 2);
+      const responseStr = formatJson(response);
       setResponseValue(responseStr);
       // Push the value into the editor iframe without blocking the invoke lifecycle;
       // the iframe round-trip can hang if the editor is slow/unreachable.
@@ -390,10 +410,12 @@ export function CustomOperationsPage(): JSX.Element {
 
       showNotification({ color: 'green', message: 'Operation invoked successfully' });
     } catch (err) {
-      const msg = normalizeErrorString(err);
-      setResponseValue(msg);
-      pushToEditor(responseRef.current, msg);
-      showNotification({ color: 'red', message: msg, autoClose: false });
+      // Show the full OperationOutcome (beautified) in the editor, but keep the
+      // toast concise with the normalized error message.
+      const responseStr = formatJson(normalizeOperationOutcome(err));
+      setResponseValue(responseStr);
+      pushToEditor(responseRef.current, responseStr);
+      showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
     } finally {
       setInvoking(false);
     }
@@ -862,8 +884,11 @@ interface ParameterFieldProps {
  * references, a numeric input for integer/decimal types, and a plain text input
  * (accepting JSON for complex types) otherwise. All values are normalized to the
  * string representation stored in the invoke form's parameter state.
+ * @param props - The parameter field props.
+ * @returns The rendered input for the parameter.
  */
-function ParameterField({ param, value, onChange }: ParameterFieldProps): JSX.Element {
+function ParameterField(props: ParameterFieldProps): JSX.Element {
+  const { param, value, onChange } = props;
   const required = (param.min ?? 0) > 0;
   const label = param.name ?? '';
   const type = param.type ?? '';
