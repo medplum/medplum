@@ -43,9 +43,9 @@ Most bot unit tests follow a common pattern:
 1. Create a Medplum `MockClient`
 2. Create mock resources
 3. Invoke the handler function
-4. Query mock resources and assert test your test criteria
+4. Query mock resources and assert your test criteria
 
-The [finalize-report tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-report.ts) are a great example of this pattern.
+The [finalize-report bot tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-reports.test.ts) are a great example of this pattern.
 
 ### Create a `MockClient`
 
@@ -71,13 +71,12 @@ The MockClient does not yet perfectly replicate all functionality of the `Medplu
 - **`Bot/$execute`**
 - **Terminology service** (e.g., `ValueSet/$expand`)
 - **FHIRcast**
-- **Websocket subscriptions**
+- **WebSocket subscriptions**
 - **Project admin calls** (new project, invite user, create client application, etc.)
 
 The Medplum team is working on bringing these features to parity as soon as possible. For related discussion, see [related GitHub issue](https://github.com/medplum/medplum/issues/6889).
 
 :::
-
 ### Create test data
 
 Most tests require setting up some resources in the mock environment before running the Bot. You can use `createResource()` and `updateResource()` to add resources to your mock server, just as you would with a regular `MedplumClient` instance.
@@ -127,7 +126,7 @@ This example searches for all `Patient` resources named 'Alex'. It also uses the
 
 A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resources from already existing data.
 
-#### Cloning an Existing Projects
+#### Cloning an Existing Project
 
 If you want to clone an existing project into a new environment, you can use the `$clone` operation. For more details [see the Projects guide](/docs/access/projects#cloning-and-expunging-projects).
 
@@ -145,7 +144,7 @@ Most of the time, Bots will create or modify resources on the Medplum server. To
 
 To check the bot's response, simply check the return value of your `handler` function.
 
-The after running the Bot, the [finalize-report bot's tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-reports.test.ts) read the updated `DiagnosticReport` and `Observation` resources to confirm their status.
+After running the Bot, the [finalize-report bot's tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-reports.test.ts) read the updated `DiagnosticReport` and `Observation` resources to confirm their status.
 
 <details>
   <summary>Example: Query the results</summary>
@@ -165,24 +164,3 @@ Many times, you'd like to make sure your Bot is [idempotent](https://en.wikipedi
 </details>
 
 :::
-
-### Using the Medplum CLI
-
-If you have a dev project that already has rich data, you can use the Medplum CLI to easily convert this data into test data.
-
-The Medplum CLI offers the optional `--as-transaction` flag when using the `medplum get` command. A `GET` request returns a `Bundle` with `type=searchset`, but this flag will convert it to `type=transaction`.
-
-<details>
-<summary>Example: Get a patient and all encounters that reference them as a transaction</summary>
-
-```cli
-
-// medplum get --as-transaction 'Patient?name=Alex&_revinclude=Encounter:patient'
-
-```
-
-</details>
-
-This example searches for all `Patient` resources named 'Alex'. It also uses the [`_revinclude` parameter](/docs/search/includes) to search for all `Encounter` resources that reference those patients.
-
-A transaction `Bundle` can be used directly in a batch request, and can be passed as an argument to `executeBatch` on your `MockClient`. This allows you to easily create test resources from already existing data.
