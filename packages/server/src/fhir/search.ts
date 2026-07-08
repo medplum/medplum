@@ -540,7 +540,7 @@ async function getSearchIncludeEntries(
   include: IncludeTarget,
   resources: Resource[]
 ): Promise<BundleEntry[]> {
-  const { resourceType, searchParam: code } = include;
+  const { resourceType, searchParam: code, targetType } = include;
   const searchParam = getSearchParameter(resourceType, code);
   if (!searchParam) {
     throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
@@ -557,9 +557,18 @@ async function getSearchIncludeEntries(
     }
   }
 
-  const includedResources = (await repo.readReferences(references)).filter((v) => isResource(v)) as WithId<Resource>[];
-  if (searchParam.target && canonicalReferences.length > 0) {
-    const canonicalSearches = searchParam.target.map((resourceType) => {
+  // `_include=ResourceType:code:targetType` restricts the include to references of
+  // `targetType`; without the suffix every referenced resource type is returned.
+  const targetReferences = targetType
+    ? references.filter((reference) => reference.reference?.startsWith(targetType + '/'))
+    : references;
+
+  const includedResources = (await repo.readReferences(targetReferences)).filter((v) =>
+    isResource(v)
+  ) as WithId<Resource>[];
+  const canonicalTargets = targetType ? searchParam.target?.filter((t) => t === targetType) : searchParam.target;
+  if (canonicalTargets?.length && canonicalReferences.length > 0) {
+    const canonicalSearches = canonicalTargets.map((resourceType) => {
       const searchRequest = {
         resourceType: resourceType,
         filters: [
@@ -605,16 +614,37 @@ async function getSearchRevIncludeEntries(
   revInclude: IncludeTarget,
   resources: Resource[]
 ): Promise<BundleEntry[]> {
-  const { resourceType, searchParam: code } = revInclude;
+  const { resourceType, searchParam: code, targetType } = revInclude;
   const searchParam = getSearchParameter(resourceType, code);
   if (!searchParam) {
     throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
   }
 
-  const references =
-    getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL
-      ? flatMapFilter(resources, (r) => getCanonicalUrl(r))
-      : resources.map(getReferenceString);
+  // `_revinclude=ResourceType:code:targetType` restricts the reverse include to
+  // base resources of `targetType`. Build the references in a single pass,
+  // filtering to the target type as we go.
+  const isCanonical =
+    getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL;
+  const references: string[] = [];
+  for (const resource of resources) {
+    if (targetType && resource.resourceType !== targetType) {
+      continue;
+    }
+    if (isCanonical) {
+      const canonicalUrl = getCanonicalUrl(resource);
+      if (canonicalUrl) {
+        references.push(canonicalUrl);
+      }
+    } else {
+      const reference = getReferenceString(resource);
+      if (reference) {
+        references.push(reference);
+      }
+    }
+  }
+  if (references.length === 0) {
+    return [];
+  }
   const searchRequest = {
     resourceType: resourceType as ResourceType,
     filters: [{ code, operator: Operator.EQUALS, value: references.join(',') }],
