@@ -452,6 +452,72 @@ describe('Patient Set Accounts Operation', () => {
     );
   });
 
+  test('Job aborts when AsyncJob.status is not continuable', async () => {
+    const queue = getSetAccountsQueue() as any;
+    queue.add.mockClear();
+
+    // Start the operation
+    const initRes = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'accounts',
+            valueReference: createReference(organization1),
+          },
+          {
+            name: 'propagate',
+            valueBoolean: true,
+          },
+        ],
+      });
+    expect(initRes.status).toBe(202);
+    expect(initRes.headers['content-location']).toBeDefined();
+    const jobUrlMatch = /job\/([^/]+)\/status/.exec(initRes.headers['content-location']);
+    const asyncJobId = jobUrlMatch?.[1];
+
+    // Cancel the job by updating AsyncJob.status
+    const cancelRes = await request(app)
+      .patch(`/fhir/R4/AsyncJob/${asyncJobId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send([{ op: 'replace', path: '/status', value: 'cancelled' }]);
+    expect(cancelRes.status).toBe(200);
+
+    // Manually push through BullMQ job
+    expect(queue.add).toHaveBeenCalledWith(
+      'SetAccountsJobData',
+      expect.objectContaining<Partial<SetAccountsJobData>>({ resourceType: 'Patient', id: patient.id })
+    );
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    queue.add.mockClear();
+
+    await runInAuthenticatedContext(
+      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+      undefined,
+      undefined,
+      { async: true },
+      () => execSetAccountsJob(job)
+    );
+
+    // Check that the job status doesn't update and no output is provided
+    const contentLocation = new URL(initRes.headers['content-location']);
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+
+    const statusRes = await request(app)
+      .get(contentLocation.pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(statusRes.status).toBe(200);
+    const resBody = statusRes.body as AsyncJob;
+    expect(resBody.status).toStrictEqual('cancelled');
+    expect(resBody.output?.parameter).toBeUndefined();
+  });
+
   test('Removes account without extended header', async () => {
     const setTwo = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
