@@ -143,7 +143,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
             size="sm"
             mt="lg"
             c="dimmed"
-            style={{ textAlign: 'center' }}
+            ta="center"
             data-dashlane-ignore="true"
             data-lp-ignore="true"
             data-no-autofill="true"
