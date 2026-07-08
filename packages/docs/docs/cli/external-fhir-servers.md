@@ -5,7 +5,7 @@ tags: [integration]
 
 # Connecting to External FHIR Servers
 
-When building an application, you many need to query or write data to an external FHIR server as part of your application's workflow. For example:
+When building an application, you may need to query or write data to an external FHIR server as part of your application's workflow. For example:
 
 - When a new patient is created, see if that patient already exists in another server
 - When an encounter is finalized, synchronize the encounter documentation to another FHIR server
@@ -17,7 +17,7 @@ The examples below use the [CLI optional flags](/docs/cli#optional-flags-for-med
 
 ## Setting up your credentials
 
-Medplum CLI stores credentials to be used in a future period without needing it to be entered in every command. By using the `profile` command, this helps with the ability to work with multiple FHIR servers.
+Medplum CLI stores credentials so they can be reused without entering them in every command. The `profile` command helps you work with multiple FHIR servers.
 
 ### Setting a Profile
 
@@ -50,7 +50,7 @@ medplum profile set <profileName> \
 | authorization-code |
 | jwt-bearer         |
 
-The profile will now be stored in a file directory in `~.medplum/<profileName>.json`
+The profile will now be stored in a file directory in `~/.medplum/<profileName>.json`
 
 Once you have a profile, you can connect with external FHIR servers with your profile using the `-p` flag.
 
@@ -74,10 +74,10 @@ medplum profile set example \
     --fhir-url-path "fhir/R4" \
     --token-url "/oauth2/token" \
     --client-id "MY_CLIENT_ID" \
-    --client-secret "MY_CLIENT_SECRET"
-    --scope "openid profile"
-    --audience "/oauth2/token"
-    --subject "john_doe"
+    --client-secret "MY_CLIENT_SECRET" \
+    --scope "openid profile" \
+    --audience "/oauth2/token" \
+    --subject "john_doe" \
     --issuer "api.example.com"
 ```
 
@@ -127,7 +127,7 @@ Other profile commands include:
 
 #### `describe`
 
-To see the state of your credentials in on profile
+To see the state of your credentials in one profile
 
 ###### Syntax
 
@@ -185,10 +185,10 @@ medplum login \
     --fhir-url-path "fhir/R4" \
     --token-url "/oauth2/token" \
     --client-id "MY_CLIENT_ID" \
-    --client-secret "MY_CLIENT_SECRET"
-    --scope "openid profile"
-    --audience "/oauth2/token"
-    --subject "john_doe"
+    --client-secret "MY_CLIENT_SECRET" \
+    --scope "openid profile" \
+    --audience "/oauth2/token" \
+    --subject "john_doe" \
     --issuer "api.example.com"
 ```
 
@@ -214,7 +214,7 @@ medplum post -p <profileName>  Encounter '{"resourceType": "Encounter", "status"
 
 ## Example: Bulk FHIR Export
 
-In this example, Bulk FHIR ndjson files are exported from the server and stored on on the local drive after a profile has been set.
+In this example, Bulk FHIR ndjson files are exported from the server and stored on the local drive after a profile has been set.
 
 ```bash
 medplum bulk export -p <profileName> -e Group/all
@@ -234,7 +234,7 @@ medplum bulk export -p bcda-sandbox -e Group/all
 
 ## Next Steps
 
-The Medplum CLI uses Medplum [TypescriptSDK](/docs/sdk) to power the functionality. Once the external connection is working and you have tested some of the basic scenarios, it is recommended to build out your integration as a [bot](/docs/bots) to enable your event driven or [cron-based](/docs/bots/bot-cron-job) workflow.
+The Medplum CLI uses the Medplum [TypeScript SDK](/docs/sdk) to power the functionality. Once the external connection is working and you have tested some of the basic scenarios, it is recommended to build out your integration as a [bot](/docs/bots) to enable your event-driven or [cron-based](/docs/bots/bot-cron-job) workflow.
 
 ## Related Resources
 
