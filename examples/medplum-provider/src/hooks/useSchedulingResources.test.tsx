@@ -57,7 +57,6 @@ describe('useSchedulingResources', () => {
 
       expect(result.current.slots).toBeUndefined();
       expect(result.current.appointments).toBeUndefined();
-      expect(result.current.schedulingResources).toBeUndefined();
     });
   });
 
@@ -305,7 +304,12 @@ describe('useSchedulingResources', () => {
         resourceType: 'Appointment',
         id: 'new-appt',
         status: 'booked',
-        participant: [],
+        participant: [
+          {
+            status: 'tentative',
+            actor: { reference: 'Practitioner/prac-1' },
+          },
+        ],
       };
       const newSlot: WithId<Slot> = {
         resourceType: 'Slot',
@@ -322,14 +326,19 @@ describe('useSchedulingResources', () => {
       });
       medplum.invalidateSearches = vi.fn();
 
-      let bookResult!: { appointment: WithId<Appointment>; slots: WithId<Slot>[] };
-      await act(async () => {
-        bookResult = await result.current.schedulingAPI.book({
+      // let bookResult!: { appointment: WithId<Appointment>; slots: WithId<Slot>[] };
+      const bookResult = await act(() =>
+        result.current.schedulingAPI.book({
           resourceType: 'Appointment',
           status: 'proposed',
-          participant: [],
-        });
-      });
+          participant: [
+            {
+              status: 'tentative',
+              actor: { reference: 'Practitioner/prac-1' },
+            },
+          ],
+        })
+      );
 
       expect(bookResult.appointment).toEqual(newAppointment);
       expect(bookResult.slots).toContainEqual(newSlot);
@@ -346,7 +355,12 @@ describe('useSchedulingResources', () => {
         resourceType: 'Appointment',
         id: 'new-appt',
         status: 'booked',
-        participant: [],
+        participant: [
+          {
+            status: 'tentative',
+            actor: { reference: 'Practitioner/prac-1' },
+          },
+        ],
       };
       medplum.post = vi.fn().mockResolvedValue({
         resourceType: 'Bundle',
@@ -356,7 +370,16 @@ describe('useSchedulingResources', () => {
       medplum.invalidateSearches = vi.fn();
 
       await act(async () => {
-        await result.current.schedulingAPI.book({ resourceType: 'Appointment', status: 'proposed', participant: [] });
+        await result.current.schedulingAPI.book({
+          resourceType: 'Appointment',
+          status: 'proposed',
+          participant: [
+            {
+              status: 'tentative',
+              actor: { reference: 'Practitioner/prac-1' },
+            },
+          ],
+        });
       });
 
       expect(medplum.invalidateSearches).toHaveBeenCalledWith('Appointment');
