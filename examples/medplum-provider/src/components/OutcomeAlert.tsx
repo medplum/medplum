@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AlertProps } from '@mantine/core';
+import type { AlertProps } from '@mantine/core';
 import { isOk } from '@medplum/core';
 import type { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { OperationOutcomeAlert } from '@medplum/react';
