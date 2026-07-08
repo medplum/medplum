@@ -37,7 +37,7 @@ describe('AnnotationInput', () => {
   });
 
   test('Set value', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup({
       path: '',
@@ -55,7 +55,7 @@ describe('AnnotationInput', () => {
       text: 'TEST',
       authorReference: {
         display: 'Alice Smith',
-        reference: 'Practitioner/123',
+        reference: 'Practitioner/124',
       },
       time: expect.anything(),
     });
@@ -77,7 +77,7 @@ describe('AnnotationInput', () => {
   });
 
   test('Clear value', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup({
       path: '',

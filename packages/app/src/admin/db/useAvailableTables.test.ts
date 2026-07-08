@@ -3,25 +3,26 @@
 
 import { ContentType, MedplumClient } from '@medplum/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import type { Mock } from 'vitest';
 import { useAvailableTables } from './useAvailableTables';
 
 describe('useAvailableTables', () => {
   let medplum: MedplumClient;
-  let onChange: jest.Mock;
-  let onError: jest.Mock;
+  let onChange: Mock;
+  let onError: Mock;
 
   beforeEach(() => {
-    onChange = jest.fn();
-    onError = jest.fn();
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    onChange = vi.fn();
+    onError = vi.fn();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test('Loads resource types and transforms to tables', async () => {
-    const fetch = jest.fn(async (url: string) => {
+    const fetch = vi.fn(async (url: string) => {
       if (url.includes('ValueSet/$expand')) {
         return {
           status: 200,
@@ -65,7 +66,7 @@ describe('useAvailableTables', () => {
   });
 
   test('Calls onError when request fails', async () => {
-    const fetch = jest.fn(async () => {
+    const fetch = vi.fn(async () => {
       throw new Error('Network error');
     });
 
@@ -82,9 +83,9 @@ describe('useAvailableTables', () => {
   });
 
   test('Logs to console.error when onError not provided', async () => {
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const fetch = jest.fn(async () => {
+    const fetch = vi.fn(async () => {
       throw new Error('Network error');
     });
 
@@ -100,7 +101,7 @@ describe('useAvailableTables', () => {
   });
 
   test('Handles empty expansion', async () => {
-    const fetch = jest.fn(async (url: string) => {
+    const fetch = vi.fn(async (url: string) => {
       if (url.includes('ValueSet/$expand')) {
         return {
           status: 200,
@@ -135,7 +136,7 @@ describe('useAvailableTables', () => {
   });
 
   test('Handles undefined expansion', async () => {
-    const fetch = jest.fn(async (url: string) => {
+    const fetch = vi.fn(async (url: string) => {
       if (url.includes('ValueSet/$expand')) {
         return {
           status: 200,
@@ -165,7 +166,7 @@ describe('useAvailableTables', () => {
   });
 
   test('Handles contains with undefined codes', async () => {
-    const fetch = jest.fn(async (url: string) => {
+    const fetch = vi.fn(async (url: string) => {
       if (url.includes('ValueSet/$expand')) {
         return {
           status: 200,
@@ -203,7 +204,7 @@ describe('useAvailableTables', () => {
     const createFetch = (
       resourceTypes: string[]
     ): ((url: string) => Promise<{ status: number; headers: any; json: () => Promise<any> }>) =>
-      jest.fn(async (url: string) => {
+      vi.fn(async (url: string) => {
         if (url.includes('ValueSet/$expand')) {
           return {
             status: 200,

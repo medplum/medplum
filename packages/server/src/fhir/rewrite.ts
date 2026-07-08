@@ -162,9 +162,6 @@ class Rewriter {
       } else {
         binary = await this.repo.readResource<Binary>('Binary', id);
       }
-      if (binary.securityContext) {
-        await this.repo.readReference(binary.securityContext);
-      }
     } catch (err: any) {
       getLogger().debug('Error reading binary to generate presigned URL', err);
       return `Binary/${id}`;
@@ -186,7 +183,7 @@ class Rewriter {
  * @param url - The input URL.
  * @returns The normalized binary ID and version ID.
  */
-function normalizeBinaryUrl(url: string): { id?: string; versionId?: string } {
+export function normalizeBinaryUrl(url: string): { id?: string; versionId?: string } {
   const config = getConfig();
   let refStr: string | undefined;
 

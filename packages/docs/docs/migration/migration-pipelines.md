@@ -70,7 +70,7 @@ This batch operation creates (or updates) two [`Patient`][patient] resources in 
 
 ## Using Transactions for Data Integrity
 
-[FHIR Transactions](/docs/fhir-datastore/fhir-batch-requests#internal-references) ensure that a set of resources are written together or fail together, maintaining data integrity. However, transactions are generally slower and are capped at 20 resources per transaction.
+[FHIR Transactions](/docs/fhir-datastore/fhir-batch-requests#internal-references) ensure that a set of resources are written together or fail together, maintaining data integrity. Transactions require the `transaction-bundles` feature flag on your project; without it, bundles with `type: "transaction"` are processed as batches and lose atomicity. Transactions are generally slower than batches, and two limits apply: a transaction may contain at most 50 update operations, and a transaction that includes conditional operations (conditional create, update, or delete) runs under serializable isolation and is limited to 8 entries. See [Transaction Limits](/docs/fhir-datastore/fhir-batch-requests#transaction-limits) for details.
 
 #### Example: Encounter with Clinical Impression
 

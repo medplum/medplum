@@ -9,7 +9,6 @@ import {
   DEFAULT_SEARCH_COUNT,
   isNotFound,
   isReference,
-  isResource,
   OperationOutcomeError,
   resolveId,
 } from '@medplum/core';
@@ -34,21 +33,6 @@ import {
 } from './utils/scheduling';
 import { extractCommonParameters } from './utils/scheduling-parameters';
 
-const scheduleFindOperation = makeOperationDefinition(
-  { scope: 'instance', resource: 'Schedule' },
-  {
-    name: 'find',
-    code: 'find',
-    parameter: [
-      { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
-      { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
-      { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
-      { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
-      { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
-    ],
-  }
-);
-
 const appointmentFindOperation = makeOperationDefinition(
   { scope: 'type', resource: 'Appointment' },
   {
@@ -64,13 +48,6 @@ const appointmentFindOperation = makeOperationDefinition(
     ],
   }
 );
-
-type ScheduleFindParameters = {
-  start: string;
-  end: string;
-  'service-type-reference': string;
-  _count?: number;
-};
 
 type AppointmentFindParameters = {
   start: string;
@@ -166,7 +143,7 @@ async function handler(params: {
     assert(schedulingParameters);
 
     const scheduleSlots = existingSlots.filter((slot) => resolveId(slot.schedule) === schedule.id);
-    let availability = resolveAvailability(schedulingParameters, effectiveRange, schedulingParameters.timezone);
+    let availability = resolveAvailability(schedulingParameters, effectiveRange, schedulingParameters.get('timezone'));
     availability = applyExistingSlots({
       availability,
       slots: scheduleSlots,
@@ -176,8 +153,8 @@ async function handler(params: {
 
     // Trim off bufferBefore/bufferAfter from availability
     availability = availability.map((interval) => ({
-      start: addMinutes(interval.start, schedulingParameters.bufferBefore),
-      end: addMinutes(interval.end, -1 * schedulingParameters.bufferAfter),
+      start: addMinutes(interval.start, schedulingParameters.get('bufferBefore')),
+      end: addMinutes(interval.end, -1 * schedulingParameters.get('bufferAfter')),
     }));
 
     // Optimization: restrict to windows long enough for the requested duration
@@ -186,7 +163,7 @@ async function handler(params: {
     // `start` after our previous buffer-trimming step.
     availability = availability.filter((interval) => {
       const durationMs = interval.end.getTime() - interval.start.getTime();
-      return durationMs >= schedulingParameters.duration * 60 * 1000;
+      return durationMs >= schedulingParameters.get('duration') * 60 * 1000;
     });
 
     return availability;
@@ -201,9 +178,12 @@ async function handler(params: {
     intersectingAvailability,
     (interval, _idx, maxCount) =>
       findAlignedSlotTimes(interval, {
-        offsetMinutes: commonParameters.alignmentOffset,
+        alignment: {
+          interval: commonParameters.alignmentInterval,
+          offset: commonParameters.alignmentOffset,
+          timezone: commonParameters.alignmentTimezone,
+        },
         durationMinutes: commonParameters.duration,
-        alignment: commonParameters.alignmentInterval,
         maxCount,
       }),
     pageSize
@@ -228,10 +208,10 @@ async function handler(params: {
         },
       ];
 
-      if (parameters.bufferBefore) {
+      if (parameters.get('bufferBefore')) {
         resultSlots.push({
           resourceType: 'Slot',
-          start: addMinutes(interval.start, -1 * parameters.bufferBefore).toISOString(),
+          start: addMinutes(interval.start, -1 * parameters.get('bufferBefore')).toISOString(),
           end: start,
           schedule: createReference(schedule),
           status: 'busy-unavailable',
@@ -240,11 +220,11 @@ async function handler(params: {
         });
       }
 
-      if (parameters.bufferAfter) {
+      if (parameters.get('bufferAfter')) {
         resultSlots.push({
           resourceType: 'Slot',
           start: end,
-          end: addMinutes(interval.end, parameters.bufferAfter).toISOString(),
+          end: addMinutes(interval.end, parameters.get('bufferAfter')).toISOString(),
           schedule: createReference(schedule),
           status: 'busy-unavailable',
           serviceType,
@@ -280,50 +260,12 @@ async function handler(params: {
 }
 
 /**
- * Handles HTTP requests for the Schedule $find operation.
- *
- * Endpoints:
- *   [fhir base]/Schedule/[id]/$find
- *
- * @param req - The FHIR request.
- * @returns The FHIR response.
- */
-export async function scheduleFindHandler(req: FhirRequest): Promise<FhirResponse> {
-  const params = parseInputParameters<ScheduleFindParameters>(scheduleFindOperation, req);
-  const proposed = await handler({
-    start: params.start,
-    end: params.end,
-    _count: params._count,
-    schedules: [withPath({ reference: `Schedule/${req.params.id}` }, 'Schedule')],
-    healthcareService: { reference: params['service-type-reference'] },
-  });
-
-  const entry = proposed.map((appointment) => {
-    // We passed in a single schedule, so each resulting appointment should have
-    // a single "busy" slot.
-    const slots = appointment.contained?.filter((s) => isResource<Slot>(s, 'Slot'));
-    const slot = slots?.find((s) => s.status === 'busy');
-    assert(slot);
-    // In the single schedule $find, we show the potential slots as "free", as they represent
-    // bookable time rather than a proposed set of resources to create during booking.
-    return { resource: { ...slot, status: 'free' as const } };
-  });
-
-  const bundle: Bundle<Slot> = {
-    resourceType: 'Bundle',
-    type: 'searchset',
-    entry,
-  };
-
-  return [allOk, buildOutputParameters(scheduleFindOperation, bundle)];
-}
-
-/**
  * Handles HTTP requests for the Appointment $find operation.
  *
  * Endpoints:
  *   [fhir base]/Appointment/$find
  *
+ * @experimental - Scheduling Beta API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */

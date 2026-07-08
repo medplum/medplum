@@ -1,15 +1,8 @@
-# Set to true to add reviewers to pull requests
-addReviewers: true
+# Reviewer assignment is handled by CODEOWNERS plus each team's
+# "Code review assignment" setting (Org -> Teams -> <team> -> Settings -> Code review),
+# which routes a team review request to a single member. This action only sets the
+# PR author as the assignee so the PR shows up in their "assigned" list.
+addReviewers: false
 
 # Set addAssignees to 'author' to set the PR creator as the assignee.
 addAssignees: author
-
-# A list of reviewers to be added to pull requests (GitHub user name)
-reviewers:
-  - mattlong
-  - mattwiller
-  - ThatOneBro
-
-# A number of reviewers added to the pull request
-# Set 0 to add all the reviewers (default: 0)
-numberOfReviewers: 1

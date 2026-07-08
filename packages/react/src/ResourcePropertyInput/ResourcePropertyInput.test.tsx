@@ -56,7 +56,7 @@ describe('ResourcePropertyInput', () => {
   // https://www.hl7.org/fhir/datatypes.html#primitive
 
   test('boolean property', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -74,7 +74,7 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Date property', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -92,7 +92,7 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Date/Time property', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     const localString = convertIsoToLocal('2021-01-01T12:00:00Z');
     const isoString = convertLocalToIso(localString);
 
@@ -112,7 +112,7 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Time property', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -134,7 +134,7 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Markdown property', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -193,7 +193,7 @@ describe('ResourcePropertyInput', () => {
       title: 'hello.txt',
     };
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -229,7 +229,7 @@ describe('ResourcePropertyInput', () => {
       },
     ];
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -300,7 +300,7 @@ describe('ResourcePropertyInput', () => {
       },
     ];
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -345,7 +345,7 @@ describe('ResourcePropertyInput', () => {
       },
     ];
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -372,7 +372,7 @@ describe('ResourcePropertyInput', () => {
       end: '2021-01-02T12:00:00.000Z',
     };
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -403,7 +403,7 @@ describe('ResourcePropertyInput', () => {
       unit: 'mg',
     };
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -431,7 +431,7 @@ describe('ResourcePropertyInput', () => {
       high: { value: 10, unit: 'mg' },
     };
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -465,7 +465,7 @@ describe('ResourcePropertyInput', () => {
       denominator: { value: 10, unit: 'ml' },
     };
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -550,7 +550,7 @@ describe('ResourcePropertyInput', () => {
       type: [{ code: 'Quantity' }, { code: 'string' }, { code: 'integer' }],
     };
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,
@@ -644,7 +644,7 @@ describe('ResourcePropertyInput', () => {
       type: [{ code: 'string' }],
     };
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     await setup({
       ...defaultProps,

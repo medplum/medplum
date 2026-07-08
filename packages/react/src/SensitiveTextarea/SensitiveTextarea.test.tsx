@@ -5,7 +5,7 @@ import { SensitiveTextarea } from './SensitiveTextarea';
 
 describe('SensitiveTextarea', () => {
   test('Renders', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     render(<SensitiveTextarea placeholder="secret" defaultValue="foo" onChange={onChange} />);
 

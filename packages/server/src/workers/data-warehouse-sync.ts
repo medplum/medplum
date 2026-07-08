@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Job, QueueBaseOptions } from 'bullmq';
+import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { S3TablesWarehouseDestination } from '../cloud/aws/data-warehouse-destination';
 import type { MedplumServerConfig } from '../config/types';
@@ -20,7 +20,7 @@ import {
 } from '../database';
 import { globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { addVerboseQueueLogging, getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { addVerboseQueueLogging, defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 export interface DataWarehouseSyncJobData {
   trigger: 'scheduler';
@@ -73,13 +73,10 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
     return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
   }
 
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<DataWarehouseSyncJobData>(DataWarehouseSyncQueueName, {
     ...defaultOptions,
-    defaultJobOptions: { attempts: 1 },
+    defaultJobOptions: { ...defaultOptions.defaultJobOptions, attempts: 1 },
   });
 
   const workerBullmq = getWorkerBullmqConfig(config, 'data-warehouse-sync') ?? {};
@@ -156,6 +153,7 @@ export async function processDataWarehouseSyncJob(
   job: Job<DataWarehouseSyncJobData>
 ): Promise<void> {
   const syncConfig = config.dataWarehouse;
+  const jobStartTime = new Date();
 
   await withPoolClient(async (client) => {
     let hasLock = false;
@@ -170,6 +168,7 @@ export async function processDataWarehouseSyncJob(
         globalLogger.info('Skipping data warehouse sync; another sync is in progress', {
           jobId: job.id,
           trigger: job.data.trigger,
+          startDate: syncConfig?.startDate,
           subsystem: 'data-warehouse-sync',
         });
         return;
@@ -184,18 +183,30 @@ export async function processDataWarehouseSyncJob(
         },
       });
 
+      let syncDurationSeconds = 0;
+      for (const table of result.tables) {
+        syncDurationSeconds += table.syncDurationMs / 1000;
+      }
+
       const tables = result.tables;
       const tablesWithRows = tables.filter((t) => t.rowsInserted > 0).length;
       const tablesEmpty = tables.length - tablesWithRows;
       const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
+      const jobEndTime = new Date();
+      const durationSeconds = (jobEndTime.getTime() - jobStartTime.getTime()) / 1000;
       globalLogger.info('Data warehouse sync completed', {
         jobId: job.id,
         trigger: job.data.trigger,
+        startDate: syncOptions.startDate,
         tablesSynced: tables.length,
         tablesWithRows,
         tablesEmpty,
         rowsInserted,
-        tables,
+        tableCounts: Object.fromEntries(tables.map((t) => [t.destination, t.rowsInserted])),
+        syncDurationSeconds,
+        jobStartTime: jobStartTime.toISOString(),
+        jobEndTime: jobEndTime.toISOString(),
+        durationSeconds,
         subsystem: 'data-warehouse-sync',
       });
     } catch (err) {
@@ -204,6 +215,7 @@ export async function processDataWarehouseSyncJob(
         trigger: job.data.trigger,
         destination: syncConfig?.destination,
         namespace: syncConfig?.namespace,
+        startDate: syncConfig?.startDate,
         err,
         subsystem: 'data-warehouse-sync',
       });

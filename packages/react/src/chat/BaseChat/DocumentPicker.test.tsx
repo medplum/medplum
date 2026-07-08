@@ -15,11 +15,11 @@ describe('DocumentPicker', () => {
 
   beforeEach(() => {
     medplum = new MockClient({ profile: DrAliceSmith });
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   async function setup(props: DocumentPickerProps): Promise<void> {
@@ -34,19 +34,19 @@ describe('DocumentPicker', () => {
 
   async function flushDebounce(): Promise<void> {
     await act(async () => {
-      jest.advanceTimersByTime(300);
+      vi.advanceTimersByTime(300);
     });
   }
 
   test('Shows header, search input, and upload option', async () => {
-    await setup({ onSelect: jest.fn(), onUpload: jest.fn() });
+    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
     expect(screen.getByText('Attachments')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Search for a Document...')).toBeInTheDocument();
     expect(screen.getByText('Upload an image, pdf, etc.')).toBeInTheDocument();
   });
 
   test('Shows No documents found when no results', async () => {
-    await setup({ onSelect: jest.fn(), onUpload: jest.fn() });
+    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
     await flushDebounce();
     expect(await screen.findByText('No documents found')).toBeInTheDocument();
   });
@@ -59,7 +59,7 @@ describe('DocumentPicker', () => {
       content: [{ attachment: { title: 'blood-test.pdf' } }],
     });
 
-    await setup({ onSelect: jest.fn(), onUpload: jest.fn() });
+    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
     await flushDebounce();
 
     expect(await screen.findByText('Blood test results')).toBeInTheDocument();
@@ -72,14 +72,14 @@ describe('DocumentPicker', () => {
       content: [{ attachment: { title: 'xray.pdf' } }],
     });
 
-    await setup({ onSelect: jest.fn(), onUpload: jest.fn() });
+    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
     await flushDebounce();
 
     expect(await screen.findByText('xray.pdf')).toBeInTheDocument();
   });
 
   test('Calls onSelect with the document when a document is clicked', async () => {
-    const onSelect = jest.fn();
+    const onSelect = vi.fn();
     const doc = await medplum.createResource<DocumentReference>({
       resourceType: 'DocumentReference',
       status: 'current',
@@ -87,7 +87,7 @@ describe('DocumentPicker', () => {
       content: [{ attachment: { title: 'radiology.pdf' } }],
     });
 
-    await setup({ onSelect, onUpload: jest.fn() });
+    await setup({ onSelect, onUpload: vi.fn() });
     await flushDebounce();
 
     const docButton = await screen.findByText('Radiology report');
@@ -98,8 +98,8 @@ describe('DocumentPicker', () => {
   });
 
   test('Calls onUpload when upload option is clicked', async () => {
-    const onUpload = jest.fn();
-    await setup({ onSelect: jest.fn(), onUpload });
+    const onUpload = vi.fn();
+    await setup({ onSelect: vi.fn(), onUpload });
 
     await act(async () => fireEvent.click(screen.getByText('Upload an image, pdf, etc.')));
 
@@ -108,9 +108,9 @@ describe('DocumentPicker', () => {
 
   test('Passes subject filter to search when subjectRef provided', async () => {
     const subjectRef = createReference(HomerSimpson);
-    const searchSpy = jest.spyOn(medplum, 'searchResources').mockImplementation(() => Promise.resolve([]) as never);
+    const searchSpy = vi.spyOn(medplum, 'searchResources').mockImplementation(() => Promise.resolve([]) as never);
 
-    await setup({ onSelect: jest.fn(), onUpload: jest.fn(), subjectRef });
+    await setup({ onSelect: vi.fn(), onUpload: vi.fn(), subjectRef });
     await flushDebounce();
 
     await waitFor(() => expect(searchSpy).toHaveBeenCalled());
@@ -123,9 +123,9 @@ describe('DocumentPicker', () => {
   });
 
   test('Does not pass subject filter when subjectRef is not provided', async () => {
-    const searchSpy = jest.spyOn(medplum, 'searchResources').mockImplementation(() => Promise.resolve([]) as never);
+    const searchSpy = vi.spyOn(medplum, 'searchResources').mockImplementation(() => Promise.resolve([]) as never);
 
-    await setup({ onSelect: jest.fn(), onUpload: jest.fn() });
+    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
     await flushDebounce();
 
     await waitFor(() => expect(searchSpy).toHaveBeenCalled());
@@ -137,9 +137,9 @@ describe('DocumentPicker', () => {
   });
 
   test('Passes description:contains filter when searching', async () => {
-    const searchSpy = jest.spyOn(medplum, 'searchResources').mockImplementation(() => Promise.resolve([]) as never);
+    const searchSpy = vi.spyOn(medplum, 'searchResources').mockImplementation(() => Promise.resolve([]) as never);
 
-    await setup({ onSelect: jest.fn(), onUpload: jest.fn() });
+    await setup({ onSelect: vi.fn(), onUpload: vi.fn() });
     await flushDebounce();
     searchSpy.mockClear();
 

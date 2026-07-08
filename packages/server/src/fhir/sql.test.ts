@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Client, PoolClient } from 'pg';
 import { globalLogger } from '../logger';
-import type { CTE, Operator } from './sql';
+import type { CTE, Operator, PgQueryable } from './sql';
 import {
   Column,
   Condition,
@@ -10,6 +10,7 @@ import {
   Disjunction,
   InsertQuery,
   IsNull,
+  isPoolClient,
   isValidColumnName,
   isValidTableName,
   MAX_INDEX_DATA_BYTES,
@@ -28,7 +29,7 @@ import {
 
 describe('SqlBuilder', () => {
   beforeEach(() => {
-    jest.resetModules();
+    vi.resetModules();
   });
 
   describe('SelectQuery', () => {
@@ -343,7 +344,7 @@ describe('SqlBuilder', () => {
     });
 
     test('Debug mode', async () => {
-      const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+      const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
       const sql = new SqlBuilder();
       sql.debug = 'true';
@@ -351,7 +352,7 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable"');
 
       const conn = {
-        query: jest.fn(() => ({ rows: [] })),
+        query: vi.fn(() => ({ rows: [] })),
       } as unknown as Client;
 
       await sql.execute(conn);
@@ -360,7 +361,7 @@ describe('SqlBuilder', () => {
     });
 
     test('Empty insert is no-op', async () => {
-      const db = { query: jest.fn() } as unknown as PoolClient;
+      const db = { query: vi.fn() } as unknown as PoolClient;
       await expect(new InsertQuery('Patient', []).execute(db)).resolves.toStrictEqual([]);
       expect(db.query).not.toHaveBeenCalled();
     });
@@ -497,10 +498,10 @@ test('isValidColumnName', () => {
 });
 
 test('debug', async () => {
-  const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+  const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
   const conn = {
-    query: jest.fn(() => ({ rows: [] })),
+    query: vi.fn(() => ({ rows: [] })),
   } as unknown as Client;
 
   const query = new SelectQuery('MyTable').column('id');
@@ -582,5 +583,22 @@ describe('truncateTextColumn', () => {
     expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(MAX_INDEX_DATA_BYTES);
     // Should keep all ASCII chars + 1 emoji (exactly MAX_INDEX_DATA_BYTES bytes)
     expect(result).toBe('a'.repeat(asciiLen) + '\u{1F600}');
+  });
+});
+
+describe('isPoolClient', () => {
+  test('returns true for a client with a release function', () => {
+    const client = { query: vi.fn(), release: vi.fn() } as PgQueryable;
+    expect(isPoolClient(client)).toBe(true);
+  });
+
+  test('returns false for a pool without a release function', () => {
+    const pool = { query: vi.fn() } as PgQueryable;
+    expect(isPoolClient(pool)).toBe(false);
+  });
+
+  test('returns false when release is not a function', () => {
+    const notAClient = { query: vi.fn(), release: true } as PgQueryable;
+    expect(isPoolClient(notAClient)).toBe(false);
   });
 });

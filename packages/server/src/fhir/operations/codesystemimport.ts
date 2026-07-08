@@ -4,8 +4,9 @@ import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinitionParameter } from '@medplum/fhirtypes';
-import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
+import { DatabaseMode } from '../../database';
+import type { PgQueryable } from '../sql';
 import { Condition, InsertQuery, SelectQuery } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -103,7 +104,8 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
   }
 
   try {
-    await repo.withTransaction(async (db) => {
+    await repo.withTransaction(async (txRepo) => {
+      const db = txRepo.getDatabaseClient(DatabaseMode.WRITER);
       await importCodeSystem(db, codeSystem, params.concept, params.property, params.designation);
     });
   } catch (err) {
@@ -113,7 +115,7 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 }
 
 export async function importCodeSystem(
-  db: PoolClient,
+  db: PgQueryable,
   codeSystem: WithId<CodeSystem>,
   concepts?: Coding[],
   properties?: ImportedProperty[],
@@ -140,7 +142,9 @@ export async function importCodeSystem(
   if (designations?.length) {
     const lookupCodes = new Set<string>(designations.map((d) => d.code));
     // Batch lookup all Codings with associated properties
-    const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
+    const codingIds = await selectCoding(codeSystem.id, ...lookupCodes)
+      .where('synonymOf', '=', null)
+      .execute(db);
     const synonyms: Record<string, any>[] = [];
     for (const designation of designations) {
       // Add synonym row
@@ -165,7 +169,7 @@ export async function importCodeSystem(
 async function processProperties(
   importedProperties: ImportedProperty[],
   codeSystem: WithId<CodeSystem>,
-  db: PoolClient
+  db: PgQueryable
 ): Promise<void> {
   const cache: Record<string, { id: number; property: CodeSystemProperty }> = Object.create(null);
   const lookupCodes = new Set<string>();
@@ -185,7 +189,9 @@ async function processProperties(
   }
 
   // Batch lookup all Codings with associated properties
-  const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
+  const codingIds = await selectCoding(codeSystem.id, ...lookupCodes)
+    .where('synonymOf', '=', null)
+    .execute(db);
   const rows: Record<string, any>[] = [];
   const synonyms: Record<string, any>[] = [];
   for (const imported of importedProperties) {
@@ -226,7 +232,7 @@ async function processProperties(
 async function resolveProperty(
   codeSystem: CodeSystem,
   code: string,
-  db: PoolClient
+  db: PgQueryable
 ): Promise<[number, CodeSystemProperty]> {
   let prop = codeSystem.property?.find((p) => p.code === code);
   if (!prop) {

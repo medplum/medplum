@@ -51,6 +51,7 @@ import { DatabaseMode } from '../database';
 import { clamp } from './operations/utils/parameters';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
+import { parseHistoryContent } from './repository/row-builder';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
@@ -299,8 +300,8 @@ export function getSelectQueryForSearch<T extends Resource>(
   } else if (searchRequest.cursor) {
     const cursor = parseCursor(searchRequest.cursor);
     if (cursor) {
-      builder.orderBy(new Column(searchRequest.resourceType, 'lastUpdated', false));
-      builder.whereExpr(new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '>=', cursor.nextInstant));
+      builder.orderBy(new Column(builder.effectiveTableName, 'lastUpdated', false));
+      builder.whereExpr(new Condition(new Column(builder.effectiveTableName, 'lastUpdated'), '>=', cursor.nextInstant));
 
       if (cursor.excludedIds?.length) {
         builder.whereExpr(new Negation(new Condition('id', 'IN', cursor.excludedIds)));
@@ -345,19 +346,19 @@ async function getSearchEntries<T extends Resource>(
   }
 
   const rowCount = Math.min(rows.length, originalLimit);
-  const resources = [];
+  const resources: WithId<T>[] = [];
   for (let i = 0; i < rowCount; i++) {
     const row = rows[i];
-    if (row.content) {
-      resources.push(JSON.parse(row.content));
+    const parsed = parseHistoryContent(row.content as string);
+    if (!parsed.meta?.deleted) {
+      resources.push(parsed as WithId<T>);
     } else {
-      // Handle missing content
-      // In the original implementation of deleted resources, the content was not stored in the database.
+      // Handle missing or tombstone content for soft-deleted resources.
       resources.push({
         resourceType: searchRequest.resourceType,
         id: row.id,
         meta: { lastUpdated: row.lastUpdated?.toISOString() },
-      });
+      } as WithId<T>);
     }
   }
   let nextResource: T | undefined;

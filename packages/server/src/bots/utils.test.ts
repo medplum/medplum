@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { allOk, badRequest } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
-import { getJsFileExtension } from './utils';
+import { getJsFileExtension, normalizeBotExecutionResult } from './utils';
 
 describe('getJsFileExtension', () => {
   test('returns .cjs for CommonJS code with .cjs extension', () => {
@@ -45,5 +46,32 @@ describe('getJsFileExtension', () => {
     const bot = { id: '1' } as Bot;
     const code = 'const foo = 42;';
     expect(getJsFileExtension(bot, code)).toBe('.cjs');
+  });
+});
+
+describe('normalizeBotExecutionResult', () => {
+  test('keeps success true for OK OperationOutcome return values', () => {
+    expect(normalizeBotExecutionResult({ success: true, logResult: '', returnValue: allOk })).toMatchObject({
+      success: true,
+      returnValue: allOk,
+    });
+  });
+
+  test('sets success false for non-OK OperationOutcome return values', () => {
+    const outcome = badRequest('test');
+
+    expect(normalizeBotExecutionResult({ success: true, logResult: '', returnValue: outcome })).toMatchObject({
+      success: false,
+      returnValue: outcome,
+    });
+  });
+
+  test('does not reinterpret legacy runtime error objects', () => {
+    const returnValue = { errorType: 'OperationOutcomeError', errorMessage: 'test' };
+
+    expect(normalizeBotExecutionResult({ success: false, logResult: '', returnValue })).toMatchObject({
+      success: false,
+      returnValue,
+    });
   });
 });

@@ -59,6 +59,12 @@ export class AzureBlobStorage extends BaseBinaryStorage {
     return downloadBlockBlobResponse.readableStreamBody as Readable;
   }
 
+  async deleteFile(key: string): Promise<void> {
+    // deleteIfExists is idempotent: it resolves successfully if the blob does not exist.
+    const blobClient = this.containerClient.getBlobClient(key);
+    await blobClient.deleteIfExists();
+  }
+
   async copyFile(sourceKey: string, destinationKey: string): Promise<void> {
     const sourceBlobClient = this.containerClient.getBlobClient(sourceKey);
     const destinationBlobClient = this.containerClient.getBlobClient(destinationKey);

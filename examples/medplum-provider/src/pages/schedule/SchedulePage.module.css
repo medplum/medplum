@@ -1,21 +1,4 @@
-.wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.container {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  gap: var(--mantine-spacing-sm);
-}
-
-.calendar {
-  flex-grow: 1;
-  min-height: 0;
-}
-
-.findPane {
-  flex-basis: 25%;
+.page {
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
+  height: 100vh;
 }

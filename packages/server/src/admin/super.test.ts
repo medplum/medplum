@@ -5,7 +5,10 @@ import type { Bot, Login, Practitioner, Project, ProjectMembership, User } from 
 import type { Queue } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import type * as Pg from 'pg';
 import request from 'supertest';
+import type { MockedFunction, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
@@ -13,6 +16,8 @@ import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
+import type * as MigrationDataV1 from '../migrations/data/v1';
+import type * as MigrationDataV2 from '../migrations/data/v2';
 import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
@@ -27,8 +32,12 @@ import { getReindexQueue } from '../workers/reindex';
 
 const mockPgMaintenanceQueries: string[] = [];
 
-jest.mock('pg', () => {
-  const original = jest.requireActual('pg');
+vi.mock('pg', async () => {
+  const original = await vi.importActual<typeof Pg>('pg');
+  const poolPrototype = original.Pool.prototype as {
+    query: (...args: any[]) => any;
+    connect: (...args: any[]) => any;
+  };
 
   function mockGetSql(query: unknown): string | undefined {
     if (typeof query === 'string') {
@@ -95,13 +104,13 @@ jest.mock('pg', () => {
       if (handled) {
         return handled.result;
       }
-      return original.Pool.prototype.query.apply(this, args);
+      return poolPrototype.query.apply(this, args);
     }
 
     connect(...args: any[]): any {
       const callback = args[args.length - 1];
       if (typeof callback === 'function') {
-        return original.Pool.prototype.connect.apply(this, [
+        return poolPrototype.connect.apply(this, [
           ...args.slice(0, -1),
           (err: unknown, client: any, done: unknown) => {
             if (client) {
@@ -112,7 +121,7 @@ jest.mock('pg', () => {
         ]);
       }
 
-      return original.Pool.prototype.connect.apply(this, args).then((client: any) => mockWrapClient(client));
+      return poolPrototype.connect.apply(this, args).then((client: any) => mockWrapClient(client));
     }
   }
 
@@ -122,35 +131,39 @@ jest.mock('pg', () => {
   };
 });
 
-jest.mock('../seeds/valuesets');
-jest.mock('../seeds/structuredefinitions');
-jest.mock('../seeds/searchparameters');
+vi.mock('../seeds/valuesets');
+vi.mock('../seeds/structuredefinitions');
+vi.mock('../seeds/searchparameters');
 
 const app = express();
 let project: Project;
 let adminAccessToken: string;
 let nonAdminAccessToken: string;
 const mockAsyncJobWaitOptions = { completionDelayMs: 0, maxAttempts: 200, pollIntervalMs: 10 };
-const mockRebuildR4ValueSets = rebuildR4ValueSets as jest.MockedFunction<typeof rebuildR4ValueSets>;
-const mockRebuildR4StructureDefinitions = rebuildR4StructureDefinitions as jest.MockedFunction<
+const mockRebuildR4ValueSets = rebuildR4ValueSets as MockedFunction<typeof rebuildR4ValueSets>;
+const mockRebuildR4StructureDefinitions = rebuildR4StructureDefinitions as MockedFunction<
   typeof rebuildR4StructureDefinitions
 >;
-const mockRebuildR4SearchParameters = rebuildR4SearchParameters as jest.MockedFunction<
-  typeof rebuildR4SearchParameters
->;
+const mockRebuildR4SearchParameters = rebuildR4SearchParameters as MockedFunction<typeof rebuildR4SearchParameters>;
 
-jest.mock('../migrations/data/index', () => {
-  return {
-    v1: jest.requireMock('../migrations/data/v1'),
-    v2: jest.requireMock('../migrations/data/v2'),
-    v3: jest.requireMock('../migrations/data/v2'),
-  };
-});
+vi.mock('../migrations/data/v1', () => ({
+  migration: { type: 'reindex' },
+}));
+
+vi.mock('../migrations/data/v2', () => ({
+  migration: { type: 'custom' },
+}));
+
+vi.mock('../migrations/data/index', async () => ({
+  v1: await vi.importMock<typeof MigrationDataV1>('../migrations/data/v1'),
+  v2: await vi.importMock<typeof MigrationDataV2>('../migrations/data/v2'),
+  v3: await vi.importMock<typeof MigrationDataV2>('../migrations/data/v2'),
+}));
 
 describe('Super Admin routes', () => {
-  let processStdoutWriteSpy: jest.SpyInstance;
+  let processStdoutWriteSpy: MockInstance;
   beforeAll(async () => {
-    processStdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    processStdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const config = await loadTestConfig();
     await initApp(app, config);
 
@@ -860,7 +873,7 @@ describe('Super Admin routes', () => {
   test('Set password success', async () => {
     const email = `alice${randomUUID()}@example.com`;
 
-    await withTestContext(() =>
+    await withTestContext(async () =>
       registerNew({
         firstName: 'Alice',
         lastName: 'Smith',
@@ -987,7 +1000,7 @@ describe('Super Admin routes', () => {
 
   describe('Table settings', () => {
     test('Set table auto-vacuum settings -- Happy path', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1012,7 +1025,7 @@ describe('Super Admin routes', () => {
     });
 
     test('No table name', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1028,7 +1041,7 @@ describe('Super Admin routes', () => {
     });
 
     test('No settings', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1064,7 +1077,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Invalid setting', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1092,7 +1105,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Settings with int values reject floats', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1108,7 +1121,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Settings with float values reject non-numeric values', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1124,7 +1137,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Multiple settings', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1152,7 +1165,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Multiple settings w/ invalid settings', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1173,7 +1186,7 @@ describe('Super Admin routes', () => {
 
   describe('Vacuum', () => {
     test('Vacuum -- No tables specified', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1206,7 +1219,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Invalid table name', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1222,7 +1235,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Table names listed', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1247,7 +1260,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Analyze too', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1272,7 +1285,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Only analyze', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1308,7 +1321,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Non-string table names', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1326,7 +1339,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Non-snake-cased table names', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1344,7 +1357,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Invalid parameter name', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1389,8 +1402,8 @@ describe('Super Admin routes', () => {
 
       const bot = res1.body as Bot & { id: string };
 
-      const obliterateSpy = jest.spyOn(cronQueue, 'obliterate');
-      const upsertJobSchedulerSpy = jest.spyOn(cronQueue, 'upsertJobScheduler');
+      const obliterateSpy = vi.spyOn(cronQueue, 'obliterate');
+      const upsertJobSchedulerSpy = vi.spyOn(cronQueue, 'upsertJobScheduler');
 
       const res2 = await request(app)
         .post('/admin/super/reloadcron')

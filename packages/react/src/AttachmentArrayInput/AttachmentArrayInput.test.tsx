@@ -18,7 +18,7 @@ function setup(args?: AttachmentArrayInputProps): void {
 
 describe('AttachmentArrayInput', () => {
   beforeAll(async () => {
-    global.URL.createObjectURL = jest.fn(() => 'details');
+    global.URL.createObjectURL = vi.fn(() => 'details');
   });
 
   test('Renders', () => {
@@ -88,7 +88,7 @@ describe('AttachmentArrayInput', () => {
   });
 
   test('Calls onChange', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup({
       name: 'test',

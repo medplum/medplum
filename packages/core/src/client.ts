@@ -301,8 +301,6 @@ export interface MedplumClientOptions {
    * Fetch implementation.
    *
    * Default is `window.fetch` (if available).
-   *
-   * For Node.js applications, consider the 'node-fetch' package.
    */
   fetch?: FetchLike;
 
@@ -546,6 +544,12 @@ export interface LoginAuthenticationResponse {
   readonly mfaEnrollRequired?: boolean;
   readonly mfaRequired?: boolean;
   readonly enrollQrCode?: string;
+  /** MFA enrollment methods the project allows (e.g. 'totp', 'email'). */
+  readonly allowedMfaMethods?: ('totp' | 'email')[];
+  /** MFA methods the user is enrolled in, returned when an MFA challenge is required. */
+  readonly mfaMethods?: ('totp' | 'email')[];
+  /** The user's email address, returned with an MFA challenge so the UI can show where a magic link was sent. */
+  readonly email?: string;
   readonly code?: string;
   readonly memberships?: ProjectMembership[];
 }
@@ -610,6 +614,12 @@ export interface InviteRequest {
   lastName: string;
   email?: string;
   externalId?: string;
+  /**
+   * The patient that a newly provisioned `RelatedPerson` is related to.
+   * Required when inviting a `RelatedPerson` without an existing
+   * `membership.profile`, since `RelatedPerson.patient` is a required FHIR field.
+   */
+  patient?: Reference<Patient>;
   scope?: 'project' | 'server';
   password?: string;
   sendEmail?: boolean;
@@ -799,7 +809,21 @@ interface AutoBatchEntry<T = any> {
 interface RequestState {
   statusUrl?: string;
   pollCount?: number;
+  /**
+   * Number of times this logical request has already been dispatched to the server.
+   * Starts at 0 for the initial attempt and is incremented before each 401 recovery
+   * retry. Used to bound the unauthenticated-retry path so a rejected token can never
+   * loop forever (see {@link MedplumClient.handleUnauthenticated}).
+   */
+  authAttempt?: number;
 }
+
+/**
+ * Maximum number of times a single logical request may be dispatched to the server
+ * across the 401/unauthenticated recovery path: 1 initial attempt + 1 recovery attempt.
+ * A 401 on the recovery attempt is terminal and is never retried again.
+ */
+const MAX_AUTH_ATTEMPTS = 2;
 
 /**
  * OAuth 2.0 Grant Type Identifiers
@@ -3601,7 +3625,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     if (response.status === 401) {
       // Refresh and try again
-      return this.handleUnauthenticated(url, options);
+      return this.handleUnauthenticated<T>(url, options, state);
     }
 
     if (response.status === 204 || response.status === 304) {
@@ -3808,7 +3832,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       await sleep(retryDelay, { signal: options.signal });
       state.pollCount++;
     }
-    return this.request(statusUrl, { ...options, method: 'GET' }, state);
+    return this.request(statusUrl, statusOptions, state);
   }
 
   /**
@@ -3987,16 +4011,25 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
-   * Handles an unauthenticated response from the server.
-   * First, tries to refresh the access token and retry the request.
-   * Otherwise, calls unauthenticated callbacks and rejects.
+   * Handles an unauthenticated (HTTP 401) response from the server.
+   *
+   * Bounded and terminal: at most {@link MAX_AUTH_ATTEMPTS} attempts per request (1 initial
+   * + 1 recovery, tracked via {@link RequestState.authAttempt}). The recovery re-mints via a
+   * forced {@link MedplumClient.refresh} (bypassing the {@link MedplumClient.isAuthenticated}
+   * short-circuit on the rejected token), single-flight so concurrent 401s share one re-mint.
+   * A second 401 is terminal: clear auth, `onUnauthenticated`, reject — never recurse.
+   *
    * @param url - The URL of the original request.
    * @param options - Optional fetch request init options.
+   * @param state - The request state carrying the per-request attempt count.
    * @returns The result of the retry.
    */
-  private handleUnauthenticated(url: string, options: MedplumRequestOptions): Promise<any> {
-    if (this.refresh()) {
-      return this.request(url, options);
+  private async handleUnauthenticated<T>(url: string, options: MedplumRequestOptions, state: RequestState): Promise<T> {
+    const attempt = state.authAttempt ?? 0;
+    const refreshPromise = attempt + 1 < MAX_AUTH_ATTEMPTS ? this.refresh(undefined, true) : undefined;
+    if (refreshPromise) {
+      await refreshPromise;
+      return this.request<T>(url, options, { ...state, authAttempt: attempt + 1 });
     }
     this.clear();
     this.onUnauthenticated?.();
@@ -4100,10 +4133,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * has already refreshed.
    *
    * @param gracePeriod - Optional grace period in milliseconds threaded through to the post-lock authentication check.
+   * @param force - When true, re-mint even if the current token still looks locally valid — used by the 401 recovery path, where the server has rejected a token that has not locally expired. A newer token already in storage (e.g. from a peer tab) is still preferred over a fresh mint.
    * @returns The refresh promise if available; otherwise undefined.
    * @see https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
-  private refresh(gracePeriod?: number): Promise<void> | undefined {
+  private refresh(gracePeriod?: number, force = false): Promise<void> | undefined {
     if (this.refreshPromise) {
       return this.refreshPromise;
     }
@@ -4112,7 +4146,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return undefined;
     }
 
-    this.refreshPromise = this.runRefreshWithLock(gracePeriod);
+    this.refreshPromise = this.runRefreshWithLock(gracePeriod, force);
     return this.refreshPromise;
   }
 
@@ -4121,17 +4155,22 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Tabs that wait on the lock check storage on acquisition and skip the network call
    * if a peer tab has already produced a fresh access token.
    * @param gracePeriod - Optional grace period in milliseconds used by the post-lock authentication check to decide whether the current token still has enough life left to skip the network refresh.
+   * @param force - When true, bypass the post-lock expiry short-circuit for the current token (still preferring a newer token a peer tab produced).
    * @returns Promise that resolves when the refresh (or short-circuit) is complete.
    */
-  private async runRefreshWithLock(gracePeriod?: number): Promise<ProfileResource | undefined> {
+  private async runRefreshWithLock(gracePeriod?: number, force = false): Promise<ProfileResource | undefined> {
     const run = (): Promise<ProfileResource | undefined> => {
       // Re-read latest tokens from storage before hitting the network.
       // A peer tab may have completed a refresh while we were queued on the lock.
+      const previousAccessToken = this.accessToken;
       const latest = this.getActiveLogin();
       if (latest?.accessToken && latest.accessToken !== this.accessToken) {
         this.setAccessToken(latest.accessToken, latest.refreshToken);
       }
-      if (this.isAuthenticated(gracePeriod)) {
+      // A forced refresh (401 recovery) skips the expiry short-circuit for the rejected
+      // token, but still reuses a different token a peer already produced if it is valid.
+      const adoptedNewerToken = this.accessToken !== previousAccessToken;
+      if (this.isAuthenticated(gracePeriod) && (!force || adoptedNewerToken)) {
         return Promise.resolve(this.getProfile());
       }
 

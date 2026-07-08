@@ -84,6 +84,8 @@ describe('warehouse SQL (integration)', () => {
     const connection = await instance.connect();
     try {
       await connection.run('INSTALL postgres; LOAD postgres;');
+      await connection.run('SET threads = 1');
+      await connection.run('SET pg_use_ctid_scan = false');
       await connection.run(buildDuckdbPostgresAttachQuery(connStr));
       await connection.run(`
         CREATE TABLE "${DEST_TABLE}" (
@@ -106,6 +108,7 @@ describe('warehouse SQL (integration)', () => {
       expect(row.project_id).toBe('project-from-json');
     } finally {
       connection.closeSync();
+      instance.closeSync();
     }
   }, 30_000);
 });

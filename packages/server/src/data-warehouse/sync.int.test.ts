@@ -129,6 +129,7 @@ describe('syncData local destination (integration)', () => {
       expect(row.project_id).toBe('project-from-json');
     } finally {
       c.closeSync();
+      instance.closeSync();
     }
   }, 30_000); // longer timeout because of database operations
 });

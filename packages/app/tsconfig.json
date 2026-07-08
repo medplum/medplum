@@ -4,11 +4,11 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "lib": ["esnext", "dom", "dom.iterable"],
-    "types": ["vite/client"],
+    "types": ["node", "vitest/globals", "vite/client"],
     "paths": {
       "@medplum/core": ["../core/src"],
       "@medplum/react": ["../react/src"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "jest.setup.ts", "vite.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "vitest.config.ts"]
 }

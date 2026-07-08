@@ -223,7 +223,7 @@ export class SubscriptionManager {
               details: {
                 text: 'WebSocket connection closed due to an error',
               },
-              diagnostics: event.error.toString(),
+              diagnostics: event.error ? normalizeErrorString(event.error) : event.message,
             },
           ],
         }),
@@ -462,11 +462,12 @@ export class SubscriptionManager {
       if (criteriaEntry.token) {
         this.sendUnbind(criteriaEntry.token);
       }
-      // Reset binding state so the entry can be re-subscribed.
-      // We preserve subscriptionId so rebindCriteriaEntry can reuse
-      // the existing Subscription resource instead of creating a new one.
+      // Reset binding state so the entry can be re-subscribed. The server drops the
+      // Subscription bound to the closed connection, so clear subscriptionId too and
+      // let rebindCriteriaEntry recreate it on the new connection.
       criteriaEntry.token = undefined;
       criteriaEntry.tokenExpiry = undefined;
+      criteriaEntry.subscriptionId = undefined;
       criteriaEntry.state = 'idle';
       criteriaEntry.generation++;
       await this.subscribeToCriteria(criteriaEntry);

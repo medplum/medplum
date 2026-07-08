@@ -28,7 +28,7 @@ import { diffAny } from './diff';
 import { Pointer } from './pointer';
 import { clone, objectType } from './util';
 
-export interface Options {
+export interface PatchOptions {
   /**
    * When true, "add" operations with path ending in "/-" will implicitly
    * create an empty array where possible.
@@ -95,19 +95,19 @@ function _remove(object: any, key: string): void {
 }
 
 /**
- * >  o  If the target location specifies an array index, a new value is
- * >     inserted into the array at the specified index.
- * >  o  If the target location specifies an object member that does not
- * >     already exist, a new member is added to the object.
- * >  o  If the target location specifies an object member that does exist,
- * >     that member's value is replaced.
+ *  o  If the target location specifies an array index, a new value is
+ *     inserted into the array at the specified index.
+ *  o  If the target location specifies an object member that does not
+ *     already exist, a new member is added to the object.
+ *  o  If the target location specifies an object member that does exist,
+ *     that member's value is replaced.
  *
  * @param object - The object being patched.
  * @param operation - The operation to perform on the object.
  * @param options - Optional params.
  * @returns null on success, or error if one occurred.
  */
-export function add(object: any, operation: AddOperation, options?: Options): MissingError | null {
+export function add(object: any, operation: AddOperation, options?: PatchOptions): MissingError | null {
   const pointer = Pointer.fromJSON(operation.path);
   // Handle implicit array creation for terminal "/-" paths
   if (options?.implicitArrayCreation && pointer.tokens[pointer.tokens.length - 1] === '-') {
@@ -137,15 +137,15 @@ export function add(object: any, operation: AddOperation, options?: Options): Mi
 }
 
 /**
- * > The "remove" operation removes the value at the target location.
- * > The target location MUST exist for the operation to be successful.
+ * The "remove" operation removes the value at the target location.
+ * The target location MUST exist for the operation to be successful.
  *
  * @param object - The object being patched.
  * @param operation - The operation to perform on the object.
  * @param _options - Optional params.
  * @returns null on success, or error if one occurred.
  */
-export function remove(object: any, operation: RemoveOperation, _options?: Options): MissingError | null {
+export function remove(object: any, operation: RemoveOperation, _options?: PatchOptions): MissingError | null {
   // endpoint has parent, key, and value properties
   const endpoint = Pointer.fromJSON(operation.path).evaluate(object);
   if (endpoint.value === undefined) {
@@ -157,14 +157,14 @@ export function remove(object: any, operation: RemoveOperation, _options?: Optio
 }
 
 /**
- * > The "replace" operation replaces the value at the target location
- * > with a new value.  The operation object MUST contain a "value" member
- * > whose content specifies the replacement value.
- * > The target location MUST exist for the operation to be successful.
+ * The "replace" operation replaces the value at the target location
+ * with a new value.  The operation object MUST contain a "value" member
+ * whose content specifies the replacement value.
+ * The target location MUST exist for the operation to be successful.
  *
- * > This operation is functionally identical to a "remove" operation for
- * > a value, followed immediately by an "add" operation at the same
- * > location with the replacement value.
+ * This operation is functionally identical to a "remove" operation for
+ * a value, followed immediately by an "add" operation at the same
+ * location with the replacement value.
  *
  * Even more simply, it's like the add operation with an existence check.
  *
@@ -173,7 +173,7 @@ export function remove(object: any, operation: RemoveOperation, _options?: Optio
  * @param _options - Optional params.
  * @returns null on success, or error if one occurred.
  */
-export function replace(object: any, operation: ReplaceOperation, _options?: Options): MissingError | null {
+export function replace(object: any, operation: ReplaceOperation, _options?: PatchOptions): MissingError | null {
   const endpoint = Pointer.fromJSON(operation.path).evaluate(object);
   if (endpoint.parent === null) {
     return new MissingError(operation.path);
@@ -191,17 +191,17 @@ export function replace(object: any, operation: ReplaceOperation, _options?: Opt
 }
 
 /**
- * > The "move" operation removes the value at a specified location and
- * > adds it to the target location.
- * > The operation object MUST contain a "from" member, which is a string
- * > containing a JSON Pointer value that references the location in the
- * > target document to move the value from.
- * > This operation is functionally identical to a "remove" operation on
- * > the "from" location, followed immediately by an "add" operation at
- * > the target location with the value that was just removed.
+ * The "move" operation removes the value at a specified location and
+ * adds it to the target location.
+ * The operation object MUST contain a "from" member, which is a string
+ * containing a JSON Pointer value that references the location in the
+ * target document to move the value from.
+ * This operation is functionally identical to a "remove" operation on
+ * the "from" location, followed immediately by an "add" operation at
+ * the target location with the value that was just removed.
  *
- * > The "from" location MUST NOT be a proper prefix of the "path"
- * > location; i.e., a location cannot be moved into one of its children.
+ * The "from" location MUST NOT be a proper prefix of the "path"
+ * location; i.e., a location cannot be moved into one of its children.
  *
  * TODO: throw if the check described in the previous paragraph fails.
  *
@@ -210,7 +210,7 @@ export function replace(object: any, operation: ReplaceOperation, _options?: Opt
  * @param _options - Optional params.
  * @returns null on success, or error if one occurred.
  */
-export function move(object: any, operation: MoveOperation, _options?: Options): MissingError | null {
+export function move(object: any, operation: MoveOperation, _options?: PatchOptions): MissingError | null {
   const from_endpoint = Pointer.fromJSON(operation.from).evaluate(object);
   if (from_endpoint.value === undefined) {
     return new MissingError(operation.from);
@@ -225,15 +225,15 @@ export function move(object: any, operation: MoveOperation, _options?: Options):
 }
 
 /**
- * > The "copy" operation copies the value at a specified location to the
- * > target location.
- * > The operation object MUST contain a "from" member, which is a string
- * > containing a JSON Pointer value that references the location in the
- * > target document to copy the value from.
- * > The "from" location MUST exist for the operation to be successful.
+ * The "copy" operation copies the value at a specified location to the
+ * target location.
+ * The operation object MUST contain a "from" member, which is a string
+ * containing a JSON Pointer value that references the location in the
+ * target document to copy the value from.
+ * The "from" location MUST exist for the operation to be successful.
  *
- * > This operation is functionally identical to an "add" operation at the
- * > target location using the value specified in the "from" member.
+ * This operation is functionally identical to an "add" operation at the
+ * target location using the value specified in the "from" member.
  *
  * Alternatively, it's like 'move' without the 'remove'.
  *
@@ -242,7 +242,7 @@ export function move(object: any, operation: MoveOperation, _options?: Options):
  * @param _options - Optional params.
  * @returns null on success, or error if one occurred.
  */
-export function copy(object: any, operation: CopyOperation, _options?: Options): MissingError | null {
+export function copy(object: any, operation: CopyOperation, _options?: PatchOptions): MissingError | null {
   const from_endpoint = Pointer.fromJSON(operation.from).evaluate(object);
   if (from_endpoint.value === undefined) {
     return new MissingError(operation.from);
@@ -256,19 +256,19 @@ export function copy(object: any, operation: CopyOperation, _options?: Options):
 }
 
 /**
- * > The "test" operation tests that a value at the target location is
- * > equal to a specified value.
- * > The operation object MUST contain a "value" member that conveys the
- * > value to be compared to the target location's value.
- * > The target location MUST be equal to the "value" value for the
- * > operation to be considered successful.
+ * The "test" operation tests that a value at the target location is
+ * equal to a specified value.
+ * The operation object MUST contain a "value" member that conveys the
+ * value to be compared to the target location's value.
+ * The target location MUST be equal to the "value" value for the
+ * operation to be considered successful.
  *
  * @param object - The object being patched.
  * @param operation - The add operation to perform on the object.
  * @param _options - Optional params.
  * @returns null on success, or error if one occurred.
  */
-export function test(object: any, operation: TestOperation, _options?: Options): TestError | null {
+export function test(object: any, operation: TestOperation, _options?: PatchOptions): TestError | null {
   const endpoint = Pointer.fromJSON(operation.path).evaluate(object);
   // TODO: this diffAny(...).length usage could/should be lazy
   if (diffAny(endpoint.value, operation.value, new Pointer()).length) {
@@ -299,7 +299,7 @@ export class InvalidOperationError extends Error {
 export function apply(
   object: any,
   operation: Operation,
-  options?: Options
+  options?: PatchOptions
 ): MissingError | InvalidOperationError | TestError | null {
   switch (operation.op) {
     case 'add':

@@ -43,6 +43,13 @@ function initAiRealtimeHeartbeat(): void {
   }
 }
 
+export function stopAiRealtimeHeartbeat(): void {
+  if (aiRealtimeHeartbeatHandler) {
+    heartbeat.removeEventListener('heartbeat', aiRealtimeHeartbeatHandler);
+    aiRealtimeHeartbeatHandler = undefined;
+  }
+}
+
 export async function handleAiRealtimeConnection(socket: IncomingWebSocket, request: IncomingMessage): Promise<void> {
   aiRealtimeWebSockets.add(socket);
   initAiRealtimeHeartbeat();

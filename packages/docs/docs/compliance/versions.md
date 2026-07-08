@@ -79,12 +79,14 @@ All Medplum components are released in lockstep with the same version number:
 - Must be deployed sequentially (cannot skip minor versions)
 - Include backwards-compatible feature additions and improvements
 - _The `medplum upgrade` / `medplum aws upgrade` tool automatically chains sequential minors (e.g., 5.0 → 5.3) and supports transactional rollback._
+- May include breaking changes in [features tagged as Alpha or Beta](./alpha-beta)
 
 ### Patch Versions (X.Y.Z)
 
 - Released approximately weekly
 - Include bug fixes and non-breaking feature additions
 - Can be deployed directly without intermediate steps
+- May include breaking changes in [features tagged as Alpha](./alpha-beta)
 
 ### Security Patch SLA
 

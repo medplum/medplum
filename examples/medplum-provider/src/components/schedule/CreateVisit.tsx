@@ -138,7 +138,7 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
             binding="http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
             required={true}
             onChange={setEncounterClass}
-            path="Encounter.type"
+            path="Encounter.class"
           />
 
           <ResourceInput

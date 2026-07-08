@@ -4,6 +4,8 @@ import { badRequest, ContentType, getReferenceString, unsupportedMediaType } fro
 import type { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
+import type { Mock, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { inviteUser } from './admin/invite';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
@@ -15,10 +17,10 @@ import type { TestRedisConfig } from './test.setup';
 import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
 
 describe('App', () => {
-  let stdOutSpy: jest.SpyInstance;
+  let stdOutSpy: MockInstance;
 
   beforeEach(() => {
-    stdOutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    stdOutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -175,7 +177,7 @@ describe('App', () => {
         lastName: 'Person',
       });
 
-      (process.stdout.write as jest.Mock).mockClear();
+      (process.stdout.write as Mock).mockClear();
 
       const patient: Patient = {
         resourceType: 'Patient',
@@ -191,7 +193,7 @@ describe('App', () => {
       expect(res1.body).toMatchObject(patient);
       expect(process.stdout.write).toHaveBeenCalledTimes(1);
 
-      const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
+      const logLine = (process.stdout.write as Mock).mock.calls[0][0];
       const logObj = JSON.parse(logLine);
       expect(logObj).toMatchObject({ profile: `${getReferenceString(client)} (as ${getReferenceString(profile)})` });
     });
@@ -281,7 +283,7 @@ describe('App', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    const loggerError = jest.spyOn(globalLogger, 'error').mockReturnValueOnce();
+    const loggerError = vi.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
     getDatabasePool(DatabaseMode.WRITER).emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
@@ -304,12 +306,18 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
-  test.skip('Preflight max age', async () => {
+  test('Preflight max age', async () => {
     const app = express();
-    const res = await request(app).options('/');
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const res = await request(app)
+      .options('/fhir/R4/Patient')
+      .set('Origin', 'http://localhost:3000')
+      .set('Access-Control-Request-Method', 'GET');
     expect(res.status).toBe(204);
-    expect(res.header['access-control-max-age']).toBe('86400');
-    expect(res.header['cache-control']).toBe('public, max-age=86400');
+    expect(res.header['access-control-max-age']).toBe('600');
+    expect(res.header['cache-control']).toBe('no-store, no-cache, must-revalidate');
+    expect(await shutdownApp()).toBeUndefined();
   });
 
   test('Server rate limit', async () => {
@@ -327,6 +335,20 @@ describe('App', () => {
     const res2 = await request(app).get('/api/');
     expect(res2.status).toBe(429);
     await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test('Server rate limit disabled', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.rateLimitsEnabled = false;
+    config.defaultRateLimit = 1;
+    await initApp(app, config);
+
+    const res = await request(app).get('/api/');
+    expect(res.status).toBe(200);
+    const res2 = await request(app).get('/api/');
+    expect(res2.status).toBe(200);
     expect(await shutdownApp()).toBeUndefined();
   });
 

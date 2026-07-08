@@ -10,8 +10,8 @@ import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Header } from './Header';
 
 const medplum = new MockClient();
-const navigateMock = jest.fn();
-const closeMock = jest.fn();
+const navigateMock = vi.fn();
+const closeMock = vi.fn();
 
 async function setup(initialUrl = '/'): Promise<void> {
   await act(async () => {
@@ -29,16 +29,16 @@ async function setup(initialUrl = '/'): Promise<void> {
 
 describe('Header', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     navigateMock.mockClear();
     closeMock.mockClear();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders', async () => {
@@ -65,7 +65,7 @@ describe('Header', () => {
   });
 
   test('Switch profile', async () => {
-    const reloadSpy = jest.spyOn(locationUtils, 'reload').mockImplementation(() => {});
+    const reloadSpy = vi.spyOn(locationUtils, 'reload').mockImplementation(() => {});
 
     window.localStorage.setItem(
       'activeLogin',
@@ -73,7 +73,7 @@ describe('Header', () => {
         accessToken: 'abc',
         refreshToken: 'xyz',
         profile: {
-          reference: 'Practitioner/123',
+          reference: 'Practitioner/124',
           display: 'Alice Smith',
         },
         project: {
@@ -89,7 +89,7 @@ describe('Header', () => {
           accessToken: 'abc',
           refreshToken: 'xyz',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
             display: 'Alice Smith',
           },
           project: {
@@ -153,7 +153,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Account settings'));
     });
 
-    expect(navigateMock).toHaveBeenCalledWith('/Practitioner/123');
+    expect(navigateMock).toHaveBeenCalledWith('/Practitioner/124');
   });
 
   test('Sign out', async () => {

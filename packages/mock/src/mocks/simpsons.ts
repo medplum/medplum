@@ -30,9 +30,7 @@ export const LisaSimpson: Patient = {
   meta: {
     versionId: '1',
     lastUpdated: '2020-01-01T12:00:00Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
+    author: createReference(DrAliceSmith),
   },
   birthDate: '1981-05-09',
   name: [
@@ -114,9 +112,7 @@ export const BartSimpson: Patient = {
   meta: {
     versionId: '1',
     lastUpdated: '2020-01-01T12:00:00Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
+    author: createReference(DrAliceSmith),
   },
   birthDate: '1979-12-17',
   name: [
@@ -202,9 +198,7 @@ export const HomerSimpson: Patient = {
   meta: {
     versionId: '2',
     lastUpdated: '2020-01-02T00:00:00.000Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
+    author: createReference(DrAliceSmith),
   },
   identifier: [
     { system: 'abc', value: '123' },
@@ -285,9 +279,7 @@ export const HomerSimpsonPreviousVersion: Patient = {
   meta: {
     versionId: '1',
     lastUpdated: '2020-01-01T00:00:00.000Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
+    author: createReference(DrAliceSmith),
   },
   name: [
     {
@@ -309,9 +301,7 @@ export const HomerEncounter: Encounter = {
   meta: {
     versionId: '456',
     lastUpdated: '2020-01-01T00:00:00.000Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
+    author: createReference(DrAliceSmith),
   },
   status: 'finished',
   class: { code: 'AMB', display: 'ambulatory' },
@@ -322,9 +312,7 @@ export const HomerCommunication: Communication = {
   id: '123',
   meta: {
     lastUpdated: '2020-01-01T12:00:00Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
+    author: createReference(DrAliceSmith),
   },
   status: 'completed',
   encounter: createReference(HomerEncounter),
@@ -340,9 +328,7 @@ export const HomerMedia: Media = {
   id: '123',
   meta: {
     lastUpdated: '2020-01-01T12:00:00Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
+    author: createReference(DrAliceSmith),
   },
   status: 'completed',
   encounter: createReference(HomerEncounter),
@@ -588,9 +574,7 @@ export const HomerServiceRequest: ServiceRequest = {
   meta: {
     versionId: '1',
     lastUpdated: '2020-01-01T12:00:00Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
+    author: createReference(DrAliceSmith),
   },
   identifier: [
     {
@@ -627,9 +611,7 @@ export const HomerDiagnosticReport: DiagnosticReport = {
   meta: {
     versionId: '1',
     lastUpdated: '2020-01-02T12:00:00Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
+    author: createReference(DrAliceSmith),
   },
   status: 'final',
   code: { text: 'Test Report' },

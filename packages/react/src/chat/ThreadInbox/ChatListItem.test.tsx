@@ -30,14 +30,14 @@ const mockLastCommunication: Communication = {
   ],
 };
 
-const mockGetThreadUri = jest.fn((topic: Communication) => `/Message/${topic.id}`);
+const mockGetThreadUri = vi.fn((topic: Communication) => `/Message/${topic.id}`);
 
 describe('ChatListItem', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
     medplum = new MockClient();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const setup = (topic: Communication, lastCommunication: Communication | undefined, isSelected: boolean): void => {

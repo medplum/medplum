@@ -39,7 +39,7 @@ describe('DateTimeInput', () => {
   });
 
   test('onChange with listener', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     const date = new Date();
     date.setMilliseconds(0); // datetime-local does not support milliseconds

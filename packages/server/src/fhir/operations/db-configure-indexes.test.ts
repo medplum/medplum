@@ -156,7 +156,7 @@ describe('db-configure-indexes', () => {
 
     expect(asyncJob.output).toStrictEqual({
       resourceType: 'Parameters',
-      parameter: [
+      parameter: expect.toEqualUnordered([
         {
           name: 'action',
           part: [
@@ -177,7 +177,7 @@ describe('db-configure-indexes', () => {
             },
           ],
         },
-      ],
+      ]),
     });
   });
 
@@ -214,7 +214,7 @@ describe('db-configure-indexes', () => {
 
     expect(asyncJob.output).toStrictEqual({
       resourceType: 'Parameters',
-      parameter: [
+      parameter: expect.toEqualUnordered([
         {
           name: 'action',
           part: [
@@ -264,7 +264,7 @@ describe('db-configure-indexes', () => {
             },
           ],
         },
-      ],
+      ]),
     });
   });
 

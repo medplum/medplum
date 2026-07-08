@@ -6,7 +6,7 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import { Allergies } from './Allergies';
 
 const medplum = new MockClient();
@@ -23,14 +23,14 @@ describe('PatientSummary - Allergies', () => {
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', async () => {
@@ -64,26 +64,7 @@ describe('PatientSummary - Allergies', () => {
     });
 
     const input = (await screen.findAllByRole('searchbox'))[0] as HTMLInputElement;
-
-    // Enter random text
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await selectAutocompleteOption(input, 'Test', 'Test Display');
 
     expect(screen.getByText('Test Display')).toBeDefined();
 
@@ -108,26 +89,7 @@ describe('PatientSummary - Allergies', () => {
     });
 
     const input = (await screen.findAllByRole('searchbox'))[0] as HTMLInputElement;
-
-    // Enter random text
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await selectAutocompleteOption(input, 'Test', 'Test Display');
 
     expect(screen.getByText('Test Display')).toBeDefined();
 

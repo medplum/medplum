@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Operation } from '@medplum/core';
 import {
   EventTarget,
   OperationOutcomeError,
   allOk,
   badRequest,
   created,
+  isResource,
   normalizeOperationOutcome,
   notFound,
   parseSearchRequest,
@@ -15,11 +17,11 @@ import type {
   CapabilityStatementRestInteraction,
   CapabilityStatementRestResourceInteraction,
   OperationOutcome,
+  Parameters,
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
-import type { Operation } from 'rfc6902';
 import type { LogEvent } from './batch';
 import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';
@@ -267,12 +269,12 @@ async function conditionalDelete(req: FhirRequest, repo: FhirRepository): Promis
 // Patch resource
 async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
-  const patch = req.body as Operation[];
+  const patch = req.body as Operation[] | Parameters;
   if (!patch) {
     return [badRequest('Empty patch body')];
   }
-  if (!Array.isArray(patch)) {
-    return [badRequest('Patch body must be an array')];
+  if (!Array.isArray(patch) && !isResource(patch, 'Parameters')) {
+    return [badRequest('Invalid patch body')];
   }
   const resource = await repo.patchResource(resourceType as ResourceType, id, patch);
   return [allOk, resource];

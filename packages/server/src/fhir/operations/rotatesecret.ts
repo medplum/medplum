@@ -51,16 +51,16 @@ export async function rotateSecretHandler(req: FhirRequest): Promise<FhirRespons
 
   // Patch using system repo since the secret fields should not generally be user-writeable
   const systemRepo = ctx.systemRepo;
-  const clientApp = await systemRepo.withTransaction(async () => {
-    let clientApp = await systemRepo.readResource<ClientApplication>('ClientApplication', req.params.id);
+  const clientApp = await systemRepo.withTransaction(async (txRepo) => {
+    let clientApp = await txRepo.readResource<ClientApplication>('ClientApplication', req.params.id);
     if (params.secret && params.secret === clientApp.secret) {
-      clientApp = await systemRepo.updateResource({
+      clientApp = await txRepo.updateResource({
         ...clientApp,
         secret: generateSecret(32), // Generate new secret
         retiringSecret: clientApp.secret, // Rotate existing secret to "retiring" slot
       });
     } else if (params.retiringSecret && params.retiringSecret === clientApp.retiringSecret) {
-      clientApp = await systemRepo.updateResource({
+      clientApp = await txRepo.updateResource({
         ...clientApp,
         retiringSecret: undefined, // Remove rotated secret after it's been retired
       });

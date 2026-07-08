@@ -4,11 +4,12 @@ import type { WithId } from '@medplum/core';
 import { formatFamilyName, formatGivenName, formatHumanName, Operator } from '@medplum/core';
 import type { HumanName, Patient, Practitioner, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import type { PoolClient } from 'pg';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { bundleContains, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
+import type { PgQueryable } from '../sql';
 import type { HumanNameTableRow } from './humanname';
 import { getHumanNameSortValue, HumanNameTable } from './humanname';
 
@@ -307,7 +308,7 @@ describe('HumanName Lookup Table', () => {
       expect(descending.entry?.map((e) => e.resource?.id)).toStrictEqual([p3.id, p2.id, p1.id]);
     }));
 
-  test.failing('FAILING Sort by name multi-type', () =>
+  test.fails('FAILING Sort by name multi-type', () =>
     withTestContext(async () => {
       const name = randomUUID();
       const identifier = randomUUID();
@@ -336,7 +337,7 @@ describe('HumanName Lookup Table', () => {
   );
 
   test('Purges related resource type', async () => {
-    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+    const db = { query: vi.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PgQueryable;
 
     const table = new HumanNameTable();
     await table.purgeValuesBefore(db, 'Patient', '2024-01-01T00:00:00Z');
@@ -345,7 +346,7 @@ describe('HumanName Lookup Table', () => {
   });
 
   test('Does not purge unrelated resource type', async () => {
-    const db = { query: jest.fn() } as unknown as PoolClient;
+    const db = { query: vi.fn() } as unknown as PgQueryable;
 
     const table = new HumanNameTable();
     await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');

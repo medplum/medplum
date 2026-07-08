@@ -55,6 +55,8 @@ export interface MedplumServerConfig {
   backgroundJobsRedis?: MedplumRedisConfig;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
+  /** Allow projects to configure their own SMTP transport via Project.secret entries. Default is `true`. */
+  allowProjectSmtp?: boolean;
   bullmq?: MedplumBullmqConfig;
   googleClientId?: string;
   googleClientSecret?: string;
@@ -84,6 +86,7 @@ export interface MedplumServerConfig {
   accurateCountThreshold: number;
   maxSearchOffset?: number;
   base64BinaryMaxBytes?: number;
+  inlineAttachmentsMaxTotalBytes?: number;
   defaultSuperAdminEmail?: string;
   defaultSuperAdminPassword?: string;
   defaultSuperAdminClientId?: string;
@@ -91,6 +94,8 @@ export interface MedplumServerConfig {
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?: Project['features'];
   defaultProjectSystemSetting?: ProjectSetting[];
+  /** Enables HTTP request rate limits, FHIR quota, and resource cap accounting. Default is `true`. */
+  rateLimitsEnabled?: boolean;
   /** Number of HTTP requests per minute users can make by default; overridable by Project settings */
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
@@ -113,6 +118,9 @@ export interface MedplumServerConfig {
 
   /** Number of milliseconds to use as a base for exponential backoff in transaction retries */
   transactionExpBackoffBaseDelayMs?: number;
+
+  /** Optional threshold in milliseconds for logging and recording high idle time within transactions */
+  idleInTransactionLogThresholdMs?: number;
 
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
@@ -204,6 +212,9 @@ export interface MedplumServerConfig {
 
   /** Optional flag to allow rest-hook Subscriptions to send requests to insecure HTTP URLs. */
   allowInsecureRestHookUrl?: boolean;
+
+  /** Optional flag to allow external auth providers to use insecure HTTP or local URLs. */
+  allowInsecureExternalAuthUrl?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {
@@ -273,6 +284,8 @@ export interface MedplumSmtpConfig {
   port: number;
   username: string;
   password: string;
+  /** Use TLS when connecting. If not specified, inferred from `port === 465`. */
+  secure?: boolean;
 }
 
 export interface MedplumBullmqConfig {
@@ -292,6 +305,8 @@ export interface MedplumBullmqConfig {
 
 export interface MedplumExternalAuthConfig {
   readonly issuer: string;
+  /** Optional client ID used to select this external auth provider during token exchange. */
+  readonly clientId?: string;
   /** @deprecated Use identityProvider.userInfoUrl instead. */
   readonly userInfoUrl?: string;
   readonly identityProvider?: IdentityProvider;

@@ -42,7 +42,7 @@ describe('AppsPage', () => {
   });
 
   test('Patient Smart App Launch', async () => {
-    const mockOpen = jest.fn();
+    const mockOpen = vi.fn();
     window.open = mockOpen;
 
     await setup('/Patient/123/apps');
@@ -60,7 +60,7 @@ describe('AppsPage', () => {
   });
 
   test('Encounter Smart App Launch', async () => {
-    const mockOpen = jest.fn();
+    const mockOpen = vi.fn();
     window.open = mockOpen;
 
     await setup('/Encounter/123/apps');
@@ -80,7 +80,7 @@ describe('AppsPage', () => {
   test('Access denied to ClientApplications', async () => {
     const medplum = new MockClient();
     (medplum as any).originalSearchResources = medplum.searchResources;
-    medplum.searchResources = jest.fn().mockImplementation(async (resourceType, query) => {
+    medplum.searchResources = vi.fn().mockImplementation(async (resourceType, query) => {
       if (resourceType === 'ClientApplication') {
         throw new OperationOutcomeError(forbidden);
       }

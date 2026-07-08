@@ -3,10 +3,10 @@
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { ContentType } from '@medplum/core';
 import fastGlob from 'fast-glob';
-import fetch from 'node-fetch';
 import { createReadStream, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
+import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { readConfig, safeTarExtractor } from '../utils';
 import { createInvalidation, getStackByTag, printConfigNotFound, printStackNotFound, s3Client } from './utils';
@@ -93,8 +93,11 @@ async function downloadNpmPackage(packageName: string, version: string): Promise
   const tmpDir = mkdtempSync(join(tmpdir(), 'tarball-'));
   try {
     const response = await fetch(tarballUrl);
+    if (!response.body) {
+      throw new Error('Received empty response body');
+    }
     const extractor = safeTarExtractor(tmpDir);
-    await pipeline(response.body, extractor);
+    await pipeline(Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]), extractor);
     return join(tmpDir, 'package', 'dist');
   } catch (error) {
     rmSync(tmpDir, { recursive: true, force: true });

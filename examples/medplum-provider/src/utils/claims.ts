@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { CPT, createReference, HTTP_HL7_ORG } from '@medplum/core';
+import { CPT, createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core';
 import type {
   ChargeItem,
   Claim,
@@ -44,6 +44,15 @@ export function buildClaimFromEncounter(args: BuildClaimArgs): Claim {
     created: new Date().toISOString(),
     patient: createReference(patient),
     provider: createReference(practitioner),
+    careTeam: [
+      {
+        sequence: 1,
+        provider: createReference(practitioner),
+        role: {
+          coding: [{ system: `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/claimcareteamrole`, code: 'primary' }],
+        },
+      },
+    ],
     priority: { coding: [{ code: 'normal' }] },
     insurance: (insurance ?? []).map((coverage, index) => ({ sequence: index + 1, focal: index === 0, coverage })),
     ...(conditions?.length ? { diagnosis: createDiagnosisArray(conditions) } : {}),

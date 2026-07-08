@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { NewUserRequest, WithId } from '@medplum/core';
 import { badRequest, concatUrls, normalizeOperationOutcome } from '@medplum/core';
-import type { ClientApplication, Login, User } from '@medplum/fhirtypes';
+import type { ClientApplication, Login, Project, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
@@ -130,24 +130,29 @@ export async function createUser(request: NewUserRequest): Promise<WithId<User>>
 
 async function sendVerificationEmail(user: WithId<User>, login: WithId<Login>): Promise<void> {
   const redirectUri = concatUrls(getConfig().appBaseUrl, `register?login=${login.id}`);
-  const { id, secret } = await verifyEmail(user, redirectUri);
-  const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
   const systemRepo = getGlobalSystemRepo();
-  await sendEmail(systemRepo, {
-    to: user.email,
-    subject: 'Medplum Email Verification',
-    text: [
-      'We received a request to create a Medplum account using this email address.',
-      '',
-      'Please click the following link to verify your email address:',
-      '',
-      url,
-      '',
-      'If you received this in error, you can safely ignore it.',
-      '',
-      'Thank you,',
-      'Medplum',
-      '',
-    ].join('\n'),
-  });
+  const { id, secret } = await verifyEmail(systemRepo, user, redirectUri);
+  const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
+  const project = user.project ? await systemRepo.readReference<Project>(user.project) : undefined;
+  await sendEmail(
+    systemRepo,
+    {
+      to: user.email,
+      subject: 'Medplum Email Verification',
+      text: [
+        'We received a request to create a Medplum account using this email address.',
+        '',
+        'Please click the following link to verify your email address:',
+        '',
+        url,
+        '',
+        'If you received this in error, you can safely ignore it.',
+        '',
+        'Thank you,',
+        'Medplum',
+        '',
+      ].join('\n'),
+    },
+    project
+  );
 }

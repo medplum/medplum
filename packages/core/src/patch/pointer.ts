@@ -20,14 +20,14 @@
  *
  * `token` should *not* contain any '/' characters.
  *
- * > Evaluation of each reference token begins by decoding any escaped
- * > character sequence.  This is performed by first transforming any
- * > occurrence of the sequence '~1' to '/', and then transforming any
- * > occurrence of the sequence '~0' to '~'.  By performing the
- * > substitutions in this order, an implementation avoids the error of
- * > turning '~01' first into '~1' and then into '/', which would be
- * > incorrect (the string '~01' correctly becomes '~1' after
- * > transformation).
+ * Evaluation of each reference token begins by decoding any escaped
+ * character sequence.  This is performed by first transforming any
+ * occurrence of the sequence '~1' to '/', and then transforming any
+ * occurrence of the sequence '~0' to '~'.  By performing the
+ * substitutions in this order, an implementation avoids the error of
+ * turning '~01' first into '~1' and then into '/', which would be
+ * incorrect (the string '~01' correctly becomes '~1' after
+ * transformation).
  *
  * Here's my take:
  *
@@ -45,9 +45,9 @@ export function unescapeToken(token: string): string {
 /**
  * Escape token part of a JSON Pointer string
  *
- * > '~' needs to be encoded as '~0' and '/'
- * > needs to be encoded as '~1' when these characters appear in a
- * > reference token.
+ * '~' needs to be encoded as '~0' and '/'
+ * needs to be encoded as '~1' when these characters appear in a
+ * reference token.
  *
  * This is the exact inverse of `unescapeToken()`, so the reverse replacements must take place in reverse order.
  *
@@ -92,7 +92,7 @@ export class Pointer {
   /**
    * Returns an object with 'parent', 'key', and 'value' properties.
    * In the special case that this Pointer's path == "",
-   * this object will be {parent: null, key: '', value: object}.
+   * this object will be `{parent: null, key: '', value: object}`.
    * Otherwise, parent and key will have the property such that parent[key] == value.
    *
    * @param object - The object against which to evaluate the pointer.
@@ -106,7 +106,16 @@ export class Pointer {
       parent = value;
       key = this.tokens[i];
       if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
-        continue;
+        throw new Error('Invalid path: ' + this.toString());
+      }
+      if (
+        parent !== null &&
+        parent !== undefined &&
+        (typeof parent === 'object' || typeof parent === 'function') &&
+        !Object.hasOwn(parent, key) &&
+        key in parent
+      ) {
+        throw new Error('Invalid inherited key: ' + key);
       }
       value = parent?.[key];
     }

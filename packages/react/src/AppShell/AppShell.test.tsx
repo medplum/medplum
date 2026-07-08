@@ -4,13 +4,14 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { Logo } from '../Logo/Logo';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, selectAutocompleteOption } from '../test-utils/render';
+import type { AppShellAnnouncement } from './AnnouncementBanners';
 import { AppShell } from './AppShell';
 
 const medplum = new MockClient();
-const navigateMock = jest.fn();
+const navigateMock = vi.fn();
 
-async function setup(layoutVersion: 'v1' | 'v2' = 'v1'): Promise<void> {
+async function setup(layoutVersion: 'v1' | 'v2' = 'v1', announcements?: AppShellAnnouncement[]): Promise<void> {
   // Reset localStorage before each test
   localStorage.clear();
 
@@ -22,6 +23,7 @@ async function setup(layoutVersion: 'v1' | 'v2' = 'v1'): Promise<void> {
             logo={<Logo size={24} />}
             version="test.version"
             layoutVersion={layoutVersion}
+            announcements={announcements}
             menus={[
               {
                 title: 'Menu 1',
@@ -51,15 +53,15 @@ async function setup(layoutVersion: 'v1' | 'v2' = 'v1'): Promise<void> {
 
 describe('AppShell v1', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     navigateMock.mockClear();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders', async () => {
@@ -98,45 +100,44 @@ describe('AppShell v1', () => {
 
     const input = screen.getByPlaceholderText('Resource Type');
 
-    // Enter random text
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });
 
+    await selectAutocompleteOption(input, 'Test');
+  });
+
+  test('Dismissible announcement', async () => {
+    await setup('v1', [
+      {
+        id: 'maintenance',
+        message: 'Expected system maintenance tonight',
+        dismissible: true,
+      },
+    ]);
+
+    expect(screen.getByText('Expected system maintenance tonight')).toBeInTheDocument();
+
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
+      fireEvent.click(screen.getByLabelText('Dismiss announcement'));
     });
 
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
-
-    expect(navigateMock).toHaveBeenCalledWith('/test-code');
+    expect(screen.queryByText('Expected system maintenance tonight')).not.toBeInTheDocument();
+    expect(localStorage['appShellDismissedAnnouncements']).toBe(JSON.stringify(['maintenance']));
   });
 });
 
 describe('AppShell v2', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     navigateMock.mockClear();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders v2', async () => {
@@ -247,5 +248,18 @@ describe('AppShell v2', () => {
     });
 
     expect(navigateMock).toHaveBeenCalledWith('/Patient/123');
+  });
+
+  test('Persistent announcement', async () => {
+    await setup('v2', [
+      {
+        message: 'Warning: logged in as super admin',
+        color: 'red',
+        role: 'alert',
+      },
+    ]);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Warning: logged in as super admin');
+    expect(screen.queryByLabelText('Dismiss announcement')).not.toBeInTheDocument();
   });
 });

@@ -1,16 +1,65 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MantineColorScheme } from '@mantine/core';
-import { Avatar, Group, Menu, SegmentedControl, Stack, Text, useMantineColorScheme } from '@mantine/core';
-import type { ProfileResource } from '@medplum/core';
-import { getReferenceString, locationUtils } from '@medplum/core';
+import { Box, Divider, Flex, Menu, SegmentedControl, Text, useMantineColorScheme } from '@mantine/core';
+import type { LoginState, ProfileResource } from '@medplum/core';
+import { formatHumanName, getReferenceString, locationUtils } from '@medplum/core';
 import { useMedplumContext } from '@medplum/react-hooks';
-import { IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
+import type { TablerIcon } from '@tabler/icons-react';
+import {
+  IconDeviceDesktop,
+  IconLogout,
+  IconMoon,
+  IconPalette,
+  IconSettings,
+  IconSunHigh,
+  IconSwitchHorizontal,
+  IconTable,
+} from '@tabler/icons-react';
+import cx from 'clsx';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
-import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import { ProjectLoginOption } from '../auth/ProjectLoginOption';
 import { getAppName } from '../utils/app';
+import classes from './HeaderDropdown.module.css';
+
+type AppShellLayoutVersion = 'v1' | 'v2';
+
+const MENU_ICON_COLOR = 'var(--mantine-color-dimmed)';
+
+const THEME_OPTIONS: { value: string; label: JSX.Element }[] = [
+  { value: 'light', label: <ThemeOptionLabel Icon={IconSunHigh} label="Light" /> },
+  { value: 'auto', label: <ThemeOptionLabel Icon={IconDeviceDesktop} label="System" /> },
+  { value: 'dark', label: <ThemeOptionLabel Icon={IconMoon} label="Dark" /> },
+];
+
+const LAYOUT_OPTIONS: { label: string; value: AppShellLayoutVersion }[] = [
+  { label: 'v1', value: 'v1' },
+  { label: 'v2', value: 'v2' },
+];
+
+function ThemeOptionLabel({ Icon, label }: { readonly Icon: TablerIcon; readonly label: string }): JSX.Element {
+  return (
+    <span aria-label={label} style={{ display: 'flex' }}>
+      <Icon size={16} color={MENU_ICON_COLOR} aria-hidden />
+    </span>
+  );
+}
+
+function HeaderDropdownDivider(): JSX.Element {
+  return <Divider my={4} mx={4} className={classes.divider} />;
+}
+
+function isSameLogin(a: LoginState, b: LoginState | undefined): boolean {
+  if (!b) {
+    return false;
+  }
+  return a.project.reference === b.project.reference && a.profile.reference === b.profile.reference;
+}
+
+function getLoginKey(login: LoginState): string {
+  return `${login.project.reference}-${login.profile.reference}`;
+}
 
 export interface HeaderDropdownProps {
   readonly version?: string;
@@ -20,98 +69,115 @@ export interface HeaderDropdownProps {
 export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
   const context = useMedplumContext();
   const { medplum, profile, navigate } = context;
+  const activeLogin = medplum.getActiveLogin();
   const logins = medplum.getLogins();
+  const recentLogins = logins.filter((login) => !isSameLogin(login, activeLogin));
   const project = medplum.getProject();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
-  const [layoutVersion] = useState((localStorage['appShellLayoutVersion'] as 'v1' | 'v2' | undefined) ?? 'v1');
+  const [layoutVersion] = useState(
+    () => (localStorage['appShellLayoutVersion'] as AppShellLayoutVersion | undefined) ?? 'v1'
+  );
   const showLayoutToggle = props.showLayoutVersionToggle ?? true;
 
-  function setAppShellVersion(version: 'v1' | 'v2'): void {
-    localStorage['appShellLayoutVersion'] = version;
-    locationUtils.reload();
+  const projectDisplay = project?.name ?? medplum.getActiveLogin()?.project.display;
+  const profileDisplay = activeLogin?.profile.display ?? (profile ? formatHumanName(profile.name?.[0]) : undefined);
+
+  function switchLogin(login: LoginState): void {
+    medplum
+      .setActiveLogin(login)
+      .then(() => locationUtils.reload())
+      .catch(console.error);
   }
 
   return (
     <>
-      <Stack align="center" p="xl">
-        <ResourceAvatar size="xl" radius={100} value={context.profile} />
-        <HumanNameDisplay value={context.profile?.name?.[0]} />
-        <Text c="dimmed" size="xs">
-          {project?.name ?? medplum.getActiveLogin()?.project.display}
-        </Text>
-      </Stack>
-      {logins.length > 1 && <Menu.Divider />}
-      {logins.map(
-        (login) =>
-          login.profile.reference !== getReferenceString(context.profile as ProfileResource) && (
+      <Box className={classes.accountSection}>
+        <Box className={classes.projectOption}>
+          <ProjectLoginOption projectDisplay={projectDisplay} profileDisplay={profileDisplay} selected />
+        </Box>
+      </Box>
+      {recentLogins.length > 0 && (
+        <>
+          <HeaderDropdownDivider />
+          {recentLogins.map((login) => (
             <Menu.Item
-              key={login.profile.reference}
-              onClick={() => {
-                medplum
-                  .setActiveLogin(login)
-                  .then(() => locationUtils.reload())
-                  .catch(console.log);
-              }}
+              key={getLoginKey(login)}
+              className={classes.recentProjectItem}
+              onClick={() => switchLogin(login)}
             >
-              <Group>
-                <Avatar radius="xl" />
-                <div style={{ flex: 1 }}>
-                  <Text size="sm" fw={500}>
-                    {login.profile.display}
-                  </Text>
-                  <Text c="dimmed" size="xs">
-                    {login.project.display}
-                  </Text>
-                </div>
-              </Group>
+              <Box className={classes.projectOption}>
+                <ProjectLoginOption projectDisplay={login.project.display} profileDisplay={login.profile.display} />
+              </Box>
             </Menu.Item>
-          )
+          ))}
+        </>
       )}
-      <Menu.Divider />
-      <Menu.Item leftSection={<IconSwitchHorizontal size={14} stroke={1.5} />} onClick={() => navigate('/signin')}>
-        Switch to another project
-      </Menu.Item>
-      <Menu.Divider />
-      <Group justify="center">
-        <SegmentedControl
-          size="xs"
-          value={colorScheme}
-          onChange={(newValue) => setColorScheme(newValue as MantineColorScheme)}
-          data={[
-            { label: 'Light', value: 'light' },
-            { label: 'Dark', value: 'dark' },
-            { label: 'Auto', value: 'auto' },
-          ]}
-        />
-        {showLayoutToggle && (
-          <SegmentedControl
-            size="xs"
-            value={layoutVersion}
-            onChange={(newValue) => setAppShellVersion(newValue as 'v1' | 'v2')}
-            data={[
-              { label: 'v1', value: 'v1' },
-              { label: 'v2', value: 'v2' },
-            ]}
-          />
-        )}
-      </Group>
-      <Menu.Divider />
+      <HeaderDropdownDivider />
       <Menu.Item
-        leftSection={<IconSettings size={14} stroke={1.5} />}
+        leftSection={<IconSwitchHorizontal size={16} color={MENU_ICON_COLOR} />}
+        onClick={() => navigate('/signin')}
+      >
+        <Text size="sm">Switch to another project</Text>
+      </Menu.Item>
+      <Menu.Item
+        leftSection={<IconSettings size={16} color={MENU_ICON_COLOR} />}
         onClick={() => navigate(`/${getReferenceString(profile as ProfileResource)}`)}
       >
-        Account settings
+        <Text size="sm">Account settings</Text>
       </Menu.Item>
+
+      <Flex className={classes.settingsRow} align="center" pl="sm" pr="xs" py="xs">
+        <Flex align="center" gap="xs">
+          <IconPalette size={16} color={MENU_ICON_COLOR} />
+          <Text size="sm">Appearance</Text>
+        </Flex>
+        <Box className={classes.settingsControlWrapper}>
+          <SegmentedControl
+            classNames={{ root: cx(classes.segmentedControl, classes.appearanceControl) }}
+            size="xs"
+            radius="xl"
+            withItemsBorders={false}
+            value={colorScheme}
+            onChange={(newValue) => setColorScheme(newValue as MantineColorScheme)}
+            data={THEME_OPTIONS}
+            aria-label="Color scheme"
+          />
+        </Box>
+      </Flex>
+      {showLayoutToggle && (
+        <Flex className={classes.settingsRow} align="center" pl="sm" pr="xs" py="xs">
+          <Flex align="center" gap="xs">
+            <IconTable size={16} color={MENU_ICON_COLOR} />
+            <Text size="sm">Layout</Text>
+          </Flex>
+          <Box className={classes.settingsControlWrapper}>
+            <SegmentedControl
+              classNames={{ root: cx(classes.segmentedControl, classes.layoutControl) }}
+              size="xs"
+              radius="xl"
+              withItemsBorders={false}
+              value={layoutVersion}
+              onChange={(newValue) => {
+                localStorage['appShellLayoutVersion'] = newValue;
+                locationUtils.reload();
+              }}
+              data={LAYOUT_OPTIONS}
+              aria-label="App shell layout version"
+            />
+          </Box>
+        </Flex>
+      )}
       <Menu.Item
-        leftSection={<IconLogout size={14} stroke={1.5} />}
+        leftSection={<IconLogout size={16} color={MENU_ICON_COLOR} />}
         onClick={async () => {
           await medplum.signOut();
           navigate('/signin');
         }}
       >
-        Sign out
+        <Text size="sm">Sign out</Text>
       </Menu.Item>
-      <Text size="xs" c="dimmed" my="sm" ta="center">
+      <HeaderDropdownDivider />
+      <Text size="xs" c="dimmed" fw={500} my="sm" ta="center">
         {getAppName()} {props.version}
       </Text>
     </>

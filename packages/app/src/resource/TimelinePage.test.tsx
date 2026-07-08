@@ -13,7 +13,7 @@ describe('TimelinePage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
     await act(async () => {
       render(
-        <MedplumProvider medplum={medplum} navigate={jest.fn()}>
+        <MedplumProvider medplum={medplum} navigate={vi.fn()}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
             <Notifications />
             <AppRoutes />

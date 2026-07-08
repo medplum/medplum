@@ -37,7 +37,13 @@ test('assertReleaseManifest', () => {
     assertReleaseManifest({
       assets: [{ name: 'medplum-agent-3.1.6-linux', browser_download_url: 'https://example.com' }],
     })
-  ).toThrow('Manifest missing tag_name');
+  ).toThrow("Manifest missing valid tag_name starting with a 'v' (eg. v5.1.15)");
+  expect(() =>
+    assertReleaseManifest({
+      tag_name: '3.1.6',
+      assets: [{ name: 'medplum-agent-3.1.6-linux', browser_download_url: 'https://example.com' }],
+    })
+  ).toThrow("Manifest missing valid tag_name starting with a 'v' (eg. v5.1.15)");
   expect(() =>
     assertReleaseManifest({
       tag_name: 'v3.1.6',
@@ -146,9 +152,38 @@ describe('fetchVersionManifest', () => {
     await expect(fetchVersionManifest('test')).resolves.toMatchObject(manifest);
     // Should be called with latest
     expect(fetchSpy).toHaveBeenLastCalledWith(expect.stringContaining(`${MEDPLUM_RELEASES_URL}/latest.json`));
-    // Call again to make sure we don't refetch
+    // Call again to make sure `latest` is NOT cached and gets refetched
     fetchSpy.mockClear();
     await expect(fetchVersionManifest('test')).resolves.toMatchObject(manifest);
+    expect(fetchSpy).toHaveBeenLastCalledWith(expect.stringContaining(`${MEDPLUM_RELEASES_URL}/latest.json`));
+    fetchSpy.mockRestore();
+  });
+
+  test('Latest resolves and caches the concrete version', async () => {
+    const manifest = {
+      tag_name: 'v3.1.6',
+      assets: [
+        {
+          name: 'medplum-agent-3.1.6-linux',
+          browser_download_url: 'https://example.com',
+        },
+      ],
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      vi.fn(async () => {
+        return Promise.resolve({
+          status: 200,
+          json: async () => {
+            return manifest;
+          },
+        });
+      }) as unknown as typeof globalThis.fetch
+    );
+    // Fetching latest resolves to v3.1.6 and caches that concrete version
+    await expect(fetchVersionManifest('test')).resolves.toMatchObject(manifest);
+    // Requesting the concrete version should be served from cache, no refetch
+    fetchSpy.mockClear();
+    await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject(manifest);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
@@ -261,7 +296,7 @@ describe('fetchLatestVersionString', () => {
       }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchLatestVersionString('test')).rejects.toThrow(
-      "Invalid release name found. Release tag 'canary' did not start with 'v'"
+      "Manifest missing valid tag_name starting with a 'v' (eg. v5.1.15)"
     );
     fetchSpy.mockRestore();
   });
