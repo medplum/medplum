@@ -139,13 +139,12 @@ export async function createProject(
 
   log.info('Project creation request received', { name: projectName });
 
-  // Pre-generate the project ID so the default access policies (which reference the project via
-  // meta.project) can be created first, then the Project can be created in a single write with its
-  // default policies already set. Running it all in one transaction keeps the resource history to a
-  // single Project version instead of a create followed by a patch.
-  const projectId = randomUUID();
-
   return systemRepo.withTransaction(async (txRepo) => {
+    // Pre-generate the project ID so the default access policies (which reference the project via
+    // meta.project) can be created first, then the Project can be created in a single write with its
+    // default policies already set.
+    const projectId = txRepo.generateId();
+
     const patientAccessPolicy = await createPatientCompartmentAccessPolicy(
       txRepo,
       projectId,
