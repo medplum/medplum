@@ -1,6 +1,6 @@
 # Commonly Used Terminologies
 
-This guide provides a comprehensive reference for the most commonly used code systems and valuesets in healthcare applications. Each section includes the FHIR `system` URLs needed for proper coding in FHIR resources.
+This guide provides a comprehensive reference for the most commonly used code systems and ValueSets in healthcare applications. Each section includes the FHIR `system` URLs needed for proper coding in FHIR resources.
 
 ## Overview of Common Code Systems
 
