@@ -23,6 +23,7 @@ fi
 
 # Fail on error
 set -e
+set -o pipefail
 
 # Echo commands
 set -x

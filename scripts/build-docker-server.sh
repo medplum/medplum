@@ -8,7 +8,7 @@ if [[ -z "${SERVER_DOCKERHUB_REPOSITORY}" ]]; then
   exit 1
 fi
 
-GITHUB_SHA="${GITHUB_SHA:-$(git rev-parse --short HEAD)}"
+GITHUB_SHA="${GITHUB_SHA:-$(git rev-parse HEAD)}"
 if [[ -z "${GITHUB_SHA}" ]]; then
   echo "GITHUB_SHA is missing"
   exit 1
