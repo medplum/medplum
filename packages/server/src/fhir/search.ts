@@ -1951,5 +1951,5 @@ function splitChainedSearch(chain: string): string[] {
 }
 
 function getCanonicalUrl(resource: Resource): string | undefined {
-  return (resource as Resource & { url?: string }).url;
+  return 'url' in resource ? resource.url : undefined;
 }
