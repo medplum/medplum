@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   ConceptMapTranslateMatch,
-  ConceptMapTranslateMatchAttribute,
+  ConceptMapTranslateMatchProperty,
   ConceptMapTranslateOutput,
   ConceptMapTranslateParameters,
   WithId,
@@ -343,8 +343,8 @@ export async function conceptMapTranslateHandler(req: FhirRequest): Promise<Fhir
   const params = parseInputParameters<ConceptMapTranslateParameters>(operation, req);
   const map = await lookupConceptMap(params, req.params.id);
 
-  const output = await translateConcept(map, params);
-  return [allOk, buildOutputParameters(operation, output)];
+  const translation = await translateConcept(map, params);
+  return [allOk, buildOutputParameters(operation, translation)];
 }
 
 async function lookupConceptMap(params: ConceptMapTranslateParameters, id?: string): Promise<WithId<ConceptMap>> {
@@ -486,7 +486,7 @@ function parseDatabaseRows(rows: any[]): ConceptMapTranslateMatch[] {
   let currentMappingId: string | undefined;
   let match: ConceptMapTranslateMatch | undefined;
 
-  for (const { id, targetSystem, targetCode, targetDisplay, relationship, kind, uri, type, value } of rows) {
+  for (const { id, targetSystem, targetCode, targetDisplay, relationship, kind, uri, type, value, comment } of rows) {
     if (id !== currentMappingId) {
       if (match) {
         matches.push(match);
@@ -495,16 +495,23 @@ function parseDatabaseRows(rows: any[]): ConceptMapTranslateMatch[] {
         equivalence: relationship ?? EQUIVALENT,
         concept: { system: targetSystem, code: targetCode, display: targetDisplay ?? undefined },
       };
+      if (comment) {
+        match.property = [
+          { uri: 'https://medplum.com/conceptmap-attribute/comment', value: { type: 'string', value: comment } },
+        ];
+      }
       currentMappingId = id;
     }
 
     if (kind && match) {
       const propertyName = kind as 'property' | 'dependsOn' | 'product';
-      const attribute: ConceptMapTranslateMatchAttribute = {
-        attribute: uri,
-        value: { type, value: JSON.parse(value) },
-      };
-      match[propertyName] = append(match[propertyName], attribute);
+      if (propertyName === 'property') {
+        const property: ConceptMapTranslateMatchProperty = { uri, value: { type, value: JSON.parse(value) } };
+        match.property = append(match.property, property);
+      } else {
+        const attribute = { attribute: uri, value: { type, value: JSON.parse(value) } };
+        match[propertyName] = append(match[propertyName], attribute);
+      }
     }
   }
   if (match) {

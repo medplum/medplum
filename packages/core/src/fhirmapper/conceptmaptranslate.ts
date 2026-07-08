@@ -18,10 +18,15 @@ export interface ConceptMapTranslateParameters {
 export interface ConceptMapTranslateMatch {
   equivalence?: string;
   concept?: Coding;
-  property?: ConceptMapTranslateMatchAttribute[];
+  property?: ConceptMapTranslateMatchProperty[];
   dependsOn?: ConceptMapTranslateMatchAttribute[];
   product?: ConceptMapTranslateMatchAttribute[];
   source?: string;
+}
+
+export interface ConceptMapTranslateMatchProperty {
+  uri: string;
+  value: TypedValue;
 }
 
 export interface ConceptMapTranslateMatchAttribute {
