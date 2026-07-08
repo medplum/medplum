@@ -5,7 +5,7 @@ toc_max_heading_level: 2
 
 # Bot Basics
 
-Bots are an advanced Medplum feature that enable complex workflows. A **Medplum Bot** is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a [**Medplum client**](../sdk) , which itself can invoke FHIR operations.
+Bots are an advanced Medplum feature that enable complex workflows. A **Medplum Bot** is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a [**Medplum client**](../sdk), which itself can invoke FHIR operations.
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
 You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you want to further reduce the data it can read and write.
@@ -36,7 +36,7 @@ By using Bots, the entire logic is self contained and managed in one place. Like
 
 :::caution[Note]
 
-Bots are disabled by default. Contact your info@medplum.com if you'd like to learn more.
+Bots are disabled by default. Contact info@medplum.com if you'd like to learn more.
 
 :::
 
@@ -63,7 +63,7 @@ Click "Create Bot" to save the Bot, and you will see an acknowledgement that the
 You can see all Bots in your account on the Bot resource page: [https://app.medplum.com/Bot](https://app.medplum.com/Bot)
 
 Click on your new Bot and navigate to the **Editor** tab. This presents a code editing window where you can write your
-Javascript code.
+JavaScript code.
 
 ![Bot Editor](/img/app/bots/BotResourcePage.gif)
 
@@ -129,7 +129,7 @@ This line extracts the first and last name for the patient. Since patients can h
 
 FHIR stores a person's first names, middle names, etc. in an array called `HumanName.given`, and the last name in the `HumanName.family` property. For more information, refer to the documentation for the [`HumanName` datatype](/docs/api/fhir/datatypes/humanname).
 
-Because these properties may be undefined, we make heavy use of the Javascript [optional chaining (`?.`) operator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining) to access these properties.
+Because these properties may be undefined, we make heavy use of the JavaScript [optional chaining (`?.`) operator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining) to access these properties.
 
 ## Deploying a Bot
 
@@ -160,7 +160,7 @@ Alternatively, you can also write the code for a Bot and deploy from within your
 }
 ```
 
-Then, you can [deploy your bot from command line](/docs/bots/bots-in-production#deploying-your-bot)
+Then, you can [deploy your bot from the command line](/docs/bots/bots-in-production#deploying-your-bot)
 
 ## Executing a Bot
 
@@ -228,7 +228,7 @@ While using the `$execute` endpoint allows developers to trigger Bots from 3rd p
 Let's connect our bot to [`Patient`](/docs/api/fhir/resources/patient) resources. That means that the Bot code will run on any "create" or "update" operation to any [`Patient`](/docs/api/fhir/resources/patient).
 
 :::note[]
-Bots can be run as a cron job. [Click Here](/docs/bots/bot-cron-job) to learn more.
+Bots can be run as a cron job. [Click here](/docs/bots/bot-cron-job) to learn more.
 :::
 
 First, go to the [Subscription](https://app.medplum.com/Subscription) resources page.
@@ -257,7 +257,7 @@ The criteria of a subscription cannot be set to an [`AuditEvent`](/docs/api/fhir
 
 Next, we specify action should be taken when the subscription is triggered, using the "Channel" field.
 
-Because Bots are executed using HTTP requests, we will select the Channel "Type" as `Rest Hook` and the Channel "Endpoint" as as `Bot/<BOT_ID>`.
+Because Bots are executed using HTTP requests, we will select the Channel "Type" as `Rest Hook` and the Channel "Endpoint" as `Bot/<BOT_ID>`.
 
 ![Subscription Channel](/img/app/bots/subscription_channel.png)
 
@@ -276,7 +276,7 @@ We can test our new subscription by creating a new `Patient`. First, go to the [
 Next, click on the "New..." [button](https://app.medplum.com/Patient/new)
 ![New Patient Button](/img/app/bots/new_patient_button.png)
 
-Enter a sample name such as given "Jane" family "Doe". Then Scroll down and click "OK"
+Enter a sample name such as given "Jane" family "Doe". Then scroll down and click "OK"
 
 ![Create new Patient](/img/app/bots/NewPatient.gif)
 
@@ -290,11 +290,11 @@ If you want to see all `AuditEvents` sorted by most recent, you can use [this li
 
 ## Software Development Lifecycle
 
-Bots written using the web editor are a great way to get started. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you refer to our next tutorial on [deploying Bots in production](./bots-in-production)
+Bots written using the web editor are a great way to get started. If you would like to develop locally, test, and deploy apps as part of your software development lifecycle, refer to our next tutorial on [deploying Bots in production](./bots-in-production)
 
 ## Medplum Lambda Bots Size Limits
 
-Medplum Bots that use the AWS Lamda runtime are subject to AWS Lambda size constraints:
+Medplum Bots that use the AWS Lambda runtime are subject to AWS Lambda size constraints:
 
 - **Maximum compressed size**: 50 MB
 
