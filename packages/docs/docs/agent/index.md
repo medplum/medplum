@@ -4,11 +4,11 @@ sidebar_position: 1
 
 # Intro to Medplum Agent
 
-The Medplum Agent is an application that runs inside your firewall and connects to devices over low level protocols such as HL7/MLLP, ASTM, and DICOM. These network protocols are commonly unencrypted, and therefore require an adapter to a secure transport. The Medplum Agent uses secure HTTPS WebSocket channels to stream messages between devices and a Medplum server cluster in the cloud.
+The Medplum Agent is an application that runs inside your firewall and connects to devices over low-level protocols such as HL7/MLLP, ASTM, and DICOM. These network protocols are commonly unencrypted, and therefore require an adapter to a secure transport. The Medplum Agent uses secure HTTPS WebSocket channels to stream messages between devices and a Medplum server cluster in the cloud.
 
 ## How it works
 
-The Medplum Agent runs in your local network and connects to devices over low level protocols:
+The Medplum Agent runs in your local network and connects to devices over low-level protocols:
 
 ![Medplum Agent Overview](./medplum-agent-overview.webp)
 
@@ -18,7 +18,7 @@ The Medplum Agent securely connects to Medplum servers running in the cloud usin
 
 ## Installation
 
-The installation of the agent has two parts: first [setting up the configurations on the Medplum app](#configuration-on-medplum-app), then [installing the application on the edge host](#install-on-host) and then inputting the configurations from the first step into the installer. After completing your install you'll be able to [send test transmissions end-to-end](#testing-your-setup).
+The installation of the agent has two parts: first [setting up the configuration in the Medplum App](#configuration-on-medplum-app), then [installing the application on the edge host](#install-on-host) and entering that configuration into the installer. After completing your install, you'll be able to [send test transmissions end-to-end](#testing-your-setup).
 
 ### Configuration on Medplum App
 
@@ -26,9 +26,9 @@ The Medplum App setup includes creating four resources which represent the confi
 
 #### Set up an Endpoint Resource
 
-First, set up the [Endpoint](/docs/api/fhir/resources/endpoint). An endpoint is a representation of what the on-site system will connect to. For visibility you may consider adding a `managingOrganization`, `address`, `contact`, and related metadata the `Endpoint` to represent where this physical on-site system is.
+First, set up the [Endpoint](/docs/api/fhir/resources/endpoint). An endpoint is a representation of what the on-site system will connect to. For visibility you may consider adding a `managingOrganization`, `address`, `contact`, and related metadata on the `Endpoint` to represent where this physical on-site system is.
 
-Here is the link to create a [new Endpoint](https://app.medplum.com/Endpoint/new) on the Medplum App. Assuming you want to configure the Endpoint to listen to HL7 v2 over MLLP you'll want set up agent as follows:
+Here is the link to create a [new Endpoint](https://app.medplum.com/Endpoint/new) on the Medplum App. Assuming you want to configure the Endpoint to listen to HL7 v2 over MLLP, you'll want to set up the agent as follows:
 
 ```json
 {
@@ -94,11 +94,11 @@ Third, set up the [Agent](https://app.medplum.com/Agent/new). This identifies th
 
 #### Set up a Client Application
 
-Finally, set up your [Client Application](https://app.medplum.com/admin/clients/new). While a default client may be used, we recommend setting up a new client for traceability. We also recommend setting up an AccessPolicy and attaching it to the ClientApplication you can restrict access to the host. The instructions on [setting up access controls](/docs/user-management#creating-memberships) are available in the Admin panel.
+Finally, set up your [Client Application](https://app.medplum.com/admin/clients/new). While a default client may be used, we recommend setting up a new client for traceability. We also recommend setting up an AccessPolicy and attaching it to the ClientApplication so you can restrict access to the host. The instructions on [setting up access controls](/docs/user-management#creating-memberships) are available in the Admin panel.
 
 At the end of the setup you should have the following items:
 
-- Base Url - The base URL of your Medplum server, or https://api.medplum.com for hosted Medplum
+- Base URL - The base URL of your Medplum server, or https://api.medplum.com for hosted Medplum
 - `ClientId`/`ClientSecret` - obtain these from the [ClientApplication](https://app.medplum.com/ClientApplication/) you created or will use in the Medplum app.
 - Agent ID - this is the Agent `id` UUID
 
@@ -123,7 +123,7 @@ npm run agent <base_url> <client_id> <client_secret> <agent_id>
 
 #### Windows Install
 
-The agent executable for Windows is built with each release, and can be be downloaded from the [Medplum Releases](https://github.com/medplum/medplum/releases) page.
+The agent executable for Windows is built with each release, and can be downloaded from the [Medplum Releases](https://github.com/medplum/medplum/releases) page.
 
 To install on a Windows Host, remote into the host and download the agent executable to the host filesystem. Double click on the installer executable to start and go through the install screen, inputting the 4 pieces of information from the previous step into the screen.
 
@@ -161,7 +161,7 @@ Go through the following checklist to ensure that your setup is working.
 
 - [ ] When you log into the host, ensure that the agent is running
 - [ ] Send a message to the Agent for testing
-- [ ] Confirm that the logs on the agent host
+- [ ] Confirm that logs are being written on the agent host
 - [ ] Navigate to your [`Bot` on the Medplum App](https://app.medplum.com/Bot) and view the `Events` tab, confirm that you see the AuditEvents produced
 
 ### Testing HL7 with Medplum CLI
@@ -182,7 +182,7 @@ Then send a test message:
 medplum hl7 send localhost 56000 --generate-example
 ```
 
-You can also send a specific test message, stored in a `.hl7`, similar extension (`.oru`, `.adt`, etc.), or `.txt.` file, via the following command:
+You can also send a specific test message, stored in a `.hl7`, similar extension (`.oru`, `.adt`, etc.), or `.txt` file, via the following command:
 
 ```bash
 npx medplum hl7 send localhost 56000 --file <some-file.hl7>
@@ -218,7 +218,7 @@ These are not duplicated `AuditEvent` resources but rather the same resource sho
 
 ## Preparing for Scale
 
-HL7 Feeds can be extremely high volume, and before you go live with a high-volume feed you may want to modify your Bot to log only set the Bot `AuditEventDestination` to `log`.
+HL7 feeds can be extremely high volume, and before you go live with a high-volume feed you may want to set the Bot `AuditEventDestination` to `log`.
 
 ## Supported Protocols
 
@@ -234,5 +234,5 @@ HL7 Feeds can be extremely high volume, and before you go live with a high-volum
 - [FHIR WebSocket Subscriptions](https://build.fhir.org/ig/HL7/fhir-subscription-backport-ig/channels.html#websockets)
 - [FHIRcast](https://fhircast.org/)
 - [Medplum CLI](/docs/cli)
-- [Sim Hospital](https://github.com/google/simhospital) is a useful tool to generate HL7 V2 test messages locally for testing
-- [Medplum Agent Demo Video](https://youtu.be/MmE3Dn939B4) on Youtube
+- [Sim Hospital](https://github.com/google/simhospital) is a useful tool to generate HL7 v2 test messages locally for testing
+- [Medplum Agent Demo Video](https://youtu.be/MmE3Dn939B4) on YouTube
