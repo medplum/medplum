@@ -9,6 +9,10 @@
   color: var(--project-login-icon-color, light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2)));
 }
 
+.subtitle {
+  color: var(--project-login-subtitle-color, var(--mantine-color-dimmed));
+}
+
 .interactive {
   border-radius: var(--mantine-radius-sm);
   padding: 8px 12px;
@@ -21,5 +25,9 @@
     & .iconBox {
       color: var(--mantine-color-text);
     }
+  }
+
+  &[data-combobox-selected] {
+    --project-login-subtitle-color: var(--mantine-color-white);
   }
 }
