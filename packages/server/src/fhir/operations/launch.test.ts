@@ -73,6 +73,19 @@ describe('ClientApplication/:id/$smart-launch', () => {
     expect(launch.id).toEqual(launchId);
   });
 
+  test('Does not launch ClientApplication from another project', async () => {
+    const otherProject = await createTestProject({
+      client: { launchUri: 'https://example.com/other-project-smart-launch' },
+      withClient: true,
+    });
+
+    const res = await request(app)
+      .get(`/fhir/R4/ClientApplication/${otherProject.client.id}/$smart-launch`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res.status).toBe(404);
+  });
+
   test('Preserves launch parameter', async () => {
     // Update ClientApplication with launchUri
     const launchUri = 'https://example.com/smart-launch';

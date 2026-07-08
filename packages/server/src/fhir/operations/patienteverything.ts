@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest, WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   allOk,
   append,
   concatUrls,
@@ -9,6 +10,7 @@ import {
   getReferenceString,
   isReference,
   isResource,
+  isString,
   Operator,
   sortStringArray,
 } from '@medplum/core';
@@ -49,6 +51,7 @@ export interface PatientEverythingParameters {
   _since?: string;
   _count?: number;
   _offset?: number;
+  _cursor?: string;
   _type?: ResourceType[] | string;
   _inlineAttachments?: boolean;
 }
@@ -69,6 +72,7 @@ export async function patientEverythingHandler(req: FhirRequest): Promise<FhirRe
 
   // _inlineAttachments is a Medplum extension not in the standard OperationDefinition.
   params._inlineAttachments = isPatientEverythingInlineAttachmentsEnabled(req, ctx.repo);
+  params._cursor = getStringQueryParam(req, '_cursor');
 
   // First read the patient to verify access
   const patient = await ctx.repo.readResource<Patient>('Patient', id);
@@ -99,6 +103,7 @@ export async function getPatientEverything(
     types: types.length > 0 ? types : undefined,
     count: params?._count,
     offset: params?._offset,
+    cursor: params?._cursor,
   };
   if (params?._since) {
     search.filters = append(search.filters, {
@@ -150,6 +155,7 @@ function rewritePatientEverythingLink(
   setSearchParam(url, '_since', params?._since);
   setSearchParam(url, '_count', searchUrl.searchParams.get('_count') ?? params?._count);
   setSearchParam(url, '_offset', searchUrl.searchParams.get('_offset'));
+  setSearchParam(url, '_cursor', searchUrl.searchParams.get('_cursor'));
 
   const types = normalizeTypes(params?._type);
   if (types.length > 0) {
@@ -167,6 +173,14 @@ function setSearchParam(url: URL, name: string, value: string | number | undefin
   if (value !== undefined && value !== null && value !== '') {
     url.searchParams.set(name, String(value));
   }
+}
+
+function getStringQueryParam(req: FhirRequest, name: string): string | undefined {
+  const value = req.query?.[name];
+  if (Array.isArray(value)) {
+    return value.find(isString);
+  }
+  return isString(value) ? value : undefined;
 }
 
 function normalizeTypes(types: PatientEverythingParameters['_type']): ResourceType[] {
@@ -191,10 +205,24 @@ export async function searchPatientCompartment(
   target: WithId<Resource>,
   search?: Partial<SearchRequest>
 ): Promise<Bundle<WithId<Resource>>> {
-  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  const types = search?.types ?? flatMapFilter(resourceList, (r) => (r.code === 'Binary' ? undefined : r.code));
-  types.push(target.resourceType);
-  sortStringArray(types);
+  const types = [target.resourceType];
+
+  if (search?.types) {
+    types.push(...search.types);
+  } else {
+    const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
+    for (const resourceType of resourceList) {
+      if (
+        resourceType.code !== 'Binary' &&
+        repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType.code)
+      ) {
+        types.push(resourceType.code);
+      }
+    }
+  }
+
+  const uniqueTypes = Array.from(new Set(types));
+  sortStringArray(uniqueTypes);
 
   const filters = search?.filters ?? [];
   filters.push({
@@ -206,11 +234,12 @@ export async function searchPatientCompartment(
   // Get initial bundle of compartment resources
   return repo.search({
     resourceType: target.resourceType,
-    types,
+    types: uniqueTypes,
     filters,
     count: search?.count ?? defaultMaxResults,
     offset: search?.offset,
-    sortRules: [{ code: '_id' }], // Must make sort deterministic to ensure that pagination works correctly
+    cursor: search?.cursor,
+    sortRules: [{ code: '_lastUpdated' }],
   });
 }
 

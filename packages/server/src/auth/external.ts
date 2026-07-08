@@ -13,7 +13,6 @@ import {
 } from '@medplum/core';
 import type { ClientApplication, DomainConfiguration, IdentityProvider, Project } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
@@ -22,6 +21,7 @@ import { getLogger, globalLogger } from '../logger';
 import { getClientRedirectUri } from '../oauth/clients';
 import type { CodeChallengeMethod } from '../oauth/utils';
 import { getClientApplication, tryLogin } from '../oauth/utils';
+import { validateOutboundUrl } from '../util/url';
 import { getDomainConfiguration } from './method';
 
 /*
@@ -262,6 +262,7 @@ async function verifyExternalCode(
 ): Promise<Record<string, unknown>> {
   const headers: HeadersInit = {
     Accept: ContentType.JSON,
+    'Accept-Encoding': 'identity',
     'Content-Type': ContentType.FORM_URL_ENCODED,
   };
 
@@ -283,7 +284,12 @@ async function verifyExternalCode(
   }
 
   try {
-    const response = await fetch(idp.tokenUrl, {
+    const allowInsecureExternalAuthUrl = !!getConfig().allowInsecureExternalAuthUrl;
+    const tokenUrl = validateOutboundUrl(idp.tokenUrl, {
+      allowHttp: allowInsecureExternalAuthUrl,
+      allowUnsafeHostname: allowInsecureExternalAuthUrl,
+    }).toString();
+    const response = await fetch(tokenUrl, {
       method: 'POST',
       headers,
       body: params.toString(),

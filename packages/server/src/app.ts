@@ -34,6 +34,7 @@ import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
+import { smartHealthLinkRouter } from './fhir/operations/smarthealthlinks';
 import { closeAgentCallbackSubscriber } from './fhir/operations/utils/agentcallback';
 import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
@@ -238,6 +239,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/keyvalue/v1/', keyValueRouter);
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
+  apiRouter.use('/shl/', smartHealthLinkRouter);
   apiRouter.use('/storage/', storageRouter);
   apiRouter.use('/webhook/', webhookRouter);
 

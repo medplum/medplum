@@ -280,7 +280,7 @@ describe('Agent Push', () => {
   });
 
   test('Ping -- Successful ping to IP', async () => {
-    const publishSpy = jest.spyOn(pubsub, 'publish');
+    const publishSpy = vi.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -345,7 +345,7 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
   });
 
   test('Ping -- Successful ping to hostname', async () => {
-    const publishSpy = jest.spyOn(pubsub, 'publish');
+    const publishSpy = vi.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -410,7 +410,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Ping -- Error', async () => {
-    const publishSpy = jest.spyOn(pubsub, 'publish');
+    const publishSpy = vi.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -473,7 +473,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Prefer: respond-async', async () => {
-    const publishSpy = jest.spyOn(pubsub, 'publish');
+    const publishSpy = vi.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -613,7 +613,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Submit with returnAck parameter', async () => {
-    const publishSpy = jest.spyOn(pubsub, 'publish');
+    const publishSpy = vi.spyOn(pubsub, 'publish');
 
     const res = await request(app)
       .post(`/fhir/R4/Agent/${agent.id}/$push`)
@@ -639,7 +639,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Submit with returnAck=first parameter', async () => {
-    const publishSpy = jest.spyOn(pubsub, 'publish');
+    const publishSpy = vi.spyOn(pubsub, 'publish');
 
     const res = await request(app)
       .post(`/fhir/R4/Agent/${agent.id}/$push`)
@@ -665,7 +665,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Submit without returnAck parameter does not include it in request', async () => {
-    const publishSpy = jest.spyOn(pubsub, 'publish');
+    const publishSpy = vi.spyOn(pubsub, 'publish');
 
     const res = await request(app)
       .post(`/fhir/R4/Agent/${agent.id}/$push`)

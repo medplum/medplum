@@ -10,10 +10,10 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { SchedulingParametersURI } from '../../utils/scheduling';
 import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../utils/servicetype';
 import { ScheduleSettings, ScheduleSettingsPage } from './ScheduleSettingsPage';
 
-const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 const ServiceTypeReferenceURI = 'https://medplum.com/fhir/service-type-reference';
 
 describe('ScheduleSettings', () => {

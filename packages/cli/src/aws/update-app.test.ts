@@ -26,12 +26,10 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { AwsStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import fastGlob from 'fast-glob';
-import type * as NodeFetch from 'node-fetch';
-import fetch from 'node-fetch';
 import fs from 'node:fs';
-import { Readable, Writable } from 'node:stream';
+import { Writable } from 'node:stream';
 import * as tar from 'tar';
-import type { Mock, MockedFunction, MockInstance } from 'vitest';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
 
 vi.mock('fast-glob', () => {
@@ -58,14 +56,19 @@ vi.mock('node:fs', () => {
   return { default: mock, ...mock };
 });
 
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
-
 vi.mock('tar', () => ({
   extract: vi.fn(),
 }));
 
-const nodeFetch = await vi.importActual<typeof NodeFetch>('node-fetch');
-const { Response: NodeFetchResponse } = nodeFetch;
+const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+function emptyResponse(): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      controller.close();
+    },
+  });
+}
 
 let cfMock: AwsStub<
   CloudFormationServiceInputTypes,
@@ -173,7 +176,7 @@ describe('update-app command', () => {
   });
 
   afterEach(() => {
-    (fetch as MockedFunction<typeof fetch>).mockReset();
+    fetchMock.mockReset();
   });
 
   test('Update app command', async () => {
@@ -192,22 +195,11 @@ describe('update-app command', () => {
     );
 
     // Mock the 2 fetch requests
-    (fetch as MockedFunction<typeof fetch>)
+    fetchMock
       // First request is for the package metadata
-      .mockResolvedValueOnce(
-        new NodeFetchResponse('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 })
-      )
+      .mockResolvedValueOnce(new Response('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 }))
       // Second request is for the tarball
-      .mockResolvedValueOnce(
-        new NodeFetchResponse(
-          new Readable({
-            read() {
-              this.push(null); // Signal the end of the stream
-            },
-          }),
-          { status: 200 }
-        )
-      );
+      .mockResolvedValueOnce(new Response(emptyResponse(), { status: 200 }));
 
     // Mock the tar extract
     (tar.extract as unknown as Mock).mockReturnValueOnce(
@@ -237,8 +229,8 @@ describe('update-app command', () => {
 
     await main(['node', 'index.js', 'aws', 'update-app', 'dev']);
 
-    expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
-    expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
+    expect(fetchMock).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
     expect(console.log).toHaveBeenCalledWith('Done');
     expect(s3Mock.calls()).toHaveLength(1);
     expect(cloudFrontMock.calls()).toHaveLength(1);
@@ -260,22 +252,11 @@ describe('update-app command', () => {
     );
 
     // Mock the 2 fetch requests
-    (fetch as MockedFunction<typeof fetch>)
+    fetchMock
       // First request is for the package metadata
-      .mockResolvedValueOnce(
-        new NodeFetchResponse('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 })
-      )
+      .mockResolvedValueOnce(new Response('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 }))
       // Second request is for the tarball
-      .mockResolvedValueOnce(
-        new NodeFetchResponse(
-          new Readable({
-            read() {
-              this.push(null); // Signal the end of the stream
-            },
-          }),
-          { status: 200 }
-        )
-      );
+      .mockResolvedValueOnce(new Response(emptyResponse(), { status: 200 }));
 
     // Mock the tar extract
     (tar.extract as unknown as Mock).mockReturnValueOnce(
@@ -305,8 +286,8 @@ describe('update-app command', () => {
 
     await main(['node', 'index.js', 'aws', 'update-app', 'dev', '--dryrun']);
 
-    expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
-    expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
+    expect(fetchMock).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
     expect(console.log).toHaveBeenCalledWith('Done');
     expect(s3Mock.calls()).toHaveLength(0);
     expect(cloudFrontMock.calls()).toHaveLength(0);
@@ -324,22 +305,11 @@ describe('update-app command', () => {
     );
 
     // Mock the 2 fetch requests
-    (fetch as MockedFunction<typeof fetch>)
+    fetchMock
       // First request is for the package metadata
-      .mockResolvedValueOnce(
-        new NodeFetchResponse('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 })
-      )
+      .mockResolvedValueOnce(new Response('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 }))
       // Second request is for the tarball
-      .mockResolvedValueOnce(
-        new NodeFetchResponse(
-          new Readable({
-            read() {
-              this.push(null); // Signal the end of the stream
-            },
-          }),
-          { status: 200 }
-        )
-      );
+      .mockResolvedValueOnce(new Response(emptyResponse(), { status: 200 }));
 
     // Mock the tar extract
     (tar.extract as unknown as Mock).mockReturnValueOnce(

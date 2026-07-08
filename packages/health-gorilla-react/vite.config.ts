@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { defineConfig as defineVitestConfig } from 'vitest/config';
 import { medplumAliases } from '../../vitest.config';
 
@@ -9,6 +11,7 @@ const vitestConfig = defineVitestConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test.setup.ts',
+    pool: 'threads',
   },
 });
 
