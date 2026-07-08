@@ -8,7 +8,7 @@ Medplum publishes an official agent installer for Microsoft Windows.
 
 To install on a Windows Host, remote into the host and download the agent executable to the host filesystem. Double click on the MSI to start and go through the install screen, inputting the 4 pieces of information from the previous step into the screen.
 
-The agent executable for Windows is built with each release, and can be be downloaded from the [releases](https://github.com/medplum/medplum/releases) page.
+The agent executable for Windows is built with each release, and can be downloaded from the [releases](https://github.com/medplum/medplum/releases) page.
 
 ### Operating System (OS)
 
