@@ -40,6 +40,46 @@ export function assertReleaseManifest(candidate: unknown): asserts candidate is 
 }
 
 /**
+ * Fetches and parses JSON from a Medplum releases file.
+ *
+ * Handles the machinery common to all releases requests: building the URL, appending the
+ * standard `a` (app name) and `c` (current version) query params plus any extra `params`, and
+ * throwing a descriptive error on a non-200 response.
+ * @param fileName - The releases file to fetch (e.g. `latest.json`, `v5.1.24.json`, `all.json`).
+ * @param appName - The name of the app to fetch the releases file for.
+ * @param errorContext - A human-readable clause describing the request, interpolated into the
+ * thrown error message (e.g. `fetching all release versions`).
+ * @param params - An optional list of key-value pairs to be appended to the URL query string.
+ * @returns The parsed JSON response.
+ */
+async function fetchReleasesJson<T>(
+  fileName: string,
+  appName: string,
+  errorContext: string,
+  params?: Record<string, string>
+): Promise<T> {
+  const url = new URL(`${MEDPLUM_RELEASES_URL}/${fileName}`);
+  url.searchParams.set('a', appName);
+  url.searchParams.set('c', MEDPLUM_VERSION);
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
+  }
+  const res = await fetch(url.toString());
+  if (res.status !== 200) {
+    let message: string | undefined;
+    try {
+      message = ((await res.json()) as { message: string }).message;
+    } catch (err) {
+      console.error(`Failed to parse message from body: ${normalizeErrorString(err)}`);
+    }
+    throw new Error(`Received status code ${res.status} while ${errorContext}. Message: ${message}`);
+  }
+  return (await res.json()) as T;
+}
+
+/**
  * Fetches the manifest for a given Medplum release version.
  * @param appName - The name of the app to fetch the manifest for.
  * @param version - The version to fetch. If no `version` is provided, defaults to the `latest` version.
@@ -56,27 +96,12 @@ export async function fetchVersionManifest(
   let manifest = version ? releaseManifests.get(version) : undefined;
   if (!manifest) {
     const versionTag = version ? `v${version}` : 'latest';
-    const url = new URL(`${MEDPLUM_RELEASES_URL}/${versionTag}.json`);
-    url.searchParams.set('a', appName);
-    url.searchParams.set('c', MEDPLUM_VERSION);
-    if (params) {
-      for (const [key, value] of Object.entries(params)) {
-        url.searchParams.set(key, value);
-      }
-    }
-    const res = await fetch(url.toString());
-    if (res.status !== 200) {
-      let message: string | undefined;
-      try {
-        message = ((await res.json()) as { message: string }).message;
-      } catch (err) {
-        console.error(`Failed to parse message from body: ${normalizeErrorString(err)}`);
-      }
-      throw new Error(
-        `Received status code ${res.status} while fetching manifest for version '${version ?? 'latest'}'. Message: ${message}`
-      );
-    }
-    const response = (await res.json()) as ReleaseManifest;
+    const response = await fetchReleasesJson<ReleaseManifest>(
+      `${versionTag}.json`,
+      appName,
+      `fetching manifest for version '${version ?? 'latest'}'`,
+      params
+    );
     assertReleaseManifest(response);
     manifest = response;
     // `tag_name` is always `v${version}`, so this key matches the `version` lookup above for
@@ -153,25 +178,12 @@ export async function fetchLatestVersionString(appName: string): Promise<string>
  * @returns An array of version strings (without the leading `v`), sorted from newest to oldest.
  */
 export async function fetchAllVersionStrings(appName: string, params?: Record<string, string>): Promise<string[]> {
-  const url = new URL(`${MEDPLUM_RELEASES_URL}/all.json`);
-  url.searchParams.set('a', appName);
-  url.searchParams.set('c', MEDPLUM_VERSION);
-  if (params) {
-    for (const [key, value] of Object.entries(params)) {
-      url.searchParams.set(key, value);
-    }
-  }
-  const res = await fetch(url.toString());
-  if (res.status !== 200) {
-    let message: string | undefined;
-    try {
-      message = ((await res.json()) as { message: string }).message;
-    } catch (err) {
-      console.error(`Failed to parse message from body: ${normalizeErrorString(err)}`);
-    }
-    throw new Error(`Received status code ${res.status} while fetching all release versions. Message: ${message}`);
-  }
-  const response = (await res.json()) as { versions?: { version: string }[] };
+  const response = await fetchReleasesJson<{ versions?: { version: string }[] }>(
+    'all.json',
+    appName,
+    'fetching all release versions',
+    params
+  );
   const versions = (response.versions ?? []).map((release) => release.version).filter(isValidMedplumSemver);
   return versions.sort(compareVersions).reverse();
 }
