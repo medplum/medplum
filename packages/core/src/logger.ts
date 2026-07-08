@@ -90,7 +90,7 @@ export class Logger implements ILogger {
   clone(override?: LoggerConfigOverride): Logger {
     const config = this.getLoggerConfig();
     const mergedConfig = override
-      ? { ...config, override, options: { ...config.options, ...override.options } }
+      ? { ...config, ...override, options: { ...config.options, ...override.options } }
       : config;
     return new Logger(mergedConfig.write, mergedConfig.metadata, mergedConfig.level, mergedConfig.options);
   }
