@@ -13,7 +13,13 @@ This demo project showcases how to work with FHIR ValueSets in a React applicati
 
 If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
 
-[Fork](https://github.com/medplum/medplum-valueset-selector/fork) and clone the repo to your local machine.
+[Fork](https://github.com/medplum/medplum/fork) and clone the Medplum repo to your local machine.
+
+Move into the `medplum-valueset-selector` example directory:
+
+```bash
+cd examples/medplum-valueset-selector
+```
 
 If you want to change any environment variables from the defaults, copy the `.env.defaults` file to `.env`
 
@@ -133,7 +139,7 @@ const handleCreateValueSet = async () => {
 
 1. Edit the JSON in the textarea on the right
 2. Ensure your ValueSet has a unique URL
-3. Click "Create ValueSet"
+3. Click "Create/Update ValueSet"
 4. The new ValueSet will be immediately available for use
 
 ### Tips
