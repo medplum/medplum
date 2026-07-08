@@ -48,6 +48,25 @@ describe('FileSystemStorage', () => {
     expect(content).toStrictEqual('foo');
   });
 
+  test('deleteFile removes a file and is idempotent', async () => {
+    initBinaryStorage('file:binary');
+    const storage = getBinaryStorage();
+
+    const key = 'system/async-batch/delete-test/state.json';
+    await storage.writeFile(key, ContentType.JSON, '{"hello":"world"}');
+
+    // The file can be read back before deletion.
+    const stream = await storage.readFile(key);
+    expect(await streamToString(stream)).toStrictEqual('{"hello":"world"}');
+
+    // After deletion, reading throws.
+    await storage.deleteFile(key);
+    await expect(storage.readFile(key)).rejects.toThrow('File not found');
+
+    // Deleting a missing key is a no-op (idempotent).
+    await expect(storage.deleteFile(key)).resolves.toBeUndefined();
+  });
+
   test('Should throw an error when file is not found in readBinary()', async () => {
     initBinaryStorage('file:binary');
 
