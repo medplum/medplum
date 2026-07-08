@@ -119,16 +119,13 @@ export const KitchenSink = (): JSX.Element => {
 
   useEffect(() => {
     (async (): Promise<DiagnosticReport> => {
-      // Observation with categories, performer, interpretation, and notes
       const creatinine = await medplum.createResource(CreatinineObservation);
 
-      // Observation groups with nested member observations (hasMember)
       await medplum.createResource(HealthGorillaObservation1);
       await medplum.createResource(HealthGorillaObservation2);
       const group1 = await medplum.createResource(HealthGorillaObservationGroup1);
       const group2 = await medplum.createResource(HealthGorillaObservationGroup2);
 
-      // Second specimen with a received time and its own notes
       const receivedSpecimen = await medplum.createResource<Specimen>({
         ...deepClone(HomerSimpsonSpecimen),
         id: 'kitchen-sink-specimen',

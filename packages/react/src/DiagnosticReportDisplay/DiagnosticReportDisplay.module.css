@@ -8,7 +8,6 @@
     padding: 4px;
   }
 
-  /* Keep status badges from ellipsizing when the table compresses columns */
   & :global(.mantine-Badge-root) {
     min-width: max-content;
   }
