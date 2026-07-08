@@ -280,6 +280,115 @@ describe('CodeSystem lookup', () => {
     });
   });
 
+  test('Prefers complete CodeSystem over example even when example is newer', async () => {
+    const sharedUrl = 'http://example.com/shared-code-system-' + randomUUID();
+
+    // Both CodeSystems share the URL and have no version. The "example" one has a more recent date
+    // and only a subset of codes, and is created last (most recently updated) so that neither the
+    // date nor recency causes it to be selected over the "complete" one.
+    const exampleCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: sharedUrl,
+      name: 'exampleCodeSystem',
+      status: 'active',
+      content: 'example',
+      date: '2026-06-27',
+      concept: [{ code: 'example-only', display: 'Example Only' }],
+    };
+
+    // The "complete" CodeSystem has an older date but the full set of codes
+    const completeCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: sharedUrl,
+      name: 'completeCodeSystem',
+      status: 'active',
+      content: 'complete',
+      date: '2024-03-12',
+      concept: [{ code: 'complete-only', display: 'Complete Only' }],
+    };
+    const completeRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(completeCodeSystem);
+    expect(completeRes.status).toStrictEqual(201);
+
+    const exampleRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(exampleCodeSystem);
+    expect(exampleRes.status).toStrictEqual(201);
+
+    // A code that only exists in the "complete" CodeSystem should be found
+    const foundRes = await request(app)
+      .post('/fhir/R4/CodeSystem/$lookup')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: sharedUrl },
+          { name: 'code', valueCode: 'complete-only' },
+        ],
+      });
+    expect(foundRes.status).toStrictEqual(200);
+    expect(foundRes.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'name', valueString: 'completeCodeSystem' },
+        { name: 'display', valueString: 'Complete Only' },
+      ],
+    });
+
+    // A code that only exists in the "example" CodeSystem should NOT be found,
+    // confirming that the "complete" CodeSystem was selected
+    const notFoundRes = await request(app)
+      .post('/fhir/R4/CodeSystem/$lookup')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: sharedUrl },
+          { name: 'code', valueCode: 'example-only' },
+        ],
+      });
+    expect(notFoundRes.status).toStrictEqual(404);
+  });
+
+  test('Excludes retired CodeSystem from selection', async () => {
+    const retiredCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: 'http://example.com/retired-code-system-' + randomUUID(),
+      name: 'retiredCodeSystem',
+      status: 'retired',
+      content: 'complete',
+      concept: [{ code: 'retired-code', display: 'Retired Code' }],
+    };
+    const res = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(retiredCodeSystem);
+    expect(res.status).toStrictEqual(201);
+
+    // The retired CodeSystem should not be selected, so the lookup fails to find it
+    const lookupRes = await request(app)
+      .post('/fhir/R4/CodeSystem/$lookup')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: retiredCodeSystem.url },
+          { name: 'code', valueCode: 'retired-code' },
+        ],
+      });
+    // The retired CodeSystem is filtered out, so no CodeSystem is found for the URL (400)
+    expect(lookupRes.status).toStrictEqual(400);
+  });
+
   test('GET endpoint', async () => {
     const res = await request(app)
       .get(`/fhir/R4/CodeSystem/$lookup?system=${testCodeSystem.url}&code=1`)

@@ -13,7 +13,7 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import type { AuthState } from '../oauth/middleware';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { addVerboseQueueLogging, defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 /*
  * The set-accounts worker asynchronously updates all account references
@@ -53,6 +53,9 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
         ...workerBullmq,
       }
     );
+    addVerboseQueueLogging<SetAccountsJobData>(queue, worker, (job) => ({
+      asyncJob: 'AsyncJob/' + job.data.asyncJob.id,
+    }));
 
     worker.on('failed', async (job) => {
       if (!job) {
@@ -92,7 +95,7 @@ export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Jo
 }
 
 export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<void> {
-  const { resourceType, id, accounts } = job.data;
+  const { resourceType, id, accounts, asyncJob } = job.data;
   const { login, project, membership } = job.data.authState;
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // job.data will eventually include shardId
 
@@ -100,8 +103,8 @@ export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
   const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
 
-  const exec = new AsyncJobExecutor(repo, job.data.asyncJob);
+  const exec = new AsyncJobExecutor(repo, asyncJob);
   await exec.startAsync(async () => {
-    return setResourceAccounts(repo, resourceType, id, { accounts, propagate: true });
+    return setResourceAccounts(repo, resourceType, id, { accounts, propagate: true }, asyncJob.id);
   });
 }

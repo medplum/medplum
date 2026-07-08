@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 export * from './common';
 export * from './loadScriptSureQuantityQualifiers';
+export * from './pharmacy-search';
 export * from './useScriptSureIFrame';
 export * from './useScriptSureOrderMedication';
 export * from './useScriptSureOrderSet';
