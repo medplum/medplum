@@ -15,6 +15,7 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
@@ -96,7 +97,7 @@ interface DiagnosticReportHeaderProps {
 
 function DiagnosticReportHeader({ value, hideSubject = false }: DiagnosticReportHeaderProps): JSX.Element {
   return (
-    <Group mt="md" gap={30}>
+    <Group mt="md" gap={30} align="flex-start">
       {value.subject && !hideSubject && (
         <div>
           <Text size="xs" tt="uppercase" c="dimmed">
@@ -118,7 +119,7 @@ function DiagnosticReportHeader({ value, hideSubject = false }: DiagnosticReport
           <Text size="xs" tt="uppercase" c="dimmed">
             Performer
           </Text>
-          <ResourceBadge value={performer} link={true} />
+          <PerformerDisplay value={performer} />
         </div>
       ))}
       {value.issued && (
@@ -138,6 +139,25 @@ function DiagnosticReportHeader({ value, hideSubject = false }: DiagnosticReport
         </div>
       )}
     </Group>
+  );
+}
+
+interface PerformerDisplayProps {
+  readonly value: NonNullable<DiagnosticReport['performer']>[number];
+}
+
+function PerformerDisplay({ value }: PerformerDisplayProps): JSX.Element {
+  const performer = useResource(value);
+  const address = performer?.resourceType === 'Organization' ? performer.address?.[0] : undefined;
+  return (
+    <>
+      <ResourceBadge value={value} link={true} />
+      {address && (
+        <Text size="sm" c="dimmed" mt={4}>
+          <AddressDisplay value={address} />
+        </Text>
+      )}
+    </>
   );
 }
 
