@@ -7,6 +7,11 @@
     border: 0.1px solid var(--mantine-color-gray-5);
     padding: 4px;
   }
+
+  /* Keep status badges from ellipsizing when the table compresses columns */
+  & :global(.mantine-Badge-root) {
+    min-width: max-content;
+  }
 }
 
 .criticalRow {
