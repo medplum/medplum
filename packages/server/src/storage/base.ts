@@ -18,6 +18,8 @@ export abstract class BaseBinaryStorage implements BinaryStorage {
 
   abstract copyFile(sourceKey: string, destinationKey: string): Promise<void>;
 
+  abstract deleteFile(key: string): Promise<void>;
+
   abstract getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string>;
 
   readBinary(binary: Binary): Promise<Readable> {
