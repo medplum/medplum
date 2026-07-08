@@ -525,12 +525,12 @@ function parseDatabaseRows(rows: any[]): ConceptMapTranslateMatch[] {
 function sortMatches(a: ConceptMapTranslateMatch, b: ConceptMapTranslateMatch): number {
   const aDeps =
     a.dependsOn
-      ?.map((d) => `${d.attribute}|${d.value.value}`)
+      ?.map((d) => `${d.attribute}|${JSON.stringify(d.value.value)}`)
       .sort()
       .join(',') ?? '';
   const bDeps =
     b.dependsOn
-      ?.map((d) => `${d.attribute}|${d.value.value}`)
+      ?.map((d) => `${d.attribute}|${JSON.stringify(d.value.value)}`)
       .sort()
       .join(',') ?? '';
   if (aDeps < bDeps) {

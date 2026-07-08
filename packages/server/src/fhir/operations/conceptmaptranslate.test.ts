@@ -766,6 +766,67 @@ describe('ConceptMap $translate', () => {
       ],
     });
   });
+
+  test('Renders mapping comment', async () => {
+    const { repo, accessToken } = await createTestProject({
+      withRepo: true,
+      withAccessToken: true,
+      membership: { admin: true },
+    });
+    const map: ConceptMap = await repo.createResource({
+      resourceType: 'ConceptMap',
+      status: 'active',
+      url: 'http://example.com/ConceptMap/commented',
+    });
+
+    const importRes = await request(app)
+      .post(`/fhir/R4/ConceptMap/${map.id}/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'mapping',
+            part: [
+              { name: 'source', valueCoding: { system: 'A', code: 'foo' } },
+              { name: 'target', valueCoding: { system: 'B', code: 'bar' } },
+              { name: 'comment', valueString: 'Baz, Quux' },
+            ],
+          },
+        ],
+      });
+    expect(importRes.status).toBe(200);
+
+    const translateRes = await request(app)
+      .get(`/fhir/R4/ConceptMap/${map.id}/$translate?system=A&code=foo`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send();
+    expect(translateRes.status).toBe(200);
+    const output = translateRes.body as Parameters;
+
+    expect(output).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'result', valueBoolean: true },
+        {
+          name: 'match',
+          part: [
+            { name: 'equivalence', valueCode: 'equivalent' },
+            { name: 'concept', valueCoding: { system: 'B', code: 'bar' } },
+            {
+              name: 'property',
+              part: [
+                { name: 'uri', valueUri: 'https://medplum.com/conceptmap-attribute/comment' },
+                { name: 'value', valueString: 'Baz, Quux' },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+  });
 });
 
 function dependsOn(code: string): ParametersParameter {
