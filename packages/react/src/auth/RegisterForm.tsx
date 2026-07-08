@@ -21,6 +21,7 @@ export interface RegisterFormProps {
   readonly recaptchaSiteKey?: string;
   readonly children?: ReactNode;
   readonly onSuccess: () => void;
+  readonly onSignIn?: () => void;
 }
 
 export function RegisterForm(props: RegisterFormProps): JSX.Element {
@@ -67,6 +68,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
           googleClientId={googleClientId}
           recaptchaSiteKey={recaptchaSiteKey}
           handleAuthResponse={handleAuthResponse}
+          onSignIn={props.onSignIn}
         >
           {props.children}
         </NewUserForm>

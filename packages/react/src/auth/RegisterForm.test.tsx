@@ -359,4 +359,19 @@ describe('RegisterForm', () => {
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
   });
+  test('Sign in link', async () => {
+    const onSignIn = vi.fn();
+    await setup({
+      type: 'project',
+      projectId: 'new',
+      onSuccess: vi.fn(),
+      onSignIn,
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign in'));
+    });
+
+    expect(onSignIn).toHaveBeenCalled();
+  });
 });
