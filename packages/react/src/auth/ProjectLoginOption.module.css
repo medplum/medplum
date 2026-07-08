@@ -18,8 +18,9 @@
   padding: 8px 12px;
   cursor: pointer;
 
-  &:hover,
-  &[data-hovered] {
+  /* Exclude the selected option so this doesn't clash with Mantine's selected styling */
+  &:hover:not([data-combobox-selected]),
+  &[data-hovered]:not([data-combobox-selected]) {
     background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
 
     & .iconBox {
