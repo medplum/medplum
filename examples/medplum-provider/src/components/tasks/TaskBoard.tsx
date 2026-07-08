@@ -249,14 +249,7 @@ export function TaskBoard({
         items={tasks}
         loading={loading}
         selectedKey={selectedKey}
-        renderItem={(task, { selected, index, items }) => (
-          <TaskListItem
-            task={task}
-            selectedTask={selected ? task : undefined}
-            getTaskUri={getTaskUri}
-            hideDivider={selected || (index < items.length - 1 && items[index + 1]?.id === selectedKey)}
-          />
-        )}
+        renderItem={(task) => <TaskListItem task={task} getTaskUri={getTaskUri} />}
         emptyList={<EmptyTasksState />}
         tabs={tabs}
         activeTab={isMyTasks ? 'my' : 'all'}

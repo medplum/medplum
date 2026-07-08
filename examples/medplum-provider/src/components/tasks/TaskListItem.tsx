@@ -4,36 +4,25 @@ import { Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { Task } from '@medplum/fhirtypes';
 import { MedplumLink, StatusBadge, useResource } from '@medplum/react';
-import cx from 'clsx';
 import type { JSX } from 'react';
 import classes from './TaskListItem.module.css';
 
 interface TaskListItemProps {
   task: Task;
-  selectedTask: Task | undefined;
   getTaskUri: (task: Task) => string;
-  hideDivider?: boolean;
 }
 
 export function TaskListItem(props: TaskListItemProps): JSX.Element {
-  const { task, selectedTask, getTaskUri, hideDivider } = props;
-  const isSelected = selectedTask?.id === task.id;
+  const { task, getTaskUri } = props;
   const patient = useResource(task.for);
   const owner = useResource(task.owner);
   const taskFrom = task?.authoredOn ? `from ${formatDate(task?.authoredOn)}` : '';
   const taskUrl = getTaskUri(task);
 
   return (
-    <div className={cx(classes.itemWrapper, { [classes.hideDivider]: hideDivider })}>
+    <div className={classes.itemWrapper}>
       <MedplumLink to={taskUrl} underline="never">
-        <Group
-          p="xs"
-          align="center"
-          wrap="nowrap"
-          className={cx(classes.contentContainer, {
-            [classes.selected]: isSelected,
-          })}
-        >
+        <Group p="xs" align="center" wrap="nowrap" className={classes.contentContainer}>
           <Stack gap={0} flex={1}>
             <Group justify="space-between" align="flex-start" wrap="nowrap">
               <Text fw={700} className={classes.content}>

@@ -27,18 +27,11 @@
   color: light-dark(var(--mantine-color-dark-9), var(--mantine-color-gray-0));
 }
 
+
 .content {
   flex: 1;
   width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.contentContainer:hover {
-  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
-}
-
-.contentContainer.selected {
-  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-8));
 }
