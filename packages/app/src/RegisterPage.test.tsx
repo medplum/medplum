@@ -9,7 +9,7 @@ import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
 import { getConfig } from './config';
 import type { UserEvent } from './test-utils/render';
-import { act, render, screen, userEvent } from './test-utils/render';
+import { act, fireEvent, render, screen, userEvent } from './test-utils/render';
 
 async function setup(medplum: MedplumClient): Promise<UserEvent> {
   const user = userEvent.setup();
@@ -81,6 +81,18 @@ describe('RegisterPage', () => {
     await user.type(screen.getByLabelText('Project Name *'), 'Test Project');
 
     await user.click(screen.getByRole('button'));
+  });
+
+  test('Sign in link navigates to sign in page', async () => {
+    const medplum = new MockClient();
+    medplum.getProfile = vi.fn(() => undefined);
+    await setup(medplum);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign In'));
+    });
+
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   });
 
   test('Register disabled', async () => {

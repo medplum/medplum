@@ -21,6 +21,7 @@ export interface NewUserFormProps {
   readonly googleClientId?: string;
   readonly recaptchaSiteKey?: string;
   readonly children?: ReactNode;
+  readonly onSignIn?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 
@@ -137,6 +138,20 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           pb="xs"
         />
         <SubmitButton fullWidth>Register Account</SubmitButton>
+        {props.onSignIn && (
+          <Text
+            size="sm"
+            mt="lg"
+            c="dimmed"
+            style={{ textAlign: 'center' }}
+            data-dashlane-ignore="true"
+            data-lp-ignore="true"
+            data-no-autofill="true"
+            data-form-type="navigation"
+          >
+            Already have an account? <Anchor onClick={props.onSignIn}>Sign In</Anchor>
+          </Text>
+        )}
         <Text c="dimmed" size="xs" pt="lg" ta="center">
           By clicking "Register Account" you agree to the Medplum{' '}
           <Anchor href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</Anchor>

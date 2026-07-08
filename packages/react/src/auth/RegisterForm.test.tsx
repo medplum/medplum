@@ -212,6 +212,32 @@ describe('RegisterForm', () => {
     expect(onSuccess).toHaveBeenCalled();
   });
 
+  test('Sign in link hidden by default', async () => {
+    await setup({
+      type: 'project',
+      recaptchaSiteKey,
+      onSuccess: vi.fn(),
+    });
+
+    expect(screen.queryByText('Sign In')).not.toBeInTheDocument();
+  });
+
+  test('Sign in link calls onSignIn', async () => {
+    const onSignIn = vi.fn();
+    await setup({
+      type: 'project',
+      recaptchaSiteKey,
+      onSuccess: vi.fn(),
+      onSignIn,
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign In'));
+    });
+
+    expect(onSignIn).toHaveBeenCalled();
+  });
+
   test('Register new project success with empty recaptchaSiteKey', async () => {
     const onSuccess = vi.fn();
 
