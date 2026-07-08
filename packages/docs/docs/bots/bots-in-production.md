@@ -17,7 +17,7 @@ If you want to run bots locally, you should use a VM Context. For more details s
 
 :::
 
-## This Guide will show you
+## This guide will show you
 
 - How to set up a repository to host the source code for your Bots.
 - Write a new `Bot` in TypeScript.
@@ -86,7 +86,7 @@ MEDPLUM_BASE_URL=https://api.example.com/
 
 ## Create a source file
 
-After we've installed dependencies, we can write your Bot in any typescript file under the `src/` directory.
+After we've installed dependencies, we can write your Bot in any TypeScript file under the `src/` directory.
 
 As mentioned in [Bot Basics](./bot-basics), a bot is any TypeScript file that contains a `handler` function with the following signature:
 
@@ -132,7 +132,7 @@ First, compile your code:
 npm run build
 ```
 
-This runs the `tsc` compiler to translate your TypeScript code to Javascript.
+This runs the `tsc` compiler to translate your TypeScript code to JavaScript.
 
 Next, take a look at your `dist/` directory and notice how there is now a file called `my-first-bot.js` with the compiled version of your code.
 
@@ -189,10 +189,10 @@ After creating the bot, you should go to `medplum.config.json` and you should se
 
 | Parameter | Description                                                                                                                                                                                                                                          |
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`    | Name of the bot used in the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) (below). **Note**: This name can be whatever your want. It does not have to match the filename of the bot code, nor anything in the Medplum App |
+| `name`    | Name of the bot used in the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) (below). **Note**: This name can be whatever you want. It does not have to match the filename of the bot code, nor anything in the Medplum App  |
 | `id`      | The Bot Resource `id`. Can be found by navigating to [app.medplum.com/Bot](https://app.medplum.com/Bot) and clicking on the entry for the corresponding Bot. See the [Bot Basics tutorial](./bot-basics#bot_id) for more information                 |
-| `source`  | This is the location of the typescript source file for your bot. **Note**: Currently, Medplum only supports single-file Bots.                                                                                                                        |
-| `dist`    | This is the location of the transpiled javascript file for your bot. For most setups, this will be in your `dist` directory of your package.                                                                                                         |
+| `source`  | This is the location of the TypeScript source file for your bot. **Note**: Currently, Medplum only supports single-file Bots.                                                                                                                        |
+| `dist`    | This is the location of the transpiled JavaScript file for your bot. For most setups, this will be in your `dist` directory of your package.                                                                                                         |
 
 ## Deploying your Bot
 
@@ -210,7 +210,7 @@ Where `<bot-name>` is the `name` property that you set for your bot in `medplum.
 npx medplum bot deploy my-first-bot
 ```
 
-Use a wild card \* in `<bot-name>` to deploy multiple bots matching the pattern.
+Use a wildcard \* in `<bot-name>` to deploy multiple bots matching the pattern.
 This would allow us to deploy bots as part of a CI/CD pipeline, without having to update the command every time a new bot is added.
 
 ```bash
@@ -220,7 +220,7 @@ npx medplum bot deploy *staging*
 Running this command does two things:
 
 1. Save the TypeScript source to the `code` property of your [`Bot` resource](/docs/api/fhir/medplum/bot)
-2. Deploys your compiled Javascript code as an AWS Lambda function with your Medplum deployment.
+2. Deploys your compiled JavaScript code as an AWS Lambda function with your Medplum deployment.
 
 :::caution[Note]
 There is a known timing issue with the `bot deploy` command. If you see the following error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/medplum)
@@ -308,4 +308,4 @@ Setting `auditEventDestination` to `log` will only output an `AuditEvent` in you
 
 ## Conclusion
 
-As your Bots become more complex, integrating them into your software development workflow becomes crucial. Using the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) allows you do integrate Bots into your regular code review process and deploy as part of your CI/CD pipelines.
+As your Bots become more complex, integrating them into your software development workflow becomes crucial. Using the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) allows you to integrate Bots into your regular code review process and deploy as part of your CI/CD pipelines.
