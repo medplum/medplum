@@ -383,6 +383,21 @@ export class Repository extends FhirRepository implements Disposable {
     return systemRepo;
   }
 
+  getElevatedRepo(opts?: { author?: Reference; accessPolicy?: AccessPolicy }): Repository {
+    const context: RepositoryContext = {
+      ...this.context,
+      author: opts?.author ?? { reference: 'system' },
+      accessPolicy: opts?.accessPolicy,
+      onBehalfOf: this.context.author,
+    };
+
+    if (this.connection.hasConnection()) {
+      return new Repository(context, this.connection, this.connectionScope);
+    } else {
+      return new Repository(context);
+    }
+  }
+
   withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository {
     this.assertUsable();
     let repo: Repository;
