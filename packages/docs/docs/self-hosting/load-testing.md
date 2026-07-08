@@ -102,7 +102,7 @@ vusers.session_length:
 
 Hm, interesting
 
-Good news: 99.99% of requests succeeded (165993 / 166000) and median response time was 82 ms. Our best response time was 49 ms, which is pretty close the [theoretical minimum of 40 ms due to speed of light](https://serverfault.com/a/137364/807396).
+Good news: 99.99% of requests succeeded (165993 / 166000) and median response time was 82 ms. Our best response time was 49 ms, which is pretty close to the [theoretical minimum of 40 ms due to speed of light](https://serverfault.com/a/137364/807396).
 
 Bad news: We had a few failures (7 `http.codes.502`), p95 is underwhelming (190 ms), and p99 is disappointing (391 ms). We can do better for a production system.
 
@@ -134,7 +134,7 @@ Let's update those values to something more appropriate for a production environ
 
 (See our [CDK guide](/docs/self-hosting/install-on-aws) for how to easily update your cluster configuration)
 
-After the CDK ugprade is complete, we can run Artillery again:
+After the CDK upgrade is complete, we can run Artillery again:
 
 ```bash
 artillery run healthcheck.yml
@@ -187,11 +187,7 @@ For our test script, each virtual user will do the following:
 2. Read the patient by `id`
 3. Search for the patient by `name`
 
-Start Artillery:
-
-```bash
-artillery run healthcheck.yml
-```
+Create a `fhir.yml` file:
 
 ```yml
 # fhir.yml
@@ -238,6 +234,12 @@ scenarios:
 ```
 
 (See Artillery docs on [Testing HTTP](https://www.artillery.io/docs/guides/guides/http-reference) for more details)
+
+Start Artillery:
+
+```bash
+artillery run fhir.yml
+```
 
 Results:
 
@@ -294,7 +296,7 @@ This is intended to punish the cluster and find where it breaks.
 Start Artillery:
 
 ```bash
-artillery run healthcheck.yml
+artillery run fhir.yml
 ```
 
 Somewhere in the middle, the number of timeouts spiked, so I terminated Artillery to put the server out of its misery.
