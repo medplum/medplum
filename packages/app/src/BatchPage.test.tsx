@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { ContentType } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
@@ -251,6 +252,63 @@ describe('BatchPage', () => {
     await waitFor(() => {
       expect(postSpy).toHaveBeenCalled();
       expect(screen.getByTestId('batch-input')).toHaveValue('{"resourceType": "Bundle"}');
+    });
+  });
+
+  test('Submit Async Batch', async () => {
+    const postSpy = vi.spyOn(medplum, 'post');
+    const { user } = setup();
+
+    await user.click(screen.getByRole('tab', { name: 'JSON' }));
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('batch-input'), {
+        target: {
+          value: exampleBundle,
+        },
+      });
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Submit Async Batch' }));
+
+    await waitFor(() => {
+      expect(postSpy).toHaveBeenCalled();
+    });
+
+    const [url, body, contentType, options] = postSpy.mock.calls[0];
+    expect(url.toString()).toStrictEqual(medplum.fhirUrl().toString());
+    expect(body).toMatchObject({ resourceType: 'Bundle' });
+    expect(contentType).toStrictEqual(ContentType.FHIR_JSON);
+    expect(options).toMatchObject({ headers: { Prefer: 'respond-async' } });
+  });
+
+  test('Shows batch jobs and downloads results', async () => {
+    const asyncJob = await medplum.createResource({
+      resourceType: 'AsyncJob',
+      status: 'completed',
+      requestTime: new Date().toISOString(),
+      request: medplum.fhirUrl().toString(),
+      output: {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'results', valueReference: { reference: 'Binary/test-binary' } }],
+      },
+    });
+
+    window.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/blob');
+    window.URL.revokeObjectURL = vi.fn();
+    const downloadSpy = vi
+      .spyOn(medplum, 'download')
+      .mockResolvedValue(new Blob(['{}'], { type: 'application/fhir+json' }));
+
+    const { user } = setup();
+
+    await user.click(screen.getByRole('tab', { name: 'Batch Jobs' }));
+
+    expect(await screen.findByText(asyncJob.id)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+
+    await waitFor(() => {
+      expect(downloadSpy).toHaveBeenCalledWith('Binary/test-binary');
     });
   });
 
