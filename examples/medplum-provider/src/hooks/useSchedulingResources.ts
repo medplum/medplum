@@ -89,6 +89,35 @@ function isWithinRange(start: string | undefined, range: Range): boolean {
   return time >= range.start.getTime() && time <= range.end.getTime();
 }
 
+function isSettledOptimisticUpdate(timestamp: number, freshResource: Resource): boolean {
+  const lastUpdated = freshResource.meta?.lastUpdated;
+  return lastUpdated !== undefined && new Date(lastUpdated).getTime() >= timestamp;
+}
+
+// Drops optimistic entries once a fresh fetch confirms they're no longer needed.
+// `created`/`updated` entries settle once the fetch returns the same id with an
+// equal-or-newer `lastUpdated`. `deleted` entries settle once the fetch stops
+// returning the id at all, since deletes (e.g. Appointment $cancel) remove the
+// resource outright rather than changing its status.
+function pruneSettledUpdates<T extends Resource>(
+  store: OptimisticUpdateStore<WithId<T>>,
+  freshResources: WithId<T>[]
+): OptimisticUpdateStore<WithId<T>> {
+  const freshById = new Map(freshResources.map((resource) => [resource.id, resource]));
+  const next: OptimisticUpdateStore<WithId<T>> = {};
+  for (const [id, update] of Object.entries(store)) {
+    const fresh = freshById.get(id);
+    const settled =
+      update.action === 'deleted'
+        ? fresh === undefined
+        : fresh !== undefined && isSettledOptimisticUpdate(update.timestamp, fresh);
+    if (!settled) {
+      next[id] = update;
+    }
+  }
+  return next;
+}
+
 async function fetchSchedulingResources(
   medplum: MedplumClient,
   schedule: WithId<Schedule>,
@@ -195,6 +224,16 @@ export function useSchedulingResources(
       .then((results) => {
         if (active) {
           setSchedulingResources(results);
+          setOptimisticUpdates((store) => ({
+            appointment: pruneSettledUpdates(
+              store.appointment,
+              results.flatMap((row) => row.appointments)
+            ),
+            slot: pruneSettledUpdates(
+              store.slot,
+              results.flatMap((row) => row.slots)
+            ),
+          }));
 
           const foundAllResources = results.every(
             (resourceRow) => resourceRow.slots.length < PAGE_SIZE && resourceRow.appointments.length < PAGE_SIZE
