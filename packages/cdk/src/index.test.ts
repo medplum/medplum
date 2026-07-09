@@ -609,11 +609,7 @@ describe('Infra', () => {
     const stack = new MedplumStack(app, config);
     const template = Template.fromStack(stack.primaryStack);
 
-    template.resourcePropertiesCountIs(
-      'AWS::ElastiCache::ReplicationGroup',
-      { CacheNodeType: 'cache.t4g.medium' },
-      1
-    );
+    template.resourcePropertiesCountIs('AWS::ElastiCache::ReplicationGroup', { CacheNodeType: 'cache.t4g.medium' }, 1);
   });
 
   // Regression test for https://github.com/medplum/medplum/issues/9287:
