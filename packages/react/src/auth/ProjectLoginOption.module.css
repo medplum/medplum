@@ -10,7 +10,7 @@
 }
 
 .subtitle {
-  color: var(--project-login-subtitle-color, var(--mantine-color-dimmed));
+  color: var(--mantine-color-dimmed);
 }
 
 .interactive {
@@ -18,10 +18,15 @@
   padding: 8px 12px;
   cursor: pointer;
 
-  /* Exclude the selected option so this doesn't clash with Mantine's selected styling */
-  &:hover:not([data-combobox-selected]),
-  &[data-hovered]:not([data-combobox-selected]) {
+  /* Keyboard-highlighted option gets the same treatment as hover (background + icon
+     color), overriding Mantine's default filled/white-text combo, plus an outline so
+     it's still distinguishable from a plain hover. Text colors never invert, so there's
+     no selected+hover contrast conflict to guard against. */
+  &:hover,
+  &[data-hovered],
+  &[data-combobox-selected] {
     background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+    color: var(--mantine-color-text);
 
     & .iconBox {
       color: var(--mantine-color-text);
@@ -29,6 +34,7 @@
   }
 
   &[data-combobox-selected] {
-    --project-login-subtitle-color: var(--mantine-color-white);
+    outline: 2px solid var(--mantine-color-blue-6);
+    outline-offset: -2px;
   }
 }
