@@ -155,7 +155,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
       </Form>
       {props.onSignIn && (
         <>
-          <Divider mt="lg" mb="xs"/>
+          <Divider mt="lg" mb="xs" />
           <Text size="sm" mt="lg" c="dimmed" ta="center">
             Already have an account? <Anchor onClick={props.onSignIn}>Sign In</Anchor>
           </Text>
