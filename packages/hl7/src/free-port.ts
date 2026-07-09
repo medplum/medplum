@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { AddressInfo } from 'node:net';
 import { createServer } from 'node:net';
 
 // Every port ever handed out by `getFreePort`, so we never issue the same one twice
@@ -34,7 +35,7 @@ export async function getFreePort(): Promise<number> {
       const port = await new Promise<number>((resolve, reject) => {
         server.on('error', reject);
         server.listen(0, () => {
-          resolve((server.address() as { port: number }).port);
+          resolve((server.address() as AddressInfo).port);
         });
       });
       if (issuedPorts.has(port)) {
