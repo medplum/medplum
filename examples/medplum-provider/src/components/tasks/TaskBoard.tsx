@@ -95,20 +95,16 @@ export function TaskBoard({
     const currentRequestId = ++requestIdRef.current;
 
     try {
-      const bundle = await medplum.search('Task', query, { cache: 'no-cache' });
+      const tasks = await medplum.searchResources('Task', query, { cache: 'no-cache' });
 
       if (currentRequestId !== requestIdRef.current) {
         return;
       }
 
-      let results: WithId<Task>[] = [];
+      let results = [...tasks];
 
-      if (bundle.entry) {
-        results = bundle.entry.map((entry) => entry.resource).filter((r): r is WithId<Task> => r !== undefined);
-      }
-
-      if (bundle.total !== undefined) {
-        setTotal(bundle.total);
+      if (tasks.bundle.total !== undefined) {
+        setTotal(tasks.bundle.total);
       }
 
       const allPerformerTypes = results.flatMap((task) => task.performerType || []);
