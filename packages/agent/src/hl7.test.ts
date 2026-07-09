@@ -20,7 +20,7 @@ import {
 } from '@medplum/core';
 import type { Agent, AgentChannel, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import type { Hl7Connection } from '@medplum/hl7';
-import { Hl7Client, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
+import { getFreePort, Hl7Client, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
@@ -41,7 +41,7 @@ import {
   shouldSendAppLevelAck,
 } from './hl7';
 import { DEFAULT_NORMAL_MODE_MAX_ATTEMPTS, DEFAULT_RETRY_POLICY } from './queue/worker';
-import { createEndpointWithRandomPort, createMockLogger, getFreePort } from './test-utils';
+import { createEndpointWithRandomPort, createMockLogger } from './test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
   const actual = await importOriginal<typeof AgentConstants>();
