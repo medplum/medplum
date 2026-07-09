@@ -189,8 +189,11 @@ describe('fetchAllVersionStrings', () => {
       }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchAllVersionStrings('test')).rejects.toThrow(
-      'Received status code 500 while fetching all release versions. Message: Internal Server Error'
+      'Received status code 500 while fetching all release versions'
     );
+    await expect(fetchAllVersionStrings('test')).rejects.toMatchObject({
+      cause: expect.objectContaining({ message: 'Internal Server Error' }),
+    });
     fetchSpy.mockRestore();
   });
 
@@ -321,8 +324,11 @@ describe('fetchVersionManifest', () => {
       }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchVersionManifest('test', '3.1.6')).rejects.toThrow(
-      "Received status code 404 while fetching manifest for version '3.1.6'. Message: Not Found"
+      "Received status code 404 while fetching manifest for version '3.1.6'"
     );
+    await expect(fetchVersionManifest('test', '3.1.6')).rejects.toMatchObject({
+      cause: expect.objectContaining({ message: 'Not Found' }),
+    });
     fetchSpy.mockRestore();
   });
 });

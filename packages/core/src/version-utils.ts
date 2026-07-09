@@ -76,7 +76,7 @@ async function fetchReleasesJson<T>(
     } catch (err) {
       console.error(`Failed to parse message from body: ${normalizeErrorString(err)}`);
     }
-    throw new Error(`Received status code ${res.status} while ${errorContext}. Message: ${message}`);
+    throw new Error(`Received status code ${res.status} while ${errorContext}`, { cause: new Error(message) });
   }
   return (await res.json()) as T;
 }
