@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Expression } from '../fhir/sql';
-import { Column, Condition, InsertQuery, SelectQuery, SqlBuilder } from '../fhir/sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  InsertQuery,
+  Parameter,
+  SelectQuery,
+  SqlBuilder,
+  SqlFunction,
+} from '../fhir/sql';
 
 const DEFAULT_COMPRESSION_TYPE = 'zstd';
 const DEFAULT_FILE_FORMAT = 'PARQUET';
@@ -114,6 +123,46 @@ export function buildManagedIcebergQualifiedTable(namespace: string, icebergTabl
   return `${DEFAULT_ICEBERG_CATALOG_ALIAS}.${namespace}.${icebergTable}`;
 }
 
+/**
+ * Reads the incremental sync watermark from Iceberg manifest column stats (no Parquet scan).
+ *
+ * Uses per-file `upper_bound` values from `iceberg_column_stats`.
+ * Requires Iceberg V2+ tables with accurate `last_updated` bounds in manifest metadata.
+ *
+ * @param connection - DuckDB connection used to run the watermark query.
+ * @param qualifiedIcebergTable - Fully qualified table name (e.g. `iceberg_catalog.default.patient_history`).
+ * @returns The max `last_updated` upper bound, or `undefined` when the table is empty or has no stats.
+ */
+export async function fetchIcebergWatermark(
+  connection: Pick<DuckdbConnection, 'prepare'>,
+  qualifiedIcebergTable: string
+): Promise<string | undefined> {
+  // create the query
+  const statsTableFn = new SqlFunction('iceberg_column_stats', [new Parameter(qualifiedIcebergTable)]);
+  const watermarkColumn = new Column(undefined, 'max(try_cast(upper_bound AS TIMESTAMPTZ)) AS watermark', true);
+  const filters = new Conjunction([
+    new Condition('column_name', '=', 'last_updated'),
+    new Condition('status', '!=', 'DELETED'),
+    new Condition('upper_bound', '!=', null),
+    new Condition('upper_bound', '!=', ''),
+  ]);
+  // NOTE: SelectQuery only supports table identifiers or subqueries in FROM, not table-valued
+  //       functions like iceberg_column_stats(...), so we'll assemble this query with SqlBuilder directly.
+  const query = buildSqlBuilder((sql) => {
+    sql.append('SELECT ');
+    sql.appendColumn(watermarkColumn);
+    sql.append(' FROM ');
+    sql.appendExpression(statsTableFn);
+    sql.append(' WHERE ');
+    sql.appendExpression(filters);
+  });
+
+  // execute it
+  const result = await runParameterizedWarehouseSqlReadAll(connection, query);
+  const row = result.getRowObjectsJson()[0] as { watermark?: string | null } | undefined;
+  return row?.watermark ?? undefined;
+}
+
 export function buildInsertIntoSelectQuery(
   qualifiedTable: string,
   selectQuery: SelectQuery,
@@ -152,13 +201,14 @@ export function buildSelectFromHistoryTableQuery(
     inner.whereExpr(sourcePredicate);
   }
 
+  const projectIdExpression = `json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}')`;
+
   return new SelectQuery('src', inner)
     .column('id')
     .column('version_id')
     .column('content')
     .column('last_updated')
-    .raw(`json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}') AS project_id`)
-    .orderBy('last_updated');
+    .raw(`${projectIdExpression} AS project_id`);
 }
 
 export function buildProjectedSelectFromHistoryTable(
@@ -168,18 +218,6 @@ export function buildProjectedSelectFromHistoryTable(
   return buildSqlBuilder((sql) =>
     sql.appendExpression(buildSelectFromHistoryTableQuery(sourceHistoryTable, sourcePredicate))
   );
-}
-
-export function buildCountFromHistoryTableQuery(sourceHistoryTable: string, sourcePredicate?: Expression): SqlBuilder {
-  const table = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
-  const query = new SelectQuery(table).raw('COUNT(*) AS count').where('content', '!=', null).where('content', '!=', '');
-  if (sourcePredicate) {
-    query.whereExpr(sourcePredicate);
-  }
-
-  return buildSqlBuilder((sql) => {
-    sql.appendExpression(query);
-  });
 }
 
 export function buildCopySelectToParquetQuery(selectQuery: SqlBuilder, parquetPath: string): SqlBuilder {
@@ -245,6 +283,17 @@ export function buildManagedIcebergSetupQueries(options: ManagedIcebergSetupOpti
   return [
     ...buildManagedIcebergExtensionQueries(),
     buildManagedS3CredentialSecretQuery(options.s3Region),
+    /*
+     * the default is 524288, which can take a LOT of memory since we're copying
+     * JSON content data
+     */
+    'SET partitioned_write_flush_threshold = 10000;',
+    /*
+     * Misleading option.  This is to allow duckdb to insert into a "sorted table", which is really a hint anyway.
+     * https://github.com/duckdb/duckdb-iceberg/issues/851
+     * https://github.com/duckdb/duckdb-iceberg/pull/992
+     */
+    'SET unsafe_iceberg_ignore_sort_order=true',
     /*
      * See https://duckdb.org/docs/current/core_extensions/postgres/connection_pool
      * the default connection pool settings are very aggressive; many connections, much parallelism
