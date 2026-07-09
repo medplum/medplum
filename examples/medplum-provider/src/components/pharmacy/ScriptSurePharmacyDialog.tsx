@@ -12,6 +12,7 @@ import {
 } from '@medplum/scriptsure-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
+import { useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
 
 /** ScriptSure search-field placeholders reflecting SureScripts directory constraints. */
 const SCRIPTSURE_SEARCH_PLACEHOLDERS: PharmacySearchFieldPlaceholders = {
@@ -51,12 +52,15 @@ function ScriptSureSpecialtyFilters({ value, onChange }: ScriptSureSpecialtyFilt
  *
  * Composes the generic {@link PharmacyDialog} with ScriptSure bot identifiers and
  * passes `specialties` to POST /v3/pharmacy/search (e.g. Retail + ZIP for nearby pickers).
+ * Also injects the selected practice `organizationId` (multi-practice) into both the
+ * search and add-to-favorites operations.
  *
  * @param props - The base pharmacy dialog props (patient, onSubmit, onClose).
  * @returns The ScriptSure pharmacy dialog component.
  */
 export function ScriptSurePharmacyDialog(props: PharmacyDialogBaseProps): JSX.Element {
   const { searchPharmacies, addToFavorites } = useScriptSurePharmacySearch();
+  const { selectedOrganizationId } = useScriptSurePractice();
   const [specialties, setSpecialties] = useState<ScriptSurePharmacySpecialty[]>([
     ...SCRIPTSURE_DEFAULT_PHARMACY_SPECIALTIES,
   ]);
@@ -67,8 +71,14 @@ export function ScriptSurePharmacyDialog(props: PharmacyDialogBaseProps): JSX.El
   );
 
   const handleSearch = useCallback(
-    (params: ScriptSurePharmacySearchParams) => searchPharmacies(params),
-    [searchPharmacies]
+    (params: ScriptSurePharmacySearchParams) => searchPharmacies({ ...params, organizationId: selectedOrganizationId }),
+    [searchPharmacies, selectedOrganizationId]
+  );
+
+  const handleAddToFavorites = useCallback(
+    (params: Parameters<typeof addToFavorites>[0]) =>
+      addToFavorites({ ...params, organizationId: selectedOrganizationId }),
+    [addToFavorites, selectedOrganizationId]
   );
 
   const specialtyFilters = useMemo(
@@ -80,10 +90,10 @@ export function ScriptSurePharmacyDialog(props: PharmacyDialogBaseProps): JSX.El
     <PharmacyDialog
       {...props}
       onSearch={handleSearch}
-      onAddToFavorites={addToFavorites}
+      onAddToFavorites={handleAddToFavorites}
       getExtraSearchParams={getExtraSearchParams}
       renderBeforeSearchButton={specialtyFilters}
       searchPlaceholders={SCRIPTSURE_SEARCH_PLACEHOLDERS}
     />
   );
-}
+

@@ -119,6 +119,11 @@ export interface MedicationOrderRequest {
   /** Free-text patient instructions (additional sig); maps to dosageInstruction[0].patientInstruction when using MR path. */
   readonly patientInstruction?: string;
   readonly appId?: string;
+  /**
+   * Selected practice-location Organization (id or `Organization/{id}` reference) for
+   * multi-practice deployments. The vendor bot resolves the vendor practice from it.
+   */
+  readonly organizationId?: string;
 }
 
 /**
@@ -154,6 +159,11 @@ export interface MedicationOrderSetRequest {
    */
   readonly vendorOrderSetId?: number | string;
   readonly appId?: string;
+  /**
+   * Selected practice-location Organization (id or `Organization/{id}` reference) for
+   * multi-practice deployments. The vendor bot resolves the vendor practice from it.
+   */
+  readonly organizationId?: string;
 }
 
 /**
@@ -186,6 +196,11 @@ export interface MedicationSearchParams {
   readonly includeCode?: boolean;
   /** When true, drug-search bot returns quantity qualifiers from GET /v3/prescription/quantityqualifier instead of Medication[]. */
   readonly quantityQualifiers?: boolean;
+  /**
+   * Selected practice-location Organization (id or `Organization/{id}` reference) for
+   * multi-practice deployments. The vendor bot resolves the vendor practice from it.
+   */
+  readonly organizationId?: string;
 }
 
 /**
@@ -387,6 +402,9 @@ export function medicationSearchParamsToParameters(params: MedicationSearchParam
   if (params.quantityQualifiers !== undefined) {
     parameter.push(param('quantityQualifiers', 'valueBoolean', params.quantityQualifiers));
   }
+  if (params.organizationId !== undefined) {
+    parameter.push(param('organizationId', 'valueString', params.organizationId));
+  }
   return { resourceType: 'Parameters', parameter };
 }
 
@@ -525,6 +543,9 @@ export function medicationOrderRequestToParameters(req: MedicationOrderRequest):
   if (req.appId !== undefined) {
     parameter.push(param('appId', 'valueString', req.appId));
   }
+  if (req.organizationId !== undefined) {
+    parameter.push(param('organizationId', 'valueString', req.organizationId));
+  }
 
   return { resourceType: 'Parameters', parameter };
 }
@@ -587,6 +608,9 @@ export function medicationOrderSetRequestToParameters(req: MedicationOrderSetReq
   }
   if (req.appId !== undefined) {
     parameter.push(param('appId', 'valueString', req.appId));
+  }
+  if (req.organizationId !== undefined) {
+    parameter.push(param('organizationId', 'valueString', req.organizationId));
   }
   return { resourceType: 'Parameters', parameter };
 }
@@ -669,6 +693,12 @@ export interface MedicationCheckoutRequest {
   readonly patientId: string;
   readonly medicationRequestIds: string[];
   readonly appId?: string;
+  /**
+   * Selected practice-location Organization (id or `Organization/{id}` reference)
+   * for multi-practice deployments. The vendor bot resolves the vendor practice
+   * from it; omit for single-practice prescribers (backend resolves by affiliation).
+   */
+  readonly organizationId?: string;
 }
 
 /**
@@ -721,6 +751,9 @@ export function medicationCheckoutRequestToParameters(req: MedicationCheckoutReq
   }
   if (req.appId !== undefined) {
     parameter.push(param('appId', 'valueString', req.appId));
+  }
+  if (req.organizationId !== undefined) {
+    parameter.push(param('organizationId', 'valueString', req.organizationId));
   }
   return { resourceType: 'Parameters', parameter };
 }
@@ -965,4 +998,92 @@ export function parametersToMedicationCartManageResponse(params: Parameters): Me
     throw new Error(INVALID_MEDICATION_CART_RESPONSE);
   }
   return candidate;
+}
+
+// ============================================================================
+// Order-set sync ($sync-orderset)
+// ============================================================================
+
+/**
+ * Per-action outcome from the vendor-neutral `$sync-orderset` operation. A
+ * `'failed'` row carries `error` and was NOT added to the vendor order set, so
+ * a later apply/signing session would open with fewer meds than the
+ * `PlanDefinition` requested — callers must surface these.
+ */
+export interface OrderSetSyncSequenceResult {
+  readonly actionTitle?: string;
+  readonly activityDefinitionUrl?: string;
+  readonly scriptSureSequenceId?: number;
+  readonly scriptSureOrderId?: number;
+  readonly status: 'synced' | 'failed';
+  readonly error?: string;
+}
+
+/**
+ * Vendor-neutral decoded response from the `$sync-orderset` custom operation
+ * (`POST /fhir/R4/PlanDefinition/$sync-orderset`). `failedCount > 0` means the
+ * synced vendor order set carries fewer meds than the `PlanDefinition`.
+ */
+export interface OrderSetSyncResponse {
+  readonly mode: 'created' | 'noop-already-synced';
+  readonly planDefinitionId?: string;
+  readonly scriptSureOrdersetId?: number;
+  readonly syncedCount: number;
+  readonly failedCount: number;
+  readonly results: OrderSetSyncSequenceResult[];
+}
+
+/**
+ * Decodes one repeating `results` part list from the `$sync-orderset` response
+ * into a typed {@link OrderSetSyncSequenceResult}.
+ *
+ * @param parts - The `part[]` entries of a single `results` output parameter.
+ * @returns The decoded per-action row.
+ */
+function partsToSyncSequenceResult(parts: ParametersParameter[]): OrderSetSyncSequenceResult {
+  const map: Record<string, unknown> = {};
+  for (const part of parts) {
+    if (part.name) {
+      map[part.name] = readParameterValue(part);
+    }
+  }
+  return {
+    actionTitle: typeof map.actionTitle === 'string' ? map.actionTitle : undefined,
+    activityDefinitionUrl: typeof map.activityDefinitionUrl === 'string' ? map.activityDefinitionUrl : undefined,
+    scriptSureSequenceId: typeof map.scriptSureSequenceId === 'number' ? map.scriptSureSequenceId : undefined,
+    scriptSureOrderId: typeof map.scriptSureOrderId === 'number' ? map.scriptSureOrderId : undefined,
+    status: map.status === 'failed' ? 'failed' : 'synced',
+    error: typeof map.error === 'string' ? map.error : undefined,
+  };
+}
+
+/**
+ * Decodes the `Parameters` response from the `$sync-orderset` custom operation
+ * into a typed {@link OrderSetSyncResponse}, including the repeating per-action
+ * `results` rows the server previously dropped.
+ *
+ * @param params - The `Parameters` resource returned by the operation.
+ * @returns A vendor-neutral {@link OrderSetSyncResponse}.
+ */
+export function parametersToOrderSetSyncResponse(params: Parameters): OrderSetSyncResponse {
+  const map: Record<string, unknown> = {};
+  const results: OrderSetSyncSequenceResult[] = [];
+  for (const p of params.parameter ?? []) {
+    if (!p.name) {
+      continue;
+    }
+    if (p.name === 'results' && p.part?.length) {
+      results.push(partsToSyncSequenceResult(p.part));
+    } else {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  return {
+    mode: map.mode === 'noop-already-synced' ? 'noop-already-synced' : 'created',
+    planDefinitionId: typeof map.planDefinitionId === 'string' ? map.planDefinitionId : undefined,
+    scriptSureOrdersetId: typeof map.scriptSureOrdersetId === 'number' ? map.scriptSureOrdersetId : undefined,
+    syncedCount: typeof map.syncedCount === 'number' ? map.syncedCount : results.filter((r) => r.status === 'synced').length,
+    failedCount: typeof map.failedCount === 'number' ? map.failedCount : results.filter((r) => r.status === 'failed').length,
+    results,
+  };
 }

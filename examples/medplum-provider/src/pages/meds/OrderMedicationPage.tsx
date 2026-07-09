@@ -48,6 +48,7 @@ import { AsyncAutocomplete, Panel, ResourceInput, useMedplum } from '@medplum/re
 import { useSearchResources } from '@medplum/react-hooks';
 import {
   loadScriptSureQuantityQualifiers,
+  SCRIPTSURE_GCN_SEQNO_SYSTEM,
   SCRIPTSURE_GENERIC_NAME_EXTENSION,
   SCRIPTSURE_NAME_TYPE_EXTENSION,
   SCRIPTSURE_ROUTED_MED_ID_SYSTEM,
@@ -60,11 +61,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import type { QualifierMatcher } from '../../components/meds/quantity-qualifiers';
 import {
+  buildDispenseUnitNameResolver,
   buildQualifierMatcher,
+  extractLeadingSigDispenseUnit,
   inferQuantityQualifierCodeWith,
   mergeQuantityQualifierCatalog,
+  STATIC_DISPENSE_UNIT_NAME_RESOLVER,
   STATIC_QUALIFIER_MATCHER,
 } from '../../components/meds/quantity-qualifiers';
+import { ScriptSurePracticeSwitcher, useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderSetTabPanel } from './OrderSetTabPanel';
 
@@ -372,44 +377,72 @@ interface ParsedSig {
   quantityQualifierRaw: string | undefined;
 }
 
+/** A resolver mapping a dispense-unit name to an NCI potency-unit code. */
+type DispenseUnitNameResolver = (unitName: string | undefined) => string | undefined;
+
+/** Matches an NCI Thesaurus code (e.g. `C48155`). */
+const NCI_CODE_RE = /^C\d+$/;
+
 /**
  * Resolves the dispense unit (NCI potency code) for a sig.
  *
- * The matcher only fires for dose-form keywords (tablet, capsule, suppository,
- * patch, …) and `mL`. It never tags a strength unit like `mg`, so when it
- * returns something we can trust it more than ScriptSure's per-sig
- * `quantityQualifier` — which in practice often carries a strength-unit code
- * for solid dose forms (e.g. metformin tablets coming back with the milligram
- * code because the formulation strength is "500 mg").
+ * The ScriptSure drug-format endpoint does not send a per-sig
+ * `quantityQualifier`; the dispense unit is encoded as the leading token of the
+ * sig line (`"30 Gram - …"`, `"80 Tablet - …"`). So the qualifier is only
+ * "present" when some other path (e.g. an edited/persisted MedicationRequest)
+ * supplied it — in which case we trust it. Otherwise we infer, preferring the
+ * authoritative leading sig-unit token over free-text keyword inference.
+ *
+ * NOTE: this is deliberate, not a stopgap — the v4 Advanced API (as of the
+ * 2026-07-01 docs capture) exposes NO deterministic per-drug dispense-unit
+ * lookup; `quantityQualifier` is only a caller-supplied write field, and drug
+ * reads return dose-form *text* (`MED_DOSAGE_FORM_DESC`), not an NCI code. The
+ * leading sig token IS the deterministic signal (ScriptSure builds it from the
+ * same quantity-qualifier catalog). See the KB:
+ * wiki/fhir/medication-quantity-qualifiers.md + wiki/contradictions.md.
  *
  * Priority:
- *  1. Keyword inference from sig line + formulation label (only fires on a
- *     dose-form / volume keyword).
- *  2. Whatever ScriptSure sent on the sig (when non-empty and not the bot's
- *     "I had nothing, defaulting to tablet" sentinel).
- *  3. The static `C48542` Tablet fallback.
+ *  1. `raw` when ScriptSure/caller genuinely supplied a valid NCI code
+ *     (the qualifier "wins when present").
+ *  2. The leading `"<qty> <unit> - …"` token from the sig line, resolved via the
+ *     live/static catalog (fixes topicals/liquids like `"30 Gram"` → Gram).
+ *  3. Keyword inference from sig line + formulation label (dose-form / volume).
+ *  4. The static `C48542` Tablet fallback.
  *
- * @param raw - Value returned by ScriptSure on the sig (may be undefined).
+ * @param raw - Value already on the sig (usually absent for drug-format sigs).
  * @param sigLine - Sig text shown to the prescriber.
  * @param formatText - Formulation label (e.g. drug `code.text`) when known.
- * @param matcher - Catalog-aware matcher (live `/v3/prescription/quantityqualifier`
- *   or static fallback) used for keyword inference.
+ * @param matcher - Catalog-aware matcher used for keyword inference.
+ * @param unitResolver - Catalog-aware name→code resolver for the leading token.
  * @returns NCI potency-unit code; never empty.
  */
 function resolveQuantityQualifier(
   raw: string | undefined,
   sigLine: string,
   formatText: string | undefined,
-  matcher: QualifierMatcher
+  matcher: QualifierMatcher,
+  unitResolver: DispenseUnitNameResolver
 ): string {
+  const trimmedRaw = raw?.trim();
+  if (trimmedRaw && NCI_CODE_RE.test(trimmedRaw)) {
+    return trimmedRaw;
+  }
+  const fromSigUnit = unitResolver(extractLeadingSigDispenseUnit(sigLine));
+  if (fromSigUnit) {
+    return fromSigUnit;
+  }
   const inferred = inferQuantityQualifierCodeWith(matcher, sigLine, formatText);
   if (inferred) {
     return inferred;
   }
-  return raw?.trim() || DEFAULT_QUANTITY_QUALIFIER;
+  return trimmedRaw || DEFAULT_QUANTITY_QUALIFIER;
 }
 
-function parseScriptSureSigs(medication: Medication, matcher: QualifierMatcher): ParsedSig[] {
+function parseScriptSureSigs(
+  medication: Medication,
+  matcher: QualifierMatcher,
+  unitResolver: DispenseUnitNameResolver
+): ParsedSig[] {
   const formatText = medication.code?.text;
   const out: ParsedSig[] = [];
   for (const ext of medication.extension ?? []) {
@@ -424,7 +457,7 @@ function parseScriptSureSigs(medication: Medication, matcher: QualifierMatcher):
       out.push({
         sigLine,
         quantity,
-        quantityQualifier: resolveQuantityQualifier(quantityQualifierRaw, sigLine, formatText, matcher),
+        quantityQualifier: resolveQuantityQualifier(quantityQualifierRaw, sigLine, formatText, matcher, unitResolver),
         quantityQualifierRaw,
       });
     }
@@ -523,8 +556,18 @@ function medicationToCodeableConcept(
   format: Medication,
   drug?: Medication
 ): MedicationRequest['medicationCodeableConcept'] {
+  const coding = [...(format.code?.coding ?? [])];
+  // The drug-format Medication carries its single GCN_SEQNO as an identifier
+  // (not a code.coding). Promote it to a coding so the draft MR carries the
+  // FDB clinical-formulation key: the ScriptSure prescription webhook reconciles
+  // draft→sent by GCN when the NDC drifts (#9300) or a generic is substituted
+  // (brand/generic share a GCN). See scriptsure-react SCRIPTSURE_GCN_SEQNO_SYSTEM.
+  const gcn = getIdentifier(format, SCRIPTSURE_GCN_SEQNO_SYSTEM);
+  if (gcn && !coding.some((c) => c.system === SCRIPTSURE_GCN_SEQNO_SYSTEM)) {
+    coding.push({ system: SCRIPTSURE_GCN_SEQNO_SYSTEM, code: gcn });
+  }
   return {
-    coding: format.code?.coding,
+    coding,
     text: composeMedicationName(drug, format),
   };
 }
@@ -635,13 +678,18 @@ interface FormulationSigChoice {
  * @param formats - Deduped Medication[] from `searchMedications({ routedMedId })`.
  * @param matcher - Quantity-qualifier matcher used by `parseScriptSureSigs` to
  *   resolve dispense units when ScriptSure omits them on a sig.
+ * @param unitResolver - Name→code resolver for the leading sig-unit token.
  * @returns One row per selectable formulation+sig pair.
  */
-function buildFormulationSigChoices(formats: Medication[], matcher: QualifierMatcher): FormulationSigChoice[] {
+function buildFormulationSigChoices(
+  formats: Medication[],
+  matcher: QualifierMatcher,
+  unitResolver: DispenseUnitNameResolver
+): FormulationSigChoice[] {
   const out: FormulationSigChoice[] = [];
   formats.forEach((fm, fi) => {
     const formatLabel = fm.code?.text ?? `Option ${fi + 1}`;
-    const sigs = parseScriptSureSigs(fm, matcher);
+    const sigs = parseScriptSureSigs(fm, matcher, unitResolver);
     if (sigs.length === 0) {
       out.push({
         formatIndex: fi,
@@ -672,6 +720,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
   const medplum = useMedplum();
   const { patientId } = useParams();
   const { searchMedications, orderMedication } = useScriptSureOrderMedication();
+  const { selectedOrganizationId } = useScriptSurePractice();
 
   const [patient, setPatient] = useState(patientProp);
   const [requester, setRequester] = useState<Practitioner | undefined>();
@@ -770,6 +819,16 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
     return buildQualifierMatcher(qualifierCatalog.map((r) => ({ potencyUnit: r.code, name: r.label })));
   }, [qualifierCatalog]);
 
+  // Name→code resolver for the leading sig-unit token ("30 Gram" → C48155),
+  // built from the same live catalog; falls back to the static resolver until
+  // the bot call resolves.
+  const unitNameResolver = useMemo<DispenseUnitNameResolver>(() => {
+    if (qualifierCatalog.length === 0) {
+      return STATIC_DISPENSE_UNIT_NAME_RESOLVER;
+    }
+    return buildDispenseUnitNameResolver(qualifierCatalog.map((r) => ({ potencyUnit: r.code, name: r.label })));
+  }, [qualifierCatalog]);
+
   useEffect(() => {
     if (patientProp) {
       return undefined;
@@ -845,13 +904,13 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
   }, [termMedication, searchMedications]);
 
   const sigOptions = useMemo(
-    () => (selectedFormat ? parseScriptSureSigs(selectedFormat, qualifierMatcher) : []),
-    [selectedFormat, qualifierMatcher]
+    () => (selectedFormat ? parseScriptSureSigs(selectedFormat, qualifierMatcher, unitNameResolver) : []),
+    [selectedFormat, qualifierMatcher, unitNameResolver]
   );
 
   const formulationSigChoices = useMemo(
-    () => buildFormulationSigChoices(formatMedications, qualifierMatcher),
-    [formatMedications, qualifierMatcher]
+    () => buildFormulationSigChoices(formatMedications, qualifierMatcher, unitNameResolver),
+    [formatMedications, qualifierMatcher, unitNameResolver]
   );
 
   const selectedChoiceKey = useMemo(() => {
@@ -1035,6 +1094,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
         pharmacyOrganizationId: pharmacyOrg?.id,
         writtenDate: writtenDateYmd,
         fillDate: fillDateYmd.trim() || undefined,
+        organizationId: selectedOrganizationId,
       });
 
       onOrderComplete?.({ launchUrl: res.launchUrl, medicationRequestId: res.medicationRequestId });
@@ -1080,7 +1140,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
         showErrorNotification('Each compound line needs a selected formulation');
         return;
       }
-      const sigs = parseScriptSureSigs(line.formatMed, qualifierMatcher);
+      const sigs = parseScriptSureSigs(line.formatMed, qualifierMatcher, unitNameResolver);
       const sigLine3 = sigs[0]?.sigLine ?? 'Take as directed';
       drugs.push(
         medicationToOrderDrugInput(line.formatMed, {
@@ -1120,6 +1180,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
         fillDate: compoundFillYmd.trim() || undefined,
         durationDays: compoundDaysSupply,
         pharmacyNote: compoundNotesPharmacist.trim() || undefined,
+        organizationId: selectedOrganizationId,
       });
       onOrderComplete?.({ launchUrl: res.launchUrl, medicationRequestId: res.medicationRequestId });
     } catch (e) {
@@ -1132,6 +1193,9 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
   return (
     <Container size="md">
       <Panel>
+        <Group justify="flex-end" mb="sm">
+          <ScriptSurePracticeSwitcher />
+        </Group>
         <Tabs value={activeTab} onChange={(v) => setActiveTab(v ?? 'single')}>
           <Tabs.List>
             <Tabs.Tab value="single">Single medication</Tabs.Tab>

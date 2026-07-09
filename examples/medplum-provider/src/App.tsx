@@ -22,6 +22,7 @@ import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-rou
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
+import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 import './index.css';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
@@ -91,7 +92,7 @@ export function App(): JSX.Element | null {
     return null;
   }
 
-  return (
+  const appShellContent = (
     <AppShell
       logo={<Logo size={24} />}
       pathname={location.pathname}
@@ -274,5 +275,11 @@ export function App(): JSX.Element | null {
         </Routes>
       </Suspense>
     </AppShell>
+  );
+
+  return hasScriptSure ? (
+    <ScriptSurePracticeProvider>{appShellContent}</ScriptSurePracticeProvider>
+  ) : (
+    appShellContent
   );
 }

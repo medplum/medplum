@@ -5,8 +5,19 @@
  * NCI Thesaurus potency-unit codes used by DAW/ScriptSure as quantity qualifiers
  * (`potencyUnit` from GET /v3/prescription/quantityqualifier).
  *
- * This static table is a fallback when the live catalog has not been loaded yet.
- * @see https://github.com/... (DAW docs: get-quantity-qualifiers)
+ * This static table is a fallback for when the live catalog has not loaded yet
+ * (and the sole source for {@link getQuantityQualifierLabel}, which renders a
+ * persisted `MedicationRequest.dispenseRequest.quantity.unit`).
+ *
+ * The codes below are taken verbatim from the live staging catalog
+ * (`GET /v3/prescription/quantityqualifier`). An earlier version of this table
+ * used guessed sequential `C484xx` codes that were mostly WRONG — e.g. it mapped
+ * Gram→C48478, but the catalog says C48478 is **Box** and Gram is **C48155**;
+ * likewise Each, Drop, Capsule, Patch, Milligram, Suppository, Syringe, and Vial
+ * were all bound to the wrong code. That corrupted the dropdown and the details
+ * display. See wiki/contradictions.md ("static quantity-qualifier table codes").
+ *
+ * @see https://scriptsure.stoplight.io/docs/scriptsure-advanced/9tbm26mytiwwy-get-quantity-qualifiers
  */
 export const STATIC_QUANTITY_QUALIFIERS: readonly { readonly code: string; readonly label: string }[] = [
   { code: 'C48473', label: 'Ampule' },
@@ -14,21 +25,29 @@ export const STATIC_QUANTITY_QUALIFIERS: readonly { readonly code: string; reado
   { code: 'C78783', label: 'Applicatorful' },
   { code: 'C48474', label: 'Bag' },
   { code: 'C48475', label: 'Bar' },
-  { code: 'C48480', label: 'Each' },
-  { code: 'C25301', label: 'Day' },
+  { code: 'C48477', label: 'Bottle' },
+  { code: 'C48478', label: 'Box' },
+  { code: 'C48480', label: 'Capsule' },
+  { code: 'C48481', label: 'Cartridge' },
+  { code: 'C48484', label: 'Container' },
+  { code: 'C48491', label: 'Drop' },
+  { code: 'C64933', label: 'Each' },
+  { code: 'C48155', label: 'Gram' },
+  { code: 'C48504', label: 'Kit' },
+  { code: 'C48506', label: 'Lozenge' },
+  { code: 'C48152', label: 'Microgram' },
+  { code: 'C28253', label: 'Milligram' },
   { code: 'C28254', label: 'Milliliter' },
-  { code: 'C48542', label: 'Tablet dosing unit' },
-  { code: 'C48477', label: 'Drop' },
-  { code: 'C48478', label: 'Gram' },
-  { code: 'C48479', label: 'International unit' },
-  { code: 'C48481', label: 'Milligram' },
-  { code: 'C48482', label: 'Microgram' },
-  { code: 'C48483', label: 'Capsule' },
-  { code: 'C48484', label: 'Patch' },
-  { code: 'C48485', label: 'Spray' },
-  { code: 'C48486', label: 'Suppository' },
-  { code: 'C48487', label: 'Syringe' },
-  { code: 'C48488', label: 'Vial' },
+  { code: 'C48521', label: 'Packet' },
+  { code: 'C48524', label: 'Patch' },
+  { code: 'C48537', label: 'Spray' },
+  { code: 'C48539', label: 'Suppository' },
+  { code: 'C48540', label: 'Syringe' },
+  { code: 'C48542', label: 'Tablet' },
+  { code: 'C48548', label: 'Troche' },
+  { code: 'C48549', label: 'Tube' },
+  { code: 'C44278', label: 'Unit' },
+  { code: 'C48551', label: 'Vial' },
 ];
 
 const STATIC_BY_CODE: Readonly<Record<string, string>> = Object.fromEntries(
@@ -281,3 +300,95 @@ export function mergeQuantityQualifierCatalog(
   }
   return [...map.entries()].map(([code, label]) => ({ code, label })).sort((a, b) => a.label.localeCompare(b.label));
 }
+
+/**
+ * Extracts the dispense-unit token from a ScriptSure pre-built sig line.
+ *
+ * The drug-format endpoint (`GET /v3/drugformat/format/{routedMedId}`) does not
+ * return a per-sig `quantityQualifier`; instead every sig line is built as
+ * `"<formatQuantity> <QuantityQualifierName> - <instructions>"`, e.g.
+ * `"30 Gram - Apply to skin three times daily"` or
+ * `"80 Tablet - Take 2 tablet by mouth"`. The token between the leading quantity
+ * and the ` - ` separator is therefore the authoritative dispense unit for the
+ * format (ScriptSure derives it from the same quantity-qualifier catalog we
+ * fetch), and is more reliable than scanning the free instruction text — which
+ * deliberately ignores "gram" (a strength unit inside "500 mg tablet" but the
+ * real dispense unit for topicals sold by weight).
+ *
+ * @param sigLine - Pre-built sig line from a ScriptSure drug format.
+ * @returns The unit token (e.g. `"Gram"`, `"Tablet"`), or undefined when the
+ *   line does not start with the expected `<number> <unit> -` shape.
+ */
+export function extractLeadingSigDispenseUnit(sigLine: string | undefined): string | undefined {
+  if (!sigLine) {
+    return undefined;
+  }
+  const match = /^\s*\d+(?:\.\d+)?\s+([A-Za-z][A-Za-z ]*?)\s+[-–—]/.exec(sigLine);
+  return match?.[1]?.trim() || undefined;
+}
+
+/**
+ * Abbreviations / label variants a leading sig-unit token may use that differ
+ * from the canonical catalog `name`. Keys and values are lowercased.
+ */
+const LEADING_UNIT_NAME_ALIASES: Readonly<Record<string, string>> = {
+  tab: 'tablet',
+  tabs: 'tablet',
+  cap: 'capsule',
+  caps: 'capsule',
+};
+
+/**
+ * Normalizes a unit name for lookup: lowercases, maps common abbreviations
+ * (tab→tablet, cap→capsule), and strips the ScriptSure "... dosing unit" suffix
+ * so `"Tablet dosing unit"` and `"Tablet"` collapse to the same key.
+ * @param name - Raw unit name / token.
+ * @returns Normalized lookup key.
+ */
+function normalizeUnitName(name: string): string {
+  const lowered = name.trim().toLowerCase().replace(/\s+dosing unit$/, '');
+  return LEADING_UNIT_NAME_ALIASES[lowered] ?? lowered;
+}
+
+/**
+ * Builds a resolver mapping a dispense-unit *name* (typically the token from
+ * {@link extractLeadingSigDispenseUnit}) to its NCI potency-unit code.
+ *
+ * Unlike {@link buildQualifierMatcher}, this does NOT drop "strength-style"
+ * units such as Gram or Milligram: in the leading dispense position those ARE
+ * the dispense unit, so whatever the catalog names is trusted. Names are
+ * normalized via {@link normalizeUnitName} so `"Tablet"`, `"tab"`, and
+ * `"Tablet dosing unit"` all resolve.
+ *
+ * @param catalog - Live and/or static rows ({ potencyUnit, name }).
+ * @returns A function mapping a unit name to its code, or undefined.
+ */
+export function buildDispenseUnitNameResolver(
+  catalog: readonly { potencyUnit: string; name: string }[]
+): (unitName: string | undefined) => string | undefined {
+  const byName = new Map<string, string>();
+  for (const row of catalog) {
+    const code = row.potencyUnit?.trim();
+    const name = row.name?.trim();
+    if (code && name) {
+      const key = normalizeUnitName(name);
+      if (!byName.has(key)) {
+        byName.set(key, code);
+      }
+    }
+  }
+  return (unitName) => {
+    if (!unitName?.trim()) {
+      return undefined;
+    }
+    return byName.get(normalizeUnitName(unitName));
+  };
+}
+
+/**
+ * Default name resolver built from the static fallback catalog, used until the
+ * live `/v3/prescription/quantityqualifier` response loads.
+ */
+export const STATIC_DISPENSE_UNIT_NAME_RESOLVER = buildDispenseUnitNameResolver(
+  STATIC_QUANTITY_QUALIFIERS.map((r) => ({ potencyUnit: r.code, name: r.label }))
+);

@@ -11,6 +11,8 @@ export interface UseScriptSureOrderSetOptions {
   /** ScriptSure orderset id (escape hatch when no synced PD exists yet). */
   readonly scriptSureOrdersetId?: number;
   readonly appId?: string;
+  /** Selected practice-location Organization (id or reference) for multi-practice deployments. */
+  readonly organizationId?: string;
 }
 
 export type UseScriptSureOrderSetReturn = UseMedicationOrderSetReturn;
@@ -38,5 +40,6 @@ export function useScriptSureOrderSet(options: UseScriptSureOrderSetOptions): Us
     planDefinitionId: options.planDefinitionId,
     vendorOrderSetId: options.scriptSureOrdersetId,
     appId: options.appId,
+    organizationId: options.organizationId,
   });
 }

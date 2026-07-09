@@ -36,6 +36,17 @@ export const SCRIPTSURE_ORDER_MEDICATION_BOT: Identifier = {
 /** Identifier system for ScriptSure ROUTED_MED_ID on in-memory Medication resources from drug search. */
 export const SCRIPTSURE_ROUTED_MED_ID_SYSTEM = 'https://scriptsure.com/routed-med-id';
 
+/**
+ * Identifier/coding system for the FDB GCN Sequence Number (`GCN_SEQNO`) — the
+ * clinical-formulation key (ingredient+strength+dose-form+route), independent of
+ * brand and NDC. Stamped as a `medicationCodeableConcept.coding` on the draft
+ * MedicationRequest so the ScriptSure prescription webhook can reconcile a draft
+ * to its sent prescription even when the NDC drifts or the pharmacy substitutes a
+ * generic (brand and generic share the same GCN). Mirrors the medplum-ee bot
+ * constant of the same name.
+ */
+export const SCRIPTSURE_GCN_SEQNO_SYSTEM = 'https://scriptsure.com/gcn-seqno';
+
 export const SCRIPTSURE_PENDING_ORDER_ID_SYSTEM = 'https://scriptsure.com/pending-order-id';
 
 export const SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION = 'https://scriptsure.com/pending-order-status';
@@ -106,6 +117,19 @@ export const SCRIPTSURE_ADD_PATIENT_PHARMACY_BOT: Identifier = {
 };
 
 export const SCRIPTSURE_PATIENT_ID_SYSTEM = 'https://scriptsure.com/patient-id';
+
+/**
+ * Identifier system for the ScriptSure `practiceId` stamped on the Practice-level
+ * Medplum `Organization`. Used by the practice/location selector to discover the
+ * prescriber's ScriptSure practices and pass the chosen `organizationId` to bots.
+ */
+export const SCRIPTSURE_PRACTICE_ID_SYSTEM = 'https://scriptsure.com/practice-id';
+
+/** Identifier system for the ScriptSure `businessUnitId` on the BU-level Medplum `Organization`. */
+export const SCRIPTSURE_BUSINESS_UNIT_ID_SYSTEM = 'https://scriptsure.com/business-unit-id';
+
+/** `Organization.type` coding system discriminating ScriptSure entity Organizations (`business-unit` | `practice`). */
+export const SCRIPTSURE_ORGANIZATION_TYPE_SYSTEM = 'https://scriptsure.com/organization-type';
 
 /** Base URL for ScriptSure-specific extensions on in-memory Medication resources (e.g. `/sig`). */
 export const SCRIPTSURE_SYSTEM = 'https://scriptsure.com';
