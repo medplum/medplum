@@ -145,7 +145,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
             {' and '}
             <Anchor href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</Anchor>.
           </Text>
-          <Text c="dimmed" size="xs" pt="xs" ta="center">
+          <Text c="dimmed" size="xs" pb="xs" ta="center">
             This site is protected by reCAPTCHA and the Google{' '}
             <Anchor href="https://policies.google.com/privacy">Privacy&nbsp;Policy</Anchor>
             {' and '}
@@ -155,7 +155,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
       </Form>
       {props.onSignIn && (
         <>
-          <Divider mt="lg" mb="xs" />
+          <Divider mt="lg" pb="xs" />
           <Text size="sm" mt="lg" c="dimmed" ta="center">
             Already have an account? <Anchor onClick={props.onSignIn}>Sign In</Anchor>
           </Text>
