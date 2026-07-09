@@ -231,9 +231,7 @@ describe('RegisterForm', () => {
       onSignIn,
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Sign In'));
-    });
+    fireEvent.click(screen.getByText('Sign In'));
 
     expect(onSignIn).toHaveBeenCalled();
   });
