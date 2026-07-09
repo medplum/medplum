@@ -15,13 +15,14 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import type { AgentChannelStats, AgentStats } from '@medplum/core';
+import type { AgentChannelStats, AgentStats, MedplumSemver } from '@medplum/core';
 import {
   ContentType,
   compareVersions,
   fetchAllVersionStrings,
   fetchLatestVersionString,
   formatDateTime,
+  isValidMedplumSemver,
   normalizeErrorString,
 } from '@medplum/core';
 import type { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
@@ -42,7 +43,7 @@ const DOWNGRADE_WARNING =
 type UpgradeConfirmContentProps = {
   readonly opened: boolean;
   readonly close: () => void;
-  readonly version: string | undefined;
+  readonly version: MedplumSemver | 'unknown' | undefined;
   readonly loadingStatus: boolean;
   readonly handleStatus: () => void;
   readonly handleUpgrade: (force: boolean, version: string) => void;
@@ -51,9 +52,9 @@ type UpgradeConfirmContentProps = {
 function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
   const { opened, close, version, loadingStatus, handleStatus, handleUpgrade } = props;
 
-  const [latestVersionString, setLatestVersionString] = useState<string>();
-  const [availableVersions, setAvailableVersions] = useState<string[]>();
-  const [selectedVersion, setSelectedVersion] = useState<string>();
+  const [latestVersionString, setLatestVersionString] = useState<MedplumSemver>();
+  const [availableVersions, setAvailableVersions] = useState<MedplumSemver[]>();
+  const [selectedVersion, setSelectedVersion] = useState<MedplumSemver>();
   const [shouldForceUpgrade, setShouldForceUpgrade] = useState(false);
 
   useEffect(() => {
@@ -102,14 +103,14 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
   const isDowngrade = compareVersions(targetVersion, version) < 0;
   const isSameVersion = compareVersions(targetVersion, version) === 0;
 
-  function toVersionOption(v: string): AsyncAutocompleteOption<string> {
+  function toVersionOption(v: MedplumSemver): AsyncAutocompleteOption<MedplumSemver> {
     return { value: v, label: v === latestVersionString ? `${v} (Latest)` : v, resource: v };
   }
 
   // With no search input, offer the curated list (latest + nearby versions). Otherwise,
   // search across every known version, not just the curated list.
-  const allVersions: string[] = availableVersions;
-  async function loadVersionOptions(input: string): Promise<string[]> {
+  const allVersions: MedplumSemver[] = availableVersions;
+  async function loadVersionOptions(input: string): Promise<MedplumSemver[]> {
     if (!input) {
       return versionChoices;
     }
@@ -127,7 +128,7 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
 
   return (
     <>
-      <AsyncAutocomplete<string>
+      <AsyncAutocomplete<MedplumSemver>
         label="Target Version"
         placeholder="Search versions..."
         defaultValue={targetVersion}
@@ -271,7 +272,7 @@ export function ToolsPage(): JSX.Element | null {
   const [fetchingLogs, setFetchingLogs] = useState(false);
   const [fetchingStats, setFetchingStats] = useState(false);
   const [status, setStatus] = useState<string>();
-  const [version, setVersion] = useState<string>();
+  const [version, setVersion] = useState<MedplumSemver | 'unknown'>();
   const [lastUpdated, setLastUpdated] = useState<string>();
   const [lastPing, setLastPing] = useState<string | undefined>();
   const [pinging, setPinging] = useState(false);
@@ -290,8 +291,13 @@ export function ToolsPage(): JSX.Element | null {
       .get(medplum.fhirUrl('Agent', id, '$status'), { cache: 'reload' })
       .then((result: Parameters) => {
         setStatus(result.parameter?.find((p) => p.name === 'status')?.valueCode);
-        setVersion(result.parameter?.find((p) => p.name === 'version')?.valueString);
         setLastUpdated(result.parameter?.find((p) => p.name === 'lastUpdated')?.valueInstant);
+        const version = result.parameter?.find((p) => p.name === 'version')?.valueString;
+        if (version === undefined || version === 'unknown' || isValidMedplumSemver(version)) {
+          setVersion(version);
+        } else {
+          showError('Invalid version received from $status operation');
+        }
       })
       .catch((err) => showError(normalizeErrorString(err)))
       .finally(() => setLoadingStatus(false));
@@ -403,24 +409,6 @@ export function ToolsPage(): JSX.Element | null {
       .catch((err) => showError(normalizeErrorString(err)))
       .finally(() => setFetchingStats(false));
   }, [medplum, id]);
-
-  function showSuccess(message: string): void {
-    showNotification({
-      color: 'green',
-      title: 'Success',
-      icon: <IconCheck size="1rem" />,
-      message,
-    });
-  }
-
-  function showError(message: string): void {
-    showNotification({
-      color: 'red',
-      title: 'Error',
-      message,
-      autoClose: false,
-    });
-  }
 
   return (
     <Document>
@@ -577,4 +565,22 @@ export function ToolsPage(): JSX.Element | null {
       )}
     </Document>
   );
+}
+
+function showSuccess(message: string): void {
+  showNotification({
+    color: 'green',
+    title: 'Success',
+    icon: <IconCheck size="1rem" />,
+    message,
+  });
+}
+
+function showError(message: string): void {
+  showNotification({
+    color: 'red',
+    title: 'Error',
+    message,
+    autoClose: false,
+  });
 }

@@ -3,6 +3,8 @@
 import { MEDPLUM_VERSION } from './client';
 import { normalizeErrorString } from './outcomes';
 
+export const MEDPLUM_SEMVER_REGEX = /^\d+\.\d+\.\d+(-[0-9a-z]{7})?$/;
+
 export type MedplumSemver = `${number}.${number}.${number}` | `${number}.${number}.${number}-${string}`;
 
 export const MEDPLUM_RELEASES_URL = 'https://meta.medplum.com/releases';
@@ -121,7 +123,13 @@ export async function fetchVersionManifest(
  * @returns `true` if `version` is a valid semver version that conforms to the Medplum versioning system, otherwise `false`.
  */
 export function isValidMedplumSemver(version: string): version is MedplumSemver {
-  return /^\d+\.\d+\.\d+(-[0-9a-z]{7})?$/.test(version);
+  return MEDPLUM_SEMVER_REGEX.test(version);
+}
+
+export function assertValidMedplumSemver(version: string): asserts version is MedplumSemver {
+  if (!MEDPLUM_SEMVER_REGEX.test(version)) {
+    throw new TypeError(`Version is not a valid Medplum semver (eg. 1.1.1 or 1.1.1-a1bc): ${version}`);
+  }
 }
 
 /**
@@ -165,12 +173,14 @@ export async function checkIfValidMedplumVersion(appName: string, version: strin
  * @param appName - The name of the app to fetch the latest version for.
  * @returns A version string corresponding to the latest Medplum release version.
  */
-export async function fetchLatestVersionString(appName: string): Promise<string> {
+export async function fetchLatestVersionString(appName: string): Promise<MedplumSemver> {
   const latest = await fetchVersionManifest(appName);
   if (!latest.tag_name.startsWith('v')) {
     throw new Error(`Invalid release name found. Release tag '${latest.tag_name}' did not start with 'v'`);
   }
-  return latest.tag_name.slice(1);
+  const version = latest.tag_name.slice(1);
+  assertValidMedplumSemver(version);
+  return version;
 }
 
 /**
@@ -179,7 +189,10 @@ export async function fetchLatestVersionString(appName: string): Promise<string>
  * @param params - An optional list of key-value pairs to be appended to the URL query string.
  * @returns An array of version strings (without the leading `v`), sorted from newest to oldest.
  */
-export async function fetchAllVersionStrings(appName: string, params?: Record<string, string>): Promise<string[]> {
+export async function fetchAllVersionStrings(
+  appName: string,
+  params?: Record<string, string>
+): Promise<MedplumSemver[]> {
   const response = await fetchReleasesJson<{ versions?: { version: string }[] }>(
     'all.json',
     appName,
@@ -187,7 +200,7 @@ export async function fetchAllVersionStrings(appName: string, params?: Record<st
     params
   );
   const versions = (response.versions ?? []).map((release) => release.version).filter(isValidMedplumSemver);
-  return versions.sort(compareVersions).reverse();
+  return versions.toSorted(compareVersions).reverse();
 }
 
 /**
