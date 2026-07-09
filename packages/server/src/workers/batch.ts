@@ -12,7 +12,7 @@ import {
 } from '@medplum/core';
 import type { BatchInitialState, FhirRequest } from '@medplum/fhir-router';
 import { BatchProcessor, buildBatchResponseBundle, FhirRouter } from '@medplum/fhir-router';
-import type { AsyncJob, Binary, Bundle, Parameters, UserConfiguration } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bundle, BundleEntry, Parameters, UserConfiguration } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
@@ -47,25 +47,23 @@ import {
  * graceful shutdown the job is delayed and re-queued; on resume the processor is rehydrated from
  * durable state and continues from the last checkpoint.
  *
- * ┌──────────────────────────────────────────────────────────────────────────────────────────┐
- * │ AT-LEAST-ONCE / REPLAY WINDOW — READ BEFORE CHANGING CHECKPOINT LOGIC                        │
- * │                                                                                             │
- * │ Each entry's database side-effects are committed BEFORE its result is checkpointed to       │
- * │ durable storage. If a worker crashes (hard crash or the process is killed) after an entry's │
- * │ side-effects commit but before the next checkpoint, that entry is re-processed when the job │
- * │ resumes. Async batch processing is therefore AT-LEAST-ONCE per entry, NOT exactly-once.     │
- * │                                                                                             │
- * │ The replay window is bounded by the checkpoint cadence (BatchJobData.checkpointEntries      │
- * │ entries OR .checkpointIntervalMs milliseconds, whichever comes first). Entries that are      │
- * │ inherently NON-IDEMPOTENT — e.g. some PATCH operations (array insert/append) and plain POST │
- * │ creates — may be applied more than once if a crash occurs within that window. A replayed    │
- * │ POST create reuses the resource id assigned during preprocessing (persisted in the initial  │
- * │ state), so depending on the create path it may upsert or conflict; the result recorded on   │
- * │ replay reflects the replay attempt, not the original.                                       │
- * │                                                                                             │
- * │ This trade-off is intentional: we do NOT rewrite entries to force idempotency. Shrinking    │
- * │ the checkpoint thresholds shrinks the window at the cost of more object-storage writes.     │
- * └──────────────────────────────────────────────────────────────────────────────────────────┘
+ * AT-LEAST-ONCE / REPLAY WINDOW — READ BEFORE CHANGING CHECKPOINT LOGIC
+ *
+ * Each entry's database side-effects are committed BEFORE its result is checkpointed to
+ * durable storage. If a worker crashes (hard crash or the process is killed) after an entry's
+ * side-effects commit but before the next checkpoint, that entry is re-processed when the job
+ * resumes. Async batch processing is therefore AT-LEAST-ONCE per entry, NOT exactly-once.
+ *
+ * The replay window is bounded by the checkpoint cadence (BatchJobData.checkpointEntries
+ * entries OR .checkpointIntervalMs milliseconds, whichever comes first). Entries that are
+ * inherently NON-IDEMPOTENT — e.g. some PATCH operations (array insert/append) and plain POST
+ * creates — may be applied more than once if a crash occurs within that window. A replayed
+ * POST create reuses the resource id assigned during preprocessing (persisted in the initial
+ * state), so depending on the create path it may upsert or conflict; the result recorded on
+ * replay reflects the replay attempt, not the original.
+ *
+ * This trade-off is intentional: we do NOT rewrite entries to force idempotency. Shrinking
+ * the checkpoint thresholds shrinks the window at the cost of more object-storage writes.
  */
 
 interface BaseBatchJobData {
@@ -267,6 +265,12 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   const store = new BatchCheckpointStore(job.data.asyncJobId, logger);
   let asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
   let chunkSeq = job.data.chunkSeq ?? 0;
+  // Chunks below this sequence were persisted by previous runs of this job and exist only in
+  // durable storage. Results checkpointed during this run are additionally kept in memory
+  // (resultsThisRun) so completion can assemble the response without re-reading chunks this run
+  // just wrote; in the happy path of a single uninterrupted run, no chunks are read back at all.
+  const priorChunkSeq = chunkSeq;
+  const resultsThisRun: Record<number, BundleEntry> = Object.create(null);
 
   if (!isJobActive(asyncJob)) {
     await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState);
@@ -318,11 +322,14 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
 
     // Flush results produced since the last checkpoint to durable storage, THEN advance the durable
     // progress marker. This ordering guarantees the marker never moves past an unpersisted result.
+    // The chunk lets a future worker resuming after a crash reconstruct these results; it is also
+    // mirrored into resultsThisRun so this run can assemble from memory without re-reading it.
     const checkpoint = async (): Promise<void> => {
       const pending = processor.takePendingResults();
       if (pending) {
         await store.saveResultChunk(chunkSeq, pending);
         chunkSeq++;
+        Object.assign(resultsThisRun, pending);
       }
       await job.updateData({ ...job.data, position: processor.getPosition(), chunkSeq });
       logger.info('checkpoint', { position: processor.getPosition(), chunkSeq });
@@ -352,15 +359,22 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
       }
     }
 
-    // Final checkpoint to flush any remaining results.
+    // Final checkpoint: flush the tail results and advance the durable marker to the end. In the
+    // happy path this chunk is written but never read back (assembly sources this run's results
+    // from memory); its purpose is to keep the entry-replay window narrow. Without it, a crash
+    // during the assemble/upload/completeJob phase would resume with the marker at the last
+    // checkpoint and reprocess the tail; with it, resume finds the marker already at the end and
+    // only the idempotent assemble-and-upload is retried, so no entries are reprocessed.
     await checkpoint();
 
-    // Assemble the complete response bundle and upload it as a Binary for async retrieval.
+    // Assemble the complete response bundle and upload it as a Binary for async retrieval. Only
+    // chunks persisted by previous runs are read back; this run's results are merged from memory.
     const { binary, bundle: resultBundle } = await assembleResultBundle(
       userRepo.clone(),
       store,
       initialState,
-      chunkSeq
+      priorChunkSeq,
+      resultsThisRun
     );
     const errors = countBundleErrors(resultBundle);
     logger.info('completed processing batch', {
@@ -466,16 +480,23 @@ async function finalizeInterrupted(
  * @param repo - The user's repository (used to create the Binary).
  * @param store - The checkpoint store.
  * @param initialState - The preprocessed initial state.
- * @param chunkSeq - The number of result chunks written so far.
+ * @param chunkSeq - The number of result chunks to read back from durable storage (chunks `0`
+ * through `chunkSeq - 1`).
+ * @param inMemoryResults - Result entries already held in memory (checkpointed during the current
+ * run), merged over the chunks read from storage. The completion path passes these to avoid
+ * re-reading chunks the current run just wrote; the interrupted/failure paths omit them and read
+ * everything back, treating durable state as the record of what was persisted.
  * @returns The uploaded Binary and the assembled response bundle.
  */
 async function assembleResultBundle(
   repo: Repository,
   store: BatchCheckpointStore,
   initialState: BatchInitialState,
-  chunkSeq: number
+  chunkSeq: number,
+  inMemoryResults: Record<number, BundleEntry> = {}
 ): Promise<{ binary: Binary; bundle: Bundle }> {
   const results = await store.loadAllResults(chunkSeq);
+  Object.assign(results, inMemoryResults);
   // Include error results produced during preprocessing (they are not part of any result chunk).
   Object.assign(results, initialState.preprocessResults);
   const entryCount = initialState.bundle.entry?.length ?? 0;
