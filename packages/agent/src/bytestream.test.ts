@@ -3,11 +3,11 @@
 import type { AgentTransmitResponse } from '@medplum/core';
 import { allOk, ContentType, createReference, LogLevel, sleep } from '@medplum/core';
 import type { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import { getFreePort } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { Server } from 'mock-socket';
 import net from 'node:net';
 import { App } from './app';
-import { getFreePort } from './test-utils';
 
 const medplum = new MockClient();
 let bot: Bot;
