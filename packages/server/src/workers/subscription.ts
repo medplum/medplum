@@ -454,52 +454,6 @@ interface SubscriptionWithMetadata {
 }
 
 /**
- * Loads the active rest-hook subscriptions that should be evaluated for a resource in the given
- * project.
- *
- * This uses two distinct search paths, selected by the `serverScopedSubscriptions` feature flag:
- *
- * - Disabled (default): only subscriptions in the resource's own project are considered.
- * - Enabled: subscriptions in the resource's own project *and* "server-scoped" subscriptions —
- *   those not scoped to any project (stored in the system project) — are considered, so a single
- *   set of subscriptions can apply across every project on the server.
- *
- * The enabled case runs two searches rather than one because the two sets are matched by different
- * search operators: server-scoped subscriptions are found with `_project` MISSING, while
- * own-project subscriptions are found with `_project` EQUALS `<projectId>`. Medplum combines
- * multiple filters with AND, and comma-separated values only OR within a single operator, so a
- * MISSING predicate cannot be OR'd with an EQUALS predicate in one query.
- * @param systemRepo - The system repository scoped to the resource's project.
- * @param projectId - The ID of the project that contains the triggering resource.
- * @returns The active rest-hook subscriptions to evaluate.
- */
-async function getRestHookSubscriptions(
-  systemRepo: SystemRepository,
-  projectId: string
-): Promise<WithId<Subscription>[]> {
-  const activeStatusFilter: Filter = { code: 'status', operator: Operator.EQUALS, value: 'active' };
-
-  const projectSubscriptions = await systemRepo.searchResources<Subscription>({
-    resourceType: 'Subscription',
-    count: 1000,
-    filters: [{ code: '_project', operator: Operator.EQUALS, value: projectId }, activeStatusFilter],
-  });
-
-  if (!getConfig().serverScopedSubscriptions) {
-    return projectSubscriptions;
-  }
-
-  // Server-scoped subscriptions are not scoped to any project (i.e. stored in the system project).
-  const serverScopedSubscriptions = await systemRepo.searchResources<Subscription>({
-    resourceType: 'Subscription',
-    count: 1000,
-    filters: [{ code: '_project', operator: Operator.MISSING, value: 'true' }, activeStatusFilter],
-  });
-
-  return [...projectSubscriptions, ...serverScopedSubscriptions];
-}
-
-/**
  * Loads the list of all subscriptions in this repository.
  * @param resource - The resource that was created or updated.
  * @param project - The project that contains this resource.
@@ -508,7 +462,22 @@ async function getRestHookSubscriptions(
 async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<SubscriptionWithMetadata[]> {
   const projectId = project.id;
   const systemRepo = await getProjectSystemRepo(projectId);
-  const restHookSubscriptions = await getRestHookSubscriptions(systemRepo, projectId);
+
+  // By default only subscriptions in the resource's own project are evaluated. When server-scoped
+  // subscriptions are enabled, also evaluate "server-scoped" subscriptions — those not scoped to
+  // any project (stored in the system project) — so a single set of subscriptions can apply across
+  // every project on the server. The two sets are matched by different `_project` operators
+  // (EQUALS `<projectId>` vs MISSING), which Medplum cannot OR within a single ordinary filter, so
+  // the server-scoped case uses a `_filter` expression to combine them into one query.
+  const projectFilter: Filter = getConfig().serverScopedSubscriptions
+    ? { code: '_filter', operator: Operator.EQUALS, value: `_project eq ${projectId} or _project pr false` }
+    : { code: '_project', operator: Operator.EQUALS, value: projectId };
+
+  const restHookSubscriptions = await systemRepo.searchResources<Subscription>({
+    resourceType: 'Subscription',
+    count: 1000,
+    filters: [projectFilter, { code: 'status', operator: Operator.EQUALS, value: 'active' }],
+  });
 
   const subscriptionsWithMetadata: SubscriptionWithMetadata[] = restHookSubscriptions.map((subscription) => ({
     subscription,
