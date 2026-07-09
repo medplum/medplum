@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Box, Checkbox, Divider, Flex, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
+import { Anchor, Box, Checkbox, Divider, Flex, Stack, Text, TextInput } from '@mantine/core';
 import type { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
@@ -12,6 +12,7 @@ import { SubmitButton } from '../Form/SubmitButton';
 import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
+import { PasswordInput } from '../PasswordInput/PasswordInput';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';
 
