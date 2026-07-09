@@ -114,7 +114,12 @@ import {
   getResourceCacheEntry,
   setResourceCacheEntry,
 } from './repository/resource-cache';
-import { buildDeletedResourceRow, buildResourceRow } from './repository/row-builder';
+import {
+  buildDeletedResourceRow,
+  buildDeleteHistoryContent,
+  buildResourceRow,
+  parseHistoryContent,
+} from './repository/row-builder';
 import { validateRepositoryResource } from './repository/validation';
 import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
@@ -325,11 +330,13 @@ export class Repository extends FhirRepository implements Disposable {
 
   /**
    * Convenience method to create a new repository with the same context but a new connection.
+   * Since a cloned Repository doesn't share a connection, cloning is safe at any point of the
+   * Repository's life-cycle for out-of-band work, even after the Repository has been disposed.
+   * @param contextOverrides - Optional overrides for the RepositoryContext.
    * @returns A new repository with the same context but a new connection.
    */
-  clone(): Repository {
-    this.assertUsable(); // technically not needed, but the implementation has been a moving target, so keep it locked down
-    return new Repository(this.context);
+  clone(contextOverrides?: Partial<RepositoryContext>): Repository {
+    return new Repository({ ...this.context, ...contextOverrides });
   }
 
   /**
@@ -723,8 +730,10 @@ export class Repository extends FhirRepository implements Disposable {
       const entries: BundleEntry<T>[] = [];
 
       for (const row of rows) {
-        const resource = row.content ? this.removeHiddenFields(JSON.parse(row.content as string)) : undefined;
-        const outcome: OperationOutcome = row.content
+        const parsed = parseHistoryContent(row.content as string);
+        const isDeleted = parsed.meta?.deleted;
+        const resource = !isDeleted ? this.removeHiddenFields(parsed as T) : undefined;
+        const outcome: OperationOutcome = !isDeleted
           ? allOk
           : {
               resourceType: 'OperationOutcome',
@@ -742,8 +751,8 @@ export class Repository extends FhirRepository implements Disposable {
         entries.push({
           fullUrl: getFullUrl(resourceType, row.id),
           request: {
-            method: 'GET',
-            url: `${resourceType}/${row.id}/_history/${row.versionId}`,
+            method: isDeleted ? 'DELETE' : 'GET',
+            url: isDeleted ? `${resourceType}/${row.id}` : `${resourceType}/${row.id}/_history/${row.versionId}`,
           },
           response: {
             status: getStatus(outcome).toString(),
@@ -801,9 +810,13 @@ export class Repository extends FhirRepository implements Disposable {
         throw new OperationOutcomeError(notFound);
       }
 
-      const result = await this.authorizeBinarySecurityContext(
-        this.removeHiddenFields(JSON.parse(rows[0].content as string))
-      );
+      const parsed = parseHistoryContent(rows[0].content as string);
+      // FHIR vread of a delete version returns 410 Gone with no resource body.
+      if (parsed.meta?.deleted) {
+        throw new OperationOutcomeError(gone);
+      }
+
+      const result = (await this.authorizeBinarySecurityContext(this.removeHiddenFields(parsed as T))) as WithId<T>;
       const durationMs = Date.now() - startTime;
       this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });
       return result;
@@ -913,6 +926,7 @@ export class Repository extends FhirRepository implements Disposable {
       lastUpdated: this.getLastUpdated(existing, validatedResource),
       author: this.getAuthor(),
       onBehalfOf: this.context.onBehalfOf,
+      deleted: undefined,
     };
 
     const result = { ...updated, meta: resultMeta };
@@ -1267,7 +1281,21 @@ export class Repository extends FhirRepository implements Disposable {
 
       if (!this.isCacheOnly(resource)) {
         await this.ensureInTransaction(async (txRepo) => {
-          const columns = buildDeletedResourceRow(resourceType, id, resource.meta?.project);
+          // FHIR logical delete: retain history and append a new deleted version. Instance
+          // reads and vread of that version return HTTP 410 Gone; prior versions stay readable.
+          const versionId = txRepo.generateId();
+          const lastUpdated = new Date();
+
+          // Main table: empty content with deleted=true so search/read return 410, not 404.
+          const columns = buildDeletedResourceRow(resource, lastUpdated);
+
+          // History table: minimal tombstone (resourceType, id, meta.deleted) for auditing and
+          // warehouse sync. Public history bundles still omit the body and return 410 per spec.
+          const historyContent = buildDeleteHistoryContent(resource, {
+            versionId,
+            lastUpdated,
+            author: txRepo.getAuthor(),
+          });
 
           const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
           await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
@@ -1275,15 +1303,17 @@ export class Repository extends FhirRepository implements Disposable {
           await new InsertQuery(resourceType + '_History', [
             {
               id,
-              versionId: txRepo.generateId(),
+              versionId,
               lastUpdated: columns.lastUpdated,
-              content: columns.content,
+              content: historyContent,
             },
           ]).execute(client);
 
           await txRepo.deleteFromLookupTables(client, resource);
+
           const durationMs = Date.now() - startTime;
 
+          // Delete auditing via AuditEvent; FHIR does not require a searchable Provenance per delete.
           await txRepo.postCommit(async () => {
             txRepo.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });
           });
@@ -2058,6 +2088,7 @@ export class Repository extends FhirRepository implements Disposable {
       meta.account = undefined;
       meta.accounts = undefined;
       meta.compartment = undefined;
+      meta.deleted = undefined;
     }
     return input;
   }
@@ -2181,7 +2212,18 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
-      this.updateResourceImpl(auditEvent, true).catch((err) => getLogger().error('Failed to save AuditEvent', err));
+      // Clone the repository to obtain a separate RepositoryConnection for two reasons:
+      // 1. the un-awaited save must outlive the current repo's connection scope, which is marked 'ended'
+      // and closed/unusable as soon as post-commit callbacks returns (before the un-awaited save completes).
+      // 2. the un-awaited save begins a transaction (in handleStorage) which would clash with any subsequent
+      // mainline transactions started on the current Repository and cause one of them to fail.
+      // To reduce AuditEvent overhead, we could consider further decoupling AuditEvent saves from request processing
+      // by pushing them onto an in-process queue (or BullMQ) and drain/write them to the DB on an interval.
+      const saveRepo = this.clone({ skipBackgroundJobs: true });
+      saveRepo
+        .updateResourceImpl(auditEvent, true)
+        .catch((err) => getLogger().error('Failed to save AuditEvent', err))
+        .finally(() => saveRepo[Symbol.dispose]());
     }
   }
 

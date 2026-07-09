@@ -110,11 +110,12 @@ jobs:
       - name: Deploy Server
         run: ./scripts/deploy-server.sh
         env:
-          AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
+          SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.STAGING_DOCKERHUB_REPOSITORY }}
           ECS_CLUSTER: ${{ secrets.STAGING_ECS_CLUSTER }}
           ECS_SERVICE: ${{ secrets.STAGING_ECS_SERVICE }}
           WORKER_ECS_CLUSTER: ${{ secrets.STAGING_WORKER_ECS_CLUSTER }}
           WORKER_ECS_SERVICE: ${{ secrets.STAGING_WORKER_ECS_SERVICE }}
+
       - name: Deploy bot layer
         run: ./scripts/deploy-bot-layer.sh
         env:

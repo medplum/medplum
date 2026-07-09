@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { Filter, WithId } from '@medplum/core';
 import { badRequest, createReference, OperationOutcomeError, Operator, resolveId } from '@medplum/core';
 import type {
   CodeSystem,
@@ -41,20 +41,25 @@ export async function findTerminologyResource<T extends TerminologyResource>(
     options = { ...options, version: options?.version ?? url.slice(versionDelim + 1) };
   }
 
-  const filters = [{ code: 'url', operator: Operator.EQUALS, value: url }];
+  const filters: Filter[] = [
+    { code: 'url', operator: Operator.EQUALS, value: url },
+    // Exclude retired (i.e. deactivated) resources from selection entirely
+    { code: 'status', operator: Operator.NOT_EQUALS, value: 'retired' },
+  ];
   if (options?.version) {
     filters.push({ code: 'version', operator: Operator.EQUALS, value: options.version });
   }
+
   const results = await repo.searchResources<T>({
     resourceType,
     filters,
-    sortRules: [
-      // Select highest version (by lexical sort -- no version is assumed to be "current")
-      { code: 'version', descending: true },
-      // Break ties by selecting more recently-updated resource (lexically -- no date is assumed to be current)
-      { code: 'date', descending: true },
-    ],
   });
+
+  // Sort candidates in code (rather than via SQL sort rules) so we have fine-grained control over
+  // the ordering: preferring the most current version, then more complete content (e.g. a
+  // 'complete' CodeSystem over an 'example' one), then the most recent date. Doing this in code
+  // leaves room to compare versions with e.g. semver semantics in the future.
+  results.sort(compareTerminologyResources);
 
   const systemRepo = repo.getSystemRepo();
   if (!results.length) {
@@ -102,6 +107,69 @@ export async function findTerminologyResource<T extends TerminologyResource>(
 
 function sameTerminologyResourceVersion(a: TerminologyResource, b: TerminologyResource): boolean {
   return a.version === b.version && a.date === b.date;
+}
+
+/**
+ * Orders terminology resources so the most preferred candidate sorts first. Preference is, in order:
+ *   1. Most current version (a missing version is assumed to be "current")
+ *   2. More complete content, for CodeSystems (e.g. 'complete' over 'example')
+ *   3. Most recent date (a missing date is assumed to be "current")
+ * @param a - The first resource to compare.
+ * @param b - The second resource to compare.
+ * @returns A negative number if `a` sorts first, positive if `b` sorts first, or zero if equivalent.
+ */
+function compareTerminologyResources(a: TerminologyResource, b: TerminologyResource): number {
+  const byVersion = compareDescendingWithMissingFirst(a.version, b.version);
+  if (byVersion !== 0) {
+    return byVersion;
+  }
+
+  const byContent = contentModeRank(a) - contentModeRank(b);
+  if (byContent !== 0) {
+    return byContent;
+  }
+
+  return compareDescendingWithMissingFirst(a.date, b.date);
+}
+
+/**
+ * Compares two optional strings for a descending sort, treating a missing value as the greatest
+ * (i.e. sorted first). Comparison of present values is lexical, matching the previous SQL sort.
+ * @param a - The first value to compare.
+ * @param b - The second value to compare.
+ * @returns A negative number if `a` sorts first, positive if `b` sorts first, or zero if equal.
+ */
+function compareDescendingWithMissingFirst(a: string | undefined, b: string | undefined): number {
+  if (a === b) {
+    return 0;
+  } else if (a === undefined) {
+    return -1;
+  } else if (b === undefined) {
+    return 1;
+  }
+  return b.localeCompare(a);
+}
+
+// Ranks CodeSystem.content by completeness; a lower rank is more complete and therefore preferred.
+const CODE_SYSTEM_CONTENT_RANK: Record<string, number> = {
+  complete: 0,
+  fragment: 1,
+  example: 2,
+  supplement: 3,
+  'not-present': 4,
+};
+
+/**
+ * Ranks a terminology resource by how complete its content is (lower is more complete/preferred).
+ * Only CodeSystem has a content mode; other resource types are all ranked equally.
+ * @param resource - The resource to rank.
+ * @returns The content rank, where a lower value is more preferred.
+ */
+function contentModeRank(resource: TerminologyResource): number {
+  if (resource.resourceType !== 'CodeSystem' || !resource.content) {
+    return 0;
+  }
+  return CODE_SYSTEM_CONTENT_RANK[resource.content] ?? Number.MAX_SAFE_INTEGER;
 }
 
 export function selectCoding(systemId: string, ...code: string[]): SelectQuery {

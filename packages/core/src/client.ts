@@ -3832,7 +3832,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       await sleep(retryDelay, { signal: options.signal });
       state.pollCount++;
     }
-    return this.request(statusUrl, { ...options, method: 'GET' }, state);
+    return this.request(statusUrl, statusOptions, state);
   }
 
   /**

@@ -104,7 +104,7 @@ export class AgentDicomChannel extends BaseChannel {
             });
 
             // Parse the DICOM file into DICOM JSON
-            const dicomDict = dcmjs.data.DicomMessage.readFile(buffer.buffer);
+            const dicomDict = dcmjs.data.DicomMessage.readFile(new Uint8Array(buffer));
             dicomJson = {
               ...dicomDict.meta,
               ...dicomDict.dict,

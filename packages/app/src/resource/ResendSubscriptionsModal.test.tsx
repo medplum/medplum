@@ -64,6 +64,7 @@ describe('ResendSubscriptionsModal', () => {
 
     const request = resendCallback.mock.calls[0][0];
     expect(request.body.subscription).toBeUndefined();
+    expect(request.body.interaction).toBe('update');
     expect(request.body.verbose).toBe(false);
   });
 
@@ -116,6 +117,11 @@ describe('ResendSubscriptionsModal', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
+    // Select the "Delete" interaction
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Interaction'), { target: { value: 'delete' } });
+    });
+
     // Check the "Verbose mode" checkbox
     await act(async () => {
       fireEvent.click(screen.getByText('Verbose mode', { exact: false }));
@@ -130,6 +136,7 @@ describe('ResendSubscriptionsModal', () => {
 
     const request = resendCallback.mock.calls[0][0];
     expect(request.body.subscription).toBe('Subscription/1234');
+    expect(request.body.interaction).toBe('delete');
     expect(request.body.verbose).toBe(true);
   });
 

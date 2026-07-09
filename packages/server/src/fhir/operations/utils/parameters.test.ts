@@ -131,6 +131,30 @@ const NestedOutputOperation: OperationDefinition = {
   ],
 };
 
+const SingleResourceInputOperation: OperationDefinition = {
+  resourceType: 'OperationDefinition',
+  name: 'single-resource-input',
+  status: 'active',
+  kind: 'operation',
+  code: 'single-resource-input',
+  system: true,
+  type: false,
+  instance: false,
+  parameter: [{ name: 'resource', use: 'in', min: 1, max: '1', type: 'Resource' }],
+};
+
+const SingleTypedResourceInputOperation: OperationDefinition = {
+  resourceType: 'OperationDefinition',
+  name: 'single-typed-resource-input',
+  status: 'active',
+  kind: 'operation',
+  code: 'single-typed-resource-input',
+  system: true,
+  type: false,
+  instance: false,
+  parameter: [{ name: 'patient', use: 'in', min: 1, max: '1', type: 'Patient' }],
+};
+
 describe('Operation Input/Output Parameters', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json'));
@@ -258,6 +282,26 @@ describe('Operation Input/Output Parameters', () => {
         singleIn: 'Yo',
         complexIn: [{ reference: 'Observation/bp' }, { reference: 'Observation/bmi' }],
       });
+    });
+
+    test('Reads raw Resource body for single Resource input parameter', () => {
+      const patient: Patient = { resourceType: 'Patient', id: 'test-patient' };
+      const req: Request = { body: patient } as unknown as Request;
+      expect(parseInputParameters(SingleResourceInputOperation, req)).toEqual({ resource: patient });
+    });
+
+    test('Reads raw typed Resource body for single typed Resource input parameter', () => {
+      const patient: Patient = { resourceType: 'Patient', id: 'test-patient' };
+      const req: Request = { body: patient } as unknown as Request;
+      expect(parseInputParameters(SingleTypedResourceInputOperation, req)).toEqual({ patient });
+    });
+
+    test('Rejects raw Resource body that does not match the single typed Resource input parameter', () => {
+      const observation: Observation = { resourceType: 'Observation', status: 'final', code: { text: 'Test' } };
+      const req: Request = { body: observation } as unknown as Request;
+      expect(() => parseInputParameters(SingleTypedResourceInputOperation, req)).toThrow(
+        `Expected at least 1 value(s) for required input parameter 'patient'`
+      );
     });
 
     test.each<[Parameters | Record<string, any>, string]>([
