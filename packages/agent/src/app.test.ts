@@ -933,7 +933,7 @@ describe('App', () => {
     function makeHl7ChannelWithWorker(impl: () => void): { channel: AgentHl7Channel; onWebSocketDisconnect: any } {
       const channel = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
       const onWebSocketDisconnect = vi.fn(impl);
-      (channel as any).worker = { onWebSocketDisconnect };
+      (channel as any).workers = [{ onWebSocketDisconnect }];
       return { channel, onWebSocketDisconnect };
     }
     const worker1 = makeHl7ChannelWithWorker(() => undefined);
@@ -942,11 +942,11 @@ describe('App', () => {
     });
     const worker3 = makeHl7ChannelWithWorker(() => undefined);
 
-    // An HL7 channel with no worker is skipped (loop guards on `channel.worker`).
+    // An HL7 channel with an empty pool is skipped (the inner loop has nothing to run).
     const channelWithoutWorker = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
-    (channelWithoutWorker as any).worker = undefined;
+    (channelWithoutWorker as any).workers = [];
     // A non-HL7 channel is skipped entirely, worker or not.
-    const nonHl7Channel = { worker: { onWebSocketDisconnect: vi.fn() } };
+    const nonHl7Channel = { workers: [{ onWebSocketDisconnect: vi.fn() }] };
 
     (app as any).channels = new Map<string, unknown>([
       ['hl7-1', worker1.channel],
@@ -968,7 +968,7 @@ describe('App', () => {
     expect(worker2.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
     expect(worker3.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
     // The non-HL7 channel's worker is never touched.
-    expect(nonHl7Channel.worker.onWebSocketDisconnect).not.toHaveBeenCalled();
+    expect(nonHl7Channel.workers[0].onWebSocketDisconnect).not.toHaveBeenCalled();
 
     // And we threw at the end with the collected errors as the cause.
     expect(thrown).toBeInstanceOf(Error);
@@ -986,10 +986,10 @@ describe('App', () => {
 
     const channel1 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
     const notify1 = vi.fn();
-    (channel1 as any).worker = { notify: notify1 };
+    (channel1 as any).workers = [{ notify: notify1 }];
     const channel2 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
     const notify2 = vi.fn();
-    (channel2 as any).worker = { notify: notify2 };
+    (channel2 as any).workers = [{ notify: notify2 }];
 
     (app as any).channels = new Map<string, unknown>([
       ['hl7-1', channel1],

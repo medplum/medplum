@@ -288,6 +288,14 @@ interface InboundRowBase {
   encoding: string | null;
   enhancedMode: EnhancedModeColumn;
   attemptCount: number;
+  /**
+   * The row's logical channel — the FIFO partition it's claimed within, computed
+   * at intake from the channel's `logicalChannelKey` spec. `''` (the default)
+   * means the channel is a single queue. Rows sharing a key are serialized
+   * against each other; distinct keys can run on different pool workers at once.
+   * See logical-channel.ts and the CLAIM_NEXT partition logic.
+   */
+  logicalChannelKey: string;
   /** Snapshot of the channel's guaranteed-delivery setting at intake (drives crash recovery). */
   guaranteedDelivery: boolean;
   callbackId: string;
@@ -430,6 +438,12 @@ export interface EnqueueInput {
   callbackId: string;
   seqNo: number | null;
   receivedAt: number;
+  /**
+   * The row's logical channel (FIFO partition), computed at intake from the
+   * channel's `logicalChannelKey` spec. Optional; defaults to `''` (the channel
+   * is a single queue). See {@link InboundRowBase.logicalChannelKey}.
+   */
+  logicalChannelKey?: string;
   /**
    * Snapshot of the channel's guaranteed-delivery setting at intake time.
    * Stored on the row so `recoverOnStartup` (which runs before channel

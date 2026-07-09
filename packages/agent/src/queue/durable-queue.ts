@@ -32,7 +32,9 @@ import {
   RELEASE_LEASE,
   REQUEUE,
   SCHEDULE_RETRY,
+  SELECT_QUEUED_FOR_VCHANNEL_RECOMPUTE,
   SET_ACK_OUTCOME,
+  SET_LOGICAL_CHANNEL_KEY,
   TRY_ACQUIRE_LEASE,
 } from './queries';
 import { runMigrations } from './schema';
@@ -192,6 +194,8 @@ export class DurableQueue {
   private readonly markBotFailedStmt: StatementSync;
   private readonly setAckOutcomeStmt: StatementSync;
   private readonly scheduleRetryStmt: StatementSync;
+  private readonly selectQueuedForRecomputeStmt: StatementSync;
+  private readonly setLogicalChannelKeyStmt: StatementSync;
   private readonly requeueStmt: StatementSync;
   private readonly recoverInflightStmt: StatementSync;
   private readonly recoverInflightGuaranteedStmt: StatementSync;
@@ -276,6 +280,11 @@ export class DurableQueue {
     // future next_attempt_at so the channel's FIFO head blocks (and the row is
     // not re-claimed) until the backoff elapses. See SCHEDULE_RETRY.
     this.scheduleRetryStmt = this.db.prepare(SCHEDULE_RETRY);
+
+    // Logical-channel key recompute (cold path, config reload only): read every
+    // queued row's bytes, then rewrite the partition of the ones whose key changed.
+    this.selectQueuedForRecomputeStmt = this.db.prepare(SELECT_QUEUED_FOR_VCHANNEL_RECOMPUTE);
+    this.setLogicalChannelKeyStmt = this.db.prepare(SET_LOGICAL_CHANNEL_KEY);
 
     this.requeueStmt = this.db.prepare(REQUEUE);
 
@@ -535,7 +544,8 @@ export class DurableQueue {
           input.callbackId,
           seqNo,
           input.receivedAt,
-          input.guaranteedDelivery ? 1 : 0
+          input.guaranteedDelivery ? 1 : 0,
+          input.logicalChannelKey ?? ''
         );
         return Number(info.lastInsertRowid);
       };
@@ -1233,6 +1243,45 @@ export class DurableQueue {
     this.commitSeqNoStmt.run(channelName, seqNo);
     this.walDirty = true;
   }
+
+  /**
+   * Recomputes the logical-channel partition of every still-`queued` row for a
+   * channel, using `compute` (which re-derives the key from a row's original
+   * bytes under the channel's current `logicalChannelKey` spec). Called when that
+   * spec changes on a config reload, so already-queued rows are repartitioned to
+   * match new intake before the pool claims them.
+   *
+   * Only `queued` rows are touched — a `claimed`/`inflight` row is mid-dispatch
+   * within its current partition and must finish there, so it's deliberately left
+   * alone (the per-row UPDATE is re-guarded on `state = 'queued'` in case a row was
+   * claimed between the read and the write). Runs in one transaction so the
+   * repartition is atomic. Not gated on the dispatch lease: recompute is
+   * idempotent (same spec + same bytes → same key), so a follower running it
+   * during an upgrade overlap can't diverge from the leader.
+   * @param channelName - The channel whose queued rows to repartition.
+   * @param compute - Maps a row's original message bytes to its new logical channel key.
+   * @returns The number of rows whose key actually changed.
+   */
+  recomputeLogicalChannelKeys(channelName: string, compute: (originalMessage: Buffer) => string): number {
+    const rows = this.selectQueuedForRecomputeStmt.all(channelName) as {
+      id: number;
+      original_message: SQLInputValue;
+      logical_channel_key: string | null;
+    }[];
+    let changed = 0;
+    this.runInTransaction(() => {
+      for (const row of rows) {
+        const newKey = compute(toBuffer(row.original_message));
+        if (newKey !== (row.logical_channel_key ?? '')) {
+          changed += Number(this.setLogicalChannelKeyStmt.run(newKey, row.id).changes);
+        }
+      }
+    });
+    if (changed > 0) {
+      this.walDirty = true;
+    }
+    return changed;
+  }
 }
 
 /**
@@ -1259,6 +1308,7 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     encoding: (raw.encoding as string | null) ?? null,
     enhancedMode: (raw.enhanced_mode as 'standard' | 'aaMode' | null) ?? null,
     attemptCount: raw.attempt_count as number,
+    logicalChannelKey: (raw.logical_channel_key as string | null) ?? '',
     guaranteedDelivery: Boolean(raw.guaranteed_delivery),
     callbackId: raw.callback_id as string,
     seqNo: (raw.seq_no as number | null) ?? null,

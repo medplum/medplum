@@ -395,35 +395,33 @@ export class ChannelQueueWorker {
   }
 
   /**
-   * Routes a server `agent:transmit:response` to its row.
+   * Routes a server `agent:transmit:response` to its row: resolve the in-flight
+   * dispatch if this worker owns the callback ({@link tryResolveInFlight}),
+   * otherwise treat it as a late response ({@link applyLateResponse}).
    *
-   * The common case is the response to the current in-flight dispatch, matched
-   * by comparing the exact wire-level callback (row callbackId + attempt number,
-   * see {@link buildDispatchCallback}) — this resolves the pending promise and
-   * lets {@link process} settle the row.
-   *
-   * A response can also arrive *late* — after the response timeout already
-   * cleared the pending dispatch. Two distinct cases fall out of decoding the
-   * attempt number:
-   * - **Stale**: the response answers an EARLIER attempt than the row's current
-   *   one (a newer attempt has already been claimed and is running, or has
-   *   already settled). Auto-retry makes this reachable in a way it never was
-   *   before: the row's `callbackId` alone can't distinguish attempts, so without
-   *   the attempt number a stale response would misattribute its outcome to
-   *   whichever attempt happens to be running now. We discard it — the current
-   *   attempt's own response (or timeout) is authoritative.
-   * - **Late-for-current-attempt**: the response answers the row's CURRENT
-   *   attempt but arrived after we stopped waiting for it (the row is now
-   *   `failed`, or `queued` awaiting its own already-scheduled retry). The
-   *   Medplum server is the authority on the Bot-leg outcome, so we apply it to
-   *   settle the row ({@link applyServerResponse}) exactly as if it had arrived
-   *   in time — this disambiguates the ambiguous `ResponseTimeout` case and
-   *   avoids a redundant re-dispatch.
+   * This whole-worker entry point is used by a single-worker channel (and tests);
+   * a channel with a worker pool instead calls the two halves directly so it can
+   * route to exactly one owner (see {@link AgentHl7Channel.routeServerResponse}).
    * @param response - The response message received over the WS.
-   * @returns True if the response was applied or resolved a pending dispatch;
-   *          false if it could not be matched to a settleable row.
+   * @returns True if the response resolved a pending dispatch or settled a row;
+   *          false if it could not be matched.
    */
   onServerResponse(response: AgentTransmitResponse): boolean {
+    return this.tryResolveInFlight(response) || this.applyLateResponse(response);
+  }
+
+  /**
+   * Resolves the current in-flight dispatch if `response`'s callback matches it.
+   *
+   * Split out from {@link onServerResponse} so a channel with a worker pool can
+   * route a response to its true owner: it asks each worker in turn, and only the
+   * one holding that callback resolves. A non-owner returns false with no side
+   * effects (no DB lookup, no logging) — critical in a pool, where every other
+   * worker would otherwise mislog the response as belonging to a foreign row.
+   * @param response - The server response received over the WS.
+   * @returns True if this worker owned the callback and resolved its dispatch.
+   */
+  tryResolveInFlight(response: AgentTransmitResponse): boolean {
     if (!response.callback) {
       return false;
     }
@@ -434,7 +432,39 @@ export class ChannelQueueWorker {
       pending.resolve(response);
       return true;
     }
+    return false;
+  }
 
+  /**
+   * Applies a *late* server response — one whose callback matched no in-flight
+   * dispatch on this worker, because the row already timed out / was requeued /
+   * the worker stopped. Decoding the attempt number (see {@link buildDispatchCallback})
+   * splits these two ways:
+   * - **Stale**: the response answers an EARLIER attempt than the row's current
+   *   one (a newer attempt has already been claimed and is running, or has
+   *   already settled). Auto-retry makes this reachable: the row's `callbackId`
+   *   alone can't distinguish attempts, so without the attempt number a stale
+   *   response would misattribute its outcome to whichever attempt happens to be
+   *   running now. We discard it — the current attempt's own response (or
+   *   timeout) is authoritative.
+   * - **Late-for-current-attempt**: the response answers the row's CURRENT
+   *   attempt but arrived after we stopped waiting for it (the row is now
+   *   `failed`, or `queued` awaiting its own already-scheduled retry). The
+   *   Medplum server is the authority on the Bot-leg outcome, so we apply it to
+   *   settle the row ({@link applyServerResponse}) exactly as if it had arrived
+   *   in time — this disambiguates the ambiguous `ResponseTimeout` case and
+   *   avoids a redundant re-dispatch.
+   *
+   * In a worker pool the channel calls this on a SINGLE worker only after every
+   * worker's {@link tryResolveInFlight} declined — the pool shares one queue and
+   * policy, so whichever worker applies it settles the row identically.
+   * @param response - The server response received over the WS.
+   * @returns True if the response was applied to settle a row; false if it could not be matched.
+   */
+  applyLateResponse(response: AgentTransmitResponse): boolean {
+    if (!response.callback) {
+      return false;
+    }
     const parsed = parseDispatchCallback(response.callback);
     if (!parsed) {
       this.log.warn(`Discarding server response with an unparseable callback (callback=${response.callback})`);
@@ -579,8 +609,8 @@ export class ChannelQueueWorker {
       // terminal write). Stop driving the queue and step down. We deliberately
       // leave any row we had mid-flight untouched (it stays `claimed`/`inflight`)
       // for the new leader's recoverOnStartup to reconcile — a demoted process
-      // must not write dispatch state. The channel reaps this stopped worker and
-      // starts a fresh one if we later reacquire (AgentHl7Channel.maybeStartWorker).
+      // must not write dispatch state. The channel reaps this stopped worker from
+      // its pool and starts a fresh one if we later reacquire (AgentHl7Channel.maybeStartWorkers).
       this.log.info(`Worker for channel '${this.channelName}' stepping down: queue lease taken by a peer.`);
       this.stopping = true;
       this.app.heartbeatEmitter.removeEventListener('heartbeat', this.onHeartbeat);
