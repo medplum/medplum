@@ -6,6 +6,9 @@ import { createServer } from 'node:net';
 // within a single test process — see the comment on `getFreePort` below.
 const issuedPorts = new Set<number>();
 
+// Cap on how many ephemeral ports we probe before giving up looking for a fresh one.
+const MAX_ATTEMPTS = 20;
+
 /**
  * Returns a TCP port number that is currently free, with *nothing* listening on it.
  *
@@ -26,7 +29,7 @@ export async function getFreePort(): Promise<number> {
       server.close((err) => (err ? reject(err) : resolve()));
     });
   try {
-    for (let attempt = 0; attempt < 20; attempt++) {
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const server = createServer();
       const port = await new Promise<number>((resolve, reject) => {
         server.on('error', reject);
@@ -43,7 +46,7 @@ export async function getFreePort(): Promise<number> {
       await closeServer(server);
       return port;
     }
-    throw new Error('Unable to find a free port after 20 attempts');
+    throw new Error(`Unable to find a free port after ${MAX_ATTEMPTS} attempts`);
   } finally {
     await Promise.all(heldServers.map((server) => closeServer(server).catch(() => undefined)));
   }
