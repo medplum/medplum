@@ -16,12 +16,7 @@ const recaptchaSiteKey = 'abc';
 export function Basic(): JSX.Element {
   return (
     <div style={{ minHeight: '100vh' }}>
-      <RegisterForm
-        type="project"
-        recaptchaSiteKey={recaptchaSiteKey}
-        onSuccess={() => alert('Registered!')}
-        onSignIn={() => alert('Sign In')}
-      >
+      <RegisterForm type="project" recaptchaSiteKey={recaptchaSiteKey} onSuccess={() => alert('Registered!')}>
         <Logo size={32} />
         <Title order={3} py="lg">
           Register a new account
