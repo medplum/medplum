@@ -3,6 +3,8 @@
 import { MEDPLUM_VERSION } from './client';
 import { normalizeErrorString } from './outcomes';
 
+export type MedplumSemver = `${number}.${number}.${number}` | `${number}.${number}.${number}-${string}`;
+
 export const MEDPLUM_RELEASES_URL = 'https://meta.medplum.com/releases';
 
 export type ReleaseManifest = { tag_name: string; assets: { name: string; browser_download_url: string }[] };
@@ -118,7 +120,7 @@ export async function fetchVersionManifest(
  * @param version - A version string that should be tested for valid semver semantics.
  * @returns `true` if `version` is a valid semver version that conforms to the Medplum versioning system, otherwise `false`.
  */
-export function isValidMedplumSemver(version: string): boolean {
+export function isValidMedplumSemver(version: string): version is MedplumSemver {
   return /^\d+\.\d+\.\d+(-[0-9a-z]{7})?$/.test(version);
 }
 
@@ -128,7 +130,7 @@ export function isValidMedplumSemver(version: string): boolean {
  * @param b - The second version to compare.
  * @returns A negative number if `a` is older than `b`, a positive number if `a` is newer than `b`, or `0` if they resolve to the same release.
  */
-export function compareVersions(a: string, b: string): number {
+export function compareVersions(a: MedplumSemver, b: MedplumSemver): number {
   const aParts = a.split('-')[0].split('.').map(Number);
   const bParts = b.split('-')[0].split('.').map(Number);
   for (let i = 0; i < 3; i++) {
