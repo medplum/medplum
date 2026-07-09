@@ -37,7 +37,7 @@ import { vi } from 'vitest';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type * as Constants from '../constants';
-import { systemResourceProjectId, WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
@@ -641,8 +641,9 @@ describe('Subscription Worker', () => {
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
         expect(patient).toBeDefined();
+        // The patient lives in a real project (unlike the project-less server-scoped subscription).
         expect(patient.meta?.project).toBeDefined();
-        expect(patient.meta?.project).not.toStrictEqual(systemResourceProjectId);
+        expect(patient.meta?.project).toStrictEqual(repo.currentProject()?.id);
 
         fetchMock.mockImplementation(() => mockFetchStatus(200));
 
@@ -682,9 +683,9 @@ describe('Subscription Worker', () => {
           e.entity?.some((entity) => entity.what?.reference === getReferenceString(subscription))
         );
         expect(auditEvent).toBeDefined();
-        // ...but lives in the triggering resource's project, not the system project.
+        // ...but lives in the triggering resource's real project, not the project-less scope of the subscription.
+        expect(auditEvent?.meta?.project).toBeDefined();
         expect(auditEvent?.meta?.project).toStrictEqual(patient.meta?.project);
-        expect(auditEvent?.meta?.project).not.toStrictEqual(systemResourceProjectId);
       } finally {
         getConfig().serverScopedSubscriptions = savedConfig;
         // Clean up the server-scoped subscription so it does not leak into the shared system project

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobContext, BackgroundJobInteraction, Operation, WithId } from '@medplum/core';
+import type { BackgroundJobContext, BackgroundJobInteraction, Filter, Operation, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   ContentType,
@@ -40,7 +40,7 @@ import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
-import { WEBSOCKET_SUB_PUBLISH_CHANNEL, systemResourceProjectId } from '../constants';
+import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { getRequestContext, runInAuthenticatedContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
@@ -454,6 +454,52 @@ interface SubscriptionWithMetadata {
 }
 
 /**
+ * Loads the active rest-hook subscriptions that should be evaluated for a resource in the given
+ * project.
+ *
+ * This uses two distinct search paths, selected by the `serverScopedSubscriptions` feature flag:
+ *
+ * - Disabled (default): only subscriptions in the resource's own project are considered.
+ * - Enabled: subscriptions in the resource's own project *and* "server-scoped" subscriptions —
+ *   those not scoped to any project (stored in the system project) — are considered, so a single
+ *   set of subscriptions can apply across every project on the server.
+ *
+ * The enabled case runs two searches rather than one because the two sets are matched by different
+ * search operators: server-scoped subscriptions are found with `_project` MISSING, while
+ * own-project subscriptions are found with `_project` EQUALS `<projectId>`. Medplum combines
+ * multiple filters with AND, and comma-separated values only OR within a single operator, so a
+ * MISSING predicate cannot be OR'd with an EQUALS predicate in one query.
+ * @param systemRepo - The system repository scoped to the resource's project.
+ * @param projectId - The ID of the project that contains the triggering resource.
+ * @returns The active rest-hook subscriptions to evaluate.
+ */
+async function getRestHookSubscriptions(
+  systemRepo: SystemRepository,
+  projectId: string
+): Promise<WithId<Subscription>[]> {
+  const activeStatusFilter: Filter = { code: 'status', operator: Operator.EQUALS, value: 'active' };
+
+  const projectSubscriptions = await systemRepo.searchResources<Subscription>({
+    resourceType: 'Subscription',
+    count: 1000,
+    filters: [{ code: '_project', operator: Operator.EQUALS, value: projectId }, activeStatusFilter],
+  });
+
+  if (!getConfig().serverScopedSubscriptions) {
+    return projectSubscriptions;
+  }
+
+  // Server-scoped subscriptions are not scoped to any project (i.e. stored in the system project).
+  const serverScopedSubscriptions = await systemRepo.searchResources<Subscription>({
+    resourceType: 'Subscription',
+    count: 1000,
+    filters: [{ code: '_project', operator: Operator.MISSING, value: 'true' }, activeStatusFilter],
+  });
+
+  return [...projectSubscriptions, ...serverScopedSubscriptions];
+}
+
+/**
  * Loads the list of all subscriptions in this repository.
  * @param resource - The resource that was created or updated.
  * @param project - The project that contains this resource.
@@ -462,27 +508,7 @@ interface SubscriptionWithMetadata {
 async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<SubscriptionWithMetadata[]> {
   const projectId = project.id;
   const systemRepo = await getProjectSystemRepo(projectId);
-  // When server-scoped subscriptions are enabled, also include subscriptions that are not
-  // scoped to any project (i.e. stored in the system project) so they apply across all projects.
-  const projectFilterValue = getConfig().serverScopedSubscriptions
-    ? `${projectId},${systemResourceProjectId}`
-    : projectId;
-  const restHookSubscriptions = await systemRepo.searchResources<Subscription>({
-    resourceType: 'Subscription',
-    count: 1000,
-    filters: [
-      {
-        code: '_project',
-        operator: Operator.EQUALS,
-        value: projectFilterValue,
-      },
-      {
-        code: 'status',
-        operator: Operator.EQUALS,
-        value: 'active',
-      },
-    ],
-  });
+  const restHookSubscriptions = await getRestHookSubscriptions(systemRepo, projectId);
 
   const subscriptionsWithMetadata: SubscriptionWithMetadata[] = restHookSubscriptions.map((subscription) => ({
     subscription,
