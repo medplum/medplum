@@ -126,3 +126,29 @@ export const ObservationGroups = (): JSX.Element => {
     </Document>
   );
 };
+
+export const HideSubject = (): JSX.Element => {
+  const medplum = useMedplum();
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    medplum
+      .createResource(HealthGorillaObservation1)
+      .then(() => medplum.createResource(HealthGorillaObservation2))
+      .then(() => medplum.createResource(HealthGorillaObservationGroup1))
+      .then(() => medplum.createResource(HealthGorillaObservationGroup2))
+      .then(() => medplum.createResource(HealthGorillaDiagnosticReport))
+      .then(() => setLoaded(true))
+      .catch(console.log);
+  }, [medplum]);
+
+  if (!loaded) {
+    return <></>;
+  }
+
+  return (
+    <Document>
+      <DiagnosticReportDisplay hideSubject value={HealthGorillaDiagnosticReport} />
+    </Document>
+  );
+};

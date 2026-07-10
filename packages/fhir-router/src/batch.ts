@@ -177,9 +177,26 @@ export class BatchProcessor {
       return this.processEntriesAndBuild();
     }
 
-    return this.repo.withTransaction((txRepo) => this.withRepo(txRepo, () => this.processEntriesAndBuild()), {
-      serializable: bundleInfo.requiresStrongTransaction,
-    });
+    // withTransaction re-runs this callback on a retryable failure (e.g. a serialization conflict,
+    // which SERIALIZABLE transactions commonly surface at COMMIT time). Each attempt must reprocess
+    // every entry from scratch: the progress marker (`position`) and per-entry results
+    // (`resultEntries`) are instance state carried over from the failed attempt, so without resetting
+    // them a retry would re-enter with `position` already at the end, skip every entry, commit an
+    // empty transaction, and return the stale success responses from the rolled-back attempt.
+    // Preprocessing (ID assignment, conditional-URL rewriting) is intentionally NOT redone, so
+    // reprocessed entries reuse the same resource IDs and remain idempotent across attempts.
+    const attemptStartPosition = this.position;
+    const attemptStartResults = this.resultEntries.slice();
+    return this.repo.withTransaction(
+      (txRepo) =>
+        this.withRepo(txRepo, () => {
+          this.position = attemptStartPosition;
+          this.resultEntries = attemptStartResults.slice();
+          this.pendingIndices = [];
+          return this.processEntriesAndBuild();
+        }),
+      { serializable: bundleInfo.requiresStrongTransaction }
+    );
   }
 
   /**

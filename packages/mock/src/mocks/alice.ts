@@ -12,6 +12,16 @@ export const TestOrganization: WithId<Organization> = {
     versionId: '1',
   },
   name: 'Test Organization',
+  address: [
+    {
+      use: 'work',
+      line: ['123 Test Street'],
+      city: 'Springfield',
+      state: 'CA',
+      postalCode: '90210',
+      country: 'US',
+    },
+  ],
 };
 
 export const DifferentOrganization: WithId<Organization> = {
