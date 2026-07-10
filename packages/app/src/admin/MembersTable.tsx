@@ -34,8 +34,8 @@ export interface MemberTableProps {
 }
 
 const MFA_ENROLLMENT_COLUMN_NAMES: Record<MfaMethod, string> = {
-  totp: 'Authenticator',
-  email: 'Email MFA',
+  totp: 'MFA: Authenticator',
+  email: 'MFA: Email',
 };
 
 /**

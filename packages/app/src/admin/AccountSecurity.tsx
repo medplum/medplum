@@ -137,7 +137,6 @@ export function SendPasswordResetModal(props: SendPasswordResetModalProps): JSX.
 export interface SetPasswordModalProps {
   readonly opened: boolean;
   readonly onClose: () => void;
-  readonly projectId: string;
   readonly email: string;
   readonly onSuccess?: () => void;
 }
@@ -271,14 +270,7 @@ export function AccountSecurityCard(props: AccountSecurityCardProps): JSX.Elemen
         projectId={props.projectId}
         membershipId={props.membershipId}
       />
-      {user.email && (
-        <SetPasswordModal
-          opened={setPasswordOpened}
-          onClose={setPasswordDisc.close}
-          projectId={props.projectId}
-          email={user.email}
-        />
-      )}
+      {user.email && <SetPasswordModal opened={setPasswordOpened} onClose={setPasswordDisc.close} email={user.email} />}
     </>
   );
 }
