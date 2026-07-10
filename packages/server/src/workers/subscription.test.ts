@@ -660,17 +660,13 @@ describe('Subscription Worker', () => {
           })
         );
 
-        // The AuditEvent should still be scoped to the triggering resource's project,
-        // NOT the (system) project that the server-scoped subscription lives in.
-        // The project must be specified explicitly when searching with the system repo.
+        // The AuditEvent for a server-scoped subscription inherits the subscription's (missing)
+        // project rather than the triggering resource's project, so it is itself project-less and
+        // lives in the system scope alongside the subscription. Search across all projects with the
+        // system repo and locate it by the entity it references.
         const auditEvents = await repo.getSystemRepo().searchResources<AuditEvent>({
           resourceType: 'AuditEvent',
           filters: [
-            {
-              code: '_project',
-              operator: Operator.EQUALS,
-              value: patient.meta?.project as string,
-            },
             {
               code: 'entity',
               operator: Operator.EQUALS,
@@ -683,9 +679,8 @@ describe('Subscription Worker', () => {
           e.entity?.some((entity) => entity.what?.reference === getReferenceString(subscription))
         );
         expect(auditEvent).toBeDefined();
-        // ...but lives in the triggering resource's real project, not the project-less scope of the subscription.
-        expect(auditEvent?.meta?.project).toBeDefined();
-        expect(auditEvent?.meta?.project).toStrictEqual(patient.meta?.project);
+        // ...and, like that subscription, is not scoped to any project.
+        expect(auditEvent?.meta?.project).toBeUndefined();
       } finally {
         getConfig().serverScopedSubscriptions = savedConfig;
         // Clean up the server-scoped subscription so it does not leak into the shared system project

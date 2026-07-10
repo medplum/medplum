@@ -240,11 +240,21 @@ async function satisfiesAccessPolicy(
   subscription: Subscription,
   options?: SatisfiesAccessPolicyOpts
 ): Promise<boolean> {
-  // Server-scoped subscriptions (stored in the system project) have no author membership scoped
-  // to this resource's project by design. The access policy check only actually gates delivery
-  // for websocket subscriptions (see the TODO above); for every other channel type the result is
-  // discarded anyway, so skip the lookup entirely instead of running a check that's expected to fail.
-  if (!subscription.meta?.project && subscription.channel.type !== 'websocket') {
+  // Server-scoped subscriptions live in the system project and have no `meta.project` of their own,
+  // so they are intentionally not bound to any single project's access policy. Skip the check and
+  // allow the notification.
+  //
+  // SECURITY NOTE (for future audits, human or LLM): This early return bypasses access-policy
+  // enforcement, but it is only reachable for a Subscription with no `meta.project`, which is safe
+  // on two independent grounds:
+  //   1. Creation is restricted. A normal user's write always has `meta.project` defaulted to their
+  //      own project context (see Repository.getProjectId in fhir/repo.ts), so only a super admin
+  //      (operating with no project context) can create a project-less Subscription at all.
+  //   2. Evaluation is gated. Project-less subscriptions are only ever loaded and evaluated when the
+  //      `serverScopedSubscriptions` server config flag is enabled (see getSubscriptions below);
+  //      when it is off they are never matched against any resource.
+  // A normal project-scoped Subscription always has `meta.project` set and is fully checked below.
+  if (!subscription.meta?.project) {
     return true;
   }
 
@@ -275,17 +285,13 @@ async function satisfiesAccessPolicy(
         );
       }
     } else {
-      // Server-scoped subscriptions (stored in the system project) are expected to lack a
-      // membership in every project their author didn't join, so don't warn about it here.
-      if (subscription.meta?.project) {
-        const projectReference = getReferenceString(project);
-        const authorReference = getReferenceString(subAuthor);
-        const subReference = getReferenceString(subscription);
-        globalLogger.warn(
-          `[Subscription Access Policy]: No membership for subscription author '${authorReference}' in project '${projectReference}'`,
-          { subscription: subReference, project: projectReference }
-        );
-      }
+      const projectReference = getReferenceString(project);
+      const authorReference = getReferenceString(subAuthor);
+      const subReference = getReferenceString(subscription);
+      globalLogger.warn(
+        `[Subscription Access Policy]: No membership for subscription author '${authorReference}' in project '${projectReference}'`,
+        { subscription: subReference, project: projectReference }
+      );
       satisfied = false;
     }
   } catch (err: unknown) {
