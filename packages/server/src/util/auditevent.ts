@@ -407,8 +407,7 @@ export async function createSubscriptionAuditEvent(
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
-      // Fallback to the project of the resource when the subscription is a server-scoped subscription
-      project: subscription.meta?.project ?? resource.meta?.project,
+      project: subscription.meta?.project,
       account: subscription.meta?.account,
       accounts: subscription.meta?.accounts,
     },
