@@ -5,7 +5,7 @@ import { Notifications } from '@mantine/notifications';
 import type { Questionnaire } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import * as reactRouter from 'react-router';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -157,13 +157,20 @@ describe('IntakeFormPage', () => {
 
     await waitFor(
       () => {
-        const alert = screen.queryByText(/Some valuesets are unavailable/i);
-        if (alert) {
-          expect(alert).toBeInTheDocument();
-        }
+        expect(screen.getByText('Some fields are unavailable')).toBeInTheDocument();
       },
       { timeout: 10000 }
     );
+
+    // The alert names the affected field
+    expect(screen.getByText('Gender Identity', { selector: 'strong' })).toBeInTheDocument();
+
+    // The value set URLs are hidden until expanded
+    expect(screen.queryByText(/http:\/\/example\.com\/gender/)).not.toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByText('Show missing value set URLs'));
+    });
+    expect(screen.getByText(/http:\/\/example\.com\/gender/)).toBeInTheDocument();
   });
 
   test('Renders required demographic fields', async () => {

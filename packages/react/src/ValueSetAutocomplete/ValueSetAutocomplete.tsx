@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
 import type { ValueSetExpandParams } from '@medplum/core';
-import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { getStatus, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
+import type { ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { forwardRef, useCallback } from 'react';
+import { forwardRef, useCallback, useState } from 'react';
 import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
 
@@ -58,22 +59,35 @@ function createValue(input: string): ValueSetExpansionContains {
  */
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
-  const { binding, creatable, clearable, expandParams, withHelpText, ...rest } = props;
+  const { binding, creatable, clearable, expandParams, withHelpText, error, ...rest } = props;
+  const [unavailableBinding, setUnavailableBinding] = useState<{ binding: string; message: string }>();
+  const bindingError = binding && unavailableBinding?.binding === binding ? unavailableBinding.message : undefined;
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<ValueSetExpansionContains[]> => {
-      if (!binding) {
+      if (!binding || unavailableBinding?.binding === binding) {
         return [];
       }
-      const valueSet = await medplum.valueSetExpand(
-        {
-          count: 10,
-          ...expandParams,
-          url: binding,
-          filter: input,
-        },
-        { signal }
-      );
+      let valueSet: ValueSet;
+      try {
+        valueSet = await medplum.valueSetExpand(
+          {
+            count: 10,
+            ...expandParams,
+            url: binding,
+            filter: input,
+          },
+          { signal }
+        );
+      } catch (err) {
+        // A 4xx outcome (e.g. "ValueSet not found") won't succeed on retry, so remember the failure
+        // and show it inline instead of surfacing an error on every keystroke; transient errors rethrow
+        if (err instanceof OperationOutcomeError && getStatus(err.outcome) < 500) {
+          setUnavailableBinding({ binding, message: normalizeErrorString(err) });
+          return [];
+        }
+        throw err;
+      }
       const valueSetElements = valueSet.expansion?.contains ?? [];
       const newData: ValueSetExpansionContains[] = [];
       for (const valueSetElement of valueSetElements) {
@@ -84,12 +98,13 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
 
       return newData;
     },
-    [medplum, expandParams, binding]
+    [medplum, expandParams, binding, unavailableBinding]
   );
 
   return (
     <AsyncAutocomplete
       {...rest}
+      error={error ?? bindingError}
       creatable={creatable ?? true}
       clearable={clearable ?? true}
       toOption={toOption}

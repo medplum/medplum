@@ -132,7 +132,10 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       })
       .catch((err) => {
         if (!(newAbortController.signal.aborted || err.message.includes('aborted'))) {
-          showNotification({ color: 'red', message: normalizeErrorString(err) });
+          const message = normalizeErrorString(err);
+          // Mantine ignores show() calls whose id is already on screen, so identical errors
+          // (e.g. one per keystroke, or one per field in the same form) don't stack up
+          showNotification({ id: `async-autocomplete-error-${message}`, color: 'red', message });
         }
       })
       .finally(() => {
@@ -140,7 +143,17 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           setAbortController(undefined);
         }
       });
-  }, [combobox, loadOptions, onChange, toOption, minInputLength]);
+  }, [
+    combobox,
+    loadOptions,
+    onChange,
+    toOption,
+    minInputLength,
+    setTimer,
+    setAbortController,
+    setOptions,
+    setAutoSubmit,
+  ]);
 
   const handleSearchChange = useCallback(
     (e: SyntheticEvent): void => {
@@ -163,7 +176,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       const newTimer = window.setTimeout(() => handleTimer(), 100);
       setTimer(newTimer);
     },
-    [combobox, options, creatable, handleTimer]
+    [combobox, options, creatable, handleTimer, setSearch, setAbortController, setTimer]
   );
 
   const addSelected = useCallback(
@@ -203,7 +216,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       onChange(newSelected.map((v) => v.resource));
       setSelected(newSelected);
     },
-    [creatable, options, selected, maxValues, onChange, onCreate, toOption]
+    [creatable, options, selected, maxValues, onChange, onCreate, toOption, setSelected]
   );
 
   const handleValueSelect = useMemo(() => {
@@ -228,7 +241,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         addSelected(val);
       }
     };
-  }, [addSelected, combobox, disabled, maxValues, search]);
+  }, [addSelected, combobox, disabled, maxValues, search, setSearch, setOptions]);
 
   const handleValueRemove = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
@@ -236,7 +249,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       onChange(newSelected.map((v) => v.resource));
       setSelected(newSelected);
     },
-    [selected, onChange]
+    [selected, onChange, setSelected]
   );
 
   const handleKeyDown = useCallback(
@@ -252,7 +265,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         handleValueRemove(selected[selected.length - 1]);
       }
     },
-    [abortController, handleValueRemove, search.length, selected, timer]
+    [abortController, handleValueRemove, search.length, selected, timer, setAutoSubmit]
   );
 
   useEffect(() => {

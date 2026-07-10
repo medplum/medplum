@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { cleanNotifications, Notifications } from '@mantine/notifications';
+import { badRequest, OperationOutcomeError, serverError } from '@medplum/core';
 import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -22,6 +24,7 @@ describe('AsyncAutocomplete', () => {
 
   afterEach(async () => {
     await act(async () => {
+      cleanNotifications();
       vi.runOnlyPendingTimers();
     });
     vi.useRealTimers();
@@ -141,6 +144,87 @@ describe('AsyncAutocomplete', () => {
     await typeInAutocomplete(input, 'test');
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ count: 10 }), expect.anything());
+    spy.mockRestore();
+  });
+
+  test('missing value set shows inline error and stops querying', async () => {
+    const message = 'ValueSet http://example.com/missing not found';
+    const medplum = new MockClient();
+    const spy = vi
+      .spyOn(medplum, 'valueSetExpand')
+      .mockRejectedValue(new OperationOutcomeError(badRequest(message)));
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <Notifications />
+        <ValueSetAutocomplete binding="http://example.com/missing" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
+    await typeInAutocomplete(input, 'a');
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    // The error appears exactly once: inline on the input, with no notification toast
+    expect(screen.getAllByText(message)).toHaveLength(1);
+
+    // Subsequent keystrokes do not query the server again
+    await typeInAutocomplete(input, 'ab');
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByText(message)).toHaveLength(1);
+
+    spy.mockRestore();
+  });
+
+  test('transient expand failure does not disable the input', async () => {
+    const medplum = new MockClient();
+    const spy = vi
+      .spyOn(medplum, 'valueSetExpand')
+      .mockRejectedValueOnce(new OperationOutcomeError(serverError(new Error('boom'))));
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <Notifications />
+        <ValueSetAutocomplete binding="x" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
+    await typeInAutocomplete(input, 'a');
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    // A 5xx error surfaces as a notification, not as a persistent inline error
+    expect(screen.getByText(/Internal server error/)).toBeInTheDocument();
+
+    // The next search hits the server again and succeeds
+    await typeInAutocomplete(input, 'test');
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Test Display')).toBeInTheDocument();
+
+    spy.mockRestore();
+  });
+
+  test('repeated identical failures show a single notification', async () => {
+    const medplum = new MockClient();
+    const spy = vi
+      .spyOn(medplum, 'valueSetExpand')
+      .mockRejectedValue(new OperationOutcomeError(serverError(new Error('boom'))));
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <Notifications />
+        <ValueSetAutocomplete binding="x" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
+    await typeInAutocomplete(input, 'a');
+    await typeInAutocomplete(input, 'ab');
+
+    // Both searches hit the server and failed, but only one toast is on screen
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(screen.getAllByText(/Internal server error/)).toHaveLength(1);
+
     spy.mockRestore();
   });
 

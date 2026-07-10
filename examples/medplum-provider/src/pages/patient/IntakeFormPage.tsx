@@ -1,31 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert } from '@mantine/core';
+import { Alert, Anchor, Code, List, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Questionnaire, QuestionnaireItem, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { AIRealTimeQuestionnaireForm, Document, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { onboardPatient } from '../../utils/intake-form';
 import { showErrorNotification } from '../../utils/notifications';
 
 const voiceInstructions = (
-  <ul>
-    <li>
+  <List>
+    <List.Item>
       To fill out the form, just speak naturally and the dictation tool will automatically map your spoken answers to
       the appropriate form fields.
-    </li>
-    <li>
+    </List.Item>
+    <List.Item>
       Pause briefly between thoughts to allow the tool to process and fill in the fields. You can continue speaking to
       add or update answers.
-    </li>
-    <li>
+    </List.Item>
+    <List.Item>
       Try saying something like: “My name is Sarah Johnson and I'm 28 years old” or “I live at 123 Main Street in Boston
       Massachusetts”
-    </li>
-  </ul>
+    </List.Item>
+  </List>
 );
 
 export interface IntakeFormPageProps {
@@ -40,7 +40,8 @@ export function IntakeFormPage({
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const [unavailableValueSets, setUnavailableValueSets] = useState<ValueSetInfo[]>([]);
+  const [unavailableFields, setUnavailableFields] = useState<ValueSetInfo[]>([]);
+  const [showValueSetUrls, setShowValueSetUrls] = useState(false);
   const [checkingValueSets, setCheckingValueSets] = useState(false);
   const questionnaire = propQuestionnaire ?? defaultQuestionnaire;
 
@@ -62,30 +63,24 @@ export function IntakeFormPage({
       }
 
       const allValueSets = extractValueSets(questionnaire.item);
-      const uniqueValueSets = new Map<string, ValueSetInfo>();
-      for (const vs of allValueSets) {
-        if (!uniqueValueSets.has(vs.url)) {
-          uniqueValueSets.set(vs.url, vs);
-        }
-      }
-      const valueSets = Array.from(uniqueValueSets.values());
+      const uniqueUrls = Array.from(new Set(allValueSets.map((vs) => vs.url)));
 
-      const unavailable: ValueSetInfo[] = [];
+      const unavailableUrls = new Set<string>();
 
       await Promise.allSettled(
-        valueSets.map(async (vs) => {
+        uniqueUrls.map(async (url) => {
           if (abortController.signal.aborted) {
             return;
           }
-          const isAvailable = await checkValueSetAvailability(vs.url, medplum);
+          const isAvailable = await checkValueSetAvailability(url, medplum);
           if (!isAvailable && !abortController.signal.aborted) {
-            unavailable.push(vs);
+            unavailableUrls.add(url);
           }
         })
       );
 
       if (isActive && !abortController.signal.aborted) {
-        setUnavailableValueSets(unavailable);
+        setUnavailableFields(allValueSets.filter((vs) => unavailableUrls.has(vs.url)));
       }
     }
 
@@ -129,17 +124,35 @@ export function IntakeFormPage({
   return (
     <Document width={800}>
       {checkingValueSets && <Loading />}
-      {!checkingValueSets && unavailableValueSets.length > 0 && (
-        <Alert color="red" title="Some valuesets are unavailable" mb="md">
-          <p>
-            The following questions may not display correctly because their valuesets are not available. Please contact
-            sales to enable these valuesets.
-          </p>
-          <ul>
-            {unavailableValueSets.map((vs) => (
-              <li key={vs.linkId}>{vs.url}</li>
+      {!checkingValueSets && unavailableFields.length > 0 && (
+        <Alert color="red" title="Some fields are unavailable" mb="md">
+          <Text size="sm" mb="xs">
+            These fields can't offer suggestions because their value sets aren't available in this project:{' '}
+            {unavailableFields.map((vs, index) => (
+              <Fragment key={vs.linkId}>
+                {index > 0 && ', '}
+                <strong>{vs.questionText}</strong>
+              </Fragment>
             ))}
-          </ul>
+            .
+          </Text>
+          <Anchor component="button" type="button" size="sm" onClick={() => setShowValueSetUrls((prev) => !prev)}>
+            {showValueSetUrls ? 'Hide missing value set URLs' : 'Show missing value set URLs'}
+          </Anchor>
+          {showValueSetUrls && (
+            <>
+              <Text size="sm" mt="xs">
+                Please contact sales to enable these value sets, or import them into your project.
+              </Text>
+              <List size="sm" mt="xs">
+                {Array.from(new Set(unavailableFields.map((vs) => vs.url))).map((url) => (
+                  <List.Item key={url}>
+                    <Code>{url}</Code>
+                  </List.Item>
+                ))}
+              </List>
+            </>
+          )}
         </Alert>
       )}
       <AIRealTimeQuestionnaireForm
