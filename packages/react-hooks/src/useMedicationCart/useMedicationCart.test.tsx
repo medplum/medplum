@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { INVALID_MEDICATION_CART_RESPONSE, INVALID_MEDICATION_CHECKOUT_RESPONSE } from '@medplum/core';
 import type { WithId } from '@medplum/core';
+import { INVALID_MEDICATION_CART_RESPONSE, INVALID_MEDICATION_CHECKOUT_RESPONSE } from '@medplum/core';
 import type { MedicationRequest, Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, renderHook, waitFor } from '@testing-library/react';
