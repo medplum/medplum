@@ -56,7 +56,7 @@ import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscri
 import { getCacheRedis } from '../redis';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
-import { validateOutboundUrl } from '../util/url';
+import { isAllowedOutboundUrlForQueue } from '../util/url';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import {
   clearSubscriptionFailures,
@@ -390,6 +390,13 @@ export async function addSubscriptionJobs(
       if (subscription.channel.type === 'websocket') {
         wsSubEvents.push([subscription.id, { includeResource: true }]);
         continue;
+      }
+      if (subscription.channel.type === 'rest-hook') {
+        const endpoint = subscription.channel.endpoint;
+        if (!endpoint?.startsWith('Bot/') && !isAllowedOutboundUrlForQueue(endpoint ?? '', getConfig())) {
+          logFn(`Subscription rest-hook URL is not allowed for outbound fetch`);
+          continue;
+        }
       }
       await addSubscriptionJobData({
         subscriptionId: subscription.id,
@@ -728,7 +735,6 @@ async function sendRestHook(
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }
   try {
-    validateRestHookUrl(url);
     log.info('Sending rest hook', {
       url,
       subscriptionId: subscription.id,
@@ -784,14 +790,6 @@ async function sendRestHook(
   if (error) {
     throw error;
   }
-}
-
-function validateRestHookUrl(url: string): void {
-  const allowInsecureRestHookUrl = !!getConfig().allowInsecureRestHookUrl;
-  validateOutboundUrl(url, {
-    allowHttp: allowInsecureRestHookUrl,
-    allowUnsafeHostname: allowInsecureRestHookUrl,
-  });
 }
 
 /**

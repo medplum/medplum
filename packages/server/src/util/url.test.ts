@@ -1,6 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isUnsafeHostname, isUnsafeIpAddress, validateOutboundUrl } from './url';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { Agent, fetch, getGlobalDispatcher, setGlobalDispatcher } from 'undici';
+import {
+  installSafeOutboundDispatcher,
+  isAllowedOutboundUrlForQueue,
+  isUnsafeHostname,
+  isUnsafeIpAddress,
+  safeAgent,
+  validateOutboundUrl,
+} from './url';
 
 describe('validateOutboundUrl', () => {
   test('parses HTTPS URLs', () => {
@@ -54,6 +64,8 @@ describe('isUnsafeIpAddress', () => {
     expect(isUnsafeIpAddress('fe80::1')).toBe(true);
     expect(isUnsafeIpAddress('fc00::1')).toBe(true);
     expect(isUnsafeIpAddress('::ffff:7f00:1')).toBe(true);
+    expect(isUnsafeIpAddress('::ffff:10.0.0.1')).toBe(true);
+    expect(isUnsafeIpAddress('::ffff:192.168.1.1')).toBe(true);
   });
 
   test('allows public addresses', () => {
@@ -61,3 +73,87 @@ describe('isUnsafeIpAddress', () => {
     expect(isUnsafeIpAddress('2001:4860:4860::8888')).toBe(false);
   });
 });
+
+describe('isAllowedOutboundUrlForQueue', () => {
+  test('allows safe HTTPS URLs by default', () => {
+    expect(isAllowedOutboundUrlForQueue('https://example.com/path', {})).toBe(true);
+  });
+
+  test('rejects known unsafe URLs by default', () => {
+    expect(isAllowedOutboundUrlForQueue('http://example.com/path', {})).toBe(false);
+    expect(isAllowedOutboundUrlForQueue('https://localhost/path', {})).toBe(false);
+    expect(isAllowedOutboundUrlForQueue('https://127.0.0.1/path', {})).toBe(false);
+    expect(isAllowedOutboundUrlForQueue('not a url', {})).toBe(false);
+  });
+
+  test('allows HTTP and unsafe hostnames when unsafe outbound is enabled', () => {
+    expect(isAllowedOutboundUrlForQueue('http://localhost/path', { allowUnsafeOutbound: true })).toBe(true);
+  });
+
+  test('rejects unsupported protocols when unsafe outbound is enabled', () => {
+    expect(isAllowedOutboundUrlForQueue('file://example.com/path', { allowUnsafeOutbound: true })).toBe(false);
+  });
+});
+
+describe('safeAgent', () => {
+  test('requires HTTPS', async () => {
+    await expect(fetch('http://example.com/', { dispatcher: safeAgent })).rejects.toThrow('fetch failed');
+  });
+
+  test('blocks localhost fetches before opening a socket', async () => {
+    const server = createServer((_req, res) => res.end('ok'));
+    await listen(server);
+
+    try {
+      await expect(fetch(`https://localhost:${getPort(server)}`, { dispatcher: safeAgent })).rejects.toThrow(
+        'fetch failed'
+      );
+    } finally {
+      await close(server);
+    }
+  });
+
+  test('blocks private literal targets', async () => {
+    await expect(fetch('https://127.0.0.1/', { dispatcher: safeAgent })).rejects.toThrow('fetch failed');
+  });
+});
+
+describe('installSafeOutboundDispatcher', () => {
+  test('skips installation when unsafe outbound requests are allowed', async () => {
+    const originalDispatcher = getGlobalDispatcher();
+    const unsafeAgent = new Agent();
+    const server = createServer((_req, res) => res.end('ok'));
+
+    setGlobalDispatcher(unsafeAgent);
+    await listen(server);
+
+    try {
+      expect(installSafeOutboundDispatcher({ allowUnsafeOutbound: true })).toBe(false);
+      expect(getGlobalDispatcher()).toBe(unsafeAgent);
+
+      const response = await fetch(`http://127.0.0.1:${getPort(server)}`);
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('ok');
+    } finally {
+      setGlobalDispatcher(originalDispatcher);
+      await close(server);
+      await unsafeAgent.close();
+    }
+  });
+});
+
+function getPort(server: ReturnType<typeof createServer>): number {
+  return (server.address() as AddressInfo).port;
+}
+
+function listen(server: ReturnType<typeof createServer>): Promise<void> {
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', resolve);
+  });
+}
+
+function close(server: ReturnType<typeof createServer>): Promise<void> {
+  return new Promise((resolve, reject) => {
+    server.close((err) => (err ? reject(err) : resolve()));
+  });
+}

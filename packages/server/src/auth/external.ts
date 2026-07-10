@@ -21,7 +21,6 @@ import { getLogger, globalLogger } from '../logger';
 import { getClientRedirectUri } from '../oauth/clients';
 import type { CodeChallengeMethod } from '../oauth/utils';
 import { getClientApplication, tryLogin } from '../oauth/utils';
-import { validateOutboundUrl } from '../util/url';
 import { getDomainConfiguration } from './method';
 
 /*
@@ -284,12 +283,7 @@ async function verifyExternalCode(
   }
 
   try {
-    const allowInsecureExternalAuthUrl = !!getConfig().allowInsecureExternalAuthUrl;
-    const tokenUrl = validateOutboundUrl(idp.tokenUrl, {
-      allowHttp: allowInsecureExternalAuthUrl,
-      allowUnsafeHostname: allowInsecureExternalAuthUrl,
-    }).toString();
-    const response = await fetch(tokenUrl, {
+    const response = await fetch(idp.tokenUrl, {
       method: 'POST',
       headers,
       body: params.toString(),

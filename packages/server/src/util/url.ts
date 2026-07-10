@@ -1,10 +1,79 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import ipaddr from 'ipaddr.js';
+import dns from 'node:dns';
+import { Agent, buildConnector, setGlobalDispatcher } from 'undici';
+import type { MedplumServerConfig } from '../config/types';
 
 export interface OutboundUrlValidationOptions {
   readonly allowHttp?: boolean;
   readonly allowUnsafeHostname?: boolean;
+}
+
+const connector = buildConnector({});
+
+export const safeAgent = new Agent({
+  connect(options, callback) {
+    if (options.protocol !== 'https:') {
+      callback(new Error('Outbound request blocked: HTTPS is required'), null);
+      return;
+    }
+
+    if (isUnsafeHostname(options.hostname)) {
+      callback(new Error(`Outbound request to unsafe hostname ${options.hostname} is blocked`), null);
+      return;
+    }
+
+    dns.lookup(options.hostname, { all: true }, (err, addresses) => {
+      if (err) {
+        callback(err, null);
+        return;
+      }
+
+      if (addresses.some(({ address }) => isUnsafeIpAddress(address))) {
+        callback(new Error(`Outbound request to unsafe address ${options.hostname} is blocked`), null);
+        return;
+      }
+
+      const [{ address }] = addresses;
+      connector({ ...options, hostname: address, servername: options.hostname }, callback);
+    });
+  },
+});
+
+/**
+ * Installs the global SSRF-safe dispatcher unless unsafe outbound requests are explicitly allowed.
+ * @param config - Server configuration.
+ * @returns True if the safe dispatcher was installed.
+ */
+export function installSafeOutboundDispatcher(config: Pick<MedplumServerConfig, 'allowUnsafeOutbound'>): boolean {
+  if (config.allowUnsafeOutbound) {
+    return false;
+  }
+  setGlobalDispatcher(safeAgent);
+  return true;
+}
+
+/**
+ * Performs static outbound URL checks before enqueueing async jobs.
+ * This prevents known-bad jobs from consuming retry attempts while leaving DNS and redirect safety to safeAgent.
+ * @param value - URL string.
+ * @param config - Server configuration.
+ * @returns True if the URL should be queued for outbound fetch.
+ */
+export function isAllowedOutboundUrlForQueue(
+  value: string,
+  config: Pick<MedplumServerConfig, 'allowUnsafeOutbound'>
+): boolean {
+  try {
+    validateOutboundUrl(value, {
+      allowHttp: config.allowUnsafeOutbound,
+      allowUnsafeHostname: config.allowUnsafeOutbound,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**

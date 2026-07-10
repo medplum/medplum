@@ -97,6 +97,7 @@
     "rate-limiter-flexible": "11.2.0",
     "semver": "7.8.5",
     "temporal-polyfill": "0.3.2",
+    "undici": "7.28.0",
     "uuid": "14.0.1",
     "validator": "13.15.35",
     "ws": "8.21.0",

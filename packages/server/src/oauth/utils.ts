@@ -56,7 +56,6 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
-import { validateOutboundUrl } from '../util/url';
 import { getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
@@ -845,14 +844,6 @@ function includeRefreshToken(request: LoginRequest, client: ClientApplication | 
   return !!(client?.grantType?.includes('refresh_token') || scopeArray?.includes('offline_access'));
 }
 
-export function normalizeUserInfoUrl(userInfoUrl: string): string {
-  const allowInsecureExternalAuthUrl = !!getConfig().allowInsecureExternalAuthUrl;
-  return validateOutboundUrl(userInfoUrl, {
-    allowHttp: allowInsecureExternalAuthUrl,
-    allowUnsafeHostname: allowInsecureExternalAuthUrl,
-  }).toString();
-}
-
 /**
  * Returns the external identity provider user info for an access token.
  * This can be used to verify the access token and get the user's email address.
@@ -867,13 +858,6 @@ export async function getExternalUserInfo(
   idp?: IdentityProvider
 ): Promise<JWTPayload> {
   const log = getLogger();
-
-  try {
-    userInfoUrl = normalizeUserInfoUrl(userInfoUrl);
-  } catch (err: unknown) {
-    log.warn('Invalid user info URL', { userInfoUrl, clientId: idp?.clientId, err });
-    throw new OperationOutcomeError(badRequest('Invalid user info URL - check your identity provider configuration'));
-  }
 
   const request = buildExternalUserInfoRequest(userInfoUrl, externalAccessToken, idp);
 
