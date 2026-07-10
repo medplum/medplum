@@ -13,6 +13,7 @@ import {
   isReference,
   isResource,
   parseReference,
+  resolveId,
 } from '@medplum/core';
 import type { Appointment, Bundle, CodeableConcept, Patient, Slot } from '@medplum/fhirtypes';
 import {
@@ -135,15 +136,19 @@ export function AppointmentDetails(props: {
       );
       // $cancel is a custom operation, so the client cannot classify its modifications
       // itself; announce them to invalidate caches and notify interested components.
-      // The operation also soft-deletes the appointment's slots, but does not return
-      // them, so the Slot announcement carries no id.
       medplum.notifyResourceModified({
         resourceType: 'Appointment',
         operation: 'update',
         id: updated.id,
         resource: updated,
       });
-      medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'update' });
+
+      // The $cancel operation soft-deletes the appointment's slots, but does
+      // not return any kind of tombstone for them, so we read the remaining
+      // pointers from the appointment resource and mark them as deleted.
+      updated.slot?.forEach((slot) => {
+        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'delete', id: resolveId(slot) });
+      });
       onAppointmentUpdate(updated);
     } catch (err) {
       showErrorNotification(err);
@@ -166,6 +171,7 @@ export function AppointmentDetails(props: {
       );
       const updatedResources = updated.entry?.map((entry) => entry.resource) ?? EMPTY;
       const updatedAppointment = updatedResources.find((res) => isResource<Appointment>(res, 'Appointment'));
+      const updatedSlots = updatedResources.filter((res) => isResource<Slot>(res, 'Slot'));
       // $confirm is a custom operation, so the client cannot classify its modifications
       // itself; announce them to invalidate caches and notify interested components.
       medplum.notifyResourceModified({
@@ -174,7 +180,14 @@ export function AppointmentDetails(props: {
         id: updatedAppointment?.id,
         resource: updatedAppointment,
       });
-      medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'update' });
+      updatedSlots.forEach((slot) => {
+        medplum.notifyResourceModified({
+          resourceType: 'Slot',
+          operation: 'update',
+          id: slot.id,
+          resource: slot,
+        });
+      });
       if (updatedAppointment) {
         onAppointmentUpdate(updatedAppointment);
       }

@@ -367,7 +367,7 @@ describe('AppointmentDetails', () => {
 
   test('Cancel Visit button', async () => {
     const user = userEvent.setup();
-    const appointment = createAppointment();
+    const appointment = createAppointment({ slot: [{ reference: 'Slot/slot-1' }] });
     const cancelledAppointment = { ...appointment, status: 'cancelled' as const };
     const onAppointmentUpdate = vi.fn();
 
@@ -402,7 +402,12 @@ describe('AppointmentDetails', () => {
       id: appointment.id,
       resource: cancelledAppointment,
     });
-    expect(notifyResourceModifiedSpy).toHaveBeenCalledWith({ resourceType: 'Slot', operation: 'update' });
+
+    expect(notifyResourceModifiedSpy).toHaveBeenCalledWith({
+      resourceType: 'Slot',
+      operation: 'delete',
+      id: 'slot-1',
+    });
 
     // it invoked onAppointmentUpdate callback
     expect(onAppointmentUpdate).toHaveBeenCalledWith(cancelledAppointment);
@@ -430,10 +435,10 @@ describe('AppointmentDetails', () => {
 
   test('Confirm Visit button', async () => {
     const user = userEvent.setup();
-    const bookedAppointment = createAppointment();
-    const pendingAppointment = { ...bookedAppointment, status: 'pending' as const };
+
     const busySlot: Slot = {
       resourceType: 'Slot',
+      id: 'Slot-abc',
       start,
       end,
       status: 'busy',
@@ -441,11 +446,17 @@ describe('AppointmentDetails', () => {
     };
     const busyUnavailableSlot: Slot = {
       resourceType: 'Slot',
+      id: 'Slot-def',
       start,
       end,
       status: 'busy-unavailable',
       schedule: { reference: 'Schedule/abc123' },
     };
+
+    const bookedAppointment = createAppointment({
+      slot: [{ reference: 'Slot/Slot-abc' }, { reference: 'Slot/Slot-def' }],
+    });
+    const pendingAppointment = { ...bookedAppointment, status: 'pending' as const };
 
     const onAppointmentUpdate = vi.fn();
 
@@ -490,7 +501,18 @@ describe('AppointmentDetails', () => {
       id: bookedAppointment.id,
       resource: bookedAppointment,
     });
-    expect(notifyResourceModifiedSpy).toHaveBeenCalledWith({ resourceType: 'Slot', operation: 'update' });
+    expect(notifyResourceModifiedSpy).toHaveBeenCalledWith({
+      resourceType: 'Slot',
+      operation: 'update',
+      id: 'Slot-abc',
+      resource: busySlot,
+    });
+    expect(notifyResourceModifiedSpy).toHaveBeenCalledWith({
+      resourceType: 'Slot',
+      operation: 'update',
+      id: 'Slot-def',
+      resource: busyUnavailableSlot,
+    });
 
     // re-render with booked appointment
     await rerender(<AppointmentDetails appointment={bookedAppointment} onAppointmentUpdate={onAppointmentUpdate} />);

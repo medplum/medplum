@@ -141,7 +141,9 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
           id: appointment?.id,
           resource: appointment,
         });
-        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'update' });
+        slots.forEach((slot) => {
+          medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slot.id, resource: slot });
+        });
 
         if (appointment) {
           let encounter: WithId<Encounter> | undefined;
