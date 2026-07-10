@@ -240,6 +240,14 @@ async function satisfiesAccessPolicy(
   subscription: Subscription,
   options?: SatisfiesAccessPolicyOpts
 ): Promise<boolean> {
+  // Server-scoped subscriptions (stored in the system project) have no author membership scoped
+  // to this resource's project by design. The access policy check only actually gates delivery
+  // for websocket subscriptions (see the TODO above); for every other channel type the result is
+  // discarded anyway, so skip the lookup entirely instead of running a check that's expected to fail.
+  if (!subscription.meta?.project && subscription.channel.type !== 'websocket') {
+    return true;
+  }
+
   let satisfied = true;
   try {
     // We can assert author because any time a resource is updated, the author will be set to the previous author or if it doesn't exist
@@ -267,13 +275,17 @@ async function satisfiesAccessPolicy(
         );
       }
     } else {
-      const projectReference = getReferenceString(project);
-      const authorReference = getReferenceString(subAuthor);
-      const subReference = getReferenceString(subscription);
-      globalLogger.warn(
-        `[Subscription Access Policy]: No membership for subscription author '${authorReference}' in project '${projectReference}'`,
-        { subscription: subReference, project: projectReference }
-      );
+      // Server-scoped subscriptions (stored in the system project) are expected to lack a
+      // membership in every project their author didn't join, so don't warn about it here.
+      if (subscription.meta?.project) {
+        const projectReference = getReferenceString(project);
+        const authorReference = getReferenceString(subAuthor);
+        const subReference = getReferenceString(subscription);
+        globalLogger.warn(
+          `[Subscription Access Policy]: No membership for subscription author '${authorReference}' in project '${projectReference}'`,
+          { subscription: subReference, project: projectReference }
+        );
+      }
       satisfied = false;
     }
   } catch (err: unknown) {
