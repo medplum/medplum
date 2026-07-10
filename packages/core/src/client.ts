@@ -3705,26 +3705,16 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
-   * Dispatches an event, isolating listener exceptions from the caller.
-   * Used for events emitted during request processing, where a throwing
-   * listener must not corrupt the in-flight operation.
-   * @param event - The event to dispatch.
-   */
-  private safeDispatchEvent(event: MedplumClientEventMap[keyof MedplumClientEventMap]): void {
-    try {
-      this.dispatchEvent(event);
-    } catch (err) {
-      console.error('MedplumClient event listener error', err);
-    }
-  }
-
-  /**
    * Dispatches a `resourceModified` event if there are any listeners.
    * @param payload - The event payload.
    */
   private dispatchResourceModified(payload: ResourceModifiedEvent): void {
     if (this.listenerCount('resourceModified') > 0) {
-      this.safeDispatchEvent({ type: 'resourceModified', payload });
+      try {
+        this.dispatchEvent({ type: 'resourceModified', payload });
+      } catch (err) {
+        console.error("[MedplumClient] A 'resourceModified' event listener threw an error ", err);
+      }
     }
   }
 
