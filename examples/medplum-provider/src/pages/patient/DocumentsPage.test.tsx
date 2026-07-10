@@ -107,6 +107,7 @@ describe('DocumentsPage', () => {
   });
 
   const LAB_FILTER_PARAM = `identifier=${encodeURIComponent('https://www.healthgorilla.com|')}`;
+  const OTHER_FILTER_PARAM = `identifier:not=${encodeURIComponent('https://www.healthgorilla.com|')}`;
 
   const navigatedUrls = (): string[] =>
     (navigateMock as unknown as ReturnType<typeof vi.fn>).mock.calls
@@ -141,7 +142,7 @@ describe('DocumentsPage', () => {
     expect(url).not.toContain('_offset');
   });
 
-  test('selecting Other Documents navigates with the missing-identifier and missing-related filters', async () => {
+  test('selecting Other Documents navigates with the not-Health-Gorilla and missing-related filters', async () => {
     await createDocument();
 
     setup(`/Patient/${patientId}/DocumentReference?_sort=-_lastUpdated`);
@@ -150,9 +151,9 @@ describe('DocumentsPage', () => {
     fireEvent.click(await screen.findByText('Other Documents'));
 
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith(expect.stringContaining('identifier:missing=true'));
+      expect(navigateMock).toHaveBeenCalledWith(expect.stringContaining(OTHER_FILTER_PARAM));
     });
-    const url = navigatedUrls().find((u) => u.includes('identifier:missing=true')) as string;
+    const url = navigatedUrls().find((u) => u.includes(OTHER_FILTER_PARAM)) as string;
     expect(url).toContain('related:missing=true');
   });
 
@@ -165,6 +166,18 @@ describe('DocumentsPage', () => {
     // The active source is reflected in the list header, and only the HG doc is listed.
     expect(await screen.findByText('Lab Documents')).toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(1));
+  });
+
+  test('the Other Documents filter keeps non-Health-Gorilla documents visible', async () => {
+    // A doc with an unrelated identifier is not a lab doc, so it belongs under Other Documents.
+    await createDocument({ identifier: [{ system: 'https://example.com', value: 'ext-1' }] });
+    await createDocument(); // plain upload: no identifier
+    await createDocument({ identifier: [{ system: 'https://www.healthgorilla.com', value: 'hg-123' }] });
+
+    setup(`/Patient/${patientId}/DocumentReference?_sort=-_lastUpdated&${OTHER_FILTER_PARAM}&related:missing=true`);
+
+    expect(await screen.findByText('Other Documents')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(2));
   });
 
   test('reselecting the active source clears the filter', async () => {

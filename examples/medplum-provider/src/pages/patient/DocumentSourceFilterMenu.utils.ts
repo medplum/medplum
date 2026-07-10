@@ -13,9 +13,11 @@ export interface DocumentSourceOption {
 }
 
 // Each source is identified by marks on the document itself: Health Gorilla stamps its
-// identifier on every lab document it writes (reports, specimen labels, requisitions), while
-// uploads have no identifier and no related resource. (Its debug-log documents carry a
-// ServiceRequest in context.related instead, which is why Other Documents also requires related:missing.)
+// identifier on every lab document it writes (reports, specimen labels, requisitions), so
+// Other Documents is the complement — anything without a Health Gorilla identifier (a targeted
+// :not rather than identifier:missing, so documents with unrelated identifiers still surface
+// here). Health Gorilla's debug-log documents carry no identifier, only a ServiceRequest in
+// context.related, which is why Other Documents also requires related:missing.
 // Fax/Message sources are not offered yet: nothing links DocumentReferences to their fax or
 // chat Communications — the Communication only points at the document via payload.contentReference,
 // which is not searchable.
@@ -31,7 +33,7 @@ export const DOCUMENT_SOURCE_OPTIONS: DocumentSourceOption[] = [
     label: 'Other Documents',
     headerText: 'Other Documents',
     filters: [
-      { code: 'identifier', operator: Operator.MISSING, value: 'true' },
+      { code: 'identifier', operator: Operator.NOT, value: `${HEALTH_GORILLA_SYSTEM}|` },
       { code: 'related', operator: Operator.MISSING, value: 'true' },
     ],
   },
