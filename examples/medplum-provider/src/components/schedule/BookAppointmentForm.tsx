@@ -124,9 +124,6 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
             parameter: [{ name: 'appointment', resource: booking }],
           }
         );
-        medplum.invalidateSearches('Appointment');
-        medplum.invalidateSearches('Slot');
-
         const resources = data.entry?.map((entry) => entry.resource).filter(isDefined) ?? EMPTY;
         const slots = resources.filter(
           (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Slot> => obj.resourceType === 'Slot'
@@ -134,6 +131,17 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
         const appointment = resources.find(
           (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Appointment> => obj.resourceType === 'Appointment'
         );
+
+        // $book is a custom operation, so the client cannot classify its modifications
+        // itself; announce them to invalidate caches and notify interested components
+        // (e.g. the schedule calendar).
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'create',
+          id: appointment?.id,
+          resource: appointment,
+        });
+        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'update' });
 
         if (appointment) {
           let encounter: WithId<Encounter> | undefined;

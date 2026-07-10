@@ -32,33 +32,25 @@ describe('AppointmentDetails', () => {
   type SetupOptions = {
     appointment: WithId<Appointment>;
     onAppointmentUpdate?: (appointment: Appointment) => void;
-    onSlotUpdate?: (slot: Slot) => void;
   };
 
   const setup = async (options: SetupOptions): Promise<RenderResult> => {
-    const { appointment, onAppointmentUpdate = vi.fn(), onSlotUpdate = vi.fn() } = options;
+    const { appointment, onAppointmentUpdate = vi.fn() } = options;
 
     let result!: RenderResult;
     await act(async () => {
-      result = render(
-        <AppointmentDetails
-          appointment={appointment}
-          onAppointmentUpdate={onAppointmentUpdate}
-          onSlotUpdate={onSlotUpdate}
-        />,
-        {
-          wrapper: ({ children }) => (
-            <MemoryRouter>
-              <MedplumProvider medplum={medplum}>
-                <MantineProvider>
-                  <Notifications />
-                  {children}
-                </MantineProvider>
-              </MedplumProvider>
-            </MemoryRouter>
-          ),
-        }
-      );
+      result = render(<AppointmentDetails appointment={appointment} onAppointmentUpdate={onAppointmentUpdate} />, {
+        wrapper: ({ children }) => (
+          <MemoryRouter>
+            <MedplumProvider medplum={medplum}>
+              <MantineProvider>
+                <Notifications />
+                {children}
+              </MantineProvider>
+            </MedplumProvider>
+          </MemoryRouter>
+        ),
+      });
     });
     return result;
   };
@@ -378,16 +370,14 @@ describe('AppointmentDetails', () => {
     const appointment = createAppointment();
     const cancelledAppointment = { ...appointment, status: 'cancelled' as const };
     const onAppointmentUpdate = vi.fn();
-    const onSlotUpdate = vi.fn();
 
     const postPromise = Promise.withResolvers<Appointment>();
     const postMock = vi.fn().mockReturnValue(postPromise.promise);
-    const invalidateSearchesMock = vi.fn();
+    const notifyResourceModifiedSpy = vi.spyOn(medplum, 'notifyResourceModified');
     medplum.post = postMock;
-    medplum.invalidateSearches = invalidateSearchesMock;
 
     // click the button
-    const { rerender } = await setup({ appointment, onAppointmentUpdate, onSlotUpdate });
+    const { rerender } = await setup({ appointment, onAppointmentUpdate });
     const button = screen.getByRole('button', { name: /Cancel Visit/i });
     await user.click(button);
 
@@ -405,21 +395,20 @@ describe('AppointmentDetails', () => {
     // button is no longer loading
     await waitFor(() => expect(button).not.toHaveAttribute('data-loading'));
 
-    // it invalidated Appointment and Slot searches on success
-    expect(invalidateSearchesMock).toHaveBeenCalledWith('Appointment');
-    expect(invalidateSearchesMock).toHaveBeenCalledWith('Slot');
+    // it announced the Appointment and Slot modifications on success
+    expect(notifyResourceModifiedSpy).toHaveBeenCalledWith({
+      resourceType: 'Appointment',
+      operation: 'update',
+      id: appointment.id,
+      resource: cancelledAppointment,
+    });
+    expect(notifyResourceModifiedSpy).toHaveBeenCalledWith({ resourceType: 'Slot', operation: 'update' });
 
     // it invoked onAppointmentUpdate callback
     expect(onAppointmentUpdate).toHaveBeenCalledWith(cancelledAppointment);
 
     // re-render with cancelled appointment
-    await rerender(
-      <AppointmentDetails
-        appointment={cancelledAppointment}
-        onAppointmentUpdate={onAppointmentUpdate}
-        onSlotUpdate={onSlotUpdate}
-      />
-    );
+    await rerender(<AppointmentDetails appointment={cancelledAppointment} onAppointmentUpdate={onAppointmentUpdate} />);
 
     // cancel button is disabled
     await waitFor(() => expect(button).toHaveAttribute('data-disabled'));
@@ -459,19 +448,16 @@ describe('AppointmentDetails', () => {
     };
 
     const onAppointmentUpdate = vi.fn();
-    const onSlotUpdate = vi.fn();
 
     const postPromise = Promise.withResolvers<Bundle<Appointment | Slot>>();
     const postMock = vi.fn().mockReturnValue(postPromise.promise);
-    const invalidateSearchesMock = vi.fn();
+    const notifyResourceModifiedSpy = vi.spyOn(medplum, 'notifyResourceModified');
     medplum.post = postMock;
-    medplum.invalidateSearches = invalidateSearchesMock;
 
     // click the button
     const { rerender } = await setup({
       appointment: pendingAppointment,
       onAppointmentUpdate,
-      onSlotUpdate,
     });
     const button = screen.getByRole('button', { name: /Confirm Appointment/i });
     await user.click(button);
@@ -497,22 +483,17 @@ describe('AppointmentDetails', () => {
     // onAppointmentUpdate was called with the updated appointment
     expect(onAppointmentUpdate).toHaveBeenCalledWith(bookedAppointment);
 
-    // onSlotUpdate was called with the updated slots
-    expect(onSlotUpdate).toHaveBeenCalledWith(busySlot);
-    expect(onSlotUpdate).toHaveBeenCalledWith(busyUnavailableSlot);
-
-    // it invalidated Appointment and Slot searches on success
-    expect(invalidateSearchesMock).toHaveBeenCalledWith('Appointment');
-    expect(invalidateSearchesMock).toHaveBeenCalledWith('Slot');
+    // it announced the Appointment and Slot modifications on success
+    expect(notifyResourceModifiedSpy).toHaveBeenCalledWith({
+      resourceType: 'Appointment',
+      operation: 'update',
+      id: bookedAppointment.id,
+      resource: bookedAppointment,
+    });
+    expect(notifyResourceModifiedSpy).toHaveBeenCalledWith({ resourceType: 'Slot', operation: 'update' });
 
     // re-render with booked appointment
-    await rerender(
-      <AppointmentDetails
-        appointment={bookedAppointment}
-        onAppointmentUpdate={onAppointmentUpdate}
-        onSlotUpdate={onSlotUpdate}
-      />
-    );
+    await rerender(<AppointmentDetails appointment={bookedAppointment} onAppointmentUpdate={onAppointmentUpdate} />);
 
     // button is not rendered when status is "booked"
     expect(screen.queryByRole('button', { name: 'Confirm Appointment' })).not.toBeInTheDocument();

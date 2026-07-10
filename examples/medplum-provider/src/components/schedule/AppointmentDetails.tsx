@@ -106,9 +106,8 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
 export function AppointmentDetails(props: {
   appointment: WithId<Appointment>;
   onAppointmentUpdate: (appointment: WithId<Appointment>) => void;
-  onSlotUpdate: (slot: WithId<Slot>) => void;
 }): JSX.Element {
-  const { appointment, onAppointmentUpdate, onSlotUpdate } = props;
+  const { appointment, onAppointmentUpdate } = props;
   const medplum = useMedplum();
 
   const [encounter, encounterLoading, encounterOutcome] = useSearchOne(
@@ -134,8 +133,17 @@ export function AppointmentDetails(props: {
       const updated = await medplum.post<WithId<Appointment>>(
         medplum.fhirUrl('Appointment', appointment.id, '$cancel')
       );
-      medplum.invalidateSearches('Appointment');
-      medplum.invalidateSearches('Slot');
+      // $cancel is a custom operation, so the client cannot classify its modifications
+      // itself; announce them to invalidate caches and notify interested components.
+      // The operation also soft-deletes the appointment's slots, but does not return
+      // them, so the Slot announcement carries no id.
+      medplum.notifyResourceModified({
+        resourceType: 'Appointment',
+        operation: 'update',
+        id: updated.id,
+        resource: updated,
+      });
+      medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'update' });
       onAppointmentUpdate(updated);
     } catch (err) {
       showErrorNotification(err);
@@ -156,23 +164,26 @@ export function AppointmentDetails(props: {
       const updated = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
         medplum.fhirUrl('Appointment', appointment.id, '$confirm')
       );
-      medplum.invalidateSearches('Appointment');
-      medplum.invalidateSearches('Slot');
       const updatedResources = updated.entry?.map((entry) => entry.resource) ?? EMPTY;
       const updatedAppointment = updatedResources.find((res) => isResource<Appointment>(res, 'Appointment'));
-      const updatedSlots = updatedResources.filter((res) => isResource<Slot>(res, 'Slot'));
+      // $confirm is a custom operation, so the client cannot classify its modifications
+      // itself; announce them to invalidate caches and notify interested components.
+      medplum.notifyResourceModified({
+        resourceType: 'Appointment',
+        operation: 'update',
+        id: updatedAppointment?.id,
+        resource: updatedAppointment,
+      });
+      medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'update' });
       if (updatedAppointment) {
         onAppointmentUpdate(updatedAppointment);
-      }
-      for (const updatedSlot of updatedSlots) {
-        onSlotUpdate(updatedSlot);
       }
     } catch (err) {
       showErrorNotification(err);
     } finally {
       setConfirmLoading(false);
     }
-  }, [medplum, appointment, confirmable, onAppointmentUpdate, onSlotUpdate]);
+  }, [medplum, appointment, confirmable, onAppointmentUpdate]);
 
   const sortedParticipants = appointment.participant
     .map((participant) => {

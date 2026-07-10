@@ -3,9 +3,9 @@
 import { Drawer, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
-import { EMPTY, getReferenceString, isDefined, isReference, isResourceWithId, resolveId } from '@medplum/core';
+import { getReferenceString, isReference, isResourceWithId } from '@medplum/core';
 import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useResourceModified } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -36,6 +36,11 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
 
   const [appointmentSlot, setAppointmentSlot] = useState<Range>();
   const [appointmentDetails, setAppointmentDetails] = useState<WithId<Appointment> | undefined>(undefined);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Reload slots and appointments whenever this client modifies one, e.g. booking a
+  // visit from the FindPane or cancelling one from the appointment details drawer.
+  useResourceModified(['Slot', 'Appointment'], () => setRefreshKey((key) => key + 1));
 
   useEffect(() => {
     if (!range) {
@@ -57,7 +62,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     return () => {
       active = false;
     };
-  }, [medplum, schedule, range]);
+  }, [medplum, schedule, range, refreshKey]);
 
   // Find appointments visible in the current range
   useEffect(() => {
@@ -80,7 +85,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     return () => {
       active = false;
     };
-  }, [medplum, schedule, range]);
+  }, [medplum, schedule, range, refreshKey]);
 
   const practitioner = schedule.actor.find((actor) => isReference<Practitioner>(actor, 'Practitioner'));
 
@@ -115,12 +120,12 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     [createAppointmentHandlers, practitioner]
   );
 
+  // The calendar data itself refreshes through the `useResourceModified` subscription
+  // above; this callback only handles the UI response to a successful booking.
   const handleBookSuccess = useCallback(
     (results: { appointment: WithId<Appointment>; slots: Slot[] }) => {
-      setAppointments((state) => [...(state ?? EMPTY), results.appointment]);
       setAppointmentDetails(results.appointment);
       appointmentDetailsHandlers.open();
-      setSlots((state) => results.slots.concat(state ?? EMPTY));
     },
     [appointmentDetailsHandlers]
   );
@@ -160,25 +165,13 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
 
   const handleAppointmentUpdate = useCallback(
     (updated: WithId<Appointment>) => {
-      setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
       setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
       if (updated.status === 'cancelled') {
         appointmentDetailsHandlers.close();
-
-        // If the appointment was cancelled with `$cancel`, it also
-        // soft-deleted the related slots. Remove them from our local state.
-        if (updated.slot) {
-          const ids = new Set(updated.slot.map((ref) => resolveId(ref)).filter(isDefined));
-          setSlots((state) => state?.filter((slot) => slot.id && !ids.has(slot.id)));
-        }
       }
     },
     [appointmentDetailsHandlers]
   );
-
-  const handleSlotUpdate = useCallback((updated: WithId<Slot>) => {
-    setSlots((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
-  }, []);
 
   const mergedSlots = useMemo(() => mergeOverlappingSlots(slots ?? []), [slots]);
 
@@ -235,11 +228,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
         h="100%"
       >
         {appointmentDetails && (
-          <AppointmentDetails
-            appointment={appointmentDetails}
-            onAppointmentUpdate={handleAppointmentUpdate}
-            onSlotUpdate={handleSlotUpdate}
-          />
+          <AppointmentDetails appointment={appointmentDetails} onAppointmentUpdate={handleAppointmentUpdate} />
         )}
       </Drawer>
     </>
