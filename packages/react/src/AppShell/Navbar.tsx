@@ -229,11 +229,13 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 >
                   <ResourceAvatar value={profile} radius="xl" size={24} />
                   <span className={classes.userLinkLabel} data-opened={opened || undefined}>
-                    <span className={classes.userName}>{formatHumanName(profile?.name?.[0])}</span>
+                    <Text span inherit truncate>
+                      {formatHumanName(profile?.name?.[0])}
+                    </Text>
                     {projectDisplay && (
-                      <span className={classes.userProject} title={projectDisplay}>
+                      <Text span inherit fz="xs" c="dimmed" truncate title={projectDisplay}>
                         {projectDisplay}
-                      </span>
+                      </Text>
                     )}
                   </span>
                 </UnstyledButton>
