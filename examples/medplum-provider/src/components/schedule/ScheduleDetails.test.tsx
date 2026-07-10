@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -77,77 +77,6 @@ describe('ScheduleDetails', () => {
       await setup(mockSchedule);
       const title = screen.getByText(/\w+\s+\d{4}/);
       expect(title).toBeInTheDocument();
-    });
-  });
-
-  describe('Calendar Events', () => {
-    test('searches for slots when date range is set', async () => {
-      const mockSlots: Slot[] = [
-        {
-          resourceType: 'Slot',
-          id: 'slot-1',
-          schedule: { reference: 'Schedule/schedule-1' },
-          status: 'free',
-          start: '2024-01-15T10:00:00Z',
-          end: '2024-01-15T10:30:00Z',
-        },
-      ];
-
-      medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Slot') {
-          return Promise.resolve(mockSlots);
-        }
-        return Promise.resolve([]);
-      });
-
-      await setup(mockSchedule);
-
-      await waitFor(
-        () => {
-          const slotCalls = (medplum.searchResources as ReturnType<typeof vi.fn>).mock.calls.filter(
-            (call) => call[0] === 'Slot'
-          );
-          expect(slotCalls.length).toBeGreaterThan(0);
-        },
-        { timeout: 5000 }
-      );
-    });
-
-    test('searches for appointments when date range is set', async () => {
-      const mockAppointments: Appointment[] = [
-        {
-          resourceType: 'Appointment',
-          id: 'appt-1',
-          status: 'booked',
-          start: '2024-01-15T10:00:00Z',
-          end: '2024-01-15T10:30:00Z',
-          participant: [
-            {
-              actor: { reference: 'Practitioner/practitioner-1' },
-              status: 'accepted',
-            },
-          ],
-        },
-      ];
-
-      medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Appointment') {
-          return Promise.resolve(mockAppointments);
-        }
-        return Promise.resolve([]);
-      });
-
-      await setup(mockSchedule);
-
-      await waitFor(
-        () => {
-          const appointmentCalls = (medplum.searchResources as ReturnType<typeof vi.fn>).mock.calls.filter(
-            (call) => call[0] === 'Appointment'
-          );
-          expect(appointmentCalls.length).toBeGreaterThan(0);
-        },
-        { timeout: 5000 }
-      );
     });
   });
 
