@@ -60,16 +60,18 @@ describe('LabResultDetails', () => {
     expect(screen.getByText('Final')).toBeInTheDocument();
   });
 
-  test('Displays default title when code text and display are missing', () => {
+  test('Renders an empty title when code text and display are missing', () => {
     const diagnosticReport = createMockDiagnosticReport({
       code: {
         coding: [],
       },
     });
 
-    setup(diagnosticReport);
+    const { container } = setup(diagnosticReport);
 
-    expect(screen.getByText('Lab Result')).toBeInTheDocument();
+    const title = container.querySelector('.mantine-Text-root');
+    expect(title).toBeInTheDocument();
+    expect(title).toBeEmptyDOMElement();
   });
 
   test('Displays code display when code text is missing', () => {
