@@ -1,23 +1,33 @@
+.itemWrapper {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.itemWrapper::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 1px;
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-4));
+}
+
 .contentContainer {
   transition: background 0.2s;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
+  border-radius: 0.5rem;
   text-decoration: none;
+  overflow: hidden;
   color: light-dark(var(--mantine-color-dark-9), var(--mantine-color-gray-0));
 }
 
+
 .content {
   flex: 1;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  word-break: ellipsis;
+  width: 0;
   white-space: nowrap;
-}
-.contentContainer:hover {
-  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-9));
-}
-
-.contentContainer.selected {
-  background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-9));
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
