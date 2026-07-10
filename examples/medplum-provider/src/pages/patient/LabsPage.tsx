@@ -18,7 +18,7 @@ import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
 
-type LabTab = 'open' | 'completed';
+export type LabTab = 'open' | 'completed';
 type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
 
 // The "Completed" tab lists finalized results; the "Open" tab lists orders that
@@ -28,10 +28,14 @@ const OPEN_RESOURCE_TYPE = 'ServiceRequest';
 const COMPLETED_REPORT_STATUS = 'final';
 const OPEN_ORDER_STATUS = 'active,draft,on-hold';
 const DEFAULT_SORT_RULES: SortRule[] = [{ code: '_lastUpdated', descending: true }];
-// Page size. Overridable via the URL `_count` param.
 const DEFAULT_COUNT = 20;
 
-export function LabsPage(): JSX.Element {
+export interface LabsPageProps {
+  tab: LabTab;
+}
+
+export function LabsPage(props: LabsPageProps): JSX.Element {
+  const { tab: activeTab } = props;
   const { patientId, serviceRequestId, diagnosticReportId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,9 +44,6 @@ export function LabsPage(): JSX.Element {
   const patient = usePatient();
   const patientReference = useMemo(() => (patient ? getReferenceString(patient) : undefined), [patient]);
 
-  // Tabs are URL-driven: the DiagnosticReport route is "Completed", the
-  // ServiceRequest route is "Open".
-  const activeTab: LabTab = location.pathname.includes('/DiagnosticReport') ? 'completed' : 'open';
   const resourceType = activeTab === 'completed' ? COMPLETED_RESOURCE_TYPE : OPEN_RESOURCE_TYPE;
   const selectedId = activeTab === 'completed' ? diagnosticReportId : serviceRequestId;
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Center, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
+import { isReference } from '@medplum/core';
 import type { DiagnosticReport, Reference, ServiceRequest } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import type { JSX } from 'react';
@@ -27,9 +28,7 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
   // in which case we prefer the order view over the raw result.
   const basedOnRef =
     item.resourceType === 'DiagnosticReport'
-      ? (item.basedOn?.find((ref) => ref.reference?.startsWith('ServiceRequest/')) as
-          | Reference<ServiceRequest>
-          | undefined)
+      ? item.basedOn?.find((ref): ref is Reference<ServiceRequest> => isReference(ref, 'ServiceRequest'))
       : undefined;
   const order = useResource(item.resourceType === 'ServiceRequest' ? item : basedOnRef);
 

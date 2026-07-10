@@ -30,7 +30,6 @@ export function LabReportContent(props: LabReportContentProps): JSX.Element {
       .then(setPresentedFormAttachments)
       .catch(console.error);
 
-    // Clear attachments when the report changes so the previous report's documents do not linger
     return () => {
       setPresentedFormAttachments([]);
     };

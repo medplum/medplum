@@ -356,50 +356,48 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
       <Paper h="100%">
         <Stack gap="0">
           <Stack gap="md" p="md">
-            <Stack gap="md">
-              <Stack gap="0">
-                <Text size="xl" fw={800}>
-                  {(() => {
-                    // If there are multiple codes (2 or more), show them separated by commas
-                    if (order.code?.coding && order.code.coding.length >= 2) {
-                      return order.code.coding.map((coding) => coding.display).join(', ');
-                    }
+            <Stack gap="0">
+              <Text size="xl" fw={800}>
+                {(() => {
+                  // If there are multiple codes (2 or more), show them separated by commas
+                  if (order.code?.coding && order.code.coding.length >= 2) {
+                    return order.code.coding.map((coding) => coding.display).join(', ');
+                  }
 
-                    // If there's a text field and only one code, use the text field
-                    if (order.code?.text) {
-                      return order.code.text;
-                    }
+                  // If there's a text field and only one code, use the text field
+                  if (order.code?.text) {
+                    return order.code.text;
+                  }
 
-                    // Otherwise, show the first code or fallback
-                    return order.code?.coding?.[0]?.display || 'Lab Order';
-                  })()}
-                </Text>
-                <Text size="sm" c="gray.7">
-                  {order.status === 'completed' && order.meta?.lastUpdated
-                    ? `Completed ${formatDate(order.meta.lastUpdated)} • Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`
-                    : `Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`}
-                </Text>
-              </Stack>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Tabs
-                  value={activeDetailTab}
-                  onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
-                  variant="unstyled"
-                  className="pill-tabs"
-                >
-                  <Tabs.List>
-                    <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
-                      {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
-                    </Tabs.Tab>
-                    <Tabs.Tab value="order">Order Details</Tabs.Tab>
-                  </Tabs.List>
-                </Tabs>
-                <Badge size="lg" color={getStatusColor(order.status)} variant="light">
-                  {getStatusDisplayText(order.status)}
-                </Badge>
-              </Group>
+                  // Otherwise, show the first code or fallback
+                  return order.code?.coding?.[0]?.display || 'Lab Order';
+                })()}
+              </Text>
+              <Text size="sm" c="gray.7">
+                {order.status === 'completed' && order.meta?.lastUpdated
+                  ? `Completed ${formatDate(order.meta.lastUpdated)} • Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`
+                  : `Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`}
+              </Text>
             </Stack>
+            <Divider />
+            <Group justify="space-between" align="center">
+              <Tabs
+                value={activeDetailTab}
+                onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
+                variant="unstyled"
+                className="pill-tabs"
+              >
+                <Tabs.List>
+                  <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
+                    {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
+                  </Tabs.Tab>
+                  <Tabs.Tab value="order">Order Details</Tabs.Tab>
+                </Tabs.List>
+              </Tabs>
+              <Badge size="lg" color={getStatusColor(order.status)} variant="light">
+                {getStatusDisplayText(order.status)}
+              </Badge>
+            </Group>
           </Stack>
 
           <Stack gap="xs" p="md">

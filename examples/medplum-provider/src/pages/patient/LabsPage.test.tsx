@@ -71,10 +71,13 @@ describe('LabsPage', () => {
             <Notifications />
             <LocationProbe />
             <Routes>
-              <Route path="/Patient/:patientId/ServiceRequest/:serviceRequestId" element={<LabsPage />} />
-              <Route path="/Patient/:patientId/ServiceRequest" element={<LabsPage />} />
-              <Route path="/Patient/:patientId/DiagnosticReport/:diagnosticReportId" element={<LabsPage />} />
-              <Route path="/Patient/:patientId/DiagnosticReport" element={<LabsPage />} />
+              <Route path="/Patient/:patientId/ServiceRequest/:serviceRequestId" element={<LabsPage tab="open" />} />
+              <Route path="/Patient/:patientId/ServiceRequest" element={<LabsPage tab="open" />} />
+              <Route
+                path="/Patient/:patientId/DiagnosticReport/:diagnosticReportId"
+                element={<LabsPage tab="completed" />}
+              />
+              <Route path="/Patient/:patientId/DiagnosticReport" element={<LabsPage tab="completed" />} />
             </Routes>
           </MantineProvider>
         </NavProvider>

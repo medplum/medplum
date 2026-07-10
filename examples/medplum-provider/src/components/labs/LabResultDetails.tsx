@@ -3,6 +3,7 @@
 import { Badge, Divider, Group, Paper, ScrollArea, Stack, Text } from '@mantine/core';
 import { formatDate } from '@medplum/core';
 import type { DiagnosticReport } from '@medplum/fhirtypes';
+import { CodeableConceptDisplay } from '@medplum/react';
 import type { JSX } from 'react';
 import { LabReportContent } from './LabReportContent';
 
@@ -18,37 +19,21 @@ export function LabResultDetails(props: LabResultDetailsProps): JSX.Element {
       <Paper h="100%">
         <Stack gap="0">
           <Stack gap="md" p="md">
-            <Stack gap="md">
-              <Stack gap="0">
-                <Text size="xl" fw={800}>
-                  {(() => {
-                    // If there are multiple codes (2 or more), show them separated by commas
-                    if (result.code?.coding && result.code.coding.length >= 2) {
-                      return result.code.coding.map((coding) => coding.display).join(', ');
-                    }
-
-                    // If there's a text field and only one code, use the text field
-                    if (result.code?.text) {
-                      return result.code.text;
-                    }
-
-                    // Otherwise, show the first code or fallback
-                    return result.code?.coding?.[0]?.display || 'Lab Result';
-                  })()}
-                </Text>
-                <Text size="sm" c="gray.7">
-                  {result.effectiveDateTime
-                    ? `Issued ${formatDate(result.issued)} • Collected ${formatDate(result.effectiveDateTime)}`
-                    : `Issued ${formatDate(result.issued)}`}
-                </Text>
-              </Stack>
-              <Divider />
-              <Group justify="flex-end" align="center">
-                <Badge size="lg" color={getStatusColor(result.status)} variant="light">
-                  {getStatusDisplayText(result.status)}
-                </Badge>
-              </Group>
+            <Stack gap="0">
+              <Text size="xl" fw={800}>
+                <CodeableConceptDisplay value={result.code} />
+              </Text>
+              <Text size="sm" c="gray.7">
+                Issued {formatDate(result.issued)}
+                {result.effectiveDateTime && ` • Collected ${formatDate(result.effectiveDateTime)}`}
+              </Text>
             </Stack>
+            <Divider />
+            <Group justify="flex-end" align="center">
+              <Badge size="lg" color={getStatusColor(result.status)} variant="light">
+                {getStatusDisplayText(result.status)}
+              </Badge>
+            </Group>
           </Stack>
 
           <Stack gap="xs" p="md">
