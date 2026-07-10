@@ -925,6 +925,57 @@ export interface RequestProfileSchemaOptions extends MedplumRequestOptions {
 }
 
 /**
+ * Payload of the `requestStarted` event, emitted when the client begins an HTTP round trip.
+ *
+ * Emitted after cache and auto-batch handling, immediately before the request is sent.
+ * Cache hits and requests merged into an auto-batch do not emit events of their own;
+ * the auto-batch itself is visible as a single batch `POST`.
+ */
+export interface RequestStartedEvent {
+  /**
+   * Monotonically increasing id, unique within this client instance.
+   * Correlates `requestStarted` and `requestFinished` events.
+   */
+  requestId: number;
+  /** The HTTP method. */
+  method: string;
+  /** The absolute request URL. */
+  url: string;
+  /** The request body as sent, if any. May contain PHI. */
+  body?: string;
+  /** Start time in milliseconds since the Unix epoch. */
+  startTime: number;
+}
+
+/**
+ * Payload of the `requestFinished` event, emitted when an HTTP round trip settles.
+ *
+ * A round trip that triggers follow-up round trips (token refresh and retry, redirect
+ * following, or polling on HTTP 202 "Accepted") emits nested `requestStarted`/`requestFinished`
+ * pairs for each follow-up round trip; the outer event's `response`/`error` reflect the final
+ * settled result of the chain.
+ */
+export interface RequestFinishedEvent extends RequestStartedEvent {
+  /** Elapsed time in milliseconds. */
+  durationMs: number;
+  /**
+   * The HTTP status code of this round trip, when a response was received.
+   * Undefined on network failure or abort.
+   */
+  status?: number;
+  /**
+   * The parsed response body when the request succeeded.
+   * This is the same object returned to the caller — treat it as read-only. May contain PHI.
+   */
+  response?: unknown;
+  /**
+   * The error when the request failed: an `OperationOutcomeError` for HTTP 4xx/5xx responses,
+   * or the underlying network/abort error.
+   */
+  error?: Error;
+}
+
+/**
  * This map enumerates all the lifecycle events that `MedplumClient` emits and what the shape of the `Event` is.
  */
 export type MedplumClientEventMap = {
@@ -934,6 +985,8 @@ export type MedplumClientEventMap = {
   profileRefreshed: { type: 'profileRefreshed' };
   storageInitialized: { type: 'storageInitialized' };
   storageInitFailed: { type: 'storageInitFailed'; payload: { error: Error } };
+  requestStarted: { type: 'requestStarted'; payload: RequestStartedEvent };
+  requestFinished: { type: 'requestFinished'; payload: RequestFinishedEvent };
 };
 
 /**
@@ -1027,6 +1080,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private profilePromise?: Promise<any>;
   private sessionDetails?: SessionDetails;
   private currentRateLimits?: string;
+  private requestIdCounter = 0;
   private basicAuth?: string;
   private initPromise: Promise<void>;
   private initComplete = true;
@@ -3614,14 +3668,80 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
-   * Makes an HTTP request.
+   * Dispatches an event, isolating listener exceptions from the caller.
+   * Used for events emitted during request processing, where a throwing
+   * listener must not corrupt the in-flight operation.
+   * @param event - The event to dispatch.
+   */
+  private safeDispatchEvent(event: MedplumClientEventMap[keyof MedplumClientEventMap]): void {
+    try {
+      this.dispatchEvent(event);
+    } catch (err) {
+      console.error('MedplumClient event listener error', err);
+    }
+  }
+
+  /**
+   * Makes an HTTP request, emitting `requestStarted`/`requestFinished` events when listeners
+   * are registered. One event pair is emitted per HTTP round trip: retried 5xx responses
+   * settle within a single pair, while token refresh, redirect following, and 202 polling
+   * re-enter this method and emit nested pairs.
    * @param url - The target URL.
    * @param options - Optional fetch request init options.
    * @param state - Optional request state.
    * @returns The JSON content body if available.
    */
   private async request<T>(url: string, options: MedplumRequestOptions = {}, state: RequestState = {}): Promise<T> {
+    if (this.listenerCount('requestStarted') === 0 && this.listenerCount('requestFinished') === 0) {
+      return this.requestImpl(url, options, state);
+    }
+
+    const payload: RequestStartedEvent = {
+      requestId: ++this.requestIdCounter,
+      method: options.method ?? 'GET',
+      url: url.startsWith('http') ? url : concatUrls(this.baseUrl, url),
+      body: typeof options.body === 'string' ? options.body : undefined,
+      startTime: Date.now(),
+    };
+    this.safeDispatchEvent({ type: 'requestStarted', payload });
+
+    const roundTrip: { status?: number } = {};
+    try {
+      const result = await this.requestImpl<T>(url, options, state, roundTrip);
+      this.safeDispatchEvent({
+        type: 'requestFinished',
+        payload: {
+          ...payload,
+          durationMs: Date.now() - payload.startTime,
+          status: roundTrip.status,
+          response: result,
+        },
+      });
+      return result;
+    } catch (err) {
+      this.safeDispatchEvent({
+        type: 'requestFinished',
+        payload: {
+          ...payload,
+          durationMs: Date.now() - payload.startTime,
+          status: roundTrip.status,
+          error: err as Error,
+        },
+      });
+      throw err;
+    }
+  }
+
+  private async requestImpl<T>(
+    url: string,
+    options: MedplumRequestOptions,
+    state: RequestState,
+    roundTrip?: { status?: number }
+  ): Promise<T> {
     const response = await this.wrappedFetch(url, options);
+    if (roundTrip) {
+      roundTrip.status = response.status;
+    }
 
     if (response.status === 401) {
       // Refresh and try again
