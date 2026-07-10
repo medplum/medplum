@@ -80,9 +80,11 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
           { signal }
         );
       } catch (err) {
-        // A 4xx outcome (e.g. "ValueSet not found") won't succeed on retry, so remember the failure
-        // and show it inline instead of surfacing an error on every keystroke; transient errors rethrow
-        if (err instanceof OperationOutcomeError && getStatus(err.outcome) < 500) {
+        // A 400/404 outcome (e.g. "ValueSet not found") won't succeed on retry, so remember the failure
+        // and show it inline instead of surfacing an error on every keystroke; potentially transient
+        // errors (429 rate limit, 401, 5xx, network) rethrow so the field keeps retrying
+        const status = err instanceof OperationOutcomeError ? getStatus(err.outcome) : undefined;
+        if (status === 400 || status === 404) {
           setUnavailableBinding({ binding, message: normalizeErrorString(err) });
           return [];
         }

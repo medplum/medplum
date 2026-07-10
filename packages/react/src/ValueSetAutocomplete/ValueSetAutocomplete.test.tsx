@@ -176,6 +176,35 @@ describe('AsyncAutocomplete', () => {
     spy.mockRestore();
   });
 
+  test('rate-limited expand does not disable the input', async () => {
+    const medplum = new MockClient();
+    const spy = vi.spyOn(medplum, 'valueSetExpand').mockRejectedValueOnce(
+      new OperationOutcomeError({
+        resourceType: 'OperationOutcome',
+        id: 'too-many-requests',
+        issue: [{ severity: 'error', code: 'throttled', details: { text: 'Too many requests' } }],
+      })
+    );
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <Notifications />
+        <ValueSetAutocomplete binding="x" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
+    await typeInAutocomplete(input, 'a');
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    // The next search hits the server again and succeeds
+    await typeInAutocomplete(input, 'test');
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Test Display')).toBeInTheDocument();
+
+    spy.mockRestore();
+  });
+
   test('transient expand failure does not disable the input', async () => {
     const medplum = new MockClient();
     const spy = vi
