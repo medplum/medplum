@@ -32,6 +32,9 @@ export const DOCUMENT_SOURCE_OPTIONS: DocumentSourceOption[] = [
     headerText: 'Other Documents',
     filters: [
       { code: 'identifier', operator: Operator.MISSING, value: 'true' },
+      // The Health Gorilla integration can create DocumentReference entries
+      // containing debugging information; we don't want to display those here.
+      // Such documents have a reference to a `ServiceRequest` in `context.related`.
       { code: 'related', operator: Operator.MISSING, value: 'true' },
     ],
   },
