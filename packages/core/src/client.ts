@@ -933,20 +933,18 @@ export interface RequestProfileSchemaOptions extends MedplumRequestOptions {
  * Conditional methods (`createResourceIfNoneExist`, `upsertResource`) emit
  * even when the server made no change, except on HTTP 304 "Not Modified".
  *
- * Custom operations (e.g. `Appointment/$book`), GraphQL mutations, FHIR
- * Batches and Transactions (`executeBatch`), and writes made by other clients
- * do not emit this event automatically — use `notifyResourceModified` to
- * announce them.
+ * @template T - The type of the modified resource. Defaults to `Resource`; narrow it (e.g. via
+ * `useResourceModified('Slot', ...)`) to get a typed `resource` payload without extra guards.
  */
-export interface ResourceModifiedEvent {
+export interface ResourceModifiedEvent<T extends Resource = Resource> {
   /** The type of the modified resource. */
-  resourceType: ResourceType;
+  resourceType: T['resourceType'];
   /** How the resource was modified. */
   operation: 'create' | 'update' | 'patch' | 'delete';
   /** The resource id, when known. */
   id?: string;
   /** The server-returned resource, when available. Undefined for deletes. */
-  resource?: Resource;
+  resource?: WithId<T>;
 }
 
 /**

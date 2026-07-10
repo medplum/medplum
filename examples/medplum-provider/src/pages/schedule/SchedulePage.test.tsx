@@ -539,7 +539,7 @@ describe('Cancel Visit integration', () => {
     });
   });
 
-  const setup = (initialPath = '/Calendar/Schedule/alice-smith-schedule'): ReturnType<typeof render> => {
+  const setup = (initialPath = `/Calendar/Schedule/${DrAliceSmithSchedule.id}`): ReturnType<typeof render> => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
@@ -563,7 +563,10 @@ describe('Cancel Visit integration', () => {
       status: 'booked',
       start: '2024-01-16T10:00:00Z',
       end: '2024-01-16T10:30:00Z',
-      participant: [{ actor: { reference: 'Patient/patient-1', display: 'Jane Doe' }, status: 'accepted' }],
+      participant: [
+        { actor: createReference(DrAliceSmith), status: 'accepted' },
+        { actor: { reference: 'Patient/patient-1', display: 'Jane Doe' }, status: 'accepted' },
+      ],
     } satisfies Appointment;
     const cancelledAppointment = { ...bookedAppointment, status: 'cancelled' } satisfies Appointment;
 
