@@ -154,49 +154,44 @@ export const MIGRATIONS: readonly Migration[] = [
     `,
   },
   {
-    // Logical channels: partition a physical channel's rows into independent
-    // FIFO sub-queues, so a bounded worker pool can process distinct partitions
-    // concurrently while each partition stays strictly serial. The partition of
-    // a row is its logical_channel_key, computed at intake from the channel's
-    // `logicalChannelKey` spec (a set of HL7 field paths). The default '' means
+    // Logical channels: partition a physical channel's rows into independent FIFO
+    // sub-queues so a bounded worker pool can process distinct partitions
+    // concurrently while each partition stays strictly serial. A row's partition is
+    // its logical_channel_key, computed at CLAIM time from the channel's
+    // `logicalChannelKey` spec (a set of HL7 field paths); the default '' means
     // "one queue for the whole channel" -- byte-identical to pre-logical-channel
-    // behavior. See logical-channel.ts and the CLAIM_NEXT partition logic.
+    // behavior. See logical-channel.ts and the CLAIM_NEXT / isPartitionBlocked logic.
     //
-    // ADD COLUMN stays cheap here (a plain, non-generated TEXT with a literal
-    // DEFAULT rewrites only the schema text, not existing rows -- same rationale
-    // as the v2 columns). The companion index is what the partition-aware claim
-    // relies on to stay off a full table scan.
+    // This migration also introduces the `delayed` state (a row parked behind an
+    // earlier not-yet-settled message in the same logical channel). A `delayed` row
+    // is still an ACTIVE occupant of its (channel_name, msg_control_id) -- an
+    // inbound retransmit while it waits must dedupe against it, not insert a second
+    // copy -- so the active-duplicate unique index is recreated to include it.
+    //
+    // ADD COLUMN stays cheap (a plain, non-generated TEXT with a literal DEFAULT
+    // rewrites only the schema text, not existing rows -- same rationale as the v2
+    // columns). Recreating uq_inbound_dup_active is safe on a populated table:
+    // this is the first migration to introduce `delayed`, so zero rows are in it at
+    // apply time and the widened predicate cannot surface a new uniqueness
+    // violation; the DROP + CREATE runs inside this migration's transaction (see
+    // runMigrations), so it's atomic. The other dup index (idx_inbound_dup_lookup,
+    // WHERE state != 'nacked') and the new claim index (keyed on state) already
+    // cover `delayed` without change.
     version: 3,
     sql: `
       ALTER TABLE inbound_hl7_messages
         ADD COLUMN logical_channel_key TEXT NOT NULL DEFAULT '';
 
-      -- Serves the partition-aware CLAIM_NEXT: the per-partition head lookup
-      -- (MIN(id) WHERE channel+vkey+state='queued') and the "is this partition
-      -- already being processed" busy check (channel+vkey+state IN claimed,inflight).
-      -- Leading (channel_name, logical_channel_key, state) lets both resolve by
-      -- index seek; the trailing id makes the MIN a boundary read.
+      -- Serves the worker's post-claim partition check (isPartitionBlocked: is an
+      -- earlier same-key row still queued/delayed/claimed/inflight?) and the wake of
+      -- the next delayed row of a key (wakePartition). Leading (channel_name,
+      -- logical_channel_key, state) resolves both by index seek; the trailing id
+      -- makes the MIN(id) wake a boundary read.
       CREATE INDEX IF NOT EXISTS idx_inbound_vchannel_claim
         ON inbound_hl7_messages (channel_name, logical_channel_key, state, id);
-    `,
-  },
-  {
-    // Claim-time partitioning + the new `delayed` state (a row parked behind an
-    // earlier not-yet-settled message in the same logical channel). A `delayed`
-    // row is still an ACTIVE occupant of its (channel_name, msg_control_id): an
-    // inbound retransmit while it waits must dedupe against it, not insert a
-    // second copy. So the active-duplicate unique index has to include `delayed`
-    // in its state predicate; recreate the partial UNIQUE index to widen it.
-    //
-    // Safe on the populated table: this migration is the first to introduce the
-    // `delayed` state, so zero rows are in it at apply time and the widened
-    // predicate cannot surface a new uniqueness violation. The DROP + CREATE runs
-    // inside this migration's transaction (see runMigrations), so it's atomic.
-    // The other dup index (idx_inbound_dup_lookup, WHERE state != 'nacked') and
-    // the claim index (idx_inbound_vchannel_claim, keyed on state) already cover
-    // `delayed` without change.
-    version: 4,
-    sql: `
+
+      -- Widen the active-duplicate unique index to include 'delayed', so a parked
+      -- row still counts as an active duplicate for intake dedup.
       DROP INDEX IF EXISTS uq_inbound_dup_active;
 
       CREATE UNIQUE INDEX IF NOT EXISTS uq_inbound_dup_active
