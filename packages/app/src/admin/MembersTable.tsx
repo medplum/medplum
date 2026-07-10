@@ -248,7 +248,9 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
         <Group align="flex-start" gap={0} wrap="nowrap">
           <Box style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>{searchControl}</Box>
           {rows.length > 0 && (
-            <Table>
+            // `w="auto"` and `flexShrink: 0` keep this table at its natural (narrow)
+            // width so it doesn't stretch to 100% and squeeze the SearchControl to zero.
+            <Table w="auto" style={{ flexShrink: 0 }}>
               <Table.Thead>
                 <Table.Tr>
                   {extraColumns.map((col) => (
@@ -268,7 +270,9 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
                     onClick={() => navigate(`./${resource.id}`)}
                   >
                     {extraColumns.map((col) => (
-                      <Table.Td key={col.name}>{col.renderCell(resource)}</Table.Td>
+                      <Table.Td key={col.name} style={{ whiteSpace: 'nowrap' }}>
+                        {col.renderCell(resource)}
+                      </Table.Td>
                     ))}
                   </Table.Tr>
                 ))}
