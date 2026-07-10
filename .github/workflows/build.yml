@@ -435,9 +435,10 @@ jobs:
       - name: Coveralls GitHub Action
         if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
-        uses: coverallsapp/github-action@09b709cf6a16e30b0808ba050c7a6e8a5ef13f8d # master
+        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coverage/lcov.info
       - name: SonarCloud Scan
         # Skip on fork PRs (SONAR_TOKEN is unavailable to forks). Still runs on push to
         # main and merge_group; for pull_request events, only runs when the PR head is on

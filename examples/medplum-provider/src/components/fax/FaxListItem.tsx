@@ -16,7 +16,6 @@ interface FaxListItemProps {
   selectedFax: Communication | undefined;
   activeTab: FaxTab;
   getFaxUri: (fax: Communication) => string;
-  hideDivider?: boolean;
 }
 
 function getRecipientDisplay(fax: Communication, recipient: Organization | undefined): string {
@@ -32,7 +31,7 @@ function getRecipientDisplay(fax: Communication, recipient: Organization | undef
   return display && /^\d[\d\s\-+()]*$/.test(display.replace(/\s/g, '')) ? formatFaxNumber(display) : display;
 }
 
-export function FaxListItem({ fax, selectedFax, activeTab, getFaxUri, hideDivider }: FaxListItemProps): JSX.Element {
+export function FaxListItem({ fax, selectedFax, activeTab, getFaxUri }: FaxListItemProps): JSX.Element {
   const isSelected = selectedFax?.id === fax.id;
   const patient = useResource(fax.subject);
   const recipient = useResource(activeTab === 'sent' ? fax.recipient?.[0] : undefined);
@@ -48,7 +47,7 @@ export function FaxListItem({ fax, selectedFax, activeTab, getFaxUri, hideDivide
   const datePatientLine = datePatientParts.length > 0 ? datePatientParts.join(' · ') : null;
 
   return (
-    <div className={cx(classes.itemWrapper, { [classes.hideDivider]: hideDivider })}>
+    <div className={classes.itemWrapper}>
       <MedplumLink to={faxUrl} underline="never">
         <Group
           align="center"

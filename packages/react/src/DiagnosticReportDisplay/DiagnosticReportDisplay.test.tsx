@@ -164,6 +164,15 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Alice Smith')).not.toBeNull();
   });
 
+  test('Renders performer organization address', async () => {
+    await act(async () => {
+      setup({ value: ExampleReport });
+    });
+
+    // See packages/mock/src/mocks/alice.ts for the TestOrganization address
+    expect(screen.getByText('123 Test Street, Springfield, CA, 90210')).not.toBeNull();
+  });
+
   test('Renders observation category', async () => {
     await act(async () => {
       setup({ value: ExampleReport });

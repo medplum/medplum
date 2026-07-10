@@ -61,11 +61,13 @@ function setupSyncDataMock(): MockInstance<typeof syncModule.syncData> {
         destination: 'patient_history.parquet',
         rowsInserted: 1,
         syncDurationMs: 0,
+        watermarkDurationMs: 0,
       },
       {
         destination: 'observation_history.parquet',
         rowsInserted: 0,
         syncDurationMs: 0,
+        watermarkDurationMs: 0,
       },
     ],
   });

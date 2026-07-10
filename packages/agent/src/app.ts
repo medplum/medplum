@@ -60,7 +60,8 @@ import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { DurableQueue } from './queue/durable-queue';
 import { RetentionSweeper } from './queue/retention';
-import type { ChannelQueueWorker } from './queue/worker';
+import type { AgentRetryDefaults, ChannelQueueWorker } from './queue/worker';
+import { isRetryMode, parseDispatchCallback } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
@@ -145,6 +146,9 @@ export class App {
   private config: Agent | undefined;
   private lastHeartbeatSentTime: number = -1;
   private durableQueue: DurableQueue | undefined;
+  // Agent-wide channelRetryMode / channelAutoRetry* settings; fields left undefined
+  // fall through to DEFAULT_RETRY_POLICY when channels resolve their per-channel policy.
+  private channelRetrySettings: AgentRetryDefaults = {};
   private retentionSweeper: RetentionSweeper | undefined;
   // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
   // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
@@ -562,6 +566,18 @@ export class App {
       (setting) => setting.name === 'queueSweepIntervalSecs'
     )?.valueInteger;
 
+    // Agent-wide auto-retry defaults. Channels layer their endpoint URL params
+    // (retryMode, autoRetryBaseDelayMs, ...) over these when resolving their
+    // RetryPolicy in configureHl7ServerAndConnections.
+    this.channelRetrySettings = {
+      mode: this.parseChannelRetryModeSetting(agent),
+      baseDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBaseDelayMs')?.valueInteger,
+      maxDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxDelayMs')?.valueInteger,
+      maxAttempts: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxAttempts')?.valueInteger,
+      backoffMultiplier: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBackoffMultiplier')
+        ?.valueDecimal,
+    };
+
     // If the keepAlive setting changed, we need to reset the pools we have
     if (this.keepAlive !== keepAlive) {
       const results = await Promise.allSettled(Array.from(this.hl7Clients.values()).map((pool) => pool.closeAll()));
@@ -771,6 +787,32 @@ export class App {
    */
   getDurableQueue(): DurableQueue | undefined {
     return this.durableQueue;
+  }
+
+  /** @returns The agent-wide channelRetryMode / channelAutoRetry* settings, used as per-channel policy defaults. */
+  getChannelRetrySettings(): AgentRetryDefaults {
+    return this.channelRetrySettings;
+  }
+
+  /**
+   * Reads and validates the agent-wide `channelRetryMode` setting.
+   * @param agent - The agent config being applied.
+   * @returns The configured {@link RetryMode}, or undefined when unset (falls
+   *   through to the endpoint param / built-in default) or invalid (warns).
+   */
+  private parseChannelRetryModeSetting(agent: Agent | undefined): AgentRetryDefaults['mode'] {
+    const rawMode = agent?.setting?.find((setting) => setting.name === 'channelRetryMode')?.valueString;
+    if (rawMode === undefined) {
+      return undefined;
+    }
+    const normalized = rawMode.toLowerCase();
+    if (isRetryMode(normalized)) {
+      return normalized;
+    }
+    this.log.warn(
+      `Invalid channelRetryMode setting '${rawMode}'; expected 'none', 'normal', or 'guaranteed'. Ignoring.`
+    );
+    return undefined;
   }
 
   getStats(): AgentStats {
@@ -1666,11 +1708,19 @@ export class App {
     // marker can never leave bytes on the wire recorded as `claimed`, since we
     // never reach the send. Keyed by callback; a no-op for legacy (non-durable)
     // sends and for any non-transmit frame, which just send.
-    const callback = message.type === 'agent:transmit:request' ? message.callback : undefined;
-    if (callback && this.durableQueue) {
+    //
+    // `message.callback` is the WIRE-level callback — for a durable dispatch it's
+    // `{callbackId}#{attempt}` (see buildDispatchCallback in queue/worker.ts), not
+    // the row's stable `callback_id` column, so it must be unwrapped before
+    // `markSent` (which is keyed by `callback_id`) can find the row. A legacy
+    // (non-durable) transmit's plain callback never reaches here — `durableQueue`
+    // is only set when every channel is using the durable path.
+    const wireCallback = message.type === 'agent:transmit:request' ? message.callback : undefined;
+    const callbackId = wireCallback ? (parseDispatchCallback(wireCallback)?.callbackId ?? wireCallback) : undefined;
+    if (callbackId && this.durableQueue) {
       const durableQueue = this.durableQueue;
       durableQueue.runInTransaction(() => {
-        durableQueue.markSent(callback);
+        durableQueue.markSent(callbackId);
         ws.send(payload);
       });
     } else {

@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Hl7Message, Logger, TypedEventTarget } from '@medplum/core';
 import type * as MedplumHl7 from '@medplum/hl7';
-import { Hl7Server } from '@medplum/hl7';
+import { getFreePort, Hl7Server } from '@medplum/hl7';
 import type { Mock } from 'vitest';
 import { CLIENT_RELEASE_COUNTDOWN_MS } from './constants';
 import type { EnhancedHl7Client } from './enhanced-hl7-client';
 import { Hl7ClientPool } from './hl7-client-pool';
 import { Hl7MessageTracker } from './hl7-message-tracker';
-import { getFreePort } from './test-utils';
 import type { HeartbeatEmitter } from './types';
 
 const hl7TestUtils = vi.hoisted(() => {
