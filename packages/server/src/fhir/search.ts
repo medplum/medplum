@@ -1,9 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { FhirFilterExpression, Filter, IncludeTarget, SearchRequest, SortRule, WithId } from '@medplum/core';
+import type {
+  FhirFilterExpression,
+  FhirPathAtom,
+  Filter,
+  IncludeTarget,
+  SearchRequest,
+  SortRule,
+  WithId,
+} from '@medplum/core';
 import {
   AccessPolicyInteraction,
   badRequest,
+  deepClone,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
   deriveIdentifierSearchParameter,
@@ -40,6 +49,7 @@ import type {
   Bundle,
   BundleEntry,
   BundleLink,
+  Extension,
   Reference,
   Resource,
   ResourceType,
@@ -86,6 +96,14 @@ const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
 export const minCursorBasedSearchPageSize = 20;
 
 const canonicalReferenceTypes: string[] = [PropertyType.canonical, PropertyType.uri];
+
+/**
+ * Extension URL used on `Bundle.entry.search` of `_include`/`_revinclude` entries to record the
+ * resource(s) whose reference caused the entry to be included, one `valueReference` per source,
+ * deduplicated. On `:iterate` rounds the source is the immediate parent, which may itself be an
+ * included resource rather than a match. Match entries never carry this extension.
+ */
+export const SEARCH_ENTRY_SOURCE_EXTENSION_URL = 'https://medplum.com/fhir/StructureDefinition/search-entry-source';
 
 type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
   count: number;
@@ -492,7 +510,9 @@ async function getExtraEntries<T extends Resource>(
 ): Promise<void> {
   let base: Resource[] = resources;
   let iterateOnly = false;
-  const seen = new Set<string>(resources.map((r) => `${r.resourceType}/${r.id}`));
+  // Maps references of all resources in the bundle to their entry, or undefined for match entries,
+  // which never carry source extensions
+  const seen = new Map<string, BundleEntry | undefined>(resources.map((r) => [`${r.resourceType}/${r.id}`, undefined]));
   let depth = 0;
 
   while (base.length > 0) {
@@ -517,8 +537,10 @@ async function getExtraEntries<T extends Resource>(
       const ref = `${resource.resourceType}/${resource.id}`;
       if (!seen.has(ref)) {
         entries.push(entry);
+        seen.set(ref, entry);
+      } else {
+        mergeSearchSourceExtensions(seen.get(ref), entry);
       }
-      seen.add(ref);
     }
 
     iterateOnly = true; // Only consider :iterate params on iterations after the first
@@ -546,19 +568,46 @@ async function getSearchIncludeEntries(
     throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
   }
 
-  const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
-  const references: Reference[] = [];
-  const canonicalReferences: string[] = [];
-  for (const result of fhirPathResult) {
-    if (result.type === PropertyType.Reference) {
-      references.push(result.value);
-    } else if (canonicalReferenceTypes.includes(result.type)) {
-      canonicalReferences.push(result.value);
+  const parsedExpression = parseFhirPath(searchParam.expression as string);
+  const references = new Map<string, Reference>();
+  const canonicalReferences = new Set<string>();
+  const referenceSources = new Map<string, Set<string>>();
+  const canonicalReferenceSources = new Map<string, Set<string>>();
+  for (const sourceResource of resources) {
+    const sourceReference = getReferenceString(sourceResource);
+    if (!sourceReference) {
+      continue;
+    }
+
+    // Resolve include targets from the resource as stored, preserving existing include behavior.
+    // Store the unversioned reference as the lookup key so duplicate targets read once, and so the
+    // read hits the resource cache (keyed unversioned) instead of missing on a versioned string.
+    for (const result of evalFhirPathTyped(parsedExpression, [toTypedValue(sourceResource)])) {
+      if (result.type === PropertyType.Reference && result.value.reference) {
+        const targetReference = unversionedReference(result.value.reference);
+        references.set(targetReference, { reference: targetReference });
+      } else if (canonicalReferenceTypes.includes(result.type)) {
+        canonicalReferences.add(result.value);
+      }
+    }
+
+    // Attribute the include to its source using the caller-visible view of the resource, so a
+    // reference removed by the access policy does not surface in the source extension. This mirrors
+    // the reverse include path, which attributes from entries that are already field-filtered.
+    const visibleSource = repo.removeHiddenFields(deepClone(sourceResource));
+    for (const result of evalFhirPathTyped(parsedExpression, [toTypedValue(visibleSource)])) {
+      if (result.type === PropertyType.Reference && result.value.reference) {
+        addSourceReference(referenceSources, unversionedReference(result.value.reference), sourceReference);
+      } else if (canonicalReferenceTypes.includes(result.type)) {
+        addSourceReference(canonicalReferenceSources, unversionedCanonical(result.value), sourceReference);
+      }
     }
   }
 
-  const includedResources = (await repo.readReferences(references)).filter((v) => isResource(v)) as WithId<Resource>[];
-  if (searchParam.target && canonicalReferences.length > 0) {
+  const includedResources = (await repo.readReferences(Array.from(references.values()))).filter((v) =>
+    isResource(v)
+  ) as WithId<Resource>[];
+  if (searchParam.target && canonicalReferences.size > 0) {
     const canonicalSearches = searchParam.target.map((resourceType) => {
       const searchRequest = {
         resourceType: resourceType,
@@ -566,7 +615,7 @@ async function getSearchIncludeEntries(
           {
             code: 'url',
             operator: Operator.EQUALS,
-            value: canonicalReferences.join(','),
+            value: Array.from(canonicalReferences).join(','),
           },
         ],
         count: DEFAULT_MAX_SEARCH_COUNT,
@@ -584,11 +633,12 @@ async function getSearchIncludeEntries(
     }
   }
 
-  return includedResources.map((resource) => ({
-    fullUrl: getFullUrl(resource.resourceType, resource.id),
-    search: { mode: 'include' },
-    resource,
-  }));
+  return includedResources.map((resource) =>
+    buildIncludedEntry(resource, [
+      ...getSourceReferences(referenceSources, getReferenceString(resource)),
+      ...getSourceReferences(canonicalReferenceSources, getCanonicalUrl(resource)),
+    ])
+  );
 }
 
 /**
@@ -611,10 +661,13 @@ async function getSearchRevIncludeEntries(
     throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
   }
 
-  const references =
-    getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL
-      ? flatMapFilter(resources, (r) => getCanonicalUrl(r))
-      : resources.map(getReferenceString);
+  const isCanonical =
+    getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL;
+  const sourceReferences = getRevIncludeSourceReferences(resources, isCanonical);
+  const parsedExpression = parseFhirPath(searchParam.expression as string);
+  const references = isCanonical
+    ? flatMapFilter(resources, (r) => getCanonicalUrl(r))
+    : resources.map(getReferenceString);
   const searchRequest = {
     resourceType: resourceType as ResourceType,
     filters: [{ code, operator: Operator.EQUALS, value: references.join(',') }],
@@ -626,8 +679,120 @@ async function getSearchRevIncludeEntries(
   const entries = (await getSearchEntries(repo, searchRequest, query)).entry;
   for (const entry of entries) {
     entry.search = { mode: 'include' };
+    addSearchSourceExtensions(
+      entry,
+      getSearchParamSourceReferences(parsedExpression, entry.resource as Resource, sourceReferences)
+    );
   }
   return entries;
+}
+
+function getRevIncludeSourceReferences(resources: Resource[], isCanonical: boolean): Map<string, Set<string>> {
+  const result = new Map<string, Set<string>>();
+  for (const resource of resources) {
+    const sourceReference = getReferenceString(resource);
+    const targetReference = isCanonical ? getCanonicalUrl(resource) : sourceReference;
+    if (sourceReference && targetReference) {
+      addSourceReference(result, targetReference, sourceReference);
+    }
+  }
+  return result;
+}
+
+function getSearchParamSourceReferences(
+  parsedExpression: FhirPathAtom,
+  resource: Resource,
+  sourceReferences: Map<string, Set<string>>
+): string[] {
+  const result: string[] = [];
+  const fhirPathResult = evalFhirPathTyped(parsedExpression, [toTypedValue(resource)]);
+  for (const value of fhirPathResult) {
+    let targetReference: string | undefined;
+    if (value.type === PropertyType.Reference) {
+      targetReference = value.value.reference ? unversionedReference(value.value.reference) : undefined;
+    } else if (canonicalReferenceTypes.includes(value.type)) {
+      targetReference = unversionedCanonical(value.value);
+    }
+    if (targetReference) {
+      result.push(...getSourceReferences(sourceReferences, targetReference));
+    }
+  }
+  return [...new Set(result)];
+}
+
+function buildIncludedEntry(resource: WithId<Resource>, sourceReferences: string[]): BundleEntry {
+  const entry: BundleEntry = {
+    fullUrl: getFullUrl(resource.resourceType, resource.id),
+    search: { mode: 'include' },
+    resource,
+  };
+  addSearchSourceExtensions(entry, sourceReferences);
+  return entry;
+}
+
+function addSearchSourceExtensions(entry: BundleEntry, sourceReferences: string[]): void {
+  const uniqueReferences = [...new Set(sourceReferences)];
+  if (uniqueReferences.length === 0) {
+    return;
+  }
+
+  entry.search ??= { mode: 'include' };
+  entry.search.extension = [
+    ...(entry.search.extension ?? []),
+    ...uniqueReferences.map(
+      (reference): Extension => ({
+        url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+        valueReference: { reference },
+      })
+    ),
+  ];
+}
+
+function mergeSearchSourceExtensions(targetEntry: BundleEntry | undefined, sourceEntry: BundleEntry): void {
+  const sourceExtensions = sourceEntry.search?.extension?.filter((e) => e.url === SEARCH_ENTRY_SOURCE_EXTENSION_URL);
+  if (!targetEntry || !sourceExtensions?.length) {
+    return;
+  }
+
+  const existingReferences = new Set(
+    targetEntry.search?.extension
+      ?.filter((e) => e.url === SEARCH_ENTRY_SOURCE_EXTENSION_URL)
+      .map((e) => e.valueReference?.reference)
+  );
+  addSearchSourceExtensions(
+    targetEntry,
+    sourceExtensions.flatMap((e) =>
+      e.valueReference?.reference && !existingReferences.has(e.valueReference.reference)
+        ? [e.valueReference.reference]
+        : []
+    )
+  );
+}
+
+function unversionedReference(reference: string): string {
+  return reference.split('/_history/')[0];
+}
+
+function unversionedCanonical(canonical: string): string {
+  return canonical.split('|')[0];
+}
+
+function addSourceReference(
+  references: Map<string, Set<string>>,
+  targetReference: string | undefined,
+  source: string
+): void {
+  if (!targetReference) {
+    return;
+  }
+
+  const sourceReferences = references.get(targetReference) ?? new Set<string>();
+  sourceReferences.add(source);
+  references.set(targetReference, sourceReferences);
+}
+
+function getSourceReferences(references: Map<string, Set<string>>, targetReference: string | undefined): string[] {
+  return targetReference ? [...(references.get(targetReference) ?? EMPTY)] : [];
 }
 
 /**

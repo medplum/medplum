@@ -63,7 +63,13 @@ import { bundleContains, createTestProject, withTestContext } from '../test.setu
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, Repository } from './repo';
 import type { ChainedSearchLink } from './search';
-import { clampEstimateCount, Direction, getCount, parseChainedParameter } from './search';
+import {
+  clampEstimateCount,
+  Direction,
+  getCount,
+  parseChainedParameter,
+  SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+} from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
@@ -2395,6 +2401,12 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(result.entry?.[0]?.resource?.id).toStrictEqual(observation.id);
     }));
 
+  test('Search entry source extension URL is a stable public contract', () => {
+    expect(SEARCH_ENTRY_SOURCE_EXTENSION_URL).toStrictEqual(
+      'https://medplum.com/fhir/StructureDefinition/search-entry-source'
+    );
+  });
+
   test('Include references success', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
@@ -2417,7 +2429,158 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
       expect(bundle.total).toStrictEqual(1);
       expect(bundleContains(bundle, order)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
-      expect(bundleContains(bundle, patient)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(bundleContains(bundle, patient)).toMatchObject<BundleEntry>({
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(order) },
+            },
+          ],
+        },
+      });
+    }));
+
+  test('Include references records all matching source resources', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const order1 = await repo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        subject: createReference(patient),
+      });
+      const order2 = await repo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        subject: createReference(patient),
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'ServiceRequest',
+        include: [
+          {
+            resourceType: 'ServiceRequest',
+            searchParam: 'subject',
+          },
+        ],
+        filters: [{ code: 'subject', operator: Operator.EQUALS, value: getReferenceString(patient) }],
+      });
+
+      const patientEntry = bundleContains(bundle, patient);
+      expect(patientEntry).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(patientEntry?.search?.extension).toEqual(
+        expect.arrayContaining([
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: getReferenceString(order1) },
+          },
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: getReferenceString(order2) },
+          },
+        ])
+      );
+      expect(patientEntry?.search?.extension).toHaveLength(2);
+    }));
+
+  test('Include with versioned reference records source', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const order = await repo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        subject: { reference: `Patient/${patient.id}/_history/${patient.meta?.versionId}` },
+      });
+      const bundle = await repo.search({
+        resourceType: 'ServiceRequest',
+        include: [
+          {
+            resourceType: 'ServiceRequest',
+            searchParam: 'subject',
+          },
+        ],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id }],
+      });
+      expect(bundleContains(bundle, patient)).toMatchObject<BundleEntry>({
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(order) },
+            },
+          ],
+        },
+      });
+    }));
+
+  test('Match entries are never annotated with source extensions', () =>
+    withTestContext(async () => {
+      const identifier = randomUUID();
+      const patientB = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ value: identifier }],
+      });
+      const patientA = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ value: identifier }],
+        link: [{ other: createReference(patientB), type: 'replaces' }],
+      });
+      const bundle = await repo.search({
+        resourceType: 'Patient',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+        include: [
+          {
+            resourceType: 'Patient',
+            searchParam: 'link',
+          },
+        ],
+      });
+      expect(bundle.entry).toHaveLength(2);
+      expect(bundleContains(bundle, patientA)?.search).toStrictEqual({ mode: 'match' });
+      expect(bundleContains(bundle, patientB)?.search).toStrictEqual({ mode: 'match' });
+    }));
+
+  test('Include source extension respects access-policy hidden fields', () =>
+    withTestContext(async () => {
+      // The policy can read ServiceRequest and Patient, but hides ServiceRequest.subject.
+      const { repo: restrictedRepo, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'ServiceRequest', hiddenFields: ['subject'] }, { resourceType: 'Patient' }],
+        },
+      });
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+      });
+      const order = await systemRepo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        meta: { project: project.id },
+        status: 'active',
+        intent: 'order',
+        subject: createReference(patient),
+      });
+
+      const bundle = await restrictedRepo.search({
+        resourceType: 'ServiceRequest',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id }],
+        include: [{ resourceType: 'ServiceRequest', searchParam: 'subject' }],
+      });
+
+      // The include still resolves the patient, matching pre-existing behavior...
+      const orderEntry = bundleContains(bundle, order);
+      expect(orderEntry).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
+      expect((orderEntry?.resource as ServiceRequest).subject).toBeUndefined();
+      const patientEntry = bundleContains(bundle, patient);
+      expect(patientEntry).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      // ...but the source extension does not re-expose the reference the policy hid.
+      expect(patientEntry?.search?.extension).toBeUndefined();
     }));
 
   test('Include canonical success', () =>
@@ -2446,7 +2609,17 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
       expect(bundle.total).toStrictEqual(1);
       expect(bundleContains(bundle, response)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
-      expect(bundleContains(bundle, questionnaire)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(bundleContains(bundle, questionnaire)).toMatchObject<BundleEntry>({
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(response) },
+            },
+          ],
+        },
+      });
     }));
 
   test('Include PlanDefinition mixed types', () =>
@@ -2481,8 +2654,18 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
       expect(bundle.total).toStrictEqual(1);
       expect(bundleContains(bundle, plan)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
-      expect(bundleContains(bundle, activity1)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
-      expect(bundleContains(bundle, activity2)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      const planSourceExtension = [
+        {
+          url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+          valueReference: { reference: getReferenceString(plan) },
+        },
+      ];
+      expect(bundleContains(bundle, activity1)).toMatchObject<BundleEntry>({
+        search: { mode: 'include', extension: planSourceExtension },
+      });
+      expect(bundleContains(bundle, activity2)).toMatchObject<BundleEntry>({
+        search: { mode: 'include', extension: planSourceExtension },
+      });
     }));
 
   test('Include references invalid search param', async () =>
@@ -2556,11 +2739,114 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         search: { mode: 'match' },
       });
       expect(bundleContains(searchResult2, provenance1)).toMatchObject<BundleEntry>({
-        search: { mode: 'include' },
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(practitioner1) },
+            },
+          ],
+        },
       });
       expect(bundleContains(searchResult2, provenance2)).toMatchObject<BundleEntry>({
-        search: { mode: 'include' },
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(practitioner2) },
+            },
+          ],
+        },
       });
+    }));
+
+  test('Reverse include records all matching source resources', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+      const practitioner1 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Homer'], family }],
+      });
+      const practitioner2 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Marge'], family }],
+      });
+      const provenance = await repo.createResource<Provenance>({
+        resourceType: 'Provenance',
+        target: [createReference(practitioner1), createReference(practitioner2)],
+        agent: [{ who: createReference(practitioner1) }],
+        recorded: new Date().toISOString(),
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'Practitioner',
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+        revInclude: [
+          {
+            resourceType: 'Provenance',
+            searchParam: 'target',
+          },
+        ],
+      });
+
+      const provenanceEntry = bundleContains(bundle, provenance);
+      expect(provenanceEntry).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(provenanceEntry?.search?.extension).toEqual(
+        expect.arrayContaining([
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: getReferenceString(practitioner1) },
+          },
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: getReferenceString(practitioner2) },
+          },
+        ])
+      );
+      expect(provenanceEntry?.search?.extension).toHaveLength(2);
+    }));
+
+  test('Reverse include records source for a versioned target reference', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+      const practitioner1 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Homer'], family }],
+      });
+      const practitioner2 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Marge'], family }],
+      });
+      // One target is unversioned, so the provenance is reverse-included; the other is a
+      // version-specific reference to a second matched practitioner. Source attribution must
+      // normalize that versioned reference back to the match, otherwise it is dropped.
+      const provenance = await repo.createResource<Provenance>({
+        resourceType: 'Provenance',
+        target: [
+          createReference(practitioner1),
+          { reference: `Practitioner/${practitioner2.id}/_history/${practitioner2.meta?.versionId}` },
+        ],
+        agent: [{ who: createReference(practitioner1) }],
+        recorded: new Date().toISOString(),
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'Practitioner',
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+        revInclude: [{ resourceType: 'Provenance', searchParam: 'target' }],
+      });
+
+      const provenanceEntry = bundleContains(bundle, provenance);
+      expect(provenanceEntry).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(provenanceEntry?.search?.extension).toEqual(
+        expect.arrayContaining([
+          { url: SEARCH_ENTRY_SOURCE_EXTENSION_URL, valueReference: { reference: getReferenceString(practitioner1) } },
+          { url: SEARCH_ENTRY_SOURCE_EXTENSION_URL, valueReference: { reference: getReferenceString(practitioner2) } },
+        ])
+      );
+      expect(provenanceEntry?.search?.extension).toHaveLength(2);
     }));
 
   test('Reverse include canonical', () =>
@@ -2589,7 +2875,17 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
       expect(bundle.total).toStrictEqual(1);
       expect(bundleContains(bundle, questionnaire)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
-      expect(bundleContains(bundle, response)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(bundleContains(bundle, response)).toMatchObject<BundleEntry>({
+        search: {
+          mode: 'include',
+          extension: [
+            {
+              url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+              valueReference: { reference: getReferenceString(questionnaire) },
+            },
+          ],
+        },
+      });
     }));
 
   test('Reverse include on denied type', () =>
@@ -2769,6 +3065,23 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(
         bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
       ).toStrictEqual(expected);
+
+      // practitioner2 is included by linked2 on one iteration and re-encountered via linked3 on the next;
+      // its deduplicated entry must accumulate both source references
+      const practitioner2Entry = bundle.entry?.find((e) => e.resource?.id === practitioner2.id);
+      expect(practitioner2Entry?.search?.extension).toEqual(
+        expect.arrayContaining([
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: `Patient/${linked2.id}` },
+          },
+          {
+            url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+            valueReference: { reference: `Patient/${linked3.id}` },
+          },
+        ])
+      );
+      expect(practitioner2Entry?.search?.extension).toHaveLength(2);
     }));
 
   test('_revinclude:iterate', () =>
@@ -2913,6 +3226,23 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(
         bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
       ).toStrictEqual(expected);
+
+      // Revinclude sources on :iterate rounds point at the immediate parent, which may itself be an
+      // included resource rather than a match
+      const observation3Entry = bundle.entry?.find((e) => e.resource?.id === observation3.id);
+      expect(observation3Entry?.search?.extension).toStrictEqual([
+        {
+          url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+          valueReference: { reference: `Patient/${linked2.id}` },
+        },
+      ]);
+      const observation4Entry = bundle.entry?.find((e) => e.resource?.id === observation4.id);
+      expect(observation4Entry?.search?.extension).toStrictEqual([
+        {
+          url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+          valueReference: { reference: `Observation/${observation2.id}` },
+        },
+      ]);
     }));
 
   test('_include depth limit', () =>
@@ -3061,7 +3391,15 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           }),
           expect.objectContaining<BundleEntry>({
             fullUrl: expect.stringContaining(getReferenceString(gp1)),
-            search: { mode: 'include' },
+            search: {
+              mode: 'include',
+              extension: [
+                {
+                  url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+                  valueReference: { reference: getReferenceString(patient1) },
+                },
+              ],
+            },
           }),
         ],
       });
@@ -3081,11 +3419,27 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           }),
           expect.objectContaining<BundleEntry>({
             fullUrl: expect.stringContaining(getReferenceString(gp1)),
-            search: { mode: 'include' },
+            search: {
+              mode: 'include',
+              extension: [
+                {
+                  url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+                  valueReference: { reference: getReferenceString(patient1) },
+                },
+              ],
+            },
           }),
           expect.objectContaining<BundleEntry>({
             fullUrl: expect.stringContaining(getReferenceString(gp2)),
-            search: { mode: 'include' },
+            search: {
+              mode: 'include',
+              extension: [
+                {
+                  url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
+                  valueReference: { reference: getReferenceString(patient2) },
+                },
+              ],
+            },
           }),
         ],
       });
