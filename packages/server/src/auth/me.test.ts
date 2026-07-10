@@ -106,6 +106,7 @@ describe('Me', () => {
     expect(res6.body).toBeDefined();
     expect(res6.body.config).toMatchObject(config);
     expect(res6.body.security).toBeDefined();
+    expect(res6.body.security.mfaRequired).toBe(false);
     expect(res6.body.security.sessions).toBeDefined();
     expect(res6.body.security.sessions[0].browser).toBeDefined();
     expect(res6.body.security.sessions[0].os).toBeDefined();
@@ -325,5 +326,50 @@ describe('Me', () => {
       id: project.id,
     });
     expect(res.body.project.features).toEqual(['bots']);
+  });
+
+  test('Security mfaRequired reflects project setting', async () => {
+    const email = `mfa${randomUUID()}@example.com`;
+    const password = randomUUID();
+
+    const { project, user, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Mfa',
+        lastName: 'Required',
+        projectName: `Mfa Required Project ${randomUUID()}`,
+        email,
+        password,
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      })
+    );
+
+    const systemRepo = await getProjectSystemRepo(project);
+
+    // By default MFA is not required.
+    const res1 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res1.status).toBe(200);
+    expect(res1.body.security.mfaRequired).toBe(false);
+
+    // Enabling the project setting makes MFA required for the user.
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...project,
+        setting: [{ name: 'mfaRequired', valueBoolean: true }],
+      })
+    );
+    const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res2.body.security.mfaRequired).toBe(true);
+
+    // The project requirement is enforced even when the user has explicitly set
+    // `User.mfaRequired` to false; the project setting can only tighten.
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...user,
+        mfaRequired: false,
+      })
+    );
+    const res3 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res3.body.security.mfaRequired).toBe(true);
   });
 });

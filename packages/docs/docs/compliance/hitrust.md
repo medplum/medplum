@@ -12,7 +12,7 @@ Medplum has achieved HITRUST e1 certification for the Medplum Platform residing 
 
 Medplum achieved certification in partnership with [Prescient Security](https://prescientsecurity.com/), leveraging the [myCSF](https://hitrustalliance.net/product-tool/mycsf/) platform and [Vanta](https://www.vanta.com/) for continuous compliance monitoring.
 
-Compliance documentation is available on [Medplum's Trust Center on Vanta](https://app.vanta.com/medplum.com/trust/ybe9my9rkc6ok8yijm04h). Current and prospective customers can email [info@medplum.com](mailto:info@medplum.com) for more details, including access to the certification letter.
+Compliance documentation is available on [Medplum's Trust Center on Vanta](https://trust.medplum.com). Current and prospective customers can email [info@medplum.com](mailto:info@medplum.com) for more details, including access to the certification letter.
 
 ## Process Notes
 

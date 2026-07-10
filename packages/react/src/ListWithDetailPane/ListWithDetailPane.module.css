@@ -16,6 +16,13 @@
   border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 }
 
+/* Inset the rows from the sidebar edges. Each item's rounded hover/selected
+   highlight (`.item`) would otherwise bleed to the pane border and lose its
+   corners; this padding gives the highlight breathing room on all sides. */
+.list {
+  padding: var(--mantine-spacing-xs);
+}
+
 /* Per-item chrome wrapper. The list renders this `<div>` around each item's
    content (from `renderItem`), so it owns the hover/selected backgrounds. It
    deliberately has no padding: the item's content provides its own padding so a

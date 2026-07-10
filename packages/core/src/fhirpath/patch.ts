@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Pointer } from '../patch';
-import type { Options } from '../patch/patch';
+import type { PatchOptions } from '../patch/patch';
 import { add, move, remove, replace } from '../patch/patch';
 import type { TypedValue } from '../types';
 import { getElementDefinitionForPath } from '../types';
@@ -17,7 +17,7 @@ export type FhirPathPatch =
   | { type: 'replace'; path: string; value: TypedValue }
   | { type: 'move'; path: string; source: number; destination: number };
 
-const ADD_OPTIONS: Readonly<Options> = Object.freeze({ implicitArrayCreation: true });
+const ADD_OPTIONS: Readonly<PatchOptions> = Object.freeze({ implicitArrayCreation: true });
 
 export function fhirpathPatchTypedValue(original: TypedValue, patch: FhirPathPatch[]): void {
   for (const op of patch) {

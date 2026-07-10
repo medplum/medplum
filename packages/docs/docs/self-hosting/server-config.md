@@ -735,7 +735,7 @@ Optional flag to enable custom functions in Bots.
 
 ### AWS Secrets
 
-Postgres and Redis connection details have special cases due the way CDK exposes them.
+Postgres and Redis connection details have special cases due to the way CDK exposes them.
 
 When using a JSON config file, use JSON objects for `database` and `redis`. For example:
 

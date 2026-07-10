@@ -20,13 +20,15 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createEncounter } from '../../utils/encounter';
-import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
+import {
+  SchedulingEncounterCodingURI,
+  SchedulingParametersURI,
+  SchedulingPlanDefinitionURI,
+} from '../../utils/scheduling';
 import { toCodeableReferenceLike } from '../../utils/servicetype';
 import { FindPane } from './FindPane';
 
 vi.mock('../../utils/encounter', () => ({ createEncounter: vi.fn() }));
-
-const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 const ServiceTypeReferenceURI = 'https://medlpum.com/fhir/service-type-reference';
 
 describe('FindPane', () => {

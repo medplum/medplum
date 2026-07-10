@@ -193,7 +193,18 @@ export function getDisplayString(resource: Resource): string {
       return deviceName;
     }
   }
+  if (resource.resourceType === 'DocumentReference') {
+    if (resource.description) {
+      return resource.description;
+    }
+    if (resource.type) {
+      return formatCodeableConcept(resource.type);
+    }
+  }
   if (resource.resourceType === 'MedicationRequest' && resource.medicationCodeableConcept) {
+    return formatCodeableConcept(resource.medicationCodeableConcept);
+  }
+  if (resource.resourceType === 'MedicationStatement' && resource.medicationCodeableConcept) {
     return formatCodeableConcept(resource.medicationCodeableConcept);
   }
   if (resource.resourceType === 'Slot' && (resource.start || resource.end)) {

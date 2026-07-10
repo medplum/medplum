@@ -51,6 +51,7 @@ import { DatabaseMode } from '../database';
 import { clamp } from './operations/utils/parameters';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
+import { parseHistoryContent } from './repository/row-builder';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
@@ -345,19 +346,19 @@ async function getSearchEntries<T extends Resource>(
   }
 
   const rowCount = Math.min(rows.length, originalLimit);
-  const resources = [];
+  const resources: WithId<T>[] = [];
   for (let i = 0; i < rowCount; i++) {
     const row = rows[i];
-    if (row.content) {
-      resources.push(JSON.parse(row.content));
+    const parsed = parseHistoryContent(row.content as string);
+    if (!parsed.meta?.deleted) {
+      resources.push(parsed as WithId<T>);
     } else {
-      // Handle missing content
-      // In the original implementation of deleted resources, the content was not stored in the database.
+      // Handle missing or tombstone content for soft-deleted resources.
       resources.push({
         resourceType: searchRequest.resourceType,
         id: row.id,
         meta: { lastUpdated: row.lastUpdated?.toISOString() },
-      });
+      } as WithId<T>);
     }
   }
   let nextResource: T | undefined;
@@ -539,7 +540,7 @@ async function getSearchIncludeEntries(
   include: IncludeTarget,
   resources: Resource[]
 ): Promise<BundleEntry[]> {
-  const { resourceType, searchParam: code } = include;
+  const { resourceType, searchParam: code, targetType } = include;
   const searchParam = getSearchParameter(resourceType, code);
   if (!searchParam) {
     throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
@@ -556,9 +557,18 @@ async function getSearchIncludeEntries(
     }
   }
 
-  const includedResources = (await repo.readReferences(references)).filter((v) => isResource(v)) as WithId<Resource>[];
-  if (searchParam.target && canonicalReferences.length > 0) {
-    const canonicalSearches = searchParam.target.map((resourceType) => {
+  // `_include=ResourceType:code:targetType` restricts the include to references of
+  // `targetType`; without the suffix every referenced resource type is returned.
+  const targetReferences = targetType
+    ? references.filter((reference) => reference.reference?.startsWith(targetType + '/'))
+    : references;
+
+  const includedResources = (await repo.readReferences(targetReferences)).filter((v) =>
+    isResource(v)
+  ) as WithId<Resource>[];
+  const canonicalTargets = targetType ? searchParam.target?.filter((t) => t === targetType) : searchParam.target;
+  if (canonicalTargets?.length && canonicalReferences.length > 0) {
+    const canonicalSearches = canonicalTargets.map((resourceType) => {
       const searchRequest = {
         resourceType: resourceType,
         filters: [
@@ -604,16 +614,37 @@ async function getSearchRevIncludeEntries(
   revInclude: IncludeTarget,
   resources: Resource[]
 ): Promise<BundleEntry[]> {
-  const { resourceType, searchParam: code } = revInclude;
+  const { resourceType, searchParam: code, targetType } = revInclude;
   const searchParam = getSearchParameter(resourceType, code);
   if (!searchParam) {
     throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
   }
 
-  const references =
-    getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL
-      ? flatMapFilter(resources, (r) => getCanonicalUrl(r))
-      : resources.map(getReferenceString);
+  // `_revinclude=ResourceType:code:targetType` restricts the reverse include to
+  // base resources of `targetType`. Build the references in a single pass,
+  // filtering to the target type as we go.
+  const isCanonical =
+    getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL;
+  const references: string[] = [];
+  for (const resource of resources) {
+    if (targetType && resource.resourceType !== targetType) {
+      continue;
+    }
+    if (isCanonical) {
+      const canonicalUrl = getCanonicalUrl(resource);
+      if (canonicalUrl) {
+        references.push(canonicalUrl);
+      }
+    } else {
+      const reference = getReferenceString(resource);
+      if (reference) {
+        references.push(reference);
+      }
+    }
+  }
+  if (references.length === 0) {
+    return [];
+  }
   const searchRequest = {
     resourceType: resourceType as ResourceType,
     filters: [{ code, operator: Operator.EQUALS, value: references.join(',') }],
@@ -1950,5 +1981,5 @@ function splitChainedSearch(chain: string): string[] {
 }
 
 function getCanonicalUrl(resource: Resource): string | undefined {
-  return (resource as Resource & { url?: string }).url;
+  return 'url' in resource ? resource.url : undefined;
 }

@@ -3,6 +3,7 @@
 export * from './common';
 export * from './loadScriptSureQuantityQualifiers';
 export * from './useScriptSureCart';
+export * from './pharmacy-search';
 export * from './useScriptSureIFrame';
 export * from './useScriptSureOrderMedication';
 export * from './useScriptSureOrderSet';

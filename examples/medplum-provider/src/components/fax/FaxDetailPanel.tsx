@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Divider, Flex, Group, Paper, Stack, Text, Tooltip } from '@mantine/core';
 import { formatDateTime, getDisplayString } from '@medplum/core';
-import type { Communication, Organization, Patient, Reference } from '@medplum/fhirtypes';
+import type { Communication, DocumentReference, Organization, Patient, Reference } from '@medplum/fhirtypes';
 import { MedplumLink, useResource } from '@medplum/react';
 import { useCachedBinaryUrl } from '@medplum/react-hooks';
 import { IconDownload, IconSend, IconUserPlus } from '@tabler/icons-react';
@@ -23,7 +23,13 @@ export function FaxDetailPanel({ fax, onFaxChange }: FaxDetailPanelProps): JSX.E
   const [assignModalOpened, setAssignModalOpened] = useState(false);
   const [forwardModalOpened, setForwardModalOpened] = useState(false);
 
-  const attachment = fax.payload?.find((p) => p.contentAttachment)?.contentAttachment;
+  // The faxed document can be carried either directly as a contentAttachment (inbound and
+  // forwarded faxes) or as a contentReference to a DocumentReference (newly uploaded faxes).
+  const directAttachment = fax.payload?.find((p) => p.contentAttachment)?.contentAttachment;
+  const documentReference = useResource(
+    fax.payload?.find((p) => p.contentReference)?.contentReference as Reference<DocumentReference> | undefined
+  );
+  const attachment = directAttachment ?? documentReference?.content?.[0]?.attachment;
   const rawAttachmentUrl = useCachedBinaryUrl(attachment?.url);
   const attachmentUrl = isValidUrl(rawAttachmentUrl) ? rawAttachmentUrl : undefined;
   const isInbound = fax.category?.[0]?.coding?.[0]?.code === 'inbound' || !fax.category?.[0]?.coding?.[0]?.code;

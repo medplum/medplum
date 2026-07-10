@@ -3,7 +3,7 @@
 import { AppShell, Burger, Container, Group, Menu, UnstyledButton, useMantineTheme } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { ResourceAvatar, useMedplumProfile } from '@medplum/react';
-import { IconChevronDown, IconLogout, IconSettings, IconUserCircle } from '@tabler/icons-react';
+import { IconChevronDown, IconLink, IconLogout, IconSettings, IconUserCircle } from '@tabler/icons-react';
 import cx from 'clsx';
 import { useState } from 'react';
 import type { JSX } from 'react';
@@ -67,6 +67,12 @@ export function Header(): JSX.Element {
                 onClick={() => navigate('/account/profile')?.catch(console.error)}
               >
                 Settings
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconLink size={16} color={theme.colors.teal[6]} stroke={1.5} />}
+                onClick={() => navigate('/smart-health-links')?.catch(console.error)}
+              >
+                SMART Health Links
               </Menu.Item>
               <Menu.Item
                 leftSection={<IconLogout size={16} color={theme.colors.gray[6]} stroke={1.5} />}

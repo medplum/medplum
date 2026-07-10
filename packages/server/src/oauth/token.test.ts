@@ -23,7 +23,7 @@ import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type { SystemRepository } from '../fhir/repo';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getProjectSystemRepo, Repository } from '../fhir/repo';
 import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
 import { mockFetchJson, mockFetchStatus, mockFetchText } from '../test.setup.fetch';
 import { validateClientCert } from './cert';
@@ -100,6 +100,22 @@ describe('OAuth2 Token', () => {
   const email = `text@${domain}`;
   const password = randomUUID();
   const redirectUri = `https://${domain}/auth/callback`;
+  const externalAuthIssuer = 'https://example.com';
+  const alternateIssuer = 'https://alternate.example.com';
+  const externalAuthConfigClientId = randomUUID();
+  const externalIdentityProvider = {
+    authorizeUrl: 'https://example.com/oauth2/authorize',
+    tokenUrl: 'https://example.com/oauth2/token',
+    userInfoUrl: 'https://example.com/oauth2/userinfo',
+    clientId: '123',
+    clientSecret: '456',
+  };
+  const gcipIdentityProvider = {
+    ...externalIdentityProvider,
+    userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
+    userInfoMode: 'gcip' as const,
+    userInfoApiKey: 'test-api-key',
+  };
   let config: MedplumServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
@@ -175,28 +191,14 @@ describe('OAuth2 Token', () => {
       project,
       name: 'External Auth Client',
       redirectUri,
-      identityProvider: {
-        authorizeUrl: 'https://example.com/oauth2/authorize',
-        tokenUrl: 'https://example.com/oauth2/token',
-        userInfoUrl: 'https://example.com/oauth2/userinfo',
-        clientId: '123',
-        clientSecret: '456',
-      },
+      identityProvider: externalIdentityProvider,
     });
 
     gcipAuthClient = await createClient(systemRepo, {
       project,
       name: 'GCIP Auth Client',
       redirectUri,
-      identityProvider: {
-        authorizeUrl: 'https://example.com/oauth2/authorize',
-        tokenUrl: 'https://example.com/oauth2/token',
-        userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
-        userInfoMode: 'gcip',
-        userInfoApiKey: 'test-api-key',
-        clientId: '123',
-        clientSecret: '456',
-      },
+      identityProvider: gcipIdentityProvider,
     });
 
     gcipSubjectAuthClient = await createClient(systemRepo, {
@@ -204,13 +206,7 @@ describe('OAuth2 Token', () => {
       name: 'GCIP Subject Auth Client',
       redirectUri,
       identityProvider: {
-        authorizeUrl: 'https://example.com/oauth2/authorize',
-        tokenUrl: 'https://example.com/oauth2/token',
-        userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
-        userInfoMode: 'gcip',
-        userInfoApiKey: 'test-api-key',
-        clientId: '123',
-        clientSecret: '456',
+        ...gcipIdentityProvider,
         useSubject: true,
       },
     });
@@ -220,12 +216,9 @@ describe('OAuth2 Token', () => {
       name: 'GCIP Missing Key Client',
       redirectUri,
       identityProvider: {
-        authorizeUrl: 'https://example.com/oauth2/authorize',
-        tokenUrl: 'https://example.com/oauth2/token',
+        ...externalIdentityProvider,
         userInfoUrl: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
         userInfoMode: 'gcip',
-        clientId: '123',
-        clientSecret: '456',
       },
     });
 
@@ -248,6 +241,7 @@ describe('OAuth2 Token', () => {
     joseMockState.count = 0;
     vi.mocked(jwtVerify).mockClear();
     fetchMock.mockClear();
+    config.externalAuthProviders = undefined;
   });
 
   afterAll(async () => {
@@ -2051,6 +2045,218 @@ describe('OAuth2 Token', () => {
     expect(res.body.access_token).toBeTruthy();
   });
 
+  test('Token exchange selects server external auth provider by client ID', async () => {
+    config.externalAuthProviders = [
+      {
+        issuer: externalAuthIssuer,
+        clientId: externalAuthConfigClientId,
+        identityProvider: {
+          ...externalIdentityProvider,
+          userInfoUrl: 'https://server-config.example.com/oauth2/userinfo',
+        },
+      },
+    ];
+
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthConfigClientId,
+      subject_token: 'opaque-token',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+    expect(res.body.expires_in).toBe(3600);
+    const claims = (await verifyJwt(res.body.access_token)).payload;
+    expect(claims.aud).toBe(config.issuer);
+    expect(claims.client_id).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith('https://server-config.example.com/oauth2/userinfo', expect.anything());
+  });
+
+  test('Token exchange defaults server external auth selector to identity provider client ID', async () => {
+    config.externalAuthProviders = [
+      {
+        issuer: externalAuthIssuer,
+        identityProvider: {
+          ...externalIdentityProvider,
+          userInfoUrl: 'https://server-config.example.com/oauth2/userinfo',
+        },
+      },
+    ];
+
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalIdentityProvider.clientId,
+      subject_token: 'opaque-token',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith('https://server-config.example.com/oauth2/userinfo', expect.anything());
+  });
+
+  test('Token exchange supports server external auth provider with user info URL only', async () => {
+    config.externalAuthProviders = [
+      {
+        issuer: externalAuthIssuer,
+        clientId: externalAuthConfigClientId,
+        userInfoUrl: 'https://server-config.example.com/oauth2/userinfo',
+      },
+    ];
+
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthConfigClientId,
+      subject_token: 'opaque-token',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith('https://server-config.example.com/oauth2/userinfo', expect.anything());
+  });
+
+  test('Token exchange rejects unknown client ID', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: randomUUID(),
+      subject_token: 'opaque-token',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid client');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('Token exchange rejects client without identity provider or server config match', async () => {
+    config.externalAuthProviders = [
+      { issuer: externalAuthIssuer, identityProvider: externalIdentityProvider },
+      {
+        issuer: alternateIssuer,
+        identityProvider: {
+          ...externalIdentityProvider,
+          userInfoUrl: 'https://alternate.example.com/oauth2/userinfo',
+        },
+      },
+    ];
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: client.id,
+      subject_token: 'opaque-token',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid client');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('Token exchange preserves client identity provider fallback with multiple server providers', async () => {
+    config.externalAuthProviders = [
+      { issuer: externalAuthIssuer, identityProvider: externalIdentityProvider },
+      {
+        issuer: alternateIssuer,
+        identityProvider: {
+          ...externalIdentityProvider,
+          userInfoUrl: 'https://alternate.example.com/oauth2/userinfo',
+        },
+      },
+    ];
+
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthClient.id,
+      subject_token: 'opaque-token',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/oauth2/userinfo', expect.anything());
+  });
+
+  test('Token exchange membership ID derives project across client project boundary', async () => {
+    config.externalAuthProviders = [
+      { issuer: externalAuthIssuer, clientId: externalAuthConfigClientId, identityProvider: externalIdentityProvider },
+    ];
+
+    const { project: otherProject } = await createTestProject();
+    const { membership: otherMembership } = await inviteUser({
+      project: otherProject,
+      resourceType: 'Practitioner',
+      firstName: 'Other',
+      lastName: 'Project',
+      email,
+      sendEmail: false,
+    });
+
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthConfigClientId,
+      subject_token: 'opaque-token',
+      membership_id: otherMembership.id,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+    expect(res.body.project.reference).toBe(`Project/${otherProject.id}`);
+  });
+
+  test('Token exchange rejects unknown membership ID for server external auth provider', async () => {
+    config.externalAuthProviders = [
+      { issuer: externalAuthIssuer, clientId: externalAuthConfigClientId, identityProvider: externalIdentityProvider },
+    ];
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthConfigClientId,
+      subject_token: 'opaque-token',
+      membership_id: randomUUID(),
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid membership');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('Token exchange rejects membership without project for server external auth provider', async () => {
+    config.externalAuthProviders = [
+      { issuer: externalAuthIssuer, clientId: externalAuthConfigClientId, identityProvider: externalIdentityProvider },
+    ];
+    const membershipId = randomUUID();
+    const readResourceSpy = vi.spyOn(Repository.prototype, 'readResource').mockResolvedValueOnce({
+      resourceType: 'ProjectMembership',
+      id: membershipId,
+    } as WithId<ProjectMembership>);
+
+    let res: request.Response;
+    try {
+      res = await request(app).post('/oauth2/token').type('form').send({
+        grant_type: OAuthGrantType.TokenExchange,
+        subject_token_type: OAuthTokenType.AccessToken,
+        client_id: externalAuthConfigClientId,
+        subject_token: 'opaque-token',
+        membership_id: membershipId,
+      });
+    } finally {
+      readResourceSpy.mockRestore();
+    }
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid membership');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test('Token exchange GCIP success', async () => {
     fetchMock.mockImplementation(() => mockFetchJson({ users: [{ email, localId: 'firebase-user-id' }] }));
 
@@ -2144,7 +2350,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.error_description).toBe('Missing user info API key - check your identity provider configuration');
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test('Token exchange unsupported content type', async () => {
@@ -2180,18 +2386,6 @@ describe('OAuth2 Token', () => {
       grant_type: OAuthGrantType.TokenExchange,
       subject_token_type: OAuthTokenType.AccessToken,
       client_id: '',
-      subject_token: 'xyz',
-    });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toBe('invalid_request');
-    expect(res.body.error_description).toBe('Invalid client');
-  });
-
-  test('Token exchange missing client identity provider', async () => {
-    const res = await request(app).post('/oauth2/token').type('form').send({
-      grant_type: OAuthGrantType.TokenExchange,
-      subject_token_type: OAuthTokenType.AccessToken,
-      client_id: client.id,
       subject_token: 'xyz',
     });
     expect(res.status).toBe(400);
@@ -2235,7 +2429,7 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid user info URL - check your identity provider configuration');
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test('FHIRcast scopes added to client credentials flow', async () => {

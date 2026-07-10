@@ -220,6 +220,30 @@ describe('Core Utils', () => {
         medicationCodeableConcept: { text: 'foo' },
       })
     ).toStrictEqual('foo');
+    expect(
+      getDisplayString({
+        resourceType: 'MedicationStatement',
+        status: 'active',
+        subject: { reference: 'Patient/123' },
+        medicationCodeableConcept: { coding: [{ display: 'Lisinopril 10 MG' }] },
+      })
+    ).toStrictEqual('Lisinopril 10 MG');
+    expect(
+      getDisplayString({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        description: 'Patient-shared health summary',
+        content: [{ attachment: { contentType: 'application/pdf', data: '...' } }],
+      })
+    ).toStrictEqual('Patient-shared health summary');
+    expect(
+      getDisplayString({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        type: { coding: [{ display: 'Patient summary Document' }] },
+        content: [{ attachment: { contentType: 'application/pdf', data: '...' } }],
+      })
+    ).toStrictEqual('Patient summary Document');
     expect(getDisplayString({ resourceType: 'PractitionerRole', code: [{ text: 'foo' }] })).toStrictEqual('foo');
     expect(
       getDisplayString({
