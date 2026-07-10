@@ -12,8 +12,8 @@ export interface OutboundUrlValidationOptions {
 
 const connector = buildConnector({});
 
-export const safeAgent = new Agent({
-  connect(options, callback) {
+export function createSafeConnect(connect: buildConnector.connector = connector): buildConnector.connector {
+  return (options, callback) => {
     if (options.protocol !== 'https:') {
       callback(new Error('Outbound request blocked: HTTPS is required'), null);
       return;
@@ -36,9 +36,13 @@ export const safeAgent = new Agent({
       }
 
       const [{ address }] = addresses;
-      connector({ ...options, hostname: address, servername: options.hostname }, callback);
+      connect({ ...options, hostname: address, servername: options.hostname }, callback);
     });
-  },
+  };
+}
+
+export const safeAgent = new Agent({
+  connect: createSafeConnect(),
 });
 
 /**

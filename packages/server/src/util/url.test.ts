@@ -1,9 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import dns from 'node:dns';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { Agent, fetch, getGlobalDispatcher, setGlobalDispatcher } from 'undici';
+import { vi } from 'vitest';
 import {
+  createSafeConnect,
   installSafeOutboundDispatcher,
   isAllowedOutboundUrlForQueue,
   isUnsafeHostname,
@@ -95,6 +98,43 @@ describe('isAllowedOutboundUrlForQueue', () => {
   });
 });
 
+describe('createSafeConnect', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test('returns DNS lookup errors', async () => {
+    const dnsError = new Error('DNS failure');
+    mockDnsLookup(dnsError, []);
+    const connect = createSafeConnect(vi.fn());
+
+    await expect(callConnect(connect, { hostname: 'example.com' })).rejects.toBe(dnsError);
+  });
+
+  test('blocks unsafe resolved addresses', async () => {
+    mockDnsLookup(null, [{ address: '10.0.0.1', family: 4 }]);
+    const connector = vi.fn();
+    const connect = createSafeConnect(connector);
+
+    await expect(callConnect(connect, { hostname: 'example.com' })).rejects.toThrow(
+      'Outbound request to unsafe address example.com is blocked'
+    );
+    expect(connector).not.toHaveBeenCalled();
+  });
+
+  test('passes resolved address to connector and preserves original hostname for SNI', async () => {
+    mockDnsLookup(null, [{ address: '8.8.8.8', family: 4 }]);
+    const connector = vi.fn((_options, callback) => callback(null, {} as any));
+    const connect = createSafeConnect(connector);
+
+    await expect(callConnect(connect, { hostname: 'example.com' })).resolves.toBeDefined();
+    expect(connector).toHaveBeenCalledWith(
+      expect.objectContaining({ hostname: '8.8.8.8', servername: 'example.com' }),
+      expect.any(Function)
+    );
+  });
+});
+
 describe('safeAgent', () => {
   test('requires HTTPS', async () => {
     await expect(fetch('http://example.com/', { dispatcher: safeAgent })).rejects.toThrow('fetch failed');
@@ -156,4 +196,29 @@ function close(server: ReturnType<typeof createServer>): Promise<void> {
   return new Promise((resolve, reject) => {
     server.close((err) => (err ? reject(err) : resolve()));
   });
+}
+
+function callConnect(
+  connect: ReturnType<typeof createSafeConnect>,
+  options: Partial<Parameters<ReturnType<typeof createSafeConnect>>[0]>
+): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    connect(
+      {
+        protocol: 'https:',
+        hostname: 'example.com',
+        port: '443',
+        ...options,
+      },
+      (err, socket) => (err ? reject(err) : resolve(socket))
+    );
+  });
+}
+
+function mockDnsLookup(err: Error | null, addresses: dns.LookupAddress[]): void {
+  vi.spyOn(dns, 'lookup').mockImplementation(((...args: unknown[]) => {
+    const callback = args[2] as (err: Error | null, addresses: dns.LookupAddress[]) => void;
+    callback(err, addresses);
+    return {} as any;
+  }) as any);
 }
