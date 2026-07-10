@@ -128,10 +128,10 @@ export function IntakeFormPage({
         <Alert color="red" title="Some fields are unavailable" mb="md">
           <Text size="sm" mb="xs">
             These fields can't offer suggestions because their value sets aren't available in this project:{' '}
-            {unavailableFields.map((vs, index) => (
-              <Fragment key={vs.linkId}>
+            {Array.from(new Set(unavailableFields.map((vs) => vs.questionText))).map((questionText, index) => (
+              <Fragment key={questionText}>
                 {index > 0 && ', '}
-                <strong>{vs.questionText}</strong>
+                <strong>{questionText}</strong>
               </Fragment>
             ))}
             .
