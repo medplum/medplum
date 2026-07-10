@@ -15,7 +15,7 @@ export interface DocumentSourceOption {
 // Each source is identified by marks on the document itself: Health Gorilla stamps its
 // identifier on every lab document it writes (reports, specimen labels, requisitions), while
 // uploads have no identifier and no related resource. (Its debug-log documents carry a
-// ServiceRequest in context.related instead, which is why Upload also requires related:missing.)
+// ServiceRequest in context.related instead, which is why Other Documents also requires related:missing.)
 // Fax/Message sources are not offered yet: nothing links DocumentReferences to their fax or
 // chat Communications — the Communication only points at the document via payload.contentReference,
 // which is not searchable.

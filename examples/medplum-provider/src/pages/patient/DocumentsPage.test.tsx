@@ -122,7 +122,7 @@ describe('DocumentsPage', () => {
 
     expect(await screen.findByText('Document Source')).toBeInTheDocument();
     expect(screen.getByText('Lab')).toBeInTheDocument();
-    expect(screen.getByText('Upload')).toBeInTheDocument();
+    expect(screen.getByText('Other Documents')).toBeInTheDocument();
   });
 
   test('selecting Lab navigates with the identifier filter and resets pagination', async () => {
@@ -141,13 +141,13 @@ describe('DocumentsPage', () => {
     expect(url).not.toContain('_offset');
   });
 
-  test('selecting Upload navigates with the missing-identifier and missing-related filters', async () => {
+  test('selecting Other Documents navigates with the missing-identifier and missing-related filters', async () => {
     await createDocument();
 
     setup(`/Patient/${patientId}/DocumentReference?_sort=-_lastUpdated`);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Filter documents' }));
-    fireEvent.click(await screen.findByText('Upload'));
+    fireEvent.click(await screen.findByText('Other Documents'));
 
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith(expect.stringContaining('identifier:missing=true'));
