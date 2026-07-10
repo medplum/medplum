@@ -96,6 +96,47 @@ describe('Navbar', () => {
     expect(screen.getByText('Menu 1')).toBeInTheDocument();
   });
 
+  test('Renders user name and active project name', async () => {
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: 'abc',
+        refreshToken: 'xyz',
+        profile: {
+          reference: 'Practitioner/124',
+          display: 'Alice Smith',
+        },
+        project: {
+          reference: 'Project/456',
+          display: 'My Project',
+        },
+      })
+    );
+
+    const initialUrl = new URL('/', 'http://localhost');
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum} navigate={navigateMock}>
+          <MantineAppShell>
+            <Navbar
+              logo={<div>Logo</div>}
+              pathname={initialUrl.pathname}
+              searchParams={initialUrl.searchParams}
+              navbarToggle={toggleMock}
+              closeNavbar={closeMock}
+              userMenuEnabled={true}
+            />
+          </MantineAppShell>
+        </MedplumProvider>
+      );
+    });
+
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('My Project')).toBeInTheDocument();
+
+    window.localStorage.removeItem('activeLogin');
+  });
+
   test('Highlighted link', async () => {
     await setup('/link1');
 
