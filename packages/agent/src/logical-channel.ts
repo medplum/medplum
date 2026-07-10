@@ -127,11 +127,15 @@ function parsePositiveInt(value: string): number | undefined {
  *
  * The key is `label:value-label:value-...`, one segment per spec field, in spec
  * order — e.g. spec `MSH.4-MSH.9.2` over a message from `HOSP1` of type `A01`
- * yields `MSH.4:HOSP1-MSH.9.2:A01`. Only string equality of the key matters (it
- * partitions the queue; it is never parsed back), so a value that happens to
- * contain `:` or `-` is harmless — two messages collide iff every addressed field
- * is identical. A missing segment/field contributes an empty value, so messages
- * lacking the keyed field group together in one partition.
+ * yields `MSH.4:HOSP1-MSH.9.2:A01`. The key is only ever compared for string
+ * equality (it partitions the queue; it is never parsed back), and each field's
+ * value is escaped ({@link escapeKeyPart}) so the `:`/`-` delimiters can't be
+ * forged: two messages collide iff every addressed field is identical. (Labels
+ * come from the spec and can contain neither delimiter, so they need no escaping.)
+ * Without escaping, distinct tuples could concatenate to the same key — e.g. spec
+ * `MSH.4-MSH.6` with `MSH.4='X-MSH.6:Y', MSH.6='Z'` vs `MSH.4='X', MSH.6='Y-MSH.6:Z'`
+ * — silently merging unrelated senders into one partition. A missing segment/field
+ * contributes an empty value, so messages lacking the keyed field group together.
  *
  * An empty spec returns `''` — the single-queue default.
  * @param message - The parsed HL7 message.
@@ -142,7 +146,18 @@ export function computeLogicalChannelKey(message: Hl7Message, spec: LogicalChann
   if (spec.length === 0) {
     return '';
   }
-  return spec.map((f) => `${f.label}:${extractFieldValue(message, f)}`).join('-');
+  return spec.map((f) => `${f.label}:${escapeKeyPart(extractFieldValue(message, f))}`).join('-');
+}
+
+/**
+ * Escapes the key delimiters in a field value so distinct field tuples can never
+ * concatenate to the same key. Backslash is escaped first (so it can serve as the
+ * escape character), then the `:` (label/value) and `-` (field) separators.
+ * @param value - The raw field value.
+ * @returns The value with `\`, `:`, and `-` backslash-escaped.
+ */
+function escapeKeyPart(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/:/g, '\\:').replace(/-/g, '\\-');
 }
 
 /**

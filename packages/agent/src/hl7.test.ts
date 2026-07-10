@@ -35,6 +35,7 @@ import {
   APP_LEVEL_ACK_CODES,
   APP_LEVEL_ACK_MODES,
   describeAckCode,
+  MAX_MAX_WORKERS,
   parseAppLevelAckMode,
   parseEnhancedMode,
   resolveMaxWorkers,
@@ -3356,6 +3357,21 @@ describe('resolveMaxWorkers', () => {
     expect(resolveMaxWorkers(new URLSearchParams('maxWorkers=abc'), 5, logger)).toBe(5);
     expect(logger.warn).toHaveBeenCalledTimes(2);
   });
+
+  test('clamps a value above the maximum, with a warning (guards against a runaway typo)', () => {
+    const logger = createMockLogger();
+    // A huge URL param (e.g. a typo) is clamped down to the ceiling, not instantiated verbatim.
+    expect(resolveMaxWorkers(new URLSearchParams('maxWorkers=1000000'), undefined, logger)).toBe(MAX_MAX_WORKERS);
+    // Same for an out-of-range agent-wide setting.
+    expect(resolveMaxWorkers(new URLSearchParams(), 1e9, logger)).toBe(MAX_MAX_WORKERS);
+    expect(logger.warn).toHaveBeenCalledTimes(2);
+    // A value exactly at the ceiling is fine and unwarned.
+    const logger2 = createMockLogger();
+    expect(resolveMaxWorkers(new URLSearchParams(`maxWorkers=${MAX_MAX_WORKERS}`), undefined, logger2)).toBe(
+      MAX_MAX_WORKERS
+    );
+    expect(logger2.warn).not.toHaveBeenCalled();
+  });
 });
 
 describe('AgentHl7Channel logicalChannelKey partitioning', () => {
@@ -3363,10 +3379,13 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
   const MSG = (facility: string): Hl7Message =>
     Hl7Message.parse(`MSH|^~\\&|APP|${facility}|R|F|20240101||ADT^A01|MSG1|P|2.5.1`);
 
-  // Builds a channel with a stub durable queue whose recomputeLogicalChannelKeys
-  // we can spy on, plus a helper to re-run config with a new logicalChannelKey
-  // spec (simulating a reload). createMockLogger().clone() returns the same mock,
-  // so `appLog` is the channel's own logger.
+  // Builds a channel with a stub durable queue whose recomputeLogicalChannelKeys we
+  // can spy on, plus a helper to re-run config with a new logicalChannelKey spec
+  // (simulating a reload). createMockLogger().clone() returns the same mock, so
+  // `appLog` is the channel's own logger. On a spec change the (leader) channel
+  // recomputes the stored partition of queued/delayed rows under the new spec;
+  // the common paths still key rows at claim time. isLeader is true so the
+  // leader-gated recompute runs.
   function makeChannel(): {
     channel: AgentHl7Channel;
     recompute: Mock;
@@ -3379,7 +3398,11 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
       log: appLog,
       channelLog: createMockLogger(),
       heartbeatEmitter: { addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() },
-      getDurableQueue: vi.fn().mockReturnValue({ isLeader: () => false, recomputeLogicalChannelKeys: recompute }),
+      getDurableQueue: vi.fn().mockReturnValue({
+        isLeader: () => true,
+        recomputeLogicalChannelKeys: recompute,
+        flipDelayedToQueued: vi.fn(),
+      }),
       getChannelRetrySettings: vi.fn().mockReturnValue({}),
       getChannelMaxWorkers: vi.fn().mockReturnValue(undefined),
       getChannelLogicalChannelKey: vi.fn().mockReturnValue(undefined),
@@ -3407,7 +3430,7 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
   test('validates before applying, recomputes only on a real change, and keeps the prior spec on invalid input', () => {
     const { channel, recompute, reconfigure, appLog } = makeChannel();
 
-    // First apply of a non-empty spec repartitions any already-queued rows.
+    // First apply of a non-empty spec recomputes any rows keyed under the old spec.
     reconfigure('MSH.4');
     expect(recompute).toHaveBeenCalledTimes(1);
     expect(recompute).toHaveBeenLastCalledWith('vc-channel', expect.any(Function));
@@ -3418,7 +3441,7 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
     reconfigure('MSH.4');
     expect(recompute).not.toHaveBeenCalled();
 
-    // A changed, valid spec repartitions and takes effect for new intake.
+    // A changed, valid spec recomputes and takes effect for new intake.
     reconfigure('MSH.9');
     expect(recompute).toHaveBeenCalledTimes(1);
     expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH.9:ADT^A01');
@@ -3431,5 +3454,38 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
     expect(appLog.warn).toHaveBeenCalled();
     expect(recompute).not.toHaveBeenCalled();
     expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH.9:ADT^A01');
+  });
+
+  test('a non-leader skips the recompute (re-keys at claim time if it later takes the lease)', () => {
+    const recompute = vi.fn().mockReturnValue(0);
+    const appLog = createMockLogger();
+    const mockApp = {
+      log: appLog,
+      channelLog: createMockLogger(),
+      heartbeatEmitter: { addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() },
+      getDurableQueue: vi.fn().mockReturnValue({
+        isLeader: () => false,
+        recomputeLogicalChannelKeys: recompute,
+        flipDelayedToQueued: vi.fn(),
+      }),
+      getChannelRetrySettings: vi.fn().mockReturnValue({}),
+      getChannelMaxWorkers: vi.fn().mockReturnValue(undefined),
+      getChannelLogicalChannelKey: vi.fn().mockReturnValue(undefined),
+    } as unknown as App;
+    const channel = new AgentHl7Channel(
+      mockApp,
+      { name: 'vc-channel' } as AgentChannel,
+      { resourceType: 'Endpoint', status: 'active', address: `${ADDR}?logicalChannelKey=` } as Endpoint
+    );
+    (channel as unknown as { endpoint: Endpoint }).endpoint = {
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: `${ADDR}?logicalChannelKey=MSH.4`,
+    } as Endpoint;
+    (channel as unknown as { configureHl7ServerAndConnections(): void }).configureHl7ServerAndConnections();
+
+    // Non-leader: no recompute, but the spec still takes effect for its own claims.
+    expect(recompute).not.toHaveBeenCalled();
+    expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH.4:HOSPA');
   });
 });

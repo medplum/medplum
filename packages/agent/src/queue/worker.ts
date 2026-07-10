@@ -265,6 +265,29 @@ export interface ChannelQueueWorkerOptions {
    * `undelivered`, never a Bot-leg error.
    */
   sendAck: (response: AgentTransmitResponse, row: InboundRow) => boolean;
+  /**
+   * Computes a claimed row's logical-channel key (FIFO partition) from its stored
+   * bytes under the channel's CURRENT spec. Injected (not read off the channel) so
+   * the worker stays decoupled from the channel and the key always reflects the
+   * live spec — computing it at claim time is what keeps the partition correct
+   * across retries/requeues/restarts/spec changes. Must be synchronous and must
+   * not throw (a row that no longer parses falls back to the default `''`
+   * partition); the worker calls it inside an await-free critical section.
+   *
+   * Optional: defaults to `() => ''` (a single, fully-serialized logical channel —
+   * the no-partitioning behavior). Production always injects the channel's real
+   * computer; the default keeps single-channel unit tests terse.
+   */
+  computeKey?: (originalMessage: Buffer) => string;
+  /**
+   * Nudges the whole worker pool (all sibling workers) so an idle one immediately
+   * claims a row this worker just released. Called after waking a partition on a
+   * terminal settle. Injected because a worker only knows its own `notify()`.
+   *
+   * Optional: defaults to a no-op (a released row is then picked up on the next
+   * idle poll instead of immediately). Production injects the pool notifier.
+   */
+  notifyPool?: () => void;
 }
 
 interface PendingResponse {
@@ -310,6 +333,8 @@ export class ChannelQueueWorker {
   private readonly responseTimeoutMs: number;
   private readonly idlePollMs: number;
   private readonly sendAck: ChannelQueueWorkerOptions['sendAck'];
+  private readonly computeKey: (originalMessage: Buffer) => string;
+  private readonly notifyPool: () => void;
   private retryPolicy: RetryPolicy;
 
   private running = false;
@@ -328,6 +353,8 @@ export class ChannelQueueWorker {
     this.responseTimeoutMs = options.responseTimeoutMs ?? DEFAULT_WORKER_RESPONSE_TIMEOUT_MS;
     this.idlePollMs = options.idlePollMs ?? DEFAULT_WORKER_IDLE_POLL_MS;
     this.sendAck = options.sendAck;
+    this.computeKey = options.computeKey ?? (() => '');
+    this.notifyPool = options.notifyPool ?? ((): void => {});
     this.retryPolicy = options.retryPolicy ?? DEFAULT_RETRY_POLICY;
     this.wakeSignal = makeWakeSignal();
   }
@@ -516,27 +543,50 @@ export class ChannelQueueWorker {
   }
 
   /**
-   * Stops the dispatch loop. Cancels any in-flight dispatch by rejecting its
-   * pending response Promise with `worker-stopped` — an ambiguous outcome (we
-   * don't know whether the server processed the message). The row is marked
-   * `failed` for operator review; an operator decides whether to replay.
+   * Stops the dispatch loop. Two modes, chosen by the caller:
+   *
+   * - **Immediate** (default — channel/app shutdown, port rebind): cancel any
+   *   in-flight dispatch with an ambiguous `worker-stopped` so the row settles
+   *   terminally (`failed` for review, or a guaranteed-mode retry) rather than
+   *   being left dangling `inflight`. This is the clean-shutdown contract: a
+   *   stopped agent leaves no row stuck mid-flight.
+   *
+   * - **Drain** (`{ drain: true }` — shrinking `maxWorkers` on a reload): stop
+   *   claiming new work but let the current dispatch settle on its own (its server
+   *   response, or the response-timeout, drives it terminal) before the loop
+   *   exits, bounded by the response timeout. A pool resize is NOT a shutdown, so
+   *   cancelling the in-flight row would needlessly re-dispatch it in guaranteed
+   *   mode (duplicate Bot execution) or strand a spurious `failed` row. We keep
+   *   the heartbeat watchdog attached through the drain so a concurrent lease loss
+   *   still tears the worker down at once (a demoted process must stop writing
+   *   immediately), removing it only once the loop has exited.
+   * @param options - Stop options.
+   * @param options.drain - `true` to let the in-flight row settle instead of cancelling it.
    */
-  async stop(): Promise<void> {
+  async stop(options?: { drain?: boolean }): Promise<void> {
     if (!this.running) {
       return;
     }
     this.stopping = true;
-    this.app.heartbeatEmitter.removeEventListener('heartbeat', this.onHeartbeat);
-    if (this.pending) {
-      const pending = this.pending;
-      clearTimeout(pending.timeout);
-      this.pending = undefined;
-      pending.reject(new QueueError(QueueErrorCode.WorkerStopped, 'worker stopping'));
+    if (!options?.drain) {
+      // Immediate: cancel the in-flight dispatch so its row settles terminally
+      // instead of dangling `inflight`.
+      this.app.heartbeatEmitter.removeEventListener('heartbeat', this.onHeartbeat);
+      if (this.pending) {
+        const pending = this.pending;
+        clearTimeout(pending.timeout);
+        this.pending = undefined;
+        pending.reject(new QueueError(QueueErrorCode.WorkerStopped, 'worker stopping'));
+      }
     }
-    // Wake the loop so it observes `stopping`.
+    // Wake the loop so an idle worker observes `stopping` without waiting on its
+    // poll; a draining worker finishes its current dispatch first, then exits.
     this.notify();
     if (this.loopPromise) {
       await this.loopPromise;
+    }
+    if (options?.drain) {
+      this.app.heartbeatEmitter.removeEventListener('heartbeat', this.onHeartbeat);
     }
     this.running = false;
   }
@@ -619,6 +669,31 @@ export class ChannelQueueWorker {
   }
 
   private async process(row: InboundRow): Promise<void> {
+    // ── Partition gate ─────────────────────────────────────────────────────
+    // MUST stay synchronous (NO `await`) from the `claimNext()` in loop() through
+    // to the write below. The loop does `claimNext()` then `await process(row)`,
+    // so this block runs before the first suspension point (dispatch). That is
+    // what makes the claim→key decision atomic against sibling pool workers on the
+    // single JS thread: no other worker can observe this row between the claim and
+    // the moment its partition key is recorded (or it is parked). Introducing an
+    // `await` here reopens the race where two workers dispatch the same logical
+    // channel concurrently, out of order.
+    const key = this.computeKey(row.originalMessage);
+    if (this.queue.isPartitionBlocked(this.channelName, key, row.id)) {
+      // An earlier message in this logical channel is still in play. Park the row
+      // `delayed` (undoing the claim's attempt bump) and let the loop claim the
+      // next one; it re-enters `queued` when that message settles (releasePartition)
+      // or on a spec change / startup recovery. Never dispatched, so no ordering risk.
+      this.queue.markDelayed(row.id, row.attemptCount, key);
+      return;
+    }
+    // Partition is free: record the key so later same-partition claims see it as
+    // occupied, and mirror it onto the in-memory row so releasePartition wakes the
+    // right partition when this row settles.
+    this.queue.setLogicalChannelKey(row.id, key);
+    row.logicalChannelKey = key;
+    // ───────────────────────────────────────────────────────────────────────
+
     let response: AgentTransmitResponse | undefined;
     try {
       response = await this.dispatch(row);
@@ -777,6 +852,22 @@ export class ChannelQueueWorker {
   }
 
   /**
+   * Releases the next message in a settled row's logical channel: promotes the
+   * head `delayed` row of the partition to `queued` and nudges the pool so an idle
+   * worker claims it without waiting on the idle poll. Called ONLY on a terminal
+   * settle (processed/rejected/failed), never on a scheduled retry — a retrying
+   * head keeps blocking its partition until it terminally settles. `row.logicalChannelKey`
+   * was stored at claim time (normal path) or read from the row (late path), so it
+   * is the partition to wake.
+   * @param row - The row that just settled terminally.
+   */
+  private releasePartition(row: InboundRow): void {
+    if (this.queue.wakePartition(this.channelName, row.logicalChannelKey)) {
+      this.notifyPool();
+    }
+  }
+
+  /**
    * Settles a row the Bot accepted, then delivers the app-level ACK back to the
    * source as a SEPARATE leg tracked in `ack_outcome`.
    *
@@ -791,12 +882,14 @@ export class ChannelQueueWorker {
       // This attempt was superseded before we could record it (e.g. a peer took
       // the dispatch lease between the response arriving and this write) — the
       // ACK we may have just sent is the new owner's business to reconcile, not
-      // ours to also record.
+      // ours to also record. No wake either: we don't own this row's partition.
       this.log.info(
         `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) processed-state write discarded: attempt ${row.attemptCount} was already superseded`
       );
       return;
     }
+    // Terminal success: let the next message in this partition proceed.
+    this.releasePartition(row);
     if (row.attemptCount > 1) {
       this.log.info(
         `Row id=${row.id} (control id=${row.msgControlId ?? 'n/a'}) Bot leg succeeded after ${row.attemptCount} attempts`
@@ -900,9 +993,12 @@ export class ChannelQueueWorker {
       }
     }
     // Not retried (or exhausted): land on the terminal state by classification.
+    // A terminal settle releases the partition so its next message can proceed;
+    // a superseded write (applied === false) does not — we no longer own the row.
     if (PERMANENT_ERROR_CODES.has(code)) {
       const applied = this.queue.markRejected(row.id, row.attemptCount, message, code);
       if (applied) {
+        this.releasePartition(row);
         this.log.error(`${rowDesc} rejected (${code}): ${message}`);
       } else {
         this.log.info(`${rowDesc} rejected-state write discarded: attempt ${row.attemptCount} was already superseded`);
@@ -912,6 +1008,7 @@ export class ChannelQueueWorker {
     // Transient/ambiguous codes the policy isn't retrying — left for operator review.
     const applied = this.queue.markFailed(row.id, row.attemptCount, message, code);
     if (applied) {
+      this.releasePartition(row);
       this.log.error(`${rowDesc} failed (${code}, operator review): ${message}`);
     } else {
       this.log.info(`${rowDesc} failed-state write discarded: attempt ${row.attemptCount} was already superseded`);

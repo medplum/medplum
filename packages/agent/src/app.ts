@@ -1270,17 +1270,20 @@ export class App {
       return false;
     }
     const channel = this.channels.get(response.channel);
-    if (!(channel instanceof AgentHl7Channel) || channel.workers.length === 0) {
+    if (!(channel instanceof AgentHl7Channel)) {
       return false;
     }
-    // This channel is owned end-to-end by its durable-queue worker pool: when the
-    // queue is on, inbound messages never use the legacy in-memory path, so
-    // their responses must not either. Consume the response here unconditionally.
-    // routeServerResponse hands it to the worker that owns the callback; if none
-    // does — e.g. a late response that arrived after the response timeout already
-    // errored/requeued the row, or after a requeue/worker stop cleared the pending
-    // dispatch — it logs and drops it. Returning true regardless prevents it from
-    // falling through to addToHl7Queue, which would re-send a stale ACK to the source.
+    // When the durable queue is on, an HL7 channel is owned end-to-end by its
+    // worker pool: inbound messages never use the legacy in-memory path, so their
+    // responses must not either. Consume the response here unconditionally —
+    // regardless of the current pool size. Gating on `workers.length > 0` was a
+    // bug: a pool momentarily empty (e.g. workers stepped down on a lease loss,
+    // then a reconfigure filtered them out) would let a late response fall through
+    // to addToHl7Queue and re-send a stale ACK to the source. routeServerResponse
+    // hands the response to the worker that owns the callback; if none does — a
+    // late response whose row already settled/requeued, or an empty pool with no
+    // owner at all — it logs and drops it. Returning true regardless keeps it off
+    // the legacy path.
     channel.routeServerResponse(response);
     return true;
   }
@@ -1329,7 +1332,9 @@ export class App {
     const errors: Error[] = [];
     for (const channel of this.channels.values()) {
       if (channel instanceof AgentHl7Channel) {
-        for (const worker of channel.workers) {
+        // allWorkers, not workers: a worker still draining after a pool shrink can
+        // own an in-flight dispatch, so it must also see disconnect/notify events.
+        for (const worker of channel.allWorkers) {
           try {
             fn(worker);
           } catch (err) {

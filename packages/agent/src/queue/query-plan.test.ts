@@ -11,14 +11,18 @@ import {
   CLAIM_NEXT,
   FIND_BY_CALLBACK,
   FIND_SEEN_BY_CONTROL_ID,
+  FLIP_DELAYED_FOR_CHANNEL,
+  IS_PARTITION_BLOCKED,
   LIST_QUEUED_IDS_FOR_CHANNEL,
   MARK_SENT,
   RECOVER_CLAIMED,
+  RECOVER_DELAYED,
   RECOVER_INFLIGHT,
   RECOVER_INFLIGHT_GUARANTEED,
   RETENTION_PHASE1_DELETE,
   RETENTION_PHASE2_DELETE,
   RETENTION_PHASE3_DELETE,
+  WAKE_PARTITION,
 } from './queries';
 
 /**
@@ -34,17 +38,15 @@ import {
 const CASES: { name: string; sql: string; params: unknown[]; index: string }[] = [
   // Hot path
   { name: 'findSeenByControlId', sql: FIND_SEEN_BY_CONTROL_ID, params: ['ch', 'mc'], index: 'idx_inbound_dup_lookup' },
-  // claimNext binds `now` twice: processing_started_at + the next_attempt_at backoff predicate.
-  // Its `head` scan (channel + state, ordered by id) rides idx_inbound_channel_state_id...
+  // claimNext is partition-UNAWARE now: it binds `now` twice (processing_started_at
+  // + the next_attempt_at backoff predicate) and its head scan (channel + state,
+  // ordered by id) rides idx_inbound_channel_state_id. The partition check moved
+  // to isPartitionBlocked (below), so claimNext no longer touches the vchannel index.
   { name: 'claimNext head scan', sql: CLAIM_NEXT, params: [0, 'ch', 0], index: 'idx_inbound_channel_state_id' },
-  // ...while the per-partition head (MIN) and busy subqueries ride idx_inbound_vchannel_claim.
-  // Both must be present so neither the concurrency index nor the FIFO index can be dropped silently.
-  {
-    name: 'claimNext partition subqueries',
-    sql: CLAIM_NEXT,
-    params: [0, 'ch', 0],
-    index: 'idx_inbound_vchannel_claim',
-  },
+  // The post-claim partition check + its wake ride idx_inbound_vchannel_claim
+  // (channel_name, logical_channel_key, state, id) — the FIFO/concurrency index.
+  { name: 'isPartitionBlocked', sql: IS_PARTITION_BLOCKED, params: ['ch', '', 0], index: 'idx_inbound_vchannel_claim' },
+  { name: 'wakePartition', sql: WAKE_PARTITION, params: ['ch', ''], index: 'idx_inbound_vchannel_claim' },
   { name: 'markSent', sql: MARK_SENT, params: [0, 'cb'], index: 'uq_inbound_callback' },
   { name: 'findByCallback', sql: FIND_BY_CALLBACK, params: ['cb'], index: 'uq_inbound_callback' },
   // Startup / recovery
@@ -62,6 +64,13 @@ const CASES: { name: string; sql: string; params: unknown[]; index: string }[] =
     index: 'idx_inbound_state_processed_at',
   },
   { name: 'recoverClaimed', sql: RECOVER_CLAIMED, params: [], index: 'idx_inbound_state_processed_at' },
+  { name: 'recoverDelayed', sql: RECOVER_DELAYED, params: [], index: 'idx_inbound_state_processed_at' },
+  {
+    name: 'flipDelayedForChannel',
+    sql: FLIP_DELAYED_FOR_CHANNEL,
+    params: ['ch'],
+    index: 'idx_inbound_channel_state_id',
+  },
   // Retention sweep
   { name: 'retentionPhase1', sql: RETENTION_PHASE1_DELETE, params: [0], index: 'idx_inbound_state_processed_at' },
   { name: 'retentionPhase2', sql: RETENTION_PHASE2_DELETE, params: [0], index: 'idx_inbound_state_processed_at' },

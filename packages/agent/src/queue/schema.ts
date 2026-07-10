@@ -180,6 +180,31 @@ export const MIGRATIONS: readonly Migration[] = [
         ON inbound_hl7_messages (channel_name, logical_channel_key, state, id);
     `,
   },
+  {
+    // Claim-time partitioning + the new `delayed` state (a row parked behind an
+    // earlier not-yet-settled message in the same logical channel). A `delayed`
+    // row is still an ACTIVE occupant of its (channel_name, msg_control_id): an
+    // inbound retransmit while it waits must dedupe against it, not insert a
+    // second copy. So the active-duplicate unique index has to include `delayed`
+    // in its state predicate; recreate the partial UNIQUE index to widen it.
+    //
+    // Safe on the populated table: this migration is the first to introduce the
+    // `delayed` state, so zero rows are in it at apply time and the widened
+    // predicate cannot surface a new uniqueness violation. The DROP + CREATE runs
+    // inside this migration's transaction (see runMigrations), so it's atomic.
+    // The other dup index (idx_inbound_dup_lookup, WHERE state != 'nacked') and
+    // the claim index (idx_inbound_vchannel_claim, keyed on state) already cover
+    // `delayed` without change.
+    version: 4,
+    sql: `
+      DROP INDEX IF EXISTS uq_inbound_dup_active;
+
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_inbound_dup_active
+        ON inbound_hl7_messages (channel_name, msg_control_id)
+        WHERE msg_control_id IS NOT NULL
+          AND state IN ('queued', 'delayed', 'claimed', 'inflight');
+    `,
+  },
 ];
 
 /**

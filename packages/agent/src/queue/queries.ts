@@ -25,14 +25,19 @@ import { QueueErrorCode } from './types';
 
 // --- Intake ---
 
-/** Insert a new `queued` row. Column order matches {@link DurableQueue.enqueue}'s bind order. */
+/**
+ * Insert a new `queued` row. Column order matches {@link DurableQueue.enqueue}'s
+ * bind order. `logical_channel_key` is deliberately NOT set here — it defaults to
+ * `''` and is written at claim time from the channel's current spec (see
+ * {@link SET_LOGICAL_CHANNEL_KEY}), so no stored key can ever go stale.
+ */
 export const ENQUEUE = `
   INSERT INTO inbound_hl7_messages (
     channel_name, remote, msg_control_id, msg_type, original_message, finalized_message, encoding,
     enhanced_mode, state, attempt_count, callback_id,
-    seq_no, received_at, guaranteed_delivery, logical_channel_key
+    seq_no, received_at, guaranteed_delivery
   ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?, ?, ?
   )
 `;
 
@@ -51,25 +56,130 @@ export const ENQUEUE_REJECTED = `
   )
 `;
 
-// --- Logical-channel key recompute (config reload) ---
+// --- Logical channels (claim-time partitioning) ---
 //
-// When a channel's `logicalChannelKey` spec changes, the stored partition of
-// every still-`queued` row must be recomputed from its original bytes. We touch
-// ONLY `queued` rows: a `claimed`/`inflight` row is mid-dispatch under its
-// current partition and must finish there (never repartition a row a worker
-// holds in flight). See AgentHl7Channel config reload + DurableQueue.recomputeLogicalChannelKeys.
+// The partition of a row (its `logical_channel_key`) is computed at CLAIM time
+// from the channel's *current* spec, not at intake — so it can never go stale
+// across retries, requeues, restarts, or spec changes. Right after claiming a
+// row a worker computes its key and either writes it (SET_LOGICAL_CHANNEL_KEY,
+// then dispatch) or, if the partition is occupied by an earlier message
+// (IS_PARTITION_BLOCKED), parks the row `delayed` (MARK_DELAYED) until the
+// blocker settles (WAKE_PARTITION). See ChannelQueueWorker's post-claim check.
 
-/** Read every `queued` row for a channel, with the bytes + current key needed to recompute its partition. */
-export const SELECT_QUEUED_FOR_VCHANNEL_RECOMPUTE = `
-  SELECT id, original_message, logical_channel_key FROM inbound_hl7_messages
-   WHERE channel_name = ? AND state = 'queued'
-`;
-
-/** Rewrite a single `queued` row's partition. Guarded on `state = 'queued'` so a row claimed since the read is left alone. */
+/**
+ * Records the freshly-computed partition on the just-claimed row, immediately
+ * before dispatch. Guarded on `state = 'claimed'`: the worker computes the key
+ * synchronously between `claimNext` and this write (no `await` in between), so
+ * the row is provably still `claimed` and this is the row's own worker writing
+ * its own key. A `queued` guard (the pre-rework shape) would silently no-op here.
+ */
 export const SET_LOGICAL_CHANNEL_KEY = `
   UPDATE inbound_hl7_messages
      SET logical_channel_key = ?
-   WHERE id = ? AND state = 'queued'
+   WHERE id = ? AND state = 'claimed'
+`;
+
+/**
+ * Is the logical channel `key` occupied by an EARLIER message than `id`? True
+ * when any other row in the same partition with a lower id is still in play
+ * (`queued` and backing off, `delayed` behind an even-earlier row, `claimed`, or
+ * `inflight`). The `id <` bound plus FIFO claim ordering is what preserves
+ * per-partition order: the claim always takes the lowest-id queued row, so a
+ * claimed candidate need only check whether anything ahead of it in its
+ * partition is unfinished. `delayed` MUST be in this set so an over-eager wake
+ * (a row promoted while an even-earlier one is still parked) re-delays rather
+ * than dispatching out of order. Served by `idx_inbound_vchannel_claim`. [index-guarded]
+ */
+export const IS_PARTITION_BLOCKED = `
+  SELECT 1 FROM inbound_hl7_messages
+   WHERE channel_name = ?
+     AND logical_channel_key = ?
+     AND id < ?
+     AND state IN ('queued', 'delayed', 'claimed', 'inflight')
+   LIMIT 1
+`;
+
+/**
+ * Parks a just-claimed row that lost the partition race: `claimed` → `delayed`,
+ * storing the computed `logical_channel_key` so {@link WAKE_PARTITION} can find
+ * it. Undoes the claim's `attempt_count` increment (the row never dispatched, so
+ * the attempt doesn't count) and clears `processing_started_at`. The
+ * `attempt_count = ?` + `state = 'claimed'` guard makes it a no-op if the row was
+ * superseded between claim and this write. A delayed row is invisible to
+ * {@link CLAIM_NEXT} until woken.
+ */
+export const MARK_DELAYED = `
+  UPDATE inbound_hl7_messages
+     SET state = 'delayed',
+         logical_channel_key = ?,
+         processing_started_at = NULL,
+         attempt_count = MAX(0, attempt_count - 1)
+   WHERE id = ? AND attempt_count = ? AND state = 'claimed'
+`;
+
+/**
+ * Wakes a partition when its in-flight head settles terminally: promotes the
+ * single lowest-id `delayed` row of `key` back to `queued`, so exactly the next
+ * message in that partition becomes claimable. One-at-a-time promotion means
+ * each follower is parked once and woken once (no re-park churn); the promoted
+ * row's own post-claim check re-serializes it if a newer head appeared. The
+ * subquery yields NULL (matching no row, 0 changes) when nothing is parked.
+ * Served by `idx_inbound_vchannel_claim`. [index-guarded]
+ */
+export const WAKE_PARTITION = `
+  UPDATE inbound_hl7_messages
+     SET state = 'queued'
+   WHERE id = (
+     SELECT MIN(id) FROM inbound_hl7_messages
+      WHERE channel_name = ? AND logical_channel_key = ? AND state = 'delayed'
+   )
+`;
+
+/**
+ * Returns every `delayed` row for a channel to `queued`. Best-effort fallback if
+ * the spec-change recompute below fails partway, so no parked row is stranded
+ * waiting on a wake that now targets a re-keyed partition; the re-queued rows
+ * re-derive their partition at the next claim. Served by
+ * `idx_inbound_channel_state_id`. [index-guarded]
+ */
+export const FLIP_DELAYED_FOR_CHANNEL = `
+  UPDATE inbound_hl7_messages
+     SET state = 'queued'
+   WHERE channel_name = ? AND state = 'delayed'
+`;
+
+// --- Logical-channel key recompute (spec change only) ---
+//
+// Claim-time keying keeps a row's partition current across the COMMON paths
+// (retry/requeue/restart re-claim → re-key). A `logicalChannelKey` SPEC CHANGE is
+// the one path claim-time keying can't cover alone: rows not actively being
+// claimed (backing-off `queued`, parked `delayed`) keep the key they were last
+// stamped with, and IS_PARTITION_BLOCKED trusts stored keys — so a same-new-
+// partition message could skip ahead of an older not-yet-re-claimed one. On a
+// spec change we recompute the stored key of every `queued` and `delayed` row
+// from its bytes (and un-park `delayed` → `queued`). This is the rare, operator-
+// initiated path, so unlike the removed intake-time recompute it is NOT hot; it is
+// chunked (paginated by id) so a large backlog doesn't materialize every blob at
+// once, and lease-gated so only the dispatching leader runs it. `claimed`/`inflight`
+// rows are left alone — they finish under their current partition (a bounded,
+// unavoidable transitional window).
+
+/** One id-paginated batch of `queued`/`delayed` rows (with bytes) to recompute; `id > ?` is the cursor. */
+export const SELECT_QUEUED_OR_DELAYED_FOR_RECOMPUTE = `
+  SELECT id, original_message FROM inbound_hl7_messages
+   WHERE channel_name = ?
+     AND state IN ('queued', 'delayed')
+     AND id > ?
+   ORDER BY id ASC
+   LIMIT ?
+`;
+
+/** Rewrite a row's recomputed partition and un-park it if delayed. Guarded so a row claimed since the read is left alone. */
+export const RECOMPUTE_SET_KEY = `
+  UPDATE inbound_hl7_messages
+     SET logical_channel_key = ?,
+         state = CASE WHEN state = 'delayed' THEN 'queued' ELSE state END
+   WHERE id = ? AND state IN ('queued', 'delayed')
 `;
 
 // --- Per-channel sequence counter ---
@@ -106,40 +216,29 @@ export const FIND_SEEN_BY_CONTROL_ID = `
 `;
 
 /**
- * Partition-aware FIFO claim: flip the head of the next *available* logical
- * channel to `claimed` in one statement. This is what lets a bounded pool of
- * workers process distinct logical channels of one physical channel concurrently
- * while each logical channel stays strictly serial and in order.
+ * FIFO claim: flip the oldest ready `queued` row for the channel to `claimed` in
+ * one statement, so concurrent workers can't double-claim. Deliberately
+ * partition-UNAWARE — the logical-channel partition is enforced *after* the
+ * claim, by the worker: it computes the row's key (from the current spec) and
+ * either dispatches it or parks it `delayed` if an earlier same-partition message
+ * is still in play (see {@link IS_PARTITION_BLOCKED} / {@link MARK_DELAYED}).
+ * Because the claim always takes the lowest id, the head of every partition is
+ * always claimed before any of its followers, which is what lets the cheap
+ * post-claim check preserve per-partition order without SQL knowing the key.
+ * `delayed` rows are excluded (state = 'queued' only), so a parked follower is
+ * skipped until {@link WAKE_PARTITION} promotes it — no repeated re-claiming.
  *
- * A row is claimable iff ALL hold (candidate aliased `head`):
- *  1. `head` is `queued` for this channel.
- *  2. `head` is the *head* of its logical channel — the lowest-id queued row for
- *     its `logical_channel_key`. This is what makes a non-head row unclaimable
- *     while an earlier row in the same partition is still queued (per-partition
- *     FIFO), even when the head is backing off.
- *  3. That logical channel is not already being processed — no `claimed`/`inflight`
- *     row shares its `logical_channel_key`. This is the serialization guard: at
- *     most one worker ever holds a given logical channel in flight, so raising the
- *     worker-pool size never breaks per-partition ordering.
- *  4. The head's retry backoff has elapsed (`next_attempt_at`). Because only heads
- *     are considered (rule 2), a backing-off head blocks its whole logical channel
- *     rather than letting a younger row skip ahead — head-of-line blocking scoped
- *     to the partition (see {@link SCHEDULE_RETRY}).
- *
- * Among all claimable heads we take the lowest id (`ORDER BY head.id`), so the
- * oldest-waiting partition is served first. With the default single logical
- * channel (`logical_channel_key = ''`) this reduces exactly to the old behavior:
- * one in-flight row per channel, strict FIFO, head backoff blocks the channel.
+ * A row is claimable iff it is `queued` for this channel and its retry backoff
+ * has elapsed (`next_attempt_at`). Moving the partition logic out of SQL also
+ * makes this a single index seek on `idx_inbound_channel_state_id` regardless of
+ * backlog depth, instead of the correlated per-partition subqueries the
+ * partition-aware claim used.
  *
  * The claim clears `next_attempt_at` so a re-claimed retry row carries no stale
  * schedule, and clears `last_error`/`error_code` so a crash during THIS attempt
  * records a fresh `interrupted` classification instead of the previous attempt's
- * stale code (see `RECOVER_INFLIGHT`'s `COALESCE`). The `head` scan is served by
- * `idx_inbound_channel_state_id`; the per-partition head (MIN) and busy subqueries
- * by `idx_inbound_vchannel_claim`. The subqueries are correlated to the outer
- * `head` (channel + partition), so the bind list is unchanged from the
- * pre-partition claim: now (processing_started_at), channel_name (head), now
- * (head backoff). [index-guarded]
+ * stale code (see `RECOVER_INFLIGHT`'s `COALESCE`). Bind list: now
+ * (processing_started_at), channel_name, now (backoff predicate). [index-guarded]
  */
 export const CLAIM_NEXT = `
   UPDATE inbound_hl7_messages
@@ -150,23 +249,11 @@ export const CLAIM_NEXT = `
          last_error = NULL,
          error_code = NULL
    WHERE id = (
-     SELECT head.id FROM inbound_hl7_messages head
-      WHERE head.channel_name = ?
-        AND head.state = 'queued'
-        AND (head.next_attempt_at IS NULL OR head.next_attempt_at <= ?)
-        AND head.id = (
-          SELECT MIN(h.id) FROM inbound_hl7_messages h
-           WHERE h.channel_name = head.channel_name
-             AND h.logical_channel_key = head.logical_channel_key
-             AND h.state = 'queued'
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM inbound_hl7_messages busy
-           WHERE busy.channel_name = head.channel_name
-             AND busy.logical_channel_key = head.logical_channel_key
-             AND busy.state IN ('claimed', 'inflight')
-        )
-      ORDER BY head.id ASC
+     SELECT id FROM inbound_hl7_messages
+      WHERE channel_name = ?
+        AND state = 'queued'
+        AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
+      ORDER BY id ASC
       LIMIT 1
    )
    RETURNING *
@@ -373,6 +460,21 @@ export const RECOVER_CLAIMED = `
    WHERE state = 'claimed'
 `;
 
+/**
+ * Crash recovery, parked leg: a row left `delayed` was only waiting behind an
+ * earlier same-partition message; it never dispatched, so it returns to `queued`
+ * unconditionally and re-evaluates its partition at the next claim (which also
+ * re-derives its key under whatever spec is current after the restart). No
+ * attempt_count adjustment — {@link MARK_DELAYED} already undid the claim's
+ * increment when it parked the row. The `WHERE state` scan is served by
+ * `idx_inbound_state_processed_at`. [index-guarded]
+ */
+export const RECOVER_DELAYED = `
+  UPDATE inbound_hl7_messages
+     SET state = 'queued'
+   WHERE state = 'delayed'
+`;
+
 // --- Stats / diagnostics ---
 
 /** Counts of rows by state (full GROUP BY scan — diagnostic, not on the hot path). */
@@ -380,10 +482,11 @@ export const COUNT_BY_STATE = `
   SELECT state, COUNT(*) AS n FROM inbound_hl7_messages GROUP BY state
 `;
 
-/** Per-channel queue depth snapshot (queued/claimed/inflight counts + oldest queued time). */
+/** Per-channel queue depth snapshot (queued/delayed/claimed/inflight counts + oldest queued time). */
 export const CHANNEL_DEPTH = `
   SELECT
     SUM(state = 'queued')                                            AS queued,
+    SUM(state = 'delayed')                                           AS delayed,
     SUM(state = 'claimed')                                           AS claimed,
     SUM(state = 'inflight')                                          AS inflight,
     MIN(CASE WHEN state = 'queued' THEN received_at ELSE NULL END)   AS oldest_queued_at

@@ -8,6 +8,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { createMockLogger } from '../test-utils';
 import { DurableQueue, isUniqueConstraintError } from './durable-queue';
 import { MIGRATIONS } from './schema';
+import type { ClaimedRow } from './types';
 import { AckOutcome, assertRowState, MessageState, QueueErrorCode } from './types';
 
 function makeEnqueueInput(
@@ -291,22 +292,19 @@ describe('DurableQueue', () => {
       throw new Error('expected inserted');
     }
 
-    // The default single partition ('') serializes the whole channel: the head is
-    // claimed first, and until it settles that partition is busy — so a second
-    // claim returns null rather than handing out a concurrently-in-flight row.
+    // claimNext is partition-unaware: it hands out channel A's queued rows in
+    // FIFO id order. (Per-partition serialization — keeping one in flight per
+    // logical channel — is the worker's post-claim job, not the claim's.) B's row
+    // belongs to a different channel and never surfaces for A.
     const first = queue.claimNext('A');
     expect(first?.id).toBe(a.row.id);
     expect(first?.state).toBe(MessageState.CLAIMED);
     expect(first?.attemptCount).toBe(1);
-    expect(queue.claimNext('A')).toBeNull(); // partition busy — serialization guard
 
-    // Once the head settles, the next-oldest row for the channel is claimable — FIFO.
-    queue.markProcessed(a.row.id, first?.attemptCount ?? -1, AckOutcome.DELIVERED);
     const second = queue.claimNext('A');
-    expect(second?.id).toBe(a2.row.id);
+    expect(second?.id).toBe(a2.row.id); // next in FIFO order, without waiting for the first to settle
 
-    // Drained: nothing left for A once A2 is claimed (B's row is untouched throughout).
-    queue.markProcessed(a2.row.id, second?.attemptCount ?? -1, AckOutcome.DELIVERED);
+    // Drained: both of A's rows are now claimed; B's row is untouched throughout.
     expect(queue.claimNext('A')).toBeNull();
   });
 
@@ -371,115 +369,190 @@ describe('DurableQueue', () => {
     expect(queue.scheduleRetry(r.row.id, 0, 'again', QueueErrorCode.ServerError, nextAttemptAt)).toBe(false);
   });
 
-  test('claimNext honors next_attempt_at and blocks the channel head-of-line', () => {
+  test('claimNext honors next_attempt_at as a per-row backoff gate', () => {
     const now = Date.now();
     const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'R', msgControlId: 'HOL1' }));
     const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'R', msgControlId: 'HOL2' }));
     if (r1.kind !== 'inserted' || r2.kind !== 'inserted') {
       throw new Error('expected inserted');
     }
+    // Claim r1, then schedule it to retry in the future — it now carries a backoff.
     queue.claimNext('R', now);
     queue.scheduleRetry(r1.row.id, 1, 'Server returned 503', QueueErrorCode.ServerError, now + 5000);
 
-    // Head row is backing off: nothing claimable — including r2, which must NOT
-    // skip ahead of r1 (per-channel FIFO ordering).
-    expect(queue.claimNext('R', now)).toBeNull();
-    expect(queue.claimNext('R', now + 4999)).toBeNull();
+    // claimNext is partition-unaware now: with r1 backing off, the next eligible
+    // queued row (r2) IS handed out. Per-partition FIFO — keeping r2 behind a
+    // backing-off r1 of the same key — is enforced by the worker's post-claim
+    // partition check, not by claimNext.
+    expect(queue.claimNext('R', now)?.id).toBe(r2.row.id);
 
-    // Once the backoff elapses, the retried row comes out first, with
-    // next_attempt_at cleared and attempt_count bumped.
+    // r1 remains gated by its OWN backoff: not claimable until now+5000, then it
+    // comes out with next_attempt_at cleared and attempt_count bumped.
+    expect(queue.claimNext('R', now + 4999)).toBeNull();
     const reclaimed = queue.claimNext('R', now + 5000);
     expect(reclaimed?.id).toBe(r1.row.id);
     expect(reclaimed?.attemptCount).toBe(2);
     expect(rawColumn(r1.row.id, 'next_attempt_at')).toBeNull();
-
-    // And the channel resumes normal FIFO behind it.
-    queue.markProcessed(r1.row.id, reclaimed?.attemptCount ?? -1, AckOutcome.DELIVERED);
-    expect(queue.claimNext('R', now + 5000)?.id).toBe(r2.row.id);
   });
 
-  describe('logical channels (partitioned claim)', () => {
-    test('distinct logical channels are claimable concurrently; each is serialized within', () => {
-      // Two partitions (X, Y) on one channel; X has two messages.
-      const x1 = queue.enqueue(makeEnqueueInput({ channelName: 'VC', msgControlId: 'X1', logicalChannelKey: 'X' }));
-      const y1 = queue.enqueue(makeEnqueueInput({ channelName: 'VC', msgControlId: 'Y1', logicalChannelKey: 'Y' }));
-      const x2 = queue.enqueue(makeEnqueueInput({ channelName: 'VC', msgControlId: 'X2', logicalChannelKey: 'X' }));
-      if (x1.kind !== 'inserted' || y1.kind !== 'inserted' || x2.kind !== 'inserted') {
+  describe('logical channels (claim-time partitioning)', () => {
+    // Enqueue a row and claim it (partition-unaware), returning the claimed row.
+    // The partition key is assigned AFTER the claim (setLogicalChannelKey /
+    // markDelayed), mirroring how the worker does it.
+    function enqueueAndClaim(channelName: string, msgControlId: string): ClaimedRow {
+      const r = queue.enqueue(makeEnqueueInput({ channelName, msgControlId }));
+      if (r.kind !== 'inserted') {
         throw new Error('expected inserted');
       }
+      const claimed = queue.claimNext(channelName);
+      assertRowState(claimed, MessageState.CLAIMED);
+      return claimed;
+    }
 
-      // Claim twice with nothing settled: we get X's head and Y's head — two rows
-      // in flight at once, because they're different partitions (concurrency).
-      const first = queue.claimNext('VC');
-      const second = queue.claimNext('VC');
-      expect(first?.id).toBe(x1.row.id); // lowest-id head overall
-      expect(second?.id).toBe(y1.row.id); // next partition, not busy
-      expect(first?.logicalChannelKey).toBe('X');
-      expect(second?.logicalChannelKey).toBe('Y');
-
-      // Both partitions are now busy — X2 must wait behind X1 (per-partition FIFO),
-      // and Y has nothing left. So a third claim yields nothing.
-      expect(queue.claimNext('VC')).toBeNull();
-
-      // Settle X1; X2 (same partition) becomes claimable, in order.
-      queue.markProcessed(x1.row.id, first?.attemptCount ?? -1, AckOutcome.DELIVERED);
-      expect(queue.claimNext('VC')?.id).toBe(x2.row.id);
-    });
-
-    test('a backing-off head blocks only its own logical channel, not its siblings', () => {
-      const now = Date.now();
-      const x1 = queue.enqueue(makeEnqueueInput({ channelName: 'VC2', msgControlId: 'BX1', logicalChannelKey: 'X' }));
-      const y1 = queue.enqueue(makeEnqueueInput({ channelName: 'VC2', msgControlId: 'BY1', logicalChannelKey: 'Y' }));
-      if (x1.kind !== 'inserted' || y1.kind !== 'inserted') {
+    test('claimNext is partition-unaware: claims the lowest-id queued row in FIFO order', () => {
+      const a = queue.enqueue(makeEnqueueInput({ channelName: 'CU', msgControlId: 'A' }));
+      const b = queue.enqueue(makeEnqueueInput({ channelName: 'CU', msgControlId: 'B' }));
+      if (a.kind !== 'inserted' || b.kind !== 'inserted') {
         throw new Error('expected inserted');
       }
-
-      // X1 fails and is scheduled to retry in the future — X is now head-of-line blocked.
-      const claimedX1 = queue.claimNext('VC2', now);
-      queue.scheduleRetry(
-        x1.row.id,
-        claimedX1?.attemptCount ?? -1,
-        'Server returned 503',
-        QueueErrorCode.ServerError,
-        now + 5000
-      );
-
-      // Y is untouched by X's backoff: Y1 is still claimable right now.
-      expect(queue.claimNext('VC2', now)?.id).toBe(y1.row.id);
-      // Nothing else until X's backoff elapses (X blocked, Y now busy).
-      expect(queue.claimNext('VC2', now)).toBeNull();
-      // Once X's backoff passes, its head comes out.
-      expect(queue.claimNext('VC2', now + 5000)?.id).toBe(x1.row.id);
+      // No keys assigned yet; claim still returns rows in id order.
+      expect(queue.claimNext('CU')?.id).toBe(a.row.id);
+      expect(queue.claimNext('CU')?.id).toBe(b.row.id);
     });
 
-    test('recomputeLogicalChannelKeys repartitions only queued rows, leaving in-flight rows alone', () => {
-      const r1 = queue.enqueue(makeEnqueueInput({ channelName: 'RC', msgControlId: 'RC1', logicalChannelKey: 'old' }));
-      const r2 = queue.enqueue(makeEnqueueInput({ channelName: 'RC', msgControlId: 'RC2', logicalChannelKey: 'old' }));
-      const otherChannel = queue.enqueue(
-        makeEnqueueInput({ channelName: 'OTHER', msgControlId: 'O1', logicalChannelKey: 'old' })
-      );
-      if (r1.kind !== 'inserted' || r2.kind !== 'inserted' || otherChannel.kind !== 'inserted') {
-        throw new Error('expected inserted');
-      }
-
-      // r1 is mid-dispatch (claimed) when the spec changes; it must keep its partition.
-      queue.claimNext('RC');
-      expect(queue.getById(r1.row.id)?.state).toBe(MessageState.CLAIMED);
-
-      // Recompute assigns a new key derived from the row's bytes; here a constant 'new'.
-      const changed = queue.recomputeLogicalChannelKeys('RC', () => 'new');
-
-      expect(changed).toBe(1); // only r2 (queued) changed
-      expect(queue.getById(r1.row.id)?.logicalChannelKey).toBe('old'); // claimed row untouched
-      expect(queue.getById(r2.row.id)?.logicalChannelKey).toBe('new'); // queued row repartitioned
-      expect(queue.getById(otherChannel.row.id)?.logicalChannelKey).toBe('old'); // other channel untouched
+    test('setLogicalChannelKey records the partition on a claimed row (only while claimed)', () => {
+      const claimed = enqueueAndClaim('SK', 'S1');
+      queue.setLogicalChannelKey(claimed.id, 'MSH.4:HOSP');
+      expect(queue.getById(claimed.id)?.logicalChannelKey).toBe('MSH.4:HOSP');
+      // Once settled, a stale key write is a no-op (guarded on state = 'claimed').
+      queue.markProcessed(claimed.id, claimed.attemptCount, AckOutcome.DELIVERED);
+      queue.setLogicalChannelKey(claimed.id, 'STALE');
+      expect(queue.getById(claimed.id)?.logicalChannelKey).toBe('MSH.4:HOSP');
     });
 
-    test('recomputeLogicalChannelKeys counts only rows whose key actually changed', () => {
-      queue.enqueue(makeEnqueueInput({ channelName: 'RC3', msgControlId: 'S1', logicalChannelKey: 'keep' }));
-      queue.enqueue(makeEnqueueInput({ channelName: 'RC3', msgControlId: 'S2', logicalChannelKey: 'keep' }));
-      // Recomputing to the same key is a no-op — nothing changed.
-      expect(queue.recomputeLogicalChannelKeys('RC3', () => 'keep')).toBe(0);
+    test('isPartitionBlocked sees an earlier in-flight row of the same key; ignores later rows, other keys/channels', () => {
+      const head = enqueueAndClaim('PB', 'H');
+      queue.setLogicalChannelKey(head.id, 'K');
+      queue.markSent(head.callbackId); // now inflight — occupying partition K
+
+      // A later row (higher id) of key K is blocked by the in-flight head.
+      expect(queue.isPartitionBlocked('PB', 'K', head.id + 1)).toBe(true);
+      // The head itself has nothing earlier, so it is not blocked.
+      expect(queue.isPartitionBlocked('PB', 'K', head.id)).toBe(false);
+      // A different key / channel is free.
+      expect(queue.isPartitionBlocked('PB', 'OTHER', head.id + 1)).toBe(false);
+      expect(queue.isPartitionBlocked('OTHER', 'K', head.id + 1)).toBe(false);
+    });
+
+    test('isPartitionBlocked treats a delayed row as an occupant', () => {
+      const earlier = enqueueAndClaim('PBD', 'E');
+      queue.markDelayed(earlier.id, earlier.attemptCount, 'K');
+      // A row after the parked one, same key, is still blocked.
+      expect(queue.isPartitionBlocked('PBD', 'K', earlier.id + 1)).toBe(true);
+    });
+
+    test('markDelayed parks a claimed row, undoing the attempt increment; delayed rows are unclaimable', () => {
+      const claimed = enqueueAndClaim('MD', 'D1');
+      expect(claimed.attemptCount).toBe(1); // the claim bumped it
+      expect(queue.markDelayed(claimed.id, claimed.attemptCount, 'K')).toBe(true);
+      const delayed = queue.getById(claimed.id);
+      assertRowState(delayed, MessageState.DELAYED);
+      expect(delayed.logicalChannelKey).toBe('K');
+      expect(delayed.attemptCount).toBe(0); // increment undone
+      // A delayed row is invisible to claimNext.
+      expect(queue.claimNext('MD')).toBeNull();
+    });
+
+    test('markDelayed is attempt-scoped: a superseded claim no-ops', () => {
+      const claimed = enqueueAndClaim('MDS', 'DS1');
+      // Wrong attempt number → no-op, row stays claimed.
+      expect(queue.markDelayed(claimed.id, claimed.attemptCount + 1, 'K')).toBe(false);
+      expect(queue.getById(claimed.id)?.state).toBe(MessageState.CLAIMED);
+    });
+
+    test('wakePartition promotes the lowest-id delayed row of a key back to queued', () => {
+      const d1 = enqueueAndClaim('WP', 'W1');
+      queue.markDelayed(d1.id, d1.attemptCount, 'K');
+      const d2 = enqueueAndClaim('WP', 'W2');
+      queue.markDelayed(d2.id, d2.attemptCount, 'K');
+      const other = enqueueAndClaim('WP', 'W3');
+      queue.markDelayed(other.id, other.attemptCount, 'OTHER');
+
+      // Wake K: only its lowest-id parked row is promoted.
+      expect(queue.wakePartition('WP', 'K')).toBe(true);
+      expect(queue.getById(d1.id)?.state).toBe(MessageState.QUEUED);
+      expect(queue.getById(d2.id)?.state).toBe(MessageState.DELAYED);
+      expect(queue.getById(other.id)?.state).toBe(MessageState.DELAYED);
+
+      // Wake again: the next K row; then nothing left parked for K.
+      expect(queue.wakePartition('WP', 'K')).toBe(true);
+      expect(queue.getById(d2.id)?.state).toBe(MessageState.QUEUED);
+      expect(queue.wakePartition('WP', 'K')).toBe(false);
+    });
+
+    test('flipDelayedToQueued re-queues every delayed row for the channel, leaving other channels alone', () => {
+      const d1 = enqueueAndClaim('FD', 'F1');
+      queue.markDelayed(d1.id, d1.attemptCount, 'A');
+      const d2 = enqueueAndClaim('FD', 'F2');
+      queue.markDelayed(d2.id, d2.attemptCount, 'B');
+      const other = enqueueAndClaim('FD-OTHER', 'FO1');
+      queue.markDelayed(other.id, other.attemptCount, 'A');
+
+      expect(queue.flipDelayedToQueued('FD')).toBe(2);
+      expect(queue.getById(d1.id)?.state).toBe(MessageState.QUEUED);
+      expect(queue.getById(d2.id)?.state).toBe(MessageState.QUEUED);
+      expect(queue.getById(other.id)?.state).toBe(MessageState.DELAYED); // other channel untouched
+    });
+
+    test('recoverOnStartup returns delayed rows to queued', () => {
+      const d = enqueueAndClaim('RD', 'RD1');
+      queue.markDelayed(d.id, d.attemptCount, 'K');
+      const { requeued } = queue.recoverOnStartup();
+      expect(requeued).toBeGreaterThanOrEqual(1);
+      expect(queue.getById(d.id)?.state).toBe(MessageState.QUEUED);
+    });
+
+    test('recomputeLogicalChannelKeys re-keys queued/delayed rows and un-parks delayed, leaving claimed rows alone', () => {
+      // Spec-change path: refresh the stored partition of rows not actively being
+      // claimed (backing-off `queued`, parked `delayed`), which claim-time keying
+      // can't reach on its own; `claimed` rows finish under their current partition.
+      const now = 1000;
+      const enq = (mc: string): number => {
+        const r = queue.enqueue(makeEnqueueInput({ channelName: 'RK', msgControlId: mc }));
+        if (r.kind !== 'inserted') {
+          throw new Error('expected inserted');
+        }
+        return r.row.id;
+      };
+      const aId = enq('RA');
+      const bId = enq('RB');
+      const cId = enq('RC');
+
+      // a: claim → key 'old' → schedule retry (queued, backing off, keeps its key).
+      const a = queue.claimNext('RK', now);
+      assertRowState(a, MessageState.CLAIMED);
+      queue.setLogicalChannelKey(aId, 'old');
+      queue.scheduleRetry(aId, a.attemptCount, 'transient', QueueErrorCode.ServerError, now + 60_000);
+
+      // b: claim (a is backing off, so b is next) → park delayed under 'old'.
+      const b = queue.claimNext('RK', now);
+      assertRowState(b, MessageState.CLAIMED);
+      queue.markDelayed(bId, b.attemptCount, 'old');
+
+      // c: claim → key 'old', leave CLAIMED (mid-dispatch).
+      const c = queue.claimNext('RK', now);
+      assertRowState(c, MessageState.CLAIMED);
+      queue.setLogicalChannelKey(cId, 'old');
+
+      const changed = queue.recomputeLogicalChannelKeys('RK', () => 'new');
+      expect(changed).toBe(2); // a (queued) + b (delayed); c (claimed) left alone
+
+      expect(queue.getById(aId)?.logicalChannelKey).toBe('new');
+      expect(queue.getById(aId)?.state).toBe(MessageState.QUEUED);
+      expect(queue.getById(bId)?.logicalChannelKey).toBe('new');
+      expect(queue.getById(bId)?.state).toBe(MessageState.QUEUED); // un-parked
+      expect(queue.getById(cId)?.logicalChannelKey).toBe('old'); // claimed → untouched
+      expect(queue.getById(cId)?.state).toBe(MessageState.CLAIMED);
     });
   });
 
@@ -787,6 +860,7 @@ describe('DurableQueue', () => {
 
     expect(queue.countByState()).toEqual({
       queued: 0,
+      delayed: 0,
       claimed: 0,
       inflight: 0,
       processed: 1,

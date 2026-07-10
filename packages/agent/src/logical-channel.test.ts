@@ -107,4 +107,14 @@ describe('computeLogicalChannelKey', () => {
     const other = Hl7Message.parse('MSH|^~\\&|APP2|HOSP1|R|F|20240102||ADT^A02|MSG777|P|2.5.1');
     expect(computeLogicalChannelKey(MESSAGE, spec)).toBe(computeLogicalChannelKey(other, spec));
   });
+
+  test('escapes the : / - delimiters so distinct field tuples cannot collide', () => {
+    const spec = parseValid('MSH.4-MSH.6');
+    // Without escaping these two would both concatenate to 'MSH.4:X-MSH.6:Y-MSH.6:Z',
+    // silently merging two unrelated senders into one partition:
+    //   a: MSH.4='X-MSH.6:Y', MSH.6='Z'   vs   b: MSH.4='X', MSH.6='Y-MSH.6:Z'
+    const a = Hl7Message.parse('MSH|^~\\&|APP|X-MSH.6:Y|RAPP|Z|20240101||ADT^A01|MSGA|P|2.5.1');
+    const b = Hl7Message.parse('MSH|^~\\&|APP|X|RAPP|Y-MSH.6:Z|20240101||ADT^A01|MSGB|P|2.5.1');
+    expect(computeLogicalChannelKey(a, spec)).not.toBe(computeLogicalChannelKey(b, spec));
+  });
 });

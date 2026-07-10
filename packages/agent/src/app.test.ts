@@ -934,6 +934,7 @@ describe('App', () => {
       const channel = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
       const onWebSocketDisconnect = vi.fn(impl);
       (channel as any).workers = [{ onWebSocketDisconnect }];
+      (channel as any).drainingWorkers = []; // allWorkers getter reads this
       return { channel, onWebSocketDisconnect };
     }
     const worker1 = makeHl7ChannelWithWorker(() => undefined);
@@ -945,6 +946,7 @@ describe('App', () => {
     // An HL7 channel with an empty pool is skipped (the inner loop has nothing to run).
     const channelWithoutWorker = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
     (channelWithoutWorker as any).workers = [];
+    (channelWithoutWorker as any).drainingWorkers = [];
     // A non-HL7 channel is skipped entirely, worker or not.
     const nonHl7Channel = { workers: [{ onWebSocketDisconnect: vi.fn() }] };
 
@@ -987,9 +989,11 @@ describe('App', () => {
     const channel1 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
     const notify1 = vi.fn();
     (channel1 as any).workers = [{ notify: notify1 }];
+    (channel1 as any).drainingWorkers = [];
     const channel2 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
     const notify2 = vi.fn();
     (channel2 as any).workers = [{ notify: notify2 }];
+    (channel2 as any).drainingWorkers = [];
 
     (app as any).channels = new Map<string, unknown>([
       ['hl7-1', channel1],
