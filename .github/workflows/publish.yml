@@ -92,8 +92,12 @@ jobs:
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
-      - name: Update npm # Ensure npm 11.5.1 or later is installed
-        run: npm install -g npm@latest
+      # npm 12.0.0 (npm@latest as of 2026-07-08) ships without the bundled `sigstore`
+      # dependency that `npm publish --provenance` requires, causing MODULE_NOT_FOUND
+      # on the first package publish. Pin npm 11.x until https://github.com/npm/cli/issues/9722 is fixed.
+      # Node 24's bundled npm may be older than 11.5.1, which trusted publishing needs.
+      - name: Pin npm 11 for provenance publish
+        run: npm install -g npm@11
 
       - name: Publish to NPM
         run: ./scripts/publish.sh
