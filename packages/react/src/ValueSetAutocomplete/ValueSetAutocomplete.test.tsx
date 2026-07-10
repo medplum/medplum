@@ -150,9 +150,7 @@ describe('AsyncAutocomplete', () => {
   test('missing value set shows inline error and stops querying', async () => {
     const message = 'ValueSet http://example.com/missing not found';
     const medplum = new MockClient();
-    const spy = vi
-      .spyOn(medplum, 'valueSetExpand')
-      .mockRejectedValue(new OperationOutcomeError(badRequest(message)));
+    const spy = vi.spyOn(medplum, 'valueSetExpand').mockRejectedValue(new OperationOutcomeError(badRequest(message)));
 
     render(
       <MedplumProvider medplum={medplum}>
