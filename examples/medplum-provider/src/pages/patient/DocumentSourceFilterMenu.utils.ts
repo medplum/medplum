@@ -6,7 +6,7 @@ import { Operator } from '@medplum/core';
 const HEALTH_GORILLA_SYSTEM = 'https://www.healthgorilla.com';
 
 export interface DocumentSourceOption {
-  readonly source: 'lab' | 'upload';
+  readonly source: 'lab' | 'other';
   readonly label: string;
   readonly headerText: string;
   readonly filters: Filter[];
@@ -27,9 +27,9 @@ export const DOCUMENT_SOURCE_OPTIONS: DocumentSourceOption[] = [
     filters: [{ code: 'identifier', operator: Operator.EQUALS, value: `${HEALTH_GORILLA_SYSTEM}|` }],
   },
   {
-    source: 'upload',
-    label: 'Upload',
-    headerText: 'Uploaded Documents',
+    source: 'other',
+    label: 'Other Documents',
+    headerText: 'Other Documents',
     filters: [
       { code: 'identifier', operator: Operator.MISSING, value: 'true' },
       { code: 'related', operator: Operator.MISSING, value: 'true' },
