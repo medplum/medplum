@@ -12,6 +12,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router';
 import { App } from './App';
+import { XRay } from './components/XRay';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
@@ -51,6 +52,7 @@ root.render(
       <MantineProvider theme={theme}>
         <Notifications position="bottom-right" />
         <RouterProvider router={router} />
+        <XRay />
       </MantineProvider>
     </MedplumProvider>
   </StrictMode>
