@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, SegmentedControl, Text, VisuallyHidden } from '@mantine/core';
+import { Box, Group, SegmentedControl, Table, Text, VisuallyHidden } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import { Operator } from '@medplum/core';
 import type { Bundle, ProjectMembership, Resource, User } from '@medplum/fhirtypes';
-import type { SearchControlExtraColumn, SearchLoadEvent } from '@medplum/react';
+import type { SearchLoadEvent } from '@medplum/react';
 import { SearchControl, useMedplum } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
@@ -39,6 +39,19 @@ const MFA_ENROLLMENT_COLUMN_NAMES: Record<MfaMethod, string> = {
 };
 
 /**
+ * A read-only, computed column rendered alongside the {@link SearchControl} results.
+ *
+ * These columns are not backed by a search parameter, so they cannot live inside the
+ * shared {@link SearchControl} table. Instead we render them in a companion table
+ * (see {@link MemberTable}) whose rows are kept in lock-step with the SearchControl's
+ * rows: both render the same search-response entries, in the same order.
+ */
+interface ExtraColumn {
+  readonly name: string;
+  readonly renderCell: (resource: Resource) => ReactNode;
+}
+
+/**
  * Returns the bare id of a membership's `User/{id}` reference, if it has one.
  * @param membership - The ProjectMembership row resource.
  * @returns The user id, or undefined when the membership has no User reference.
@@ -57,6 +70,9 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   const { showMfaEnrollment } = props;
   const [allowedMfaMethods, setAllowedMfaMethods] = useState<MfaMethod[] | undefined>();
   const [memberUsers, setMemberUsers] = useState<Record<string, User>>({});
+  // The most recent search-result rows, in SearchControl's render order, so the
+  // companion table (see below) can render an aligned row for each member.
+  const [rows, setRows] = useState<Resource[]>([]);
 
   // Load the project's allowed MFA methods to decide which enrollment columns to show.
   useEffect(() => {
@@ -77,9 +93,14 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
       if (!showMfaEnrollment) {
         return;
       }
+      // Mirror the entries SearchControl renders (see `resources` in SearchControl):
+      // both derive from `response.entry` in the same order, keeping the companion
+      // table's rows aligned with the search table's rows.
+      const entries = e.response.entry ?? [];
+      setRows(entries.map((entry) => entry.resource).filter((r): r is Resource => r !== undefined));
       const ids = Array.from(
         new Set(
-          (e.response.entry ?? [])
+          entries
             .map((entry) => (entry.resource ? getMemberUserId(entry.resource) : undefined))
             .filter((id): id is string => id !== undefined)
         )
@@ -110,11 +131,11 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
     [medplum, showMfaEnrollment]
   );
 
-  const extraColumns = useMemo<SearchControlExtraColumn[] | undefined>(() => {
+  const extraColumns = useMemo<ExtraColumn[] | undefined>(() => {
     if (!showMfaEnrollment) {
       return undefined;
     }
-    const columns: SearchControlExtraColumn[] = [
+    const columns: ExtraColumn[] = [
       {
         name: 'Project-scoped',
         renderCell: (resource: Resource): ReactNode => {
@@ -192,6 +213,17 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   const showSegmentedControl = props.profileTypeOptions.length > 1;
   const showToolbar = showSegmentedControl || props.toolbarLeft !== undefined || props.toolbarRight !== undefined;
 
+  const searchControl = (
+    <SearchControl
+      search={search}
+      onClick={(e) => navigate(`./${e.resource.id}`)}
+      onChange={(e) => setSearch(e.definition)}
+      onLoad={handleLoad}
+      hideFilters
+      hideToolbar
+    />
+  );
+
   return (
     <>
       {showToolbar && (
@@ -209,15 +241,44 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
           {props.toolbarRight}
         </Group>
       )}
-      <SearchControl
-        search={search}
-        onClick={(e) => navigate(`./${e.resource.id}`)}
-        onChange={(e) => setSearch(e.definition)}
-        onLoad={handleLoad}
-        extraColumns={extraColumns}
-        hideFilters
-        hideToolbar
-      />
+      {extraColumns ? (
+        // The extra columns are computed (not search-backed), so they can't live inside
+        // the shared SearchControl table. Render them in a companion table pinned to the
+        // right whose rows track SearchControl's rows one-for-one (see `rows`/`handleLoad`).
+        <Group align="flex-start" gap={0} wrap="nowrap">
+          <Box style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>{searchControl}</Box>
+          {rows.length > 0 && (
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  {extraColumns.map((col) => (
+                    <Table.Th key={col.name} p={0}>
+                      <Text fw={500} px="md" py="xs" style={{ whiteSpace: 'nowrap' }}>
+                        {col.name}
+                      </Text>
+                    </Table.Th>
+                  ))}
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {rows.map((resource) => (
+                  <Table.Tr
+                    key={resource.id}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => navigate(`./${resource.id}`)}
+                  >
+                    {extraColumns.map((col) => (
+                      <Table.Td key={col.name}>{col.renderCell(resource)}</Table.Td>
+                    ))}
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          )}
+        </Group>
+      ) : (
+        searchControl
+      )}
     </>
   );
 }
