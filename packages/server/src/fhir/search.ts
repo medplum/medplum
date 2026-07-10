@@ -12,6 +12,7 @@ import type {
 import {
   AccessPolicyInteraction,
   badRequest,
+  deepClone,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
   deriveIdentifierSearchParameter,
@@ -577,14 +578,26 @@ async function getSearchIncludeEntries(
       continue;
     }
 
-    const fhirPathResult = evalFhirPathTyped(parsedExpression, [toTypedValue(sourceResource)]);
-    for (const result of fhirPathResult) {
+    // Resolve include targets from the resource as stored, preserving existing include behavior.
+    // Store the unversioned reference as the lookup key so duplicate targets read once, and so the
+    // read hits the resource cache (keyed unversioned) instead of missing on a versioned string.
+    for (const result of evalFhirPathTyped(parsedExpression, [toTypedValue(sourceResource)])) {
       if (result.type === PropertyType.Reference && result.value.reference) {
         const targetReference = unversionedReference(result.value.reference);
-        references.set(targetReference, result.value);
-        addSourceReference(referenceSources, targetReference, sourceReference);
+        references.set(targetReference, { reference: targetReference });
       } else if (canonicalReferenceTypes.includes(result.type)) {
         canonicalReferences.add(result.value);
+      }
+    }
+
+    // Attribute the include to its source using the caller-visible view of the resource, so a
+    // reference removed by the access policy does not surface in the source extension. This mirrors
+    // the reverse include path, which attributes from entries that are already field-filtered.
+    const visibleSource = repo.removeHiddenFields(deepClone(sourceResource));
+    for (const result of evalFhirPathTyped(parsedExpression, [toTypedValue(visibleSource)])) {
+      if (result.type === PropertyType.Reference && result.value.reference) {
+        addSourceReference(referenceSources, unversionedReference(result.value.reference), sourceReference);
+      } else if (canonicalReferenceTypes.includes(result.type)) {
         addSourceReference(canonicalReferenceSources, unversionedCanonical(result.value), sourceReference);
       }
     }

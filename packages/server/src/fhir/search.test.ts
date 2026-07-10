@@ -2546,6 +2546,44 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(bundleContains(bundle, patientB)?.search).toStrictEqual({ mode: 'match' });
     }));
 
+  test('Include source extension respects access-policy hidden fields', () =>
+    withTestContext(async () => {
+      // The policy can read ServiceRequest and Patient, but hides ServiceRequest.subject.
+      const { repo: restrictedRepo, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'ServiceRequest', hiddenFields: ['subject'] }, { resourceType: 'Patient' }],
+        },
+      });
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+      });
+      const order = await systemRepo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        meta: { project: project.id },
+        status: 'active',
+        intent: 'order',
+        subject: createReference(patient),
+      });
+
+      const bundle = await restrictedRepo.search({
+        resourceType: 'ServiceRequest',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id }],
+        include: [{ resourceType: 'ServiceRequest', searchParam: 'subject' }],
+      });
+
+      // The include still resolves the patient, matching pre-existing behavior...
+      const orderEntry = bundleContains(bundle, order);
+      expect(orderEntry).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
+      expect((orderEntry?.resource as ServiceRequest).subject).toBeUndefined();
+      const patientEntry = bundleContains(bundle, patient);
+      expect(patientEntry).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      // ...but the source extension does not re-expose the reference the policy hid.
+      expect(patientEntry?.search?.extension).toBeUndefined();
+    }));
+
   test('Include canonical success', () =>
     withTestContext(async () => {
       const canonicalURL = 'http://example.com/fhir/Questionnaire/PHQ-9/' + randomUUID();
@@ -2766,6 +2804,47 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             url: SEARCH_ENTRY_SOURCE_EXTENSION_URL,
             valueReference: { reference: getReferenceString(practitioner2) },
           },
+        ])
+      );
+      expect(provenanceEntry?.search?.extension).toHaveLength(2);
+    }));
+
+  test('Reverse include records source for a versioned target reference', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+      const practitioner1 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Homer'], family }],
+      });
+      const practitioner2 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Marge'], family }],
+      });
+      // One target is unversioned, so the provenance is reverse-included; the other is a
+      // version-specific reference to a second matched practitioner. Source attribution must
+      // normalize that versioned reference back to the match, otherwise it is dropped.
+      const provenance = await repo.createResource<Provenance>({
+        resourceType: 'Provenance',
+        target: [
+          createReference(practitioner1),
+          { reference: `Practitioner/${practitioner2.id}/_history/${practitioner2.meta?.versionId}` },
+        ],
+        agent: [{ who: createReference(practitioner1) }],
+        recorded: new Date().toISOString(),
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'Practitioner',
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+        revInclude: [{ resourceType: 'Provenance', searchParam: 'target' }],
+      });
+
+      const provenanceEntry = bundleContains(bundle, provenance);
+      expect(provenanceEntry).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(provenanceEntry?.search?.extension).toEqual(
+        expect.arrayContaining([
+          { url: SEARCH_ENTRY_SOURCE_EXTENSION_URL, valueReference: { reference: getReferenceString(practitioner1) } },
+          { url: SEARCH_ENTRY_SOURCE_EXTENSION_URL, valueReference: { reference: getReferenceString(practitioner2) } },
         ])
       );
       expect(provenanceEntry?.search?.extension).toHaveLength(2);
