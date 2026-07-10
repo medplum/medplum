@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { HumanName } from '@medplum/fhirtypes';
-import { formatDiagnosisPointers, formatHumanName, getSimplePhone } from './cms1500pdf';
+import type { ClaimItem, HumanName } from '@medplum/fhirtypes';
+import { formatDiagnosisPointers, formatHumanName, getPlaceOfService, getSimplePhone } from './cms1500pdf';
 
 describe('CMS 1500 PDF Utils', () => {
   test('formats full name with middle name', () => {
@@ -108,4 +108,42 @@ describe('CMS 1500 PDF Utils', () => {
   test('ignores out-of-range pointers', () => {
     expect(formatDiagnosisPointers([0, 1, 27])).toBe('A');
   });
+
+  test('reads Box 24B place of service from the CMS place-of-service coding', () => {
+    const item: ClaimItem = {
+      sequence: 1,
+      productOrService: {},
+      locationCodeableConcept: {
+        coding: [
+          { system: 'http://example.com/other', code: 'XX' },
+          { system: 'https://www.cms.gov/Medicare/Coding/place-of-service-codes', code: '11' },
+        ],
+      },
+    };
+    expect(getPlaceOfService(item)).toStrictEqual('11');
+  });
+
+  test('falls back to the first locationCodeableConcept coding when the CMS system is absent', () => {
+    const item: ClaimItem = {
+      sequence: 1,
+      productOrService: {},
+      locationCodeableConcept: { coding: [{ system: 'http://example.com/other', code: '02' }] },
+    };
+    expect(getPlaceOfService(item)).toStrictEqual('02');
+  });
+
+  test('falls back to locationAddress.state when no coding is present (legacy behavior)', () => {
+    const item: ClaimItem = {
+      sequence: 1,
+      productOrService: {},
+      locationAddress: { state: 'CA' },
+    };
+    expect(getPlaceOfService(item)).toStrictEqual('CA');
+  });
+
+  test('returns undefined when the claim line has no location information', () => {
+    const item: ClaimItem = { sequence: 1, productOrService: {} };
+    expect(getPlaceOfService(item)).toBeUndefined();
+  });
 });
+
