@@ -153,7 +153,7 @@ Number of database connections per API server instance
 
 ### cacheNodeType
 
-Optional [Elasticache Node Type](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html). Default value is `cache.t2.medium`.
+Optional [Elasticache Node Type](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html). Default value is `cache.t4g.medium`.
 
 ### cacheSecurityGroupId
 
