@@ -1669,6 +1669,96 @@ describe('QuestionnaireForm', () => {
     expect(response2.item[0].answer).toEqual(expect.arrayContaining([{}]));
   });
 
+  test('Checkbox optionExclusive', async () => {
+    const onSubmit = vi.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'checkbox-option-exclusive',
+        title: 'Checkbox optionExclusive',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Select Allergies',
+            type: 'choice',
+            repeats: true,
+            answerOption: [
+              { valueString: 'Peanuts' },
+              { valueString: 'Shellfish' },
+              {
+                valueString: 'No known allergies',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-optionExclusive',
+                    valueBoolean: true,
+                  },
+                ],
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check Box',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBe(3);
+    const [peanuts, shellfish, noAllergies] = checkboxes as HTMLInputElement[];
+
+    // Select two non-exclusive options
+    await act(async () => {
+      fireEvent.click(peanuts);
+      fireEvent.click(shellfish);
+    });
+    expect(peanuts.checked).toBe(true);
+    expect(shellfish.checked).toBe(true);
+
+    // Selecting the exclusive option clears the others
+    await act(async () => {
+      fireEvent.click(noAllergies);
+    });
+    expect(noAllergies.checked).toBe(true);
+    expect(peanuts.checked).toBe(false);
+    expect(shellfish.checked).toBe(false);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const response1 = onSubmit.mock.calls[0][0];
+    expect(response1.item[0].answer).toEqual([{ valueString: 'No known allergies' }]);
+
+    // Selecting a non-exclusive option clears the exclusive option
+    await act(async () => {
+      fireEvent.click(peanuts);
+    });
+    expect(peanuts.checked).toBe(true);
+    expect(noAllergies.checked).toBe(false);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+    const response2 = onSubmit.mock.calls[1][0];
+    expect(response2.item[0].answer).toEqual([{ valueString: 'Peanuts' }]);
+  });
+
   test('Multi-Select Dropdown Value Set', async () => {
     const onSubmit = vi.fn();
 

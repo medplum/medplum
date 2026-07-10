@@ -31,6 +31,7 @@ import {
   getQuestionnaireItemReferenceFilter,
   getQuestionnaireItemReferenceTargetTypes,
   QUESTIONNAIRE_ITEM_CONTROL_URL,
+  QUESTIONNAIRE_OPTION_EXCLUSIVE_URL,
   QuestionnaireItemType,
   useMedplum,
 } from '@medplum/react-hooks';
@@ -587,6 +588,9 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
 
   const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS);
 
+  // Collect the string representation of any answerOption marked with the optionExclusive extension.
+  const exclusiveOptionValues = getExclusiveOptionValues(item);
+
   const handleCheckboxChange = (optionValue: TypedValue, selected: boolean): void => {
     if (item.answerValueSet) {
       const currentCodings = selectedValues as Coding[];
@@ -610,7 +614,10 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
       let newValues: string[];
 
       if (selected) {
-        newValues = [...currentValues, optionValueStr];
+        // An exclusive option clears every other selection; a non-exclusive one clears any exclusive selection.
+        newValues = exclusiveOptionValues.has(optionValueStr)
+          ? [optionValueStr]
+          : [...currentValues.filter((v) => !exclusiveOptionValues.has(v)), optionValueStr];
       } else {
         newValues = currentValues.filter((v) => v !== optionValueStr);
       }
@@ -678,6 +685,25 @@ function getCurrentMultiSelectAnswer(response: QuestionnaireResponseItem | undef
 
 function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: TypedValue): string | undefined {
   return options.find((option) => deepEquals(option[1].value, defaultAnswer?.value))?.[0];
+}
+
+/**
+ * Returns the set of string-encoded answer option values that are marked as exclusive via the
+ * `questionnaire-optionExclusive` extension. 
+ * @param item - The questionnaire item to inspect.
+ * @returns A set of `typedValueToString` values for the item's exclusive answer options.
+ */
+function getExclusiveOptionValues(item: QuestionnaireItem): Set<string> {
+  const exclusiveOptionValues = new Set<string>();
+  for (const option of item.answerOption ?? []) {
+    if (getExtension(option, QUESTIONNAIRE_OPTION_EXCLUSIVE_URL)?.valueBoolean === true) {
+      const optionValue = getItemAnswerOptionValue(option);
+      if (optionValue?.value) {
+        exclusiveOptionValues.add(typedValueToString(optionValue));
+      }
+    }
+  }
+  return exclusiveOptionValues;
 }
 
 type ChoiceControl = {
