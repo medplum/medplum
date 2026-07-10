@@ -22,16 +22,22 @@ const checkoutMock = vi.fn<(input: MedicationCheckoutRequest) => Promise<Medicat
 const removeFromCartMock =
   vi.fn<(input: { patientId: string; medicationRequestId: string }) => Promise<MedicationCartManageResponse>>();
 const clearCartMock = vi.fn<(input: { patientId: string }) => Promise<MedicationCartManageResponse>>();
+const addToCartMock = vi.fn<(mr: MedicationRequest) => Promise<MedicationRequest>>();
 
-// Mock only the cart hooks; keep the rest of the module (constants,
+// Mock only the cart hook; keep the rest of the module (constants,
 // `useScriptSureOrderMedication`) real so the page's other ScriptSure paths
 // behave normally.
 vi.mock('@medplum/scriptsure-react', async () => {
   const actual = await vi.importActual<typeof ScriptSureReactModule>('@medplum/scriptsure-react');
   return {
     ...actual,
-    useScriptSureCheckout: () => ({ checkout: checkoutMock }),
-    useScriptSureCart: () => ({ removeFromCart: removeFromCartMock, clearCart: clearCartMock }),
+    useScriptSureCart: () => ({
+      addToCart: addToCartMock,
+      adding: false,
+      checkout: checkoutMock,
+      removeFromCart: removeFromCartMock,
+      clearCart: clearCartMock,
+    }),
   };
 });
 
@@ -141,6 +147,7 @@ describe('MedicationsPage', () => {
     checkoutMock.mockReset();
     removeFromCartMock.mockReset();
     clearCartMock.mockReset();
+    addToCartMock.mockReset();
   });
 
   test('Renders medication tabs and order action', async () => {

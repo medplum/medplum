@@ -87,6 +87,17 @@ export interface OrderMedicationPageProps {
    */
   onAddedToCart?: (medicationRequest: WithId<MedicationRequest>) => void;
   /**
+   * Optional cart-hook `addToCart` from the parent (shared with Draft-tab
+   * checkout so pending adds can block checkout). When omitted, Add to cart
+   * falls back to `medplum.createResource`.
+   */
+  persistCartDraft?: (medicationRequest: MedicationRequest) => Promise<MedicationRequest>;
+  /**
+   * Parent `useScriptSureCart().adding` when {@link persistCartDraft} is wired
+   * from a shared cart hook instance.
+   */
+  cartAdding?: boolean;
+  /**
    * Number of medications already in the patient's cart (draft MRs). Shown as a
    * contextual indicator next to the actions so the prescriber knows the
    * single-med "Prescribe this medication" action does **not** send the cart.
@@ -657,7 +668,7 @@ function buildFormulationSigChoices(formats: Medication[], matcher: QualifierMat
 }
 
 export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): JSX.Element {
-  const { onOrderComplete, onAddedToCart, cartCount = 0, patient: patientProp } = props;
+  const { onOrderComplete, onAddedToCart, persistCartDraft, cartAdding, cartCount = 0, patient: patientProp } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();
   const { searchMedications, orderMedication } = useScriptSureOrderMedication();
@@ -984,17 +995,25 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
     if (!body) {
       return;
     }
-    setAddingToCart(true);
+    const persist = persistCartDraft ?? ((mr: MedicationRequest) => medplum.createResource<MedicationRequest>(mr));
+    const useLocalLoading = !persistCartDraft;
+    if (useLocalLoading) {
+      setAddingToCart(true);
+    }
     try {
-      const created = await medplum.createResource<MedicationRequest>(body);
-      onAddedToCart?.(created);
+      const created = await persist(body);
+      onAddedToCart?.(created as WithId<MedicationRequest>);
       resetSingleMedicationSelection();
     } catch (e) {
       showErrorNotification(e);
     } finally {
-      setAddingToCart(false);
+      if (useLocalLoading) {
+        setAddingToCart(false);
+      }
     }
   };
+
+  const isAddingToCart = persistCartDraft ? (cartAdding ?? false) : addingToCart;
 
   const submitSingle = async (): Promise<void> => {
     const body = buildSingleDraftBody();
@@ -1308,13 +1327,13 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
                     onClick={() => {
                       addToCart().catch(showErrorNotification);
                     }}
-                    loading={addingToCart}
+                    loading={isAddingToCart}
                     disabled={submitting}
                     leftSection={<IconShoppingCart size={16} />}
                   >
                     Add to cart
                   </Button>
-                  <Button variant="default" onClick={submitSingle} loading={submitting} disabled={addingToCart}>
+                  <Button variant="default" onClick={submitSingle} loading={submitting} disabled={isAddingToCart}>
                     Prescribe this medication
                   </Button>
                 </Group>

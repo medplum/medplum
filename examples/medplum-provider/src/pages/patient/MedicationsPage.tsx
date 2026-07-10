@@ -30,7 +30,6 @@ import {
   SCRIPTSURE_IFRAME_BOT,
   SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS,
   useScriptSureCart,
-  useScriptSureCheckout,
   useScriptSureOrderMedication,
 } from '@medplum/scriptsure-react';
 import { IconPlus, IconShoppingCart, IconTrash } from '@tabler/icons-react';
@@ -75,8 +74,7 @@ export function MedicationsPage(): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const { orderMedication } = useScriptSureOrderMedication();
-  const { checkout } = useScriptSureCheckout();
-  const { removeFromCart, clearCart } = useScriptSureCart();
+  const { addToCart, adding, checkout, removeFromCart, clearCart } = useScriptSureCart();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const statusParam = searchParams.get('status') ?? TAB_TO_STATUS_PARAM[DEFAULT_TAB];
@@ -579,6 +577,13 @@ export function MedicationsPage(): JSX.Element {
   // Other modes refresh the single-order/chart session token in place.
   const canRefreshLaunchUrl = !isCartCheckoutMode && Boolean(iframePollMrId || currentOrder?.id);
   const modalRefreshLaunchUrl = canRefreshLaunchUrl ? refreshLaunchUrl : undefined;
+  let medicationRequestIdsToWatch: string[] | undefined;
+  if (isCartCheckoutMode) {
+    medicationRequestIdsToWatch = cartWatchIds;
+  } else {
+    const singleWatchId = iframePollMrId ?? currentOrder?.id;
+    medicationRequestIdsToWatch = singleWatchId ? [singleWatchId] : undefined;
+  }
 
   return (
     <Box w="100%" h="100%">
@@ -689,7 +694,7 @@ export function MedicationsPage(): JSX.Element {
                         size="xs"
                         leftSection={<IconShoppingCart size={14} />}
                         loading={checkingOut}
-                        disabled={total === 0}
+                        disabled={total === 0 || adding}
                         onClick={() => handleCheckout().catch(showErrorNotification)}
                       >
                         Checkout ({total})
@@ -739,6 +744,8 @@ export function MedicationsPage(): JSX.Element {
           patient={patient}
           onOrderComplete={(r) => handleOrderMedicationComplete(r).catch(showErrorNotification)}
           onAddedToCart={handleAddedToCart}
+          persistCartDraft={addToCart}
+          cartAdding={adding}
           cartCount={cartCount}
         />
       </Modal>
@@ -754,8 +761,7 @@ export function MedicationsPage(): JSX.Element {
         }}
         launchUrl={iframeUrl}
         onRefreshLaunchUrl={modalRefreshLaunchUrl}
-        medicationRequestIdToWatch={isCartCheckoutMode ? undefined : (iframePollMrId ?? currentOrder?.id)}
-        medicationRequestIdsToWatch={isCartCheckoutMode ? cartWatchIds : undefined}
+        medicationRequestIdsToWatch={medicationRequestIdsToWatch}
         onFhirSynced={handleIframeFhirSynced}
         title={modalTitle}
       />

@@ -4,7 +4,6 @@ export * from './MedplumProvider/MedplumProvider';
 export * from './MedplumProvider/MedplumProvider.context';
 export * from './useCachedBinaryUrl/useCachedBinaryUrl';
 export * from './useMedicationCart/useMedicationCart';
-export * from './useMedicationCheckout/useMedicationCheckout';
 export * from './useMedicationIFrame/useMedicationIFrame';
 export * from './useMedicationOrder/useMedicationOrder';
 export * from './useMedicationOrderSet/useMedicationOrderSet';

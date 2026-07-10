@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Box, Modal, useComputedColorScheme } from '@mantine/core';
 import type { MedicationRequest } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useMedicationRequestSyncPolling } from '../../hooks/useMedicationRequestSyncPolling';
 import { applyDarkmode } from './applyDarkmode';
 
 /** Stamped on MR when ScriptSure webhook confirms a prescription (see scriptsure-prescription-webhook-bot). */
@@ -20,24 +20,16 @@ export interface PrescriptionIFrameModalProps {
   onRefreshLaunchUrl?: () => Promise<string | undefined>;
   title?: string;
   /**
-   * When set, polls Medplum for this MedicationRequest until it transitions from
-   * “still in draft / pending” to synced (non-draft or prescription-id present).
-   * Skips auto-close if the MR was already synced when the modal opened (e.g. reopening iframe).
-   */
-  medicationRequestIdToWatch?: string;
-  /**
-   * Multi-MR variant for the cart / Approve Queue flow: polls every id and fires
+   * MedicationRequest ids to poll until each transitions from “still in draft /
+   * pending” to synced (non-draft or prescription-id present). Fires
    * {@link onFhirSynced} only once **all** of the ids that started unsynced have
-   * synced. Takes precedence over {@link medicationRequestIdToWatch} when set.
+   * synced. Skips auto-close if every MR was already synced when the modal opened
+   * (e.g. reopening iframe). Pass a single-element array for the single-order path.
    */
   medicationRequestIdsToWatch?: string[];
   /** Invoked when polling detects the watched MR(s) were updated from the server (webhook merged). */
   onFhirSynced?: () => void;
 }
-
-const POLL_MS = 3500;
-/** Max poll attempts before giving up (~3.5 minutes at POLL_MS). */
-const POLL_MAX_ATTEMPTS = 60;
 
 function medicationRequestLooksSynced(mr: MedicationRequest): boolean {
   if (mr.status && mr.status !== 'draft') {
@@ -60,19 +52,11 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
     launchUrl,
     onRefreshLaunchUrl,
     title = 'Complete prescription',
-    medicationRequestIdToWatch,
     medicationRequestIdsToWatch,
     onFhirSynced,
   } = props;
-  const medplum = useMedplum();
-  // Stable, order-independent key for the set of MR ids to poll. Derived from
-  // either the multi-id (cart / Approve Queue) or single-id prop so the polling
-  // effect deps don't churn on every parent render (arrays are new each render).
-  const watchKey = [
-    ...(medicationRequestIdsToWatch ?? (medicationRequestIdToWatch ? [medicationRequestIdToWatch] : [])),
-  ]
-    .sort((a, b) => a.localeCompare(b))
-    .join(',');
+  const resourcesToSync = medicationRequestIdsToWatch ?? [];
+
   // ScriptSure widget URLs are theme-agnostic from the bot side; the modal
   // appends `darkmode=on|off` based on the active Mantine color scheme right
   // before assigning to the iframe `src`. Resolved scheme is captured once
@@ -80,25 +64,21 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
   // reload (which would discard any in-progress draft inside ScriptSure).
   const colorScheme = useComputedColorScheme('light');
   const [url, setUrl] = useState(() => applyDarkmode(launchUrl, colorScheme));
-  const [pollTimedOut, setPollTimedOut] = useState(false);
-  /**
-   * null = not sampled yet; otherwise the set of watched MR ids that were still
-   * draft/pending on the first sample. Auto-close fires once every id in this set
-   * has synced. An empty set means everything was already synced on open (never
-   * auto-close).
-   */
-  const pollStartedUnsyncedRef = useRef<Set<string> | null>(null);
-  const skipPollRef = useRef(false);
+
+  const { timedOut, errors, allInitiallyUnsyncedSynced } = useMedicationRequestSyncPolling(resourcesToSync, {
+    enabled: opened && resourcesToSync.length > 0 && Boolean(onFhirSynced),
+    test: medicationRequestLooksSynced,
+  });
 
   useEffect(() => {
     setUrl(applyDarkmode(launchUrl, colorScheme));
   }, [launchUrl, colorScheme]);
 
   useEffect(() => {
-    pollStartedUnsyncedRef.current = null;
-    skipPollRef.current = false;
-    setPollTimedOut(false);
-  }, [opened, watchKey]);
+    if (allInitiallyUnsyncedSynced) {
+      onFhirSynced?.();
+    }
+  }, [allInitiallyUnsyncedSynced, onFhirSynced]);
 
   // ScriptSure's embedded widget measures its viewport once during initial
   // paint and does not re-measure unless a `resize` event fires on its window.
@@ -150,99 +130,12 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
     };
   }, [opened, onRefreshLaunchUrl, launchUrl, colorScheme]);
 
-  useEffect(() => {
-    if (!opened || !watchKey || !onFhirSynced) {
-      return undefined;
-    }
-    const ids = watchKey.split(',');
-    let cancelled = false;
-    let intervalId: number | undefined;
-    let attempts = 0;
-
-    const stop = (): void => {
-      if (intervalId !== undefined) {
-        window.clearInterval(intervalId);
-        intervalId = undefined;
-      }
-    };
-
-    // Reads every watched MR (cache-bypassed so a webhook-merged update is
-    // observed) and returns a per-id synced map. Ids whose read failed are
-    // omitted so the caller can tell a complete sample from a partial one.
-    const sampleSyncedById = async (): Promise<Map<string, boolean>> => {
-      const syncedById = new Map<string, boolean>();
-      await Promise.all(
-        ids.map(async (id) => {
-          try {
-            const mr = await medplum.readResource('MedicationRequest', id, { cache: 'reload' });
-            syncedById.set(id, medicationRequestLooksSynced(mr));
-          } catch {
-            // Leave id absent on transient failure (see attempts handling below).
-          }
-        })
-      );
-      return syncedById;
-    };
-
-    const tick = async (): Promise<void> => {
-      if (skipPollRef.current) {
-        return;
-      }
-      const syncedById = await sampleSyncedById();
-      if (cancelled) {
-        return;
-      }
-
-      if (pollStartedUnsyncedRef.current === null) {
-        // Wait for a complete first sample so we don't misclassify an id whose
-        // initial read failed as "already synced".
-        if (syncedById.size < ids.length) {
-          return;
-        }
-        const startedUnsynced = new Set<string>();
-        for (const [id, synced] of syncedById) {
-          if (!synced) {
-            startedUnsynced.add(id);
-          }
-        }
-        pollStartedUnsyncedRef.current = startedUnsynced;
-        if (startedUnsynced.size === 0) {
-          skipPollRef.current = true;
-          stop();
-        }
-        return;
-      }
-
-      const stillPending = [...pollStartedUnsyncedRef.current].some((id) => !(syncedById.get(id) ?? false));
-      if (!stillPending) {
-        stop();
-        onFhirSynced();
-      }
-    };
-
-    intervalId = window.setInterval(() => {
-      attempts += 1;
-      if (attempts >= POLL_MAX_ATTEMPTS) {
-        stop();
-        if (!cancelled && (pollStartedUnsyncedRef.current?.size ?? 0) > 0) {
-          setPollTimedOut(true);
-        }
-        return;
-      }
-      tick().catch(() => undefined);
-    }, POLL_MS);
-    tick().catch(() => undefined);
-
-    return (): void => {
-      cancelled = true;
-      stop();
-    };
-  }, [opened, watchKey, medplum, onFhirSynced]);
+  const hasReadErrors = errors.size > 0;
 
   return (
     <Modal opened={opened} onClose={onClose} size="xl" centered title={title} styles={{ body: { padding: 0 } }}>
       <Box p="md" style={{ maxWidth: 'min(100%, 560px)', margin: '0 auto' }}>
-        {pollTimedOut && (
+        {timedOut && (
           <Alert
             mb="sm"
             color="yellow"
@@ -250,7 +143,8 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
             icon={<IconAlertCircle size={16} />}
             title="Confirmation pending"
           >
-            We have not received a confirmation from the e-prescribing system yet. You can leave this dialog open and
+            We have not received a confirmation from the e-prescribing system yet
+            {hasReadErrors ? ' (some medication reads failed while waiting)' : ''}. You can leave this dialog open and
             refresh the medications list shortly, or close it and check back later.
           </Alert>
         )}
