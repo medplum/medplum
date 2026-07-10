@@ -376,8 +376,8 @@ row in flight and processes in FIFO order. A `logicalChannelKey` spec partitions
 channel into independent FIFO sub-queues ("logical channels") so a **bounded pool of
 workers** (`maxWorkers`) can process distinct partitions concurrently, while each
 partition stays strictly serial and in order. The partition of a row is its
-`logical_channel_key` — e.g. spec `MSH.4-MSH.9.2` over a message from `HOSP1` of type
-`A01` yields `MSH.4:HOSP1-MSH.9.2:A01`. The empty key (`''`, the default) means "one
+`logical_channel_key` — e.g. spec `MSH-4,MSH-9.2` over a message from `HOSP1` of type
+`A01` yields `MSH-4:HOSP1,MSH-9.2:A01`. The empty key (`''`, the default) means "one
 queue for the whole channel," byte-identical to pre-logical-channel behavior.
 
 **The key is computed at CLAIM time, not intake.** This is the load-bearing design
@@ -577,7 +577,7 @@ Existing `Agent.setting[]` array continues to be the project-settings carrier. N
 | `channelAutoRetryMaxAttempts`       | `valueInteger` | `0` when `guaranteed` (the default); `10` when `normal`         | Total dispatch attempts before a retryable failure becomes terminal; `0` = retry indefinitely.                                                                                                                                                                                                                                               |
 | `channelAutoRetryBackoffMultiplier` | `valueDecimal` | `2`                                                             | Exponential base; `1` = fixed-interval retry.                                                                                                                                                                                                                                                                                                |
 | `channelMaxWorkers`                 | `valueInteger` | `1`                                                             | Agent-wide default worker-pool size per channel (§4.2). `1` = strictly serial (pre-logical-channel behavior). Clamped to `[1, MAX_MAX_WORKERS]`. Only meaningful with the durable queue on and a `logicalChannelKey` set (else at most one row is in flight per channel anyway).                                                                |
-| `channelLogicalChannelKey`          | `valueString`  | `''` (none)                                                     | Agent-wide default partition spec (§4.2): `SEGMENT.field[.component[.subcomponent]]` tokens joined by `-`, e.g. `MSH.4-MSH.9.2`. Empty = one queue per channel. Requires the durable queue.                                                                                                                                                    |
+| `channelLogicalChannelKey`          | `valueString`  | `''` (none)                                                     | Agent-wide default partition spec (§4.2): conventional HL7 `SEGMENT-field[.component[.subcomponent]]` tokens joined by `,`, e.g. `MSH-4,MSH-9.2`. Empty = one queue per channel. Requires the durable queue.                                                                                                                                                    |
 
 Per-channel URL query parameters (parsed in `configureHl7ServerAndConnections`, like existing `enhanced`, `encoding`, etc.):
 
@@ -590,7 +590,7 @@ Per-channel URL query parameters (parsed in `configureHl7ServerAndConnections`, 
 | `autoRetryMaxAttempts`       | number ≥ 0                         | agent setting                        | Per-channel override of `channelAutoRetryMaxAttempts`; `0` = retry indefinitely.                                                                                                                                                                                                           |
 | `autoRetryBackoffMultiplier` | number ≥ 1                         | agent setting                        | Per-channel override of `channelAutoRetryBackoffMultiplier`.                                                                                                                                                                                                                               |
 | `maxWorkers`                 | integer ≥ 1                        | agent setting (default `1`)          | Per-channel override of `channelMaxWorkers` (§4.2): worker-pool size. Clamped to `[1, MAX_MAX_WORKERS]`; a value above the ceiling warns and clamps. `> 1` with the queue off warns and has no effect.                                                                                       |
-| `logicalChannelKey`          | `SEG.f[.c[.s]]-…`                  | agent setting (default `''`)         | Per-channel override of `channelLogicalChannelKey` (§4.2): FIFO partition spec. An invalid token warns and the prior spec is kept. `''` = one queue per channel. Requires the durable queue; a spec with the queue off warns and has no effect.                                              |
+| `logicalChannelKey`          | `SEG-f[.c[.s]],…`                  | agent setting (default `''`)         | Per-channel override of `channelLogicalChannelKey` (§4.2): FIFO partition spec in conventional HL7 notation. An invalid token warns and the prior spec is kept. `''` = one queue per channel. Requires the durable queue; a spec with the queue off warns and has no effect.               |
 
 Auto-retry resolution is per-field: endpoint URL param → agent `channelRetryMode` / `channelAutoRetry*` setting → built-in default (see `resolveRetryPolicy` in `hl7.ts`). Invalid values warn and fall through to the next layer.
 

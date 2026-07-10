@@ -3431,29 +3431,29 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
     const { channel, recompute, reconfigure, appLog } = makeChannel();
 
     // First apply of a non-empty spec recomputes any rows keyed under the old spec.
-    reconfigure('MSH.4');
+    reconfigure('MSH-4');
     expect(recompute).toHaveBeenCalledTimes(1);
     expect(recompute).toHaveBeenLastCalledWith('vc-channel', expect.any(Function));
-    expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH.4:HOSPA');
+    expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH-4:HOSPA');
 
     // Re-applying the same spec is a no-op — no recompute.
     recompute.mockClear();
-    reconfigure('MSH.4');
+    reconfigure('MSH-4');
     expect(recompute).not.toHaveBeenCalled();
 
     // A changed, valid spec recomputes and takes effect for new intake.
-    reconfigure('MSH.9');
+    reconfigure('MSH-9');
     expect(recompute).toHaveBeenCalledTimes(1);
-    expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH.9:ADT^A01');
+    expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH-9:ADT^A01');
 
     // An invalid spec is rejected before it takes effect: warn, no recompute,
     // prior (MSH.9) partitioning retained.
     recompute.mockClear();
     vi.mocked(appLog.warn).mockClear();
-    reconfigure('NOTASEGMENT.X');
+    reconfigure('NOTASEGMENT-X');
     expect(appLog.warn).toHaveBeenCalled();
     expect(recompute).not.toHaveBeenCalled();
-    expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH.9:ADT^A01');
+    expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH-9:ADT^A01');
   });
 
   test('a non-leader skips the recompute (re-keys at claim time if it later takes the lease)', () => {
@@ -3480,12 +3480,12 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
     (channel as unknown as { endpoint: Endpoint }).endpoint = {
       resourceType: 'Endpoint',
       status: 'active',
-      address: `${ADDR}?logicalChannelKey=MSH.4`,
+      address: `${ADDR}?logicalChannelKey=MSH-4`,
     } as Endpoint;
     (channel as unknown as { configureHl7ServerAndConnections(): void }).configureHl7ServerAndConnections();
 
     // Non-leader: no recompute, but the spec still takes effect for its own claims.
     expect(recompute).not.toHaveBeenCalled();
-    expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH.4:HOSPA');
+    expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH-4:HOSPA');
   });
 });

@@ -44,8 +44,8 @@ const TEST_MSG = (controlId: string): Hl7Message =>
       'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M\r'
   );
 
-// Like TEST_MSG but with a caller-chosen MSH.4 (sending facility), so a channel
-// keyed on logicalChannelKey=MSH.4 partitions messages by `facility`.
+// Like TEST_MSG but with a caller-chosen MSH-4 (sending facility), so a channel
+// keyed on logicalChannelKey=MSH-4 partitions messages by `facility`.
 const VC_MSG = (controlId: string, facility: string): Hl7Message =>
   Hl7Message.parse(
     `MSH|^~\\&|ADT1|${facility}|LABADT|MCM|198808181126|SECURITY|ADT^A01|${controlId}|P|2.5\r` +
@@ -273,12 +273,12 @@ describe('Durable queue integration', () => {
       );
     };
 
-    // Partition by sending facility (MSH.4); allow two workers so two partitions
+    // Partition by sending facility (MSH-4); allow two workers so two partitions
     // can be in flight at once. enhanced=true so each send gets its commit CA at
     // intake (independent of the deferred Bot reply we control above).
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      address: 'mllp://0.0.0.0:0?enhanced=true&logicalChannelKey=MSH.4&maxWorkers=2',
+      address: 'mllp://0.0.0.0:0?enhanced=true&logicalChannelKey=MSH-4&maxWorkers=2',
     });
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -320,8 +320,8 @@ describe('Durable queue integration', () => {
 
     // The partition key is computed and stored at CLAIM time (not intake): the two
     // in-flight rows now carry their facility partitions end-to-end.
-    expect(queue.findSeenByControlId('vc', 'A1')?.logicalChannelKey).toBe('MSH.4:HOSPA');
-    expect(queue.findSeenByControlId('vc', 'B1')?.logicalChannelKey).toBe('MSH.4:HOSPB');
+    expect(queue.findSeenByControlId('vc', 'A1')?.logicalChannelKey).toBe('MSH-4:HOSPA');
+    expect(queue.findSeenByControlId('vc', 'B1')?.logicalChannelKey).toBe('MSH-4:HOSPB');
 
     // Settle A1; only now does A2 (next in partition HOSPA) become claimable.
     replyTo('A1');
@@ -382,7 +382,7 @@ describe('Durable queue integration', () => {
     // behind the in-flight head rather than dispatch concurrently.
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      address: 'mllp://0.0.0.0:0?enhanced=true&logicalChannelKey=MSH.4&maxWorkers=2',
+      address: 'mllp://0.0.0.0:0?enhanced=true&logicalChannelKey=MSH-4&maxWorkers=2',
     });
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -476,7 +476,7 @@ describe('Durable queue integration', () => {
     // Two facilities → two partitions, maxWorkers=2 → both dispatch concurrently.
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      address: 'mllp://0.0.0.0:0?enhanced=true&logicalChannelKey=MSH.4&maxWorkers=2',
+      address: 'mllp://0.0.0.0:0?enhanced=true&logicalChannelKey=MSH-4&maxWorkers=2',
     });
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',

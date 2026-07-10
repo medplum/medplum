@@ -5,15 +5,16 @@ import type { Hl7Message, ILogger } from '@medplum/core';
 
 /**
  * One HL7 field path in a channel's `logicalChannelKey` spec, parsed from a token
- * like `MSH.4`, `MSH.9.2`, or `PID.3.1.2`.
+ * in conventional HL7 notation like `MSH-4`, `MSH-9.2`, or `PID-3.1.2` — segment
+ * and field separated by `-`, component/subcomponent by `.`.
  *
  * Indices are 1-based to match Medplum's HL7 accessors (`Hl7Segment.getField` /
- * `getComponent`) and the way HL7 names components — e.g. `MSH.9.2` is field 9,
+ * `getComponent`) and the way HL7 names components — e.g. `MSH-9.2` is field 9,
  * component 2. MSH's field-separator/encoding offset is handled inside
- * `getField`, so `MSH.9` addresses the message type as a human would expect.
+ * `getField`, so `MSH-9` addresses the message type as a human would expect.
  */
 export interface LogicalChannelField {
-  /** The token exactly as written (e.g. `MSH.9.2`); used verbatim as the key label. */
+  /** The token exactly as written (e.g. `MSH-9.2`); used verbatim as the key label. */
   label: string;
   /** Segment name (e.g. `MSH`, `PID`). */
   segment: string;
@@ -32,10 +33,11 @@ const SEGMENT_RE = /^[A-Z][A-Z0-9]{2}$/;
 /**
  * Parses a `logicalChannelKey` spec into validated field paths.
  *
- * The spec is `field1-field2-...` where each field is `SEGMENT.field[.component[.subcomponent]]`
- * (e.g. `MSH.4-MSH.9.2`). `-` separates fields; HL7 field paths never contain `-`,
- * so the split is unambiguous. An empty/whitespace spec means "no partitioning"
- * and yields `[]` (the channel is a single serialized queue).
+ * The spec is `field1,field2,...` where each field is in conventional HL7 notation
+ * `SEGMENT-field[.component[.subcomponent]]` (e.g. `MSH-4,MSH-9.2`). `,` separates
+ * fields; HL7 field references never contain a comma, so the split is unambiguous.
+ * An empty/whitespace spec means "no partitioning" and yields `[]` (the channel is
+ * a single serialized queue).
  *
  * Validation is all-or-nothing: if ANY field token is malformed the whole spec is
  * rejected (returns `undefined`) so a caller can keep the previously-applied spec
@@ -54,12 +56,12 @@ export function parseLogicalChannelKeySpec(
     return [];
   }
   const fields: LogicalChannelField[] = [];
-  for (const token of spec.split('-')) {
+  for (const token of spec.split(',')) {
     const parsed = parseLogicalChannelField(token.trim());
     if (!parsed) {
       logger.warn(
         `Invalid logicalChannelKey field '${token}' in spec '${raw}'; ` +
-          `expected SEGMENT.field[.component[.subcomponent]] (e.g. 'MSH.4-MSH.9.2'). Ignoring the spec.`
+          `expected SEGMENT-field[.component[.subcomponent]] (e.g. 'MSH-4,MSH-9.2'). Ignoring the spec.`
       );
       return undefined;
     }
@@ -69,7 +71,9 @@ export function parseLogicalChannelKeySpec(
 }
 
 /**
- * Parses a single `SEGMENT.field[.component[.subcomponent]]` token.
+ * Parses a single `SEGMENT-field[.component[.subcomponent]]` token (conventional
+ * HL7 notation). Segment and field are separated by `-`; component and
+ * subcomponent, if present, by `.`.
  * @param token - The field token to parse.
  * @returns The parsed field path, or undefined if the token is malformed.
  */
@@ -77,15 +81,22 @@ function parseLogicalChannelField(token: string): LogicalChannelField | undefine
   if (!token) {
     return undefined;
   }
-  const parts = token.split('.');
-  // segment + field are required; component + subcomponent are optional.
-  if (parts.length < 2 || parts.length > 4) {
+  // Split segment from field on the FIRST '-'. Segment names match SEGMENT_RE and
+  // never contain '-', so the first '-' is unambiguously the segment/field boundary.
+  const dashIdx = token.indexOf('-');
+  if (dashIdx <= 0 || dashIdx === token.length - 1) {
     return undefined;
   }
-  const [segment, fieldStr, componentStr, subcomponentStr] = parts;
+  const segment = token.slice(0, dashIdx);
   if (!SEGMENT_RE.test(segment)) {
     return undefined;
   }
+  // The remainder is field[.component[.subcomponent]] — field required, 1-3 parts.
+  const parts = token.slice(dashIdx + 1).split('.');
+  if (parts.length > 3) {
+    return undefined;
+  }
+  const [fieldStr, componentStr, subcomponentStr] = parts;
   const field = parsePositiveInt(fieldStr);
   if (field === undefined) {
     return undefined;
@@ -109,8 +120,8 @@ function parseLogicalChannelField(token: string): LogicalChannelField | undefine
 
 /**
  * Parses a strictly-positive 1-based index. Rejects non-digits, 0, and anything
- * with a sign/decimal so a typo (`MSH.0`, `MSH.-1`, `MSH.x`) fails validation
- * rather than silently addressing the wrong thing.
+ * with a sign/decimal so a typo (`MSH-0`, `MSH-x`) fails validation rather than
+ * silently addressing the wrong thing.
  * @param value - The candidate index string.
  * @returns The parsed integer (>= 1), or undefined if invalid.
  */
@@ -125,17 +136,18 @@ function parsePositiveInt(value: string): number | undefined {
 /**
  * Computes a message's logical-channel key from a parsed spec.
  *
- * The key is `label:value-label:value-...`, one segment per spec field, in spec
- * order — e.g. spec `MSH.4-MSH.9.2` over a message from `HOSP1` of type `A01`
- * yields `MSH.4:HOSP1-MSH.9.2:A01`. The key is only ever compared for string
+ * The key is `label:value,label:value,...`, one segment per spec field, in spec
+ * order — e.g. spec `MSH-4,MSH-9.2` over a message from `HOSP1` of type `A01`
+ * yields `MSH-4:HOSP1,MSH-9.2:A01`. The key is only ever compared for string
  * equality (it partitions the queue; it is never parsed back), and each field's
- * value is escaped ({@link escapeKeyPart}) so the `:`/`-` delimiters can't be
+ * value is escaped ({@link escapeKeyPart}) so the `:`/`,` delimiters can't be
  * forged: two messages collide iff every addressed field is identical. (Labels
- * come from the spec and can contain neither delimiter, so they need no escaping.)
- * Without escaping, distinct tuples could concatenate to the same key — e.g. spec
- * `MSH.4-MSH.6` with `MSH.4='X-MSH.6:Y', MSH.6='Z'` vs `MSH.4='X', MSH.6='Y-MSH.6:Z'`
- * — silently merging unrelated senders into one partition. A missing segment/field
- * contributes an empty value, so messages lacking the keyed field group together.
+ * come from the spec and contain only `-`/`.`/alphanumerics — never `:` or `,` —
+ * so they need no escaping.) Without escaping, distinct tuples could concatenate
+ * to the same key — e.g. spec `MSH-4,MSH-6` with `MSH.4='X,MSH-6:Y', MSH.6='Z'`
+ * vs `MSH.4='X', MSH.6='Y,MSH-6:Z'` — silently merging unrelated senders into one
+ * partition. A missing segment/field contributes an empty value, so messages
+ * lacking the keyed field group together.
  *
  * An empty spec returns `''` — the single-queue default.
  * @param message - The parsed HL7 message.
@@ -146,18 +158,18 @@ export function computeLogicalChannelKey(message: Hl7Message, spec: LogicalChann
   if (spec.length === 0) {
     return '';
   }
-  return spec.map((f) => `${f.label}:${escapeKeyPart(extractFieldValue(message, f))}`).join('-');
+  return spec.map((f) => `${f.label}:${escapeKeyPart(extractFieldValue(message, f))}`).join(',');
 }
 
 /**
  * Escapes the key delimiters in a field value so distinct field tuples can never
  * concatenate to the same key. Backslash is escaped first (so it can serve as the
- * escape character), then the `:` (label/value) and `-` (field) separators.
+ * escape character), then the `:` (label/value) and `,` (field) separators.
  * @param value - The raw field value.
- * @returns The value with `\`, `:`, and `-` backslash-escaped.
+ * @returns The value with `\`, `:`, and `,` backslash-escaped.
  */
 function escapeKeyPart(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/:/g, '\\:').replace(/-/g, '\\-');
+  return value.replace(/\\/g, '\\\\').replace(/:/g, '\\:').replace(/,/g, '\\,');
 }
 
 /**

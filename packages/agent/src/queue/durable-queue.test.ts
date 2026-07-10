@@ -422,12 +422,12 @@ describe('DurableQueue', () => {
 
     test('setLogicalChannelKey records the partition on a claimed row (only while claimed)', () => {
       const claimed = enqueueAndClaim('SK', 'S1');
-      queue.setLogicalChannelKey(claimed.id, 'MSH.4:HOSP');
-      expect(queue.getById(claimed.id)?.logicalChannelKey).toBe('MSH.4:HOSP');
+      queue.setLogicalChannelKey(claimed.id, 'MSH-4:HOSP');
+      expect(queue.getById(claimed.id)?.logicalChannelKey).toBe('MSH-4:HOSP');
       // Once settled, a stale key write is a no-op (guarded on state = 'claimed').
       queue.markProcessed(claimed.id, claimed.attemptCount, AckOutcome.DELIVERED);
       queue.setLogicalChannelKey(claimed.id, 'STALE');
-      expect(queue.getById(claimed.id)?.logicalChannelKey).toBe('MSH.4:HOSP');
+      expect(queue.getById(claimed.id)?.logicalChannelKey).toBe('MSH-4:HOSP');
     });
 
     test('isPartitionBlocked sees an earlier in-flight row of the same key; ignores later rows, other keys/channels', () => {
