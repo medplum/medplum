@@ -389,7 +389,7 @@ describe('worker utils', () => {
       await vi.waitFor(() =>
         expect(loggerErrorSpy).toHaveBeenCalledWith('Failed to apply global concurrency for TestQueue', {
           globalConcurrency: 3,
-          err,
+          error: err,
         })
       );
       loggerErrorSpy.mockRestore();

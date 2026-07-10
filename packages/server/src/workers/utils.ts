@@ -278,7 +278,7 @@ export function applyGlobalConcurrency(queue: Queue, config: Partial<MedplumBull
   promise.catch((err) => {
     globalLogger.error(`Failed to apply global concurrency for ${queue.name}`, {
       globalConcurrency,
-      err,
+      error: err,
     });
   });
 }
