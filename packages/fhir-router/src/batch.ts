@@ -86,7 +86,7 @@ export async function processBatch(
   return processor.run();
 }
 
-type ProcessingState = {
+interface ProcessingState {
   /** Index into `bundleInfo.ordering` of the next entry to process. */
   position: number;
   /** The result entries for the bundle */
@@ -95,7 +95,7 @@ type ProcessingState = {
   pendingIndices: number[];
   /** Error messages accumulated across processed entries, for the post-batch telemetry event. */
   errors: string[];
-};
+}
 
 /**
  * The BatchProcessor class contains the state for processing a batch/transaction bundle.
