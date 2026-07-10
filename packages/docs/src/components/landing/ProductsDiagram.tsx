@@ -27,12 +27,12 @@ import styles from './ProductsDiagram.module.css';
 /* Foundation → 1-based index (matches FOUNDATIONS order in products-content). */
 export const FOUNDATION_NUMBER = Object.fromEntries(FOUNDATIONS.map((f, i) => [f.name, i + 1]));
 
-/* Foundation → diagram icon glyph. Each nav chip in ProductsFoundations renders the same
+/* Foundation → diagram icon glyph. Each nav chip in ProductsHowItWorks renders the same
    glyph its region uses here, so the selector and the figure read as the same set without
    needing numbered badges. Keys match the names in products-content's FOUNDATIONS. */
 export const FOUNDATION_ICON = {
   'FHIR Data Store & API': 'database',
-  'TypeScript / JavaScript SDK': 'layers',
+  'TypeScript / JavaScript SDK': 'code',
   'Medplum Component Library': 'components',
   Bots: 'robot',
   Subscriptions: 'bell',
@@ -252,44 +252,19 @@ function LegendExtensible({ label }) {
 
 /* ───────────────────────── Diagram ───────────────────────── */
 
-function MedplumDiagram({ active = null, peek = null, onSelect }) {
-  /* Interactive-foundation wiring. A region passes its foundation name (matching the
-     names in products-content's FOUNDATIONS) so the parent tracker can show its copy.
-     Focus uses a SPOTLIGHT: when a foundation is selected, all other elements dim, so
-     the active region reads as the single lit cluster. `peek` mirrors hover from the
-     index pills below. Context elements (apps, external IdP, integrations) are not
-     interactive: they only ever dim.
+function MedplumDiagram() {
+  /* Static figure. Foundation regions keep the `clickable` class purely for its visual
+     treatment (a fuller fill than context layers, which use the softer `:not(.clickable)`
+     variant), but carry no selection, hover, or keyboard behavior — `clk` supplies only
+     the region className, with no event handlers, roles, or spotlight state.
 
      The figure is a pure CSS stack — relationships are carried by adjacency and layering
      rather than drawn connectors, so there is no ref-measurement or SVG-overlay engine. */
-  const isActive = (name) => active === name;
-  const pick = (name) => onSelect && onSelect(name);
-  /* opts.band: platform-interior bands have partial borders, so they highlight with
-     an inset ring instead of a border recolor (see ProductsDiagram.module.css). */
-  const clk = (name, opts = {}) => ({
-    className: [
-      styles.clickable,
-      styles.dimmable,
-      opts.band ? styles.regionBand : '',
-      opts.band ? styles.medplumManaged : '',
-      isActive(name) ? styles.active : '',
-      active && !isActive(name) ? styles.dimmed : '',
-      peek === name ? styles.peeked : '',
-    ].join(' '),
-    'data-diagram-selectable': true,
-    onClick: () => pick(name),
-    role: 'button',
-    tabIndex: 0,
-    'aria-pressed': isActive(name),
-    onKeyDown: (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        pick(name);
-      }
-    },
+  /* opts.band: platform-interior bands share the managed fill (they have partial borders). */
+  const clk = (_name, opts = {}) => ({
+    className: opts.band ? `${styles.clickable} ${styles.medplumManaged}` : styles.clickable,
   });
-  /* Non-interactive context: dims whenever any foundation is in focus. */
-  const ctxClass = `${styles.dimmable} ${active ? styles.dimmed : ''}`;
+  const ctxClass = '';
 
   return (
     <div
@@ -415,6 +390,28 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
 
         {/* Row 2 — Apps */}
         <div className={styles.appsRow}>
+          {/* Your Apps */}
+          <div className={styles.sectionWrap}>
+            <div className={`${styles.sectionLabel} ${ctxClass}`}>Your Apps</div>
+            <Card className={ctxClass} kind="customer" icon="puzzle" name="Custom App" compact />
+            <Card
+              {...clk('Medplum Component Library')}
+              kind="customer"
+              number={FOUNDATION_NUMBER['Medplum Component Library']}
+              name="Component Library"
+              sub="Optional"
+              compact
+            />
+            <Card
+              {...clk('TypeScript / JavaScript SDK')}
+              kind="customer"
+              number={FOUNDATION_NUMBER['TypeScript / JavaScript SDK']}
+              name="TypeScript / JS SDK"
+              sub="Optional"
+              compact
+            />
+          </div>
+
           {/* Medplum Apps */}
           <div className={styles.sectionWrap}>
             <div className={`${styles.sectionLabel} ${ctxClass}`}>Medplum Apps</div>
@@ -452,28 +449,6 @@ function MedplumDiagram({ active = null, peek = null, onSelect }) {
               number={FOUNDATION_NUMBER['TypeScript / JavaScript SDK']}
               name="TypeScript / JS SDK"
               extensible
-              compact
-            />
-          </div>
-
-          {/* Your Apps */}
-          <div className={styles.sectionWrap}>
-            <div className={`${styles.sectionLabel} ${ctxClass}`}>Your Apps</div>
-            <Card className={ctxClass} kind="customer" icon="puzzle" name="Custom App" compact />
-            <Card
-              {...clk('Medplum Component Library')}
-              kind="customer"
-              number={FOUNDATION_NUMBER['Medplum Component Library']}
-              name="Component Library"
-              sub="Optional"
-              compact
-            />
-            <Card
-              {...clk('TypeScript / JavaScript SDK')}
-              kind="customer"
-              number={FOUNDATION_NUMBER['TypeScript / JavaScript SDK']}
-              name="TypeScript / JS SDK"
-              sub="Optional"
               compact
             />
           </div>

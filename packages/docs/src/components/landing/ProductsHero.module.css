@@ -14,7 +14,7 @@
   display: grid;
   grid-template-columns: 1fr 1.05fr;
   gap: 3.5rem;
-  align-items: center;
+  align-items: start;
 }
 
 @media (max-width: 996px) {
@@ -56,7 +56,7 @@
 }
 
 .cta {
-  margin-top: 1rem;
+  margin-top: 2rem;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -86,74 +86,128 @@
   text-decoration: none;
 }
 
-/* ── Hero composition: app card at centre, capability/foundation chips around it ──
-   A fixed 600×440 design space, scaled fluidly. Chips are placed by percentage so they
-   track the stage; the connector-line SVG shares the same 600×440 viewBox, so line
-   endpoints line up with chip positions at any size. container-type lets the chips scale
-   their own type/padding with the stage width (cqw). */
+/* ── Hero composition: browser window at centre, capability/foundation chips around it ──
+   A fixed 600×500 design space, scaled fluidly. Chips are placed by percentage so they
+   track the stage. */
 .composition {
   position: relative;
   width: 100%;
-  max-width: 540px;
+  max-width: 580px;
   margin: 0 auto;
-  aspect-ratio: 600 / 440;
+  aspect-ratio: 600 / 500;
   container-type: inline-size;
+  /* Ferris-wheel orbit: one revolution every --wheel-dur, starting once the entrance
+     has settled (--orbit-delay). */
+  --wheel-dur: 40s;
+  --orbit-delay: 1400ms;
 }
 
-/* TODO: remove before launch — placeholder watermark over the hero art. */
-.watermark {
+/* Rotating ring that carries the chips. It spins about the composition centre (which is
+   also the centre of the chip ring); each chip counter-rotates to stay upright. */
+.wheel {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  pointer-events: none;
-  transform: rotate(-16deg);
-  font-family: var(--landing-font-display);
-  font-weight: 800;
-  font-size: clamp(26px, 11cqw, 60px);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  text-align: center;
-  color: rgba(var(--oc-cyan-3-rgb), 0.55);
+  z-index: 4;
+  transform-origin: 50% 50%;
 }
 
-.lines {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  z-index: 3;
-  pointer-events: none;
+.play .wheel {
+  animation: wheelSpin var(--wheel-dur) linear var(--orbit-delay) infinite;
 }
 
-.line {
-  stroke: var(--oc-grape-2);
-  stroke-width: 1.25;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-}
-
+/* Drop-shadow on the wrapper (not the masked node) so the shadow isn't clipped. */
 .compCard {
   position: absolute;
-  left: 50%;
-  top: 50%;
+  left: 75%;
+  top: 75%;
   transform: translate(-50%, -50%);
-  width: clamp(280px, 56%, 320px);
+  width: 88%;
+  max-width: 510px;
   z-index: 2;
   opacity: 0;
+  filter: drop-shadow(-10px -8px 36px rgba(var(--oc-grape-2-rgb), 0.75));
 }
 
-.compCard .patientCard {
-  min-width: 0;
+/* Browser window — same treatment as the CTA custom-app preview (masked fade, chrome bar). */
+.heroBrowser {
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  background: var(--landing-surface-elevated);
+  border-radius: 12px 0 0 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 80%, transparent 100%),
+    linear-gradient(to bottom, #000 80%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, #000 80%, transparent 95%),
+    linear-gradient(to bottom, #000 20%, transparent 80%);
+  mask-composite: intersect;
+}
+
+.browserBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--landing-surface-inset);
+  border-bottom: 1px solid var(--landing-divider);
+}
+
+.browserDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.browserDotRed {
+  background: #ff5f57;
+}
+
+.browserDotYellow {
+  background: #febc2e;
+}
+
+.browserDotGreen {
+  background: #28c840;
+}
+
+.browserAddress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  margin-left: 8px;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: var(--landing-surface-elevated);
+  border: 1px solid var(--landing-border);
+  font-family: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  font-size: 10.5px;
+  color: var(--landing-color-muted);
+}
+
+.browserAddress svg {
+  color: var(--oc-gray-6);
+  flex-shrink: 0;
+}
+
+.heroBrowserImage {
+  aspect-ratio: 1024 / 808;
+  overflow: hidden;
+  background: var(--landing-surface-inset);
+}
+
+.heroScreenshot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-position: left top;
 }
 
 .compChip {
   position: absolute;
-  transform: translate(-50%, -50%);
+  translate: -50% -50%;
   display: inline-flex;
   align-items: center;
   gap: clamp(6px, 1.4cqw, 9px);
@@ -201,14 +255,13 @@
   animation: compCardIn 0.6s cubic-bezier(0.22, 0.9, 0.35, 1) forwards;
 }
 
+/* Entrance (opacity + scale) and the ferris-wheel counter-rotation run together. They touch
+   different transform longhands (scale vs rotate), so neither clobbers the other, and the
+   counter-spin shares the wheel's duration/delay so the two stay perfectly in sync. */
 .play .compChip {
-  animation: compChipIn 0.5s cubic-bezier(0.22, 0.9, 0.35, 1) forwards;
-  animation-delay: calc(220ms + var(--d, 0ms));
-}
-
-.play .line {
-  animation: compDraw 0.55s ease forwards;
-  animation-delay: calc(260ms + var(--d, 0ms));
+  animation:
+    compChipIn 0.5s cubic-bezier(0.22, 0.9, 0.35, 1) calc(220ms + var(--d, 0ms)) forwards,
+    chipUpright var(--wheel-dur) linear var(--orbit-delay) infinite;
 }
 
 @keyframes compCardIn {
@@ -225,17 +278,25 @@
 @keyframes compChipIn {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.9);
+    scale: 0.9;
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    scale: 1;
   }
 }
 
-@keyframes compDraw {
+/* The wheel spins one full turn; each chip spins the opposite way by the same amount, so its
+   net orientation stays 0° while its position orbits the ring. */
+@keyframes wheelSpin {
   to {
-    stroke-dashoffset: 0;
+    rotate: 360deg;
+  }
+}
+
+@keyframes chipUpright {
+  to {
+    rotate: -360deg;
   }
 }
 
@@ -244,223 +305,32 @@
   .compChip {
     opacity: 1;
   }
-  .line {
-    stroke-dashoffset: 0;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .compCard,
-  .compChip {
+  .compCard {
     opacity: 1;
     transform: translate(-50%, -50%);
     animation: none !important;
   }
-  .line {
-    stroke-dashoffset: 0;
+
+  .compChip {
+    opacity: 1;
+    scale: 1;
+    rotate: 0deg;
     animation: none !important;
+  }
+
+  .wheel {
+    animation: none !important;
+    rotate: 0deg;
   }
 }
 
-[data-theme='dark'] .line {
-  stroke: var(--oc-grape-7);
+[data-theme='dark'] .compCard {
+  filter: drop-shadow(-10px -8px 36px rgba(0, 0, 0, 0.45));
 }
 
-.patientCard {
-  background: var(--landing-surface-elevated);
-  border-radius: 14px;
-  overflow: hidden;
-  border: var(--landing-shadow-card-border);
-  box-shadow: var(--landing-shadow-card);
-  min-width: 320px;
-}
-
-.browserBar {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 12px;
-  background: var(--landing-surface-inset);
-  border-bottom: 1px solid var(--landing-divider);
-}
-
-.browserDot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.browserDotRed {
-  background: #ff6b6b;
-}
-
-.browserDotYellow {
-  background: #fcc419;
-}
-
-.browserDotGreen {
-  background: #51cf66;
-}
-
-.browserUrl {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  margin-left: 4px;
-  padding: 4px 12px;
-  background: var(--landing-surface-elevated);
-  border-radius: 6px;
-  font-family: var(--ifm-font-family-monospace);
-  font-size: 11.5px;
-  color: var(--landing-color-muted);
-}
-
-.browserUrl svg {
-  flex-shrink: 0;
-  opacity: 0.7;
-}
-
-.patientBody {
-  padding: 20px;
-}
-
-.patientHeader {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.patientAvatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  background: var(--landing-surface-inset);
-}
-
-.patientMeta {
-  flex: 1;
-  min-width: 0;
-}
-
-.patientName {
-  font-family: var(--landing-font-display);
-  font-weight: 600;
-  font-size: var(--landing-body-size);
-  color: var(--landing-color-heading);
-  line-height: 1.2;
-}
-
-.patientMrn {
-  font-family: var(--ifm-font-family-monospace);
-  font-size: 11.5px;
-  color: var(--landing-color-muted);
-  margin-top: 3px;
-}
-
-.allergyPill {
-  font-family: var(--landing-font-display);
-  font-size: 10.5px;
-  font-weight: 600;
-  background: var(--oc-red-0);
-  color: var(--oc-red-9);
-  padding: 4px 9px;
-  border-radius: var(--landing-radius-chip);
-  border: 1px solid var(--oc-red-2);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  flex-shrink: 0;
-}
-
-.patientFields {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--landing-divider);
-}
-
-.fieldLabel {
-  font-family: var(--landing-font-body);
-  font-size: 10.5px;
-  color: var(--landing-color-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: var(--landing-label-weight);
-}
-
-.fieldValue {
-  font-family: var(--landing-font-body);
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--landing-color-heading);
-  margin-top: 2px;
-}
-
-.vitalsBar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-  padding: 10px 12px;
-  background: var(--oc-grape-0);
-  border-radius: 8px;
-  border: 1px solid var(--oc-grape-1);
-  --pulse-color: rgba(156, 54, 181, 0.35);
-}
-
-.vitalsDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--oc-grape-8);
-  flex-shrink: 0;
-}
-
-.vitalsLabel {
-  font-family: var(--landing-font-body);
-  font-size: 12px;
-  color: var(--landing-color-body);
-  font-weight: 500;
-}
-
-.vitalsReading {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.vitalsValue {
-  font-family: var(--landing-font-display);
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--landing-color-heading);
-}
-
-.vitalsMeta {
-  font-family: var(--landing-font-body);
-  font-size: 11px;
-  color: var(--landing-color-muted);
-}
-
-[data-theme='dark'] .patientCard {
-  background: var(--landing-surface-elevated);
-  border-color: var(--landing-border);
-}
-
-[data-theme='dark'] .allergyPill {
-  background: rgba(240, 62, 62, 0.15);
-  color: #fa5252;
-  border-color: rgba(240, 62, 62, 0.3);
-}
-
-[data-theme='dark'] .vitalsBar {
-  background: rgba(156, 54, 181, 0.18);
-  border-color: rgba(156, 54, 181, 0.3);
-  --pulse-color: rgba(199, 125, 214, 0.45);
+[data-theme='dark'] .browserAddress svg {
+  color: var(--oc-green-4);
 }

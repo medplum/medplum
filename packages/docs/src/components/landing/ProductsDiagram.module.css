@@ -121,7 +121,7 @@
    connectors aligned. */
 
 .clickable {
-  cursor: pointer;
+  cursor: default;
   position: relative;
 }
 
@@ -155,86 +155,13 @@
     filter 200ms ease;
 }
 
-.clickable:hover,
-.clickable.peeked,
-.clickable.active {
-  /* Lift the highlighted element above its dimmed neighbors so its tonal wash and shadow
-     are never clipped where edges meet. */
-  z-index: 5;
-}
+/* The figure is static: no hover tint, selection swap, or spotlight dimming. The
+   `.clickable` class is retained only for the fuller region fill (see .medplumManaged /
+   .userManaged below); it no longer confers any interactive behavior. */
 
-/* Hover uses a tint overlay; selected swaps the fill (no overlay). */
-.clickable.medplumManaged:not(.active):hover::after,
-.clickable.medplumManaged:not(.active).peeked::after {
-  background: rgba(156, 54, 181, 0.08);
-}
-
-.clickable.userManaged:not(.active):hover::after,
-.clickable.userManaged:not(.active).peeked::after {
-  background: rgba(var(--oc-red-4-rgb), 0.25);
-}
-
-.clickable.active {
-  opacity: 1;
-  isolation: isolate;
-}
-
-.clickable.active::after {
-  background: transparent;
-}
-
-.clickable.medplumManaged.active {
-  background: var(--dg-fill-core);
-}
-
-.clickable.userManaged.active {
-  background: var(--dg-fill-user-selected);
-}
-
-[data-theme='dark'] .clickable.medplumManaged:not(.active):hover::after,
-[data-theme='dark'] .clickable.medplumManaged:not(.active).peeked::after {
-  background: rgba(199, 125, 214, 0.12);
-}
-
-[data-theme='dark'] .clickable.userManaged:not(.active):hover::after,
-[data-theme='dark'] .clickable.userManaged:not(.active).peeked::after {
-  background: rgba(var(--oc-red-5-rgb), 0.18);
-}
-
-/* ---- spotlight dimming ----
-   Un-selected elements fade via opacity so the active region reads as the lit cluster.
-   Applied per leaf element only — never on section containers, because parent opacity
-   would wash out active children even when they carry .active. */
-.dimmable {
-  transition:
-    filter 200ms ease,
-    opacity 200ms ease;
-}
-
-.dimmed {
-  filter: saturate(0.75);
-  opacity: 0.5;
-}
-
-[data-theme='dark'] .dimmed {
-  filter: saturate(0.85) brightness(0.9);
-  opacity: 0.4;
-}
-
-/* Hosted-platform pill: color lives here (not inline) so .dimmedSolid can gray it. */
+/* Hosted-platform pill color (kept here rather than inline for consistency). */
 .hostedPill {
   color: #fff;
-}
-
-.dimmedSolid {
-  filter: saturate(0.45) brightness(1.12) contrast(0.92);
-  /* Defined after .hostedPill so this color wins when both classes are present. */
-  color: rgba(255, 255, 255, 0.62);
-}
-
-[data-theme='dark'] .dimmedSolid {
-  filter: saturate(0.5) brightness(0.58);
-  color: rgba(255, 255, 255, 0.62);
 }
 
 /* Mutes the platform container's outer border when any region is selected (set on the
@@ -292,8 +219,8 @@
 /* Gray inset container shared by every diagram section. */
 .sectionWrap {
   border-radius: 16px;
-  background: rgba(var(--oc-gray-1-rgb), 0.5);
-  border: 1px solid var(--oc-gray-1);
+  background: var(--oc-gray-1);
+  border: 1px solid var(--oc-gray-2);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -313,7 +240,7 @@
   grid-column: 1;
   grid-row: 2;
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 2fr;
   gap: var(--dg-section-gap);
 }
 

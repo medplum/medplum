@@ -28,15 +28,18 @@ export interface AppItem {
 }
 
 export interface ComplianceItem {
+  id: string;
   label: string;
   sub: string;
   img: string | null;
+  /** Per-logo optical size tuning (px). */
+  logoSize?: { height: number; maxWidth?: number };
 }
 
 export const HERO_HEADLINE = 'Fast and flexible products, for any healthcare solution';
 
 export const HERO_SUB =
-  'Our pre-built Apps, Capabilites, and Foundations, allow you to move fast, stay compliant, and avoid getting locked into rigid systems as your organization evolves.';
+  'Our pre-built apps, capabilities, and foundations, allow you to move fast, stay compliant, and avoid getting locked into rigid systems as your organization evolves.';
 
 export const TIER_INTRO_HEADLINE = 'Build outward from one data model.';
 
@@ -48,61 +51,61 @@ export const FOUNDATIONS: FoundationItem[] = [
     name: 'FHIR Data Store & API',
     icon: 'IconDatabase',
     short: 'Native FHIR R4 datastore',
-    body: 'Every FHIR R4 resource, search parameter, and reference modeled out of the box — REST, GraphQL, and time-aware search built in. Hosted terminology (SNOMED, LOINC, RxNorm) on the same store.',
+    body: 'A complete healthcare data store, with every FHIR R4 resource, search parameter, and reference modeled out of the box, plus REST, GraphQL, hosted Terminology, and time-aware search built in.',
   },
   {
     name: 'TypeScript / JavaScript SDK',
     icon: 'IconCode',
     short: 'Typed client for every resource',
-    body: 'A fully typed client for browser and Node. Auth, search, paging, batch bundles, and subscriptions are one method call away.',
+    body: 'A ready-made developer toolkit: a fully typed client for browser and Node, where auth, search, paging, batch bundles, and subscriptions are each one method call away.',
   },
   {
     name: 'Medplum Component Library',
     icon: 'IconComponents',
     short: 'Pre-built clinical UI components',
-    body: 'A library of pre-built, themeable clinical UI React components (@medplum/react) — resource forms, search controls, and timelines — wired to the data model and browsable in Storybook.',
+    body: 'Prebuilt clinical app interfaces: a library of themeable clinical UI React components (@medplum/react), including resource forms, search controls, and timelines, all wired to the data model and browsable in Storybook.',
   },
   {
     name: 'Bots',
     icon: 'IconRobot',
     short: 'Sandboxed serverless runtime',
-    body: 'TypeScript functions that run inside Medplum, triggered by resource changes, schedules, or HTTP. Handle HL7 transforms, eligibility, and notifications.',
+    body: 'Automated tasks and workflows, written as TypeScript functions that run inside Medplum and trigger on resource changes, schedules, or HTTP requests. They handle HL7 transforms, eligibility checks, and notifications.',
   },
   {
     name: 'Subscriptions',
     icon: 'IconWebhook',
     short: 'Rest-hook & WebSocket events',
-    body: 'FHIR Subscriptions in two flavors: rest-hook webhooks for server-to-server delivery and WebSocket events for real-time clients. Retry, HMAC signing, and audit logging built in.',
+    body: 'Real-time event notifications through FHIR Subscriptions in two flavors: rest-hook webhooks for server-to-server delivery, and WebSocket events for live clients. Retry, HMAC signing, and audit logging are built in.',
   },
   {
     name: 'Medplum Bridge',
     icon: 'IconAntenna',
     short: 'On-prem bridge to the cloud',
-    body: 'Medplum software that runs on-prem inside your firewall and tunnels HL7v2 and DICOM to the cloud over encrypted WebSockets. A modern alternative to legacy interface engines.',
+    body: 'An on-site connection to the cloud. Medplum software runs on-premise inside your firewall and tunnels HL7v2 and DICOM to the cloud over encrypted WebSockets, a modern alternative to legacy interface engines.',
   },
   {
     name: 'Medplum Auth',
     icon: 'IconLock',
     short: 'Auth API & identity provider',
-    body: "Medplum's Auth API: a complete identity provider with OAuth2, OpenID Connect, SMART on FHIR, and MFA — or federate with your own.",
+    body: "Sign-in and identity management through Medplum's Auth API, a complete identity provider with OAuth2, OpenID Connect, SMART on FHIR, and MFA, or you can federate with your own.",
   },
   {
     name: 'Access Control',
     icon: 'IconShieldLock',
     short: 'Fine-grained AccessPolicy',
-    body: 'Fine-grained authorization modeled in FHIR. Granular AccessPolicy resources control read/write access down to the resource, compartment, and field level.',
+    body: 'Fine-grained control over who can access what, modeled in FHIR. Granular AccessPolicy resources govern read and write access down to the resource, compartment, and field level.',
   },
   {
     name: 'Multi-Tenancy',
     icon: 'IconBuildingCommunity',
     short: 'Project-based data isolation',
-    body: 'Medplum Projects partition every resource into isolated tenants on one deployment — clean data isolation per customer, clinic, or environment, with no shared state between them.',
+    body: 'Isolated data per customer. Medplum Projects partition every resource into separate tenants on one deployment, giving you clean data isolation per customer, clinic, or environment, with no shared state between them.',
   },
   {
     name: 'Audit Logging',
     icon: 'IconHistory',
     short: 'Compliance-grade audit trail',
-    body: 'Every read, write, and login is captured as a FHIR AuditEvent — a complete, queryable audit trail built in, satisfying the logging requirements behind HIPAA, SOC 2, and ONC certification.',
+    body: 'A compliance-ready audit trail. Every read, write, and login is captured as a FHIR AuditEvent, giving you a complete, queryable record built in that satisfies the logging requirements behind HIPAA, SOC 2, and ONC certification.',
   },
 ];
 
@@ -176,11 +179,17 @@ export const ALL_APPS: AppItem[] = [
 export const FEATURED_APPS = ALL_APPS.slice(0, 2);
 
 export const COMPLIANCE: ComplianceItem[] = [
-  { label: 'HIPAA', sub: 'Compliant', img: '/img/compliance/HIPAA-Asclepius.svg' },
-  { label: 'SOC 2', sub: 'Type 2', img: '/img/compliance/soc.png' },
-  { label: 'HITRUST', sub: 'CSF Certified', img: '/img/compliance/HITRUST.svg' },
-  { label: 'ONC (+ HTI-4)', sub: '(g)(10) Certified', img: '/img/compliance/ONC-Certified-HealthIT.png' },
-  { label: 'ISO 9001', sub: 'Quality Mgmt', img: '/img/compliance/ISO.svg' },
-  { label: '21 CFR Part 11', sub: 'FDA', img: '/img/compliance/FDA.svg' },
-  { label: 'EPCS', sub: 'DEA-ready', img: '/img/compliance/drummond-epcs.png' },
+  { id: 'hipaa', label: 'HIPAA', sub: 'Compliant', img: '/img/compliance/HIPAA-Asclepius.svg', logoSize: { height: 46 } },
+  { id: 'soc2', label: 'SOC 2', sub: 'Type 2', img: '/img/compliance/soc.png', logoSize: { height: 30 } },
+  { id: 'hitrust', label: 'HITRUST', sub: 'CSF Certified', img: '/img/compliance/HITRUST.svg', logoSize: { height: 19 } },
+  {
+    id: 'onc',
+    label: 'ONC (+ HTI-4)',
+    sub: '(g)(10) Certified',
+    img: '/img/compliance/ONC-Certified-HealthIT.png',
+    logoSize: { height: 17, maxWidth: 115 },
+  },
+  { id: 'iso', label: 'ISO 9001', sub: 'Quality Mgmt', img: '/img/compliance/ISO.svg', logoSize: { height: 23 } },
+  { id: 'fda', label: '21 CFR Part 11', sub: 'FDA', img: '/img/compliance/FDA.svg', logoSize: { height: 24 } },
+  { id: 'epcs', label: 'EPCS', sub: 'DEA-ready', img: '/img/compliance/drummond-epcs.png', logoSize: { height: 32 } },
 ];

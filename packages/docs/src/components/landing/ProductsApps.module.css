@@ -141,7 +141,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 4px;
 }
 
 .tabName {
@@ -167,7 +167,7 @@
 .showcaseBody {
   background-color: var(--showcase-surface);
   border: 1px solid rgba(var(--oc-grape-0-rgb), 0.75);
-  border-radius: 8px;
+  border-radius: 4px;
 }
 
 .appDescription {
@@ -175,7 +175,7 @@
   line-height: 1.5rem;
   color: rgba(var(--oc-gray-7-rgb), 0.75);
   margin: 0 auto;
-  padding: 4rem 1.5rem 1.5rem;
+  padding: 4rem 1.5rem 0rem;
   max-width: 720px;
   text-align: center;
 }
@@ -194,8 +194,7 @@
 .imageStack {
   position: absolute;
   inset: 0;
-  perspective: 1200px;
-  --stack-width: 80%;
+  --stack-width: 85%;
   --stack-top: 2.75rem;
   --stack-back-x: 38px;
   --stack-back-y: 30px;
@@ -214,7 +213,6 @@
   left: 50%;
   width: var(--stack-width);
   transform-origin: center center;
-  will-change: transform;
   appearance: none;
   background: transparent;
   border: none;
@@ -229,7 +227,7 @@
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
   box-shadow: 0px 8px 40px rgba(var(--oc-grape-2-rgb), 0.5);
-  border: 1px solid rgba(var(--oc-grape-0-rgb), 0.75);
+  border: 1px solid rgba(var(--oc-grape-1-rgb), 0.5);
   border-bottom: none;
   background: #fff;
 }
@@ -317,7 +315,7 @@
 
 [data-theme='dark'] .showcaseBody {
   background-color: var(--showcase-surface);
-  border: 1px solid rgba(var(--oc-gray-7-rgb), 0.25);
+  border: 1px solid rgba(var(--oc-grape-0-rgb), 0.75);
 }
 
 [data-theme='dark'] .tabActive .tabName {

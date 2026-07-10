@@ -1,0 +1,116 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* Theme tokens consumed by the diagram's inline styles via var(--dg-*).
+   These mirror the newer ProductsDiagram figure so both diagrams share one palette:
+   surfaces are distinguished by SHADE (a grape ramp for Medplum-managed, a red ramp for
+   user-managed) rather than by heavy borders or stripes, and extensibility is marked with
+   a code-icon circle instead of a pattern fill. Light values here; dark overrides below. */
+.root {
+  --dg-purple: var(--oc-grape-8);
+  --dg-purple-soft: var(--oc-grape-4);
+  --dg-purple-bg: var(--oc-grape-0);
+  --dg-border: var(--landing-border-strong);
+  --dg-bg-gray: var(--landing-surface-inset);
+  --dg-bg: var(--landing-surface);
+  --dg-text: var(--landing-color-heading);
+  --dg-muted: var(--landing-color-muted);
+  --dg-line: var(--landing-border-strong);
+  --dg-dot-fill: var(--landing-surface);
+  --dg-dot-stroke: var(--landing-border-strong);
+  --dg-sub: var(--landing-color-body);
+  --dg-dashed: var(--landing-color-muted);
+  --dg-hosted-bg: var(--oc-grape-9);
+  --dg-panel: var(--landing-surface-elevated);
+  --dg-chip-bg: var(--landing-surface-elevated);
+  --dg-int-bg: var(--landing-surface-inset);
+  --dg-int-pill-bg: var(--landing-surface-inset);
+  --dg-int-pill-border: var(--landing-border-strong);
+  --dg-panel-soft: var(--landing-surface-elevated);
+
+  /* Tonal fills — the same ramps the newer diagram uses. */
+  --dg-fill-build: var(--oc-grape-1);
+  --dg-fill-user: var(--oc-orange-2);
+  --dg-icon-build: var(--oc-grape-8);
+  --dg-icon-user: var(--oc-orange-5);
+
+  /* Subtle tonal borders (thin, low-contrast) rather than the old 2px purple outline. */
+  --dg-border-build: none;
+  --dg-border-user: none;
+
+  --dg-extensible-size: 22px; /* code-icon circle marker */
+
+  /* Type + layout scale — keep in sync with ProductsDiagram.module.css */
+  --dg-size-card: 12px;
+  --dg-size-sub: 11.5px;
+  --dg-size-label: 14px;
+  --dg-size-term: 12px;
+  --dg-weight-medium: 500;
+  --dg-weight-extrabold: 800;
+  --dg-leading-card: 16px;
+  --dg-leading-sub: 1.25;
+  --dg-chip: 32px;
+  --dg-row-pad: 8px 12px 8px 8px;
+  --dg-row-gap: 9px;
+  --dg-inner-gap: 8px;
+}
+
+/* Dark mode follows the same elevation ladder as the newer diagram. */
+[data-theme='dark'] .root {
+  --dg-purple: var(--oc-grape-5);
+  --dg-purple-soft: var(--oc-grape-6);
+  --dg-purple-bg: rgba(156, 54, 181, 0.18);
+  --dg-border: var(--landing-border-strong);
+  --dg-bg-gray: var(--landing-surface-muted);
+  --dg-bg: var(--landing-surface-elevated);
+  --dg-text: var(--landing-color-heading);
+  --dg-muted: var(--landing-color-muted);
+  --dg-line: var(--landing-border-strong);
+  --dg-dot-fill: var(--landing-surface-muted);
+  --dg-dot-stroke: var(--landing-color-muted);
+  --dg-sub: var(--landing-color-body);
+  --dg-dashed: var(--landing-color-muted);
+  --dg-hosted-bg: var(--oc-grape-8);
+  --dg-panel: #232327;
+  --dg-chip-bg: var(--oc-gray-7);
+  --dg-int-bg: #242429;
+  --dg-int-pill-bg: #33333a;
+  --dg-int-pill-border: var(--landing-border-strong);
+  --dg-panel-soft: #232327;
+
+  --dg-fill-build: rgba(156, 54, 181, 0.18);
+  --dg-fill-user: var(--oc-gray-7);
+  --dg-icon-build: var(--oc-grape-4);
+  --dg-icon-user: var(--oc-gray-4);
+
+  --dg-border-build: rgba(156, 54, 181, 0.35);
+  --dg-border-user: rgba(var(--oc-gray-5-rgb), 0.4);
+}
+
+/* Icon tile — a light elevated square that holds the card's colored glyph. */
+.iconChip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--dg-chip-bg);
+}
+
+/* Grape circle + white code icon — marks extensible / customizable surfaces
+   (replaces the old striped "with extensibility" fill). */
+.extensibleMark {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dg-extensible-size);
+  height: var(--dg-extensible-size);
+  border-radius: 50%;
+  background: var(--oc-grape-9);
+  align-self: center;
+}
+
+[data-theme='dark'] .extensibleMark {
+  background: var(--oc-grape-7);
+}

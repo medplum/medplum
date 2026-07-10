@@ -17,11 +17,11 @@ const APP_TAB_ICONS: Record<string, JSX.Element> = {
 
 const APP_SCREENSHOTS: Record<string, { src: string; alt: string }> = {
   provider: {
-    src: '/img/screenshots/provider-app.png',
+    src: '/img/provider/medplum-provider-app-cover-image.webp',
     alt: 'Medplum Provider App',
   },
   admin: {
-    src: '/img/screenshots/app.medplum.png',
+    src: '/img/screenshots/Medplum-App.webp',
     alt: 'Medplum App — admin and developer console',
   },
 };
@@ -172,10 +172,10 @@ export function ProductsApps(): JSX.Element {
   return (
     <div id="apps" className={styles.section}>
       <div className={styles.sectionIntro}>
-        <h2 className={styles.sectionHeadline}>Start using Medplum today, with our pre-built Apps.</h2>
+        <h2 className={styles.sectionHeadline}>Start using Medplum today, with our pre-built apps</h2>
         <p className={styles.sectionLead}>
-          Developed by Medplum using our powerful Capabilities and Foundations, these prepackaged Apps are ready to be
-          modified for your clinical needs—or used as a reference when building your own custom Apps.
+          Developed by Medplum using our powerful capabilities and foundations, these prepackaged apps are ready to be
+          modified for your clinical needs—or used as a reference when building your own custom apps.
         </p>
       </div>
 

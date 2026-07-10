@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { CAPABILITIES } from '../../data/products-content';
 import styles from './ProductsCapabilities.module.css';
 
@@ -27,9 +27,9 @@ function IntakeFormPreview(): JSX.Element {
       {/* First Name * */}
       <text x="20" y="60" fontFamily={f} fontSize="12" fontWeight="500" fill={tc}>
         First Name
-      </text>
-      <text x="88" y="60" fontFamily={f} fontSize="12" fontWeight="500" fill={red}>
-        *
+        <tspan dx="4" fill={red}>
+          *
+        </tspan>
       </text>
       <rect x="20" y="66" width="260" height="32" rx="4" fill="white" stroke={border} strokeWidth="1.5" />
       <text x="30" y="86" fontFamily={f} fontSize="13" fill={tc}>
@@ -45,9 +45,9 @@ function IntakeFormPreview(): JSX.Element {
       {/* Last Name * */}
       <text x="20" y="184" fontFamily={f} fontSize="12" fontWeight="500" fill={tc}>
         Last Name
-      </text>
-      <text x="80" y="184" fontFamily={f} fontSize="12" fontWeight="500" fill={red}>
-        *
+        <tspan dx="4" fill={red}>
+          *
+        </tspan>
       </text>
       <rect x="20" y="190" width="260" height="32" rx="4" fill="white" stroke={border} strokeWidth="1.5" />
       <text x="30" y="210" fontFamily={f} fontSize="13" fill={tc}>
@@ -57,9 +57,9 @@ function IntakeFormPreview(): JSX.Element {
       {/* Date of Birth * */}
       <text x="20" y="246" fontFamily={f} fontSize="12" fontWeight="500" fill={tc}>
         Date of Birth
-      </text>
-      <text x="101" y="246" fontFamily={f} fontSize="12" fontWeight="500" fill={red}>
-        *
+        <tspan dx="4" fill={red}>
+          *
+        </tspan>
       </text>
       <rect x="20" y="252" width="260" height="32" rx="4" fill="white" stroke={border} strokeWidth="1.5" />
       <text x="30" y="272" fontFamily={f} fontSize="13" fill={tc}>
@@ -77,6 +77,8 @@ function SchedulingPreview(): JSX.Element {
   const segBg = '#f1f3f5';
   const segText = '#495057';
   const blue = '#228be6';
+  const gutterW = 50;
+  const gutterPad = 10; // right inset for the time labels within the gutter
 
   // Horizontal hour lines + their gutter labels (top of each hour slot).
   const hours = [
@@ -111,11 +113,11 @@ function SchedulingPreview(): JSX.Element {
 
       {/* Grid frame: top border, two day columns + a time gutter */}
       <line x1="0" y1="54" x2="300" y2="54" stroke={grid} strokeWidth="1.5" />
-      <line x1="34" y1="54" x2="34" y2="300" stroke={grid} strokeWidth="1.5" />
+      <line x1={gutterW} y1="54" x2={gutterW} y2="300" stroke={grid} strokeWidth="1.5" />
       <line x1="167" y1="54" x2="167" y2="300" stroke={grid} strokeWidth="1.5" />
 
       {/* Day headers */}
-      <text x="100" y="74" fontFamily={f} fontSize="12" fontWeight="700" fill={tc} textAnchor="middle">
+      <text x={(gutterW + 167) / 2} y="74" fontFamily={f} fontSize="12" fontWeight="700" fill={tc} textAnchor="middle">
         01 Fri
       </text>
       <text x="233" y="74" fontFamily={f} fontSize="12" fontWeight="700" fill={tc} textAnchor="middle">
@@ -126,19 +128,19 @@ function SchedulingPreview(): JSX.Element {
       {/* Hour rows + gutter labels */}
       {hours.map((h) => (
         <g key={h.label}>
-          <line x1="34" y1={h.y} x2="300" y2={h.y} stroke={grid} strokeWidth="1" />
-          <text x="29" y={h.y + 4} fontFamily={f} fontSize="9" fill={muted} textAnchor="end">
+          <line x1={gutterW} y1={h.y} x2="300" y2={h.y} stroke={grid} strokeWidth="1" />
+          <text x={gutterW - gutterPad} y={h.y + 4} fontFamily={f} fontSize="9" fill={muted} textAnchor="end">
             {h.label}
           </text>
         </g>
       ))}
 
       {/* Appointment block — aligned to the 10–11 AM slot; same patient as the intake form */}
-      <rect x="40" y="158" width="120" height="36" rx="5" fill={blue} />
-      <text x="48" y="174" fontFamily={f} fontSize="9" fill="white" fillOpacity="0.9">
+      <rect x={gutterW + 6} y="158" width="112" height="36" rx="5" fill={blue} />
+      <text x={gutterW + 14} y="174" fontFamily={f} fontSize="9" fill="white" fillOpacity="0.9">
         10:00 – 11:00 AM
       </text>
-      <text x="48" y="189" fontFamily={f} fontSize="11" fontWeight="600" fill="white">
+      <text x={gutterW + 14} y="189" fontFamily={f} fontSize="11" fontWeight="600" fill="white">
         Sarah Mitchell
       </text>
     </svg>
@@ -207,17 +209,23 @@ function ChartingPreview(): JSX.Element {
 function DiagnosticOrdersPreview(): JSX.Element {
   const f = 'system-ui,-apple-system,sans-serif';
   const tc = '#212529';
+  const muted = '#868e96';
   const grid = '#e9ecef';
 
   // Lab orders with Mantine-style status badges.
   const green = { bg: '#d3f9d8', fg: '#2f9e44' };
   const yellow = { bg: '#fff3bf', fg: '#f08c00' };
   const orders = [
-    { top: 48, name: 'CBC with Differential', status: 'Final', tone: green },
-    { top: 92, name: 'Lipid Panel', status: 'Final', tone: green },
-    { top: 136, name: 'Hemoglobin A1c', status: 'Pending', tone: yellow },
-    { top: 180, name: 'TSH, Serum', status: 'Pending', tone: yellow },
+    { name: 'CBC with Differential', date: 'Mar 1, 2025', status: 'Final', tone: green },
+    { name: 'Lipid Panel', date: 'Feb 28, 2025', status: 'Final', tone: green },
+    { name: 'Hemoglobin A1c', date: 'Ordered Mar 2, 2025', status: 'Pending', tone: yellow },
+    { name: 'TSH, Serum', date: 'Ordered Mar 2, 2025', status: 'Pending', tone: yellow },
   ];
+
+  // Equal-height row bands so the padding between items stays even; each item's
+  // text block and badge are vertically centered within its band.
+  const firstDivider = 46;
+  const rowH = 51;
 
   return (
     <svg
@@ -232,19 +240,26 @@ function DiagnosticOrdersPreview(): JSX.Element {
         Lab Orders
       </text>
 
-      {orders.map((o) => {
+      {orders.map((o, i) => {
+        const top = firstDivider + i * rowH;
         const pillW = o.status === 'Pending' ? 58 : 44;
         const pillX = 280 - pillW;
+        const nameY = top + 22;
+        const dateY = top + 37;
+        const pillY = top + (rowH - 20) / 2;
         return (
           <g key={o.name}>
-            <line x1="20" y1={o.top} x2="280" y2={o.top} stroke={grid} strokeWidth="1.5" />
-            <text x="20" y={o.top + 26} fontFamily={f} fontSize="12" fontWeight="600" fill={tc}>
+            <line x1="20" y1={top} x2="280" y2={top} stroke={grid} strokeWidth="1.5" />
+            <text x="20" y={nameY} fontFamily={f} fontSize="12" fontWeight="600" fill={tc}>
               {o.name}
             </text>
-            <rect x={pillX} y={o.top + 12} width={pillW} height="20" rx="10" fill={o.tone.bg} />
+            <text x="20" y={dateY} fontFamily={f} fontSize="10" fill={muted}>
+              {o.date}
+            </text>
+            <rect x={pillX} y={pillY} width={pillW} height="20" rx="10" fill={o.tone.bg} />
             <text
               x={pillX + pillW / 2}
-              y={o.top + 26}
+              y={pillY + 14}
               fontFamily={f}
               fontSize="9.5"
               fontWeight="600"
@@ -256,7 +271,7 @@ function DiagnosticOrdersPreview(): JSX.Element {
           </g>
         );
       })}
-      <line x1="20" y1="224" x2="280" y2="224" stroke={grid} strokeWidth="1.5" />
+      <line x1="20" y1={firstDivider + orders.length * rowH} x2="280" y2={firstDivider + orders.length * rowH} stroke={grid} strokeWidth="1.5" />
     </svg>
   );
 }
@@ -288,21 +303,38 @@ function MedicationsPreview(): JSX.Element {
         Active Medications
       </text>
 
-      {meds.map((m) => (
-        <g key={m.name}>
-          <line x1="20" y1={m.top} x2="280" y2={m.top} stroke={grid} strokeWidth="1.5" />
-          <rect x="20" y={m.top + 15} width="26" height="26" rx="6" fill={rxBg} />
-          <text x="33" y={m.top + 32} fontFamily={f} fontSize="12" fontWeight="700" fill={rxFg} textAnchor="middle">
-            Rx
-          </text>
-          <text x="58" y={m.top + 26} fontFamily={f} fontSize="12" fontWeight="600" fill={tc}>
-            {m.name}
-          </text>
-          <text x="58" y={m.top + 42} fontFamily={f} fontSize="10" fill={muted}>
-            {m.sig}
-          </text>
-        </g>
-      ))}
+      {meds.map((m) => {
+        const nameY = m.top + 23;
+        const sigY = m.top + 38; // tightened gap so the two lines read as one block
+        const chipSize = 28;
+        // Center the Rx chip on the optical center of the name + sig block.
+        const blockCenterY = (nameY - 9 + (sigY + 2)) / 2;
+        const chipY = blockCenterY - chipSize / 2;
+        return (
+          <g key={m.name}>
+            <line x1="20" y1={m.top} x2="280" y2={m.top} stroke={grid} strokeWidth="1.5" />
+            <rect x="20" y={chipY} width={chipSize} height={chipSize} rx="6" fill={rxBg} />
+            <text
+              x={20 + chipSize / 2}
+              y={blockCenterY}
+              fontFamily={f}
+              fontSize="12"
+              fontWeight="700"
+              fill={rxFg}
+              textAnchor="middle"
+              dominantBaseline="central"
+            >
+              Rx
+            </text>
+            <text x="58" y={nameY} fontFamily={f} fontSize="12" fontWeight="600" fill={tc}>
+              {m.name}
+            </text>
+            <text x="58" y={sigY} fontFamily={f} fontSize="10" fill={muted}>
+              {m.sig}
+            </text>
+          </g>
+        );
+      })}
       <line x1="20" y1="216" x2="280" y2="216" stroke={grid} strokeWidth="1.5" />
     </svg>
   );
@@ -312,25 +344,58 @@ function CareCoordinationPreview(): JSX.Element {
   const f = 'system-ui,-apple-system,sans-serif';
   const tc = '#212529';
   const muted = '#868e96';
-  const blue = '#228be6';
-  const boxBorder = '#ced4da';
+  const grid = '#e9ecef';
+  const badgeBg = '#E0E8F3';
+  const badgeFg = '#1971c2';
+  const selectedBg = '#F2F3F5';
+  const padX = 12;
+  const badgeH = 18;
+  const badgeInset = 7; // gap from badge to card's right edge — mirrors the card's top padding
+  const dividerY = 48;
+  const lineGap = 15; // baseline-to-baseline within a task
+  const blockGap = 30; // gap between tasks (and between the divider and the first task)
 
   const tasks = [
-    { top: 52, label: 'Schedule follow-up visit', done: true, chip: null },
-    { top: 96, label: 'Send referral to Cardiology', done: true, chip: null },
     {
-      top: 140,
-      label: 'Review lab results',
-      done: false,
-      chip: { text: 'Today', bg: '#ffe3e3', fg: '#e03131', w: 48 },
+      title: 'Schedule cardiology follow-up',
+      due: 'Due Mar 15, 2025',
+      patient: 'Sarah Mitchell',
+      assignee: 'Dr. A. Nguyen',
+      status: 'Ready',
+      badgeW: 44,
+      selected: false,
     },
     {
-      top: 184,
-      label: 'Call patient re: meds',
-      done: false,
-      chip: { text: 'Tomorrow', bg: '#e7f5ff', fg: '#1971c2', w: 66 },
+      title: 'Send PT referral',
+      due: null,
+      patient: 'James Ortiz',
+      assignee: 'Care Coordinator',
+      status: 'In Progress',
+      badgeW: 72,
+      selected: true,
+    },
+    {
+      title: 'Review care plan goals',
+      due: 'Due Mar 8, 2025',
+      patient: 'Sarah Mitchell',
+      assignee: 'Dr. A. Nguyen',
+      status: 'Requested',
+      badgeW: 66,
+      selected: false,
     },
   ];
+
+  // Stack tasks sequentially: each task's title baseline sits blockGap below the
+  // previous task's last line (and the first sits blockGap below the divider), so
+  // the inter-task spacing and the divider-to-first-task spacing are identical.
+  let baseline = dividerY;
+  const layout = tasks.map((t) => {
+    const lines = t.due ? 4 : 3; // title, [due], for, assigned
+    const titleY = baseline + blockGap;
+    const blockH = (lines - 1) * lineGap;
+    baseline = titleY + blockH;
+    return { titleY, blockH };
+  });
 
   return (
     <svg
@@ -341,55 +406,62 @@ function CareCoordinationPreview(): JSX.Element {
     >
       <rect x="0" y="0" width="300" height="300" fill="white" fillOpacity="0.9" />
 
-      <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>
-        Care Tasks
+      <text x={padX} y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>
+        My Tasks
       </text>
+      <line x1={padX} y1={dividerY} x2={300 - padX} y2={dividerY} stroke={grid} strokeWidth="1.5" />
 
-      {tasks.map((t) => (
-        <g key={t.label}>
-          {t.done ? (
-            <>
-              <rect x="20" y={t.top} width="16" height="16" rx="4" fill={blue} />
-              <path
-                d={`M24 ${t.top + 8} L27 ${t.top + 11} L32 ${t.top + 4}`}
-                stroke="white"
-                strokeWidth="2"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+      {tasks.map((t, i) => {
+        const textX = padX + 8;
+        const { titleY, blockH } = layout[i];
+        const badgeX = 300 - padX - badgeInset - t.badgeW;
+        const badgeY = titleY - 13;
+        const dueY = t.due ? titleY + lineGap : titleY;
+        const forY = t.due ? titleY + lineGap * 2 : titleY + lineGap;
+        const assignY = forY + lineGap;
+
+        return (
+          <g key={t.title}>
+            {t.selected && (
+              <rect
+                x={padX}
+                y={titleY - 20}
+                width={300 - padX * 2}
+                height={blockH + 30}
+                rx="8"
+                fill={selectedBg}
               />
-            </>
-          ) : (
-            <rect x="20" y={t.top} width="16" height="16" rx="4" fill="white" stroke={boxBorder} strokeWidth="1.5" />
-          )}
-          <text
-            x="46"
-            y={t.top + 13}
-            fontFamily={f}
-            fontSize="12"
-            fill={t.done ? muted : tc}
-            textDecoration={t.done ? 'line-through' : undefined}
-          >
-            {t.label}
-          </text>
-          {t.chip && (
-            <>
-              <rect x={280 - t.chip.w} y={t.top - 1} width={t.chip.w} height="18" rx="9" fill={t.chip.bg} />
-              <text
-                x={280 - t.chip.w / 2}
-                y={t.top + 12}
-                fontFamily={f}
-                fontSize="9.5"
-                fontWeight="600"
-                fill={t.chip.fg}
-                textAnchor="middle"
-              >
-                {t.chip.text}
+            )}
+            <text x={textX} y={titleY} fontFamily={f} fontSize="12" fontWeight="700" fill={tc}>
+              {t.title}
+            </text>
+            <rect x={badgeX} y={badgeY} width={t.badgeW} height={badgeH} rx="9" fill={badgeBg} />
+            <text
+              x={badgeX + t.badgeW / 2}
+              y={badgeY + badgeH / 2}
+              fontFamily={f}
+              fontSize="9"
+              fontWeight="600"
+              fill={badgeFg}
+              textAnchor="middle"
+              dominantBaseline="central"
+            >
+              {t.status}
+            </text>
+            {t.due && (
+              <text x={textX} y={dueY} fontFamily={f} fontSize="10" fontWeight="500" fill={muted}>
+                {t.due}
               </text>
-            </>
-          )}
-        </g>
-      ))}
+            )}
+            <text x={textX} y={forY} fontFamily={f} fontSize="10" fill={muted}>
+              For: {t.patient}
+            </text>
+            <text x={textX} y={assignY} fontFamily={f} fontSize="10" fill={muted}>
+              Assigned to {t.assignee}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }
@@ -397,15 +469,31 @@ function CareCoordinationPreview(): JSX.Element {
 function MessagingPreview(): JSX.Element {
   const f = 'system-ui,-apple-system,sans-serif';
   const tc = '#212529';
+  const grid = '#e9ecef';
   const grayBubble = '#f1f3f5';
   const blue = '#228be6';
 
+  const fontSize = 11.5;
+  const padX = 13; // horizontal padding inside each bubble
+  const charW = 5.4; // fallback advance-width estimate until the text is measured on the client
+  const leftX = 20; // left edge of incoming bubbles / left text anchor
+  const rightX = 280; // right edge of outgoing bubbles / right text anchor
+
   const msgs = [
-    { top: 50, w: 186, text: 'Hi — question about my Rx', out: false },
-    { top: 94, w: 158, text: 'Sure, how can I help?', out: true },
-    { top: 138, w: 232, text: 'Can I get a refill on Lisinopril?', out: false },
-    { top: 182, w: 204, text: 'Done! Sent to your pharmacy.', out: true },
+    { top: 58, text: 'Hi — question about my Rx', out: false },
+    { top: 102, text: 'Sure, how can I help?', out: true },
+    { top: 146, text: 'Can I get a refill on Lisinopril?', out: false },
+    { top: 190, text: 'Done! Sent to your pharmacy.', out: true },
   ];
+
+  // The bubble rects hug the text: measure each label's real rendered width once
+  // mounted (a char-count estimate can't account for narrow glyphs like i, l, spaces).
+  // Text anchors are fixed (incoming left, outgoing right), so only the rects resize.
+  const textRefs = useRef<(SVGTextElement | null)[]>([]);
+  const [textWidths, setTextWidths] = useState<number[]>([]);
+  useEffect(() => {
+    setTextWidths(textRefs.current.map((el) => el?.getComputedTextLength() ?? 0));
+  }, []);
 
   return (
     <svg
@@ -419,13 +507,27 @@ function MessagingPreview(): JSX.Element {
       <text x="20" y="32" fontFamily={f} fontSize="16" fontWeight="700" fill={tc}>
         Messages
       </text>
+      <line x1="20" y1="46" x2="280" y2="46" stroke={grid} strokeWidth="1.5" />
 
-      {msgs.map((m) => {
-        const x = m.out ? 280 - m.w : 20;
+      {msgs.map((m, i) => {
+        const textW = textWidths[i] || m.text.length * charW;
+        const w = textW + padX * 2;
+        const bubbleX = m.out ? rightX - w : leftX;
+        const anchorX = m.out ? rightX - padX : leftX + padX;
         return (
           <g key={m.text}>
-            <rect x={x} y={m.top} width={m.w} height="30" rx="12" fill={m.out ? blue : grayBubble} />
-            <text x={x + 14} y={m.top + 20} fontFamily={f} fontSize="11.5" fill={m.out ? 'white' : tc}>
+            <rect x={bubbleX} y={m.top} width={w} height="30" rx="12" fill={m.out ? blue : grayBubble} />
+            <text
+              ref={(el) => {
+                textRefs.current[i] = el;
+              }}
+              x={anchorX}
+              y={m.top + 20}
+              fontFamily={f}
+              fontSize={fontSize}
+              fill={m.out ? 'white' : tc}
+              textAnchor={m.out ? 'end' : 'start'}
+            >
               {m.text}
             </text>
           </g>
@@ -506,10 +608,10 @@ export function ProductsCapabilities(): JSX.Element {
     <div id="capabilities" className={styles.section}>
       {/* ---- header ---- */}
       <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionHeadline}>Combine our Capabilities for custom solutions.</h2>
+        <h2 className={styles.sectionHeadline}>Combine our capabilities for custom solutions</h2>
         <p className={styles.sectionLead}>
           We&apos;ve solved the hard parts of clinical workflows for you—backed by first- and third-party integrations.
-          Each Capability ships with a recommended data model, set of operations, and even UI components, but is still
+          Each capability ships with a recommended data model, set of operations, and even UI components, but is still
           fully configurable for even your most unique workflows.
         </p>
       </div>

@@ -66,8 +66,8 @@
   --landing-btn-weight: 500;
   --landing-btn-gap: 0.5rem;
 
-  --landing-shadow-card: 0px 8px 24px rgba(var(--oc-orange-1-rgb), 0.75);
-  --landing-shadow-card-border: 1px solid rgba(var(--oc-orange-0-rgb), 1);
+  --landing-shadow-card: 0px 8px 24px rgba(var(--oc-indigo-2-rgb), 0.5);
+  --landing-shadow-card-border: 1px solid rgba(var(--oc-indigo-1-rgb), 1);
   --landing-shadow-media: 0px 8px 40px rgba(var(--oc-orange-3-rgb), 0.75);
   --landing-shadow-cta-white: 0px 8px 16px rgba(var(--oc-violet-1-rgb), 0.5),
     0px -1px 16px rgba(var(--oc-violet-1-rgb), 0.75);

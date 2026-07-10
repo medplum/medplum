@@ -45,9 +45,14 @@ interface BuildDropdownProps {
   /* When set, replaces the default trigger styling so the button can match a host page's
      CTA (e.g. the products hero's primary button). The dropdown menu is unchanged. */
   triggerClassName?: string;
+  /* Overrides the trigger label. Defaults to "Build on the Platform". */
+  label?: string;
 }
 
-export function BuildDropdown({ triggerClassName }: BuildDropdownProps = {}): JSX.Element {
+export function BuildDropdown({
+  triggerClassName,
+  label = 'Build on the Platform',
+}: BuildDropdownProps = {}): JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -73,7 +78,7 @@ export function BuildDropdown({ triggerClassName }: BuildDropdownProps = {}): JS
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        Build on the Platform
+        {label}
         <IconChevronDown size={18} className={styles.chevron} />
       </button>
 

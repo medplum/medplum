@@ -5,7 +5,7 @@
   font-family: var(--landing-font-display);
   background: var(--oc-grape-0);
   color: var(--landing-color-heading);
-  padding: 6rem 0 4rem;
+  padding: 6rem 0 2rem;
   position: relative;
   margin-top: 10rem;
 }
@@ -24,25 +24,19 @@
 .inner {
   max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: 0 var(--layout-padding);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 6rem;
+  align-items: start;
+  padding-left: 2rem;
+}
+
+.copyCol {
   text-align: left;
-}
-
-@media (max-width: 996px) {
-  .inner {
-    padding: 0 var(--layout-padding-md);
-  }
-
-  .section {
-    padding: 4rem 0 3rem;
-    margin-top: 6rem;
-  }
-}
-
-@media (max-width: 600px) {
-  .inner {
-    padding: 0 var(--layout-padding-sm);
-  }
+  padding-top: 2rem;
 }
 
 .headline {
@@ -57,13 +51,12 @@
 }
 
 .body {
-  font-family: var(--landing-font-body);
-  font-size: var(--landing-lead-size);
-  line-height: var(--landing-lead-leading);
-  font-weight: var(--landing-lead-weight);
-  color: var(--landing-color-body-alt);
+  font-family: var(--landing-font-display);
+  color: #4d4d4d;
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 400;
   margin: 1rem 0 2rem;
-  max-width: 64%;
 }
 
 .buttons {
@@ -71,14 +64,16 @@
   gap: var(--landing-stack-gap);
   justify-content: flex-start;
   flex-wrap: wrap;
+  align-items: center;
 }
 
-.whiteButton,
-.purpleButton {
+/* Primary dropdown trigger (passed to BuildDropdown) + secondary link share one shape. */
+.startButton,
+.whiteButton {
   display: inline-flex;
   align-items: center;
   gap: var(--landing-btn-gap);
-  font-family: inherit;
+  font-family: var(--landing-font-display);
   font-weight: var(--landing-btn-weight);
   font-size: var(--landing-btn-size);
   padding: var(--landing-btn-padding);
@@ -91,6 +86,16 @@
   justify-content: center;
 }
 
+.startButton {
+  background: var(--oc-grape-8);
+  color: #fff;
+}
+
+.startButton:hover {
+  background: var(--oc-grape-9);
+  color: #fff;
+}
+
 .whiteButton {
   background: #fff;
   color: var(--landing-color-heading);
@@ -100,17 +105,6 @@
 .whiteButton:hover {
   background: #fff;
   color: var(--oc-grape-8);
-  text-decoration: none;
-}
-
-.purpleButton {
-  background: var(--oc-grape-8);
-  color: #fff;
-}
-
-.purpleButton:hover {
-  background: var(--oc-grape-9);
-  color: #fff;
   text-decoration: none;
 }
 
@@ -133,16 +127,142 @@
   color: var(--oc-grape-5);
 }
 
+[data-theme='dark'] .body {
+  color: #b2b2b2;
+}
+
+/* ---- Browser window (the custom app being built) ----------------------
+   The right & bottom edges fade to the section background, so the window reads as a crop
+   of the top-left of a larger, only-partially-seen app. */
+
+/* Drop-shadow on the column wrapper (not the masked node) so the shadow isn't clipped.
+   Negative offset biases it toward the top-left; the inner mask still fades right/bottom. */
+.browserCol {
+  filter: drop-shadow(-10px -8px 36px rgba(var(--oc-grape-2-rgb), 0.75));
+  width: 100%;
+  max-width: 1024px;
+  justify-self: end;
+}
+
+.browser {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1024px;
+  background: var(--landing-surface-elevated);
+  border-radius: 12px 0 0 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 80%, transparent 100%),
+    linear-gradient(to bottom, #000 80%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, #000 80%, transparent 95%),
+    linear-gradient(to bottom, #000 20%, transparent 80%);
+  mask-composite: intersect;
+}
+
+.browserBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--landing-surface-inset);
+  border-bottom: 1px solid var(--landing-divider);
+}
+
+.browserDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.browserDotRed {
+  background: #ff5f57;
+}
+
+.browserDotYellow {
+  background: #febc2e;
+}
+
+.browserDotGreen {
+  background: #28c840;
+}
+
+.browserAddress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  margin-left: 8px;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: var(--landing-surface-elevated);
+  border: 1px solid var(--landing-border);
+  font-family: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  font-size: 10.5px;
+  color: var(--landing-color-muted);
+}
+
+.browserAddress svg {
+  color: var(--oc-gray-6);
+  flex-shrink: 0;
+}
+
+/* Native 1024×731 screenshots — frame matches source aspect ratio so slides are not cropped or upscaled. */
+.browserImage {
+  position: relative;
+  aspect-ratio: 1024 / 731;
+  overflow: hidden;
+  background: var(--landing-surface-inset);
+}
+
+/* Stacked slides that cross-fade. Sized to the frame at native aspect ratio (no object-fit scaling). */
+.slide {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-position: left top;
+  opacity: 0;
+  transition: opacity 250ms ease;
+}
+
+.slideActive {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide {
+    transition: none;
+  }
+}
+
+[data-theme='dark'] .browserCol {
+  filter: drop-shadow(-10px -8px 36px rgba(0, 0, 0, 0.45));
+}
+
+[data-theme='dark'] .browserAddress svg {
+  color: var(--oc-green-4);
+}
+
+/* ---- Responsive ------------------------------------------------------- */
 @media (max-width: 996px) {
-  .body {
-    width: 90%;
-    max-width: none;
+  .section {
+    padding: 4rem 0 2rem;
+    margin-top: 6rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
   }
 }
 
 @media (max-width: 600px) {
   .buttons {
     flex-direction: column;
+    align-items: stretch;
     width: 100%;
   }
 
