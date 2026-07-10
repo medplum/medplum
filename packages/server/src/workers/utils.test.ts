@@ -381,14 +381,15 @@ describe('worker utils', () => {
 
     test('logs an error when the underlying call rejects', async () => {
       const loggerErrorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
-      const setGlobalConcurrency = vi.fn().mockRejectedValue(new Error('redis down'));
+      const err = new Error('redis down');
+      const setGlobalConcurrency = vi.fn().mockRejectedValue(err);
       const queue = { name: 'TestQueue', setGlobalConcurrency } as unknown as Queue;
 
       applyGlobalConcurrency(queue, { globalConcurrency: 3 });
       await vi.waitFor(() =>
         expect(loggerErrorSpy).toHaveBeenCalledWith('Failed to apply global concurrency for TestQueue', {
           globalConcurrency: 3,
-          error: 'redis down',
+          err,
         })
       );
       loggerErrorSpy.mockRestore();
