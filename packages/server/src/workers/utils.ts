@@ -259,6 +259,30 @@ export function addVerboseQueueLogging<TDataType>(
   });
 }
 
+/**
+ * Applies the configured global concurrency limit to a queue.
+ *
+ * Global concurrency is a queue-level property persisted in Redis, so it must be set imperatively
+ * rather than through queue/worker constructor options. When `globalConcurrency` is configured, the
+ * limit is set; when it is omitted, any previously-set limit is removed so that clearing the config
+ * takes effect on the next startup.
+ *
+ * The underlying Redis calls are fire-and-forget: failures are logged but do not block worker init.
+ * @param queue - The queue to apply the limit to.
+ * @param config - The merged BullMQ config for the queue's worker, if any.
+ */
+export function applyGlobalConcurrency(queue: Queue, config: Partial<MedplumBullmqConfig> | undefined): void {
+  const globalConcurrency = config?.globalConcurrency;
+  const promise =
+    globalConcurrency === undefined ? queue.removeGlobalConcurrency() : queue.setGlobalConcurrency(globalConcurrency);
+  promise.catch((err) => {
+    globalLogger.error(`Failed to apply global concurrency for ${queue.name}`, {
+      globalConcurrency,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  });
+}
+
 export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<never> {
   if (job.token) {
     const delayMs = 60_000;

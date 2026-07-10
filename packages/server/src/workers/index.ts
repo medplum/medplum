@@ -15,7 +15,7 @@ import { initReindexWorker } from './reindex';
 import { initSetAccountsWorker } from './set-accounts';
 import { initSubscriptionWorker } from './subscription';
 import type { WorkerInitializer } from './utils';
-import { queueRegistry } from './utils';
+import { applyGlobalConcurrency, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
   { name: 'dispatch', init: initDispatchWorker },
@@ -45,6 +45,7 @@ export function initWorkers(config: MedplumServerConfig): void {
     // a queue can be disabled, in which case, don't register it
     if (queue) {
       queueRegistry.add(queueName, queue, worker);
+      applyGlobalConcurrency(queue, getWorkerBullmqConfig(config, name));
     }
   }
   globalLogger.debug('Workers initialized');

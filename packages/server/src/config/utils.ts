@@ -154,6 +154,7 @@ const integerKeys = new Set([
   'smtp.port',
 
   'bullmq.concurrency',
+  'bullmq.globalConcurrency',
 
   'fission.routerPort',
 ]);
