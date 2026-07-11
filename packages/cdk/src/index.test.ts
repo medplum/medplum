@@ -649,4 +649,51 @@ describe('Infra', () => {
       0
     );
   });
+
+  test('ALB target group uses IP target type', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumIpTargetGroupStack',
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const app = new App();
+    const stack = new MedplumStack(app, config);
+    const template = Template.fromStack(stack.primaryStack);
+
+    template.resourcePropertiesCountIs('AWS::ElasticLoadBalancingV2::TargetGroup', { TargetType: 'ip' }, 1);
+    template.resourceCountIs('AWS::ECS::Service', 1);
+  });
+
+  test('Disabling ECS skips Fargate service deployment', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumEcsDisabledStack',
+      ecsEnabled: false,
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const app = new App();
+    const stack = new MedplumStack(app, config);
+    const template = Template.fromStack(stack.primaryStack);
+
+    template.resourcePropertiesCountIs('AWS::ElasticLoadBalancingV2::TargetGroup', { TargetType: 'ip' }, 1);
+    template.resourceCountIs('AWS::ECS::Service', 0);
+  });
+
+  test('Enabling EKS provisions cluster and node group', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumEksEnabledStack',
+      eksEnabled: true,
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const app = new App();
+    const stack = new MedplumStack(app, config);
+    const template = Template.fromStack(stack.primaryStack);
+
+    template.hasResourceProperties('Custom::AWSCDK-EKS-Cluster', {
+      Config: Match.objectLike({ version: '1.30' }),
+    });
+    template.resourceCountIs('AWS::EKS::Nodegroup', 1);
+    template.resourceCountIs('Custom::AWSCDK-EKS-HelmChart', 2);
+  });
 });

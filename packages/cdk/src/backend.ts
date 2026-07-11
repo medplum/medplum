@@ -6,6 +6,7 @@ import {
   Duration,
   RemovalPolicy,
   aws_ec2 as ec2,
+  aws_eks as eks,
   aws_ecs as ecs,
   aws_elasticache as elasticache,
   aws_elasticloadbalancingv2 as elbv2,
@@ -24,6 +25,8 @@ import { ClusterInstance, DBClusterStorageType, ParameterGroup } from 'aws-cdk-l
 import { Secret, SecretTargetAttachment } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import assert from 'node:assert';
+import { KubectlV30Layer } from '@aws-cdk/lambda-layer-kubectl-v30';
+import awsLbcIamPolicy from './eks/aws-lbc-iam-policy.json';
 import { buildWaf } from './waf';
 
 /**
@@ -52,8 +55,11 @@ export class BackEnd extends Construct {
   loadBalancerSecurityGroup?: ec2.ISecurityGroup;
   serviceContainer: ecs.ContainerDefinition;
   fargateSecurityGroup: ec2.SecurityGroup;
-  fargateService: ecs.FargateService;
+  fargateService?: ecs.FargateService;
   loadBalancer: elbv2.ApplicationLoadBalancer;
+  targetGroup?: elbv2.ApplicationTargetGroup;
+  eksCluster?: eks.Cluster;
+  loadBalancerController?: eks.HelmChart;
   mtlsLoadBalancer?: elbv2.ApplicationLoadBalancer;
   dnsRecord?: route53.ARecord;
   mtlsDnsRecord?: route53.ARecord;
@@ -538,24 +544,26 @@ export class BackEnd extends Construct {
     });
 
     // Fargate Services
-    this.fargateService = new ecs.FargateService(this, 'FargateService', {
-      cluster: this.ecsCluster,
-      taskDefinition: this.taskDefinition,
-      assignPublicIp: false,
-      vpcSubnets: {
-        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-      },
-      desiredCount: config.desiredServerCount,
-      securityGroups: [this.fargateSecurityGroup],
-      healthCheckGracePeriod: Duration.minutes(5),
-      minHealthyPercent: 100, // 50% is the default
-    });
+    if (config.ecsEnabled !== false) {
+      this.fargateService = new ecs.FargateService(this, 'FargateService', {
+        cluster: this.ecsCluster,
+        taskDefinition: this.taskDefinition,
+        assignPublicIp: false,
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        },
+        desiredCount: config.desiredServerCount,
+        securityGroups: [this.fargateSecurityGroup],
+        healthCheckGracePeriod: Duration.minutes(5),
+        minHealthyPercent: 100, // 50% is the default
+      });
 
-    // Add autoscaling
-    this.addAutoScaling(this.fargateService, config.fargateAutoScaling);
+      // Add autoscaling
+      this.addAutoScaling(this.fargateService, config.fargateAutoScaling);
 
-    // Add dependencies - make sure Fargate service is created after RDS and Redis
-    this.addServiceDependencies(this.fargateService, purposeRedisClusters);
+      // Add dependencies - make sure Fargate service is created after RDS and Redis
+      this.addServiceDependencies(this.fargateService, purposeRedisClusters);
+    }
 
     // Load Balancer logging
     if (config.loadBalancerLoggingBucket) {
@@ -602,6 +610,11 @@ export class BackEnd extends Construct {
         { mutualAuthenticationMode: elbv2.MutualAuthenticationMode.PASS_THROUGH },
         loadBalancingAlgorithm
       );
+    }
+
+    if (config.eksEnabled) {
+      assert(this.targetGroup, 'Target group is required before creating EKS resources');
+      this.createEksCluster(config, this.targetGroup);
     }
 
     if (this.rdsCluster) {
@@ -915,6 +928,164 @@ export class BackEnd extends Construct {
     this.addAutoScaling(serviceFargate, service.fargateAutoScaling, serviceId);
   }
 
+  private createEksCluster(config: MedplumInfraConfig, targetGroup: elbv2.ApplicationTargetGroup): void {
+    const clusterVersion = eks.KubernetesVersion.of(config.eksKubernetesVersion ?? '1.30');
+
+    this.eksCluster = new eks.Cluster(this, 'EksCluster', {
+      version: clusterVersion,
+      vpc: this.vpc,
+      vpcSubnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }],
+      defaultCapacity: 0,
+      clusterName: `medplum-${config.name}`,
+      kubectlLayer: new KubectlV30Layer(this, 'EksKubectlV30Layer'),
+    });
+
+    this.eksCluster.addNodegroupCapacity('MedplumNodeGroup', {
+      instanceTypes: [new ec2.InstanceType(config.eksNodeInstanceType ?? 't3.medium')],
+      desiredSize: config.eksDesiredNodeCount ?? 2,
+      minSize: config.eksMinNodeCount ?? 1,
+      maxSize: config.eksMaxNodeCount ?? 10,
+      subnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+    });
+
+    if (this.rdsCluster) {
+      this.rdsCluster.connections.allowDefaultPortFrom(this.eksCluster.clusterSecurityGroup);
+    }
+
+    if (this.rdsProxy) {
+      this.rdsProxy.connections.allowFrom(this.eksCluster.clusterSecurityGroup, ec2.Port.tcp(5432));
+    }
+
+    this.redisSecurityGroup.addIngressRule(this.eksCluster.clusterSecurityGroup, ec2.Port.tcp(6379));
+
+    this.installLoadBalancerController(config);
+    this.deployMedplumHelm(config, targetGroup);
+  }
+
+  private installLoadBalancerController(config: MedplumInfraConfig): void {
+    assert(this.eksCluster, 'EKS cluster must exist before installing the load balancer controller');
+
+    const lbcPolicy = new iam.Policy(this, 'AwsLbcPolicy', {
+      document: iam.PolicyDocument.fromJson(awsLbcIamPolicy),
+    });
+
+    const lbcServiceAccount = this.eksCluster.addServiceAccount('AwsLbcServiceAccount', {
+      name: 'aws-load-balancer-controller',
+      namespace: 'kube-system',
+    });
+    lbcServiceAccount.role.attachInlinePolicy(lbcPolicy);
+
+    this.loadBalancerController = this.eksCluster.addHelmChart('AwsLoadBalancerController', {
+      chart: 'aws-load-balancer-controller',
+      repository: 'https://aws.github.io/eks-charts',
+      namespace: 'kube-system',
+      version: '1.8.1',
+      values: {
+        clusterName: this.eksCluster.clusterName,
+        serviceAccount: {
+          create: false,
+          name: lbcServiceAccount.serviceAccountName,
+        },
+        region: config.region,
+        vpcId: this.vpc.vpcId,
+      },
+    });
+
+    this.loadBalancerController.node.addDependency(lbcServiceAccount);
+  }
+
+  private deployMedplumHelm(config: MedplumInfraConfig, targetGroup: elbv2.ApplicationTargetGroup): void {
+    assert(this.eksCluster, 'EKS cluster must exist before deploying Helm charts');
+    const [repository, tag] = splitContainerImage(config.serverImage);
+
+    const podServiceAccount = this.eksCluster.addServiceAccount('MedplumServiceAccount', {
+      name: 'medplum-server',
+      namespace: 'medplum',
+    });
+    podServiceAccount.role.attachInlinePolicy(
+      new iam.Policy(this, 'EksMedplumPodPolicy', {
+        document: iam.PolicyDocument.fromJson(this.taskRolePolicies.toJSON()),
+      })
+    );
+
+    const command = [
+      config.region === 'us-east-1' ? `aws:/medplum/${config.name}/` : `aws:${config.region}:/medplum/${config.name}/`,
+    ];
+    const deploymentEnv = Object.entries(config.environment ?? {}).map(([name, value]) => ({ name, value }));
+    const defaultHelmValues: Record<string, unknown> = {
+      global: {
+        configSource: {
+          type: command[0],
+        },
+      },
+      image: {
+        repository,
+        tag,
+      },
+      deployment: {
+        image: {
+          repository,
+          tag,
+        },
+        replicaCount: config.desiredServerCount,
+        env: deploymentEnv,
+        resources: {
+          requests: {
+            cpu: `${config.serverCpu}m`,
+            memory: `${config.serverMemory}Mi`,
+          },
+          limits: {
+            memory: `${config.serverMemory}Mi`,
+          },
+        },
+      },
+      serviceAccount: {
+        create: false,
+        name: podServiceAccount.serviceAccountName,
+      },
+      replicaCount: config.desiredServerCount,
+      resources: {
+        requests: {
+          cpu: `${config.serverCpu}m`,
+          memory: `${config.serverMemory}Mi`,
+        },
+        limits: {
+          memory: `${config.serverMemory}Mi`,
+        },
+      },
+      command,
+      env: config.environment,
+      ingress: {
+        deploy: true,
+        enabled: true,
+        domain: config.apiDomainName,
+        annotations: {
+          'kubernetes.io/ingress.class': 'alb',
+          'alb.ingress.kubernetes.io/target-type': 'ip',
+          'alb.ingress.kubernetes.io/load-balancer-arn': this.loadBalancer.loadBalancerArn,
+          'alb.ingress.kubernetes.io/target-group-arn': targetGroup.targetGroupArn,
+          'alb.ingress.kubernetes.io/scheme': config.apiInternetFacing !== false ? 'internet-facing' : 'internal',
+          'alb.ingress.kubernetes.io/healthcheck-path': '/healthcheck',
+        },
+        hosts: [{ host: config.apiDomainName, paths: [{ path: '/', pathType: 'Prefix' }] }],
+      },
+    };
+    const helmValues = deepMerge(defaultHelmValues, config.eksHelmValues);
+
+    const medplumChart = this.eksCluster.addHelmChart('MedplumServer', {
+      chart: 'medplum',
+      repository: 'https://charts.medplum.com',
+      namespace: 'medplum',
+      createNamespace: true,
+      values: helmValues,
+    });
+
+    medplumChart.node.addDependency(podServiceAccount);
+    if (this.loadBalancerController) {
+      medplumChart.node.addDependency(this.loadBalancerController);
+    }
+  }
+
   private createRedisCluster(
     id: string,
     options: { nodeType?: string; securityGroupId?: string; engine?: string; engineVersion?: string }
@@ -1012,6 +1183,7 @@ export class BackEnd extends Construct {
       vpc: this.vpc,
       port,
       protocol: elbv2.ApplicationProtocol.HTTP,
+      targetType: elbv2.TargetType.IP,
       healthCheck: {
         path: '/healthcheck',
         interval: Duration.seconds(30),
@@ -1020,8 +1192,11 @@ export class BackEnd extends Construct {
         unhealthyThresholdCount: 5,
       },
       loadBalancingAlgorithmType,
-      targets: [this.fargateService],
+      targets: this.fargateService ? [this.fargateService] : [],
     });
+    if (!namePrefix) {
+      this.targetGroup = targetGroup;
+    }
 
     const loadBalancer = new elbv2.ApplicationLoadBalancer(this, `${namePrefix}LoadBalancer`, {
       vpc: this.vpc,
@@ -1082,6 +1257,36 @@ function resolveLoadBalancingAlgorithmType(
         `Invalid loadBalancerAlgorithm '${value}'. Expected one of: round_robin, least_outstanding_requests, weighted_random`
       );
   }
+}
+
+function splitContainerImage(image: string): [repository: string, tag: string] {
+  const imageWithoutDigest = image.split('@')[0];
+  const slashIndex = imageWithoutDigest.lastIndexOf('/');
+  const tagIndex = imageWithoutDigest.lastIndexOf(':');
+  if (tagIndex > slashIndex) {
+    return [imageWithoutDigest.slice(0, tagIndex), imageWithoutDigest.slice(tagIndex + 1)];
+  }
+  return [imageWithoutDigest, 'latest'];
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function deepMerge(base: Record<string, unknown>, override?: Record<string, unknown>): Record<string, unknown> {
+  if (!override) {
+    return base;
+  }
+  const result: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(override)) {
+    const baseValue = result[key];
+    if (isObject(baseValue) && isObject(value)) {
+      result[key] = deepMerge(baseValue, value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
 }
 
 function getPostgresEngine(
