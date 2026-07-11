@@ -3,13 +3,13 @@
 import { badRequest, ContentType } from '@medplum/core';
 import type { Binary, Bundle, Parameters, Patient, SmartHealthLink } from '@medplum/fhirtypes';
 import express from 'express';
-import type { KeyLike } from 'jose';
 import { base64url, CompactEncrypt, CompactSign, exportJWK, generateKeyPair } from 'jose';
 import { deflateRawSync } from 'node:zlib';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import type { KeyLike } from '../../oauth/keys';
 import { createTestProject, initTestAuth } from '../../test.setup';
 
 const app = express();
