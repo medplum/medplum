@@ -92,3 +92,9 @@ fi
 
 export SERVER_DOCKER_IMAGE_DIGEST
 export SERVER_DOCKER_IMAGE="${SERVER_DOCKERHUB_REPOSITORY}@${SERVER_DOCKER_IMAGE_DIGEST}"
+
+# Persist values for subsequent GitHub Actions steps in the same job.
+if [[ -n "${GITHUB_ENV}" ]]; then
+  echo "SERVER_DOCKER_IMAGE_DIGEST=${SERVER_DOCKER_IMAGE_DIGEST}" >> "${GITHUB_ENV}"
+  echo "SERVER_DOCKER_IMAGE=${SERVER_DOCKER_IMAGE}" >> "${GITHUB_ENV}"
+fi
