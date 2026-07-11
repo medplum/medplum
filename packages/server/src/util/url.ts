@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import ipaddr from 'ipaddr.js';
 import dns from 'node:dns';
-import { Agent, buildConnector } from 'undici';
 import type { Dispatcher } from 'undici';
+import { Agent, buildConnector } from 'undici';
 import { getConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 
