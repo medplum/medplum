@@ -57,7 +57,7 @@ deploy_service() {
     --output json \
     | jq --arg repo "$SERVER_DOCKERHUB_REPOSITORY" --arg image "$IMAGE" '
         .containerDefinitions |= map(
-          if (.image | startswith($repo + ":") or startswith($repo + "@")) then .image = $image else . end
+          if (.image | startswith($repo + ":") or startswith($repo + "@sha256:")) then .image = $image else . end
         )
         | del(
             .taskDefinitionArn,
