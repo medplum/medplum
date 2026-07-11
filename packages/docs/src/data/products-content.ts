@@ -179,9 +179,21 @@ export const ALL_APPS: AppItem[] = [
 export const FEATURED_APPS = ALL_APPS.slice(0, 2);
 
 export const COMPLIANCE: ComplianceItem[] = [
-  { id: 'hipaa', label: 'HIPAA', sub: 'Compliant', img: '/img/compliance/HIPAA-Asclepius.svg', logoSize: { height: 46 } },
+  {
+    id: 'hipaa',
+    label: 'HIPAA',
+    sub: 'Compliant',
+    img: '/img/compliance/HIPAA-Asclepius.svg',
+    logoSize: { height: 46 },
+  },
   { id: 'soc2', label: 'SOC 2', sub: 'Type 2', img: '/img/compliance/soc.png', logoSize: { height: 30 } },
-  { id: 'hitrust', label: 'HITRUST', sub: 'CSF Certified', img: '/img/compliance/HITRUST.svg', logoSize: { height: 19 } },
+  {
+    id: 'hitrust',
+    label: 'HITRUST',
+    sub: 'CSF Certified',
+    img: '/img/compliance/HITRUST.svg',
+    logoSize: { height: 19 },
+  },
   {
     id: 'onc',
     label: 'ONC (+ HTI-4)',

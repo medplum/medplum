@@ -70,46 +70,34 @@ function FhirDatastoreExample(): JSX.Element {
             <span className={styles.dtBrace}>{'{'}</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;Bundle&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Bundle&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;type&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;searchset&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;searchset&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;total&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtNum}>3</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtNum}>3</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;entry&quot;</span>
             <span className={styles.dtPunct}>: [</span>
             {'\n    '}
-            <span className={styles.dtBrace}>{'{'}</span>
-            {' '}
-            <span className={styles.dtProp}>&quot;resource&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtBrace}>{'{'}</span>
+            <span className={styles.dtBrace}>{'{'}</span> <span className={styles.dtProp}>&quot;resource&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtBrace}>{'{'}</span>
             {'\n      '}
             <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;Patient&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Patient&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n      '}
             <span className={styles.dtProp}>&quot;name&quot;</span>
-            <span className={styles.dtPunct}>: [</span>{' '}
-            <span className={styles.dtBrace}>{'{'}</span>{' '}
+            <span className={styles.dtPunct}>: [</span> <span className={styles.dtBrace}>{'{'}</span>{' '}
             <span className={styles.dtProp}>&quot;family&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;Simpson&quot;</span>{' '}
-            <span className={styles.dtBrace}>{'}'}</span>{' '}
-            <span className={styles.dtPunct}>]</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Simpson&quot;</span>{' '}
+            <span className={styles.dtBrace}>{'}'}</span> <span className={styles.dtPunct}>]</span>
             {'\n    '}
-            <span className={styles.dtBrace}>{'}'}</span>
-            {' '}
-            <span className={styles.dtBrace}>{'}'}</span>
+            <span className={styles.dtBrace}>{'}'}</span> <span className={styles.dtBrace}>{'}'}</span>
             {'\n  '}
             <span className={styles.dtPunct}>]</span>
             {'\n'}
@@ -202,8 +190,7 @@ function SdkCodeExample(): JSX.Element {
             {';\n\n'}
             <span className={styles.dtKeyword}>const</span>
             {' medplum = '}
-            <span className={styles.dtKeyword}>new</span>{' '}
-            <span className={styles.dtFn}>MedplumClient</span>
+            <span className={styles.dtKeyword}>new</span> <span className={styles.dtFn}>MedplumClient</span>
             {'();\n\n'}
             <span className={styles.dtComment}>{'// Typed reads, searches, and writes'}</span>
             {'\n'}
@@ -283,8 +270,7 @@ function ComponentLibraryExample(): JSX.Element {
             <span className={styles.dtKeyword}>from</span>{' '}
             <span className={styles.dtStr}>&apos;@medplum/react&apos;</span>
             {';\n\n'}
-            <span className={styles.dtKeyword}>export function</span>{' '}
-            <span className={styles.dtFn}>Patients</span>
+            <span className={styles.dtKeyword}>export function</span> <span className={styles.dtFn}>Patients</span>
             {'() {\n  '}
             <span className={styles.dtKeyword}>return</span>
             {' (\n    <'}
@@ -316,10 +302,7 @@ function ComponentLibraryExample(): JSX.Element {
 
         <div className={styles.libTabs}>
           {LIB_COMPONENTS.map((component) => (
-            <span
-              key={component}
-              className={clsx(styles.libTab, component === 'SearchControl' && styles.libTabActive)}
-            >
+            <span key={component} className={clsx(styles.libTab, component === 'SearchControl' && styles.libTabActive)}>
               {component}
             </span>
           ))}
@@ -381,8 +364,7 @@ function BotsExample(): JSX.Element {
             <span className={styles.dtKeyword}>from</span>{' '}
             <span className={styles.dtStr}>&apos;@medplum/core&apos;</span>
             {';\n\n'}
-            <span className={styles.dtKeyword}>export async function</span>{' '}
-            <span className={styles.dtFn}>handler</span>
+            <span className={styles.dtKeyword}>export async function</span> <span className={styles.dtFn}>handler</span>
             {'(\n  medplum: '}
             <span className={styles.dtType}>MedplumClient</span>
             {',\n  event: '}
@@ -458,13 +440,11 @@ function SubscriptionsExample(): JSX.Element {
             <span className={styles.dtBrace}>{'{'}</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;Subscription&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Subscription&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;status&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;active&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;active&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;criteria&quot;</span>
@@ -477,8 +457,7 @@ function SubscriptionsExample(): JSX.Element {
             <span className={styles.dtBrace}>{'{'}</span>
             {'\n    '}
             <span className={styles.dtProp}>&quot;type&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;rest-hook&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;rest-hook&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n    '}
             <span className={styles.dtProp}>&quot;endpoint&quot;</span>
@@ -633,8 +612,7 @@ function AuthExample(): JSX.Element {
             {';\n\n'}
             <span className={styles.dtKeyword}>const</span>
             {' medplum = '}
-            <span className={styles.dtKeyword}>new</span>{' '}
-            <span className={styles.dtFn}>MedplumClient</span>
+            <span className={styles.dtKeyword}>new</span> <span className={styles.dtFn}>MedplumClient</span>
             {'();\n\n'}
             <span className={styles.dtComment}>{'// Route through Medplum or your own IdP'}</span>
             {'\n'}
@@ -709,28 +687,21 @@ function AccessControlExample(): JSX.Element {
             <span className={styles.dtBrace}>{'{'}</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;AccessPolicy&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;AccessPolicy&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;name&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;Front Desk&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Front Desk&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;resource&quot;</span>
             <span className={styles.dtPunct}>: [</span>
             {'\n    '}
-            <span className={styles.dtBrace}>{'{'}</span>
-            {' '}
+            <span className={styles.dtBrace}>{'{'}</span>{' '}
             <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;Patient&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {' '}
-            <span className={styles.dtProp}>&quot;readonly&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtKeyword}>true</span>{' '}
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Patient&quot;</span>
+            <span className={styles.dtPunct}>,</span> <span className={styles.dtProp}>&quot;readonly&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtKeyword}>true</span>{' '}
             <span className={styles.dtBrace}>{'}'}</span>
             {'\n  '}
             <span className={styles.dtPunct}>]</span>
@@ -803,23 +774,19 @@ function MultiTenancyExample(): JSX.Element {
             <span className={styles.dtBrace}>{'{'}</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;Project&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Project&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;name&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;Northwind Clinic&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Northwind Clinic&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;strictMode&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtKeyword}>true</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtKeyword}>true</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;superAdmin&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtKeyword}>false</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtKeyword}>false</span>
             {'\n'}
             <span className={styles.dtBrace}>{'}'}</span>
           </code>
@@ -881,13 +848,11 @@ function AuditLoggingExample(): JSX.Element {
             <span className={styles.dtBrace}>{'{'}</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;AuditEvent&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;AuditEvent&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;action&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;R&quot;</span>
+            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;R&quot;</span>
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;recorded&quot;</span>
@@ -896,11 +861,10 @@ function AuditLoggingExample(): JSX.Element {
             <span className={styles.dtPunct}>,</span>
             {'\n  '}
             <span className={styles.dtProp}>&quot;agent&quot;</span>
-            <span className={styles.dtPunct}>: [{ '{' } </span>
+            <span className={styles.dtPunct}>: [{'{'} </span>
             <span className={styles.dtProp}>&quot;who&quot;</span>
             <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;Practitioner/nguyen&quot;</span>
-            {' '}
+            <span className={styles.dtStr}>&quot;Practitioner/nguyen&quot;</span>{' '}
             <span className={styles.dtPunct}>{'}]'}</span>
             {'\n'}
             <span className={styles.dtBrace}>{'}'}</span>
@@ -926,7 +890,8 @@ function AuditLoggingExample(): JSX.Element {
             <div key={entry.time + entry.actor} className={styles.auditRow}>
               <span className={clsx(styles.auditAction, styles[entry.cls])}>{entry.action}</span>
               <span className={styles.auditText}>
-                <span className={styles.auditActor}>{entry.actor}</span> · <span className={styles.auditTarget}>{entry.target}</span>
+                <span className={styles.auditActor}>{entry.actor}</span> ·{' '}
+                <span className={styles.auditTarget}>{entry.target}</span>
               </span>
               <span className={styles.auditTime}>{entry.time}</span>
             </div>

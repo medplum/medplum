@@ -271,7 +271,14 @@ function DiagnosticOrdersPreview(): JSX.Element {
           </g>
         );
       })}
-      <line x1="20" y1={firstDivider + orders.length * rowH} x2="280" y2={firstDivider + orders.length * rowH} stroke={grid} strokeWidth="1.5" />
+      <line
+        x1="20"
+        y1={firstDivider + orders.length * rowH}
+        x2="280"
+        y2={firstDivider + orders.length * rowH}
+        stroke={grid}
+        strokeWidth="1.5"
+      />
     </svg>
   );
 }
@@ -423,14 +430,7 @@ function CareCoordinationPreview(): JSX.Element {
         return (
           <g key={t.title}>
             {t.selected && (
-              <rect
-                x={padX}
-                y={titleY - 20}
-                width={300 - padX * 2}
-                height={blockH + 30}
-                rx="8"
-                fill={selectedBg}
-              />
+              <rect x={padX} y={titleY - 20} width={300 - padX * 2} height={blockH + 30} rx="8" fill={selectedBg} />
             )}
             <text x={textX} y={titleY} fontFamily={f} fontSize="12" fontWeight="700" fill={tc}>
               {t.title}
