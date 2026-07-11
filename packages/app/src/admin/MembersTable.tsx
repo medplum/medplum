@@ -38,6 +38,11 @@ const MFA_ENROLLMENT_COLUMN_NAMES: Record<MfaMethod, string> = {
   email: 'MFA: Email',
 };
 
+// Keep the status icons within a single text line's height so a companion row is never
+// taller than a normal (single-line) SearchControl row. Combined with the measured row
+// heights (see `measureRowHeights`), this lets the two tables line up exactly.
+const STATUS_ICON_SIZE = 16;
+
 /**
  * A read-only, computed column rendered alongside the {@link SearchControl} results.
  *
@@ -150,12 +155,22 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
           const user = userId ? memberUsers[userId] : undefined;
           return user?.project ? (
             <>
-              <IconCheck color="var(--mantine-color-blue-6)" aria-hidden="true" />
+              <IconCheck
+                size={STATUS_ICON_SIZE}
+                color="var(--mantine-color-blue-6)"
+                style={{ verticalAlign: 'middle' }}
+                aria-hidden="true"
+              />
               <VisuallyHidden>Project-scoped</VisuallyHidden>
             </>
           ) : (
             <>
-              <IconX color="var(--mantine-color-gray-6)" aria-hidden="true" />
+              <IconX
+                size={STATUS_ICON_SIZE}
+                color="var(--mantine-color-gray-6)"
+                style={{ verticalAlign: 'middle' }}
+                aria-hidden="true"
+              />
               <VisuallyHidden>Not project-scoped</VisuallyHidden>
             </>
           );
@@ -180,12 +195,22 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
               }
               return getEnrolledMfaMethods(user).includes(method) ? (
                 <>
-                  <IconCheck color="var(--mantine-color-blue-6)" aria-hidden="true" />
+                  <IconCheck
+                    size={STATUS_ICON_SIZE}
+                    color="var(--mantine-color-blue-6)"
+                    style={{ verticalAlign: 'middle' }}
+                    aria-hidden="true"
+                  />
                   <VisuallyHidden>Enrolled</VisuallyHidden>
                 </>
               ) : (
                 <>
-                  <IconX color="var(--mantine-color-gray-6)" aria-hidden="true" />
+                  <IconX
+                    size={STATUS_ICON_SIZE}
+                    color="var(--mantine-color-gray-6)"
+                    style={{ verticalAlign: 'middle' }}
+                    aria-hidden="true"
+                  />
                   <VisuallyHidden>Not enrolled</VisuallyHidden>
                 </>
               );
