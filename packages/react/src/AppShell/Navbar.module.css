@@ -118,6 +118,26 @@
   }
 }
 
+.userLink {
+  height: auto;
+  min-height: 36px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.userLinkLabel {
+  display: flex;
+  flex-direction: column;
+  margin-left: 8px;
+  min-width: 0;
+  opacity: 0;
+  transition: opacity 150ms ease;
+
+  &[data-opened] {
+    opacity: 1;
+  }
+}
+
 .iconWrapper {
   position: relative;
   display: flex;
