@@ -79,14 +79,15 @@ export async function valueSetValidateOperation(req: FhirRequest): Promise<FhirR
 export async function validateCodingInValueSet(
   repo: Repository,
   valueSet: ValueSet,
-  codings: Coding[]
+  codings: Coding[],
+  visited?: Set<string>
 ): Promise<Coding | undefined> {
   let found: Coding | undefined;
   if (valueSet.expansion && !valueSet.expansion.parameter) {
     found = valueSet.expansion.contains?.find((e) => codings.some((c) => e.system === c.system && e.code === c.code));
   } else if (valueSet.compose) {
     for (const include of valueSet.compose.include) {
-      found = await findIncludedCode(repo, include, ...codings);
+      found = await findIncludedCode(repo, include, codings, visited);
       if (found) {
         break;
       }
@@ -104,8 +105,26 @@ export async function validateCodingInValueSet(
 async function findIncludedCode(
   repo: Repository,
   include: ValueSetComposeInclude,
-  ...codings: Coding[]
+  codings: Coding[],
+  visited?: Set<string>
 ): Promise<Coding | undefined> {
+  // Handle valueSet references — mirror the $expand behavior
+  if (include.valueSet) {
+    const visitedSet = visited ?? new Set<string>();
+    for (const url of include.valueSet) {
+      if (visitedSet.has(url)) {
+        continue; // Prevent circular references
+      }
+      visitedSet.add(url);
+      const referencedValueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
+      const found = await validateCodingInValueSet(repo, referencedValueSet, codings, visitedSet);
+      if (found) {
+        return found;
+      }
+    }
+    return undefined;
+  }
+
   if (!include.system) {
     throw new OperationOutcomeError(
       badRequest('Missing system URL for ValueSet include', 'ValueSet.compose.include.system')
