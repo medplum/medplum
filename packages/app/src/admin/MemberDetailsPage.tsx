@@ -9,6 +9,7 @@ import type { JSX } from 'react';
 import { useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { getProjectId } from '../utils';
+import { AccountSecurityCard } from './AccountSecurity';
 
 function getMemberListPath(pathname: string): string {
   if (pathname.includes('/admin/bots/')) {
@@ -75,6 +76,9 @@ export function MemberDetailsPage(): JSX.Element {
             <Alert color="yellow">This User is server-scoped and cannot be viewed in this project.</Alert>
           )}
         </>
+      )}
+      {isAdmin && user?.project && projectId && (
+        <AccountSecurityCard projectId={projectId} membershipId={membershipId} user={user} />
       )}
       {isAdmin && !isOwner && (
         <Group justify="flex-end" mt="xl">
