@@ -60,8 +60,8 @@ export function ProductsCta(): JSX.Element {
           <div className={styles.copyCol}>
             <h2 className={styles.headline}>Start building your own custom app with Medplum</h2>
             <p className={styles.body}>
-              Build and ship your own branded app with the workflows your organization needs, all running on our FHIR
-              data model, auth, and APIs. You own the experience and we&apos;ll handle the infrastructure underneath.
+              Build and ship your own branded app, for your organization or patients, all running on our FHIR data
+              model, auth, and APIs. You own the experience and we&apos;ll handle the infrastructure underneath.
             </p>
             <div className={styles.buttons}>
               <BuildDropdown label="Start Building" triggerClassName={styles.startButton} />

@@ -136,11 +136,11 @@
   background: var(--landing-surface-elevated);
   border-radius: 12px 0 0 0;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to right, #000 80%, transparent 100%),
-    linear-gradient(to bottom, #000 80%, transparent 100%);
+  -webkit-mask-image:
+    linear-gradient(to right, #000 80%, transparent 100%), linear-gradient(to bottom, #000 80%, transparent 100%);
   -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, #000 80%, transparent 95%),
-    linear-gradient(to bottom, #000 20%, transparent 80%);
+  mask-image:
+    linear-gradient(to right, #000 80%, transparent 95%), linear-gradient(to bottom, #000 20%, transparent 80%);
   mask-composite: intersect;
 }
 
@@ -182,7 +182,11 @@
   border-radius: 7px;
   background: var(--landing-surface-elevated);
   border: 1px solid var(--landing-border);
-  font-family: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Helvetica Neue',
+    sans-serif;
   font-size: 10.5px;
   color: var(--landing-color-muted);
 }

@@ -522,7 +522,14 @@ function ProductsDiagramV1() {
           {/* Your Apps — the custom app you build, with optional Medplum front-end libs. */}
           <div ref={refs.yourAppsBox} style={SECTION_WRAP}>
             <div style={SECTION_LABEL}>Your Apps</div>
-            <Card nodeRef={refs.customApps} kind="customer" icon="appWindow" name="Custom App" compact />
+            <Card
+              nodeRef={refs.customApps}
+              kind="customer"
+              icon="appWindow"
+              name="Custom App"
+              sub="(EHR, Patient Portal)"
+              compact
+            />
             <Card kind="customer" icon="components" name="Component Library" sub="Optional" compact />
             <Card kind="customer" icon="box" name="TypeScript / JS SDK" sub="Optional" compact />
           </div>

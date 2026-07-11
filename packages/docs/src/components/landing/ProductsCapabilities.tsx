@@ -610,9 +610,9 @@ export function ProductsCapabilities(): JSX.Element {
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionHeadline}>Combine our capabilities for custom solutions</h2>
         <p className={styles.sectionLead}>
-          We&apos;ve solved the hard parts of clinical workflows for you—backed by first- and third-party integrations.
-          Each capability ships with a recommended data model, set of operations, and even UI components, but is still
-          fully configurable for even your most unique workflows.
+          We&apos;ve solved the hard parts of clinical workflows and patient engagement for you—backed by first- and
+          third-party integrations. Each capability ships with a recommended data model, set of operations, and even UI
+          components, but are still fully configurable for the most unique operations.
         </p>
       </div>
 

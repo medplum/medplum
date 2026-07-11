@@ -104,7 +104,6 @@
 
 .tab:hover .tabTagline {
   color: var(--oc-gray-6);
-
 }
 
 /* Timer fill — runs left to right along the tab's divider over 10s. */
@@ -307,7 +306,6 @@
   background: var(--oc-grape-1);
   color: var(--oc-grape-8);
 }
-
 
 [data-theme='dark'] .tabProgress {
   background: var(--oc-grape-5);
