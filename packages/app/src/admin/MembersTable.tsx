@@ -8,7 +8,7 @@ import type { SearchLoadEvent } from '@medplum/react';
 import { SearchControl, useMedplum } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { getProjectId } from '../utils';
 import type { MfaMethod } from './mfa';
@@ -73,6 +73,13 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   // The most recent search-result rows, in SearchControl's render order, so the
   // companion table (see below) can render an aligned row for each member.
   const [rows, setRows] = useState<Resource[]>([]);
+  // The companion table is a separate <table> from SearchControl's, so CSS alone
+  // can't keep their rows the same height (a wrapped profile name makes a base row
+  // taller). We measure SearchControl's header/body row heights and apply them to
+  // the companion rows so the two tables line up exactly. See `measureRowHeights`.
+  const searchControlRef = useRef<HTMLDivElement>(null);
+  const [headerHeight, setHeaderHeight] = useState<number>();
+  const [rowHeights, setRowHeights] = useState<number[]>([]);
 
   // Load the project's allowed MFA methods to decide which enrollment columns to show.
   useEffect(() => {
@@ -189,6 +196,40 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
     return columns;
   }, [showMfaEnrollment, allowedMfaMethods, memberUsers]);
 
+  // Measure SearchControl's rendered row heights so the companion rows can match them.
+  // Reads SearchControl's DOM (header row + `search-control-row` body rows, in order);
+  // state is only updated when a height actually changes, to avoid render churn.
+  const measureRowHeights = useCallback((): void => {
+    const container = searchControlRef.current;
+    if (!container) {
+      return;
+    }
+    const headerEl = container.querySelector('thead tr');
+    const bodyEls = container.querySelectorAll('tbody [data-testid="search-control-row"]');
+    const nextHeader = headerEl ? headerEl.getBoundingClientRect().height : undefined;
+    const nextRows = Array.from(bodyEls, (el) => el.getBoundingClientRect().height);
+    setHeaderHeight((prev) => (prev === nextHeader ? prev : nextHeader));
+    setRowHeights((prev) =>
+      prev.length === nextRows.length && prev.every((h, i) => h === nextRows[i]) ? prev : nextRows
+    );
+  }, []);
+
+  // Re-measure after each render that can change row heights (new rows, enrollment data)
+  // and whenever the search table is resized (e.g. window resize re-wraps a profile name).
+  useLayoutEffect(() => {
+    if (!showMfaEnrollment) {
+      return undefined;
+    }
+    measureRowHeights();
+    const container = searchControlRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') {
+      return undefined;
+    }
+    const observer = new ResizeObserver(() => measureRowHeights());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [showMfaEnrollment, rows, memberUsers, measureRowHeights]);
+
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -246,13 +287,17 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
         // the shared SearchControl table. Render them in a companion table pinned to the
         // right whose rows track SearchControl's rows one-for-one (see `rows`/`handleLoad`).
         <Group align="flex-start" gap={0} wrap="nowrap">
-          <Box style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>{searchControl}</Box>
+          <Box ref={searchControlRef} style={{ flex: 1, minWidth: 0, overflowX: 'auto' }}>
+            {searchControl}
+          </Box>
           {rows.length > 0 && (
             // `w="auto"` and `flexShrink: 0` keep this table at its natural (narrow)
             // width so it doesn't stretch to 100% and squeeze the SearchControl to zero.
+            // Row heights are copied from SearchControl (see `measureRowHeights`) so the
+            // two tables line up exactly, even when a base row wraps to multiple lines.
             <Table w="auto" style={{ flexShrink: 0 }}>
               <Table.Thead>
-                <Table.Tr>
+                <Table.Tr style={{ height: headerHeight }}>
                   {extraColumns.map((col) => (
                     <Table.Th key={col.name} p={0}>
                       <Text fw={500} px="md" py="xs" style={{ whiteSpace: 'nowrap' }}>
@@ -263,10 +308,10 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {rows.map((resource) => (
+                {rows.map((resource, index) => (
                   <Table.Tr
                     key={resource.id}
-                    style={{ cursor: 'pointer' }}
+                    style={{ cursor: 'pointer', height: rowHeights[index] }}
                     onClick={() => navigate(`./${resource.id}`)}
                   >
                     {extraColumns.map((col) => (
