@@ -490,10 +490,10 @@ describe('Agent WebSockets', () => {
     try {
       await request(server)
         .ws('/ws/agent')
-        .sendJson({ type: 'agent:connect:request', accessToken, agentId: agent.id })
-        .expectJson({ type: 'agent:connect:response' })
+        .sendText(JSON.stringify({ type: 'agent:connect:request', accessToken, agentId: agent.id }))
+        .expectText('{"type":"agent:connect:response"}')
         // Report the agent version via a heartbeat response
-        .sendJson({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION })
+        .sendText(JSON.stringify({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION }))
         // Give any (buggy) in-flight status update time to land before closing
         .exec(() => sleep(400))
         .close()
