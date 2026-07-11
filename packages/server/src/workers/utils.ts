@@ -267,20 +267,22 @@ export function addVerboseQueueLogging<TDataType>(
  * limit is set; when it is omitted, any previously-set limit is removed so that clearing the config
  * takes effect on the next startup.
  *
- * The underlying Redis calls are fire-and-forget: failures are logged but do not block worker init.
+ * If the underlying Redis command fails, the error is allowed to propagate: it is unsafe to start
+ * the workers without the configured global concurrency applied, so the caller should let startup
+ * fail rather than run with the wrong limit.
  * @param queue - The queue to apply the limit to.
  * @param config - The merged BullMQ config for the queue's worker, if any.
  */
-export function applyGlobalConcurrency(queue: Queue, config: Partial<MedplumBullmqConfig> | undefined): void {
+export async function applyGlobalConcurrency(
+  queue: Queue,
+  config: Partial<MedplumBullmqConfig> | undefined
+): Promise<void> {
   const globalConcurrency = config?.globalConcurrency;
-  const promise =
-    globalConcurrency === undefined ? queue.removeGlobalConcurrency() : queue.setGlobalConcurrency(globalConcurrency);
-  promise.catch((err) => {
-    globalLogger.error(`Failed to apply global concurrency for ${queue.name}`, {
-      globalConcurrency,
-      error: err,
-    });
-  });
+  if (globalConcurrency === undefined) {
+    await queue.removeGlobalConcurrency();
+  } else {
+    await queue.setGlobalConcurrency(globalConcurrency);
+  }
 }
 
 export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<never> {

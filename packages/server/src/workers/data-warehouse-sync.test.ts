@@ -410,7 +410,7 @@ describe('data-warehouse sync worker', () => {
     });
 
     test('registers DataWarehouseSyncQueue when sync is operational', async () => {
-      initWorkers({
+      await initWorkers({
         ...appConfig,
         workers: { enabled: ['data-warehouse-sync'] },
         dataWarehouse: {
@@ -425,7 +425,7 @@ describe('data-warehouse sync worker', () => {
     });
 
     test('does not register queue when data warehouse config is invalid', async () => {
-      initWorkers({
+      await initWorkers({
         ...appConfig,
         workers: { enabled: ['data-warehouse-sync'] },
         dataWarehouse: {
