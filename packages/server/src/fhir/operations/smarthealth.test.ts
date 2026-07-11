@@ -151,10 +151,13 @@ describe('SMART Health operations', () => {
     expect(getBooleanParameter(verifyResponse.body, 'valid')).toBe(true);
     expect(getBooleanParameter(verifyResponse.body, 'issuerTrusted')).toBe(false);
     expect(getBooleanParameter(verifyResponse.body, 'verified')).toBe(false);
-    expect(fetchSpy).toHaveBeenCalledWith(new URL('https://issuer.example.com/.well-known/jwks.json'), {
-      redirect: 'error',
-      signal: expect.any(AbortSignal),
-    });
+    expect(fetchSpy).toHaveBeenCalledWith(
+      new URL('https://issuer.example.com/.well-known/jwks.json'),
+      expect.objectContaining({
+        redirect: 'error',
+        signal: expect.any(AbortSignal),
+      })
+    );
 
     fetchSpy.mockRestore();
   });
@@ -421,14 +424,17 @@ describe('SMART Health operations', () => {
     expect(resolveResponse.status).toBe(200);
     expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(true);
 
-    const fetchUrl = fetchSpy.mock.calls[0][0] as URL;
+    const fetchCall = fetchSpy.mock.calls.at(-1);
+    const fetchUrl = fetchCall?.[0] as URL;
     expect(fetchUrl.toString()).toBe(
       'https://issuer.example.com/smart-link/payload?existing=true&recipient=Test+Recipient'
     );
-    expect(fetchSpy.mock.calls[0][1]).toStrictEqual({
-      redirect: 'error',
-      signal: expect.any(AbortSignal),
-    });
+    expect(fetchCall?.[1]).toEqual(
+      expect.objectContaining({
+        redirect: 'error',
+        signal: expect.any(AbortSignal),
+      })
+    );
     expect(getStringParameter(resolveResponse.body, 'recipient')).toBe('Test Recipient');
     expect(getStringParameter(resolveResponse.body, 'sourceOrigin')).toBe('https://issuer.example.com');
     expect(getDateTimeParameter(resolveResponse.body, 'expiresAt')).toBe(new Date(exp * 1000).toISOString());

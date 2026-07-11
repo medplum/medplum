@@ -3,11 +3,10 @@
 import dns from 'node:dns';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { Agent, fetch, getGlobalDispatcher, setGlobalDispatcher } from 'undici';
+import { fetch } from 'undici';
 import { vi } from 'vitest';
 import {
   createSafeConnect,
-  installSafeOutboundDispatcher,
   isAllowedOutboundUrlForQueue,
   isUnsafeHostname,
   isUnsafeIpAddress,
@@ -155,30 +154,6 @@ describe('safeAgent', () => {
 
   test('blocks private literal targets', async () => {
     await expect(fetch('https://127.0.0.1/', { dispatcher: safeAgent })).rejects.toThrow('fetch failed');
-  });
-});
-
-describe('installSafeOutboundDispatcher', () => {
-  test('skips installation when unsafe outbound requests are allowed', async () => {
-    const originalDispatcher = getGlobalDispatcher();
-    const unsafeAgent = new Agent();
-    const server = createServer((_req, res) => res.end('ok'));
-
-    setGlobalDispatcher(unsafeAgent);
-    await listen(server);
-
-    try {
-      expect(installSafeOutboundDispatcher({ allowUnsafeOutbound: true })).toBe(false);
-      expect(getGlobalDispatcher()).toBe(unsafeAgent);
-
-      const response = await fetch(`http://127.0.0.1:${getPort(server)}`);
-      expect(response.status).toBe(200);
-      expect(await response.text()).toBe('ok');
-    } finally {
-      setGlobalDispatcher(originalDispatcher);
-      await close(server);
-      await unsafeAgent.close();
-    }
   });
 });
 

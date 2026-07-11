@@ -5,7 +5,6 @@ import gracefulShutdown from 'http-graceful-shutdown';
 import { initApp, shutdownApp } from './app';
 import { loadConfig } from './config/loader';
 import { exitAfterStdoutDrain, globalLogger } from './logger';
-import { installSafeOutboundDispatcher } from './util/url';
 import { getServerVersion } from './util/version';
 
 export async function main(configName: string): Promise<void> {
@@ -36,7 +35,6 @@ export async function main(configName: string): Promise<void> {
   globalLogger.info('Starting Medplum Server...', { configName, version: getServerVersion() });
 
   const config = await loadConfig(configName);
-  installSafeOutboundDispatcher(config);
 
   const app = await initApp(express(), config);
   const server = app.listen(config.port);

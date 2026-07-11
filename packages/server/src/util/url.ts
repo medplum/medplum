@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import ipaddr from 'ipaddr.js';
 import dns from 'node:dns';
-import { Agent, buildConnector, setGlobalDispatcher } from 'undici';
+import { Agent, buildConnector } from 'undici';
+import type { Dispatcher } from 'undici';
+import { getConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 
 export interface OutboundUrlValidationOptions {
@@ -11,6 +13,10 @@ export interface OutboundUrlValidationOptions {
 }
 
 const connector = buildConnector({});
+
+// The DOM RequestInit type used by built-in fetch does not include Undici's
+// dispatcher option, even though Node's fetch accepts it.
+type FetchInitWithDispatcher = RequestInit & { dispatcher?: Dispatcher };
 
 export function createSafeConnect(connect: buildConnector.connector = connector): buildConnector.connector {
   return (options, callback) => {
@@ -46,16 +52,16 @@ export const safeAgent = new Agent({
 });
 
 /**
- * Installs the global SSRF-safe dispatcher unless unsafe outbound requests are explicitly allowed.
- * @param config - Server configuration.
- * @returns True if the safe dispatcher was installed.
+ * Performs an outbound fetch with SSRF-safe connection handling unless unsafe outbound requests are explicitly allowed.
+ * @param input - Fetch input.
+ * @param init - Fetch options.
+ * @returns Fetch response.
  */
-export function installSafeOutboundDispatcher(config: Pick<MedplumServerConfig, 'allowUnsafeOutbound'>): boolean {
-  if (config.allowUnsafeOutbound) {
-    return false;
+export function safeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  if (getConfig().allowUnsafeOutbound) {
+    return fetch(input, init);
   }
-  setGlobalDispatcher(safeAgent);
-  return true;
+  return fetch(input, { ...init, dispatcher: safeAgent } as FetchInitWithDispatcher);
 }
 
 /**

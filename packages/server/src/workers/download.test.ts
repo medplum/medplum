@@ -60,12 +60,15 @@ describe('Download Worker', () => {
 
         await findAndExecDownloadJob(media, 'create');
 
-        expect(fetchMock).toHaveBeenCalledWith(url, {
-          headers: {
-            'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
-            traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
-          },
-        });
+        expect(fetchMock).toHaveBeenCalledWith(
+          url,
+          expect.objectContaining({
+            headers: {
+              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
+              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+            },
+          })
+        );
 
         const updatedMedia = await repo.readResource<Media>('Media', media.id);
         expect(updatedMedia.content?.url).toMatch(/^Binary\//);

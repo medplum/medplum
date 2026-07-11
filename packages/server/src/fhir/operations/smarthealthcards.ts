@@ -12,6 +12,7 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getJwks, getSigningKey } from '../../oauth/keys';
+import { safeFetch } from '../../util/url';
 import { makeOperationDefinition } from './definitions';
 import { getPatientEverything } from './patienteverything';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -427,7 +428,7 @@ async function getSmartHealthCardPublicKey(
 async function getExternalSmartHealthCardJwks(issuer: string): Promise<JWK[]> {
   const issuerUrl = new URL(issuer);
   const jwksUrl = new URL('/.well-known/jwks.json', issuerUrl);
-  const response = await fetch(jwksUrl, { redirect: 'error', signal: AbortSignal.timeout(5000) });
+  const response = await safeFetch(jwksUrl, { redirect: 'error', signal: AbortSignal.timeout(5000) });
   if (!response.ok) {
     throw new Error(`SMART Health Card issuer JWKS request failed: ${response.status}`);
   }

@@ -56,7 +56,7 @@ import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscri
 import { getCacheRedis } from '../redis';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
-import { isAllowedOutboundUrlForQueue } from '../util/url';
+import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import {
   clearSubscriptionFailures,
@@ -741,7 +741,12 @@ async function sendRestHook(
       projectId: subscription.meta?.project,
     });
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
-    const response = await fetch(url, { method: 'POST', headers, body, signal: AbortSignal.timeout(REQUEST_TIMEOUT) });
+    const response = await safeFetch(url, {
+      method: 'POST',
+      headers,
+      body,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT),
+    });
     fetchEndTime = Date.now();
     log.info('Received rest hook response', {
       status: response.status,

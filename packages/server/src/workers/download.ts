@@ -22,7 +22,7 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
-import { isAllowedOutboundUrlForQueue } from '../util/url';
+import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
@@ -257,7 +257,7 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 
   try {
     log.info('Requesting content at: ' + url);
-    const response = await fetch(url, {
+    const response = await safeFetch(url, {
       headers,
     });
 
