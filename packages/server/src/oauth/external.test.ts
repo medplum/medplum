@@ -373,6 +373,32 @@ describe('External auth', () => {
     );
   });
 
+  test('Identity provider legacy useSubject maps verified subject', async () => {
+    await withExternalAuthProviders(
+      [
+        {
+          issuer: 'https://external-auth.example.com',
+          identityProvider: {
+            userInfoUrl: 'https://external-auth.example.com/oauth2/userinfo',
+            useSubject: true,
+          },
+        },
+      ],
+      async () => {
+        fetchMock.mockImplementationOnce(() => mockFetchJson({ sub: externalSub }));
+
+        const jwt = createFakeJwt({
+          iss: 'https://external-auth.example.com',
+          nonce: randomUUID(),
+        });
+        const res = await request(app)
+          .get(`/oauth2/userinfo`)
+          .set('Authorization', 'Bearer ' + jwt);
+        expect(res.status).toBe(200);
+      }
+    );
+  });
+
   test.each([
     {
       name: 'unverified email',

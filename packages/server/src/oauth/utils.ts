@@ -1116,7 +1116,7 @@ async function tryExternalAuthLogin(
     return undefined;
   }
 
-  const useIdentityProviderMapping = !!(idp.identitySource || idp.identityMappingMode);
+  const useIdentityProviderMapping = !!(idp.identitySource || idp.identityMappingMode || idp.useSubject);
   const extensions = claims.ext as Record<string, unknown> | undefined;
   const profileString = claims.fhirUser ?? extensions?.fhirUser;
   if (!useIdentityProviderMapping && !isString(profileString) && !isString(claims.sub)) {
@@ -1236,8 +1236,8 @@ async function getExternalBearerMembershipFromClaims(
 /**
  * Resolves a direct external bearer token to a ProjectMembership using explicit IdentityProvider mapping settings.
  *
- * This path is used only when `identitySource` or `identityMappingMode` is configured on the
- * identity provider. Identity values come from the verified userinfo response, not from the
+ * This path is used only when `identitySource`, `identityMappingMode`, or legacy `useSubject`
+ * is configured on the identity provider. Identity values come from the verified userinfo response, not from the
  * original bearer-token claims.
  *
  * @param systemRepo - System repository used for cross-project membership lookup.
