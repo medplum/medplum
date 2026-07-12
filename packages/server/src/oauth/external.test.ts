@@ -484,6 +484,21 @@ describe('External auth', () => {
     expect(res2.status).toBe(200);
   });
 
+  test('Expired token is rejected before cache lookup', async () => {
+    fetchMock.mockClear();
+
+    const jwt = createFakeJwt({
+      iss: 'https://external-auth.example.com',
+      sub: externalSub,
+      exp: Math.floor(Date.now() / 1000) - 1,
+    });
+    const res = await request(app)
+      .get(`/oauth2/userinfo`)
+      .set('Authorization', 'Bearer ' + jwt);
+    expect(res.status).toBe(401);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test('Sub claim with unknown externalId', async () => {
     fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
 

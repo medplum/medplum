@@ -1076,6 +1076,11 @@ async function tryExternalAuth(
     return undefined;
   }
 
+  const cacheTtl = getExternalAuthCacheTtl(claims);
+  if (cacheTtl <= 0) {
+    return undefined;
+  }
+
   const redis = getCacheRedis();
   const redisKey = `medplum:ext-auth:${issuer}:${hashCode(accessToken)}:${hashCode(
     JSON.stringify(externalAuthConfig.identityProvider?.audience ?? null)
@@ -1097,11 +1102,29 @@ async function tryExternalAuth(
       return undefined;
     }
     ({ login, project, membership } = externalAuthState);
-    await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
+    await redis.set(redisKey, JSON.stringify(login), 'EX', cacheTtl);
   }
 
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
   return { login, project, membership, userConfig };
+}
+
+/**
+ * Returns the Redis TTL for a cached external bearer login.
+ *
+ * The cache must not outlive the bearer token. Tokens without an `exp` claim keep
+ * the legacy one-hour TTL because userinfo validation may be the only expiry signal.
+ *
+ * @param claims - Parsed JWT claims from the presented bearer token.
+ * @returns Cache TTL in seconds, or 0 if the token is already expired.
+ */
+function getExternalAuthCacheTtl(claims: JWTPayload): number {
+  const maxTtl = 3600;
+  if (typeof claims.exp !== 'number') {
+    return maxTtl;
+  }
+
+  return Math.min(maxTtl, Math.max(0, Math.floor(claims.exp - Date.now() / 1000)));
 }
 
 async function tryExternalAuthLogin(
