@@ -328,7 +328,7 @@ describe('External auth', () => {
       name: 'email to user membership',
       identitySource: 'email' as const,
       identityMappingMode: 'user-email' as const,
-      userInfo: () => ({ email }),
+      userInfo: () => ({ email, email_verified: true }),
     },
     {
       name: 'subject to membership externalId',
@@ -369,6 +369,42 @@ describe('External auth', () => {
           .get(`/oauth2/userinfo`)
           .set('Authorization', 'Bearer ' + jwt);
         expect(res.status).toBe(200);
+      }
+    );
+  });
+
+  test.each([
+    {
+      name: 'unverified email',
+      userInfo: { email, email_verified: false },
+    },
+    {
+      name: 'missing email_verified',
+      userInfo: { email },
+    },
+  ])('Identity provider email mapping rejects $name', async ({ userInfo }) => {
+    await withExternalAuthProviders(
+      [
+        {
+          issuer: 'https://external-auth.example.com',
+          identityProvider: {
+            userInfoUrl: 'https://external-auth.example.com/oauth2/userinfo',
+            identitySource: 'email',
+            identityMappingMode: 'user-email',
+          },
+        },
+      ],
+      async () => {
+        fetchMock.mockImplementationOnce(() => mockFetchJson(userInfo));
+
+        const jwt = createFakeJwt({
+          iss: 'https://external-auth.example.com',
+          nonce: randomUUID(),
+        });
+        const res = await request(app)
+          .get(`/oauth2/userinfo`)
+          .set('Authorization', 'Bearer ' + jwt);
+        expect(res.status).toBe(401);
       }
     );
   });

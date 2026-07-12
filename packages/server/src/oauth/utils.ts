@@ -1258,7 +1258,7 @@ async function getExternalBearerMembershipForIdentityProvider(
 
   if (identitySource === 'email' && identityMappingMode === 'user-email') {
     const email = isString(userInfo.email) ? userInfo.email.toLowerCase() : undefined;
-    if (!email) {
+    if (!email || userInfo.email_verified !== true) {
       return undefined;
     }
     const user = await getUserByEmail(email, undefined);

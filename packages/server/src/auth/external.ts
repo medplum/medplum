@@ -221,6 +221,9 @@ async function resolveExternalLoginIdentity(
     if (!email) {
       throw new OperationOutcomeError(badRequest('External token does not contain email address'));
     }
+    if (userInfo.email_verified !== true) {
+      throw new OperationOutcomeError(badRequest('External token email is not verified'));
+    }
     return { email };
   }
 
