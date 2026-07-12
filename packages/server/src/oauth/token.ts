@@ -43,9 +43,9 @@ import { generateSecret, verifyJwt } from './keys';
 import {
   checkIpAccessRules,
   getAuthTokens,
-  getExternalAuthIdentityProvider,
   getClientApplication,
   getClientApplicationMembership,
+  getExternalAuthIdentityProvider,
   hashCode,
   revokeLogin,
   timingSafeEqualStr,

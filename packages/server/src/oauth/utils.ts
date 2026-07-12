@@ -1205,7 +1205,9 @@ async function tryExternalAuthLogin(
  * @param externalAuthConfig - The matching external auth provider config.
  * @returns Identity provider settings with a userinfo URL, or undefined if none is configured.
  */
-export function getExternalAuthIdentityProvider(externalAuthConfig: MedplumExternalAuthConfig): IdentityProvider | undefined {
+export function getExternalAuthIdentityProvider(
+  externalAuthConfig: MedplumExternalAuthConfig
+): IdentityProvider | undefined {
   const issuer = getExternalAuthProviderIssuer(externalAuthConfig);
   if (externalAuthConfig.identityProvider) {
     return {
