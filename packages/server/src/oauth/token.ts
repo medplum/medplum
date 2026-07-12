@@ -43,6 +43,7 @@ import { generateSecret, verifyJwt } from './keys';
 import {
   checkIpAccessRules,
   getAuthTokens,
+  getExternalAuthIdentityProvider,
   getClientApplication,
   getClientApplicationMembership,
   hashCode,
@@ -566,19 +567,7 @@ function resolveExternalAuthProvider(clientId: string, client?: ClientApplicatio
     (provider) => (provider.clientId ?? provider.identityProvider?.clientId) === clientId
   );
   if (externalAuthConfig) {
-    const issuer = externalAuthConfig.identityProvider?.issuer ?? externalAuthConfig.issuer;
-    if (externalAuthConfig.identityProvider) {
-      return {
-        issuer,
-        userInfoUrl: externalAuthConfig.userInfoUrl,
-        ...externalAuthConfig.identityProvider,
-      };
-    }
-
-    const userInfoUrl = externalAuthConfig.userInfoUrl;
-    if (userInfoUrl) {
-      return { issuer, userInfoUrl };
-    }
+    return getExternalAuthIdentityProvider(externalAuthConfig);
   }
 
   return client?.identityProvider;
