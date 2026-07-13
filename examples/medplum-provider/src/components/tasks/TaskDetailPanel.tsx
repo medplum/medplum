@@ -88,6 +88,8 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
         h="100%"
         style={{
           flex: 1,
+          minWidth: 0,
+          overflow: 'hidden',
         }}
         className={classes.borderRight}
       >

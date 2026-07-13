@@ -3,11 +3,11 @@
 import type { ILogger } from '@medplum/core';
 import { Hl7Message, ReturnAckCategory, sleep, TypedEventTarget } from '@medplum/core';
 import type { Hl7Connection } from '@medplum/hl7';
-import { Hl7Server } from '@medplum/hl7';
+import { getFreePort, Hl7Server } from '@medplum/hl7';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
 import { Hl7ClientPool } from './hl7-client-pool';
 import { Hl7MessageTracker } from './hl7-message-tracker';
-import { createMockLogger, getFreePort } from './test-utils';
+import { createMockLogger } from './test-utils';
 import type { HeartbeatEmitter } from './types';
 
 describe('Hl7MessageTracker', () => {

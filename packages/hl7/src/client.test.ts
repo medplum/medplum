@@ -7,8 +7,9 @@ import net, { createServer } from 'node:net';
 import { Hl7Client } from './client';
 import type { Hl7Connection } from './connection';
 import type { Hl7ErrorEvent } from './events';
+import { getFreePort } from './free-port';
 import { Hl7Server } from './server';
-import { getFreePort, MockServer, MockSocket } from './test-utils';
+import { MockServer, MockSocket } from './test-utils';
 
 describe('Hl7Client', () => {
   describe('sendAndWait', () => {
