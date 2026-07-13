@@ -4,8 +4,7 @@ import { InvokeWithResponseStreamCommand, LambdaClient, ListLayerVersionsCommand
 import type { WithId } from '@medplum/core';
 import { badRequest, ContentType, getStatus } from '@medplum/core';
 import type { Bot, Project } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -19,10 +18,10 @@ let project: WithId<Project>;
 let streamingBot: WithId<Bot>;
 
 describe('Execute', () => {
-  let mockLambdaClient: AwsClientStub<LambdaClient>;
+  let mockLambdaClient: ReturnType<typeof mockAwsClient>;
 
   beforeEach(() => {
-    mockLambdaClient = mockClient(LambdaClient);
+    mockLambdaClient = mockAwsClient(LambdaClient);
 
     mockLambdaClient.on(ListLayerVersionsCommand).resolves({
       LayerVersions: [

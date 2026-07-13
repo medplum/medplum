@@ -11,8 +11,7 @@ import {
 import { ContentType } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import { sdkStreamMixin } from '@smithy/util-stream';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import type { Request } from 'express';
 import { createHash } from 'node:crypto';
 import type internal from 'stream';
@@ -21,14 +20,14 @@ import { getConfig, loadTestConfig } from '../../config/loader';
 import { getBinaryStorage, initBinaryStorage } from '../../storage/loader';
 
 describe('Storage', () => {
-  let mockS3Client: AwsClientStub<S3Client>;
+  let mockS3Client: ReturnType<typeof mockAwsClient>;
 
   beforeAll(async () => {
     await loadTestConfig();
   });
 
   beforeEach(() => {
-    mockS3Client = mockClient(S3Client);
+    mockS3Client = mockAwsClient(S3Client);
   });
 
   afterEach(() => {

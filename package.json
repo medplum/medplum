@@ -30,7 +30,7 @@
     "adm-zip": "0.6.1",
     "dompurify": "3.4.17",
     "esbuild": "0.28.2",
-    "typescript": "6.0.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "uuid": "14.0.2",
     "whatwg-url": "14.0.0",
     "import-in-the-middle": "3.4.0",
@@ -41,6 +41,7 @@
     "@microsoft/api-extractor": "7.60.1",
     "@types/jsdom": "30.0.0",
     "@types/node": "22.20.5",
+    "@typescript/native": "npm:typescript@7.0.2",
     "@vitejs/plugin-react": "6.3.0",
     "@vitest/coverage-v8": "4.1.12",
     "cross-env": "10.1.0",
@@ -58,7 +59,7 @@
     "tslib": "2.9.1",
     "tsx": "4.23.15",
     "turbo": "2.11.11",
-    "typescript": "6.0.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "vite": "8.3.8",
     "vitest": "4.1.12",
     "vitest-websocket-mock": "0.5.0"
@@ -66,5 +67,9 @@
   "packageManager": "npm@11.21.2+sha512.ec73c0a64f807e53146af4ac78bd4f9ba0a762a3081e4e77c7e2a6ba1aa64c3a8f9233cc8312294cf713aac13dd4428dc3880504957d7e75e249d1a6d435eaf4",
   "engines": {
     "node": ">=22.22.0 <23.0.0 || >=24.2.0 <25.0.0"
+  },
+  "dependencies": {
+    "nodemailer": "^10.5.0",
+    "react-router": "^8.3.0"
   }
 }

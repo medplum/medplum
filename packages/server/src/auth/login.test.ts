@@ -4,8 +4,7 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
 import { createReference, LOINC } from '@medplum/core';
 import type { ClientApplication, Project } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { simpleParser } from 'mailparser';
@@ -28,11 +27,11 @@ let project: WithId<Project>;
 let repo: Repository;
 let client: WithId<ClientApplication>;
 let corsClient: WithId<ClientApplication>;
-let mockSESv2Client: AwsClientStub<SESv2Client>;
+let mockSESv2Client: ReturnType<typeof mockAwsClient>;
 
 describe('Login', () => {
   beforeAll(async () => {
-    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client = mockAwsClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
 
     const config = await loadTestConfig();

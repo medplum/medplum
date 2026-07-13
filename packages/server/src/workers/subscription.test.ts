@@ -27,8 +27,7 @@ import type {
   ResourceType,
   Subscription,
 } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import type { Job } from 'bullmq';
 import * as bullmqModule from 'bullmq';
 import { UnrecoverableError } from 'bullmq';
@@ -87,7 +86,7 @@ describe('Subscription Worker', () => {
   let systemRepo: SystemRepository;
   let repo: Repository;
   let botRepo: Repository;
-  let mockLambdaClient: AwsClientStub<LambdaClient>;
+  let mockLambdaClient: ReturnType<typeof mockAwsClient>;
   let superAdminRepo: Repository;
 
   beforeAll(async () => {
@@ -131,7 +130,7 @@ describe('Subscription Worker', () => {
     const botProjectDetails = await createTestProject({ withClient: true, withRepo: true });
     botRepo = botProjectDetails.repo;
 
-    mockLambdaClient = mockClient(LambdaClient);
+    mockLambdaClient = mockAwsClient(LambdaClient);
     mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {
       const decoder = new TextDecoder();
       const event = JSON.parse(decoder.decode(Payload));

@@ -16,8 +16,7 @@ import {
 } from '@aws-sdk/client-lambda';
 import { allOk, badRequest, ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import JSZip from 'jszip';
@@ -42,7 +41,7 @@ describe('Deploy', () => {
   const app = express();
   let accessToken: string;
   let projectId: string;
-  let mockLambdaClient: AwsClientStub<LambdaClient>;
+  let mockLambdaClient: ReturnType<typeof mockAwsClient>;
 
   /**
    * Creates a bot via the admin endpoint (which auto-creates a ProjectMembership),
@@ -92,7 +91,7 @@ describe('Deploy', () => {
   beforeEach(() => {
     const lambdaMap = new Map<string, Record<string, any>>();
 
-    mockLambdaClient = mockClient(LambdaClient);
+    mockLambdaClient = mockAwsClient(LambdaClient);
 
     mockLambdaClient.on(CreateFunctionCommand).callsFake(({ FunctionName, Timeout }) => {
       const lambdaConfig = {
@@ -666,13 +665,13 @@ describe('Deploy', () => {
 
 describe('getLambdaTimeoutForBot', () => {
   const app = express();
-  let mockLambdaClient: AwsClientStub<LambdaClient>;
+  let mockLambdaClient: ReturnType<typeof mockAwsClient>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    mockLambdaClient = mockClient(LambdaClient);
+    mockLambdaClient = mockAwsClient(LambdaClient);
   });
 
   afterAll(async () => {

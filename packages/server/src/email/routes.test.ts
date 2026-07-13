@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { ContentType } from '@medplum/core';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import express from 'express';
 import { simpleParser } from 'mailparser';
 import request from 'supertest';
@@ -26,7 +25,7 @@ vi.mock('nodemailer', () => ({
 const app = express();
 
 describe('Email API Routes', () => {
-  let mockSESv2Client: AwsClientStub<SESv2Client>;
+  let mockSESv2Client: ReturnType<typeof mockAwsClient>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -35,7 +34,7 @@ describe('Email API Routes', () => {
   });
 
   beforeEach(() => {
-    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client = mockAwsClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
   });
 

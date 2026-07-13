@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { DeleteFunctionCommand, LambdaClient, ResourceNotFoundException } from '@aws-sdk/client-lambda';
 import type { Bot, Patient, Subscription } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
@@ -16,7 +15,7 @@ import { findAndExecDispatchJob } from './test-utils';
 
 describe('Dispatch Worker', () => {
   let botRepo: Repository;
-  let mockLambdaClient: AwsClientStub<LambdaClient>;
+  let mockLambdaClient: ReturnType<typeof mockAwsClient>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -32,7 +31,7 @@ describe('Dispatch Worker', () => {
 
   beforeEach(() => {
     getConfig().dispatchEnabled = true;
-    mockLambdaClient = mockClient(LambdaClient);
+    mockLambdaClient = mockAwsClient(LambdaClient);
     mockLambdaClient.on(DeleteFunctionCommand).resolves({});
   });
 

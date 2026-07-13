@@ -6,12 +6,12 @@ import {
   DescribeStacksCommand,
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
-import { mockClient } from 'aws-sdk-client-mock';
+import { mockAwsClient } from './mockAwsClient';
 import { main } from '../index';
 
 describe('list command', () => {
   beforeAll(() => {
-    const cfMock = mockClient(CloudFormationClient);
+    const cfMock = mockAwsClient(CloudFormationClient);
 
     cfMock.on(ListStacksCommand).resolves({
       StackSummaries: [

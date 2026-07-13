@@ -92,7 +92,7 @@
     "sinon": "22.1.0",
     "storybook": "10.6.7",
     "temporal-polyfill": "1.0.8",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   },
   "peerDependencies": {
     "@mantine/core": "^8.0.0",

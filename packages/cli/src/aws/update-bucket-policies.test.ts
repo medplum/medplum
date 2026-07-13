@@ -1,31 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type {
-  CloudFormationClientResolvedConfig,
-  ServiceInputTypes as CloudFormationServiceInputTypes,
-  ServiceOutputTypes as CloudFormationServiceOutputTypes,
-  StackResource,
-} from '@aws-sdk/client-cloudformation';
+import type { StackResource } from '@aws-sdk/client-cloudformation';
 import {
   CloudFormationClient,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
-import type {
-  CloudFrontClientResolvedConfig,
-  ServiceInputTypes as CloudFrontServiceInputTypes,
-  ServiceOutputTypes as CloudFrontServiceOutputTypes,
-} from '@aws-sdk/client-cloudfront';
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
-import type {
-  S3ClientResolvedConfig,
-  ServiceInputTypes as S3ServiceInputTypes,
-  ServiceOutputTypes as S3ServiceOutputTypes,
-} from '@aws-sdk/client-s3';
 import { GetBucketPolicyCommand, PutBucketPolicyCommand, S3Client } from '@aws-sdk/client-s3';
-import type { AwsStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
+import { mockAwsClient } from './mockAwsClient';
 import fs from 'node:fs';
 import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
@@ -50,13 +34,9 @@ vi.mock('node:fs', () => {
   return { default: mock, ...mock };
 });
 
-let cfMock: AwsStub<
-  CloudFormationServiceInputTypes,
-  CloudFormationServiceOutputTypes,
-  CloudFormationClientResolvedConfig
->;
-let s3Mock: AwsStub<S3ServiceInputTypes, S3ServiceOutputTypes, S3ClientResolvedConfig>;
-let cloudFrontMock: AwsStub<CloudFrontServiceInputTypes, CloudFrontServiceOutputTypes, CloudFrontClientResolvedConfig>;
+let cfMock: ReturnType<typeof mockAwsClient>;
+let s3Mock: ReturnType<typeof mockAwsClient>;
+let cloudFrontMock: ReturnType<typeof mockAwsClient>;
 
 describe('update-bucket-policies command', () => {
   let processError: MockInstance;
@@ -67,7 +47,7 @@ describe('update-bucket-policies command', () => {
     });
     processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
 
-    cfMock = mockClient(CloudFormationClient);
+    cfMock = mockAwsClient(CloudFormationClient);
 
     cfMock.on(ListStacksCommand).resolves({
       StackSummaries: [
@@ -144,11 +124,11 @@ describe('update-bucket-policies command', () => {
       ],
     });
 
-    s3Mock = mockClient(S3Client);
+    s3Mock = mockAwsClient(S3Client);
     s3Mock.on(GetBucketPolicyCommand).resolves({ Policy: '{}' });
     s3Mock.on(PutBucketPolicyCommand).resolves({});
 
-    cloudFrontMock = mockClient(CloudFrontClient);
+    cloudFrontMock = mockAwsClient(CloudFrontClient);
     cloudFrontMock.on(CreateInvalidationCommand).resolves({});
   });
 

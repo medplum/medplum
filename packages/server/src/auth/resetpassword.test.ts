@@ -3,8 +3,7 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { createReference, getReferenceString, Operator, resolveId } from '@medplum/core';
 import type { DomainConfiguration, Project, User, UserSecurityRequest } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { simpleParser } from 'mailparser';
@@ -33,7 +32,7 @@ describe('Reset Password', () => {
   const app = express();
   const systemRepo = getGlobalSystemRepo();
   const testRecaptchaSecretKey = 'testrecaptchasecretkey';
-  let mockSESv2Client: AwsClientStub<SESv2Client>;
+  let mockSESv2Client: ReturnType<typeof mockAwsClient>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -46,7 +45,7 @@ describe('Reset Password', () => {
   });
 
   beforeEach(() => {
-    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client = mockAwsClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
 
     fetchMock.mockClear();

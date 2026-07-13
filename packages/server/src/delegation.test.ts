@@ -16,7 +16,7 @@ import type {
   Project,
   ProjectMembership,
 } from '@medplum/fhirtypes';
-import { mockClient } from 'aws-sdk-client-mock';
+import { mockAwsClient } from './test-utils/mockAwsClient';
 import type { Job } from 'bullmq';
 import { Worker } from 'bullmq';
 import express from 'express';
@@ -214,7 +214,7 @@ async function createDelegationFixture(): Promise<DelegationFixture> {
 
 describe('On-Behalf-Of delegation matrix', () => {
   const app = express();
-  const ses = mockClient(SESv2Client);
+  const ses = mockAwsClient(SESv2Client);
   let fixture: DelegationFixture;
   const seeded = new Map<string, { patient: Patient; organization: Organization }>();
 
