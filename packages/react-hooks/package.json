@@ -71,8 +71,7 @@
     "@types/react-dom": "19.2.3",
     "dotenv": "17.4.2",
     "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "typescript": "6.0.3"
+    "react-dom": "19.2.7"
   },
   "peerDependencies": {
     "@medplum/core": "5.1.26",

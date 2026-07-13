@@ -65,7 +65,6 @@
     "react-intersection-observer": "10.0.3",
     "react-router": "7.18.0",
     "react-router-dom": "7.18.0",
-    "typescript": "6.0.3",
     "url-loader": "4.1.1"
   },
   "engines": {
