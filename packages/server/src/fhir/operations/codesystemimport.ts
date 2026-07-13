@@ -21,7 +21,7 @@ function makeCodeAttributeParameter(
     use: 'in',
     name: paramName,
     min: 0,
-    max: '*',
+    max: '1000',
     part: [
       { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
       { use: 'in', ...attributeParam },
@@ -37,7 +37,7 @@ const operation = makeOperationDefinition(
     code: 'import',
     parameter: [
       { use: 'in', name: 'system', type: 'uri', min: 0, max: '1' },
-      { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '*' },
+      { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '1000' },
       makeCodeAttributeParameter('property', {
         name: 'property',
         type: 'code',
