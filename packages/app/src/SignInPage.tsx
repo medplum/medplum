@@ -32,12 +32,14 @@ export function SignInPage(): JSX.Element {
       onSuccess={() => navigateToNext()}
       onForgotPassword={() => navigate('/resetpassword')?.catch(console.error)}
       onRegister={
-        isRegisterEnabled()
+        isRegisterEnabled() && searchParams.get('project') !== 'new'
           ? async () => {
-              // Sign out before navigating to RegisterPage so it does not
-              // redirect us back to /signin?project=new. If the server logout
-              // fails, still clear local auth state so the Register page loads.
-              await medplum.signOut().catch(() => medplum.clear());
+              // Only clear a live session; RegisterPage bounces logged-in users
+              // back to /signin?project=new otherwise. Fall back to clear() if
+              // the server logout call fails.
+              if (medplum.getProfile()) {
+                await medplum.signOut().catch(() => medplum.clear());
+              }
               navigate('/register')?.catch(console.error);
             }
           : undefined
