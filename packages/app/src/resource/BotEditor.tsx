@@ -72,8 +72,8 @@ export function BotEditor(): JSX.Element | null {
   const codeFrameRef = useRef<HTMLIFrameElement>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
   const [loading, setLoading] = useState(false);
-  // The action taken by the primary Execute button. Defaults to 'sse' for streaming-enabled bots.
-  const [executeMode, setExecuteMode] = useState<'sync' | 'sse'>('sync');
+  const [executeSSEAvailable, setExecuteSSEAvailable] = useState(false);
+  const [requestedExecuteMode, setRequestedExecuteMode] = useState<'sync' | 'sse'>('sync');
   // When defined, the bot was last executed with server-sent events, and we show the stream of events
   // instead of the normal output frame. `undefined` means we are in normal (synchronous) execute mode.
   const [sseEvents, setSseEvents] = useState<SseEvent[]>();
@@ -83,7 +83,9 @@ export function BotEditor(): JSX.Element | null {
       .readResource('Bot', id)
       .then(async (newBot: Bot) => {
         setBot(newBot);
-        setExecuteMode(newBot.streamingEnabled ? 'sse' : 'sync');
+        const sseAvailable = newBot.runtimeVersion === 'vmcontext' || newBot.runtimeVersion === 'awslambda';
+        setExecuteSSEAvailable(sseAvailable);
+        setRequestedExecuteMode(sseAvailable && newBot.streamingEnabled ? 'sse' : 'sync');
         setModule(newBot.runtimeVersion === 'vmcontext' ? 'commonjs' : 'esnext');
         setDefaultCode(await getBotCode(medplum, newBot));
       })
@@ -261,6 +263,9 @@ export function BotEditor(): JSX.Element | null {
     return null;
   }
 
+  // only respect requestedExecuteMode when SSE is available
+  const executeMode = executeSSEAvailable ? requestedExecuteMode : 'sync';
+
   return (
     <Grid m={0} gutter={0} style={{ overflow: 'hidden' }}>
       <Grid.Col span={8}>
@@ -286,47 +291,49 @@ export function BotEditor(): JSX.Element | null {
                 onClick={executeMode === 'sse' ? executeBotSSE : executeBot}
                 loading={loading}
                 leftSection={executeMode === 'sse' ? <IconBolt size="1rem" /> : <IconPlayerPlay size="1rem" />}
-                className={classes.splitButton}
+                className={executeSSEAvailable ? classes.splitButton : undefined}
               >
                 {executeMode === 'sse' ? 'Execute SSE' : 'Execute'}
               </Button>
-              <Menu transitionProps={{ transition: 'pop' }} position="bottom-end" withinPortal>
-                <Menu.Target>
-                  <ActionIcon
-                    variant="filled"
-                    color={theme.primaryColor}
-                    size={36}
-                    className={classes.menuControl}
-                    aria-label="Execute options"
-                    loading={loading}
-                  >
-                    <IconChevronDown size={14} stroke={1.5} />
-                  </ActionIcon>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  {executeMode === 'sse' ? (
-                    <Menu.Item
-                      leftSection={<IconPlayerPlay size={14} stroke={1.5} />}
-                      onClick={(e) => {
-                        setExecuteMode('sync');
-                        return executeBot(e);
-                      }}
+              {executeSSEAvailable && (
+                <Menu transitionProps={{ transition: 'pop' }} position="bottom-end" withinPortal>
+                  <Menu.Target>
+                    <ActionIcon
+                      variant="filled"
+                      color={theme.primaryColor}
+                      size={36}
+                      className={classes.menuControl}
+                      aria-label="Execute options"
+                      loading={loading}
                     >
-                      Execute
-                    </Menu.Item>
-                  ) : (
-                    <Menu.Item
-                      leftSection={<IconBolt size={14} stroke={1.5} />}
-                      onClick={(e) => {
-                        setExecuteMode('sse');
-                        return executeBotSSE(e);
-                      }}
-                    >
-                      Execute SSE
-                    </Menu.Item>
-                  )}
-                </Menu.Dropdown>
-              </Menu>
+                      <IconChevronDown size={14} stroke={1.5} />
+                    </ActionIcon>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    {executeMode === 'sse' ? (
+                      <Menu.Item
+                        leftSection={<IconPlayerPlay size={14} stroke={1.5} />}
+                        onClick={(e) => {
+                          setRequestedExecuteMode('sync');
+                          return executeBot(e);
+                        }}
+                      >
+                        Execute
+                      </Menu.Item>
+                    ) : (
+                      <Menu.Item
+                        leftSection={<IconBolt size={14} stroke={1.5} />}
+                        onClick={(e) => {
+                          setRequestedExecuteMode('sse');
+                          return executeBotSSE(e);
+                        }}
+                      >
+                        Execute SSE
+                      </Menu.Item>
+                    )}
+                  </Menu.Dropdown>
+                </Menu>
+              )}
             </Group>
           </Group>
         </Paper>
@@ -393,7 +400,7 @@ function SseEventViewer(props: SseEventViewerProps): JSX.Element {
         ) : (
           <Stack gap="xs">
             {events.map((event) => (
-              <Code block className={classes.eventData}>
+              <Code block className={classes.eventData} key={event.key}>
                 {event.data}
               </Code>
             ))}
