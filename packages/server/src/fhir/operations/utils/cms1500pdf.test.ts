@@ -146,4 +146,3 @@ describe('CMS 1500 PDF Utils', () => {
     expect(getPlaceOfService(item)).toBeUndefined();
   });
 });
-
