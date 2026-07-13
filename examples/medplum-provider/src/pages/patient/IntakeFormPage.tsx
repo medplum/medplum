@@ -1,31 +1,38 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Anchor, Code, List, Text } from '@mantine/core';
+import { Alert } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Questionnaire, QuestionnaireItem, QuestionnaireResponse } from '@medplum/fhirtypes';
-import { AIRealTimeQuestionnaireForm, Document, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
+import {
+  AIRealTimeQuestionnaireForm,
+  checkValueSetAvailability,
+  Document,
+  Loading,
+  useMedplum,
+  useMedplumProfile,
+} from '@medplum/react';
 import type { JSX } from 'react';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { onboardPatient } from '../../utils/intake-form';
 import { showErrorNotification } from '../../utils/notifications';
 
 const voiceInstructions = (
-  <List>
-    <List.Item>
+  <ul>
+    <li>
       To fill out the form, just speak naturally and the dictation tool will automatically map your spoken answers to
       the appropriate form fields.
-    </List.Item>
-    <List.Item>
+    </li>
+    <li>
       Pause briefly between thoughts to allow the tool to process and fill in the fields. You can continue speaking to
       add or update answers.
-    </List.Item>
-    <List.Item>
+    </li>
+    <li>
       Try saying something like: “My name is Sarah Johnson and I'm 28 years old” or “I live at 123 Main Street in Boston
       Massachusetts”
-    </List.Item>
-  </List>
+    </li>
+  </ul>
 );
 
 export interface IntakeFormPageProps {
@@ -40,8 +47,7 @@ export function IntakeFormPage({
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const [unavailableFields, setUnavailableFields] = useState<ValueSetInfo[]>([]);
-  const [showValueSetUrls, setShowValueSetUrls] = useState(false);
+  const [unavailableValueSets, setUnavailableValueSets] = useState<ValueSetInfo[]>([]);
   const [checkingValueSets, setCheckingValueSets] = useState(false);
   const questionnaire = propQuestionnaire ?? defaultQuestionnaire;
 
@@ -63,24 +69,30 @@ export function IntakeFormPage({
       }
 
       const allValueSets = extractValueSets(questionnaire.item);
-      const uniqueUrls = Array.from(new Set(allValueSets.map((vs) => vs.url)));
+      const uniqueValueSets = new Map<string, ValueSetInfo>();
+      for (const vs of allValueSets) {
+        if (!uniqueValueSets.has(vs.url)) {
+          uniqueValueSets.set(vs.url, vs);
+        }
+      }
+      const valueSets = Array.from(uniqueValueSets.values());
 
-      const unavailableUrls = new Set<string>();
+      const unavailable: ValueSetInfo[] = [];
 
       await Promise.allSettled(
-        uniqueUrls.map(async (url) => {
+        valueSets.map(async (vs) => {
           if (abortController.signal.aborted) {
             return;
           }
-          const isAvailable = await checkValueSetAvailability(url, medplum);
-          if (!isAvailable && !abortController.signal.aborted) {
-            unavailableUrls.add(url);
+          const availability = await checkValueSetAvailability(medplum, vs.url);
+          if (availability.status === 'unavailable' && !abortController.signal.aborted) {
+            unavailable.push(vs);
           }
         })
       );
 
       if (isActive && !abortController.signal.aborted) {
-        setUnavailableFields(allValueSets.filter((vs) => unavailableUrls.has(vs.url)));
+        setUnavailableValueSets(unavailable);
       }
     }
 
@@ -124,35 +136,17 @@ export function IntakeFormPage({
   return (
     <Document width={800}>
       {checkingValueSets && <Loading />}
-      {!checkingValueSets && unavailableFields.length > 0 && (
-        <Alert color="red" title="Some fields are unavailable" mb="md">
-          <Text size="sm" mb="xs">
-            These fields can't offer suggestions because their value sets aren't available in this project:{' '}
-            {Array.from(new Set(unavailableFields.map((vs) => vs.questionText))).map((questionText, index) => (
-              <Fragment key={questionText}>
-                {index > 0 && ', '}
-                <strong>{questionText}</strong>
-              </Fragment>
+      {!checkingValueSets && unavailableValueSets.length > 0 && (
+        <Alert color="red" title="Some valuesets are unavailable" mb="md">
+          <p>
+            The following questions may not display correctly because their valuesets are not available. Please contact
+            sales to enable these valuesets.
+          </p>
+          <ul>
+            {unavailableValueSets.map((vs) => (
+              <li key={vs.linkId}>{vs.url}</li>
             ))}
-            .
-          </Text>
-          <Anchor component="button" type="button" size="sm" onClick={() => setShowValueSetUrls((prev) => !prev)}>
-            {showValueSetUrls ? 'Hide missing value set URLs' : 'Show missing value set URLs'}
-          </Anchor>
-          {showValueSetUrls && (
-            <>
-              <Text size="sm" mt="xs">
-                Please contact sales to enable these value sets, or import them into your project.
-              </Text>
-              <List size="sm" mt="xs">
-                {Array.from(new Set(unavailableFields.map((vs) => vs.url))).map((url) => (
-                  <List.Item key={url}>
-                    <Code>{url}</Code>
-                  </List.Item>
-                ))}
-              </List>
-            </>
-          )}
+          </ul>
         </Alert>
       )}
       <AIRealTimeQuestionnaireForm
@@ -195,27 +189,6 @@ function extractValueSets(items: QuestionnaireItem[] | undefined, result: ValueS
   }
 
   return result;
-}
-
-/**
- * Checks if a valueset is available by attempting to expand it
- * @param valueSetUrl - The URL of the valueset to check
- * @param medplum - The Medplum client instance
- * @returns Promise that resolves to true if valueset is available, false otherwise
- */
-async function checkValueSetAvailability(
-  valueSetUrl: string,
-  medplum: ReturnType<typeof useMedplum>
-): Promise<boolean> {
-  try {
-    await medplum.valueSetExpand({
-      url: valueSetUrl,
-      count: 1,
-    });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 const defaultQuestionnaire: Questionnaire = {

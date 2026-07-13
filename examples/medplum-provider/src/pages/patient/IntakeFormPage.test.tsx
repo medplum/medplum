@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { badRequest, OperationOutcomeError, serverError } from '@medplum/core';
 import type { Questionnaire } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import * as reactRouter from 'react-router';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -138,7 +139,7 @@ describe('IntakeFormPage', () => {
   test('Shows alert when value sets are unavailable', async () => {
     medplum.valueSetExpand = vi.fn().mockImplementation(async (params: { url: string }) => {
       if (params.url === 'http://example.com/gender') {
-        throw new Error('Value set not available');
+        throw new OperationOutcomeError(badRequest('ValueSet http://example.com/gender not found'));
       }
       return {
         resourceType: 'ValueSet',
@@ -157,20 +158,33 @@ describe('IntakeFormPage', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('Some fields are unavailable')).toBeInTheDocument();
+        expect(screen.getByText(/Some valuesets are unavailable/i)).toBeInTheDocument();
+      },
+      { timeout: 10000 }
+    );
+  });
+
+  test('Does not show alert for transient value set errors', async () => {
+    medplum.valueSetExpand = vi.fn().mockImplementation(async (params: { url: string }) => {
+      if (params.url === 'http://example.com/gender') {
+        throw new OperationOutcomeError(serverError(new Error('boom')));
+      }
+      return {
+        resourceType: 'ValueSet',
+        expansion: { contains: [] },
+      };
+    });
+
+    await setup(false, simpleQuestionnaire);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Simple Test Questionnaire')).toBeInTheDocument();
       },
       { timeout: 10000 }
     );
 
-    // The alert names the affected field
-    expect(screen.getByText('Gender Identity', { selector: 'strong' })).toBeInTheDocument();
-
-    // The value set URLs are hidden until expanded
-    expect(screen.queryByText(/http:\/\/example\.com\/gender/)).not.toBeInTheDocument();
-    await act(async () => {
-      fireEvent.click(screen.getByText('Show missing value set URLs'));
-    });
-    expect(screen.getByText(/http:\/\/example\.com\/gender/)).toBeInTheDocument();
+    expect(screen.queryByText(/Some valuesets are unavailable/i)).not.toBeInTheDocument();
   });
 
   test('Renders required demographic fields', async () => {
