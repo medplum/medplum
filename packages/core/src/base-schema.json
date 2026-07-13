@@ -4231,36 +4231,8 @@
   },
   "IdentityProvider": {
     "elements": {
-      "issuer": {
-        "type": [
-          {
-            "code": "string"
-          }
-        ]
-      },
-      "audience": {
-        "max": 9007199254740991,
-        "type": [
-          {
-            "code": "string"
-          }
-        ]
-      },
-      "tokenVerificationMethod": {
-        "type": [
-          {
-            "code": "code"
-          }
-        ]
-      },
-      "jwksUrl": {
-        "type": [
-          {
-            "code": "string"
-          }
-        ]
-      },
       "authorizeUrl": {
+        "min": 1,
         "type": [
           {
             "code": "string"
@@ -4268,6 +4240,7 @@
         ]
       },
       "tokenUrl": {
+        "min": 1,
         "type": [
           {
             "code": "string"
@@ -4282,6 +4255,7 @@
         ]
       },
       "userInfoUrl": {
+        "min": 1,
         "type": [
           {
             "code": "string"
@@ -4303,6 +4277,7 @@
         ]
       },
       "clientId": {
+        "min": 1,
         "type": [
           {
             "code": "string"
@@ -4310,6 +4285,7 @@
         ]
       },
       "clientSecret": {
+        "min": 1,
         "type": [
           {
             "code": "string"
