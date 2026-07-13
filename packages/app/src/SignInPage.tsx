@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
-import { getAppName, Logo, SignInForm, useMedplumProfile } from '@medplum/react';
+import { getAppName, Logo, SignInForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { getConfig, isRegisterEnabled } from './config';
 
 export function SignInPage(): JSX.Element {
+  const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -30,7 +31,17 @@ export function SignInPage(): JSX.Element {
     <SignInForm
       onSuccess={() => navigateToNext()}
       onForgotPassword={() => navigate('/resetpassword')?.catch(console.error)}
-      onRegister={isRegisterEnabled() ? () => navigate('/register')?.catch(console.error) : undefined}
+      onRegister={
+        isRegisterEnabled()
+          ? async () => {
+              // Sign out before navigating to RegisterPage so it does not
+              // redirect us back to /signin?project=new. If the server logout
+              // fails, still clear local auth state so the Register page loads.
+              await medplum.signOut().catch(() => medplum.clear());
+              navigate('/register')?.catch(console.error);
+            }
+          : undefined
+      }
       googleClientId={config.googleClientId}
       login={searchParams.get('login') || undefined}
       projectId={searchParams.get('project') || undefined}
