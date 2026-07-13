@@ -19,6 +19,7 @@ import {
 import { RepositoryMode } from '@medplum/fhir-router';
 import type {
   Binary,
+  Bundle,
   BundleEntry,
   Login,
   OperationOutcome,
@@ -29,6 +30,7 @@ import type {
   ProjectMembership,
   Questionnaire,
   ResearchDefinition,
+  Resource,
   ResourceType,
   ServiceRequest,
   User,
@@ -52,6 +54,30 @@ import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
 vi.mock('hibp');
+
+function isHistoryEntryDeleted(entry: BundleEntry): boolean {
+  return (
+    entry.response?.status === '410' &&
+    entry.response?.outcome?.issue?.some((issue) => issue.code === 'deleted') === true
+  );
+}
+
+function isResourceCurrentlyDeleted<T extends Resource>(history: Bundle<T>): boolean {
+  return history.entry?.some(isHistoryEntryDeleted) ?? false;
+}
+
+function getLatestNonDeletedHistoryResource<T extends Resource>(history: Bundle<T>): WithId<T> | undefined {
+  const entry = history.entry?.find((e) => e.response?.status === '200' && e.resource);
+  return entry?.resource as WithId<T> | undefined;
+}
+
+function buildRestoredResource<T extends Resource>(latestVersion: WithId<T>): WithId<T> {
+  if (!latestVersion.meta?.deleted) {
+    return latestVersion;
+  }
+  const { deleted: _, ...meta } = latestVersion.meta;
+  return { ...latestVersion, meta } as WithId<T>;
+}
 
 describe('FHIR Repo', () => {
   const globalSystemRepo = getGlobalSystemRepo();
@@ -1077,28 +1103,15 @@ describe('FHIR Repo', () => {
       await systemRepo.deleteResource('Patient', patient.id);
 
       const history = await systemRepo.readHistory<Patient>('Patient', patient.id);
-      expect(
-        history.entry?.some(
-          (entry) =>
-            entry.response?.status === '410' &&
-            entry.response?.outcome?.issue?.some((issue) => issue.code === 'deleted') === true
-        ) ?? false
-      ).toBe(true);
+      expect(isResourceCurrentlyDeleted(history)).toBe(true);
 
-      const latestVersion = history.entry?.find((e) => e.response?.status === '200' && e.resource)?.resource as
-        | WithId<Patient>
-        | undefined;
+      const latestVersion = getLatestNonDeletedHistoryResource(history);
       expect(latestVersion).toBeDefined();
       if (!latestVersion) {
         throw new Error('Expected latest version');
       }
 
-      let resourceToRestore: WithId<Patient> = latestVersion;
-      if (latestVersion.meta?.deleted) {
-        const { deleted: _deleted, ...meta } = latestVersion.meta;
-        resourceToRestore = { ...latestVersion, meta };
-      }
-      const restored = await systemRepo.updateResource(resourceToRestore);
+      const restored = await systemRepo.updateResource(buildRestoredResource(latestVersion));
 
       expect(restored.name?.[0]?.family).toStrictEqual('Smith');
       expect(restored.meta?.deleted).toBeUndefined();
