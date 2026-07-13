@@ -26,6 +26,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-cdk/lambda-layer-kubectl-v30": "2.0.4",
     "@aws-sdk/types": "3.973.13",
     "@medplum/core": "5.1.26",
     "aws-cdk-lib": "2.260.0",
