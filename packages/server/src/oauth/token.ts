@@ -37,7 +37,6 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
 import { safeFetch } from '../util/url';
 import { validateClientCert } from './cert';
-import { verifyExternalToken } from './external-token';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
 import {
@@ -45,7 +44,7 @@ import {
   getAuthTokens,
   getClientApplication,
   getClientApplicationMembership,
-  getExternalAuthIdentityProvider,
+  getExternalUserInfo,
   hashCode,
   revokeLogin,
   timingSafeEqualStr,
@@ -543,7 +542,7 @@ async function tryGetExternalUserInfo(
   subjectToken: string
 ): Promise<JWTPayload | undefined> {
   try {
-    return await verifyExternalToken(idp, subjectToken);
+    return await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
   } catch (err: any) {
     const outcome = normalizeOperationOutcome(err);
     sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(outcome));
@@ -567,7 +566,14 @@ function resolveExternalAuthProvider(clientId: string, client?: ClientApplicatio
     (provider) => (provider.clientId ?? provider.identityProvider?.clientId) === clientId
   );
   if (externalAuthConfig) {
-    return getExternalAuthIdentityProvider(externalAuthConfig);
+    if (externalAuthConfig.identityProvider) {
+      return externalAuthConfig.identityProvider;
+    }
+
+    const userInfoUrl = externalAuthConfig.userInfoUrl;
+    if (userInfoUrl) {
+      return { userInfoUrl } as IdentityProvider;
+    }
   }
 
   return client?.identityProvider;

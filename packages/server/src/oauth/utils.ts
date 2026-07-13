@@ -3,6 +3,7 @@
 import type { Filter, JWTPayload, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
   badRequest,
+  ContentType,
   createReference,
   forbidden,
   getDateProperty,
@@ -15,6 +16,7 @@ import {
   parseReference,
   parseSearchRequest,
   resolveId,
+  tooManyRequests,
 } from '@medplum/core';
 import type {
   AccessPolicy,
@@ -54,8 +56,8 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
+import { safeFetch } from '../util/url';
 import { getStandardClientById } from './clients';
-import { verifyExternalToken } from './external-token';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
 import type { AuthenticationResult, AuthState } from './middleware';
@@ -843,6 +845,122 @@ function includeRefreshToken(request: LoginRequest, client: ClientApplication | 
   return !!(client?.grantType?.includes('refresh_token') || scopeArray?.includes('offline_access'));
 }
 
+/**
+ * Returns the external identity provider user info for an access token.
+ * This can be used to verify the access token and get the user's email address.
+ * @param userInfoUrl - The user info URL from the identity provider configuration.
+ * @param externalAccessToken - The external identity provider access token.
+ * @param idp - Optional identity provider configuration.
+ * @returns The user info claims.
+ */
+export async function getExternalUserInfo(
+  userInfoUrl: string,
+  externalAccessToken: string,
+  idp?: IdentityProvider
+): Promise<JWTPayload> {
+  const log = getLogger();
+
+  const request = buildExternalUserInfoRequest(userInfoUrl, externalAccessToken, idp);
+
+  let response;
+  try {
+    response = await safeFetch(request.url, request.init);
+  } catch (err: any) {
+    log.warn('Error while verifying external auth code', err);
+    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+  }
+
+  if (response.status === 429) {
+    log.warn('Auth rate limit exceeded', { url: request.url, clientId: idp?.clientId });
+    throw new OperationOutcomeError(tooManyRequests);
+  }
+
+  if (response.status !== 200) {
+    log.warn('Failed to verify external authorization code', { status: response.status });
+    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+  }
+
+  const contentType = response.headers.get('content-type');
+  try {
+    if (contentType?.includes(ContentType.JSON)) {
+      return normalizeExternalUserInfo(await response.json(), idp);
+    } else if (contentType?.includes(ContentType.JWT)) {
+      return parseJWTPayload(await response.text());
+    }
+  } catch (err: any) {
+    if (err instanceof OperationOutcomeError) {
+      throw err;
+    }
+    log.warn('Failed to verify external authorization code', { err, userInfoUrl, contentType });
+    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+  }
+
+  throw new OperationOutcomeError(badRequest(`Failed to verify code - unsupported content type: ${contentType}`));
+}
+
+function buildExternalUserInfoRequest(
+  userInfoUrl: string,
+  externalAccessToken: string,
+  idp: IdentityProvider | undefined
+): { url: string; init: RequestInit } {
+  if (idp?.userInfoMode === 'gcip') {
+    const apiKey = idp.userInfoApiKey;
+    if (!apiKey) {
+      throw new OperationOutcomeError(
+        badRequest('Missing user info API key - check your identity provider configuration')
+      );
+    }
+
+    const url = new URL(userInfoUrl);
+    url.searchParams.set('key', apiKey);
+
+    return {
+      url: url.toString(),
+      init: {
+        method: 'POST',
+        headers: {
+          Accept: ContentType.JSON,
+          'Accept-Encoding': 'identity',
+          'Content-Type': ContentType.JSON,
+        },
+        body: JSON.stringify({ idToken: externalAccessToken }),
+      },
+    };
+  }
+
+  return {
+    url: userInfoUrl,
+    init: {
+      method: 'GET',
+      headers: {
+        Accept: ContentType.JSON,
+        'Accept-Encoding': 'identity',
+        Authorization: `Bearer ${externalAccessToken}`,
+      },
+    },
+  };
+}
+
+function normalizeExternalUserInfo(body: Record<string, unknown>, idp?: IdentityProvider): Record<string, unknown> {
+  if (idp?.userInfoMode !== 'gcip') {
+    return body;
+  }
+
+  const users = body.users;
+  if (!Array.isArray(users) || users.length === 0 || !users[0] || typeof users[0] !== 'object') {
+    throw new OperationOutcomeError(badRequest('Failed to verify code - invalid user info response'));
+  }
+
+  const user = users[0] as Record<string, unknown>;
+  if (!user.localId) {
+    throw new OperationOutcomeError(badRequest('Failed to verify code - missing localId in user info response'));
+  }
+  return {
+    ...user,
+    sub: user.localId,
+  };
+}
+
 interface ValidationAssertion {
   clientId?: string;
   clientSecret?: string;
@@ -1068,23 +1186,14 @@ async function tryExternalAuth(
 
   const claims = parseJWTPayload(accessToken);
   const issuer = claims.iss as string;
-  const externalAuthConfig = externalAuthProviders.find(
-    (provider) => getExternalAuthProviderIssuer(provider) === issuer
-  );
+  const externalAuthConfig = externalAuthProviders.find((provider) => provider.issuer === issuer);
   if (!externalAuthConfig) {
     // Not a configured external auth provider
     return undefined;
   }
 
-  const cacheTtl = getExternalAuthCacheTtl(claims);
-  if (cacheTtl <= 0) {
-    return undefined;
-  }
-
   const redis = getCacheRedis();
-  const redisKey = `medplum:ext-auth:${issuer}:${hashCode(accessToken)}:${hashCode(
-    JSON.stringify(externalAuthConfig.identityProvider?.audience ?? null)
-  )}`;
+  const redisKey = `medplum:ext-auth:${issuer}:${hashCode(accessToken)}`;
   const cachedValue = await redis.get(redisKey);
   let login: Login;
   let project: WithId<Project> | undefined;
@@ -1102,29 +1211,11 @@ async function tryExternalAuth(
       return undefined;
     }
     ({ login, project, membership } = externalAuthState);
-    await redis.set(redisKey, JSON.stringify(login), 'EX', cacheTtl);
+    await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
   }
 
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
   return { login, project, membership, userConfig };
-}
-
-/**
- * Returns the Redis TTL for a cached external bearer login.
- *
- * The cache must not outlive the bearer token. Tokens without an `exp` claim keep
- * the legacy one-hour TTL because userinfo validation may be the only expiry signal.
- *
- * @param claims - Parsed JWT claims from the presented bearer token.
- * @returns Cache TTL in seconds, or 0 if the token is already expired.
- */
-function getExternalAuthCacheTtl(claims: JWTPayload): number {
-  const maxTtl = 3600;
-  if (typeof claims.exp !== 'number') {
-    return maxTtl;
-  }
-
-  return Math.min(maxTtl, Math.max(0, Math.floor(claims.exp - Date.now() / 1000)));
 }
 
 async function tryExternalAuthLogin(
@@ -1134,30 +1225,84 @@ async function tryExternalAuthLogin(
   claims: JWTPayload,
   externalAuthConfig: MedplumExternalAuthConfig
 ): Promise<Pick<AuthState, 'login' | 'project' | 'membership'> | undefined> {
-  const idp = getExternalAuthIdentityProvider(externalAuthConfig);
-  if (!idp) {
-    return undefined;
-  }
-
-  const useIdentityProviderMapping = !!(idp.identitySource || idp.identityMappingMode || idp.useSubject);
+  // To ensure broad compatibility, we check for the FHIR user profile in two places:
+  // the standard `fhirUser` claim and `ext.fhirUser` for identity providers
+  // that automatically place custom claims in an `ext` block.
   const extensions = claims.ext as Record<string, unknown> | undefined;
   const profileString = claims.fhirUser ?? extensions?.fhirUser;
-  if (!useIdentityProviderMapping && !isString(profileString) && !isString(claims.sub)) {
+
+  // If neither fhirUser nor sub is present, we cannot identify the user
+  if (!isString(profileString) && !isString(claims.sub)) {
     return undefined;
   }
 
-  // Verify the token against the external IDP.
-  let verifiedClaims: JWTPayload;
+  // Validate the token against the external IDP's userinfo endpoint
   try {
-    verifiedClaims = await verifyExternalToken(idp, accessToken);
+    const userInfoUrl = externalAuthConfig.identityProvider?.userInfoUrl ?? externalAuthConfig.userInfoUrl;
+    if (!userInfoUrl) {
+      return undefined;
+    }
+    await getExternalUserInfo(userInfoUrl, accessToken, externalAuthConfig.identityProvider);
   } catch (err: any) {
-    getLogger().warn('Failed to verify external token', err);
+    getLogger().warn('Failed to get external user info', err);
     return undefined;
   }
 
-  const membership = useIdentityProviderMapping
-    ? await getExternalBearerMembershipForIdentityProvider(systemRepo, verifiedClaims, idp)
-    : await getExternalBearerMembershipFromClaims(systemRepo, claims);
+  let membership: WithId<ProjectMembership> | undefined;
+
+  if (isString(profileString)) {
+    // Path A: fhirUser claim present - look up profile, then find membership
+    // Profile string can be either a reference or a search string
+    let searchRequest: SearchRequest<ProfileResource>;
+    const queryIndex = profileString.indexOf('?');
+    if (queryIndex > -1) {
+      // Search string can be either relative (e.g. `Patient?identifier=foo`),
+      // or absolute (e.g. `https://idp.example.com/fhir/Patient?identifier=bar`)
+      // Isolate the resource type and query string from any preceding URL parts
+      const startIndex = profileString.lastIndexOf('/', queryIndex);
+      searchRequest = parseSearchRequest(profileString.substring(startIndex + 1));
+    } else {
+      const [resourceType, id] = profileString.split('/');
+      searchRequest = {
+        resourceType: resourceType as ProfileResource['resourceType'],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: id }],
+      };
+    }
+
+    // Search for the profile
+    const profile = await systemRepo.searchOne<ProfileResource>(searchRequest);
+    if (!profile) {
+      return undefined;
+    }
+
+    // Search for a ProjectMembership for the profile
+    membership = await systemRepo.searchOne<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(profile) }],
+    });
+  } else {
+    // Path B: sub claim fallback - look up ProjectMembership by externalId
+    // Fetch at most 2 to detect duplicates efficiently; if 2+ exist, the externalId is ambiguous
+    const bundle = await systemRepo.search<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [
+        {
+          code: 'external-id',
+          operator: Operator.EXACT,
+          value: claims.sub as string,
+        },
+      ],
+      count: 2,
+    });
+
+    const entries = bundle.entry;
+    if (entries && entries.length > 1) {
+      getLogger().warn('Multiple ProjectMemberships found for external ID', { sub: claims.sub });
+      return undefined;
+    }
+
+    membership = entries?.[0]?.resource;
+  }
 
   if (!membership || membership.active === false) {
     return undefined;
@@ -1193,224 +1338,6 @@ async function tryExternalAuthLogin(
   );
 
   return { login, project, membership };
-}
-
-/**
- * Returns the IdentityProvider settings used to validate direct external bearer tokens.
- *
- * Newer configs store userinfo settings in `identityProvider`; older configs store only
- * a top-level `userInfoUrl`. This function normalizes those shapes for token validation
- * without deciding how the token should map to a Medplum identity.
- *
- * @param externalAuthConfig - The matching external auth provider config.
- * @returns Identity provider settings with a userinfo URL, or undefined if none is configured.
- */
-export function getExternalAuthIdentityProvider(
-  externalAuthConfig: MedplumExternalAuthConfig
-): IdentityProvider | undefined {
-  const issuer = getExternalAuthProviderIssuer(externalAuthConfig);
-  if (externalAuthConfig.identityProvider) {
-    return {
-      issuer,
-      userInfoUrl: externalAuthConfig.userInfoUrl,
-      ...externalAuthConfig.identityProvider,
-    };
-  }
-
-  if (externalAuthConfig.userInfoUrl) {
-    return { issuer, userInfoUrl: externalAuthConfig.userInfoUrl };
-  }
-
-  return undefined;
-}
-
-export function getExternalAuthProviderIssuer(externalAuthConfig: MedplumExternalAuthConfig): string {
-  return externalAuthConfig.identityProvider?.issuer ?? externalAuthConfig.issuer;
-}
-
-/**
- * Resolves a direct external bearer token to a ProjectMembership using JWT claims.
- *
- * This is the default direct-bearer mapping behavior: `fhirUser` (including
- * `ext.fhirUser`) takes precedence, and `sub` falls back to matching
- * `ProjectMembership.externalId`.
- *
- * @param systemRepo - System repository used for cross-project membership lookup.
- * @param claims - Parsed JWT claims from the presented bearer token.
- * @returns The resolved project membership, or undefined if no unambiguous membership matches.
- */
-async function getExternalBearerMembershipFromClaims(
-  systemRepo: SystemRepository,
-  claims: JWTPayload
-): Promise<WithId<ProjectMembership> | undefined> {
-  const extensions = claims.ext as Record<string, unknown> | undefined;
-  const profileString = claims.fhirUser ?? extensions?.fhirUser;
-  if (isString(profileString)) {
-    // Path A: fhirUser claim present - look up profile, then find membership
-    // Profile string can be either a reference or a search string
-    return getProjectMembershipByProfileString(systemRepo, profileString);
-  }
-
-  if (isString(claims.sub)) {
-    return getProjectMembershipByExternalId(systemRepo, claims.sub);
-  }
-
-  return undefined;
-}
-
-/**
- * Resolves a direct external bearer token to a ProjectMembership using explicit IdentityProvider mapping settings.
- *
- * This path is used only when `identitySource`, `identityMappingMode`, or legacy `useSubject`
- * is configured on the identity provider. Identity values come from the verified userinfo response, not from the
- * original bearer-token claims.
- *
- * @param systemRepo - System repository used for cross-project membership lookup.
- * @param userInfo - Userinfo response returned by the external identity provider.
- * @param idp - Identity provider configuration containing the mapping settings.
- * @returns The resolved project membership, or undefined if the mapping is unsupported or no membership matches.
- */
-async function getExternalBearerMembershipForIdentityProvider(
-  systemRepo: SystemRepository,
-  userInfo: JWTPayload,
-  idp: IdentityProvider
-): Promise<WithId<ProjectMembership> | undefined> {
-  const identitySource = idp.identitySource ?? (idp.useSubject ? 'subject' : 'email');
-  const identityMappingMode =
-    idp.identityMappingMode ?? (idp.useSubject ? 'project-membership-external-id' : 'user-email');
-
-  if (identitySource === 'email' && identityMappingMode === 'user-email') {
-    const email = isString(userInfo.email) ? userInfo.email.toLowerCase() : undefined;
-    if (!email || userInfo.email_verified !== true) {
-      return undefined;
-    }
-    const user = await getUserByEmail(email, undefined);
-    return user ? getOnlyProjectMembershipForUser(systemRepo, user) : undefined;
-  }
-
-  if (identitySource === 'subject' && identityMappingMode === 'project-membership-external-id') {
-    return isString(userInfo.sub) ? getProjectMembershipByExternalId(systemRepo, userInfo.sub) : undefined;
-  }
-
-  if (identitySource === 'fhir-user' && identityMappingMode === 'project-membership-profile') {
-    const extensions = userInfo.ext as Record<string, unknown> | undefined;
-    const profileString = userInfo.fhirUser ?? extensions?.fhirUser;
-    return isString(profileString) ? getProjectMembershipByProfileString(systemRepo, profileString) : undefined;
-  }
-
-  getLogger().warn('Unsupported identity provider configuration for external bearer token', {
-    identitySource,
-    identityMappingMode,
-  });
-  return undefined;
-}
-
-/**
- * Resolves a FHIR profile reference/search string to its ProjectMembership.
- *
- * Supports direct references such as `Practitioner/123`, relative search strings such as
- * `Practitioner?identifier=abc`, and absolute URLs whose trailing path/query form a FHIR
- * search string.
- *
- * @param systemRepo - System repository used to search profiles and memberships.
- * @param profileString - FHIR profile reference or search string from `fhirUser`.
- * @returns The membership for the resolved profile, or undefined if either resource is missing.
- */
-async function getProjectMembershipByProfileString(
-  systemRepo: SystemRepository,
-  profileString: string
-): Promise<WithId<ProjectMembership> | undefined> {
-  let searchRequest: SearchRequest<ProfileResource>;
-  const queryIndex = profileString.indexOf('?');
-  if (queryIndex > -1) {
-    // Search string can be either relative (e.g. `Patient?identifier=foo`),
-    // or absolute (e.g. `https://idp.example.com/fhir/Patient?identifier=bar`)
-    // Isolate the resource type and query string from any preceding URL parts
-    const startIndex = profileString.lastIndexOf('/', queryIndex);
-    searchRequest = parseSearchRequest(profileString.substring(startIndex + 1));
-  } else {
-    const [resourceType, id] = profileString.split('/');
-    searchRequest = {
-      resourceType: resourceType as ProfileResource['resourceType'],
-      filters: [{ code: '_id', operator: Operator.EQUALS, value: id }],
-    };
-  }
-
-  const profile = await systemRepo.searchOne<ProfileResource>(searchRequest);
-  if (!profile) {
-    return undefined;
-  }
-
-  return systemRepo.searchOne<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(profile) }],
-  });
-}
-
-/**
- * Resolves a ProjectMembership by external ID.
- *
- * The lookup is intentionally cross-project because direct external bearer auth is configured
- * at the server level. Duplicate matches are treated as ambiguous and fail closed.
- *
- * @param systemRepo - System repository used for cross-project membership lookup.
- * @param externalId - External subject identifier to match against `ProjectMembership.externalId`.
- * @returns The matching project membership, or undefined if none or multiple memberships match.
- */
-async function getProjectMembershipByExternalId(
-  systemRepo: SystemRepository,
-  externalId: string
-): Promise<WithId<ProjectMembership> | undefined> {
-  // Fetch at most 2 to detect duplicates efficiently; if 2+ exist, the externalId is ambiguous.
-  const bundle = await systemRepo.search<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [
-      {
-        code: 'external-id',
-        operator: Operator.EXACT,
-        value: externalId,
-      },
-    ],
-    count: 2,
-  });
-
-  const entries = bundle.entry;
-  if (entries && entries.length > 1) {
-    getLogger().warn('Multiple ProjectMemberships found for external ID', { externalId });
-    return undefined;
-  }
-
-  return entries?.[0]?.resource;
-}
-
-/**
- * Resolves a user's sole ProjectMembership.
- *
- * Email-based direct bearer mapping does not carry a project or membership selector. To avoid
- * choosing a project implicitly, users with multiple memberships are treated as ambiguous and
- * fail closed.
- *
- * @param systemRepo - System repository used for cross-project membership lookup.
- * @param user - The resolved global user.
- * @returns The user's only project membership, or undefined if the user has none or multiple.
- */
-async function getOnlyProjectMembershipForUser(
-  systemRepo: SystemRepository,
-  user: WithId<User>
-): Promise<WithId<ProjectMembership> | undefined> {
-  const bundle = await systemRepo.search<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
-    count: 2,
-  });
-
-  const entries = bundle.entry;
-  if (entries && entries.length > 1) {
-    getLogger().warn('Multiple ProjectMemberships found for external auth user', { user: getReferenceString(user) });
-    return undefined;
-  }
-
-  return entries?.[0]?.resource;
 }
 
 /**
