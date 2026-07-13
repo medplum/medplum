@@ -273,7 +273,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   const resultsThisRun: Record<number, BundleEntry> = Object.create(null);
 
   if (!isJobActive(asyncJob)) {
-    await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState);
+    await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun);
     return;
   }
 
@@ -353,7 +353,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
 
         asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
         if (!isJobActive(asyncJob)) {
-          await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState);
+          await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun);
           return;
         }
       }
@@ -404,7 +404,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
     try {
       if (userRepo && initialState) {
         // attach whatever partial results were persisted and fail the job
-        const { binary } = await assembleResultBundle(userRepo.clone(), store, initialState, chunkSeq);
+        const { binary } = await assembleResultBundle(userRepo.clone(), store, initialState, chunkSeq, resultsThisRun);
         await exec
           .failJob(failErr, {
             resourceType: 'Parameters',
@@ -438,6 +438,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
  * @param asyncJob - The (refreshed) AsyncJob, in a terminal/cancelled state.
  * @param chunkSeq - The number of result chunks written so far.
  * @param authState - The auth state captured when the batch was submitted.
+ * @param inMemoryResults - Result entries produced during this run, i.e. checkpointed during this run.
  */
 async function finalizeInterrupted(
   logger: ILogger,
@@ -445,7 +446,8 @@ async function finalizeInterrupted(
   store: BatchCheckpointStore,
   asyncJob: WithId<AsyncJob>,
   chunkSeq: number,
-  authState: Readonly<AuthState>
+  authState: Readonly<AuthState>,
+  inMemoryResults: Record<number, BundleEntry>
 ): Promise<void> {
   try {
     logger.info('Async batch job cancelled mid-flight; making partial results available', {
@@ -454,7 +456,7 @@ async function finalizeInterrupted(
     const initialState = await store.loadInitialState();
     const userConfig = await getUserConfiguration(systemRepo, authState.project, authState.membership);
     const repo = await getBatchUserRepo(authState, userConfig);
-    const { binary, bundle } = await assembleResultBundle(repo, store, initialState, chunkSeq);
+    const { binary, bundle } = await assembleResultBundle(repo, store, initialState, chunkSeq, inMemoryResults);
     const output: Parameters = {
       resourceType: 'Parameters',
       parameter: [
@@ -482,10 +484,7 @@ async function finalizeInterrupted(
  * @param initialState - The preprocessed initial state.
  * @param chunkSeq - The number of result chunks to read back from durable storage (chunks `0`
  * through `chunkSeq - 1`).
- * @param inMemoryResults - Result entries already held in memory (checkpointed during the current
- * run), merged over the chunks read from storage. The completion path passes these to avoid
- * re-reading chunks the current run just wrote; the interrupted/failure paths omit them and read
- * everything back, treating durable state as the record of what was persisted.
+ * @param inMemoryResults - Result entries produced during this run, i.e. checkpointed during this run.
  * @returns The uploaded Binary and the assembled response bundle.
  */
 async function assembleResultBundle(
@@ -493,7 +492,7 @@ async function assembleResultBundle(
   store: BatchCheckpointStore,
   initialState: BatchInitialState,
   chunkSeq: number,
-  inMemoryResults: Record<number, BundleEntry> = {}
+  inMemoryResults: Record<number, BundleEntry>
 ): Promise<{ binary: Binary; bundle: Bundle }> {
   const results = await store.loadAllResults(chunkSeq);
   Object.assign(results, inMemoryResults);
