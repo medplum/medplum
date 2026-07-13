@@ -96,4 +96,5 @@ export function ScriptSurePharmacyDialog(props: PharmacyDialogBaseProps): JSX.El
       searchPlaceholders={SCRIPTSURE_SEARCH_PLACEHOLDERS}
     />
   );
+}
 

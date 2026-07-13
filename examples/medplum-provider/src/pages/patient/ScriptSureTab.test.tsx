@@ -14,11 +14,13 @@ import { ScriptSureTab } from './ScriptSureTab';
 const mockIframeUrl = 'https://scriptsure.example.com/chart/123/prescriptions';
 const mockRenderedIframeUrl = applyDarkmode(mockIframeUrl, 'light');
 
-vi.mock('@medplum/scriptsure-react', () => ({
-  useScriptSureIFrame: vi.fn(() => mockIframeUrl),
-  SCRIPTSURE_IFRAME_BOT: { system: 'https://www.medplum.com/bots', value: 'scriptsure-iframe-bot' },
-  SCRIPTSURE_PATIENT_SYNC_BOT: { system: 'https://www.medplum.com/bots', value: 'scriptsure-patient-sync-bot' },
-}));
+vi.mock('@medplum/scriptsure-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@medplum/scriptsure-react')>();
+  return {
+    ...actual,
+    useScriptSureIFrame: vi.fn(() => mockIframeUrl),
+  };
+});
 
 describe('ScriptSureTab', () => {
   let medplum: MockClient;
