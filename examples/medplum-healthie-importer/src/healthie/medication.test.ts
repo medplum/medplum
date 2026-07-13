@@ -50,13 +50,12 @@ describe('fetchMedications', () => {
       },
     ];
 
-    mockFetch.mockImplementationOnce(
-      (): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { medications: mockMedications } }),
-          ok: true,
-          status: 200,
-        })
+    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+      Promise.resolve({
+        json: () => Promise.resolve({ data: { medications: mockMedications } }),
+        ok: true,
+        status: 200,
+      })
     );
 
     const result = await fetchMedications(healthieClient, 'patient123');
@@ -75,13 +74,12 @@ describe('fetchMedications', () => {
   // so all medications are fetched in a single request
 
   test('returns empty array when no medications found', async () => {
-    mockFetch.mockImplementationOnce(
-      (): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { medications: [] } }),
-          ok: true,
-          status: 200,
-        })
+    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+      Promise.resolve({
+        json: () => Promise.resolve({ data: { medications: [] } }),
+        ok: true,
+        status: 200,
+      })
     );
 
     const result = await fetchMedications(healthieClient, 'patient123');
