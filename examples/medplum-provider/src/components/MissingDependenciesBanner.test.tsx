@@ -8,6 +8,7 @@ import { MedplumProvider } from '@medplum/react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { ICD10_CM_BILLABLE_VALUESET } from '../config/appDependencies';
 import { MissingDependenciesBanner } from './MissingDependenciesBanner';
 
 const US_CORE_PATIENT_URL = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient';
@@ -80,6 +81,45 @@ describe('MissingDependenciesBanner', () => {
       expect(screen.getByText('UMLS terminology')).toBeInTheDocument();
     });
     expect(screen.getByText(/shared projects are not linked/i)).toBeInTheDocument();
+  });
+
+  test('Does not flag UMLS when at least one of its ValueSets is present', async () => {
+    mockAllPresent(medplum);
+    // ICD-10 expands fine but the second UMLS ValueSet 404s. One present probe proves the UMLS
+    // project is linked, so the group must NOT be flagged even though a sibling probe is missing.
+    vi.spyOn(medplum, 'valueSetExpand').mockImplementation((async (params: { url: string }) => {
+      if (params.url === ICD10_CM_BILLABLE_VALUESET) {
+        return presentValueSet;
+      }
+      throw new OperationOutcomeError(notFound);
+    }) as any);
+
+    setup();
+
+    await waitFor(() => {
+      expect(medplum.valueSetExpand).toHaveBeenCalled();
+    });
+    expect(screen.queryByText('UMLS terminology')).not.toBeInTheDocument();
+    expect(screen.queryByText(/shared projects are not linked/i)).not.toBeInTheDocument();
+  });
+
+  test('Flags US Core profiles when the profile search is empty', async () => {
+    mockAllPresent(medplum);
+    vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string) => {
+      if (resourceType === 'StructureDefinition') {
+        return undefined;
+      }
+      if (resourceType === 'Bot') {
+        return { resourceType: 'Bot', id: 'hg-bot' } as Bot;
+      }
+      return undefined;
+    }) as any);
+
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('US Core profiles')).toBeInTheDocument();
+    });
   });
 
   test('Flags Health Gorilla when the bot search is empty', async () => {

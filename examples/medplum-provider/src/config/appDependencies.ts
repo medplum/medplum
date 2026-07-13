@@ -43,9 +43,11 @@ export interface DependencyGroup {
   /** Link to setup docs for this dependency. */
   readonly docsUrl: string;
   /**
-   * The probes used to detect this group. A group is considered missing if ANY of its probes
-   * definitively resolve as missing (404/400/empty). Because every probe in a group is backed by
-   * the same shared project, one missing probe means the whole project is unlinked.
+   * The probes used to detect this group. A group is flagged missing when at least one probe
+   * definitively resolves as missing (404/400/empty) AND none resolve as present. Because every
+   * probe in a group is backed by the same shared project, a single present probe proves the
+   * project is linked (so the group is not flagged), while a missing probe with no present sibling
+   * indicates the project is unlinked.
    */
   readonly probes: readonly DependencyProbe[];
 }

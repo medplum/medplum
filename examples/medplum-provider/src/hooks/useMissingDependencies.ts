@@ -21,9 +21,15 @@ export interface UseMissingDependenciesResult {
  * ValueSet is expanded at most once per client and the result is shared with the inline
  * field-level checks (a missing ValueSet recovers automatically once the project is linked).
  *
- * Only definitive negatives (a 400/404 `$expand`, an empty profile/bot search) count as "missing";
- * transient failures (network errors, 401/403/5xx) are treated as "unknown" and never flag a
- * dependency, so a flaky connection or a permission gap does not produce a false alarm.
+ * Definitive negatives count as "missing": a 400/404 `$expand`, or an empty profile/bot search.
+ * Transient failures (network errors, 401/403/5xx) throw and are treated as "unknown", never
+ * flagging a dependency, so a flaky connection or an outright-denied request does not false-alarm.
+ *
+ * Caveat: a profile/bot search that returns *empty* is treated as missing. An AccessPolicy that
+ * merely filters those resource types out (returning an empty 200, rather than denying access,
+ * which throws) can therefore produce a false positive for a restricted user. The banner is
+ * advisory and dismissible, and the users who can act on it (project admins) are not usually
+ * restricted this way — but the ValueSet probe is the only one that cannot false-alarm.
  * @returns The missing dependency groups and a loading flag.
  */
 export function useMissingDependencies(): UseMissingDependenciesResult {
@@ -43,12 +49,9 @@ export function useMissingDependencies(): UseMissingDependenciesResult {
           setResult({ projectId, missing });
         }
       })
-      .catch(() => {
-        // Detection is best-effort; on unexpected failure, surface nothing.
-        if (active) {
-          setResult({ projectId, missing: [] });
-        }
-      });
+      // detectMissingGroups doesn't reject in practice (runProbe catches every probe error and
+      // returns a verdict); this no-op handler only satisfies the no-floating-promises rule.
+      .catch(() => undefined);
     return () => {
       active = false;
     };

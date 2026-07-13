@@ -36,6 +36,7 @@ import {
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
+import { ICD10_CM_BILLABLE_VALUESET } from '../../config/appDependencies';
 import orderSetBundleData from '../../data/order-set-example-bundle.json';
 import patientBundleData from '../../data/patient-david-james-williams.json';
 import visitBundleData from '../../data/simple-initial-visit-bundle.json';
@@ -100,7 +101,7 @@ export function GetStartedPage(): JSX.Element {
         {
           resourceType: 'ValueSet',
           status: 'active',
-          url: 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable',
+          url: ICD10_CM_BILLABLE_VALUESET,
           title: 'ICD-10-CM Billable Codes',
           name: 'icd10cm-billable',
           compose: {
@@ -112,7 +113,7 @@ export function GetStartedPage(): JSX.Element {
             ],
           },
         },
-        { url: 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable' }
+        { url: ICD10_CM_BILLABLE_VALUESET }
       );
       showNotification({ color: 'green', title: 'Success', message: 'ICD-10-CM Billable Codes ValueSet ready' });
     } catch (error) {

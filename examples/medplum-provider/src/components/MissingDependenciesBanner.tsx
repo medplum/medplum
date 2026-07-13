@@ -9,6 +9,24 @@ import { useMissingDependencies } from '../hooks/useMissingDependencies';
 
 const DISMISSED_KEY_PREFIX = 'medplum-provider-missing-dependencies-dismissed:';
 
+// sessionStorage access can throw (blocked cookies, sandboxed iframe), so both read and write are
+// guarded — an unavailable store just means dismissal falls back to component state for the session.
+function readDismissed(key: string): boolean {
+  try {
+    return sessionStorage.getItem(key) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function writeDismissed(key: string): void {
+  try {
+    sessionStorage.setItem(key, 'true');
+  } catch {
+    // Ignore storage failures; dismissal falls back to component state.
+  }
+}
+
 /**
  * A single consolidated banner shown after sign-in when one or more of the app's expected Medplum
  * shared projects (UMLS terminology, US Core profiles, integration bots) are not linked into the
@@ -23,18 +41,14 @@ export function MissingDependenciesBanner(): JSX.Element | null {
   const sessionKey = medplum.getProject()?.id ?? medplum.getProfile()?.id ?? 'default';
   const { missingGroups, loading } = useMissingDependencies();
   const dismissedKey = DISMISSED_KEY_PREFIX + sessionKey;
-  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem(dismissedKey) === 'true');
+  const [dismissed, setDismissed] = useState(() => readDismissed(dismissedKey));
 
   if (loading || dismissed || missingGroups.length === 0) {
     return null;
   }
 
   const handleClose = (): void => {
-    try {
-      sessionStorage.setItem(dismissedKey, 'true');
-    } catch {
-      // Ignore storage failures; dismissal falls back to component state.
-    }
+    writeDismissed(dismissedKey);
     setDismissed(true);
   };
 
