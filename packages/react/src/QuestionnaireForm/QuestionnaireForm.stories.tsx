@@ -1085,6 +1085,66 @@ export const Choices = (): JSX.Element => (
   </Document>
 );
 
+export const CheckboxOptionExclusive = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'checkbox-option-exclusive',
+        title: 'Checkbox Option Exclusive',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Select all allergies that apply',
+            type: 'choice',
+            repeats: true,
+            answerOption: [
+              {
+                valueString: 'Peanuts',
+              },
+              {
+                valueString: 'Shellfish',
+              },
+              {
+                valueString: 'Penicillin',
+              },
+              {
+                // Selecting this option clears every other selection, and selecting any
+                // other option clears this one, per the questionnaire-optionExclusive extension.
+                valueString: 'No known allergies',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-optionExclusive',
+                    valueBoolean: true,
+                  },
+                ],
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check box',
+                    },
+                  ],
+                  text: 'Check box',
+                },
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
 export const EnableWhen = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
