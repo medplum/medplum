@@ -161,7 +161,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           {' and '}
           <Anchor href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</Anchor>.
         </Text>
-        <Text c="dimmed" size="xs" pb="xs" ta="center">
+        <Text c="dimmed" size="xs" ta="center">
           This site is protected by reCAPTCHA and the Google{' '}
           <Anchor href="https://policies.google.com/privacy">Privacy&nbsp;Policy</Anchor>
           {' and '}
