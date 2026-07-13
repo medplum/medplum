@@ -85,7 +85,10 @@ describe('MissingDependenciesBanner', () => {
   test('Flags Health Gorilla when the bot search is empty', async () => {
     mockAllPresent(medplum);
     vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string, query: unknown) => {
-      if (resourceType === 'Bot' && String((query as Record<string, string>).identifier) === HEALTH_GORILLA_AUTOCOMPLETE_ID) {
+      if (
+        resourceType === 'Bot' &&
+        String((query as Record<string, string>).identifier) === HEALTH_GORILLA_AUTOCOMPLETE_ID
+      ) {
         return undefined;
       }
       if (resourceType === 'StructureDefinition') {

@@ -49,8 +49,8 @@ export function MissingDependenciesBanner(): JSX.Element | null {
       m="md"
     >
       <Text size="sm" mb="xs">
-        The following shared projects are missing from your project. Fields that depend on them will show
-        &ldquo;Not found&rdquo; errors. Link them from the Medplum admin console, or contact your system administrator.
+        The following shared projects are missing from your project. Fields that depend on them will show &ldquo;Not
+        found&rdquo; errors. Link them from the Medplum admin console, or contact your system administrator.
       </Text>
       <List size="sm">
         {missingGroups.map((group) => (
