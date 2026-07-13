@@ -221,13 +221,19 @@ describe('BotEditor', () => {
 
   test('Execute with SSE', async () => {
     const medplum = new MockClient();
+    const vmcontextBot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      code: 'console.log("foo");',
+      runtimeVersion: 'vmcontext',
+    });
+
     const downloadResponse = vi
       .spyOn(medplum, 'downloadResponse')
       .mockResolvedValue(
         mockSseResponse(['event: progress\ndata: step 1\n\n', 'event: progress\ndata: step 2\n\ndata: done\n\n'])
       );
 
-    await setup('/Bot/123/editor', medplum);
+    await setup(`/Bot/${vmcontextBot.id}/editor`, medplum);
     expect(await screen.findByText('Execute')).toBeInTheDocument();
 
     // Open the split-button dropdown and choose the SSE option
@@ -259,6 +265,7 @@ describe('BotEditor', () => {
     const medplum = new MockClient();
     const streamingBot = await medplum.createResource<Bot>({
       resourceType: 'Bot',
+      runtimeVersion: 'vmcontext',
       streamingEnabled: true,
     });
     const downloadResponse = vi
@@ -280,13 +287,33 @@ describe('BotEditor', () => {
     expect(downloadResponse).toHaveBeenCalled();
   });
 
+  test('Fission streaming bot cannot use Execute SSE', async () => {
+    const medplum = new MockClient();
+    const fissionBot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      runtimeVersion: 'fission',
+      streamingEnabled: true,
+    });
+
+    await setup(`/Bot/${fissionBot.id}/editor`, medplum);
+
+    expect(await screen.findByText('Execute')).toBeInTheDocument();
+    expect(screen.queryByText('Execute options')).not.toBeInTheDocument();
+  });
+
   test('Execute with SSE error', async () => {
     const medplum = new MockClient();
+    const vmcontextBot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      code: 'console.log("foo");',
+      streamingEnabled: false,
+      runtimeVersion: 'vmcontext',
+    });
     vi.spyOn(medplum, 'downloadResponse').mockResolvedValue(
       mockSseResponse([], false, 400, badRequest('Bot is not enabled'))
     );
 
-    await setup('/Bot/123/editor', medplum);
+    await setup(`/Bot/${vmcontextBot.id}/editor`, medplum);
     expect(await screen.findByText('Execute')).toBeInTheDocument();
 
     await act(async () => {
