@@ -3,6 +3,7 @@
 import {
   ActionIcon,
   Box,
+  Button,
   Divider,
   Flex,
   Group,
@@ -28,9 +29,10 @@ import { Loading, useMedplum } from '@medplum/react';
 import {
   SCRIPTSURE_IFRAME_BOT,
   SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS,
+  useScriptSureCart,
   useScriptSureOrderMedication,
 } from '@medplum/scriptsure-react';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPlus, IconShoppingCart, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
@@ -72,6 +74,7 @@ export function MedicationsPage(): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const { orderMedication } = useScriptSureOrderMedication();
+  const { addToCart, adding, checkout, removeFromCart, clearCart } = useScriptSureCart();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const statusParam = searchParams.get('status') ?? TAB_TO_STATUS_PARAM[DEFAULT_TAB];
@@ -128,7 +131,10 @@ export function MedicationsPage(): JSX.Element {
   //   used when re-opening an existing order. The single-order widget is only
   //   designed for the initial flow and cannot approve/deny a queued order
   //   (issue #9300), so re-opens must land on the chart/queue surface instead.
-  const [iframeMode, setIframeMode] = useState<'widget' | 'chart'>('widget');
+  // - 'cart-checkout': the batch MedCart widget (`/widgets/medcart/{patientId}`)
+  //   from a cart checkout, where every med added to the cart is reviewed and
+  //   signed together.
+  const [iframeMode, setIframeMode] = useState<'widget' | 'chart' | 'cart-checkout'>('widget');
   // refreshLaunchUrl reads this ref instead of closing over `iframeUrl`, so the
   // callback identity stays stable across URL changes. Without this the
   // PrescriptionIFrameModal effect that depends on `onRefreshLaunchUrl` would
@@ -141,6 +147,14 @@ export function MedicationsPage(): JSX.Element {
   /** MR id for iframe session + polling when URL/detail selection lags behind a new order. */
   const [iframePollMrId, setIframePollMrId] = useState<string | undefined>();
   const [fetchedOrder, setFetchedOrder] = useState<MedicationRequest | undefined>();
+  /** Draft MR ids the MedCart checkout modal polls for sync after a cart checkout. */
+  const [cartWatchIds, setCartWatchIds] = useState<string[]>([]);
+  /** Count of draft (cart) MedicationRequests for the patient, shown in the order modal. */
+  const [cartCount, setCartCount] = useState(0);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [clearingCart, setClearingCart] = useState(false);
+  /** MR id whose "remove from cart" request is in flight (drives the row spinner). */
+  const [removingId, setRemovingId] = useState<string | undefined>();
 
   const orderFromList = useMemo(
     () => (medicationRequestId ? orders.find((mr) => mr.id === medicationRequestId) : undefined),
@@ -356,11 +370,219 @@ export function MedicationsPage(): JSX.Element {
     setIframeModalOpened(false);
     setIframeUrl(undefined);
     setIframePollMrId(undefined);
+    setCartWatchIds([]);
     fetchData().catch(showErrorNotification);
   }, [fetchData]);
 
+  // The cart is every draft MedicationRequest for this patient (all pages). The
+  // Draft tab list is paginated, but checkout must submit the whole cart so
+  // counts stay consistent with Clear cart and the order-modal indicator.
+  const fetchAllDraftIds = useCallback(async (): Promise<string[]> => {
+    if (!patientReference) {
+      return [];
+    }
+    const ids: string[] = [];
+    const pageSize = 100;
+    let pageOffset = 0;
+    let expectedTotal = Number.POSITIVE_INFINITY;
+
+    while (ids.length < expectedTotal) {
+      const bundle = await medplum.search(
+        'MedicationRequest',
+        {
+          subject: patientReference,
+          status: 'draft',
+          _count: String(pageSize),
+          _offset: String(pageOffset),
+          _sort: '-_lastUpdated',
+          _total: 'accurate',
+          _fields: 'id',
+        },
+        { cache: 'no-cache' }
+      );
+      expectedTotal = bundle.total ?? ids.length;
+      const pageEntries = bundle.entry ?? [];
+      for (const entry of pageEntries) {
+        const id = entry.resource?.id;
+        if (typeof id === 'string' && id.length > 0) {
+          ids.push(id);
+        }
+      }
+      if (pageEntries.length < pageSize) {
+        break;
+      }
+      pageOffset += pageSize;
+    }
+
+    return ids;
+  }, [medplum, patientReference]);
+
+  // Counts the patient's draft (cart) MRs independent of the active tab, so the
+  // order modal can show an accurate "N in cart" even when opened from Active.
+  const refreshCartCount = useCallback(async (): Promise<void> => {
+    if (!patientReference) {
+      return;
+    }
+    try {
+      const bundle = await medplum.search(
+        'MedicationRequest',
+        { subject: patientReference, status: 'draft', _summary: 'count' },
+        { cache: 'no-cache' }
+      );
+      setCartCount(bundle.total ?? 0);
+    } catch {
+      // Non-critical: the indicator is advisory only.
+    }
+  }, [medplum, patientReference]);
+
+  const handleAddedToCart = useCallback((): void => {
+    showNotification({
+      color: 'green',
+      icon: '✓',
+      title: 'Added to cart',
+      message: 'Draft saved. Add more, then check out from the Draft tab.',
+      autoClose: 2500,
+    });
+    medplum.invalidateSearches('MedicationRequest');
+    if (activeTab !== 'draft') {
+      setTab('draft');
+    }
+    refreshCartCount().catch(showErrorNotification);
+    fetchData().catch(showErrorNotification);
+  }, [medplum, activeTab, setTab, fetchData, refreshCartCount]);
+
+  const handleCheckout = useCallback(async (): Promise<void> => {
+    const checkoutPatientId = patient?.id;
+    if (!checkoutPatientId || total === 0) {
+      return;
+    }
+    setCheckingOut(true);
+    try {
+      const medicationRequestIds = await fetchAllDraftIds();
+      if (medicationRequestIds.length === 0) {
+        return;
+      }
+      const res = await checkout({ patientId: checkoutPatientId, medicationRequestIds });
+      const failed = res.items.filter((i) => i.status === 'failed');
+      const queuedIds = res.items.filter((i) => i.status === 'queued').map((i) => i.medicationRequestId);
+      if (failed.length > 0) {
+        showNotification({
+          color: 'yellow',
+          title: `${failed.length} medication${failed.length === 1 ? '' : 's'} could not be queued`,
+          message: failed.map((f) => f.error ?? f.medicationRequestId).join('; '),
+          autoClose: false,
+        });
+      }
+      if (queuedIds.length === 0) {
+        // Every line failed — don't open the widget or poll drafts that will never reconcile.
+        return;
+      }
+      setCartWatchIds(queuedIds);
+      setIframeMode('cart-checkout');
+      setIframePollMrId(undefined);
+      setIframeUrl(res.approvalUrl);
+      setIframeModalOpened(true);
+      await fetchData();
+    } catch (e) {
+      showErrorNotification(e);
+    } finally {
+      setCheckingOut(false);
+    }
+  }, [patient, total, fetchAllDraftIds, checkout, fetchData]);
+
+  const handleRemoveFromCart = useCallback(
+    async (mrId: string): Promise<void> => {
+      const cartPatientId = patient?.id;
+      if (!cartPatientId) {
+        return;
+      }
+      setRemovingId(mrId);
+      try {
+        const res = await removeFromCart({ patientId: cartPatientId, medicationRequestId: mrId });
+        const item = res.items[0];
+        if (item?.status === 'failed') {
+          showNotification({
+            color: 'red',
+            title: 'Could not remove from cart',
+            message: item.error ?? mrId,
+            autoClose: false,
+          });
+        } else {
+          showNotification({
+            color: 'green',
+            icon: '✓',
+            title: 'Removed from cart',
+            message: 'The medication was removed from the cart.',
+            autoClose: 2500,
+          });
+        }
+        medplum.invalidateSearches('MedicationRequest');
+        await Promise.all([fetchData(), refreshCartCount()]);
+      } catch (e) {
+        showErrorNotification(e);
+      } finally {
+        setRemovingId(undefined);
+      }
+    },
+    [patient, removeFromCart, medplum, fetchData, refreshCartCount]
+  );
+
+  const handleClearCart = useCallback(async (): Promise<void> => {
+    const cartPatientId = patient?.id;
+    if (!cartPatientId) {
+      return;
+    }
+    setClearingCart(true);
+    try {
+      const res = await clearCart({ patientId: cartPatientId });
+      const failed = res.items.filter((i) => i.status === 'failed');
+      if (failed.length > 0) {
+        showNotification({
+          color: 'yellow',
+          title: `${failed.length} item${failed.length === 1 ? '' : 's'} could not be removed`,
+          message: failed.map((f) => f.error ?? f.medicationRequestId).join('; '),
+          autoClose: false,
+        });
+      } else {
+        showNotification({
+          color: 'green',
+          icon: '✓',
+          title: 'Cart cleared',
+          message: `Removed ${res.removedCount} item${res.removedCount === 1 ? '' : 's'} from the cart.`,
+          autoClose: 2500,
+        });
+      }
+      medplum.invalidateSearches('MedicationRequest');
+      await Promise.all([fetchData(), refreshCartCount()]);
+    } catch (e) {
+      showErrorNotification(e);
+    } finally {
+      setClearingCart(false);
+    }
+  }, [patient, clearCart, medplum, fetchData, refreshCartCount]);
+
   if (!patient || !patientId) {
     return <Loading />;
+  }
+
+  const isCartCheckoutMode = iframeMode === 'cart-checkout';
+  let modalTitle = 'Complete prescription';
+  if (isCartCheckoutMode) {
+    modalTitle = 'Approve queued prescriptions';
+  } else if (iframeMode === 'chart') {
+    modalTitle = 'ScriptSure prescriptions';
+  }
+  // The MedCart widget URL carries a fresh session token from `$checkout-medications`
+  // and re-running checkout would re-submit the cart, so that mode never refreshes.
+  // Other modes refresh the single-order/chart session token in place.
+  const canRefreshLaunchUrl = !isCartCheckoutMode && Boolean(iframePollMrId || currentOrder?.id);
+  const modalRefreshLaunchUrl = canRefreshLaunchUrl ? refreshLaunchUrl : undefined;
+  let medicationRequestIdsToWatch: string[] | undefined;
+  if (isCartCheckoutMode) {
+    medicationRequestIdsToWatch = cartWatchIds;
+  } else {
+    const singleWatchId = iframePollMrId ?? currentOrder?.id;
+    medicationRequestIdsToWatch = singleWatchId ? [singleWatchId] : undefined;
   }
 
   return (
@@ -393,7 +615,10 @@ export function MedicationsPage(): JSX.Element {
                         color="blue"
                         size={32}
                         aria-label="Order medication"
-                        onClick={() => setNewOrderModalOpened(true)}
+                        onClick={() => {
+                          refreshCartCount().catch(showErrorNotification);
+                          setNewOrderModalOpened(true);
+                        }}
                       >
                         <IconPlus size={16} />
                       </ActionIcon>
@@ -409,8 +634,9 @@ export function MedicationsPage(): JSX.Element {
                 {!loading && orders.length === 0 && <EmptyMedsState activeTab={activeTab} />}
                 {!loading &&
                   orders.length > 0 &&
-                  orders.map((item, index) => (
-                    <React.Fragment key={item.id}>
+                  orders.map((item, index) => {
+                    const showCartRow = hasScriptSure && activeTab === 'draft' && typeof item.id === 'string';
+                    const row = (
                       <MedListItem
                         item={item}
                         selectedItem={currentOrder}
@@ -418,14 +644,65 @@ export function MedicationsPage(): JSX.Element {
                         getItemUrl={getOrderUrl}
                         medicationOrderExtensions={SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS}
                       />
-                      {index < orders.length - 1 && (
-                        <Box px="0.5rem">
-                          <Divider />
-                        </Box>
-                      )}
-                    </React.Fragment>
-                  ))}
+                    );
+                    return (
+                      <React.Fragment key={item.id}>
+                        {showCartRow ? (
+                          <Group gap="xs" wrap="nowrap" align="center" pl="0.5rem">
+                            <Box className={classes.cartRowContent}>{row}</Box>
+                            <Tooltip label="Remove from cart" position="left" openDelay={500}>
+                              <ActionIcon
+                                variant="subtle"
+                                color="red"
+                                size="sm"
+                                aria-label="Remove medication from cart"
+                                loading={removingId === item.id}
+                                onClick={() => handleRemoveFromCart(item.id as string).catch(showErrorNotification)}
+                              >
+                                <IconTrash size={14} />
+                              </ActionIcon>
+                            </Tooltip>
+                          </Group>
+                        ) : (
+                          row
+                        )}
+                        {index < orders.length - 1 && (
+                          <Box px="0.5rem">
+                            <Divider />
+                          </Box>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
               </ScrollArea>
+              {!loading && hasScriptSure && activeTab === 'draft' && total > 0 && (
+                <>
+                  <Divider />
+                  <Box p="xs">
+                    <Group justify="flex-end" gap="xs" wrap="nowrap">
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        color="red"
+                        leftSection={<IconTrash size={14} />}
+                        loading={clearingCart}
+                        onClick={() => handleClearCart().catch(showErrorNotification)}
+                      >
+                        Clear cart ({total})
+                      </Button>
+                      <Button
+                        size="xs"
+                        leftSection={<IconShoppingCart size={14} />}
+                        loading={checkingOut}
+                        disabled={total === 0 || adding}
+                        onClick={() => handleCheckout().catch(showErrorNotification)}
+                      >
+                        Checkout ({total})
+                      </Button>
+                    </Group>
+                  </Box>
+                </>
+              )}
               {!loading && totalPages > 1 && (
                 <Box p="xs">
                   <Pagination
@@ -466,6 +743,10 @@ export function MedicationsPage(): JSX.Element {
         <OrderMedicationPage
           patient={patient}
           onOrderComplete={(r) => handleOrderMedicationComplete(r).catch(showErrorNotification)}
+          onAddedToCart={handleAddedToCart}
+          persistCartDraft={addToCart}
+          cartAdding={adding}
+          cartCount={cartCount}
         />
       </Modal>
 
@@ -475,13 +756,14 @@ export function MedicationsPage(): JSX.Element {
           setIframeModalOpened(false);
           setIframeUrl(undefined);
           setIframePollMrId(undefined);
+          setCartWatchIds([]);
           fetchData().catch(showErrorNotification);
         }}
         launchUrl={iframeUrl}
-        onRefreshLaunchUrl={iframePollMrId || currentOrder?.id ? refreshLaunchUrl : undefined}
-        medicationRequestIdToWatch={iframePollMrId ?? currentOrder?.id}
+        onRefreshLaunchUrl={modalRefreshLaunchUrl}
+        medicationRequestIdsToWatch={medicationRequestIdsToWatch}
         onFhirSynced={handleIframeFhirSynced}
-        title={iframeMode === 'chart' ? 'ScriptSure prescriptions' : 'Complete prescription'}
+        title={modalTitle}
       />
     </Box>
   );

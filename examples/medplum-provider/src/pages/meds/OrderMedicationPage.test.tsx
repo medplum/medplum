@@ -113,7 +113,7 @@ describe('OrderMedicationPage', () => {
     await user.click(option);
 
     // Submit the single-med order; the Mantine Tabs default is "Single medication".
-    const orderButton = await screen.findByRole('button', { name: /^Prescribe$/ });
+    const orderButton = await screen.findByRole('button', { name: /^Prescribe now$/ });
     await user.click(orderButton);
 
     // Wait for the bot rejection cleanup to run.
@@ -204,7 +204,7 @@ describe('OrderMedicationPage', () => {
     // Wait for the routedMedId formulation lookup to resolve and render.
     await screen.findByText(/Formulation & directions/i);
 
-    await user.click(await screen.findByRole('button', { name: /^Prescribe$/ }));
+    await user.click(await screen.findByRole('button', { name: /^Prescribe now$/ }));
 
     await waitFor(() => {
       const mrCall = createSpy.mock.calls.find(
@@ -215,5 +215,90 @@ describe('OrderMedicationPage', () => {
         'Jentadueto 12.5 mg-500 mg tablet'
       );
     });
+  });
+
+  test('Add to cart creates the draft MedicationRequest without calling $order-medication or opening a widget', async () => {
+    const medplum = new MockClient();
+    medplum.setProfile(DrAliceSmith);
+
+    const searchHit: Medication = {
+      resourceType: 'Medication',
+      id: 'med-aspirin-81',
+      code: { text: 'Aspirin 81 mg tablet' },
+    };
+    searchMedicationsMock.mockResolvedValue([searchHit]);
+
+    const createSpy = vi.spyOn(medplum, 'createResource');
+    const onAddedToCart = vi.fn();
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <Notifications />
+          <MedplumProvider medplum={medplum}>
+            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+              <Routes>
+                <Route
+                  path="/Patient/:patientId/MedicationRequest"
+                  element={<OrderMedicationPage patient={HomerSimpson} onAddedToCart={onAddedToCart} />}
+                />
+              </Routes>
+            </MemoryRouter>
+          </MedplumProvider>
+        </MantineProvider>
+      );
+    });
+
+    const searchInput = await screen.findByLabelText(/Search medication/i);
+    await user.type(searchInput, 'aspirin');
+    await user.click(await screen.findByText('Aspirin 81 mg tablet'));
+
+    await user.click(await screen.findByRole('button', { name: /^Add to cart$/ }));
+
+    // Draft MR created...
+    await waitFor(() => {
+      const createdMrCall = createSpy.mock.calls.find((c) => {
+        const r = c[0] as { resourceType?: string; status?: string } | undefined;
+        return r?.resourceType === 'MedicationRequest' && r?.status === 'draft';
+      });
+      expect(createdMrCall).toBeDefined();
+    });
+
+    // ...and the parent notified, but the order bot was never called (no widget).
+    await waitFor(() => {
+      expect(onAddedToCart).toHaveBeenCalledTimes(1);
+    });
+    expect(orderMedicationMock).not.toHaveBeenCalled();
+    const passedMr = onAddedToCart.mock.calls[0][0] as MedicationRequest;
+    expect(passedMr.resourceType).toBe('MedicationRequest');
+    expect(passedMr.status).toBe('draft');
+  });
+
+  test('does not show Add to cart when onAddedToCart is not provided', async () => {
+    const medplum = new MockClient();
+    medplum.setProfile(DrAliceSmith);
+    searchMedicationsMock.mockResolvedValue([]);
+
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <Notifications />
+          <MedplumProvider medplum={medplum}>
+            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+              <Routes>
+                <Route
+                  path="/Patient/:patientId/MedicationRequest"
+                  element={<OrderMedicationPage patient={HomerSimpson} />}
+                />
+              </Routes>
+            </MemoryRouter>
+          </MedplumProvider>
+        </MantineProvider>
+      );
+    });
+
+    expect(await screen.findByRole('button', { name: /^Prescribe now$/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Add to cart$/ })).not.toBeInTheDocument();
   });
 });
