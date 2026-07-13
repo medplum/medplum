@@ -6,6 +6,7 @@ import type {
   Bundle,
   BundleEntryResponse,
   CareTeam,
+  Coverage,
   Observation,
   OperationOutcome,
   OperationOutcomeIssue,
@@ -20,16 +21,19 @@ import type { Job } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import type { PoolClient } from 'pg';
 import type { RateLimiterRes } from 'rate-limiter-flexible';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { runInAuthenticatedContext } from '../context';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import type { ReentrantBatchJobData } from '../workers/batch';
 import { execBatchJob, getBatchQueue } from '../workers/batch';
 import { queueRegistry } from '../workers/utils';
+import { PostgresError } from './sql';
 
 /**
  * Builds a minimal mock BullMQ Job for driving execBatchJob in tests. Provides an in-memory
@@ -1766,5 +1770,135 @@ describe('Batch and Transaction processing', () => {
     expect(results.entry?.map((e) => Number.parseInt(e.response?.status ?? '', 10))).toStrictEqual([
       201, 201, 201, 201,
     ]);
+  });
+});
+
+describe('Transaction bundle SERIALIZABLE retry', () => {
+  const app = express();
+  let accessToken: string;
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    ({ accessToken } = await createTestProject({
+      project: { features: ['transaction-bundles'] },
+      withAccessToken: true,
+    }));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('does not silently drop writes on serialization failure', async () => {
+    // Mock a one-time serialization failure on the batch's SERIALIZABLE transaction.
+    // We wrap the writer pool so that the FIRST COMMIT on a connection that opened a SERIALIZABLE
+    // transaction throws 40001 (leaving the real transaction open so withTransaction's rollback
+    // path discards the attempt's writes, exactly as a real 40001 at COMMIT would).
+    const writerPool = getDatabasePool(DatabaseMode.WRITER);
+    const originalConnect = writerPool.connect.bind(writerPool);
+
+    let serializableBegins = 0;
+    let commitFailuresInjected = 0;
+
+    vi.spyOn(writerPool, 'connect').mockImplementation(async (...args: any[]) => {
+      const client = (await (originalConnect as any)(...args)) as PoolClient;
+      const originalQuery = client.query.bind(client);
+      let clientOpenedSerializableTx = false;
+
+      vi.spyOn(client, 'query').mockImplementation((text, values, callback) => {
+        if (typeof text === 'string') {
+          if (text.startsWith('BEGIN ISOLATION LEVEL SERIALIZABLE')) {
+            clientOpenedSerializableTx = true;
+            serializableBegins++;
+          } else if (text === 'COMMIT' && clientOpenedSerializableTx && commitFailuresInjected === 0) {
+            commitFailuresInjected++;
+            // Surface the serialization failure to the retry loop WITHOUT actually committing.
+            // The real transaction stays open; withTransaction's catch will ROLLBACK it.
+            return Promise.reject(
+              Object.assign(new Error('could not serialize access due to read/write dependencies among transactions'), {
+                code: PostgresError.SerializationFailure,
+              })
+            );
+          }
+        }
+        return (originalQuery as any)(text, values, callback);
+      });
+
+      return client;
+    });
+
+    const identifier = randomUUID();
+    const patientUrn = 'urn:uuid:' + randomUUID();
+    const transaction: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          // Conditional update requires SERIALIZABLE transaction
+          fullUrl: patientUrn,
+          request: { method: 'PUT', url: `Patient?identifier=http://example.com/mrn|${identifier}` },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{ system: 'http://example.com/mrn', value: identifier }],
+          } satisfies Patient,
+        },
+        {
+          request: { method: 'POST', url: 'Coverage' },
+          resource: {
+            resourceType: 'Coverage',
+            status: 'active',
+            beneficiary: { reference: patientUrn },
+            payor: [{ display: 'Test Payor A' }],
+          } satisfies Coverage,
+        },
+        {
+          request: { method: 'POST', url: 'Coverage' },
+          resource: {
+            resourceType: 'Coverage',
+            status: 'active',
+            beneficiary: { reference: patientUrn },
+            payor: [{ display: 'Test Payor B' }],
+          } satisfies Coverage,
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post('/fhir/R4/')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transaction);
+
+    // The failure was injected exactly once, and the transaction was retried (second BEGIN)
+    expect(serializableBegins).toBe(2);
+    expect(commitFailuresInjected).toBe(1);
+
+    // The server reports success to the client...
+    expect(res.status).toBe(200);
+    const responseBundle = res.body as Bundle;
+    expect(responseBundle.type).toBe('transaction-response');
+    expect(responseBundle.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201']);
+
+    const createdPatientRef = responseBundle.entry?.[0]?.response?.location as string;
+    expect(createdPatientRef).toBeDefined();
+
+    // ...so those resources MUST actually exist. Otherwise, the transaction retry committed
+    // an empty transaction and these reads come back empty — silent data loss
+    const patientSearch = await request(app)
+      .get(`/fhir/R4/Patient?identifier=http://example.com/mrn|${identifier}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(patientSearch.status).toBe(200);
+    expect((patientSearch.body as Bundle).entry).toHaveLength(1);
+
+    const coverageSearch = await request(app)
+      .get(`/fhir/R4/Coverage?beneficiary=${createdPatientRef}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(coverageSearch.status).toBe(200);
+    expect((coverageSearch.body as Bundle).entry).toHaveLength(2);
   });
 });

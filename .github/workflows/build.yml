@@ -41,7 +41,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -141,7 +141,7 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -277,7 +277,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -390,7 +390,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -444,7 +444,7 @@ jobs:
         # main and merge_group; for pull_request events, only runs when the PR head is on
         # this repo rather than a fork.
         if: ${{ !github.event.pull_request.head.repo.fork && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
-        uses: SonarSource/sonarqube-scan-action@45f27363d4ff7d6b16baa0516490f10c52bdd5fc # master
+        uses: SonarSource/sonarqube-scan-action@7cdc154593ec10cd3c019fceab40f415f9218437 # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -474,7 +474,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -552,7 +552,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -655,7 +655,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:

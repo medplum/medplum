@@ -2,12 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import { OAuthSigningAlgorithm, Operator } from '@medplum/core';
 import type { JsonWebKey } from '@medplum/fhirtypes';
-import type { JWK, JWSHeaderParameters, JWTPayload, JWTVerifyOptions, KeyLike } from 'jose';
+import type { JWK, JWSHeaderParameters, JWTPayload, JWTVerifyOptions } from 'jose';
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, SignJWT } from 'jose';
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { MedplumServerConfig } from '../config/types';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
+
+/**
+ * Represents a cryptographic key that can be used for signing or verifying JWTs.
+ * Old versions of jose used to export this type, but now we have to define it ourselves.
+ */
+export type KeyLike = CryptoKey | Uint8Array;
 
 export interface MedplumBaseClaims extends JWTPayload {
   /**
@@ -126,9 +132,9 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     jsonWebKeys = searchResult;
   } else {
     // Generate a key pair
-    // https://github.com/panva/jose/blob/HEAD/docs/functions/util_generate_key_pair.generatekeypair.md
+    // https://github.com/panva/jose/blob/main/docs/key/generate_key_pair/functions/generateKeyPair.md
     globalLogger.info('No keys found.  Creating new key...');
-    const keyResult = await generateKeyPair(PREFERRED_ALG);
+    const keyResult = await generateKeyPair(PREFERRED_ALG, { extractable: true });
     const jwk = await exportJWK(keyResult.privateKey);
     const createResult = await systemRepo.createResource({
       resourceType: 'JsonWebKey',
@@ -163,11 +169,11 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     jwks.keys.push(publicKey);
 
     // Convert from JWK to PKCS and add to the collection of public keys
-    publicKeys[jwk.id as string] = (await importJWK(publicKey)) as KeyLike;
-    allSigningKeys[jwk.id as string] = (await importJWK({
+    publicKeys[jwk.id as string] = await importJWK(publicKey);
+    allSigningKeys[jwk.id as string] = await importJWK({
       ...(jwk as JWK),
       use: 'sig',
-    })) as KeyLike;
+    });
   }
 
   // Use the first key as the signing key

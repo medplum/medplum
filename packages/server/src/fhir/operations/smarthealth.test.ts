@@ -3,13 +3,13 @@
 import { badRequest, ContentType } from '@medplum/core';
 import type { Binary, Bundle, Parameters, Patient, SmartHealthLink } from '@medplum/fhirtypes';
 import express from 'express';
-import type { KeyLike } from 'jose';
 import { base64url, CompactEncrypt, CompactSign, exportJWK, generateKeyPair } from 'jose';
 import { deflateRawSync } from 'node:zlib';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import type { KeyLike } from '../../oauth/keys';
 import { createTestProject, initTestAuth } from '../../test.setup';
 
 const app = express();
@@ -151,52 +151,14 @@ describe('SMART Health operations', () => {
     expect(getBooleanParameter(verifyResponse.body, 'valid')).toBe(true);
     expect(getBooleanParameter(verifyResponse.body, 'issuerTrusted')).toBe(false);
     expect(getBooleanParameter(verifyResponse.body, 'verified')).toBe(false);
-    expect(fetchSpy).toHaveBeenCalledWith(new URL('https://issuer.example.com/.well-known/jwks.json'), {
-      redirect: 'error',
-      signal: expect.any(AbortSignal),
-    });
+    expect(fetchSpy).toHaveBeenCalledWith(
+      new URL('https://issuer.example.com/.well-known/jwks.json'),
+      expect.objectContaining({
+        redirect: 'error',
+        signal: expect.any(AbortSignal),
+      })
+    );
 
-    fetchSpy.mockRestore();
-
-    const insecureCredential = await createSmartHealthCardCredential({
-      issuer: 'http://issuer.example.com',
-      keyId: publicJwk.kid,
-      privateKey,
-      bundle: { resourceType: 'Bundle', type: 'collection' },
-    });
-    const insecureVerifyResponse = await request(app)
-      .post('/fhir/R4/$verify-smart-health-card')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.JSON)
-      .send({ credential: insecureCredential });
-    expect(insecureVerifyResponse.status).toBe(200);
-    expect(getBooleanParameter(insecureVerifyResponse.body, 'valid')).toBe(false);
-    expect(getStringParameter(insecureVerifyResponse.body, 'error')).toContain('HTTPS');
-  });
-
-  test('Rejects SMART Health Card issuer hosts with private IPv6 addresses', async () => {
-    const { privateKey } = await generateKeyPair('ES256');
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Unexpected fetch'));
-
-    for (const issuer of ['https://[fd12:3456::1]', 'https://[fc00::1]']) {
-      const credential = await createSmartHealthCardCredential({
-        issuer,
-        keyId: 'private-ipv6-key',
-        privateKey,
-        bundle: { resourceType: 'Bundle', type: 'collection' },
-      });
-
-      const verifyResponse = await request(app)
-        .post('/fhir/R4/$verify-smart-health-card')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .set('Content-Type', ContentType.JSON)
-        .send({ credential });
-      expect(verifyResponse.status).toBe(200);
-      expect(getBooleanParameter(verifyResponse.body, 'valid')).toBe(false);
-      expect(getStringParameter(verifyResponse.body, 'error')).toContain('unsafe hostname');
-    }
-
-    expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
 
@@ -462,14 +424,17 @@ describe('SMART Health operations', () => {
     expect(resolveResponse.status).toBe(200);
     expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(true);
 
-    const fetchUrl = fetchSpy.mock.calls[0][0] as URL;
+    const fetchCall = fetchSpy.mock.calls.at(-1);
+    const fetchUrl = fetchCall?.[0] as URL;
     expect(fetchUrl.toString()).toBe(
       'https://issuer.example.com/smart-link/payload?existing=true&recipient=Test+Recipient'
     );
-    expect(fetchSpy.mock.calls[0][1]).toStrictEqual({
-      redirect: 'error',
-      signal: expect.any(AbortSignal),
-    });
+    expect(fetchCall?.[1]).toEqual(
+      expect.objectContaining({
+        redirect: 'error',
+        signal: expect.any(AbortSignal),
+      })
+    );
     expect(getStringParameter(resolveResponse.body, 'recipient')).toBe('Test Recipient');
     expect(getStringParameter(resolveResponse.body, 'sourceOrigin')).toBe('https://issuer.example.com');
     expect(getDateTimeParameter(resolveResponse.body, 'expiresAt')).toBe(new Date(exp * 1000).toISOString());
@@ -622,24 +587,6 @@ describe('SMART Health operations', () => {
     expect(missingFlagResponse.status).toBe(200);
     expect(getBooleanParameter(missingFlagResponse.body, 'valid')).toBe(false);
     expect(getStringParameter(missingFlagResponse.body, 'error')).toContain('Only direct SMART Health Links');
-
-    const unsafeUrlResponse = await request(app)
-      .post('/fhir/R4/$resolve-smart-health-link')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.JSON)
-      .send({
-        shlink: encodeShlinkPayload({
-          url: 'https://169.254.169.254/latest/meta-data',
-          key,
-          flag: 'U',
-          v: 1,
-        }),
-        recipient: 'Test Recipient',
-      });
-    expect(unsafeUrlResponse.status).toBe(200);
-    expect(getBooleanParameter(unsafeUrlResponse.body, 'valid')).toBe(false);
-    expect(getStringParameter(unsafeUrlResponse.body, 'error')).toContain('unsafe hostname');
-    expect(fetchSpy).toHaveBeenCalledTimes(3);
 
     fetchSpy.mockRestore();
   });

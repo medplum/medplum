@@ -389,7 +389,10 @@ const sidebars: SidebarsConfig = {
         {
           type: 'category',
           label: 'Claim submission',
-          items: ['integration/stedi/claim-submission/professional-claims'],
+          items: [
+            'integration/stedi/claim-submission/professional-claims',
+            'integration/stedi/claim-submission/claim-responses',
+          ],
         },
       ],
     },

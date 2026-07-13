@@ -120,14 +120,8 @@ export function FaxBoard({
         tabs={tabs}
         activeTab={activeTab}
         headerActions={headerActions}
-        renderItem={(fax, { selected, index, items }) => (
-          <FaxListItem
-            fax={fax}
-            selectedFax={selected ? fax : undefined}
-            activeTab={activeTab}
-            getFaxUri={getFaxUri}
-            hideDivider={selected || (index < items.length - 1 && items[index + 1]?.id === faxId)}
-          />
+        renderItem={(fax, { selected }) => (
+          <FaxListItem fax={fax} selectedFax={selected ? fax : undefined} activeTab={activeTab} getFaxUri={getFaxUri} />
         )}
         emptyList={<EmptyFaxState activeTab={activeTab} />}
         renderDetail={(fax) => <FaxDetailPanel fax={fax} onFaxChange={refreshList} />}
