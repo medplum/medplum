@@ -845,6 +845,51 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/identity-provider-token-verification-method",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "identity-provider-token-verification-method",
+        "url": "https://medplum.com/fhir/CodeSystem/identity-provider-token-verification-method",
+        "name": "IdentityProviderTokenVerificationMethod",
+        "title": "Identity Provider Token Verification Method",
+        "status": "active",
+        "description": "Methods used by identity providers to verify the identity of the user via tokens.",
+        "valueSet": "https://medplum.com/fhir/ValueSet/identity-provider-token-verification-method",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "userinfo",
+            "display": "userinfo",
+            "definition": "Clients that use the userinfo endpoint to verify the identity of the user."
+          },
+          {
+            "code": "jwks",
+            "display": "jwks",
+            "definition": "Clients that use a JSON Web Key Set (JWKS) to verify the identity of the user."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/identity-provider-token-verification-method",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "identity-provider-token-verification-method",
+        "url": "https://medplum.com/fhir/ValueSet/identity-provider-token-verification-method",
+        "name": "IdentityProviderTokenVerificationMethod",
+        "title": "Identity Provider Token Verification Method",
+        "status": "active",
+        "description": "Methods used by identity providers to verify the identity of the user via tokens.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/identity-provider-token-verification-method"
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/token-endpoint-auth-methods-supported",
       "resource": {
         "resourceType": "CodeSystem",
