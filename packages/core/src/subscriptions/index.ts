@@ -752,13 +752,16 @@ export async function resourceMatchesSubscriptionCriteria({
     return false;
   }
 
-  const supportedInteractionExtension = getExtension(
-    subscription,
-    'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
-  );
-  if (supportedInteractionExtension && supportedInteractionExtension.valueCode !== context.interaction) {
+  // A Subscription can declare one or more `subscription-supported-interaction` extensions.
+  // When present, the interaction is only supported if it matches one of the declared codes.
+  // When absent, all interactions ("create", "update", "delete") are supported by default.
+  const supportedInteractions = (subscription.extension ?? [])
+    .filter((e) => e.url === 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction')
+    .map((e) => e.valueCode)
+    .filter((code): code is string => code !== undefined);
+  if (supportedInteractions.length > 0 && !supportedInteractions.includes(context.interaction)) {
     logger?.debug(
-      `Ignore rest hook for different interaction (wanted "${supportedInteractionExtension.valueCode}", received "${context.interaction}")`
+      `Ignore rest hook for different interaction (wanted one of [${supportedInteractions.join(', ')}], received "${context.interaction}")`
     );
     return false;
   }
