@@ -57,16 +57,15 @@
     "@tabler/icons-react": "3.46.0",
     "clsx": "2.1.1",
     "file-loader": "6.2.0",
+    "marked": "18.0.7",
     "open-color": "1.9.1",
     "prism-react-renderer": "2.4.1",
     "raw-loader": "4.0.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "marked": "18.0.7",
     "react-intersection-observer": "11.0.0",
     "react-router": "7.18.2",
     "react-router-dom": "7.18.2",
-    "typescript": "6.0.3",
     "url-loader": "4.1.1"
   },
   "engines": {
