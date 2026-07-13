@@ -230,16 +230,6 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     [medplum, navigate]
   );
 
-  const handleAppointmentUpdate = useCallback(
-    (updated: WithId<Appointment>) => {
-      setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
-      if (updated.status === 'cancelled') {
-        appointmentDetailsHandlers.close();
-      }
-    },
-    [appointmentDetailsHandlers]
-  );
-
   const mergedSlots = useMemo(() => mergeOverlappingSlots(slots ?? []), [slots]);
 
   return (
@@ -294,9 +284,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
         position="right"
         h="100%"
       >
-        {appointmentDetails && (
-          <AppointmentDetails appointment={appointmentDetails} onAppointmentUpdate={handleAppointmentUpdate} />
-        )}
+        {appointmentDetails && <AppointmentDetails appointment={appointmentDetails} />}
       </Drawer>
     </>
   );

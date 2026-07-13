@@ -52,14 +52,13 @@ function ServiceTypeDisplay(props: { value: CodeableConcept }): JSX.Element {
 
 type UpdateAppointmentFormProps = {
   appointment: WithId<Appointment>;
-  onUpdate: (appointment: WithId<Appointment>) => void;
 };
 
 function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient | undefined>(undefined);
 
-  const { appointment, onUpdate } = props;
+  const { appointment } = props;
   const handleSubmit = useCallback(async () => {
     if (!patient) {
       return;
@@ -75,15 +74,12 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
       ],
     } satisfies Appointment;
 
-    let result: WithId<Appointment>;
     try {
-      result = await medplum.updateResource(updated);
+      await medplum.updateResource(updated);
     } catch (error) {
       showErrorNotification(error);
-      return;
     }
-    onUpdate?.(result);
-  }, [medplum, patient, appointment, onUpdate]);
+  }, [medplum, patient, appointment]);
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -104,11 +100,8 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
   );
 }
 
-export function AppointmentDetails(props: {
-  appointment: WithId<Appointment>;
-  onAppointmentUpdate: (appointment: WithId<Appointment>) => void;
-}): JSX.Element {
-  const { appointment, onAppointmentUpdate } = props;
+export function AppointmentDetails(props: { appointment: WithId<Appointment> }): JSX.Element {
+  const { appointment } = props;
   const medplum = useMedplum();
 
   const [encounter, encounterLoading, encounterOutcome] = useSearchOne(
@@ -149,13 +142,12 @@ export function AppointmentDetails(props: {
       updated.slot?.forEach((slot) => {
         medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'delete', id: resolveId(slot) });
       });
-      onAppointmentUpdate(updated);
     } catch (err) {
       showErrorNotification(err);
     } finally {
       setCancelLoading(false);
     }
-  }, [medplum, appointment, onAppointmentUpdate]);
+  }, [medplum, appointment]);
 
   const confirmable = appointment.status === 'pending';
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -188,15 +180,12 @@ export function AppointmentDetails(props: {
           resource: slot,
         });
       });
-      if (updatedAppointment) {
-        onAppointmentUpdate(updatedAppointment);
-      }
     } catch (err) {
       showErrorNotification(err);
     } finally {
       setConfirmLoading(false);
     }
-  }, [medplum, appointment, confirmable, onAppointmentUpdate]);
+  }, [medplum, appointment, confirmable]);
 
   const sortedParticipants = appointment.participant
     .map((participant) => {
@@ -218,7 +207,7 @@ export function AppointmentDetails(props: {
     <Stack gap="md" className={classes.AppointmentDetails}>
       <Divider />
 
-      {!hasPatient && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onAppointmentUpdate} />}
+      {!hasPatient && <UpdateAppointmentForm appointment={props.appointment} />}
 
       {sortedParticipants.map(({ actor, resourceType }, index) => {
         return (
