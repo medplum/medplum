@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -113,6 +114,7 @@ describe('onboardPatient', () => {
   });
 
   test('creates patient and invokes onboarding helpers', async () => {
+    const validateSpy = vi.spyOn(medplum, 'validateResource').mockResolvedValue(allOk);
     const createSpy = vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
       if (resource.resourceType === 'Patient') {
         return { ...resource, id: 'patient-1' };
@@ -126,6 +128,7 @@ describe('onboardPatient', () => {
     const patient = await onboardPatient(medplum, questionnaire, response);
 
     expect(patient.id).toBe('patient-1');
+    expect(validateSpy).toHaveBeenCalledWith(response);
     expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Patient' }));
     expect(mockIntakeUtils.addExtension).toHaveBeenCalledWith(
       expect.objectContaining({}),
@@ -139,6 +142,36 @@ describe('onboardPatient', () => {
     expect(mockIntakeUtils.addAllergy).toHaveBeenCalled();
     expect(mockIntakeUtils.addConsent).toHaveBeenCalled();
     expect(mockIntakeUtils.addPharmacy).toHaveBeenCalled();
+  });
+
+  test('does not create any resources when the response is invalid', async () => {
+    vi.spyOn(medplum, 'validateResource').mockRejectedValue(new OperationOutcomeError(badRequest('Invalid response')));
+    const createSpy = vi.spyOn(medplum, 'createResource');
+
+    const questionnaire = { resourceType: 'Questionnaire' } as Questionnaire;
+    const response = buildResponseFromAnswers(mockAnswers);
+
+    await expect(onboardPatient(medplum, questionnaire, response)).rejects.toThrow('Invalid response');
+
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(mockIntakeUtils.upsertObservation).not.toHaveBeenCalled();
+  });
+
+  test('does not create any resources when a coverage group is missing required answers', async () => {
+    vi.spyOn(medplum, 'validateResource').mockResolvedValue(allOk);
+    const createSpy = vi.spyOn(medplum, 'createResource');
+    mockIntakeUtils.getGroupRepeatedAnswers.mockImplementation((_, __, groupId) =>
+      groupId === 'coverage-information' ? [{ 'subscriber-id': { valueString: 'sub-1' } }] : []
+    );
+
+    const questionnaire = { resourceType: 'Questionnaire' } as Questionnaire;
+    const response = buildResponseFromAnswers(mockAnswers);
+
+    await expect(onboardPatient(medplum, questionnaire, response)).rejects.toThrow(
+      'Coverage Information is missing required answers'
+    );
+
+    expect(createSpy).not.toHaveBeenCalled();
   });
 });
 
