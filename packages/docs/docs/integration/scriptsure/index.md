@@ -36,3 +36,4 @@ Medplum will create your organization in the ScriptSure vendor portal and config
 | [Drug Interaction Check](/docs/integration/scriptsure/drug-interaction) | Check candidate drugs against the patient's current medications |
 | [Pharmacy Search](/docs/integration/scriptsure/pharmacy-search) | Search pharmacies and set a patient's preferred pharmacy |
 | [Order Sets](/docs/integration/scriptsure/order-sets) | Import and launch ScriptSure order sets |
+| [Medication Cart](/docs/integration/scriptsure/medication-cart) | Stage multiple prescriptions and approve them in a single signing session |
