@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import { addProfileToResource, append, createReference, EMPTY, getQuestionnaireAnswers } from '@medplum/core';
+import {
+  addProfileToResource,
+  append,
+  badRequest,
+  createReference,
+  EMPTY,
+  getQuestionnaireAnswers,
+  OperationOutcomeError,
+} from '@medplum/core';
 import type { Organization, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   addAllergy,
@@ -33,6 +41,20 @@ export async function onboardPatient(
   questionnaire: Questionnaire,
   response: QuestionnaireResponse
 ): Promise<Patient> {
+  // Reject invalid responses up front so a validation error cannot leave a partially created patient behind
+  await medplum.validateResource(response);
+
+  const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
+  for (const provider of insuranceProviders) {
+    if (
+      !provider['insurance-provider']?.valueReference ||
+      !provider['subscriber-id']?.valueString ||
+      !provider['relationship-to-subscriber']?.valueCoding
+    ) {
+      throw new OperationOutcomeError(badRequest('Coverage Information is missing required answers'));
+    }
+  }
+
   const answers = getQuestionnaireAnswers(response);
 
   let patient: Patient = {
@@ -211,7 +233,6 @@ export async function onboardPatient(
 
   // Handle coverage
 
-  const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
   for (const provider of insuranceProviders) {
     await addCoverage(medplum, patient, provider);
   }
