@@ -24,7 +24,7 @@
     "@types/node": "22.20.1",
     "dotenv": "17.4.2",
     "tsx": "4.23.0",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   },
   "packageManager": "npm@10.9.8",
   "engines": {
