@@ -35,7 +35,7 @@
     },
     "adm-zip": "0.6.0",
     "esbuild": "0.28.2",
-    "typescript": "6.0.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "uuid": "14.0.1",
     "vite": "8.2.1",
     "whatwg-url": "14.0.0"
@@ -45,6 +45,7 @@
     "@microsoft/api-extractor": "7.58.12",
     "@types/jsdom": "30.0.0",
     "@types/node": "22.20.1",
+    "@typescript/native": "npm:typescript@7.0.2",
     "@vitejs/plugin-react": "6.0.5",
     "@vitest/coverage-v8": "4.1.10",
     "cross-env": "10.1.0",
@@ -61,7 +62,7 @@
     "tslib": "2.8.1",
     "tsx": "4.23.12",
     "turbo": "2.10.9",
-    "typescript": "6.0.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "vite": "8.2.1",
     "vitest": "4.1.10",
     "vitest-websocket-mock": "0.5.0"
