@@ -42,7 +42,9 @@ import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
-import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import { UnavailableNote, ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import type { ValueSetAvailability } from '../ValueSetAutocomplete/valueSetAvailability';
+import { useValueSetAvailability } from '../ValueSetAutocomplete/valueSetAvailability';
 
 const MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS = 30;
 const MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS = 50;
@@ -420,10 +422,13 @@ function getValueSetOptions(
     .then((valueSet: ValueSet) => valueSet.expansion?.contains ?? []);
 }
 
-function useValueSetOptions(valueSetUrl: string | undefined): [ValueSetExpansionContains[], boolean] {
+function useValueSetOptions(
+  valueSetUrl: string | undefined
+): [ValueSetExpansionContains[], boolean, ValueSetAvailability] {
   const medplum = useMedplum();
   const [valueSetOptions, setValueSetOptions] = useState<ValueSetExpansionContains[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const availability = useValueSetAvailability(valueSetUrl);
 
   useEffect(() => {
     async function loadValueSet(): Promise<void> {
@@ -445,7 +450,17 @@ function useValueSetOptions(valueSetUrl: string | undefined): [ValueSetExpansion
     loadValueSet().catch(console.error);
   }, [valueSetUrl, medplum]);
 
-  return [valueSetOptions, isLoading];
+  return [valueSetOptions, isLoading, availability];
+}
+
+function SuggestionsUnavailableDisplay({ availability }: { readonly availability: ValueSetAvailability }): JSX.Element {
+  return (
+    <UnavailableNote
+      text="Suggestions unavailable"
+      color="yellow.9"
+      message={availability.status === 'unavailable' ? availability.message : ''}
+    />
+  );
 }
 
 function getOptionsFromValueSet(valueSetOptions: ValueSetExpansionContains[], name: string): [string, TypedValue][] {
@@ -467,7 +482,7 @@ function QuestionnaireRadioButtonInput(props: QuestionnaireChoiceInputProps): JS
   const { name, item, required, initial, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const initialValue = getItemInitialValue(initial);
-  const [valueSetOptions, isLoading] = useValueSetOptions(item.answerValueSet);
+  const [valueSetOptions, isLoading, valueSetAvailability] = useValueSetOptions(item.answerValueSet);
 
   const options: [string, TypedValue][] = [];
   let defaultValue = undefined;
@@ -501,7 +516,11 @@ function QuestionnaireRadioButtonInput(props: QuestionnaireChoiceInputProps): JS
   }
 
   if (options.length === 0) {
-    return <NoAnswerDisplay />;
+    return valueSetAvailability.status === 'unavailable' ? (
+      <SuggestionsUnavailableDisplay availability={valueSetAvailability} />
+    ) : (
+      <NoAnswerDisplay />
+    );
   }
 
   const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS);
@@ -551,7 +570,7 @@ function QuestionnaireRadioButtonInput(props: QuestionnaireChoiceInputProps): JS
 function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
-  const [valueSetOptions, isLoading] = useValueSetOptions(item.answerValueSet);
+  const [valueSetOptions, isLoading, valueSetAvailability] = useValueSetOptions(item.answerValueSet);
 
   // Get initial values from response
   const initialSelectedValues = item.answerValueSet
@@ -582,7 +601,11 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
   }
 
   if (options.length === 0) {
-    return <NoAnswerDisplay />;
+    return valueSetAvailability.status === 'unavailable' ? (
+      <SuggestionsUnavailableDisplay availability={valueSetAvailability} />
+    ) : (
+      <NoAnswerDisplay />
+    );
   }
 
   const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS);

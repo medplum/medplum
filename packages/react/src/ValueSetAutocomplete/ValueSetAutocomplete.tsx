@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Text } from '@mantine/core';
+import { ActionIcon, Group, Text, Tooltip } from '@mantine/core';
 import type { ValueSetExpandParams } from '@medplum/core';
-import { getStatus, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconCheck } from '@tabler/icons-react';
-import type { JSX } from 'react';
-import { forwardRef, useCallback, useState } from 'react';
+import { IconCheck, IconInfoCircle } from '@tabler/icons-react';
+import type { JSX, ReactNode } from 'react';
+import { forwardRef, useCallback } from 'react';
 import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
+import { isValueSetUnavailable, useValueSetAvailability } from './valueSetAvailability';
 
 export interface ValueSetAutocompleteProps extends Omit<
   AsyncAutocompleteProps<ValueSetExpansionContains>,
@@ -59,37 +59,27 @@ function createValue(input: string): ValueSetExpansionContains {
  */
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
-  const { binding, creatable, clearable, expandParams, withHelpText, error, ...rest } = props;
-  const [unavailableBinding, setUnavailableBinding] = useState<{ binding: string; message: string }>();
-  const bindingError = binding && unavailableBinding?.binding === binding ? unavailableBinding.message : undefined;
+  const { binding, creatable, clearable, expandParams, withHelpText, error, description, ...rest } = props;
+  const availability = useValueSetAvailability(binding);
+  const isCreatable = creatable ?? true;
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<ValueSetExpansionContains[]> => {
-      if (!binding || unavailableBinding?.binding === binding) {
+      if (!binding || isValueSetUnavailable(medplum, binding)) {
         return [];
       }
-      let valueSet: ValueSet;
-      try {
-        valueSet = await medplum.valueSetExpand(
-          {
-            count: 10,
-            ...expandParams,
-            url: binding,
-            filter: input,
-          },
-          { signal }
-        );
-      } catch (err) {
-        // A 400/404 outcome (e.g. "ValueSet not found") won't succeed on retry, so remember the failure
-        // and show it inline instead of surfacing an error on every keystroke; potentially transient
-        // errors (429 rate limit, 401, 5xx, network) rethrow so the field keeps retrying
-        const status = err instanceof OperationOutcomeError ? getStatus(err.outcome) : undefined;
-        if (status === 400 || status === 404) {
-          setUnavailableBinding({ binding, message: normalizeErrorString(err) });
-          return [];
-        }
-        throw err;
-      }
+      // Search errors surface inline and retry, but never latch the shared availability
+      // cache: a 400 here can be filter-specific (e.g. an unsupported filter expression),
+      // so only the filter-free mount probe is allowed to classify a value set as missing
+      const valueSet: ValueSet = await medplum.valueSetExpand(
+        {
+          count: 10,
+          ...expandParams,
+          url: binding,
+          filter: input,
+        },
+        { signal }
+      );
       const valueSetElements = valueSet.expansion?.contains ?? [];
       const newData: ValueSetExpansionContains[] = [];
       for (const valueSetElement of valueSetElements) {
@@ -100,20 +90,91 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
 
       return newData;
     },
-    [medplum, expandParams, binding, unavailableBinding]
+    [medplum, expandParams, binding]
   );
+
+  // An unavailable value set degrades the field by severity: if manual entry is allowed the field
+  // stays usable with quiet helper text, otherwise it is truly unusable and gets disabled
+  let inputDescription: ReactNode = description;
+  let inputError: ReactNode = error;
+  let inputDisabled = rest.disabled;
+  let inputWrapperOrder: ('label' | 'input' | 'description' | 'error')[] | undefined;
+  if (availability.status === 'unavailable') {
+    if (isCreatable) {
+      const unavailableNote = (
+        <UnavailableNote text="Suggestions unavailable" color="yellow.9" message={availability.message} />
+      );
+      inputDescription = description ? (
+        <>
+          {description}
+          <br />
+          {unavailableNote}
+        </>
+      ) : (
+        unavailableNote
+      );
+      // Render the warning below the input, where errors also appear, rather than
+      // Mantine's default above-the-input description slot
+      inputWrapperOrder = ['label', 'input', 'description', 'error'];
+    } else {
+      // The unavailable explanation always renders — it is the reason the field is disabled —
+      // alongside any consumer-supplied validation error
+      const unavailableNote = (
+        <UnavailableNote text="This field is unavailable." color="red" message={availability.message} />
+      );
+      inputError = error ? (
+        <>
+          {error}
+          <br />
+          {unavailableNote}
+        </>
+      ) : (
+        unavailableNote
+      );
+      inputDisabled = true;
+    }
+  }
 
   return (
     <AsyncAutocomplete
       {...rest}
-      error={error ?? bindingError}
-      creatable={creatable ?? true}
+      description={inputDescription}
+      error={inputError}
+      disabled={inputDisabled}
+      inputWrapperOrder={inputWrapperOrder}
+      creatable={isCreatable}
       clearable={clearable ?? true}
       toOption={toOption}
       loadOptions={loadValues}
       onCreate={createValue}
       itemComponent={withHelpText ? ItemComponent : undefined}
     />
+  );
+}
+
+export interface UnavailableNoteProps {
+  readonly text: string;
+  readonly color: string;
+  readonly message: string;
+}
+
+export function UnavailableNote({ text, color, message }: UnavailableNoteProps): JSX.Element {
+  return (
+    <Text span size="xs" c={color}>
+      {text}
+      <Tooltip label={message} position="top-start" withArrow events={{ hover: true, focus: true, touch: true }}>
+        <ActionIcon
+          variant="subtle"
+          color={color}
+          size={16}
+          ml={4}
+          aria-label={`Why is this unavailable? ${message}`}
+          style={{ verticalAlign: 'text-bottom' }}
+        >
+          <IconInfoCircle size={14} />
+        </ActionIcon>
+      </Tooltip>
+    </Text>
   );
 }
 

@@ -147,12 +147,10 @@ describe('AsyncAutocomplete', () => {
     spy.mockRestore();
   });
 
-  test('missing value set shows inline error and stops querying', async () => {
+  test('missing value set shows helper text on mount and stops querying', async () => {
     const message = 'ValueSet http://example.com/missing not found';
     const medplum = new MockClient();
-    const spy = vi
-      .spyOn(medplum, 'valueSetExpand')
-      .mockRejectedValue(new OperationOutcomeError(badRequest(message)));
+    const spy = vi.spyOn(medplum, 'valueSetExpand').mockRejectedValue(new OperationOutcomeError(badRequest(message)));
 
     render(
       <MedplumProvider medplum={medplum}>
@@ -161,22 +159,327 @@ describe('AsyncAutocomplete', () => {
       </MedplumProvider>
     );
 
+    // The mount-time probe discovers the missing value set before any interaction
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Suggestions unavailable')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Why is this unavailable/)).toBeInTheDocument();
+    // The technical detail lives in the tooltip, not in the visible copy
+    expect(screen.queryByText(message)).not.toBeInTheDocument();
+
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
     await typeInAutocomplete(input, 'a');
-
     expect(spy).toHaveBeenCalledTimes(1);
-    // The error appears exactly once: inline on the input, with no notification toast
-    expect(screen.getAllByText(message)).toHaveLength(1);
-
-    // Subsequent keystrokes do not query the server again
-    await typeInAutocomplete(input, 'ab');
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(screen.getAllByText(message)).toHaveLength(1);
 
     spy.mockRestore();
   });
 
-  test('rate-limited expand does not disable the input', async () => {
+  test('missing value set disables a non-creatable field', async () => {
+    const medplum = new MockClient();
+    const spy = vi
+      .spyOn(medplum, 'valueSetExpand')
+      .mockRejectedValue(new OperationOutcomeError(badRequest('ValueSet http://example.com/missing not found')));
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete
+          binding="http://example.com/missing"
+          creatable={false}
+          onChange={vi.fn()}
+          placeholder="Test"
+        />
+      </MedplumProvider>
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.getByText('This field is unavailable.')).toBeInTheDocument();
+    // The search field stays mounted (no focus-yank) but is disabled
+    expect(screen.getByRole('searchbox')).toBeDisabled();
+
+    spy.mockRestore();
+  });
+
+  test('unavailable value set is re-probed and recovers on remount', async () => {
+    const medplum = new MockClient();
+    const spy = vi
+      .spyOn(medplum, 'valueSetExpand')
+      .mockRejectedValueOnce(new OperationOutcomeError(badRequest('ValueSet http://example.com/late not found')));
+
+    const first = render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete binding="http://example.com/late" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.getByText('Suggestions unavailable')).toBeInTheDocument();
+    first.unmount();
+
+    // Within the retry interval, a fresh mount trusts the cached verdict (no request)
+    const second = render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete binding="http://example.com/late" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Suggestions unavailable')).toBeInTheDocument();
+    second.unmount();
+
+    // After the retry interval, a fresh mount re-probes; the value set has been imported in
+    // the meantime (the mock now resolves), so the field recovers
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61_000);
+    });
+    render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete binding="http://example.com/late" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Suggestions unavailable')).not.toBeInTheDocument();
+
+    spy.mockRestore();
+  });
+
+  test('transient probe failure is retried on the next mount, not cached as available', async () => {
+    const medplum = new MockClient();
+    const spy = vi
+      .spyOn(medplum, 'valueSetExpand')
+      .mockRejectedValueOnce(new OperationOutcomeError(serverError(new Error('boom'))));
+
+    const first = render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete binding="http://example.com/flaky-probe" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.queryByText('Suggestions unavailable')).not.toBeInTheDocument();
+    first.unmount();
+
+    // The failed probe did not settle the verdict, so the next mount immediately re-probes
+    render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete binding="http://example.com/flaky-probe" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Suggestions unavailable')).not.toBeInTheDocument();
+
+    spy.mockRestore();
+  });
+
+  test('failed search disarms a pending Enter', async () => {
+    const medplum = new MockClient();
+    const actualExpand = medplum.valueSetExpand.bind(medplum);
+    const onChange = vi.fn();
+    const spy = vi.spyOn(medplum, 'valueSetExpand').mockImplementation((params, options) => {
+      if (params.filter === 'a') {
+        throw new OperationOutcomeError(serverError(new Error('boom')));
+      }
+      return actualExpand(params, options);
+    });
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete binding="x" onChange={onChange} placeholder="Test" />
+      </MedplumProvider>
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    // Type and press Enter while the (failing) search is still pending
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'a' } });
+    });
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.getByText(/Internal server error/)).toBeInTheDocument();
+
+    // A later successful search must not auto-select on behalf of the stale Enter
+    await typeInAutocomplete(input, 'test');
+    expect(screen.getByText('Test Display')).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+
+    spy.mockRestore();
+  });
+
+  test('blur aborts an in-flight search so its late failure stays hidden', async () => {
+    const medplum = new MockClient();
+    const spy = vi.spyOn(medplum, 'valueSetExpand').mockImplementation(
+      () =>
+        new Promise<never>((_resolve, reject) => {
+          setTimeout(() => reject(new OperationOutcomeError(serverError(new Error('boom')))), 500);
+        }) as unknown as ReturnType<MockClient['valueSetExpand']>
+    );
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete binding="http://example.com/slow" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'a' } });
+    });
+    // Let the debounce fire so the request is in flight, then blur before it rejects
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    await act(async () => {
+      fireEvent.blur(input);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    expect(screen.queryByText(/Internal server error/)).not.toBeInTheDocument();
+
+    spy.mockRestore();
+  });
+
+  test('non-creatable unavailable field shows the unavailable note alongside a validation error', async () => {
+    const medplum = new MockClient();
+    const spy = vi
+      .spyOn(medplum, 'valueSetExpand')
+      .mockRejectedValue(new OperationOutcomeError(badRequest('ValueSet http://example.com/missing not found')));
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete
+          binding="http://example.com/missing"
+          creatable={false}
+          error="Required field"
+          onChange={vi.fn()}
+          placeholder="Test"
+        />
+      </MedplumProvider>
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    // The validation error must not hide the reason the field is disabled
+    expect(screen.getByText(/Required field/)).toBeInTheDocument();
+    expect(screen.getByText(/This field is unavailable/)).toBeInTheDocument();
+
+    spy.mockRestore();
+  });
+
+  test('load error appears on focus alone, clears on blur, and returns on refocus', async () => {
+    const medplum = new MockClient();
+    // Persistent transient failure (e.g. missing integration): every search fails with a 5xx
+    const spy = vi
+      .spyOn(medplum, 'valueSetExpand')
+      .mockRejectedValue(new OperationOutcomeError(serverError(new Error('boom'))));
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete binding="http://example.com/flaky" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    // Focus alone (no typing) triggers the search and surfaces the inline error
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
+    await act(async () => {
+      fireEvent.focus(input);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.getByText(/Internal server error/)).toBeInTheDocument();
+
+    // Leaving the field clears the error; the empty field does not keep showing it
+    await act(async () => {
+      fireEvent.blur(input);
+    });
+    expect(screen.queryByText(/Internal server error/)).not.toBeInTheDocument();
+
+    // Refocusing retries the same (empty) search and restores the error
+    await act(async () => {
+      fireEvent.focus(input);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.getByText(/Internal server error/)).toBeInTheDocument();
+
+    spy.mockRestore();
+  });
+
+  test('validation error and load error render together', async () => {
+    const medplum = new MockClient();
+    const actualExpand = medplum.valueSetExpand.bind(medplum);
+    const spy = vi.spyOn(medplum, 'valueSetExpand').mockImplementation((params, options) => {
+      if (params.filter === 'a') {
+        throw new OperationOutcomeError(serverError(new Error('boom')));
+      }
+      return actualExpand(params, options);
+    });
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete binding="x" error="Required field" onChange={vi.fn()} placeholder="Test" />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
+    await typeInAutocomplete(input, 'a');
+
+    // The validation error does not mask the load failure; both are visible
+    expect(screen.getByText(/Required field/)).toBeInTheDocument();
+    expect(screen.getByText(/Internal server error/)).toBeInTheDocument();
+
+    spy.mockRestore();
+  });
+
+  test('fields with the same binding share one availability probe', async () => {
+    const medplum = new MockClient();
+    const spy = vi
+      .spyOn(medplum, 'valueSetExpand')
+      .mockRejectedValue(new OperationOutcomeError(badRequest('ValueSet http://example.com/shared not found')));
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete binding="http://example.com/shared" onChange={vi.fn()} placeholder="A" />
+        <ValueSetAutocomplete binding="http://example.com/shared" onChange={vi.fn()} placeholder="B" />
+      </MedplumProvider>
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByText('Suggestions unavailable')).toHaveLength(2);
+
+    spy.mockRestore();
+  });
+
+  test('rate-limited probe does not mark the value set unavailable', async () => {
     const medplum = new MockClient();
     const spy = vi.spyOn(medplum, 'valueSetExpand').mockRejectedValueOnce(
       new OperationOutcomeError({
@@ -193,11 +496,15 @@ describe('AsyncAutocomplete', () => {
       </MedplumProvider>
     );
 
-    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
-    await typeInAutocomplete(input, 'a');
+    // The mount-time probe gets the 429 and treats it as transient
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
     expect(spy).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Suggestions unavailable')).not.toBeInTheDocument();
 
-    // The next search hits the server again and succeeds
+    // Searching still hits the server and succeeds
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
     await typeInAutocomplete(input, 'test');
     expect(spy).toHaveBeenCalledTimes(2);
     expect(screen.getByText('Test Display')).toBeInTheDocument();
@@ -205,11 +512,15 @@ describe('AsyncAutocomplete', () => {
     spy.mockRestore();
   });
 
-  test('transient expand failure does not disable the input', async () => {
+  test('transient search failure shows inline error and clears on success', async () => {
     const medplum = new MockClient();
-    const spy = vi
-      .spyOn(medplum, 'valueSetExpand')
-      .mockRejectedValueOnce(new OperationOutcomeError(serverError(new Error('boom'))));
+    const actualExpand = medplum.valueSetExpand.bind(medplum);
+    const spy = vi.spyOn(medplum, 'valueSetExpand').mockImplementation((params, options) => {
+      if (params.filter === 'a') {
+        throw new OperationOutcomeError(serverError(new Error('boom')));
+      }
+      return actualExpand(params, options);
+    });
 
     render(
       <MedplumProvider medplum={medplum}>
@@ -221,19 +532,18 @@ describe('AsyncAutocomplete', () => {
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
     await typeInAutocomplete(input, 'a');
 
-    expect(spy).toHaveBeenCalledTimes(1);
-    // A 5xx error surfaces as a notification, not as a persistent inline error
-    expect(screen.getByText(/Internal server error/)).toBeInTheDocument();
+    // The 5xx error appears exactly once, inline on the input, with no notification toast
+    expect(screen.getAllByText(/Internal server error/)).toHaveLength(1);
 
-    // The next search hits the server again and succeeds
+    // The next search hits the server again, succeeds, and clears the inline error
     await typeInAutocomplete(input, 'test');
-    expect(spy).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(/Internal server error/)).not.toBeInTheDocument();
     expect(screen.getByText('Test Display')).toBeInTheDocument();
 
     spy.mockRestore();
   });
 
-  test('repeated identical failures show a single notification', async () => {
+  test('repeated identical failures show a single inline error', async () => {
     const medplum = new MockClient();
     const spy = vi
       .spyOn(medplum, 'valueSetExpand')
@@ -250,8 +560,9 @@ describe('AsyncAutocomplete', () => {
     await typeInAutocomplete(input, 'a');
     await typeInAutocomplete(input, 'ab');
 
-    // Both searches hit the server and failed, but only one toast is on screen
-    expect(spy).toHaveBeenCalledTimes(2);
+    // The mount probe and both searches hit the server and failed (5xx is transient, so no
+    // latch), but the error renders exactly once, inline — never as toasts
+    expect(spy).toHaveBeenCalledTimes(3);
     expect(screen.getAllByText(/Internal server error/)).toHaveLength(1);
 
     spy.mockRestore();

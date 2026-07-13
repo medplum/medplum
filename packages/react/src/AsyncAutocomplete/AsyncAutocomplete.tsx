@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ComboboxItem, ComboboxProps } from '@mantine/core';
 import { Combobox, Group, Loader, Pill, PillsInput, ScrollAreaAutosize, useCombobox } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { IconCheck } from '@tabler/icons-react';
 import type { JSX, KeyboardEvent, ReactNode, SyntheticEvent } from 'react';
@@ -44,6 +43,7 @@ export interface AsyncAutocompleteProps<T> extends Omit<
   readonly maxValues?: number;
   readonly optionsDropdownMaxHeight?: number;
   readonly minInputLength?: number; // minimum number of input characters required before executing loadOptions
+  readonly inputWrapperOrder?: ('label' | 'input' | 'description' | 'error')[];
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
@@ -72,6 +72,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     maxValues,
     optionsDropdownMaxHeight = 320,
     minInputLength = 0,
+    inputWrapperOrder,
     ...rest
   } = props;
   const disabled = rest.disabled; // leave in rest so it also propagates to ComboBox
@@ -82,6 +83,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [autoSubmit, setAutoSubmit] = useState<boolean>();
   const [selected, setSelected] = useState(defaultItems.map(toOption));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
+  const [loadError, setLoadError] = useState<string>();
   const ItemComponent = itemComponent ?? DefaultItemComponent;
   const PillComponent = pillComponent ?? DefaultPillComponent;
   const EmptyComponent = emptyComponent ?? DefaultEmptyComponent;
@@ -119,6 +121,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     loadOptions(searchRef.current ?? '', newAbortController.signal)
       .then((newValues: T[]) => {
         if (!newAbortController.signal.aborted) {
+          setLoadError(undefined);
           setOptions(newValues.map(toOption));
           if (autoSubmitRef.current) {
             if (newValues.length > 0) {
@@ -131,11 +134,14 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         }
       })
       .catch((err) => {
-        if (!(newAbortController.signal.aborted || err.message.includes('aborted'))) {
-          const message = normalizeErrorString(err);
-          // Mantine ignores show() calls whose id is already on screen, so identical errors
-          // (e.g. one per keystroke, or one per field in the same form) don't stack up
-          showNotification({ id: `async-autocomplete-error-${message}`, color: 'red', message });
+        const message = normalizeErrorString(err);
+        if (!(newAbortController.signal.aborted || message.includes('aborted'))) {
+          setLoadError(message);
+          // A failed search is not "already done" — allow the same input to retry on the next focus
+          lastValueRef.current = undefined;
+          // Disarm a pending Enter so it can't auto-select the first result of a later,
+          // unrelated successful search
+          setAutoSubmit(false);
         }
       })
       .finally(() => {
@@ -153,6 +159,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     setAbortController,
     setOptions,
     setAutoSubmit,
+    setLoadError,
   ]);
 
   const handleSearchChange = useCallback(
@@ -285,6 +292,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       onClear={() => {
         setSearch('');
         setSelected([]);
+        setLoadError(undefined);
         onChange([]);
         combobox.closeDropdown();
       }}
@@ -294,13 +302,25 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const createVisible = creatable && search.trim().length > 0;
   const comboboxVisible = options.length > 0 || createVisible;
 
+  const displayError =
+    error && loadError ? (
+      <>
+        {error}
+        <br />
+        {loadError}
+      </>
+    ) : (
+      error || loadError
+    );
+
   return (
     <Combobox store={combobox} onOptionSubmit={handleValueSelect} withinPortal={true} shadow="xl" {...rest}>
       <Combobox.DropdownTarget>
         <PillsInput
           label={label}
           description={description}
-          error={error}
+          error={displayError}
+          inputWrapperOrder={inputWrapperOrder}
           className={props.className}
           leftSection={leftSection}
           rightSection={abortController ? <Loader size={16} /> : clearButton}
@@ -316,10 +336,11 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
                 onRemove={() => handleValueRemove(item)}
               />
             ))}
-            {!disabled && (maxValues === undefined || maxValues === 0 || selected.length < maxValues) && (
+            {(maxValues === undefined || maxValues === 0 || selected.length < maxValues) && (
               <Combobox.EventsTarget>
                 <PillsInput.Field
                   role="searchbox"
+                  disabled={disabled}
                   name={name}
                   value={search}
                   placeholder={placeholder}
@@ -327,6 +348,19 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
                   onBlur={() => {
                     combobox.closeDropdown();
                     setSearch('');
+                    // A quiet empty field shouldn't keep showing the last search's failure;
+                    // refocusing retries the search and restores the error if it still fails.
+                    // Abort any in-flight search and pending timer so a late rejection can't
+                    // repaint the error under the blurred field.
+                    setLoadError(undefined);
+                    if (abortControllerRef.current) {
+                      abortControllerRef.current.abort();
+                      setAbortController(undefined);
+                    }
+                    if (timerRef.current !== undefined) {
+                      window.clearTimeout(timerRef.current);
+                      setTimer(undefined);
+                    }
                   }}
                   onKeyDown={handleKeyDown}
                   onChange={handleSearchChange}
