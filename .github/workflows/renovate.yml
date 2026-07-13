@@ -30,7 +30,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Run Renovate only in the first week of the month
+        id: check-date
+        run: |
+          day=$(date -u +%d)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$day" -le 7 ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Not running Renovate since it's not the first week of the month"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: renovatebot/github-action@b50d2ba2bd928235abdcc14d06dfafc217f1c565 # v46.1.18
+        if: steps.check-date.outputs.run == 'true'
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_GIT_AUTHOR: 'Medplum Bot <bot@medplum.com>'
