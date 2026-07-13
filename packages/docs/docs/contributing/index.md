@@ -63,8 +63,7 @@ without needing to clone the repository.
 If you find a bug on Medplum and open a GitHub Pull Request that fixes it, we'll review it as soon as possible.
 
 Before starting implementation of a new feature, open an issue first to discuss your plans and to ensure it fits into
-our roadmap and plans for the app. If for some reason we don't accept your PR, you're welcome to [fork our repository](https://github.com/medplum/medplum/fork)
-and implement it in your own version.
+our roadmap and plans for the app.
 
 **Ready to get started writing code?** First things first, you need to [clone the Medplum repository](./contributing/local-dev-setup).
 

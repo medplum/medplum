@@ -820,7 +820,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(resetRes.status).toBe(400);
-    expect(resetRes.body.issue[0].details.text).toBe('User is not enrolled in MFA');
+    expect(resetRes.body.issue[0].details.text).toBe('User is not enrolled in MFA method: totp');
   });
 
   test('Reset MFA - membership from different project is rejected', async () => {
@@ -896,6 +896,245 @@ describe('Project Admin routes', () => {
 
     const resetRes = await request(app)
       .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
+      .set('Authorization', 'Bearer ' + nonAdminUser.accessToken)
+      .send();
+    expect(resetRes.status).toBe(403);
+  });
+
+  test('Reset MFA - invalid method is rejected', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Liam',
+        lastName: 'Neeson',
+        projectName: 'Liam Project',
+        email: `liam${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Mia',
+        lastName: 'Wong',
+        email: `mia${randomUUID()}@example.com`,
+      });
+    expect(inviteRes.status).toBe(200);
+    const membershipId = inviteRes.body.id as string;
+
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ method: 'sms' });
+    expect(resetRes.status).toBe(400);
+  });
+
+  test('Reset MFA - email method leaves TOTP and secret intact', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Nora',
+        lastName: 'Stone',
+        projectName: 'Nora Project',
+        email: `nora${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Omar',
+        lastName: 'Reed',
+        email: `omar${randomUUID()}@example.com`,
+      });
+    expect(inviteRes.status).toBe(200);
+    const membershipId = inviteRes.body.id as string;
+    const userId = (inviteRes.body.user.reference as string).split('/')[1];
+
+    // Enrolled in both TOTP and email
+    const systemRepo = getGlobalSystemRepo();
+    const invitedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
+    await withTestContext(() =>
+      systemRepo.updateResource<User>({
+        ...invitedUser,
+        mfaEnrolled: true,
+        mfaMethod: ['totp', 'email'],
+        mfaSecret: 'TESTSECRET',
+      })
+    );
+
+    // Reset only the email method
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ method: 'email' });
+    expect(resetRes.status).toBe(200);
+
+    const updatedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
+    // Still enrolled in TOTP
+    expect(updatedUser.mfaEnrolled).toBe(true);
+    expect(updatedUser.mfaMethod).toStrictEqual(['totp']);
+    // Email-only reset does not rotate the authenticator secret
+    expect(updatedUser.mfaSecret).toBe('TESTSECRET');
+  });
+
+  test('Reset MFA - TOTP method leaves email enrolled and rotates secret', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Paula',
+        lastName: 'Vance',
+        projectName: 'Paula Project',
+        email: `paula${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Quinn',
+        lastName: 'Ryder',
+        email: `quinn${randomUUID()}@example.com`,
+      });
+    expect(inviteRes.status).toBe(200);
+    const membershipId = inviteRes.body.id as string;
+    const userId = (inviteRes.body.user.reference as string).split('/')[1];
+
+    const systemRepo = getGlobalSystemRepo();
+    const invitedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
+    await withTestContext(() =>
+      systemRepo.updateResource<User>({
+        ...invitedUser,
+        mfaEnrolled: true,
+        mfaMethod: ['totp', 'email'],
+        mfaSecret: 'TESTSECRET',
+      })
+    );
+
+    // Default method is TOTP
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(resetRes.status).toBe(200);
+
+    const updatedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
+    // Still enrolled via email
+    expect(updatedUser.mfaEnrolled).toBe(true);
+    expect(updatedUser.mfaMethod).toStrictEqual(['email']);
+    // TOTP reset rotates the secret
+    expect(updatedUser.mfaSecret).not.toBe('TESTSECRET');
+  });
+
+  test('Reset MFA - method not enrolled is rejected', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Rosa',
+        lastName: 'Park',
+        projectName: 'Rosa Project',
+        email: `rosa${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Sam',
+        lastName: 'Tan',
+        email: `sam${randomUUID()}@example.com`,
+      });
+    expect(inviteRes.status).toBe(200);
+    const membershipId = inviteRes.body.id as string;
+    const userId = (inviteRes.body.user.reference as string).split('/')[1];
+
+    // Enrolled only in TOTP
+    const systemRepo = getGlobalSystemRepo();
+    const invitedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
+    await withTestContext(() =>
+      systemRepo.updateResource<User>({
+        ...invitedUser,
+        mfaEnrolled: true,
+        mfaMethod: ['totp'],
+        mfaSecret: 'TESTSECRET',
+      })
+    );
+
+    // Try to reset the email method the user is not enrolled in
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ method: 'email' });
+    expect(resetRes.status).toBe(400);
+    expect(resetRes.body.issue[0].details.text).toBe('User is not enrolled in MFA method: email');
+  });
+
+  test('Reset password - sends email to member', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Tara',
+        lastName: 'Vale',
+        projectName: 'Tara Project',
+        email: `tara${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Uma',
+        lastName: 'West',
+        email: `uma${randomUUID()}@example.com`,
+        sendEmail: false,
+      });
+    expect(inviteRes.status).toBe(200);
+    const membershipId = inviteRes.body.id as string;
+
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/resetpassword`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(resetRes.status).toBe(200);
+  });
+
+  test('Reset password - non-admin is rejected', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Vera',
+        lastName: 'York',
+        projectName: 'Vera Project',
+        email: `vera${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Will',
+        lastName: 'Xu',
+        email: `will${randomUUID()}@example.com`,
+      });
+    expect(inviteRes.status).toBe(200);
+    const membershipId = inviteRes.body.id as string;
+
+    const nonAdminUser = await withTestContext(() => addTestUser(project));
+
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/resetpassword`)
       .set('Authorization', 'Bearer ' + nonAdminUser.accessToken)
       .send();
     expect(resetRes.status).toBe(403);

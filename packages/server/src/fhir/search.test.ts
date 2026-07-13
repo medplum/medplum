@@ -2771,6 +2771,86 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       ).toStrictEqual(expected);
     }));
 
+  test('_include with target type', () =>
+    withTestContext(async () => {
+      // gh-9765: AuditEvent.entity.what can reference many types, so
+      // _include=AuditEvent:entity:Task must include only the Task, not every
+      // referenced resource type.
+      const task = await repo.createResource<Task>({
+        resourceType: 'Task',
+        status: 'completed',
+        intent: 'order',
+      });
+      const referencedAuditEvent = await repo.createResource<AuditEvent>({
+        resourceType: 'AuditEvent',
+        recorded: '2026-01-01T00:00:00.000Z',
+        type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+        agent: [{ requestor: true }],
+        source: { observer: { display: 'test' } },
+      });
+      const auditEvent = await repo.createResource<AuditEvent>({
+        resourceType: 'AuditEvent',
+        recorded: '2026-01-01T00:00:00.000Z',
+        type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+        agent: [{ requestor: true }],
+        source: { observer: { display: 'test' } },
+        entity: [
+          { what: { reference: getReferenceString(task) } },
+          { what: { reference: getReferenceString(referencedAuditEvent) } },
+        ],
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(task) }],
+        include: [{ resourceType: 'AuditEvent', searchParam: 'entity', targetType: 'Task' }],
+      });
+
+      // The Task is included; the referenced AuditEvent is not, because its type
+      // does not match the include target type.
+      expect(
+        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
+      ).toStrictEqual([`include:Task/${task.id}`, `match:AuditEvent/${auditEvent.id}`].sort());
+    }));
+
+  test('_revinclude with target type', () =>
+    withTestContext(async () => {
+      // gh-9765: _revinclude target type restricts which base resources are followed.
+      const identifier = randomUUID();
+      const task = await repo.createResource<Task>({
+        resourceType: 'Task',
+        status: 'completed',
+        intent: 'order',
+        identifier: [{ value: identifier }],
+      });
+      const auditEvent = await repo.createResource<AuditEvent>({
+        resourceType: 'AuditEvent',
+        recorded: '2026-01-01T00:00:00.000Z',
+        type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+        agent: [{ requestor: true }],
+        source: { observer: { display: 'test' } },
+        entity: [{ what: { reference: getReferenceString(task) } }],
+      });
+
+      // Target type matches the Task base result: the AuditEvent is reverse included.
+      const matched = await repo.search({
+        resourceType: 'Task',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+        revInclude: [{ resourceType: 'AuditEvent', searchParam: 'entity', targetType: 'Task' }],
+      });
+      expect(
+        matched.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
+      ).toStrictEqual([`include:AuditEvent/${auditEvent.id}`, `match:Task/${task.id}`].sort());
+
+      // Target type Patient does not match the Task base result: nothing is reverse included.
+      const notMatched = await repo.search({
+        resourceType: 'Task',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+        revInclude: [{ resourceType: 'AuditEvent', searchParam: 'entity', targetType: 'Patient' }],
+      });
+      expect(notMatched.entry?.filter((e) => e.search?.mode === 'include')).toHaveLength(0);
+    }));
+
   test('_revinclude:iterate', () =>
     withTestContext(async () => {
       /*

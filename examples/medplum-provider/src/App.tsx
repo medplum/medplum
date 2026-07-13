@@ -215,8 +215,10 @@ export function App(): JSX.Element | null {
                 {hasScriptSure && <Route path="scriptsure" element={<ScriptSureTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
-                <Route path="ServiceRequest" element={<LabsPage />} />
-                <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
+                <Route path="ServiceRequest" element={<LabsPage tab="open" />} />
+                <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage tab="open" />} />
+                <Route path="DiagnosticReport" element={<LabsPage tab="completed" />} />
+                <Route path="DiagnosticReport/:diagnosticReportId" element={<LabsPage tab="completed" />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
                 <Route path="MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
                 <Route path="DocumentReference" element={<DocumentsPage />} />

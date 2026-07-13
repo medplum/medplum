@@ -188,7 +188,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'new-password' },
       });
     });
@@ -238,7 +238,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'new-password' },
       });
     });
@@ -291,7 +291,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'new-password' },
       });
     });

@@ -23,6 +23,7 @@ import { LabOrderDetails } from './LabOrderDetails';
 vi.mock('../../utils/documentReference', () => ({
   fetchLabOrderRequisitionDocuments: vi.fn(),
   getHealthGorillaRequisitionId: vi.fn(),
+  resolvePresentedFormAttachments: vi.fn(),
 }));
 
 const mockPatient: WithId<Patient> = {
@@ -249,6 +250,7 @@ describe('LabOrderDetails', () => {
   let medplum: MockClient;
   let fetchLabOrderRequisitionDocumentsMock: any;
   let getHealthGorillaRequisitionIdMock: any;
+  let resolvePresentedFormAttachmentsMock: any;
 
   beforeEach(async () => {
     medplum = new MockClient();
@@ -257,10 +259,12 @@ describe('LabOrderDetails', () => {
     const documentReferenceUtils = await import('../../utils/documentReference');
     fetchLabOrderRequisitionDocumentsMock = vi.mocked(documentReferenceUtils.fetchLabOrderRequisitionDocuments);
     getHealthGorillaRequisitionIdMock = vi.mocked(documentReferenceUtils.getHealthGorillaRequisitionId);
+    resolvePresentedFormAttachmentsMock = vi.mocked(documentReferenceUtils.resolvePresentedFormAttachments);
 
     // Setup default mocks
     fetchLabOrderRequisitionDocumentsMock.mockResolvedValue([]);
     getHealthGorillaRequisitionIdMock.mockReturnValue('HG-REQ-12345');
+    resolvePresentedFormAttachmentsMock.mockImplementation(async (_medplum: unknown, forms: unknown) => forms ?? []);
     medplum.searchResources = vi.fn().mockResolvedValue([]);
   });
 

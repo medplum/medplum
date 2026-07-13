@@ -948,7 +948,7 @@ export class BackEnd extends Construct {
     const cluster = new elasticache.CfnReplicationGroup(this, `${id}Cluster`, {
       engine: options.engine ?? 'Redis',
       engineVersion: options.engineVersion ?? '6.x',
-      cacheNodeType: options.nodeType ?? 'cache.t2.medium',
+      cacheNodeType: options.nodeType ?? 'cache.t4g.medium',
       replicationGroupDescription: `${id}ReplicationGroup`,
       authToken: password.secretValueFromJson('password').toString(),
       transitEncryptionEnabled: true,

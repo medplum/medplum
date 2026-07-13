@@ -31,7 +31,7 @@ describe('ChangePasswordPage', () => {
     await user.type(screen.getByLabelText('New password *'), 'purple');
     await user.type(screen.getByLabelText('Confirm new password *'), 'purple');
 
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button', { name: 'Change password' }));
 
     await waitFor(async () => {
       expect(screen.getByTestId('success')).toBeInTheDocument();
@@ -45,7 +45,7 @@ describe('ChangePasswordPage', () => {
     await user.type(screen.getByLabelText('New password *'), 'purple');
     await user.type(screen.getByLabelText('Confirm new password *'), 'purple');
 
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button', { name: 'Change password' }));
 
     await waitFor(async () => {
       expect(screen.getByText('Incorrect password')).toBeInTheDocument();

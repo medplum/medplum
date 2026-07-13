@@ -176,6 +176,16 @@ export async function processDataWarehouseSyncJob(
 
       const syncOptions = getDataWarehouseSyncOptions(config);
 
+      globalLogger.info('Data warehouse sync starting', {
+        jobId: job.id,
+        trigger: job.data.trigger,
+        tablesTotal: syncOptions.warehouseSources.length,
+        startDate: syncOptions.startDate,
+        includeResourceTypes: syncOptions.includeResourceTypes,
+        excludeResourceTypes: syncOptions.excludeResourceTypes,
+        subsystem: 'data-warehouse-sync',
+      });
+
       const result = await syncData({
         ...syncOptions,
         onProgress: async (_message, metadata) => {
@@ -184,8 +194,10 @@ export async function processDataWarehouseSyncJob(
       });
 
       let syncDurationSeconds = 0;
+      let watermarkDurationSeconds = 0;
       for (const table of result.tables) {
         syncDurationSeconds += table.syncDurationMs / 1000;
+        watermarkDurationSeconds += table.watermarkDurationMs / 1000;
       }
 
       const tables = result.tables;
@@ -194,6 +206,7 @@ export async function processDataWarehouseSyncJob(
       const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
       const jobEndTime = new Date();
       const durationSeconds = (jobEndTime.getTime() - jobStartTime.getTime()) / 1000;
+
       globalLogger.info('Data warehouse sync completed', {
         jobId: job.id,
         trigger: job.data.trigger,
@@ -203,7 +216,17 @@ export async function processDataWarehouseSyncJob(
         tablesEmpty,
         rowsInserted,
         tableCounts: Object.fromEntries(tables.map((t) => [t.destination, t.rowsInserted])),
+        tableTimings: Object.fromEntries(
+          tables.map((t) => [
+            t.destination,
+            {
+              syncDurationMs: t.syncDurationMs,
+              watermarkDurationMs: t.watermarkDurationMs,
+            },
+          ])
+        ),
         syncDurationSeconds,
+        watermarkDurationSeconds,
         jobStartTime: jobStartTime.toISOString(),
         jobEndTime: jobEndTime.toISOString(),
         durationSeconds,
