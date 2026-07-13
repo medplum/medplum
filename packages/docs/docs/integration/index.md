@@ -48,10 +48,10 @@ Medplum supports the following first party integrations.
       <td><a href="/docs/auth/external-identity-providers">Entra Auth Setup</a></td>
     </tr>
     <tr>
-      <td><a href="https://www.google.com/recaptcha/about/">Recaptcha</a></td>
+      <td><a href="https://www.google.com/recaptcha/about/">reCAPTCHA</a></td>
       <td>Security</td>
-      <td>Enable recaptcha on patient registration</td>
-      <td><a href="/docs/user-management/custom-emails#setup-recaptcha">Setup recaptcha</a></td>
+      <td>Enable reCAPTCHA on patient registration</td>
+      <td><a href="/docs/user-management/custom-emails#setup-recaptcha">Set up reCAPTCHA</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Clinical Systems (EHR, HIE, Labs)</strong></td>
@@ -342,7 +342,7 @@ Complex integrations are built by composing [bots](/docs/bots/), [subscriptions]
 
 - [Running on localhost](/docs/contributing/run-the-stack) is useful for testing integrations
 - [CLI](/docs/cli/external-fhir-servers) is commonly used to test connectivity to external FHIR Servers
-- [Integration Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aintegration) on Github show the code that powers many of the integrations.
+- [Integration Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aintegration) on GitHub show the code that powers many of the integrations.
 - [Audit and Logging Features](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aaudit-logging) show several security and observability integrations.
 - [Bot Pull Requests](https://github.com/medplum/medplum/issues?q=label%3Abots) can be good reference material for how integrations work.
 - [Auth Pull Requests](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aauth) can also be good reference material for integration planning and learning.

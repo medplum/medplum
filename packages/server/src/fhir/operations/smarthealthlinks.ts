@@ -36,7 +36,7 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
-import { validateOutboundUrl } from '../../util/url';
+import { safeFetch } from '../../util/url';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { getPatientEverything } from './patienteverything';
@@ -344,9 +344,9 @@ async function resolveExternalSmartHealthLink(
     warnings.push('SMART Health Link is expired. Content was still available and decrypted.');
   }
 
-  const url = validateOutboundUrl(payload.url);
+  const url = new URL(payload.url);
   url.searchParams.set('recipient', recipient);
-  const response = await fetch(url, {
+  const response = await safeFetch(url, {
     redirect: 'error',
     signal: AbortSignal.timeout(EXTERNAL_SMART_HEALTH_LINK_FETCH_TIMEOUT_MS),
   });

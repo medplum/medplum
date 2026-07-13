@@ -46,6 +46,31 @@ describe('Header', () => {
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
   });
 
+  test('Renders active project name', async () => {
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: 'abc',
+        refreshToken: 'xyz',
+        profile: {
+          reference: 'Practitioner/124',
+          display: 'Alice Smith',
+        },
+        project: {
+          reference: 'Project/456',
+          display: 'My Project',
+        },
+      })
+    );
+
+    await setup();
+
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('My Project')).toBeInTheDocument();
+
+    window.localStorage.removeItem('activeLogin');
+  });
+
   test('Open and close the user menu', async () => {
     await setup();
 
@@ -119,7 +144,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Alice Smith'));
     });
 
-    expect(await screen.findByText('My Project')).toBeInTheDocument();
+    expect((await screen.findAllByText('My Project')).length).toBeGreaterThan(0);
     expect(await screen.findByText('My Other Project')).toBeInTheDocument();
 
     // Click on other project to switch

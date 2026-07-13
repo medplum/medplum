@@ -12,6 +12,7 @@ import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
 import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
+import { CancelledError } from '../../../workers/utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
 
@@ -137,6 +138,10 @@ export class AsyncJobExecutor {
     // to handle.
     if (err instanceof DelayedError) {
       throw err;
+    }
+    // Job has been cancelled: do not update the async job with additional data
+    if (err instanceof CancelledError) {
+      return this.resource;
     }
 
     const failedJob: WithId<AsyncJob> = {

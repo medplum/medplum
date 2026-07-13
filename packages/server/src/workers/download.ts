@@ -22,7 +22,7 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
-import { validateOutboundUrl } from '../util/url';
+import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
@@ -162,9 +162,7 @@ function isExternalUrl(url: string | undefined): url is string {
   ) {
     return false;
   }
-  try {
-    validateOutboundUrl(url);
-  } catch {
+  if (!isAllowedOutboundUrlForQueue(url, getConfig())) {
     return false;
   }
   return true;
@@ -245,7 +243,6 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
   if (!isUrlAllowedByProject(project, url)) {
     return;
   }
-  validateOutboundUrl(url);
 
   const headers: HeadersInit = {};
   const traceId = job.data.traceId;
@@ -260,7 +257,7 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 
   try {
     log.info('Requesting content at: ' + url);
-    const response = await fetch(url, {
+    const response = await safeFetch(url, {
       headers,
     });
 
