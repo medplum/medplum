@@ -39,6 +39,7 @@ import { useParams } from 'react-router';
 import { PerformingLabInput } from '../../components/PerformingLabInput';
 import { CoverageInput } from '../../components/labs/CoverageInput';
 import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
+import { ICD10_CM_BILLABLE_VALUESET } from '../../config/appDependencies';
 import { showErrorNotification } from '../../utils/notifications';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
@@ -213,7 +214,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
             <div>
               <ValueSetAutocomplete
                 label="Diagnoses"
-                binding="http://hl7.org/fhir/sid/icd-10-cm/vs/billable"
+                binding={ICD10_CM_BILLABLE_VALUESET}
                 name="diagnoses"
                 maxValues={10}
                 onChange={(items) => {

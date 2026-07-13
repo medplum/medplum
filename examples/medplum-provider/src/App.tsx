@@ -19,6 +19,7 @@ import {
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
+import { MissingDependenciesBanner } from './components/MissingDependenciesBanner';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
@@ -178,6 +179,7 @@ export function App(): JSX.Element | null {
       resourceTypeSearchDisabled={true}
       spotlightPatientsOnly={true}
     >
+      {profile && <MissingDependenciesBanner />}
       <Suspense fallback={<Loading />}>
         <Routes>
           {profile ? (

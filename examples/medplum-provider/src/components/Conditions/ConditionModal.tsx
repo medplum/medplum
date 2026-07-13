@@ -6,6 +6,7 @@ import type { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fh
 import { CodeableConceptInput, Form, SubmitButton } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
+import { ICD10_CM_BILLABLE_VALUESET } from '../../config/appDependencies';
 import { showErrorNotification } from '../../utils/notifications';
 
 export interface ConditionDialogProps {
@@ -57,7 +58,7 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
     <Form onSubmit={handleSubmit}>
       <Stack>
         <CodeableConceptInput
-          binding="http://hl7.org/fhir/sid/icd-10-cm/vs/billable"
+          binding={ICD10_CM_BILLABLE_VALUESET}
           label="ICD-10 Code"
           name="diagnosis"
           path="Condition.code"
