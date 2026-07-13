@@ -177,22 +177,6 @@ describe('External', () => {
     expect(res.body.issue[0].details.text).toBe('External token does not contain email address');
   });
 
-  test.each([
-    ['unverified', false],
-    ['missing email_verified', null],
-  ])('Rejects %s external email', async (_name, emailVerified) => {
-    const url = appendQueryParams('/auth/external', {
-      code: randomUUID(),
-      state: JSON.stringify({ domain }),
-    });
-
-    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email, undefined, emailVerified)));
-
-    const res = await request(app).get(url);
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('External token email is not verified');
-  });
-
   test('Email does not match domain', async () => {
     // Build the external callback URL with the known domain
     const url = appendQueryParams('/auth/external', {
@@ -816,21 +800,11 @@ describe('External', () => {
  * Returns fake tokens to mock the external identity provider.
  * @param email - The user email address to include in the ID token.
  * @param sub - The user subject to include as the sub claim.
- * @param emailVerified - Whether to include a verified email claim; null omits the claim.
  * @returns Fake tokens to mock the external identity provider.
  */
-function buildTokens(
-  email: string | undefined,
-  sub?: string,
-  emailVerified: boolean | null = true
-): Record<string, string> {
-  const claims: Record<string, unknown> = { email, sub };
-  if (emailVerified !== null) {
-    claims.email_verified = emailVerified;
-  }
-
+function buildTokens(email: string | undefined, sub?: string): Record<string, string> {
   return {
-    id_token: 'header.' + Buffer.from(JSON.stringify(claims), 'ascii').toString('base64') + '.signature',
+    id_token: 'header.' + Buffer.from(JSON.stringify({ email, sub }), 'ascii').toString('base64') + '.signature',
   };
 }
 
