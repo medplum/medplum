@@ -36,13 +36,10 @@ export interface DependencyGroup {
   /** Link to setup docs for this dependency. */
   readonly docsUrl: string;
   /**
-   * The probes used to detect this group. A group is flagged missing when at least one probe
-   * definitively resolves as missing (404/400/empty) AND none resolve as present. Because every
-   * probe in a group is backed by the same shared project, a single present probe proves the
-   * project is linked (so the group is not flagged), while a missing probe with no present sibling
-   * indicates the project is unlinked.
+   * The probe used to detect this group. Backed by the group's shared project, so a definitive
+   * missing result (404/400/empty) means the project is unlinked.
    */
-  readonly probes: readonly DependencyProbe[];
+  readonly probe: DependencyProbe;
 }
 
 // Shared ValueSet URLs, re-exported so call sites bind against these constants rather than
@@ -54,17 +51,12 @@ export const DEPENDENCY_GROUPS: readonly DependencyGroup[] = [
     id: 'umls-terminology',
     name: 'UMLS terminology',
     docsUrl: 'https://www.medplum.com/docs/terminology',
-    probes: [
-      // ICD-10-CM (diagnoses) and a representative UMLS/NLM value set. Both are backed by the
-      // UMLS terminology shared project, so probing one or two representatives is sufficient.
-      { kind: 'valueSet', url: ICD10_CM_BILLABLE_VALUESET },
-      { kind: 'valueSet', url: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1010.4' },
-    ],
+    probe: { kind: 'valueSet', url: ICD10_CM_BILLABLE_VALUESET },
   },
   {
     id: 'us-core-profiles',
     name: 'US Core profiles',
     docsUrl: 'https://www.medplum.com/docs/fhir-datastore/profiles',
-    probes: [{ kind: 'profile', url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient' }],
+    probe: { kind: 'profile', url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient' },
   },
 ];

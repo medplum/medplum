@@ -21,12 +21,12 @@ export interface UseMissingDependenciesResult {
  * ValueSet is expanded at most once per client and the result is shared with the inline
  * field-level checks (a missing ValueSet recovers automatically once the project is linked).
  *
- * Definitive negatives count as "missing": a 400/404 `$expand`, or an empty profile/bot search.
+ * Definitive negatives count as "missing": a 400/404 `$expand`, or an empty profile search.
  * Transient failures (network errors, 401/403/5xx) throw and are treated as "unknown", never
  * flagging a dependency, so a flaky connection or an outright-denied request does not false-alarm.
  *
- * Caveat: a profile/bot search that returns *empty* is treated as missing. An AccessPolicy that
- * merely filters those resource types out (returning an empty 200, rather than denying access,
+ * Caveat: a profile search that returns *empty* is treated as missing. An AccessPolicy that
+ * merely filters that resource type out (returning an empty 200, rather than denying access,
  * which throws) can therefore produce a false positive for a restricted user. The banner is
  * advisory and dismissible, and the users who can act on it (project admins) are not usually
  * restricted this way — but the ValueSet probe is the only one that cannot false-alarm.
@@ -63,18 +63,9 @@ export function useMissingDependencies(): UseMissingDependenciesResult {
 
 async function detectMissingGroups(medplum: MedplumClient): Promise<DependencyGroup[]> {
   const results = await Promise.all(
-    DEPENDENCY_GROUPS.map(async (group) => {
-      const probeResults = await Promise.all(group.probes.map((probe) => runProbe(medplum, probe)));
-      return { group, probeResults };
-    })
+    DEPENDENCY_GROUPS.map(async (group) => ({ group, result: await runProbe(medplum, group.probe) }))
   );
-
-  // A group is missing only when at least one probe definitively resolved as missing AND no probe
-  // resolved as present. A single present probe means the backing shared project is linked, so the
-  // group is not missing even if another probe errored transiently.
-  return results
-    .filter(({ probeResults }) => probeResults.includes('missing') && !probeResults.includes('present'))
-    .map(({ group }) => group);
+  return results.filter(({ result }) => result === 'missing').map(({ group }) => group);
 }
 
 async function runProbe(medplum: MedplumClient, probe: DependencyProbe): Promise<ProbeResult> {
