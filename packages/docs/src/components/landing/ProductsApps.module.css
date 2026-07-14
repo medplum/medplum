@@ -41,19 +41,17 @@
 }
 
 .showcaseBox {
-  --showcase-surface: rgba(var(--oc-grape-0-rgb), 0.75);
-  --showcase-rail: var(--oc-gray-0);
   border: 1px solid rgba(var(--oc-violet-0-rgb), 0.75);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0px 8px 24px rgba(var(--oc-violet-3-rgb), 0.15);
-  background: #fff;
+  background: var(--landing-surface);
 }
 
 .showcaseInner {
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: transparent;
   overflow: hidden;
 }
 
@@ -163,8 +161,12 @@
   color: var(--landing-color-muted);
 }
 
+.tabActive .tabTagline {
+  color: var(--landing-color-muted);
+}
+
 .showcaseBody {
-  background-color: var(--showcase-surface);
+  background-color: rgba(var(--oc-grape-0-rgb), 0.75);
   border: 1px solid rgba(var(--oc-grape-0-rgb), 0.75);
   border-radius: 4px;
 }
@@ -287,15 +289,13 @@
 }
 
 [data-theme='dark'] .showcaseBox {
-  --showcase-surface: var(--oc-gray-9);
-  --showcase-rail: var(--oc-gray-8);
-  background: var(--oc-gray-8);
-  border-color: rgba(var(--oc-gray-8-rgb), 0.5);
+  background: var(--landing-surface);
+  border: 1px solid rgba(var(--oc-gray-8-rgb), 0.5);
   box-shadow: 0px 4px 40px rgba(var(--oc-violet-1-rgb), 0.15);
 }
 
 [data-theme='dark'] .showcaseInner {
-  background: var(--oc-gray-9);
+  background: transparent;
 }
 
 [data-theme='dark'] .tab {
@@ -312,22 +312,26 @@
 }
 
 [data-theme='dark'] .showcaseBody {
-  background-color: var(--showcase-surface);
-  border: 1px solid rgba(var(--oc-grape-0-rgb), 0.75);
+  background-color: var(--oc-gray-9);
+  border: 1px solid rgba(var(--oc-gray-8-rgb), 0.5);
+}
+
+[data-theme='dark'] .tab:hover .tabName {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .tab:hover .tabTagline {
+  color: var(--oc-gray-4);
 }
 
 [data-theme='dark'] .tabActive .tabName {
   color: var(--oc-grape-4);
 }
 
-[data-theme='dark'] .tabActive .tabTagline {
-  color: var(--oc-grape-5);
-}
-
 [data-theme='dark'] .stackImage {
-  box-shadow: none;
-  border: 1px solid rgba(var(--oc-gray-7-rgb), 0.75);
-  background: #1b1b1d;
+  box-shadow: 0px 8px 40px rgba(var(--oc-gray-7-rgb), 0.5);
+  border: 1px solid rgba(var(--oc-gray-5-rgb), 0.25);
+  background: #FFF;
 }
 
 @media (prefers-reduced-motion: reduce) {

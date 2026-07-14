@@ -31,7 +31,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
   gap: 6rem;
   align-items: start;
-  padding-left: 2rem;
+  padding-inline: var(--layout-padding);
 }
 
 .copyCol {
@@ -52,7 +52,7 @@
 
 .body {
   font-family: var(--landing-font-display);
-  color: #4d4d4d;
+  color: var(--landing-color-body-alt);
   font-size: 1.125rem;
   line-height: 1.75rem;
   font-weight: 400;
@@ -128,7 +128,7 @@
 }
 
 [data-theme='dark'] .body {
-  color: #b2b2b2;
+  color: var(--landing-color-body-alt);
 }
 
 /* ---- Browser window (the custom app being built) ----------------------
@@ -250,27 +250,40 @@
   color: var(--oc-green-4);
 }
 
+/* Light-mode screenshots — keep the slide frame on a light surface in dark theme. */
+[data-theme='dark'] .browserImage {
+  background: var(--oc-gray-0);
+}
+
 /* ---- Responsive ------------------------------------------------------- */
 @media (max-width: 996px) {
+  /* Match the home page CTA banner at this breakpoint: 4rem/3rem padding, and keep the 10rem
+     top gap (home doesn't shrink it) so the space before the CTA matches. */
   .section {
-    padding: 4rem 0 2rem;
-    margin-top: 6rem;
+    padding: 4rem 0 3rem;
+    margin-top: 10rem;
   }
 
   .grid {
     grid-template-columns: 1fr;
     gap: 2.5rem;
+    padding-inline: var(--layout-padding-md);
   }
 }
 
 @media (max-width: 600px) {
+  .grid {
+    padding-inline: var(--layout-padding-sm);
+  }
+
   .buttons {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
   }
 
-  .buttons > a {
+  .buttons > a,
+  .startButton {
     width: 100%;
   }
 }

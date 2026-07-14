@@ -123,10 +123,10 @@ function HeroAppWindow(): JSX.Element {
       </div>
       <div className={styles.heroBrowserImage}>
         <img
-          src="/img/screenshots/product-hero-app.jpg"
+          src="/img/screenshots/product-hero-app.webp"
           alt="A custom patient app built on Medplum"
-          width={1024}
-          height={808}
+          width={2812}
+          height={2220}
           className={styles.heroScreenshot}
         />
       </div>

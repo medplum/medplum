@@ -32,126 +32,79 @@
   max-width: 64%;
 }
 
-/* Matches ProductsApps .showcaseBox */
-.detailCard {
-  margin: 0 0 20px;
-  border: 1px solid rgba(var(--oc-violet-0-rgb), 0.75);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0px 8px 24px rgba(var(--oc-violet-3-rgb), 0.15);
-  background: #fff;
-  display: flex;
-  align-items: center;
-  gap: 16px;
+/* The diagram is a fixed-width figure (~1000px). Rather than force the whole page to scroll
+   sideways on narrow viewports, it scrolls within its own box. overscroll-behavior keeps the
+   swipe from chaining out to the page. */
+.diagramScroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
-.detailCardMain {
-  flex: 1;
-  min-width: 0;
+/* Below the max content width the container has no auto side margins, so we can break the
+   figure out to the viewport edges (negative margin = the container's own padding) and let it
+   scroll edge-to-edge — no page-coloured strips at the sides. Gradient overlays on the wrap
+   sit behind the scroll layer (z-index: 1) so the scrollbar stays fully visible in front. */
+@media (max-width: 80rem) {
+  .diagramScrollWrap {
+    --diagram-bleed: var(--layout-padding);
+    position: relative;
+    margin-inline: calc(-1 * var(--diagram-bleed));
+  }
+
+  .diagramScrollWrap::before,
+  .diagramScrollWrap::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: var(--diagram-bleed);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .diagramScrollWrap::before {
+    left: 0;
+    background: linear-gradient(to right, var(--landing-surface), transparent);
+  }
+
+  .diagramScrollWrap::after {
+    right: 0;
+    background: linear-gradient(to left, var(--landing-surface), transparent);
+  }
+
+  .diagramScroll {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    padding-left: var(--diagram-bleed);
+  }
+
+  /* Chromium drops a scroll container's trailing padding once content overflows, and a block
+     child's right margin isn't counted in the scroll extent either. As a flex item the figure's
+     margin IS counted, giving the same end space as the leading padding. flex: 1 0 auto lets it
+     grow to fill when it fits and hold its intrinsic width (so it scrolls) when it doesn't. */
+  .diagramScroll > * {
+    flex: 1 0 auto;
+    margin-right: var(--diagram-bleed);
+  }
 }
 
-.detailCardTitleRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  margin-bottom: 16px;
+@media (max-width: 996px) {
+  .diagramScrollWrap {
+    --diagram-bleed: var(--layout-padding-md);
+  }
 }
 
-.detailCardNumber {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--oc-grape-1);
-  font-family: var(--landing-font-display);
-  font-size: 14px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  color: var(--oc-grape-8);
+@media (max-width: 600px) {
+  .diagramScrollWrap {
+    --diagram-bleed: var(--layout-padding-sm);
+  }
 }
 
-.detailCardTitle {
-  margin: 0;
-  min-width: 0;
-  font-family: var(--landing-font-display);
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 23px;
-  letter-spacing: -0.015em;
-  color: var(--oc-gray-8);
-}
-
-.detailCardActions {
-  display: flex;
-  flex-shrink: 0;
-  gap: 12px;
-  padding-inline: 24px;
-}
-
-.foundationNav {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.foundationNavButton {
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: background-color 120ms ease;
-}
-
-.foundationNavButton:hover,
-.foundationNavButton:focus-visible,
-.foundationNavButtonPeeked {
-  background: var(--oc-grape-2);
-  outline: none;
-}
-
-/* Matches top-nav search / dark-mode circle buttons */
-.circleButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 1px solid var(--oc-gray-3);
-  border-radius: 50%;
-  background: transparent;
-  cursor: pointer;
-  color: inherit;
-  transition: all var(--ifm-transition-fast) var(--ifm-transition-timing-default);
-}
-
-.circleButton:hover {
-  border-color: var(--oc-grape-8);
-  color: var(--oc-grape-8);
-}
-
-.detailBody {
-  font-family: var(--landing-font-body);
-  font-size: var(--landing-body-size);
-  color: var(--landing-color-body);
-  line-height: var(--landing-body-leading);
-  letter-spacing: var(--landing-body-tracking);
-  text-wrap-style: pretty;
-  margin: 0;
-  max-width: 820px;
-}
-
-/* Divider between the diagram and the compliance section — matches the diagram's
-   section-box border (1px solid var(--oc-gray-2)). */
 .diagramDivider {
   height: 0;
   border: none;
-  border-top: 1px solid var(--oc-gray-2);
+  border-top: 1px solid var(--landing-divider);
   margin: 2.5rem 0;
 }
 
@@ -167,11 +120,6 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-family: var(--landing-font-body);
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--landing-color-heading);
-  padding-bottom: 4px;
 }
 
 .securityLink {
@@ -184,33 +132,12 @@
   color: var(--oc-grape-8);
 }
 
-[data-theme='dark'] .detailCard {
-  background: var(--oc-gray-8);
-  border-color: rgba(var(--oc-gray-8-rgb), 0.5);
-  box-shadow: 0px 4px 40px rgba(var(--oc-violet-1-rgb), 0.15);
+[data-theme='dark'] .securityLink {
+  color: var(--oc-gray-5);
 }
 
-[data-theme='dark'] .detailCardTitle {
-  color: var(--oc-gray-2);
-}
-
-[data-theme='dark'] .detailCardNumber {
-  color: var(--oc-grape-4);
-}
-
-[data-theme='dark'] .circleButton {
-  border-color: var(--oc-gray-7);
-}
-
-[data-theme='dark'] .circleButton:hover {
-  border-color: var(--oc-grape-5);
+[data-theme='dark'] .securityLink:hover {
   color: var(--oc-grape-5);
-}
-
-[data-theme='dark'] .foundationNavButton:hover,
-[data-theme='dark'] .foundationNavButton:focus-visible,
-[data-theme='dark'] .foundationNavButtonPeeked {
-  background: rgba(156, 54, 181, 0.32);
 }
 
 @media (max-width: 996px) {
@@ -224,7 +151,7 @@
 }
 
 @media (max-width: 600px) {
-  .detailCard {
-    padding: 18px;
+  .sectionLead {
+    max-width: 100%;
   }
 }

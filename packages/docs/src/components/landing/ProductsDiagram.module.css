@@ -2,12 +2,24 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 /* Theme tokens consumed by the diagram's inline styles via var(--dg-*).
+   Surfaces are distinguished by shade (grape ramp for Medplum-managed, orange ramp for
+   user-managed) rather than heavy borders; extensibility is marked with a code-icon circle.
    Light values here; dark overrides below. */
+
+/* ── Diagram scale — edit these four values to tune the whole figure at once.
+   Applied via .diagramScale on the How It Works section (and composed into .root). */
+.diagramScale {
+  --dg-size-section: 16px; /* Section headlines (Your Apps, Medplum Apps, …) */
+  --dg-size-card: 14px; /* Element label text (Custom App, FHIR REST API, …) */
+  --dg-chip: 36px; /* Icon tiles (width + height) */
+  --dg-weight-extrabold: 800; /* Section headline weight */
+}
+
 .root {
+  composes: diagramScale;
   --dg-purple: var(--oc-grape-8);
   --dg-purple-soft: var(--oc-grape-4);
   --dg-purple-bg: var(--oc-grape-0);
-  --dg-stripe: repeating-linear-gradient(135deg, var(--oc-grape-0) 0 3px, var(--landing-surface) 3px 6px);
   --dg-border: var(--landing-border-strong);
   --dg-bg-gray: var(--landing-surface-inset);
   --dg-bg: var(--landing-surface);
@@ -16,7 +28,7 @@
   --dg-line: var(--landing-border-strong);
   --dg-dot-fill: var(--landing-surface);
   --dg-dot-stroke: var(--landing-border-strong);
-  --dg-sub: var(--landing-color-body);
+  --dg-sub: rgba(var(--oc-gray-8-rgb), 0.75);
   --dg-dashed: var(--landing-color-muted);
   --dg-hosted-bg: var(--oc-grape-9);
   --dg-panel: var(--landing-surface-elevated);
@@ -25,59 +37,41 @@
   --dg-int-pill-bg: var(--landing-surface-inset);
   --dg-int-pill-border: var(--landing-border-strong);
   --dg-panel-soft: var(--landing-surface-elevated);
-  --dg-hl: var(--oc-grape-9);
 
-  /* Tonal fills — surfaces are distinguished by SHADE, not borders or stripes. A grape
-     ramp encodes "how core to Medplum" (platform wash → extensible blocks → owned core),
-     and a gray ramp encodes user-managed (standard → optional). */
-  --dg-fill-platform: var(--oc-grape-0);
+  /* Tonal fills — grape (Medplum-managed) and orange (user-managed). */
   --dg-fill-build: var(--oc-grape-1);
-  --dg-fill-core: var(--oc-grape-2);
-  --dg-fill-user: var(--oc-red-2);
-  --dg-fill-user-selected: var(--oc-red-3);
-  --dg-fill-user-soft: var(--oc-gray-1);
-  --dg-icon-core: var(--oc-grape-9);
+  --dg-fill-user: var(--oc-orange-2);
   --dg-icon-build: var(--oc-grape-8);
-  --dg-icon-user: rgba(var(--oc-red-9-rgb), 0.75);
+  --dg-icon-user: var(--oc-orange-5);
 
-  /* ── Type scale ────────────────────────────────────────────
-     Edit a single token here to change that size across the whole diagram. */
-  --dg-size-card: 12px;          /* Card / band primary label */
-  --dg-size-sub: 11.5px;         /* Card sub-label */
-  --dg-size-label: 14px;         /* Section headers (Medplum Apps, etc.) */
-  --dg-size-badge: 10px;         /* Extensible badge pill */
-  --dg-size-term: 12.5px;        /* Terminology chip name */
-  --dg-size-legend-title: 13px;
-  --dg-size-legend: 12px;
+  /* Light mode: transparent keeps the same 1px box as dark borders without showing a stroke. */
+  --dg-border-build: transparent;
+  --dg-border-user: transparent;
 
-  /* ── Weights ── */
-  --dg-weight-medium: 500;
-  --dg-weight-semibold: 600;
+  --dg-section-wrap-bg: rgba(var(--oc-gray-1-rgb), 0.5);
+  --dg-section-wrap-border: var(--oc-gray-2);
+  --dg-governance-divider: var(--oc-grape-2);
+  --dg-term-chip-bg: var(--oc-grape-0);
+
+  --dg-extensible-size: 22px; /* code-icon circle marker */
+
+  /* Derived type + layout (usually leave as-is) */
+  --dg-size-sub: 11.5px;
+  --dg-size-term: 12px;
+  --dg-weight-medium: 600;
   --dg-weight-extrabold: 800;
-
-  /* ── Line heights ── */
   --dg-leading-card: 16px;
   --dg-leading-sub: 1.25;
-  --dg-leading-footnote: 1.4;
-  --dg-leading-legend: 1.3;
-
-  /* ── Letter spacing ── */
-  --dg-tracking-label: 0.08em;
-  --dg-tracking-badge: 0.03em;
-
-  /* ── Layout ── */
-  --dg-section-gap: 16px;        /* Gap between diagram section containers */
-  --dg-extensible-size: 24px;    /* Black circle extensible marker */
+  --dg-row-pad: 8px 12px 8px 8px;
+  --dg-row-gap: 9px;
+  --dg-inner-gap: 8px;
 }
 
-/* Dark mode follows an ELEVATION LADDER: the page is darkest, panels sit a step up,
-   cards a clear step above that, and icon chips lightest — separation comes from
-   lighter surfaces and lighter borders, since shadows are invisible on near-black. */
+/* Dark mode elevation ladder. */
 [data-theme='dark'] .root {
   --dg-purple: var(--oc-grape-5);
   --dg-purple-soft: var(--oc-grape-6);
   --dg-purple-bg: rgba(156, 54, 181, 0.18);
-  --dg-stripe: repeating-linear-gradient(135deg, rgba(156, 54, 181, 0.12) 0 3px, var(--landing-surface-muted) 3px 6px);
   --dg-border: var(--landing-border-strong);
   --dg-bg-gray: var(--landing-surface-muted);
   --dg-bg: var(--landing-surface-elevated);
@@ -86,272 +80,110 @@
   --dg-line: var(--landing-border-strong);
   --dg-dot-fill: var(--landing-surface-muted);
   --dg-dot-stroke: var(--landing-color-muted);
-  --dg-sub: var(--landing-color-body);
+  --dg-sub: rgba(var(--oc-gray-4-rgb), 0.75);
   --dg-dashed: var(--landing-color-muted);
   --dg-hosted-bg: var(--oc-grape-8);
   --dg-panel: #232327;
-  --dg-chip-bg: var(--oc-gray-7);
+  --dg-chip-bg: var(--oc-gray-9);
   --dg-int-bg: #242429;
   --dg-int-pill-bg: #33333a;
   --dg-int-pill-border: var(--landing-border-strong);
   --dg-panel-soft: #232327;
-  --dg-hl: var(--oc-grape-3);
 
-  --dg-fill-platform: rgba(156, 54, 181, 0.08);
-  --dg-fill-build: rgba(156, 54, 181, 0.18);
-  --dg-fill-core: rgba(156, 54, 181, 0.32);
-  --dg-fill-user: var(--oc-gray-7);
-  --dg-fill-user-selected: rgba(var(--oc-red-9-rgb), 0.28);
-  --dg-fill-user-soft: var(--oc-gray-8);
-  --dg-icon-core: var(--oc-grape-3);
+  --dg-fill-build: rgba(var(--oc-grape-8-rgb), 0.20);
+  --dg-fill-user: rgba(var(--oc-orange-8-rgb), 0.15);
   --dg-icon-build: var(--oc-grape-4);
-  --dg-icon-user: var(--oc-gray-4);
+  --dg-icon-user: var(--oc-orange-4);
+
+  --dg-border-build: rgba(var(--oc-grape-8-rgb), 0.25);
+  --dg-border-user: rgba(var(--oc-orange-8-rgb), 0.15);
+
+  --dg-section-wrap-bg: rgba(var(--oc-gray-8-rgb), 0.35);
+  --dg-section-wrap-border: var(--landing-border);
+  --dg-governance-divider: rgba(156, 54, 181, 0.35);
+  --dg-term-chip-bg: rgba(var(--oc-gray-9-rgb), 0.25);
 }
 
-/* ---- interaction model ----
-   Focus is communicated by SPOTLIGHT: when a foundation is selected, the active
-   region(s) keep full strength (plus a ring + lift) while every other diagram
-   element dims and desaturates. Clickability at rest is communicated by numbered
-   markers (one per foundation, matching the numbered nav pills above the diagram).
+/* ── Diagram text styles (all instances use these classes) ── */
 
-   A pseudo-element ring is used (not outline/box-shadow on the element) so it
-   (a) never conflicts with the inline box-shadow some cards set, and (b) sits
-   INSIDE the element via inset:0, so it is not clipped by the platform box's
-   overflow:hidden. It adds no layout offset, which keeps the ref-measured SVG
-   connectors aligned. */
-
-.clickable {
-  cursor: default;
-  position: relative;
+.sectionLabel {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: var(--dg-size-section);
+  font-weight: var(--dg-weight-extrabold, 800);
+  color: var(--dg-text, var(--landing-color-heading));
+  padding: 4px 6px;
 }
 
-/* CARDS highlight by RECOLORING THEIR OWN BORDER: each card's border color reads
-   var(--hl-border, <kind color>), and these rules set --hl-border on hover/active.
-   The highlight therefore has exactly the box's shape, corner radii, and dash
-   pattern — there is no separate ring to misalign. BANDS inside the platform box
-   (.regionBand) have only partial borders, so they use an inset ring instead;
-   they are rectangles clipped by the platform's rounded container, so the ring
-   follows the visible shape. The ::after carries only the tint. */
-.clickable::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  transition: background-color 120ms ease;
+.sectionLabelNote {
+  font-weight: 400;
+  color: var(--dg-muted);
 }
 
-/* Keep labels/icons above the hover tint — otherwise the ::after wash lightens text. */
-.clickable > * {
-  position: relative;
-  z-index: 1;
-}
-
-.clickable {
-  transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease,
-    filter 200ms ease;
-}
-
-/* The figure is static: no hover tint, selection swap, or spotlight dimming. The
-   `.clickable` class is retained only for the fuller region fill (see .medplumManaged /
-   .userManaged below); it no longer confers any interactive behavior. */
-
-/* Hosted-platform pill color (kept here rather than inline for consistency). */
-.hostedPill {
-  color: #fff;
-}
-
-/* Mutes the platform container's outer border when any region is selected (set on the
-   container, which is not a dimmable leaf). Soft purple reads as dimmed without using
-   opacity, so the bands nested inside stay fully opaque. */
-.platformDimmed {
-  --dg-platform-border: var(--dg-purple-soft);
-}
-
-/* ── Typography roles ─────────────────────────────────────────────────────────
-   Each class owns one text role in the diagram. Change the token in .root and
-   every instance of that role updates at once. */
-
-/* Primary label on every card and platform band. */
-.cardName {
+.labelText {
   font-size: var(--dg-size-card);
   font-weight: var(--dg-weight-medium);
   line-height: var(--dg-leading-card);
   color: var(--dg-text);
+}
+
+.labelTextPreline {
+  composes: labelText;
   white-space: pre-line;
 }
 
-/* Band labels inside the platform (REST API, FHIR Datastore, governance).
-   Same scale as cardName; flex:1 pushes any trailing badge to the row end. */
-.bandName {
-  flex: 1;
-  font-size: var(--dg-size-card);
-  font-weight: var(--dg-weight-medium);
-  line-height: var(--dg-leading-card);
-  color: var(--dg-text);
+.labelTextNowrap {
+  composes: labelText;
+  white-space: nowrap;
 }
 
-/* Secondary / descriptive line beneath a card name. */
-.cardSub {
+.labelTextGrow {
+  composes: labelText;
+  flex: 1;
+  min-width: 0;
+}
+
+.subText {
   font-size: var(--dg-size-sub);
   color: var(--dg-sub);
   line-height: var(--dg-leading-sub);
+}
+
+.subTextGap {
+  composes: subText;
   margin-top: 2px;
 }
 
-/* Muted inline text used as a parenthetical within a band label. */
-.subText {
-  color: var(--dg-sub);
-  font-weight: 400;
+.subTextNowrap {
+  composes: subText;
+  white-space: nowrap;
 }
 
-/* Section group headers (Medplum Apps, Your Apps, Integrations…). */
-.sectionLabel {
-  font-size: var(--dg-size-label);
-  font-weight: var(--dg-weight-extrabold);
-  color: var(--oc-gray-9);
-  padding: 4px 6px;
-}
-
-/* Gray inset container shared by every diagram section. */
-.sectionWrap {
-  border-radius: 16px;
-  background: var(--oc-gray-1);
-  border: 1px solid var(--oc-gray-2);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px;
-}
-
-/* 2-col diagram grid — right column starts on row 1 beside Hosted Platform. */
-.diagramGrid {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 290px;
-  gap: var(--dg-section-gap);
-  align-items: start;
-}
-
-.appsRow {
-  grid-column: 1;
-  grid-row: 2;
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: var(--dg-section-gap);
-}
-
-.platformSection {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.legendRow {
-  grid-column: 2;
-  grid-row: 2;
-  place-self: center;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-start;
-}
-
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.legendMarker {
-  flex-shrink: 0;
-  width: var(--dg-extensible-size);
-  height: var(--dg-extensible-size);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.legendSwatch {
-  width: var(--dg-extensible-size);
-  height: var(--dg-extensible-size);
-  border-radius: 5px;
-}
-
-.rightColumn {
-  grid-column: 2;
-  grid-row: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--dg-section-gap);
-}
-
-.footnoteText {
-  font-size: var(--dg-size-label);
-  line-height: var(--dg-leading-footnote);
+.footnote {
+  font-size: var(--dg-size-card);
+  line-height: var(--dg-leading-sub);
   color: var(--dg-muted);
   padding: 4px 6px;
-  text-align: left;
 }
 
-.footnoteMark {
-  font-weight: 400;
-  color: var(--dg-muted);
-}
-
-/* User-managed layers (--dg-fill-user / oc-red-2). */
-.userManaged {
-  background: var(--dg-fill-user);
-  border: 1px solid rgba(var(--oc-red-3-rgb), 0.25);
-}
-
-/* Medplum-managed layers (--dg-fill-build / oc-grape-1). */
-.medplumManaged {
-  background: var(--dg-fill-build);
-  border: 1px solid rgba(var(--oc-grape-2-rgb), 0.25);
-}
-
-/* Context-only layers (no foundation selection) — softer fill so clickable regions read forward. */
-.medplumManaged:not(.clickable) {
-  background: color-mix(in srgb, var(--dg-fill-build) 40%, transparent);
-}
-
-.userManaged:not(.clickable) {
-  background: color-mix(in srgb, var(--dg-fill-user) 40%, transparent);
-}
-
-.medplumManaged,
-.userManaged {
-  transition:
-    background-color 120ms ease,
-    border-color 120ms ease,
-    filter 200ms ease,
-    opacity 200ms ease;
-}
-
-/* Icon tile — stays above hover/selection wash; background never changes. */
+/* Icon tile — a light elevated square that holds the card's colored glyph. */
 .iconChip {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  width: var(--dg-chip);
+  height: var(--dg-chip);
+  border-radius: 6px;
   background: var(--dg-chip-bg);
-  position: relative;
-  z-index: 1;
 }
 
-.numberMark {
-  font-family: var(--landing-font-display, system-ui, sans-serif);
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
+.iconChip svg {
+  width: calc(var(--dg-chip) / 2);
+  height: calc(var(--dg-chip) / 2);
 }
 
-/* Black circle + white code icon — stays above hover/selection wash. */
+/* Grape circle + white code icon — marks extensible / customizable surfaces
+   (replaces the old striped "with extensibility" fill). */
 .extensibleMark {
   flex-shrink: 0;
   display: inline-flex;
@@ -362,35 +194,8 @@
   border-radius: 50%;
   background: var(--oc-grape-9);
   align-self: center;
-  position: relative;
-  z-index: 1;
 }
 
-/* Terminology chip: main label and sub-label. */
-.termName {
-  font-size: var(--dg-size-term);
-  font-weight: var(--dg-weight-medium);
-  color: var(--dg-text);
-  white-space: nowrap;
-}
-
-.termSub {
-  font-size: var(--dg-size-sub);
-  color: var(--dg-sub);
-  white-space: nowrap;
-}
-
-/* Legend. */
-.legendTitle {
-  font-size: var(--dg-size-legend-title);
-  font-weight: var(--dg-weight-semibold);
-  color: var(--dg-text);
-  margin-bottom: 8px;
-}
-
-.legendLabel {
-  font-size: var(--dg-size-legend);
-  color: var(--dg-text);
-  line-height: var(--dg-leading-legend);
-  text-align: left;
+[data-theme='dark'] .extensibleMark {
+  background: var(--oc-grape-8);
 }

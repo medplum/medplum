@@ -31,7 +31,8 @@
 }
 
 [data-theme='dark'] .complianceLogoPlaceholder {
-  border-color: var(--oc-gray-2);
+  border-color: rgba(var(--oc-gray-8-rgb), 0.5);
+  background: var(--oc-gray-2);
 }
 
 .complianceLogoLabel {
@@ -61,5 +62,41 @@
   .complianceLogoPlaceholder img {
     max-width: 40px;
     max-height: 40px;
+  }
+
+  /* Products page — keep logos readable on narrow viewports. */
+  .productsLogos {
+    gap: 1.25rem 0.75rem;
+  }
+
+  .productsLogos .complianceLogoPlaceholder {
+    width: 100%;
+    height: 92px;
+    padding: 0.75rem 1rem;
+  }
+
+  .productsLogos .complianceLogoPlaceholder img {
+    max-width: 100%;
+    max-height: 72px;
+  }
+
+  .productsLogos .complianceLogoLabel {
+    font-size: 0.8125rem;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .productsLogos {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem 1rem;
+  }
+
+  .productsLogos .complianceLogoPlaceholder {
+    height: 96px;
+    padding: 1rem;
+  }
+
+  .productsLogos .complianceLogoPlaceholder img {
+    max-height: 76px;
   }
 }

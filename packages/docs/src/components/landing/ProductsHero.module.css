@@ -5,6 +5,10 @@
   font-family: var(--landing-font-display);
   background: var(--landing-surface);
   padding: 10rem 0 8rem;
+  /* The orbiting chips can bleed past the composition at narrow widths. Clip that horizontal
+     bleed so it can't add to the page's scroll width. `clip` (not `hidden`) keeps the vertical
+     axis visible, so chip/card drop-shadows above and below still render. */
+  overflow-x: clip;
 }
 
 .container {
@@ -22,15 +26,21 @@
     padding: 0 var(--layout-padding-md);
     grid-template-columns: 1fr;
   }
-
-  .section {
-    padding: 6rem 0 4rem;
-  }
 }
 
 @media (max-width: 600px) {
   .container {
     padding: 0 var(--layout-padding-sm);
+  }
+
+  .cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cta > a {
+    width: 100%;
+    justify-content: center;
   }
 }
 
@@ -96,10 +106,10 @@
   margin: 0 auto;
   aspect-ratio: 600 / 500;
   container-type: inline-size;
-  /* Ferris-wheel orbit: one revolution every --wheel-dur, starting once the entrance
-     has settled (--orbit-delay). */
+  /* Ferris-wheel orbit: one revolution every --wheel-dur. It runs from the very start
+     (--orbit-delay: 0) so the ring is already turning while the chips stagger in. */
   --wheel-dur: 40s;
-  --orbit-delay: 1400ms;
+  --orbit-delay: 0ms;
 }
 
 /* Rotating ring that carries the chips. It spins about the composition centre (which is
@@ -115,7 +125,9 @@
   animation: wheelSpin var(--wheel-dur) linear var(--orbit-delay) infinite;
 }
 
-/* Drop-shadow on the wrapper (not the masked node) so the shadow isn't clipped. */
+/* Drop-shadow on the wrapper (not the masked node) so the shadow isn't clipped; the negative
+   offset biases it up-left, and because the shadow is cast from the masked (faded) silhouette
+   the right/bottom edges fade cleanly to white — matching the custom-app section's browser. */
 .compCard {
   position: absolute;
   left: 75%;
@@ -125,7 +137,7 @@
   max-width: 510px;
   z-index: 2;
   opacity: 0;
-  filter: drop-shadow(-10px -8px 36px rgba(var(--oc-grape-2-rgb), 0.75));
+  filter: drop-shadow(-10px -8px 36px rgba(var(--oc-grape-2-rgb), 0.85));
 }
 
 /* Browser window — same treatment as the CTA custom-app preview (masked fade, chrome bar). */
@@ -137,10 +149,10 @@
   border-radius: 12px 0 0 0;
   overflow: hidden;
   -webkit-mask-image:
-    linear-gradient(to right, #000 80%, transparent 100%), linear-gradient(to bottom, #000 80%, transparent 100%);
+    linear-gradient(to right, #000 80%, transparent 95%), linear-gradient(to bottom, #000 60%, transparent 80%);
   -webkit-mask-composite: source-in;
   mask-image:
-    linear-gradient(to right, #000 80%, transparent 95%), linear-gradient(to bottom, #000 20%, transparent 80%);
+    linear-gradient(to right, #000 60%, transparent 95%), linear-gradient(to bottom, #000 60%, transparent 80%);
   mask-composite: intersect;
 }
 
@@ -197,7 +209,7 @@
 }
 
 .heroBrowserImage {
-  aspect-ratio: 1024 / 808;
+  aspect-ratio: 2812 / 2220;
   overflow: hidden;
   background: var(--landing-surface-inset);
 }
@@ -209,29 +221,38 @@
   object-position: left top;
 }
 
+/* Chips sit on the page surface so they stay opaque over the hero browser preview. */
 .compChip {
   position: absolute;
   translate: -50% -50%;
   display: inline-flex;
   align-items: center;
-  gap: clamp(6px, 1.4cqw, 9px);
-  background: var(--oc-grape-8);
-  color: #fff;
-  border-radius: 11px;
-  padding: clamp(6px, 1.4cqw, 9px) clamp(9px, 1.9cqw, 13px);
-  box-shadow: 0 3px 12px rgba(156, 54, 181, 0.25);
+  gap: 8px;
+  background: var(--landing-surface);
+  color: var(--landing-color-heading);
+  border-radius: 12px;
+  padding: clamp(6px, 1.4cqw, 8px) 16px clamp(6px, 1.4cqw, 8px) clamp(6px, 1.4cqw, 8px);
   white-space: nowrap;
   z-index: 4;
+  box-shadow: 0px 2px 8px rgba(var(--oc-grape-3-rgb), 0.25);
   opacity: 0;
 }
 
+/* White elevated tile for the glyph — same treatment as the diagram's .iconChip. */
 .compIcon {
   display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: clamp(24px, 5.4cqw, 28px);
+  height: clamp(24px, 5.4cqw, 28px);
+  border-radius: 6px;
+  background: var(--oc-grape-8);
+  color: var(--oc-white);
 }
 
 .compIcon svg {
-  width: clamp(15px, 3.2cqw, 18px);
+  width: clamp(14px, 3cqw, 16px);
   height: auto;
 }
 
@@ -241,18 +262,30 @@
 }
 
 .compChipLabel {
-  font-family: var(--landing-font-display);
-  font-size: clamp(11px, 2.3cqw, 13px);
-  font-weight: 600;
-  line-height: 1.15;
+  font-family: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  font-size: clamp(11px, 2.4cqw, 12px);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--landing-color-heading);
 }
 
 .compChipSub {
-  font-size: clamp(10px, 1.9cqw, 11px);
+  font-family: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  font-size: clamp(10px, 2cqw, 11.5px);
   font-weight: 400;
-  line-height: 1.1;
-  opacity: 0.7;
+  line-height: 1.15;
+  color: var(--landing-color-body);
   margin-top: 1px;
+}
+
+[data-theme='dark'] .compChip {
+  background: var(--landing-surface);
+  box-shadow: 0px 4px 40px rgba(var(--oc-violet-1-rgb), 0.15);
+}
+
+[data-theme='dark'] .compIcon {
+  background: var(--oc-gray-7);
+  color: var(--oc-grape-4);
 }
 
 .play .compCard {

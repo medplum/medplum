@@ -96,6 +96,31 @@
      whole paint (box-shadow included), so the shadow must come from here. A
      parent drop-shadow traces the child's masked alpha, so it fades on the right too. */
   filter: drop-shadow(0px 8px 40px rgba(var(--oc-orange-3-rgb), 0.5));
+  /* Light mini-app preview palette — vars live on the clip wrapper so SVG fills inherit reliably. */
+  --cap-preview-bg: rgba(255, 255, 255, 0.92);
+  --cap-preview-fg: #212529;
+  --cap-preview-body: #495057;
+  --cap-preview-muted: #868e96;
+  --cap-preview-border: var(--cap-preview-grid);
+  --cap-preview-grid: #e9ecef;
+  --cap-preview-input: var(--cap-preview-bg);
+  --cap-preview-seg-bg: #f1f3f5;
+  --cap-preview-seg-text: #495057;
+  --cap-preview-highlight: #f2f3f5;
+  --cap-preview-bubble: #f1f3f5;
+  --cap-preview-badge-bg: #e0e8f3;
+  --cap-preview-badge-fg: #1971c2;
+  --cap-preview-rx-bg: #e7f5ff;
+  --cap-preview-rx-fg: #1971c2;
+  --cap-preview-blue: #228be6;
+  --cap-preview-accent: #1971c2;
+  --cap-preview-red: #fa5252;
+  --cap-preview-green-bg: #d3f9d8;
+  --cap-preview-green-fg: #2f9e44;
+  --cap-preview-yellow-bg: #fff3bf;
+  --cap-preview-yellow-fg: #f08c00;
+  --cap-preview-pill-bg: #e7f5ff;
+  --cap-preview-on-accent: #ffffff;
 }
 
 .bentoPreviewCard {
@@ -104,6 +129,34 @@
   right: -5px;
   border-top-left-radius: 16px;
   width: 80%;
+}
+
+[data-theme='dark'] .bentoImageClip {
+  filter: none;
+  --cap-preview-bg: #242429;
+  --cap-preview-fg: var(--oc-gray-2);
+  --cap-preview-body: var(--oc-gray-4);
+  --cap-preview-muted: var(--oc-gray-5);
+  --cap-preview-border: #3d3d45;
+  --cap-preview-grid: #3d3d45;
+  --cap-preview-input: #1e1e22;
+  --cap-preview-seg-bg: var(--oc-gray-7);
+  --cap-preview-seg-text: var(--oc-gray-4);
+  --cap-preview-highlight: #3a3a42;
+  --cap-preview-bubble: var(--oc-gray-7);
+  --cap-preview-badge-bg: rgba(25, 113, 194, 0.22);
+  --cap-preview-badge-fg: var(--oc-blue-4);
+  --cap-preview-rx-bg: rgba(25, 113, 194, 0.18);
+  --cap-preview-rx-fg: var(--oc-blue-4);
+  --cap-preview-blue: var(--oc-blue-6);
+  --cap-preview-accent: var(--oc-blue-5);
+  --cap-preview-red: var(--oc-red-5);
+  --cap-preview-green-bg: rgba(47, 158, 68, 0.2);
+  --cap-preview-green-fg: var(--oc-green-4);
+  --cap-preview-yellow-bg: rgba(240, 140, 0, 0.18);
+  --cap-preview-yellow-fg: var(--oc-yellow-4);
+  --cap-preview-pill-bg: rgba(25, 113, 194, 0.18);
+  --cap-preview-on-accent: #ffffff;
 }
 
 .bentoCell:nth-child(1) .bentoPreviewCard { transform: rotate(-1.2deg); }
@@ -115,41 +168,17 @@
 .bentoCell:nth-child(7) .bentoPreviewCard { transform: rotate(-0.8deg); }
 .bentoCell:nth-child(8) .bentoPreviewCard { transform: rotate(1.6deg); }
 
-.bentoPlaceholder {
-  margin-top: auto;
-  margin: 0 2rem 2rem;
-  width: calc(100% - 4rem);
-  aspect-ratio: 16 / 10;
-  background: var(--landing-surface-inset);
-  border: 2px dashed var(--landing-border-strong);
-  border-radius: var(--landing-radius-card);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-[data-theme='dark'] .bentoPlaceholder {
-  background: var(--landing-surface-muted);
-  border-color: var(--landing-border-strong);
-}
-
-.placeholderChip {
-  font-family: var(--ifm-font-family-monospace);
-  font-size: 11px;
-  color: var(--landing-color-muted);
-  background: var(--landing-surface-elevated);
-  border: 1px solid var(--landing-border);
-  border-radius: 4px;
-  padding: 4px 10px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 @media (max-width: 996px) {
   .sectionLead {
     max-width: 90%;
   }
 
+  .bento {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
   .bento {
     grid-template-columns: 1fr;
   }

@@ -25,6 +25,13 @@
   .container {
     padding: 0 var(--layout-padding-md);
   }
+
+  /* Keep the full section rhythm on small screens to match the home page, which doesn't
+     shrink its vertical spacing. The global token drops to 4rem at <=996px; hold it at 6rem
+     for the products page so section-to-section gaps stay 12rem (6rem + 6rem), same as home. */
+  .page {
+    --landing-section-padding-y: 6rem;
+  }
 }
 
 @media (max-width: 600px) {

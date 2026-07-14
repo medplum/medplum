@@ -21,9 +21,18 @@ export const COMPLIANCE_BADGES: Badge[] = [
   { id: 'epcs', label: 'EPCS', image: '/img/compliance/drummond-epcs.png' },
 ];
 
-export function ComplianceBadges({ badges = COMPLIANCE_BADGES }: { badges?: Badge[] }): JSX.Element {
+export function ComplianceBadges({
+  badges = COMPLIANCE_BADGES,
+  variant = 'default',
+}: {
+  badges?: Badge[];
+  variant?: 'default' | 'products';
+}): JSX.Element {
   return (
-    <div className={styles.complianceLogos} style={{ '--compliance-cols': badges.length } as CSSProperties}>
+    <div
+      className={`${styles.complianceLogos} ${variant === 'products' ? styles.productsLogos : ''}`}
+      style={{ '--compliance-cols': badges.length } as CSSProperties}
+    >
       {badges.map((badge) => (
         <div key={badge.id} className={styles.complianceLogoItem}>
           <div className={styles.complianceLogoPlaceholder}>

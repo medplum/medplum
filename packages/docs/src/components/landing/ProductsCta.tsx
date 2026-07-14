@@ -10,13 +10,19 @@ import styles from './ProductsCta.module.css';
 /* Screenshots that cross-fade inside the app window. */
 const SLIDES = [
   {
-    src: '/img/screenshots/medplum-custom-app-schedule.jpg',
+    src: '/img/screenshots/medplum-custom-app-schedule.webp',
     alt: 'A custom scheduling app built on Medplum',
     width: 1024,
     height: 731,
   },
   {
-    src: '/img/screenshots/medplum-custom-app-charting.jpg',
+    src: '/img/screenshots/medplum-custom-app-vitals.webp',
+    alt: 'A custom patient portal app built on Medplum',
+    width: 1024,
+    height: 731,
+  },
+  {
+    src: '/img/screenshots/medplum-custom-app-charting.webp',
     alt: 'A custom clinical documentation app built on Medplum',
     width: 1024,
     height: 731,

@@ -105,9 +105,11 @@
     0px -1px 16px rgba(var(--oc-grape-8-rgb), 0.5);
 }
 
-@media screen and (max-width: 996px) {
+@media screen and (max-width: 1000px) {
   :root {
-    --landing-hero-size: 2rem;
+    /* Hero ↔ section headline scale inversion on narrow viewports (≤1000px and ≤600px). */
+    --landing-hero-size: 2.5rem;
+    --landing-section-size: 2rem;
     --landing-section-padding-y: 4rem;
   }
 }

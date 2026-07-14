@@ -798,6 +798,10 @@
   animation: bridgeFlow 2.4s ease-in-out infinite;
 }
 
+[data-theme='dark'] .bridgeFlowDot {
+  box-shadow: 0 0 0 3px rgba(156, 54, 181, 0.35);
+}
+
 @keyframes bridgeFlow {
   0% {
     left: 6%;
