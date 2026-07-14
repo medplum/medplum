@@ -11,6 +11,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { sendLoginResult } from './utils';
+import { sendWelcomeEmail } from './welcomeemail';
 
 export interface NewProjectRequest {
   readonly loginId: string;
@@ -46,7 +47,12 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
   }
 
   const projectName = req.body.projectName;
-  const { membership } = await createProject(projectName, user);
+  const { project, membership } = await createProject(projectName, user);
   const updatedLogin = await setLoginMembership(login, membership);
+
+  // Send a welcome email to the new project owner. This is best-effort: any
+  // failure is logged inside sendWelcomeEmail and never blocks registration.
+  await sendWelcomeEmail(systemRepo, project, user);
+
   await sendLoginResult(res, updatedLogin);
 }
