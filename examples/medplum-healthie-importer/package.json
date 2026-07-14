@@ -29,16 +29,16 @@
     "@medplum/eslint-config": "5.1.26",
     "@medplum/fhirtypes": "5.1.26",
     "@medplum/mock": "5.1.26",
-    "@types/node": "22.20.1",
+    "@types/node": "22.20.0",
     "@types/ssh2-sftp-client": "9.0.6",
-    "@vitest/coverage-v8": "4.1.10",
-    "@vitest/ui": "4.1.10",
+    "@vitest/coverage-v8": "4.1.9",
+    "@vitest/ui": "4.1.9",
     "commander": "12.1.0",
     "dotenv": "17.4.2",
     "esbuild": "0.28.1",
     "fast-glob": "3.3.3",
-    "tsx": "4.23.0",
+    "tsx": "4.22.4",
     "typescript": "6.0.3",
-    "vitest": "4.1.10"
+    "vitest": "4.1.9"
   }
 }
