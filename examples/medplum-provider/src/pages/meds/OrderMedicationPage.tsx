@@ -59,20 +59,18 @@ import { IconShoppingCart } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
-import type { QualifierMatcher } from '../../components/meds/quantity-qualifiers';
+import type { DispenseUnitNameResolver, QualifierMatcher } from '../../components/meds/quantity-qualifiers';
 import {
   buildDispenseUnitNameResolver,
   buildQualifierMatcher,
-  extractLeadingSigDispenseUnit,
-  inferQuantityQualifierCodeWith,
+  DEFAULT_QUANTITY_QUALIFIER,
   mergeQuantityQualifierCatalog,
+  resolveQuantityQualifier,
   STATIC_DISPENSE_UNIT_NAME_RESOLVER,
   STATIC_QUALIFIER_MATCHER,
 } from '../../components/meds/quantity-qualifiers';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderSetTabPanel } from './OrderSetTabPanel';
-
-const DEFAULT_QUANTITY_QUALIFIER = 'C48542';
 
 function todayYmd(): string {
   return new Date().toISOString().slice(0, 10);
@@ -374,67 +372,6 @@ interface ParsedSig {
   quantityQualifier: string;
   /** Raw value from ScriptSure (undefined when the API omitted it). Useful for callers that want to distinguish "explicit" from "inferred". */
   quantityQualifierRaw: string | undefined;
-}
-
-/** A resolver mapping a dispense-unit name to an NCI potency-unit code. */
-type DispenseUnitNameResolver = (unitName: string | undefined) => string | undefined;
-
-/** Matches an NCI Thesaurus code (e.g. `C48155`). */
-const NCI_CODE_RE = /^C\d+$/;
-
-/**
- * Resolves the dispense unit (NCI potency code) for a sig.
- *
- * The ScriptSure drug-format endpoint does not send a per-sig
- * `quantityQualifier`; the dispense unit is encoded as the leading token of the
- * sig line (`"30 Gram - …"`, `"80 Tablet - …"`). So the qualifier is only
- * "present" when some other path (e.g. an edited/persisted MedicationRequest)
- * supplied it — in which case we trust it. Otherwise we infer, preferring the
- * authoritative leading sig-unit token over free-text keyword inference.
- *
- * NOTE: this is deliberate, not a stopgap — the v4 Advanced API (as of the
- * 2026-07-01 docs capture) exposes NO deterministic per-drug dispense-unit
- * lookup; `quantityQualifier` is only a caller-supplied write field, and drug
- * reads return dose-form *text* (`MED_DOSAGE_FORM_DESC`), not an NCI code. The
- * leading sig token IS the deterministic signal (ScriptSure builds it from the
- * same quantity-qualifier catalog). See the KB:
- * wiki/fhir/medication-quantity-qualifiers.md + wiki/contradictions.md.
- *
- * Priority:
- *  1. `raw` when ScriptSure/caller genuinely supplied a valid NCI code
- *     (the qualifier "wins when present").
- *  2. The leading `"<qty> <unit> - …"` token from the sig line, resolved via the
- *     live/static catalog (fixes topicals/liquids like `"30 Gram"` → Gram).
- *  3. Keyword inference from sig line + formulation label (dose-form / volume).
- *  4. The static `C48542` Tablet fallback.
- *
- * @param raw - Value already on the sig (usually absent for drug-format sigs).
- * @param sigLine - Sig text shown to the prescriber.
- * @param formatText - Formulation label (e.g. drug `code.text`) when known.
- * @param matcher - Catalog-aware matcher used for keyword inference.
- * @param unitResolver - Catalog-aware name→code resolver for the leading token.
- * @returns NCI potency-unit code; never empty.
- */
-function resolveQuantityQualifier(
-  raw: string | undefined,
-  sigLine: string,
-  formatText: string | undefined,
-  matcher: QualifierMatcher,
-  unitResolver: DispenseUnitNameResolver
-): string {
-  const trimmedRaw = raw?.trim();
-  if (trimmedRaw && NCI_CODE_RE.test(trimmedRaw)) {
-    return trimmedRaw;
-  }
-  const fromSigUnit = unitResolver(extractLeadingSigDispenseUnit(sigLine));
-  if (fromSigUnit) {
-    return fromSigUnit;
-  }
-  const inferred = inferQuantityQualifierCodeWith(matcher, sigLine, formatText);
-  if (inferred) {
-    return inferred;
-  }
-  return trimmedRaw || DEFAULT_QUANTITY_QUALIFIER;
 }
 
 function parseScriptSureSigs(

@@ -5,11 +5,13 @@ import { describe, expect, test } from 'vitest';
 import {
   buildDispenseUnitNameResolver,
   buildQualifierMatcher,
+  DEFAULT_QUANTITY_QUALIFIER,
   extractLeadingSigDispenseUnit,
   getQuantityQualifierLabel,
   inferQuantityQualifierCode,
   inferQuantityQualifierCodeWith,
   mergeQuantityQualifierCatalog,
+  resolveQuantityQualifier,
   STATIC_DISPENSE_UNIT_NAME_RESOLVER,
   STATIC_QUALIFIER_MATCHER,
 } from './quantity-qualifiers';
@@ -191,6 +193,37 @@ describe('quantity-qualifiers', () => {
     test('STATIC_DISPENSE_UNIT_NAME_RESOLVER resolves Gram and Tablet from the static fallback', () => {
       expect(STATIC_DISPENSE_UNIT_NAME_RESOLVER('Gram')).toBe('C48155');
       expect(STATIC_DISPENSE_UNIT_NAME_RESOLVER('Tablet')).toBe('C48542');
+    });
+  });
+
+  describe('resolveQuantityQualifier priority', () => {
+    const resolve = (raw: string | undefined, sigLine: string, formatText?: string): string =>
+      resolveQuantityQualifier(raw, sigLine, formatText, STATIC_QUALIFIER_MATCHER, STATIC_DISPENSE_UNIT_NAME_RESOLVER);
+
+    test('leading sig-unit beats a strength-unit raw code (the metformin-tablet regression)', () => {
+      // ScriptSure sends the Milligram strength code (C28253) on a tablet sig.
+      // The authoritative leading "80 Tablet" token must win over raw.
+      expect(resolve('C28253', '80 Tablet - Take 2 tablet by mouth four times daily')).toBe('C48542');
+    });
+
+    test('leading sig-unit resolves topicals/liquids by weight/volume', () => {
+      expect(resolve(undefined, '30 Gram - Apply to affected area twice daily')).toBe('C48155');
+    });
+
+    test('falls back to a valid NCI raw code when the sig has no leading unit token', () => {
+      expect(resolve('C48155', 'Take as directed')).toBe('C48155');
+    });
+
+    test('ignores a non-NCI raw value and infers from keywords instead', () => {
+      expect(resolve('not-a-code', 'Insert 1 suppository rectally daily')).toBe('C48539');
+    });
+
+    test('falls back to keyword inference when there is no sig unit or raw code', () => {
+      expect(resolve(undefined, 'Insert 1 suppository rectally daily')).toBe('C48539');
+    });
+
+    test('defaults to Tablet when nothing resolves', () => {
+      expect(resolve(undefined, 'Take as directed')).toBe(DEFAULT_QUANTITY_QUALIFIER);
     });
   });
 });

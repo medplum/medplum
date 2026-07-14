@@ -255,7 +255,8 @@ export const STATIC_QUALIFIER_MATCHER: QualifierMatcher = buildQualifierMatcher(
  * available so newly added DAW codes are picked up automatically.
  *
  * @param textParts - Strings to scan; empty/undefined entries are ignored.
- * @returns NCI code (e.g. `C48486`) or `undefined` when no keyword matches.
+ * @returns NCI code (e.g. `C48539` for Suppository) or `undefined` when no
+ *   keyword matches.
  */
 export function inferQuantityQualifierCode(...textParts: (string | undefined)[]): string | undefined {
   return inferQuantityQualifierCodeWith(STATIC_QUALIFIER_MATCHER, ...textParts);
@@ -375,6 +376,11 @@ export function buildDispenseUnitNameResolver(
     const name = row.name?.trim();
     if (code && name) {
       const key = normalizeUnitName(name);
+      // First-wins on normalized-key collisions (e.g. "Tablet" and "Tablet
+      // dosing unit" both normalize to "tablet"). This is only ambiguous if a
+      // catalog ever carries two such rows with *different* codes; today the
+      // static table and observed live catalog do not, so catalog row order is
+      // not significant in practice.
       if (!byName.has(key)) {
         byName.set(key, code);
       }
@@ -395,3 +401,75 @@ export function buildDispenseUnitNameResolver(
 export const STATIC_DISPENSE_UNIT_NAME_RESOLVER = buildDispenseUnitNameResolver(
   STATIC_QUANTITY_QUALIFIERS.map((r) => ({ potencyUnit: r.code, name: r.label }))
 );
+
+/** Default dispense-unit code when nothing else resolves: `C48542` (Tablet). */
+export const DEFAULT_QUANTITY_QUALIFIER = 'C48542';
+
+/** A resolver mapping a dispense-unit name to an NCI potency-unit code. */
+export type DispenseUnitNameResolver = (unitName: string | undefined) => string | undefined;
+
+/** Matches an NCI Thesaurus code (e.g. `C48155`). */
+const NCI_CODE_RE = /^C\d+$/;
+
+/**
+ * Resolves the dispense unit (NCI potency code) for a sig.
+ *
+ * The ScriptSure drug-format endpoint encodes the dispense unit as the leading
+ * token of the sig line (`"30 Gram - …"`, `"80 Tablet - …"`) and usually omits a
+ * per-sig `quantityQualifier`. When a `raw` qualifier IS present it comes from
+ * that same drug-format sig (not a separately edited resource) and cannot be
+ * trusted blindly — ScriptSure frequently sends a strength-unit code for solid
+ * dose forms — so we prefer the authoritative leading sig-unit token and only
+ * fall back to `raw`, then to free-text keyword inference.
+ *
+ * NOTE: this is deliberate, not a stopgap — the v4 Advanced API (as of the
+ * 2026-07-01 docs capture) exposes NO deterministic per-drug dispense-unit
+ * lookup; `quantityQualifier` is only a caller-supplied write field, and drug
+ * reads return dose-form *text* (`MED_DOSAGE_FORM_DESC`), not an NCI code. The
+ * leading sig token IS the deterministic signal (ScriptSure builds it from the
+ * same quantity-qualifier catalog). See the KB:
+ * wiki/fhir/medication-quantity-qualifiers.md + wiki/contradictions.md.
+ *
+ * Priority:
+ *  1. The leading `"<qty> <unit> - …"` token from the sig line, resolved via the
+ *     live/static catalog (fixes topicals/liquids like `"30 Gram"` → Gram). This
+ *     is the deterministic signal ScriptSure builds from the same catalog, so it
+ *     is preferred over `raw`.
+ *  2. `raw` when ScriptSure/caller supplied a valid NCI code the leading token
+ *     could not resolve. NOTE: ScriptSure's per-sig `quantityQualifier` often
+ *     carries a *strength*-unit code for solid dose forms (e.g. a metformin
+ *     tablet coming back with the Milligram code because the formulation strength
+ *     is "500 mg"), and `NCI_CODE_RE` cannot tell a strength code from a dispense
+ *     code — which is exactly why `raw` must rank below the leading sig-unit token
+ *     rather than above it.
+ *  3. Keyword inference from sig line + formulation label (dose-form / volume).
+ *  4. The static `C48542` Tablet fallback.
+ *
+ * @param raw - Value already on the sig (usually absent for drug-format sigs).
+ * @param sigLine - Sig text shown to the prescriber.
+ * @param formatText - Formulation label (e.g. drug `code.text`) when known.
+ * @param matcher - Catalog-aware matcher used for keyword inference.
+ * @param unitResolver - Catalog-aware name→code resolver for the leading token.
+ * @returns NCI potency-unit code; never empty.
+ */
+export function resolveQuantityQualifier(
+  raw: string | undefined,
+  sigLine: string,
+  formatText: string | undefined,
+  matcher: QualifierMatcher,
+  unitResolver: DispenseUnitNameResolver
+): string {
+  const fromSigUnit = unitResolver(extractLeadingSigDispenseUnit(sigLine));
+  if (fromSigUnit) {
+    return fromSigUnit;
+  }
+  const trimmedRaw = raw?.trim();
+  if (trimmedRaw && NCI_CODE_RE.test(trimmedRaw)) {
+    return trimmedRaw;
+  }
+  const inferred = inferQuantityQualifierCodeWith(matcher, sigLine, formatText);
+  if (inferred) {
+    return inferred;
+  }
+  return trimmedRaw || DEFAULT_QUANTITY_QUALIFIER;
+}
