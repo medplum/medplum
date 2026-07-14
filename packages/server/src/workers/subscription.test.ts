@@ -101,6 +101,7 @@ describe('Subscription Worker', () => {
 
   beforeEach(async () => {
     fetchMock.mockClear();
+    getConfig().allowUnsafeOutbound = false;
 
     // Create one simple project with no advanced features enabled
     const { client, repo: _repo } = await withTestContext(() =>
@@ -548,7 +549,7 @@ describe('Subscription Worker', () => {
       await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
-  test('Reject insecure rest-hook URLs by default', () =>
+  test('Ignore insecure rest-hook URLs by default', () =>
     withTestContext(async () => {
       const subscription = await repo.createResource<Subscription>({
         resourceType: 'Subscription',
@@ -568,49 +569,42 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('HTTPS is required');
-      expect(fetch).not.toHaveBeenCalled();
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
-  test('Allow insecure rest-hook URLs when configured', () =>
+  test('Send insecure rest-hook URLs to fetch when unsafe outbound is allowed', () =>
     withTestContext(async () => {
+      getConfig().allowUnsafeOutbound = true;
       const url = 'http://localhost:8080/subscription';
-      const savedConfig = getConfig().allowInsecureRestHookUrl;
-      getConfig().allowInsecureRestHookUrl = true;
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription).toBeDefined();
 
-      try {
-        const subscription = await repo.createResource<Subscription>({
-          resourceType: 'Subscription',
-          reason: 'test',
-          status: 'active',
-          criteria: 'Patient',
-          channel: {
-            type: 'rest-hook',
-            endpoint: url,
-          },
-        });
-        expect(subscription).toBeDefined();
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
 
-        const patient = await repo.createResource<Patient>({
-          resourceType: 'Patient',
-          name: [{ given: ['Alice'], family: 'Smith' }],
-        });
-        expect(patient).toBeDefined();
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
-        fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await findAndExecSubscriptionJob(patient, 'create');
 
-        await findAndExecSubscriptionJob(patient, 'create');
-
-        expect(fetch).toHaveBeenCalledWith(
-          url,
-          expect.objectContaining({
-            method: 'POST',
-            body: stringify(patient),
-          })
-        );
-      } finally {
-        getConfig().allowInsecureRestHookUrl = savedConfig;
-      }
+      expect(fetch).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          method: 'POST',
+          body: stringify(patient),
+        })
+      );
     }));
 
   // Skip test

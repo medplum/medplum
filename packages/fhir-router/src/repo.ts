@@ -437,11 +437,11 @@ export class MemoryRepository extends FhirRepository {
     // MockRepository ignores reader/writer mode
   }
 
-  async createResource<T extends Resource>(
+  private createResourceSync<T extends Resource>(
     resource: T,
     options?: CreateResourceOptions,
     update: boolean = false
-  ): Promise<WithId<T>> {
+  ): WithId<T> {
     //simulate round-tripping through a JSON serialized format
     const parsed = JSON.parse(stringify(resource)) as T;
     const result = {
@@ -489,6 +489,14 @@ export class MemoryRepository extends FhirRepository {
     resourceHistory.push(result);
 
     return deepClone(result);
+  }
+
+  async createResource<T extends Resource>(
+    resource: T,
+    options?: CreateResourceOptions,
+    update: boolean = false
+  ): Promise<WithId<T>> {
+    return this.createResourceSync(resource, options, update);
   }
 
   generateId(): string {
@@ -592,7 +600,7 @@ export class MemoryRepository extends FhirRepository {
     return deepClone(version);
   }
 
-  async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<WithId<T>>> {
+  private searchSync<T extends Resource>(searchRequest: SearchRequest<T>): Bundle<WithId<T>> {
     const { resourceType } = searchRequest;
     const resources = this.resources.get(resourceType) ?? new Map();
     const result = [];
@@ -617,6 +625,42 @@ export class MemoryRepository extends FhirRepository {
       entry: entry.length ? entry : undefined,
       total: result.length,
     };
+  }
+
+  async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<WithId<T>>> {
+    return this.searchSync(searchRequest);
+  }
+
+  async conditionalCreate<T extends Resource>(
+    resource: T,
+    search: SearchRequest<T>,
+    options?: CreateResourceOptions
+  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
+    if (search.resourceType !== resource.resourceType) {
+      throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
+    }
+
+    search.count = 2;
+    search.sortRules = undefined;
+
+    // Not wrapped in transaction as we can use synchronous access to simulate
+    // transaction-like behavior
+    const bundle = this.searchSync(search);
+    const matches = bundle.entry?.map((e) => e.resource as WithId<T>) ?? [];
+    if (matches.length === 1) {
+      const existing = matches[0];
+      if (!options?.assignedId && resource.id && resource.id !== existing.id) {
+        throw new OperationOutcomeError(
+          badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
+        );
+      }
+      return { resource: matches[0], outcome: allOk };
+    } else if (matches.length > 1) {
+      throw new OperationOutcomeError(multipleMatches);
+    }
+
+    const createdResource = this.createResourceSync(resource, options);
+    return { resource: createdResource, outcome: created };
   }
 
   async searchByReference<T extends Resource>(

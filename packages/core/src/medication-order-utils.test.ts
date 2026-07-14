@@ -3,6 +3,9 @@
 
 import type { Medication, MedicationRequest, Parameters } from '@medplum/fhirtypes';
 import type {
+  MedicationCartManageResponse,
+  MedicationCheckoutRequest,
+  MedicationCheckoutResponse,
   MedicationOrderRequest,
   MedicationOrderResponse,
   MedicationOrderSetRequest,
@@ -10,6 +13,8 @@ import type {
   MedicationSearchParams,
 } from './medication-order-utils';
 import {
+  INVALID_MEDICATION_CART_RESPONSE,
+  INVALID_MEDICATION_CHECKOUT_RESPONSE,
   INVALID_MEDICATION_ORDER_RESPONSE,
   INVALID_MEDICATION_ORDER_SET_RESPONSE,
   MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
@@ -19,11 +24,18 @@ import {
   getPendingMedicationOrderId,
   getPendingMedicationOrderStatus,
   isMedicationArray,
+  isMedicationCartManageResponse,
+  isMedicationCheckoutResponse,
   isMedicationOrderResponse,
   isMedicationOrderSetResponse,
+  medicationCartClearRequestToParameters,
+  medicationCartRemoveRequestToParameters,
+  medicationCheckoutRequestToParameters,
   medicationOrderRequestToParameters,
   medicationOrderSetRequestToParameters,
   medicationSearchParamsToParameters,
+  parametersToMedicationCartManageResponse,
+  parametersToMedicationCheckoutResponse,
   parametersToMedicationOrderResponse,
   parametersToMedicationOrderSetResponse,
 } from './medication-order-utils';
@@ -458,5 +470,210 @@ describe('Custom FHIR operation Parameters helpers', () => {
       parameter: [{ name: 'vendorPatientId', valueInteger: 1 }],
     };
     expect(() => parametersToMedicationOrderSetResponse(params)).toThrow(INVALID_MEDICATION_ORDER_SET_RESPONSE);
+  });
+
+  describe('isMedicationCheckoutResponse', () => {
+    test('accepts valid response (including empty items)', () => {
+      expect(
+        isMedicationCheckoutResponse({ approvalUrl: 'https://example.com/approve', vendorPatientId: 2, items: [] })
+      ).toBe(true);
+    });
+
+    test('rejects missing or malformed fields', () => {
+      expect(isMedicationCheckoutResponse({})).toBe(false);
+      expect(isMedicationCheckoutResponse(null)).toBe(false);
+      expect(isMedicationCheckoutResponse({ approvalUrl: '', vendorPatientId: 2, items: [] })).toBe(false);
+      expect(isMedicationCheckoutResponse({ approvalUrl: 'x', vendorPatientId: 2 })).toBe(false);
+      expect(isMedicationCheckoutResponse({ approvalUrl: 'x', vendorPatientId: Number.NaN, items: [] })).toBe(false);
+    });
+  });
+
+  test('medicationCheckoutRequestToParameters emits one medicationRequestIds entry per id', () => {
+    const req: MedicationCheckoutRequest = {
+      patientId: 'pat-1',
+      medicationRequestIds: ['mr-1', 'mr-2', 'mr-3'],
+      appId: 'provider-app',
+    };
+    const result = medicationCheckoutRequestToParameters(req);
+    expect(result.resourceType).toBe('Parameters');
+    expect(result.parameter).toEqual([
+      { name: 'patientId', valueId: 'pat-1' },
+      { name: 'medicationRequestIds', valueId: 'mr-1' },
+      { name: 'medicationRequestIds', valueId: 'mr-2' },
+      { name: 'medicationRequestIds', valueId: 'mr-3' },
+      { name: 'appId', valueString: 'provider-app' },
+    ]);
+  });
+
+  test('medicationCheckoutRequestToParameters omits appId when not provided', () => {
+    const result = medicationCheckoutRequestToParameters({ patientId: 'pat-1', medicationRequestIds: ['mr-1'] });
+    expect(result.parameter).toEqual([
+      { name: 'patientId', valueId: 'pat-1' },
+      { name: 'medicationRequestIds', valueId: 'mr-1' },
+    ]);
+  });
+
+  test('parametersToMedicationCheckoutResponse round-trips the checkout response shape', () => {
+    const expected: MedicationCheckoutResponse = {
+      approvalUrl: 'https://ui.example.com/widgets/medcart/24057?sessiontoken=tok',
+      vendorPatientId: 24057,
+      items: [
+        { medicationRequestId: 'mr-1', vendorLineId: 'rx-1', status: 'queued' },
+        { medicationRequestId: 'mr-2', status: 'failed', error: 'no rxnorm' },
+      ],
+    };
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://ui.example.com/widgets/medcart/24057?sessiontoken=tok' },
+        { name: 'vendorPatientId', valueInteger: 24057 },
+        {
+          name: 'items',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-1' },
+            { name: 'vendorLineId', valueString: 'rx-1' },
+            { name: 'status', valueCode: 'queued' },
+          ],
+        },
+        {
+          name: 'items',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-2' },
+            { name: 'status', valueCode: 'failed' },
+            { name: 'error', valueString: 'no rxnorm' },
+          ],
+        },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params)).toEqual(expected);
+  });
+
+  test('parametersToMedicationCheckoutResponse tolerates zero items', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params)).toEqual({
+      approvalUrl: 'https://example.com/approve',
+      vendorPatientId: 7,
+      items: [],
+    });
+  });
+
+  test('parametersToMedicationCheckoutResponse drops malformed item parts (missing status)', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+        { name: 'items', part: [{ name: 'medicationRequestId', valueId: 'mr-1' }] },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params).items).toEqual([]);
+  });
+
+  test('parametersToMedicationCheckoutResponse rejects missing approvalUrl', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [{ name: 'vendorPatientId', valueInteger: 1 }],
+    };
+    expect(() => parametersToMedicationCheckoutResponse(params)).toThrow(INVALID_MEDICATION_CHECKOUT_RESPONSE);
+  });
+
+  describe('cart management helpers', () => {
+    test('isMedicationCartManageResponse accepts valid response', () => {
+      expect(
+        isMedicationCartManageResponse({
+          vendorPatientId: 24057,
+          removedCount: 1,
+          items: [{ medicationRequestId: 'mr-1', status: 'removed' }],
+        })
+      ).toBe(true);
+    });
+
+    test('isMedicationCartManageResponse rejects malformed response', () => {
+      expect(isMedicationCartManageResponse({})).toBe(false);
+      expect(isMedicationCartManageResponse(null)).toBe(false);
+      expect(isMedicationCartManageResponse({ vendorPatientId: 1, removedCount: 0 })).toBe(false);
+    });
+
+    test('medicationCartRemoveRequestToParameters encodes remove action', () => {
+      const result = medicationCartRemoveRequestToParameters({ patientId: 'pat-1', medicationRequestId: 'mr-1' });
+      expect(result.parameter).toEqual([
+        { name: 'patientId', valueId: 'pat-1' },
+        { name: 'action', valueCode: 'remove' },
+        { name: 'medicationRequestId', valueId: 'mr-1' },
+      ]);
+    });
+
+    test('medicationCartClearRequestToParameters encodes clear action', () => {
+      const result = medicationCartClearRequestToParameters({ patientId: 'pat-1' });
+      expect(result.parameter).toEqual([
+        { name: 'patientId', valueId: 'pat-1' },
+        { name: 'action', valueCode: 'clear' },
+      ]);
+    });
+
+    test('parametersToMedicationCartManageResponse round-trips remove/clear outcomes', () => {
+      const expected: MedicationCartManageResponse = {
+        vendorPatientId: 24057,
+        removedCount: 2,
+        items: [
+          { medicationRequestId: 'mr-1', vendorLineId: 'rx-1', status: 'removed' },
+          { medicationRequestId: 'mr-2', status: 'failed', error: 'vendor 500' },
+        ],
+      };
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'vendorPatientId', valueInteger: 24057 },
+          { name: 'removedCount', valueInteger: 2 },
+          {
+            name: 'items',
+            part: [
+              { name: 'medicationRequestId', valueId: 'mr-1' },
+              { name: 'vendorLineId', valueString: 'rx-1' },
+              { name: 'status', valueCode: 'removed' },
+            ],
+          },
+          {
+            name: 'items',
+            part: [
+              { name: 'medicationRequestId', valueId: 'mr-2' },
+              { name: 'status', valueCode: 'failed' },
+              { name: 'error', valueString: 'vendor 500' },
+            ],
+          },
+        ],
+      };
+      expect(parametersToMedicationCartManageResponse(params)).toEqual(expected);
+    });
+
+    test('parametersToMedicationCartManageResponse drops malformed item parts', () => {
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'vendorPatientId', valueInteger: 7 },
+          { name: 'removedCount', valueInteger: 0 },
+          { name: 'items', part: [{ name: 'medicationRequestId', valueId: 'mr-1' }] },
+        ],
+      };
+      expect(parametersToMedicationCartManageResponse(params)).toEqual({
+        vendorPatientId: 7,
+        removedCount: 0,
+        items: [],
+      });
+    });
+
+    test('parametersToMedicationCartManageResponse rejects missing vendorPatientId', () => {
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'removedCount', valueInteger: 0 }],
+      };
+      expect(() => parametersToMedicationCartManageResponse(params)).toThrow(INVALID_MEDICATION_CART_RESPONSE);
+    });
   });
 });
