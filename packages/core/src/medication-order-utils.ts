@@ -5,11 +5,13 @@ import type {
   CodeableConcept,
   Medication,
   MedicationRequest,
+  Organization,
   Parameters,
   ParametersParameter,
+  Reference,
 } from '@medplum/fhirtypes';
 import { isResource } from './types';
-import { getExtensionValue, getIdentifier } from './utils';
+import { getExtensionValue, getIdentifier, resolveId } from './utils';
 
 /** Re-export common coding systems used with medication-order drug search. */
 export { NDC, RXNORM } from './constants';
@@ -119,11 +121,8 @@ export interface MedicationOrderRequest {
   /** Free-text patient instructions (additional sig); maps to dosageInstruction[0].patientInstruction when using MR path. */
   readonly patientInstruction?: string;
   readonly appId?: string;
-  /**
-   * Selected practice-location Organization (id or `Organization/{id}` reference) for
-   * multi-practice deployments. The vendor bot resolves the vendor practice from it.
-   */
-  readonly organizationId?: string;
+  /** Selected practice location for multi-practice deployments. */
+  readonly organization?: Reference<Organization>;
 }
 
 /**
@@ -159,11 +158,8 @@ export interface MedicationOrderSetRequest {
    */
   readonly vendorOrderSetId?: number | string;
   readonly appId?: string;
-  /**
-   * Selected practice-location Organization (id or `Organization/{id}` reference) for
-   * multi-practice deployments. The vendor bot resolves the vendor practice from it.
-   */
-  readonly organizationId?: string;
+  /** Selected practice location for multi-practice deployments. */
+  readonly organization?: Reference<Organization>;
 }
 
 /**
@@ -196,11 +192,6 @@ export interface MedicationSearchParams {
   readonly includeCode?: boolean;
   /** When true, drug-search bot returns quantity qualifiers from GET /v3/prescription/quantityqualifier instead of Medication[]. */
   readonly quantityQualifiers?: boolean;
-  /**
-   * Selected practice-location Organization (id or `Organization/{id}` reference) for
-   * multi-practice deployments. The vendor bot resolves the vendor practice from it.
-   */
-  readonly organizationId?: string;
 }
 
 /**
@@ -402,9 +393,6 @@ export function medicationSearchParamsToParameters(params: MedicationSearchParam
   if (params.quantityQualifiers !== undefined) {
     parameter.push(param('quantityQualifiers', 'valueBoolean', params.quantityQualifiers));
   }
-  if (params.organizationId !== undefined) {
-    parameter.push(param('organizationId', 'valueString', params.organizationId));
-  }
   return { resourceType: 'Parameters', parameter };
 }
 
@@ -543,8 +531,9 @@ export function medicationOrderRequestToParameters(req: MedicationOrderRequest):
   if (req.appId !== undefined) {
     parameter.push(param('appId', 'valueString', req.appId));
   }
-  if (req.organizationId !== undefined) {
-    parameter.push(param('organizationId', 'valueString', req.organizationId));
+  const organizationId = resolveId(req.organization);
+  if (organizationId !== undefined) {
+    parameter.push(param('organizationId', 'valueString', organizationId));
   }
 
   return { resourceType: 'Parameters', parameter };
@@ -609,8 +598,9 @@ export function medicationOrderSetRequestToParameters(req: MedicationOrderSetReq
   if (req.appId !== undefined) {
     parameter.push(param('appId', 'valueString', req.appId));
   }
-  if (req.organizationId !== undefined) {
-    parameter.push(param('organizationId', 'valueString', req.organizationId));
+  const organizationId = resolveId(req.organization);
+  if (organizationId !== undefined) {
+    parameter.push(param('organizationId', 'valueString', organizationId));
   }
   return { resourceType: 'Parameters', parameter };
 }
@@ -693,12 +683,8 @@ export interface MedicationCheckoutRequest {
   readonly patientId: string;
   readonly medicationRequestIds: string[];
   readonly appId?: string;
-  /**
-   * Selected practice-location Organization (id or `Organization/{id}` reference)
-   * for multi-practice deployments. The vendor bot resolves the vendor practice
-   * from it; omit for single-practice prescribers (backend resolves by affiliation).
-   */
-  readonly organizationId?: string;
+  /** Selected practice location; omit for single-practice prescribers. */
+  readonly organization?: Reference<Organization>;
 }
 
 /**
@@ -752,8 +738,9 @@ export function medicationCheckoutRequestToParameters(req: MedicationCheckoutReq
   if (req.appId !== undefined) {
     parameter.push(param('appId', 'valueString', req.appId));
   }
-  if (req.organizationId !== undefined) {
-    parameter.push(param('organizationId', 'valueString', req.organizationId));
+  const organizationId = resolveId(req.organization);
+  if (organizationId !== undefined) {
+    parameter.push(param('organizationId', 'valueString', organizationId));
   }
   return { resourceType: 'Parameters', parameter };
 }

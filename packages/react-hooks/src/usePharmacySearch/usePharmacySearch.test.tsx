@@ -27,7 +27,10 @@ describe('usePharmacySearch', () => {
 
     let orgs: Organization[] = [];
     await act(async () => {
-      orgs = await result.current.searchPharmacies({ name: 'Test', organizationId: 'org-1' });
+      orgs = await result.current.searchPharmacies({
+        name: 'Test',
+        organization: { reference: 'Organization/org-1' },
+      });
     });
 
     expect(orgs).toEqual([PHARMACY]);
@@ -45,7 +48,7 @@ describe('usePharmacySearch', () => {
     });
   });
 
-  test('addToFavorites threads organizationId through to the add bot', async () => {
+  test('addToFavorites resolves the practice reference for the add bot', async () => {
     const medplum = new MockClient();
     const response: AddPharmacyResponse = { success: true, message: 'ok', organization: PHARMACY };
     const executeBot = vi.spyOn(medplum, 'executeBot').mockResolvedValue(response);
@@ -58,7 +61,7 @@ describe('usePharmacySearch', () => {
         patientId: 'pat-1',
         pharmacy: PHARMACY,
         setAsPrimary: true,
-        organizationId: 'org-9',
+        organization: { reference: 'Organization/org-9' },
       });
     });
 

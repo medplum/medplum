@@ -30,7 +30,7 @@ describe('useMedicationIFrame', () => {
       () =>
         useMedicationIFrame(SYNC_BOT, IFRAME_BOT, {
           patientId: 'pat-1',
-          organizationId: 'org-1',
+          organization: { reference: 'Organization/org-1' },
           onPatientSyncSuccess,
           onIframeSuccess,
         }),

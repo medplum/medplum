@@ -52,7 +52,7 @@ function ScriptSureSpecialtyFilters({ value, onChange }: ScriptSureSpecialtyFilt
  *
  * Composes the generic {@link PharmacyDialog} with ScriptSure bot identifiers and
  * passes `specialties` to POST /v3/pharmacy/search (e.g. Retail + ZIP for nearby pickers).
- * Also injects the selected practice `organizationId` (multi-practice) into both the
+ * Also injects the selected practice `Organization` reference into both the
  * search and add-to-favorites operations.
  *
  * @param props - The base pharmacy dialog props (patient, onSubmit, onClose).
@@ -60,7 +60,7 @@ function ScriptSureSpecialtyFilters({ value, onChange }: ScriptSureSpecialtyFilt
  */
 export function ScriptSurePharmacyDialog(props: PharmacyDialogBaseProps): JSX.Element {
   const { searchPharmacies, addToFavorites } = useScriptSurePharmacySearch();
-  const { selectedOrganizationId } = useScriptSurePractice();
+  const { selectedOrganization } = useScriptSurePractice();
   const [specialties, setSpecialties] = useState<ScriptSurePharmacySpecialty[]>([
     ...SCRIPTSURE_DEFAULT_PHARMACY_SPECIALTIES,
   ]);
@@ -71,14 +71,13 @@ export function ScriptSurePharmacyDialog(props: PharmacyDialogBaseProps): JSX.El
   );
 
   const handleSearch = useCallback(
-    (params: ScriptSurePharmacySearchParams) => searchPharmacies({ ...params, organizationId: selectedOrganizationId }),
-    [searchPharmacies, selectedOrganizationId]
+    (params: ScriptSurePharmacySearchParams) => searchPharmacies({ ...params, organization: selectedOrganization }),
+    [searchPharmacies, selectedOrganization]
   );
 
   const handleAddToFavorites = useCallback(
-    (params: Parameters<typeof addToFavorites>[0]) =>
-      addToFavorites({ ...params, organizationId: selectedOrganizationId }),
-    [addToFavorites, selectedOrganizationId]
+    (params: Parameters<typeof addToFavorites>[0]) => addToFavorites({ ...params, organization: selectedOrganization }),
+    [addToFavorites, selectedOrganization]
   );
 
   const specialtyFilters = useMemo(

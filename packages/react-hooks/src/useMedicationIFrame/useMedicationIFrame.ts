@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Identifier } from '@medplum/fhirtypes';
+import { resolveId } from '@medplum/core';
+import type { Identifier, Organization, Reference } from '@medplum/fhirtypes';
 import { useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export interface MedicationIFrameOptions {
   readonly patientId?: string;
-  /** Selected practice-location Organization (id or reference) for multi-practice deployments. */
-  readonly organizationId?: string;
+  /** Selected practice location for multi-practice deployments. */
+  readonly organization?: Reference<Organization>;
   readonly onPatientSyncSuccess?: () => void;
   readonly onIframeSuccess?: (url: string) => void;
   readonly onError?: (err: unknown) => void;
@@ -34,7 +35,8 @@ export function useMedicationIFrame(
   options: MedicationIFrameOptions
 ): string | undefined {
   const medplum = useMedplum();
-  const { patientId, organizationId, onPatientSyncSuccess, onIframeSuccess, onError } = options;
+  const { patientId, organization, onPatientSyncSuccess, onIframeSuccess, onError } = options;
+  const organizationId = resolveId(organization);
   const [iframeUrl, setIframeUrl] = useState<string | undefined>(undefined);
 
   const onPatientSyncSuccessRef = useRef(onPatientSyncSuccess);

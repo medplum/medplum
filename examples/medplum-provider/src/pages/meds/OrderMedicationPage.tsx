@@ -657,7 +657,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
   const medplum = useMedplum();
   const { patientId } = useParams();
   const { searchMedications, orderMedication } = useScriptSureOrderMedication();
-  const { selectedOrganizationId } = useScriptSurePractice();
+  const { selectedOrganization } = useScriptSurePractice();
 
   const [patient, setPatient] = useState(patientProp);
   const [requester, setRequester] = useState<Practitioner | undefined>();
@@ -1031,7 +1031,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
         pharmacyOrganizationId: pharmacyOrg?.id,
         writtenDate: writtenDateYmd,
         fillDate: fillDateYmd.trim() || undefined,
-        organizationId: selectedOrganizationId,
+        organization: selectedOrganization,
       });
 
       onOrderComplete?.({ launchUrl: res.launchUrl, medicationRequestId: res.medicationRequestId });
@@ -1117,7 +1117,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
         fillDate: compoundFillYmd.trim() || undefined,
         durationDays: compoundDaysSupply,
         pharmacyNote: compoundNotesPharmacist.trim() || undefined,
-        organizationId: selectedOrganizationId,
+        organization: selectedOrganization,
       });
       onOrderComplete?.({ launchUrl: res.launchUrl, medicationRequestId: res.medicationRequestId });
     } catch (e) {

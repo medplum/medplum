@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Organization, Practitioner, PractitionerRole } from '@medplum/fhirtypes';
+import { getIdentifier, resolveId } from '@medplum/core';
+import type { Organization, Practitioner, PractitionerRole, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -17,8 +18,10 @@ export interface ScriptSurePracticeContextValue {
    * Never the project-wide list.
    */
   readonly practices: Organization[];
-  /** The selected practice Organization id (bare id, passed to bots as `organizationId`), or undefined. */
+  /** Bare Organization id used by the selector and persisted in localStorage. */
   readonly selectedOrganizationId: string | undefined;
+  /** FHIR reference for the selected practice, suitable for operation and hook inputs. */
+  readonly selectedOrganization: Reference<Organization> | undefined;
   /** Selects a practice Organization (persisted to localStorage). */
   readonly setSelectedOrganizationId: (id: string | undefined) => void;
   readonly loading: boolean;
@@ -27,6 +30,7 @@ export interface ScriptSurePracticeContextValue {
 const ScriptSurePracticeContext = createContext<ScriptSurePracticeContextValue>({
   practices: [],
   selectedOrganizationId: undefined,
+  selectedOrganization: undefined,
   setSelectedOrganizationId: () => undefined,
   loading: false,
 });
@@ -38,7 +42,7 @@ function addOrganizationReference(refs: Set<string>, reference: string | undefin
 }
 
 function hasPracticeIdentifier(org: Organization): boolean {
-  return Boolean(org.identifier?.some((i) => i.system === SCRIPTSURE_PRACTICE_ID_SYSTEM && i.value));
+  return Boolean(getIdentifier(org, SCRIPTSURE_PRACTICE_ID_SYSTEM));
 }
 
 /**
@@ -53,7 +57,7 @@ function resolvePractitionerId(profile: Practitioner | PractitionerRole | undefi
     return profile.id;
   }
   if (profile?.resourceType === 'PractitionerRole') {
-    return profile.practitioner?.reference?.slice('Practitioner/'.length) || undefined;
+    return resolveId(profile.practitioner);
   }
   return undefined;
 }
@@ -84,7 +88,6 @@ export function ScriptSurePracticeProvider(props: { readonly children: ReactNode
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
 
     const loadAffiliatedPractices = async (): Promise<Organization[]> => {
       const profile = medplum.getProfile() as Practitioner | PractitionerRole | undefined;
@@ -113,12 +116,16 @@ export function ScriptSurePracticeProvider(props: { readonly children: ReactNode
         }
       }
 
-      const orgs = await Promise.all(
+      const settledOrgs = await Promise.allSettled(
         [...references].map((reference) => medplum.readReference<Organization>({ reference }))
       );
       const seen = new Set<string>();
       const result: Organization[] = [];
-      for (const org of orgs) {
+      for (const settledOrg of settledOrgs) {
+        if (settledOrg.status === 'rejected') {
+          continue;
+        }
+        const org = settledOrg.value;
         if (org.id && !seen.has(org.id) && hasPracticeIdentifier(org)) {
           seen.add(org.id);
           result.push(org);
@@ -127,30 +134,31 @@ export function ScriptSurePracticeProvider(props: { readonly children: ReactNode
       return result;
     };
 
-    loadAffiliatedPractices()
-      .then((orgs) => {
-        if (cancelled) {
-          return;
+    const updateAffiliatedPractices = async (): Promise<void> => {
+      setLoading(true);
+      try {
+        const orgs = await loadAffiliatedPractices();
+        if (!cancelled) {
+          setPractices(orgs);
+          // Default: keep a stored id only if it is still an affiliation; else the sole practice.
+          setSelected((current) => {
+            if (current && orgs.some((o) => o.id === current)) {
+              return current;
+            }
+            return orgs.length === 1 ? orgs[0].id : undefined;
+          });
         }
-        setPractices(orgs);
-        // Default: keep a stored id only if it is still an affiliation; else the sole practice.
-        setSelected((current) => {
-          if (current && orgs.some((o) => o.id === current)) {
-            return current;
-          }
-          return orgs.length === 1 ? orgs[0].id : undefined;
-        });
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) {
           setPractices([]);
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) {
           setLoading(false);
         }
-      });
+      }
+    };
+    updateAffiliatedPractices().catch(() => undefined);
 
     return (): void => {
       cancelled = true;
@@ -166,9 +174,14 @@ export function ScriptSurePracticeProvider(props: { readonly children: ReactNode
     }
   }, []);
 
+  const selectedOrganization = useMemo<Reference<Organization> | undefined>(
+    () => (selectedOrganizationId ? { reference: `Organization/${selectedOrganizationId}` } : undefined),
+    [selectedOrganizationId]
+  );
+
   const value = useMemo<ScriptSurePracticeContextValue>(
-    () => ({ practices, selectedOrganizationId, setSelectedOrganizationId, loading }),
-    [practices, selectedOrganizationId, setSelectedOrganizationId, loading]
+    () => ({ practices, selectedOrganizationId, selectedOrganization, setSelectedOrganizationId, loading }),
+    [practices, selectedOrganizationId, selectedOrganization, setSelectedOrganizationId, loading]
   );
 
   return <ScriptSurePracticeContext.Provider value={value}>{props.children}</ScriptSurePracticeContext.Provider>;

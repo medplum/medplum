@@ -53,6 +53,7 @@ describe('useScriptSurePractice', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.practices.map((p) => p.id)).toEqual(['org-1']);
     expect(result.current.selectedOrganizationId).toBe('org-1');
+    expect(result.current.selectedOrganization).toEqual({ reference: 'Organization/org-1' });
   });
 
   test('does not auto-select when the prescriber has multiple affiliations', async () => {
@@ -202,6 +203,27 @@ describe('useScriptSurePractice', () => {
     expect(result.current.practices.map((p) => p.id)).toEqual(['org-1']);
   });
 
+  test('keeps readable practices when one Organization reference fails', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'getProfile').mockReturnValue(PRACTITIONER);
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([
+      { resourceType: 'PractitionerRole', organization: { reference: 'Organization/org-missing' } },
+      { resourceType: 'PractitionerRole', organization: { reference: 'Organization/org-1' } },
+    ] as Awaited<ReturnType<typeof medplum.searchResources>>);
+    vi.spyOn(medplum, 'readReference').mockImplementation((async (ref: { reference: string }) => {
+      if (ref.reference === 'Organization/org-missing') {
+        throw new Error('not found');
+      }
+      return practiceOrg('org-1', '7256');
+    }) as typeof medplum.readReference);
+
+    const { result } = setup(medplum);
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.practices.map((p) => p.id)).toEqual(['org-1']);
+    expect(result.current.selectedOrganization).toEqual({ reference: 'Organization/org-1' });
+  });
+
   test('setSelectedOrganizationId persists a selection and clears it', async () => {
     const medplum = new MockClient();
     vi.spyOn(medplum, 'getProfile').mockReturnValue(PRACTITIONER);
@@ -224,6 +246,7 @@ describe('useScriptSurePractice', () => {
 
     act(() => result.current.setSelectedOrganizationId(undefined));
     expect(result.current.selectedOrganizationId).toBeUndefined();
+    expect(result.current.selectedOrganization).toBeUndefined();
     expect(localStorage.getItem('medplum.scriptsure.selectedPracticeOrganization')).toBeNull();
   });
 
@@ -236,6 +259,7 @@ describe('useScriptSurePractice', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.practices).toEqual([]);
+    expect(result.current.selectedOrganization).toBeUndefined();
     expect(result.current.selectedOrganizationId).toBeUndefined();
   });
 

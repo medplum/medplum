@@ -76,7 +76,7 @@ export function MedicationsPage(): JSX.Element {
   const medplum = useMedplum();
   const { orderMedication } = useScriptSureOrderMedication();
   const { addToCart, adding, checkout, removeFromCart, clearCart } = useScriptSureCart();
-  const { selectedOrganizationId } = useScriptSurePractice();
+  const { selectedOrganization } = useScriptSurePractice();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const statusParam = searchParams.get('status') ?? TAB_TO_STATUS_PARAM[DEFAULT_TAB];
@@ -338,7 +338,7 @@ export function MedicationsPage(): JSX.Element {
       // chart surface handles every state (queued, sent, etc.).
       const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, {
         patientId,
-        organizationId: selectedOrganizationId,
+        organization: selectedOrganization,
       });
       if (!res?.url) {
         throw new Error('ScriptSure did not return a prescriptions URL');
@@ -351,7 +351,7 @@ export function MedicationsPage(): JSX.Element {
     } catch (e) {
       showErrorNotification(e);
     }
-  }, [patientId, currentOrder, medplum, fetchData, selectedOrganizationId]);
+  }, [patientId, currentOrder, medplum, fetchData, selectedOrganization]);
 
   const refreshLaunchUrl = useCallback(async (): Promise<string | undefined> => {
     if (!patientId) {
@@ -362,7 +362,7 @@ export function MedicationsPage(): JSX.Element {
     if (iframeMode === 'chart') {
       const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, {
         patientId,
-        organizationId: selectedOrganizationId,
+        organization: selectedOrganization,
       });
       return res?.url ?? iframeUrlRef.current;
     }
@@ -370,9 +370,9 @@ export function MedicationsPage(): JSX.Element {
     if (!mrId) {
       return iframeUrlRef.current;
     }
-    const res = await orderMedication({ patientId, medicationRequestId: mrId, organizationId: selectedOrganizationId });
+    const res = await orderMedication({ patientId, medicationRequestId: mrId, organization: selectedOrganization });
     return res.launchUrl;
-  }, [patientId, currentOrder, iframePollMrId, iframeMode, medplum, orderMedication, selectedOrganizationId]);
+  }, [patientId, currentOrder, iframePollMrId, iframeMode, medplum, orderMedication, selectedOrganization]);
 
   const handleIframeFhirSynced = useCallback((): void => {
     setIframeModalOpened(false);
@@ -473,7 +473,7 @@ export function MedicationsPage(): JSX.Element {
       const res = await checkout({
         patientId: checkoutPatientId,
         medicationRequestIds,
-        organizationId: selectedOrganizationId,
+        organization: selectedOrganization,
       });
       const failed = res.items.filter((i) => i.status === 'failed');
       const queuedIds = res.items.filter((i) => i.status === 'queued').map((i) => i.medicationRequestId);
@@ -500,7 +500,7 @@ export function MedicationsPage(): JSX.Element {
     } finally {
       setCheckingOut(false);
     }
-  }, [patient, total, fetchAllDraftIds, checkout, fetchData, selectedOrganizationId]);
+  }, [patient, total, fetchAllDraftIds, checkout, fetchData, selectedOrganization]);
 
   const handleRemoveFromCart = useCallback(
     async (mrId: string): Promise<void> => {

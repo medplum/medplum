@@ -183,7 +183,7 @@ export function OrderSetPreflightSummary(props: Readonly<OrderSetPreflightSummar
 export function OrderSetTabPanel(props: Readonly<OrderSetTabPanelProps>): JSX.Element {
   const { patient, requester, onPatientChange, onRequesterChange, onOrderComplete } = props;
   const medplum = useMedplum();
-  const { selectedOrganizationId } = useScriptSurePractice();
+  const { selectedOrganization } = useScriptSurePractice();
 
   const [planDefinition, setPlanDefinition] = useState<PlanDefinition | undefined>();
   const [scriptSureIdEscape, setScriptSureIdEscape] = useState<number | undefined>();
@@ -202,7 +202,7 @@ export function OrderSetTabPanel(props: Readonly<OrderSetTabPanelProps>): JSX.El
     patientId: patient?.id,
     planDefinitionId: planDefinitionIdInput,
     scriptSureOrdersetId: planDefinitionIdInput ? undefined : scriptSureIdEscape,
-    organizationId: selectedOrganizationId,
+    organization: selectedOrganization,
   });
 
   const submitDisabled = !patient?.id || !requester || (!planDefinitionIdInput && scriptSureIdEscape === undefined);

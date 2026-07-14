@@ -38,6 +38,7 @@ describe('ScriptSurePracticeSwitcher', () => {
     mockContext = {
       practices: [],
       selectedOrganizationId: undefined,
+      selectedOrganization: undefined,
       setSelectedOrganizationId,
       loading: false,
     };

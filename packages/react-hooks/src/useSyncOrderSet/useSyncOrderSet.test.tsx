@@ -39,7 +39,7 @@ describe('useSyncOrderSet', () => {
     const { result } = renderHook(() => useSyncOrderSet(), { wrapper: wrapper(medplum) });
 
     await act(async () => {
-      await result.current('plan-def-123', 'org-9');
+      await result.current('plan-def-123', { reference: 'Organization/org-9' });
     });
 
     expect(post.mock.calls[0][1]).toEqual({ planDefinitionId: 'plan-def-123', organizationId: 'org-9' });

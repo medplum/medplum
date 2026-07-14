@@ -12,7 +12,7 @@ import { useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
 
 export function ScriptSureTab(): JSX.Element {
   const { patientId } = useParams();
-  const { selectedOrganizationId } = useScriptSurePractice();
+  const { selectedOrganization } = useScriptSurePractice();
   const syncedRef = useRef(false);
   const iframeLoadedRef = useRef(false);
 
@@ -29,7 +29,7 @@ export function ScriptSureTab(): JSX.Element {
 
   const iframeUrl = useScriptSureIFrame({
     patientId,
-    organizationId: selectedOrganizationId,
+    organization: selectedOrganization,
     onPatientSyncSuccess: () => {
       syncedRef.current = true;
       checkAndNotify();

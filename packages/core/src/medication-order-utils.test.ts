@@ -303,6 +303,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
       pharmacyNote: 'Call patient first',
       patientInstruction: 'With food',
       appId: 'provider-app',
+      organization: { reference: 'Organization/practice-1' },
     };
     const result = medicationOrderRequestToParameters(req);
     expect(result.parameter).toContainEqual({ name: 'medicationRequestId', valueId: 'mr-1' });
@@ -317,6 +318,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
     expect(result.parameter).toContainEqual({ name: 'pharmacyNote', valueString: 'Call patient first' });
     expect(result.parameter).toContainEqual({ name: 'patientInstruction', valueString: 'With food' });
     expect(result.parameter).toContainEqual({ name: 'appId', valueString: 'provider-app' });
+    expect(result.parameter).toContainEqual({ name: 'organizationId', valueString: 'practice-1' });
 
     const drugs = result.parameter?.find((p) => p.name === 'drugs');
     expect(drugs?.part).toContainEqual({ name: 'routedMedId', valueInteger: 6876 });
@@ -401,6 +403,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
       patientId: 'pat-1',
       planDefinitionId: 'pd-1',
       appId: 'provider-app',
+      organization: { reference: 'Organization/practice-1' },
     };
     const result = medicationOrderSetRequestToParameters(req);
     expect(result.resourceType).toBe('Parameters');
@@ -408,6 +411,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
       { name: 'patientId', valueId: 'pat-1' },
       { name: 'planDefinitionId', valueId: 'pd-1' },
       { name: 'appId', valueString: 'provider-app' },
+      { name: 'organizationId', valueString: 'practice-1' },
     ]);
   });
 
@@ -518,7 +522,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
     const result = medicationCheckoutRequestToParameters({
       patientId: 'pat-1',
       medicationRequestIds: ['mr-1'],
-      organizationId: 'org-7',
+      organization: { reference: 'Organization/org-7' },
     });
     expect(result.parameter).toEqual([
       { name: 'patientId', valueId: 'pat-1' },

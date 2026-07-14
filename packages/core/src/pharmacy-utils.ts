@@ -33,11 +33,8 @@ export interface PharmacySearchParams {
   address?: string;
   phoneOrFax?: string;
   ncpdpID?: string;
-  /**
-   * Selected practice-location Organization (id or `Organization/{id}` reference) for
-   * multi-practice deployments. The vendor bot resolves the vendor practice from it.
-   */
-  organizationId?: string;
+  /** Selected practice location for multi-practice deployments. */
+  organization?: Reference<Organization>;
 }
 
 /**
@@ -47,11 +44,8 @@ export interface AddFavoriteParams {
   patientId: string;
   pharmacy: Organization;
   setAsPrimary: boolean;
-  /**
-   * Selected practice-location Organization (id or `Organization/{id}` reference) for
-   * multi-practice deployments. The vendor bot resolves the vendor practice from it.
-   */
-  organizationId?: string;
+  /** Selected practice location for multi-practice deployments. */
+  organization?: Reference<Organization>;
 }
 
 /**
