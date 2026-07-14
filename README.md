@@ -2,35 +2,27 @@
 
 ![Medplum](packages/docs/static/img/cover.webp)
 
+![Medplum](https://medplum.com)
+
 Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
 
-- **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
-- **Medplum Clinical Data Repository (CDR)** - Backend server that hosts your healthcare data in a secure, compliant, and standards-based repository.
-- **Medplum API** - FHIR-based API for sending, receiving, and manipulating data.
-- **Medplum SDK** - Client libraries that simplify the process of interacting with the **Medplum API**.
-- **Medplum App** - Web application where you can view your data and perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
-- **Medplum Bots** - Write and run application logic server-side without needing to set up your own server.
-- **UI Component Library** - React components designed to help you quickly develop custom healthcare applications.
+We unify auth, access control, data, and automation into a single tenant-isolated system for your apps—whether built with our components and SDK or forked from our pre-built apps. Medplum Bridge connects on-prem systems, integrations extend your apps' capabilities, and our compliance and security are built in.
+
+![Medplum Architecture](packages/docs/static/img/architecture.webp)
 
 ## Docs
 
 - [Contributing](#contributing)
   - [Ground Rules](#ground-rules)
-  - [Codebase](#codebase)
-    - [Technologies](#technologies)
-    - [Folder Structure](#folder-structure)
 
 ## Contributing
 
 **We heartily welcome any and all contributions that match our engineering standards!**
 
 That being said, this codebase isn't your typical open-source project because it's not a library or package with a
-limited scope -- it's our entire product. Our [Contributing documentation](https://medplum.com/docs/contributing) has
-all the information you need to get started.
+limited scope -- it's our entire product. As such, we're providing ground rules and paths to contributing below.
 
 ### Ground Rules
-
-#### Contributions and discussion guidelines
 
 By making a contribution to this project, you are deemed to have accepted the [Developer Certificate of Origin](https://developercertificate.org/) (DCO).
 
@@ -39,12 +31,18 @@ and [Acceptable Use Policies](https://help.github.com/en/github/site-policy/gith
 discussions on issues and pull requests to stay positive, productive, and respectful. Remember: there are real people on
 the other side of the screen!
 
-#### Reporting a bug or proposing a new feature
+### Contributing Guidelines
 
-If you found a technical bug on Medplum or have ideas for features we should implement, the issue tracker is the best
-place to share with us. ([click here to open a new issue](https://github.com/medplum/medplum/issues/new))
+- [Filing Issues](#filing-issues)
+- [Writing Docs or Case Studies](#writing-documentation-or-case-studies)
+- [Opening Pull Requests]
 
-### Writing documentation or blog content
+#### Filing Issues
+
+If you found a technical bug on Medplum or have ideas for features we should implement, the [issue tracker](https://github.com/medplum/medplum/issues) is the best
+place to discuss known issues and share new issues with us. ([Click here to open a new issue](https://github.com/medplum/medplum/issues/new)).
+
+#### Writing Documentation or Case Studies
 
 Did you learn how to do something using Medplum that wasn't obvious on your first try? By contributing your new knowledge
 to our documentation, you can help others who might have a similar use case!
@@ -55,58 +53,17 @@ files in our [`docs` package](https://github.com/medplum/medplum/tree/main/packa
 For relatively small changes, you can edit files directly from your web browser on [GitHub.dev](https://github.dev/medplum/medplum/blob/main/packages/docs/docs/home.md)
 without needing to clone the repository.
 
-#### Fixing a bug or implementing a new feature
+We are also always excited to showcase [case studies](https://www.medplum.com/case-studies), or to share relevant blog content! If you have built something cool on Medplum, please [reach out](mailto:support@medplum.com) for a case study/blog!
 
-If you find a bug and open a Pull Request that fixes it, we'll review it as soon as possible to ensure it meets our engineering standards.
+#### Opening Pull Requests
 
-If you want to implement a new feature, open an issue first to discuss with us how the feature might work, and to ensure
-it fits into our roadmap and plans for the app.
+If there is an open issue that you would like to implement, feel free to follow the [local setup instructions](https://www.medplum.com/docs/contributing/local-dev-setup) and jump in! Our [Contributing documentation](https://medplum.com/docs/contributing) has
+all the information you need to get started.
 
-If you want to contribute but are unsure how to start, we have [a "good first issue" label](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) which is applied to newcomer-friendly issues. Take a look at [the full list of good first issues](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and pick something you like!
+We have two labels for open issues where we would welcome community PR's:
 
-**Ready to get started writing code?** Follow the [local setup instructions](https://www.medplum.com/docs/contributing/local-dev-setup) and jump in!
-
-### Codebase
-
-#### Technologies
-
-With the ground rules out of the way, let's talk about the coarse architecture of this mono repo:
-
-- **Full-stack TypeScript**: We use Node.js to power our servers, and React to power our frontend apps. Almost all of the code you'll touch in this codebase will be TypeScript.
-
-Here is a list of all the big technologies we use:
-
-- **PostgreSQL**: Data storage
-- **Redis**: Background jobs and caching
-- **Express**: API server
-- **TypeScript**: Type-safe JavaScript
-- **React**: Frontend React app
-
-#### Folder structure
-
-```sh
-medplum/
-├── packages
-│   ├── agent           # On-premise agent
-│   ├── app             # Frontend web app
-│   ├── bot-layer       # AWS Lambda Layer for Bots
-│   ├── cdk             # AWS CDK infra as code
-│   ├── cli             # Command line interface
-│   ├── core            # Core shared library
-│   ├── definitions     # Data definitions
-│   ├── docs            # Documentation
-│   ├── examples        # Example code used in documentation
-│   ├── fhir-router     # FHIR URL router
-│   ├── fhirtypes       # FHIR TypeScript definitions
-│   ├── generator       # Code generator utilities
-│   ├── graphiql        # Preconfigured GraphiQL
-│   ├── hl7             # HL7 client and server
-│   ├── mock            # Mock FHIR data for testing
-│   ├── react           # React component library
-│   ├── react-hooks     # React hooks library
-│   └── server          # Backend API server
-└── scripts             # Helper bash scripts
-```
+- [Good first issue](https://github.com/medplum/medplum/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22): good issues for beginners and newcomers
+- [Open to commmunity](https://github.com/medplum/medplum/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22open%20to%20community%22): reasonably well-scoped issues open to community PR's
 
 ## Thanks
 
