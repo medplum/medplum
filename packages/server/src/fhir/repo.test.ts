@@ -436,6 +436,173 @@ describe('FHIR Repo', () => {
     });
   });
 
+  describe('readPreviousVersion', () => {
+    test('returns undefined for the first version', () =>
+      withTestContext(async () => {
+        const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+        const prev = await systemRepo.readPreviousVersion<Patient>(v1);
+        expect(prev).toBeUndefined();
+      }));
+
+    test('returns the immediately preceding version', () =>
+      withTestContext(async () => {
+        const base = Date.now();
+        const v1 = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: { lastUpdated: new Date(base - 2000).toISOString() },
+        });
+        const v2 = await systemRepo.updateResource<Patient>({
+          resourceType: 'Patient',
+          id: v1.id,
+          active: true,
+          meta: { lastUpdated: new Date(base - 1000).toISOString() },
+        });
+        const v3 = await systemRepo.updateResource<Patient>({
+          resourceType: 'Patient',
+          id: v1.id,
+          active: false,
+          meta: { lastUpdated: new Date(base).toISOString() },
+        });
+
+        const prevOfV3 = await systemRepo.readPreviousVersion<Patient>(v3);
+        expect(prevOfV3?.meta?.versionId).toBe(v2.meta?.versionId);
+
+        const prevOfV2 = await systemRepo.readPreviousVersion<Patient>(v2);
+        expect(prevOfV2?.meta?.versionId).toBe(v1.meta?.versionId);
+      }));
+
+    test('skips siblings sharing the same lastUpdated and warns', () =>
+      withTestContext(async () => {
+        const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+        // Fake only the clock (not timer fns) so consecutive updates can be
+        // forced to share the exact same server-assigned `lastUpdated`.
+        jest.useFakeTimers({
+          doNotFake: [
+            'setTimeout',
+            'setInterval',
+            'setImmediate',
+            'clearTimeout',
+            'clearInterval',
+            'clearImmediate',
+            'nextTick',
+            'queueMicrotask',
+            'hrtime',
+            'performance',
+          ],
+        });
+        try {
+          const base = Date.now();
+          // v1 in the past
+          jest.setSystemTime(base - 2000);
+          const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+          // v2 and v3 share the same instant -> tie among priors
+          jest.setSystemTime(base - 1000);
+          const v2 = await systemRepo.updateResource<Patient>({
+            resourceType: 'Patient',
+            id: v1.id,
+            active: true,
+          });
+          const v3 = await systemRepo.updateResource<Patient>({
+            resourceType: 'Patient',
+            id: v1.id,
+            active: false,
+          });
+          // v4 is the newest, with a unique timestamp
+          jest.setSystemTime(base);
+          const v4 = await systemRepo.updateResource<Patient>({
+            resourceType: 'Patient',
+            id: v1.id,
+            active: true,
+          });
+
+          const prev = await systemRepo.readPreviousVersion<Patient>(v4);
+          expect([v2.meta?.versionId, v3.meta?.versionId]).toContain(prev?.meta?.versionId);
+          expect(warnSpy).toHaveBeenCalledWith(
+            'readPreviousVersion: ambiguous prior version (lastUpdated tie)',
+            expect.objectContaining({
+              tiedAmongPriors: true,
+              tiedWithIncoming: false,
+              tiedVersionIds: expect.arrayContaining([v2.meta?.versionId, v3.meta?.versionId]),
+            })
+          );
+        } finally {
+          jest.useRealTimers();
+          warnSpy.mockRestore();
+        }
+      }));
+
+    test('warns when incoming resource ties with chosen prior', () =>
+      withTestContext(async () => {
+        const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+        jest.useFakeTimers({
+          doNotFake: [
+            'setTimeout',
+            'setInterval',
+            'setImmediate',
+            'clearTimeout',
+            'clearInterval',
+            'clearImmediate',
+            'nextTick',
+            'queueMicrotask',
+            'hrtime',
+            'performance',
+          ],
+        });
+        try {
+          const base = Date.now();
+          jest.setSystemTime(base - 1000);
+          const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+          // v2 and v3 share the same instant; v3 is the incoming resource, so it
+          // ties with its chosen prior (v2).
+          jest.setSystemTime(base);
+          const v2 = await systemRepo.updateResource<Patient>({
+            resourceType: 'Patient',
+            id: v1.id,
+            active: true,
+          });
+          const v3 = await systemRepo.updateResource<Patient>({
+            resourceType: 'Patient',
+            id: v1.id,
+            active: false,
+          });
+
+          const prev = await systemRepo.readPreviousVersion<Patient>(v3);
+          expect(prev?.meta?.versionId).toBe(v2.meta?.versionId);
+          expect(warnSpy).toHaveBeenCalledWith(
+            'readPreviousVersion: ambiguous prior version (lastUpdated tie)',
+            expect.objectContaining({
+              tiedWithIncoming: true,
+              tiedVersionIds: expect.arrayContaining([v2.meta?.versionId, v3.meta?.versionId]),
+            })
+          );
+        } finally {
+          jest.useRealTimers();
+          warnSpy.mockRestore();
+        }
+      }));
+
+    test('throws preconditionFailed when lastUpdated missing', () =>
+      withTestContext(async () => {
+        const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+        const stripped = { ...v1, meta: { ...v1.meta, lastUpdated: undefined } } as WithId<Patient>;
+        await expect(systemRepo.readPreviousVersion<Patient>(stripped)).rejects.toThrow(
+          new OperationOutcomeError(preconditionFailed)
+        );
+      }));
+
+    test('throws notFound when id is not a UUID', () =>
+      withTestContext(async () => {
+        const fake = {
+          resourceType: 'Patient',
+          id: 'not-a-uuid',
+          meta: { lastUpdated: new Date().toISOString(), versionId: randomUUID() },
+        } as WithId<Patient>;
+        await expect(systemRepo.readPreviousVersion<Patient>(fake)).rejects.toThrow(
+          new OperationOutcomeError(notFound)
+        );
+      }));
+  });
+
   test('Update patient', () =>
     withTestContext(async () => {
       const patient1 = await systemRepo.createResource<Patient>({

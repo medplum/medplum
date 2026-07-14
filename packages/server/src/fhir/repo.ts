@@ -7,6 +7,7 @@ import {
   allOk,
   append,
   badRequest,
+  createReference,
   deepClone,
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
@@ -249,6 +250,13 @@ export interface ReadResourceOptions extends InteractionOptions {
 export interface ResendSubscriptionsOptions extends InteractionOptions {
   interaction?: BackgroundJobInteraction;
   subscription?: string;
+  /**
+   * Resend subscriptions for a specific historical version of the resource
+   * instead of the current version. When set, `%previous` passed to
+   * subscription evaluation is the version immediately prior to this one
+   * in history (if any).
+   */
+  versionId?: string;
 }
 
 export interface ProcessAllResourcesOptions {
@@ -827,6 +835,109 @@ export class Repository extends FhirRepository implements Disposable {
     }
   }
 
+  /**
+   * Reads the version of a resource immediately preceding the given resource
+   * in history (ordered by `meta.lastUpdated`). Returns `undefined` if the
+   * given resource is the first version.
+   *
+   * Unlike scanning a paged `readHistory()` result, this query is bounded to
+   * a small constant number of rows regardless of history length.
+   *
+   * Caveat: history rows are ordered solely by `meta.lastUpdated`, which is
+   * generated from `new Date().toISOString()` (millisecond precision) and may
+   * also be set directly by ClientApplications with elevated permissions. As
+   * a result, multiple history rows can share the same `lastUpdated` value.
+   * When that happens, the prior version is not deterministically defined —
+   * either because multiple candidates tie with each other, or because the
+   * supplied resource ties with the chosen prior (so even current-vs-prior
+   * ordering is ambiguous). In those cases this method may return any one of
+   * the tied rows. The query uses `<=` and filters out the supplied
+   * resource's own `versionId` so siblings at the exact same timestamp are
+   * still considered as candidates for the prior version.
+   * @param resource - A version of the resource (current or historical) to look back from.
+   * @returns The prior version, or `undefined` if none exists.
+   */
+  async readPreviousVersion<T extends Resource>(resource: WithId<T>): Promise<T | undefined> {
+    const lastUpdated = resource.meta?.lastUpdated;
+    if (!lastUpdated) {
+      throw new OperationOutcomeError(preconditionFailed);
+    }
+    if (!isUUID(resource.id)) {
+      throw new OperationOutcomeError(notFound);
+    }
+    // Fetch up to 2 candidates so we can detect ties at the same `lastUpdated`.
+    // We use `<=` (rather than `<`) and filter out the supplied versionId
+    // ourselves so siblings sharing the resource's exact timestamp are still
+    // considered as candidates for the prior version.
+    const rows = await new SelectQuery(resource.resourceType + '_History')
+      .column('versionId')
+      .column('content')
+      .column('lastUpdated')
+      .where('id', '=', resource.id)
+      .where('lastUpdated', '<=', lastUpdated)
+      .where('versionId', '!=', resource.meta?.versionId)
+      .orderBy('lastUpdated', true)
+      .limit(2)
+      .execute(this.getDatabaseClient(DatabaseMode.READER));
+    if (rows.length === 0 || !rows[0].content) {
+      return undefined;
+    }
+    this.warnIfAmbiguousPreviousVersion(resource, lastUpdated, rows);
+    return this.removeHiddenFields(JSON.parse(rows[0].content as string)) as T;
+  }
+
+  /**
+   * Logs a warning when the prior version returned by {@link readPreviousVersion}
+   * is not deterministically defined due to a `lastUpdated` tie.
+   *
+   * Ambiguity arises in two cases:
+   *   1. The incoming resource and the chosen prior share `lastUpdated`, so
+   *      current-vs-prior ordering itself is nondeterministic.
+   *   2. Two or more candidate priors share `lastUpdated`, so which one is
+   *      "immediately prior" is nondeterministic.
+   *
+   * Timestamps are compared via numeric ms epoch. `new Date(x).getTime()`
+   * accepts both Date instances (which the pg driver currently returns for
+   * TIMESTAMPTZ columns) and ISO date strings (defensive against future
+   * driver/config changes), and yields a primitive number safe to compare
+   * with `===`. An invalid value would produce `NaN`, which simply won't
+   * match — we'd skip the warn but the caller still returns the first row, so
+   * this can't break the correctness of the prior-version lookup.
+   * @param resource - The resource the lookup was performed from.
+   * @param lastUpdated - The `meta.lastUpdated` of the supplied resource.
+   * @param rows - Up to two candidate prior rows, ordered by `lastUpdated` desc.
+   */
+  private warnIfAmbiguousPreviousVersion<T extends Resource>(
+    resource: WithId<T>,
+    lastUpdated: string,
+    rows: { versionId: string; lastUpdated: string }[]
+  ): void {
+    const incomingMs = new Date(lastUpdated).getTime();
+    const firstMs = new Date(rows[0].lastUpdated).getTime();
+    const secondMs = rows.length > 1 ? new Date(rows[1].lastUpdated).getTime() : undefined;
+    const tiedWithIncoming = incomingMs === firstMs;
+    const tiedAmongPriors = secondMs !== undefined && firstMs === secondMs;
+    if (!tiedWithIncoming && !tiedAmongPriors) {
+      return;
+    }
+    // Rare (high-throughput writes within the same millisecond, or callers
+    // setting protected meta directly) but worth surfacing.
+    // Include all versionIds sharing the tied timestamp so the log reflects
+    // the actual ambiguity set, regardless of which case triggered it.
+    const tiedVersionIds = [
+      ...(tiedWithIncoming && resource.meta?.versionId ? [resource.meta.versionId] : []),
+      ...rows.filter((r) => new Date(r.lastUpdated).getTime() === firstMs).map((r) => r.versionId),
+    ];
+    getLogger().warn('readPreviousVersion: ambiguous prior version (lastUpdated tie)', {
+      resource: createReference(resource),
+      versionId: resource.meta?.versionId,
+      lastUpdated,
+      tiedWithIncoming,
+      tiedAmongPriors,
+      tiedVersionIds,
+    });
+  }
+
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
@@ -1207,16 +1318,29 @@ export class Repository extends FhirRepository implements Disposable {
       throw new OperationOutcomeError(forbidden);
     }
 
-    const resource = await this.readResourceImpl<T>(resourceType, id);
-    const interaction = options?.interaction ?? 'update';
+    const resource = options?.versionId
+      ? await this.readVersion<T>(resourceType, id, options.versionId)
+      : await this.readResourceImpl<T>(resourceType, id);
+    let interaction = options?.interaction;
     let previousVersion: T | undefined;
 
-    if (interaction === 'update') {
-      const history = await this.readHistory(resourceType, id, { limit: 2 });
-      if (history.entry?.[0]?.resource?.meta?.versionId !== resource.meta?.versionId) {
-        throw new OperationOutcomeError(preconditionFailed);
+    if (options?.versionId && !interaction) {
+      // When a caller pins to a specific historical version but doesn't
+      // specify the interaction, derive it from the version's position in
+      // history: a version with no prior is the create event for the
+      // resource; otherwise it's an update.
+      previousVersion = await this.readPreviousVersion<T>(resource);
+      interaction = previousVersion ? 'update' : 'create';
+    } else {
+      interaction = interaction ?? 'update';
+      if (interaction === 'update') {
+        previousVersion = await this.readPreviousVersion<T>(resource);
+        if (!previousVersion) {
+          // interaction='update' implies a state transition, so a prior version
+          // is required. Use interaction='create' to resend the first version.
+          throw new OperationOutcomeError(preconditionFailed);
+        }
       }
-      previousVersion = history.entry?.[1]?.resource;
     }
 
     return addSubscriptionJobs(
