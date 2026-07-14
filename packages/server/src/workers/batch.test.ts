@@ -169,6 +169,24 @@ describe('Batch worker', () => {
         expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201']);
       }));
 
+    test('Assembles completion results from memory without re-reading chunks written this run', () =>
+      withTestContext(async () => {
+        const { asyncJob, job } = await setupReentrantJob(multiEntryBundle(3), { checkpointEntries: 1 });
+        const loadSpy = vi.spyOn(BatchCheckpointStore.prototype, 'loadAllResults');
+        const cleanupSpy = vi.spyOn(BatchCheckpointStore.prototype, 'cleanup');
+
+        await expect(execBatchJob(job)).resolves.toBeUndefined();
+
+        // Three chunks were written this run, but assembly reads back none of them (only chunks
+        // from previous runs of the job, of which there are none); cleanup still deletes all three.
+        expect(loadSpy).toHaveBeenCalledWith(0);
+        expect(cleanupSpy).toHaveBeenCalledWith(3);
+        const finished = await readAsyncJob(asyncJob.id);
+        expect(finished.status).toStrictEqual('completed');
+        const results = await readResultsBundle(finished);
+        expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201']);
+      }));
+
     test('Fails on invalid bundle rejected during preprocessing, preserving the outcome', () =>
       withTestContext(async () => {
         const { asyncJob, job } = await setupReentrantJob({
@@ -228,9 +246,12 @@ describe('Batch worker', () => {
 
         isClosingSpy.mockRestore();
 
-        // Resume on a fresh worker: rehydrate from durable state and finish.
+        // Resume on a fresh worker: rehydrate from durable state and finish. Assembly reads back
+        // only the chunk persisted by the first run; this run's results are merged from memory.
+        const loadSpy = vi.spyOn(BatchCheckpointStore.prototype, 'loadAllResults');
         const resumeJob = makeReentrantJob(job.data);
         await expect(execBatchJob(resumeJob)).resolves.toBeUndefined();
+        expect(loadSpy).toHaveBeenCalledWith(1);
 
         const finished = await readAsyncJob(asyncJob.id);
         expect(finished.status).toStrictEqual('completed');
