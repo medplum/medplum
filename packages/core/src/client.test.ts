@@ -27,6 +27,8 @@ import type {
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
+  RequestFinishedEvent,
+  RequestStartedEvent,
 } from './client';
 import { DEFAULT_ACCEPT, MedplumClient } from './client';
 import { createFakeJwt, mockFetch, mockFetchResponse, mockFetchWithStatus } from './client-test-utils';
@@ -4761,6 +4763,95 @@ describe('Client', () => {
         duplex: 'half',
       })
     );
+  });
+
+  describe('Client events', () => {
+    test('requestStarted and requestFinished on success', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+      const client = new MedplumClient({ fetch });
+      const started: RequestStartedEvent[] = [];
+      const finished: RequestFinishedEvent[] = [];
+      client.addEventListener('requestStarted', (e) => started.push(e.payload));
+      client.addEventListener('requestFinished', (e) => finished.push(e.payload));
+
+      const patient = await client.readResource('Patient', '123');
+
+      expect(started).toHaveLength(1);
+      expect(started[0]).toMatchObject({
+        method: 'GET',
+        url: 'https://api.medplum.com/fhir/R4/Patient/123',
+      });
+      expect(started[0].requestId).toBeGreaterThan(0);
+      expect(started[0].startTime).toBeGreaterThan(0);
+
+      expect(finished).toHaveLength(1);
+      expect(finished[0]).toMatchObject({
+        requestId: started[0].requestId,
+        method: 'GET',
+        url: 'https://api.medplum.com/fhir/R4/Patient/123',
+        status: 200,
+      });
+      expect(finished[0].response).toBe(patient);
+      expect(finished[0].durationMs).toBeGreaterThanOrEqual(0);
+      expect(finished[0].error).toBeUndefined();
+    });
+
+    test('requestStarted includes the request body', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+      const client = new MedplumClient({ fetch });
+      const started: RequestStartedEvent[] = [];
+      client.addEventListener('requestStarted', (e) => started.push(e.payload));
+
+      await client.createResource<Patient>({ resourceType: 'Patient' });
+
+      expect(started).toHaveLength(1);
+      expect(started[0]).toMatchObject({
+        method: 'POST',
+        url: 'https://api.medplum.com/fhir/R4/Patient',
+        body: JSON.stringify({ resourceType: 'Patient' }),
+      });
+    });
+
+    test('requestFinished with error on failed request', async () => {
+      const fetch = mockFetch(404, notFound);
+      const client = new MedplumClient({ fetch });
+      const finished: RequestFinishedEvent[] = [];
+      client.addEventListener('requestFinished', (e) => finished.push(e.payload));
+
+      await expect(client.readResource('Patient', 'missing')).rejects.toThrow('Not found');
+
+      expect(finished).toHaveLength(1);
+      expect(finished[0].status).toBe(404);
+      expect(finished[0].error).toBeInstanceOf(OperationOutcomeError);
+      expect(finished[0].response).toBeUndefined();
+    });
+
+    test('Request events after listener removed', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+      const client = new MedplumClient({ fetch });
+      const listener = vi.fn();
+      client.addEventListener('requestStarted', listener);
+      client.removeEventListener('requestStarted', listener);
+
+      await client.readResource('Patient', '123');
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    test('Throwing event listener does not affect the request', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+      const client = new MedplumClient({ fetch });
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      client.addEventListener('requestStarted', () => {
+        throw new Error('listener error');
+      });
+
+      const patient = await client.createResource<Patient>({ resourceType: 'Patient' });
+
+      expect(patient).toBeDefined();
+      expect(consoleError).toHaveBeenCalled();
+      consoleError.mockRestore();
+    });
   });
 });
 
