@@ -160,5 +160,3 @@ export * from './utils/pagination';
 export * from './utils/recaptcha';
 export * from './utils/script';
 export * from './ValueSetAutocomplete/ValueSetAutocomplete';
-export { checkValueSetAvailability, useValueSetAvailability } from './ValueSetAutocomplete/valueSetAvailability';
-export type { ValueSetAvailability } from './ValueSetAutocomplete/valueSetAvailability';

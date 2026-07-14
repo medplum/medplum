@@ -1,9 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient } from '@medplum/core';
-import { getStatus, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
-import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useSyncExternalStore } from 'react';
+import type { MedplumClient } from './client';
+import { getStatus, normalizeErrorString, OperationOutcomeError } from './outcomes';
 
 export type ValueSetAvailability =
   | { readonly status: 'checking' }
@@ -101,12 +99,58 @@ function setSnapshot(entry: CacheEntry, snapshot: ValueSetAvailability): void {
   }
 }
 
-export function getValueSetAvailability(medplum: MedplumClient, binding: string): ValueSetAvailability {
+/**
+ * Returns the last known availability of a ValueSet from the shared per-client cache without
+ * triggering a probe.
+ *
+ * The returned value is a stable reference for a given status, so it is safe to use directly as
+ * a `useSyncExternalStore` snapshot.
+ * @param medplum - The Medplum client instance.
+ * @param binding - The ValueSet URL, or undefined for unbound inputs (always 'available').
+ * @returns The current cached availability of the ValueSet.
+ */
+export function getValueSetAvailability(medplum: MedplumClient, binding: string | undefined): ValueSetAvailability {
+  if (!binding) {
+    return AVAILABLE;
+  }
   return caches.get(medplum)?.get(binding)?.snapshot ?? CHECKING;
 }
 
-export function isValueSetUnavailable(medplum: MedplumClient, binding: string): boolean {
+/**
+ * Returns true if the ValueSet has a cached 'unavailable' verdict.
+ * @param medplum - The Medplum client instance.
+ * @param binding - The ValueSet URL, or undefined for unbound inputs.
+ * @returns True if the ValueSet is known to be unavailable.
+ */
+export function isValueSetUnavailable(medplum: MedplumClient, binding: string | undefined): boolean {
   return getValueSetAvailability(medplum, binding).status === 'unavailable';
+}
+
+/**
+ * Subscribes to changes in a ValueSet's availability, probing it (or a stale 'unavailable'
+ * verdict) on first use through the shared per-client cache.
+ *
+ * Intended to back a `useSyncExternalStore` subscription: the listener is invoked whenever the
+ * cached verdict for `binding` changes, and the returned function unsubscribes.
+ * @param medplum - The Medplum client instance.
+ * @param binding - The ValueSet URL, or undefined for unbound inputs (never notifies).
+ * @param listener - Invoked whenever the availability verdict changes.
+ * @returns A function that unsubscribes the listener.
+ */
+export function subscribeToValueSetAvailability(
+  medplum: MedplumClient,
+  binding: string | undefined,
+  listener: () => void
+): () => void {
+  if (!binding) {
+    return () => undefined;
+  }
+  const entry = ensureEntry(medplum, binding);
+  if (shouldProbe(entry)) {
+    probeEntry(medplum, binding, entry).catch(console.error);
+  }
+  entry.listeners.add(listener);
+  return () => entry.listeners.delete(listener);
 }
 
 /**
@@ -125,35 +169,4 @@ export async function checkValueSetAvailability(
     await probeEntry(medplum, binding, entry);
   }
   return entry.snapshot;
-}
-
-/**
- * Subscribes to the availability of a ValueSet, probing it on first use.
- * @param binding - The ValueSet URL, or undefined for unbound inputs.
- * @returns The current availability of the ValueSet.
- */
-export function useValueSetAvailability(binding: string | undefined): ValueSetAvailability {
-  const medplum = useMedplum();
-
-  const subscribe = useCallback(
-    (listener: () => void): (() => void) => {
-      if (!binding) {
-        return () => undefined;
-      }
-      const entry = ensureEntry(medplum, binding);
-      if (shouldProbe(entry)) {
-        probeEntry(medplum, binding, entry).catch(console.error);
-      }
-      entry.listeners.add(listener);
-      return () => entry.listeners.delete(listener);
-    },
-    [medplum, binding]
-  );
-
-  const getSnapshot = useCallback(
-    (): ValueSetAvailability => (binding ? getValueSetAvailability(medplum, binding) : AVAILABLE),
-    [medplum, binding]
-  );
-
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

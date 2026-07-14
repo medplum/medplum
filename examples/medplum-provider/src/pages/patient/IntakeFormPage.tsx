@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
+import { checkValueSetAvailability, normalizeErrorString } from '@medplum/core';
 import type { Questionnaire, QuestionnaireItem, QuestionnaireResponse } from '@medplum/fhirtypes';
 import {
   AIRealTimeQuestionnaireForm,
-  checkValueSetAvailability,
   Document,
   Loading,
   useMedplum,

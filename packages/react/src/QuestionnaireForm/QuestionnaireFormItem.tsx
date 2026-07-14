@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ComboboxItem } from '@mantine/core';
 import { Checkbox, Group, MultiSelect, NativeSelect, Radio, Text, Textarea, TextInput } from '@mantine/core';
-import type { TypedValue } from '@medplum/core';
+import type { TypedValue, ValueSetAvailability } from '@medplum/core';
 import {
   capitalize,
   deepEquals,
@@ -33,6 +33,7 @@ import {
   QUESTIONNAIRE_ITEM_CONTROL_URL,
   QuestionnaireItemType,
   useMedplum,
+  useValueSetAvailability,
 } from '@medplum/react-hooks';
 import type { ChangeEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -43,8 +44,6 @@ import { QuantityInput } from '../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { UnavailableNote, ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
-import type { ValueSetAvailability } from '../ValueSetAutocomplete/valueSetAvailability';
-import { useValueSetAvailability } from '../ValueSetAutocomplete/valueSetAvailability';
 
 const MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS = 30;
 const MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS = 50;

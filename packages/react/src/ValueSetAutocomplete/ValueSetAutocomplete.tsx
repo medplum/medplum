@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Group, Text, Tooltip } from '@mantine/core';
 import type { ValueSetExpandParams } from '@medplum/core';
+import { isValueSetUnavailable } from '@medplum/core';
 import type { ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useValueSetAvailability } from '@medplum/react-hooks';
 import { IconCheck, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { forwardRef, useCallback } from 'react';
 import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { isValueSetUnavailable, useValueSetAvailability } from './valueSetAvailability';
 
 export interface ValueSetAutocompleteProps extends Omit<
   AsyncAutocompleteProps<ValueSetExpansionContains>,
