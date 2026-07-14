@@ -157,6 +157,7 @@ export const EncounterModal = (): JSX.Element => {
 
                 <ResourceInput
                   name="plandefinition"
+                  label="Care template"
                   resourceType="PlanDefinition"
                   onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
                   required={true}
