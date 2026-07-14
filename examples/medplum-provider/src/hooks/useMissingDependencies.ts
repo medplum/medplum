@@ -1,12 +1,39 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import { checkValueSetAvailability, useMedplum } from '@medplum/react';
+import { checkValueSetAvailability } from '@medplum/core';
+import { useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import type { DependencyGroup, DependencyProbe } from '../config/appDependencies';
 import { DEPENDENCY_GROUPS } from '../config/appDependencies';
 
 type ProbeResult = 'present' | 'missing' | 'unknown';
+
+const CLEAR_CACHE_KEY_PREFIX = 'medplum-provider-missing-dependencies-clear:';
+
+// A signature of the current DEPENDENCY_GROUPS shape, so a cached all-clear result is only trusted
+// when it was computed against the same set of probes (changing/adding a probe invalidates it).
+function computeProbeSignature(): string {
+  return DEPENDENCY_GROUPS.map((group) => `${group.id}:${group.probe.kind}:${group.probe.url}`).join('|');
+}
+
+// localStorage access can throw (blocked cookies, sandboxed iframe, quota exceeded), so both read
+// and write are guarded — an unavailable store just means the probes always re-run.
+function readClearCache(key: string, signature: string): boolean {
+  try {
+    return localStorage.getItem(key) === signature;
+  } catch {
+    return false;
+  }
+}
+
+function writeClearCache(key: string, signature: string): void {
+  try {
+    localStorage.setItem(key, signature);
+  } catch {
+    // Ignore storage failures; the cache just won't help on the next page load.
+  }
+}
 
 export interface UseMissingDependenciesOptions {
   /** Set to false to skip probing entirely, e.g. once the banner has been dismissed. Defaults to true. */
@@ -22,7 +49,7 @@ export interface UseMissingDependenciesResult {
 
 /**
  * Probes the app's expected shared-project dependencies once after sign-in and reports which are
- * missing. ValueSet probes go through `@medplum/react`'s shared availability cache, so a given
+ * missing. ValueSet probes go through `@medplum/core`'s shared availability cache, so a given
  * ValueSet is expanded at most once per client and the result is shared with the inline
  * field-level checks (a missing ValueSet recovers automatically once the project is linked).
  *
@@ -35,6 +62,12 @@ export interface UseMissingDependenciesResult {
  * which throws) can therefore produce a false positive for a restricted user. The banner is
  * advisory and dismissible, and the users who can act on it (project admins) are not usually
  * restricted this way — but the ValueSet probe is the only one that cannot false-alarm.
+ *
+ * An all-clear result (nothing missing) is cached in `localStorage` per project, so an
+ * already-linked project skips the probes on subsequent page loads. Only all-clear is cached —
+ * a missing verdict always re-probes, so linking a project later is picked up on the next load.
+ * The cache key includes a signature of the current probe set, so it self-invalidates if
+ * `DEPENDENCY_GROUPS` changes shape.
  * @param options - Options controlling whether the probes run.
  * @returns The missing dependency groups and a loading flag.
  */
@@ -52,11 +85,20 @@ export function useMissingDependencies(options?: UseMissingDependenciesOptions):
     if (!enabled) {
       return undefined;
     }
+    const signature = computeProbeSignature();
+    const cacheKey = projectId ? CLEAR_CACHE_KEY_PREFIX + projectId : undefined;
+    if (cacheKey && readClearCache(cacheKey, signature)) {
+      setResult({ projectId, missing: [] });
+      return undefined;
+    }
     let active = true;
     detectMissingGroups(medplum)
       .then((missing) => {
         if (active) {
           setResult({ projectId, missing });
+          if (cacheKey && missing.length === 0) {
+            writeClearCache(cacheKey, signature);
+          }
         }
       })
       // detectMissingGroups doesn't reject in practice (runProbe catches every probe error and
