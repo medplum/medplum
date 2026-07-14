@@ -39,7 +39,7 @@ export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Elemen
   );
 
   const handleSubmit = useCallback(async () => {
-    if (!encounterClass || !planDefinition) {
+    if (!encounterClass) {
       showNotification({
         color: 'yellow',
         icon: <IconAlertSquareRounded />,
@@ -117,12 +117,11 @@ export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Elemen
           resourceType="PlanDefinition"
           label="Care template"
           onChange={setPlanDefinition}
-          required={true}
         />
 
         <PlanDefinitionSummary planDefinition={planDefinition} />
 
-        <Button fullWidth type="submit" disabled={!planDefinition || !encounterClass}>
+        <Button fullWidth type="submit" disabled={!encounterClass}>
           Apply
         </Button>
       </Stack>
