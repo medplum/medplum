@@ -29,7 +29,7 @@ function writeDismissed(key: string): void {
 
 /**
  * A single consolidated banner shown after sign-in when one or more of the app's expected Medplum
- * shared projects (UMLS terminology, US Core profiles, integration bots) are not linked into the
+ * shared projects (UMLS terminology, US Core profiles) are not linked into the
  * user's project. Fields that depend on them show their own local "Not found" errors; this banner
  * explains the shared root cause and links to setup docs. Dismissible for the session.
  *

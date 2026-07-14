@@ -91,10 +91,6 @@ async function runProbe(medplum: MedplumClient, probe: DependencyProbe): Promise
         const found = await medplum.searchOne('StructureDefinition', { url: probe.url });
         return found ? 'present' : 'missing';
       }
-      case 'bot': {
-        const found = await medplum.searchOne('Bot', { identifier: `${probe.system}|${probe.value}` });
-        return found ? 'present' : 'missing';
-      }
       default:
         return 'unknown';
     }

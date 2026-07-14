@@ -3,7 +3,7 @@
 
 /**
  * The Medplum Provider app implicitly depends on several Medplum "shared projects" being linked
- * into the user's project (e.g. UMLS terminology, US Core profiles, integration bots). Hosted
+ * into the user's project (e.g. UMLS terminology, US Core profiles). Hosted
  * projects get these out-of-the-box via project linking, but self-hosted projects or projects
  * running from source have none of them.
  *
@@ -26,14 +26,7 @@ export interface ProfileProbe {
   readonly url: string;
 }
 
-/** An integration Bot expected to be present, identified by its bot-identifier. */
-export interface BotProbe {
-  readonly kind: 'bot';
-  readonly system: string;
-  readonly value: string;
-}
-
-export type DependencyProbe = ValueSetProbe | ProfileProbe | BotProbe;
+export type DependencyProbe = ValueSetProbe | ProfileProbe;
 
 export interface DependencyGroup {
   /** Stable key, used for caching and dismissal state. */
@@ -73,17 +66,5 @@ export const DEPENDENCY_GROUPS: readonly DependencyGroup[] = [
     name: 'US Core profiles',
     docsUrl: 'https://www.medplum.com/docs/fhir-datastore/profiles',
     probes: [{ kind: 'profile', url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient' }],
-  },
-  {
-    id: 'health-gorilla',
-    name: 'Health Gorilla integration',
-    docsUrl: 'https://www.medplum.com/docs/integration/health-gorilla',
-    probes: [
-      {
-        kind: 'bot',
-        system: 'https://www.medplum.com/integrations/bot-identifier',
-        value: 'health-gorilla-labs/autocomplete',
-      },
-    ],
   },
 ];
