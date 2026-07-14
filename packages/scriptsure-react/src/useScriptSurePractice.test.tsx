@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Organization, Practitioner, PractitionerRole, ProjectMembership } from '@medplum/fhirtypes';
+import type { Organization, Practitioner, ProjectMembership } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { RenderHookResult } from '@testing-library/react';
@@ -145,7 +145,7 @@ describe('useScriptSurePractice', () => {
       resourceType: 'PractitionerRole',
       id: 'role-1',
       practitioner: { reference: 'Practitioner/prac-1' },
-    } as PractitionerRole);
+    } as unknown as ReturnType<typeof medplum.getProfile>);
     const searchSpy = vi
       .spyOn(medplum, 'searchResources')
       .mockResolvedValue([
@@ -168,7 +168,9 @@ describe('useScriptSurePractice', () => {
   test('discovers practices from ProjectMembership.access organization parameters', async () => {
     const medplum = new MockClient();
     vi.spyOn(medplum, 'getProfile').mockReturnValue(PRACTITIONER);
-    vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as Awaited<ReturnType<typeof medplum.searchResources>>);
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue(
+      [] as unknown as Awaited<ReturnType<typeof medplum.searchResources>>
+    );
     vi.spyOn(medplum, 'getProjectMembership').mockReturnValue({
       resourceType: 'ProjectMembership',
       access: [{ parameter: [{ name: 'organization', valueReference: { reference: 'Organization/org-9' } }] }],
