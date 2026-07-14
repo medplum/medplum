@@ -4907,6 +4907,13 @@ describe('Client', () => {
       expect(fetch).toHaveBeenCalledTimes(2);
     });
   });
+
+  test('setEventListenerErrorHandler refines the type based on client-supported event types', () => {
+    const client = new MedplumClient();
+    client.setEventListenerErrorHandler((error, event) => {
+      expectTypeOf(event.type).toEqualTypeOf<keyof MedplumClientEventMap>();
+    });
+  });
 });
 
 describe('Passed in async-backed `ClientStorage`', () => {
