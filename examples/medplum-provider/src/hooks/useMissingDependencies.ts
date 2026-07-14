@@ -77,18 +77,17 @@ export function useMissingDependencies(options?: UseMissingDependenciesOptions):
   // Callers only mount this hook after sign-in; re-key on the active project so the probes re-run
   // if the user switches projects without a full reload.
   const projectId = medplum.getProject()?.id;
+  const signature = computeProbeSignature();
+  const cacheKey = projectId ? CLEAR_CACHE_KEY_PREFIX + projectId : undefined;
+  // Read synchronously during render (a pure localStorage lookup) rather than in the effect, so a
+  // cache hit never needs a setState call to report its result.
+  const cached = enabled && !!cacheKey && readClearCache(cacheKey, signature);
   // Tagged with the project id it was computed for, so a result from a previous project isn't
   // shown after the key changes (and `loading` is derived from whether it matches).
   const [result, setResult] = useState<{ projectId?: string; missing: DependencyGroup[] }>();
 
   useEffect(() => {
-    if (!enabled) {
-      return undefined;
-    }
-    const signature = computeProbeSignature();
-    const cacheKey = projectId ? CLEAR_CACHE_KEY_PREFIX + projectId : undefined;
-    if (cacheKey && readClearCache(cacheKey, signature)) {
-      setResult({ projectId, missing: [] });
+    if (!enabled || cached) {
       return undefined;
     }
     let active = true;
@@ -107,9 +106,9 @@ export function useMissingDependencies(options?: UseMissingDependenciesOptions):
     return () => {
       active = false;
     };
-  }, [medplum, projectId, enabled]);
+  }, [medplum, projectId, enabled, cached, cacheKey, signature]);
 
-  if (!enabled) {
+  if (!enabled || cached) {
     return { missingGroups: [], loading: false };
   }
   const resolved = result?.projectId === projectId ? result : undefined;
