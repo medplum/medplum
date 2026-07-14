@@ -129,18 +129,18 @@ describe('FHIR Repo', () => {
         repo.setMode(RepositoryMode.READER);
         await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found');
         expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1);
-        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).not.toHaveBeenCalled();
         expect(repo.mode).toBe(RepositoryMode.READER);
         resetSpies();
 
         await repo.createResource<Patient>({ resourceType: 'Patient' });
-        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
-        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(readerPoolQuerySpy).not.toHaveBeenCalled();
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
         expect(repo.mode).toBe(RepositoryMode.WRITER);
         resetSpies();
 
         await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found'); // randomUUID to ensure cache miss
-        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(readerPoolQuerySpy).not.toHaveBeenCalled();
         expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
         expect(repo.mode).toBe(RepositoryMode.WRITER);
         resetSpies();
@@ -148,7 +148,7 @@ describe('FHIR Repo', () => {
         repo.setMode(RepositoryMode.READER);
         await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found');
         expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1);
-        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).not.toHaveBeenCalled();
         expect(repo.mode).toBe(RepositoryMode.READER);
       }));
 
@@ -1602,20 +1602,22 @@ describe('FHIR Repo', () => {
         resourceType: 'Practitioner',
         identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
       });
+      const practitionerRef = { reference: getReferenceString(practitioner) };
+
       const conditionalReference = {
         reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
       };
-
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         meta: { account: conditionalReference },
         generalPractitioner: [conditionalReference],
       });
-      const expectedPractitioner = getReferenceString(practitioner);
-      expect(patient.generalPractitioner?.[0]?.reference).toStrictEqual(expectedPractitioner);
-      expect(patient.meta?.account?.reference).toStrictEqual(expectedPractitioner);
-      expect(patient.meta?.accounts).toHaveLength(1);
-      expect(patient.meta?.accounts).toContainEqual({ reference: expectedPractitioner });
+      const patientRef = { reference: getReferenceString(patient) };
+      expect(patient.generalPractitioner?.[0]).toStrictEqual(practitionerRef);
+      expect(patient.meta?.account).toStrictEqual(practitionerRef);
+      expect(patient.meta?.accounts).toStrictEqual([practitionerRef]);
+      expect(patient.meta?.compartment).toStrictEqual(expect.arrayContaining([practitionerRef, patientRef]));
+      expect(patient.meta?.compartment).toHaveLength(2);
     }));
 
   test('Conditional reference resolution failure', async () =>
@@ -1779,14 +1781,14 @@ describe('FHIR Repo', () => {
 
       const patient: Patient = {
         resourceType: 'Patient',
-        link: [],
+        generalPractitioner: [],
       };
 
       // Postgres uses a 16-bit counter for placeholder formats internally,
       // so (2^16 + 1) / 3 = (64k + 1) / 3 will definitely overflow it if not sent in smaller batches
       // the division by three since there are 3 column placeholders per inserted row
       for (let i = 0; i < Math.ceil((64 * 1024 + 1) / 3); i++) {
-        patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
+        patient.generalPractitioner?.push({ reference: 'Practitioner/' + randomUUID() });
       }
 
       let finishedTransaction = false;

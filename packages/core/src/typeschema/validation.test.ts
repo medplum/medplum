@@ -268,10 +268,16 @@ describe('FHIR resource validation', () => {
     });
   });
 
-  test('StructureDefinition', () => {
-    expect(() => validateResource(typesBundle)).not.toThrow();
-    expect(() => validateResource(resourcesBundle)).not.toThrow();
-    expect(() => validateResource(medplumBundle)).not.toThrow();
+  test('Types StructureDefinitions', () => {
+    expect(validateResource(typesBundle)).toStrictEqual([]);
+  });
+
+  test('Base FHIR resource StructureDefinitions', () => {
+    expect(validateResource(resourcesBundle)).toStrictEqual([]);
+  });
+
+  test('Medplum resource StructureDefinitions', () => {
+    expect(validateResource(medplumBundle)).toStrictEqual([]);
   });
 
   test('StructureDefinition with differential', () => {

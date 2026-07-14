@@ -12,7 +12,7 @@ import { normalizeErrorString, OperationOutcomeError, validationError } from '..
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
 import type { ProfileResource, WithId } from '../utils';
-import { deepEquals, extractAccountReferences, getExtension, getReferenceString, resolveId } from '../utils';
+import { deepEquals, getExtension, getReferenceString, resolveId } from '../utils';
 import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../websockets/reconnecting-websocket';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 import {
@@ -767,22 +767,15 @@ export async function resourceMatchesSubscriptionCriteria({
     return false;
   }
 
-  const subscriptionAccounts = extractAccountReferences(subscription.meta) ?? [];
-  const resourceAccounts = extractAccountReferences(resource.meta) ?? [];
-
-  if (subscriptionAccounts.length) {
-    // Check if there is any common account between the subscription and the resource
-    if (
-      !subscriptionAccounts.some((subAccount) =>
-        resourceAccounts.some((resAccount) => resAccount.reference === subAccount.reference)
-      )
-    ) {
-      logger?.debug('Subscription suppressed due to mismatched accounts', {
-        subscriptionId: subscription.id,
-        resource: getReferenceString(resource),
-      });
-      return false;
-    }
+  // Check if there is any common compartment between the subscription and the resource
+  const sub = subscription.meta?.compartment?.filter((c) => !c.reference?.startsWith('Project/'));
+  const res = resource.meta?.compartment?.filter((c) => !c.reference?.startsWith('Project/'));
+  if (sub?.length && !sub.some((s) => res?.some((r) => r.reference === s.reference))) {
+    logger?.debug('Subscription suppressed due to mismatched accounts', {
+      subscriptionId: subscription.id,
+      resource: getReferenceString(resource),
+    });
+    return false;
   }
 
   return true;
