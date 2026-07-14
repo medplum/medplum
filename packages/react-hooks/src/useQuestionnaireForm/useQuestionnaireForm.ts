@@ -127,7 +127,9 @@ export interface QuestionnaireFormPaginationState extends QuestionnaireFormLoade
 }
 
 export type QuestionnaireFormState =
-  QuestionnaireFormLoadingState | QuestionnaireFormSinglePageState | QuestionnaireFormPaginationState;
+  | QuestionnaireFormLoadingState
+  | QuestionnaireFormSinglePageState
+  | QuestionnaireFormPaginationState;
 
 export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly<QuestionnaireFormState> {
   const questionnaire = useResource(props.questionnaire);

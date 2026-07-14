@@ -286,14 +286,16 @@ describe('Patient Summary Operation', () => {
         ['activity', LOINC_RESULTS_SECTION],
       ];
 
-      const everything = categories.map((category, index): WithId<Observation> => ({
-        resourceType: 'Observation',
-        id: `obs${index}`,
-        subject,
-        status: 'final',
-        category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: category[0] }] }],
-        code: { text: 'test' },
-      }));
+      const everything = categories.map(
+        (category, index): WithId<Observation> => ({
+          resourceType: 'Observation',
+          id: `obs${index}`,
+          subject,
+          status: 'final',
+          category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: category[0] }] }],
+          code: { text: 'test' },
+        })
+      );
 
       const builder = new PatientSummaryBuilder(author, patient, everything);
       const result = builder.build();

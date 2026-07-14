@@ -61,10 +61,10 @@
     "raw-loader": "4.0.2",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "marked": "18.0.6",
+    "marked": "18.0.5",
     "react-intersection-observer": "10.0.3",
-    "react-router": "7.18.1",
-    "react-router-dom": "7.18.1",
+    "react-router": "7.18.0",
+    "react-router-dom": "7.18.0",
     "typescript": "6.0.3",
     "url-loader": "4.1.1"
   },

@@ -170,7 +170,9 @@ export type FhircastResourceContext =
 
 // The reference contexts related to `*-select` and `*-update` events, which contain a `reference` key
 export type FhircastReferenceContext =
-  FhircastReportReferenceContext | FhircastPatientReferenceContext | FhircastSelectContext;
+  | FhircastReportReferenceContext
+  | FhircastPatientReferenceContext
+  | FhircastSelectContext;
 
 export type FhircastPatientOpenContext = FhircastPatientContext | FhircastEncounterContext;
 export type FhircastPatientCloseContext = FhircastPatientOpenContext;
@@ -179,12 +181,19 @@ export type FhircastImagingStudyCloseContext = FhircastImagingStudyOpenContext;
 export type FhircastEncounterOpenContext = FhircastEncounterContext | FhircastPatientContext;
 export type FhircastEncounterCloseContext = FhircastEncounterOpenContext;
 export type FhircastDiagnosticReportOpenContext =
-  FhircastReportContext | FhircastEncounterContext | FhircastStudyContext | FhircastPatientContext;
+  | FhircastReportContext
+  | FhircastEncounterContext
+  | FhircastStudyContext
+  | FhircastPatientContext;
 export type FhircastDiagnosticReportCloseContext = FhircastDiagnosticReportOpenContext;
 export type FhircastDiagnosticReportUpdateContext =
-  FhircastReportReferenceContext | FhircastPatientReferenceContext | FhircastUpdatesContext;
+  | FhircastReportReferenceContext
+  | FhircastPatientReferenceContext
+  | FhircastUpdatesContext;
 export type FhircastDiagnosticReportSelectContext =
-  FhircastReportReferenceContext | FhircastPatientReferenceContext | FhircastSelectContext;
+  | FhircastReportReferenceContext
+  | FhircastPatientReferenceContext
+  | FhircastSelectContext;
 export type FhircastSyncErrorContext = FhircastOperationOutcomeContext;
 
 // This is the one key that only exists within a GetCurrentContext

@@ -108,7 +108,8 @@ export async function createDiagnoticReport(
   orderID: string
 ): Promise<DiagnosticReport> {
   const patient = bundle.entry?.find((e: any) => e.resource.resourceType === 'Patient')?.resource as
-    Patient | undefined;
+    | Patient
+    | undefined;
 
   if (!patient?.id) {
     throw new Error('No patient found in bundle');
@@ -119,7 +120,8 @@ export async function createDiagnoticReport(
   }
 
   const observationEntries = bundle.entry?.filter((entry) => entry.resource?.resourceType === 'Observation') as
-    BundleEntry<Observation>[] | undefined;
+    | BundleEntry<Observation>[]
+    | undefined;
   if (!observationEntries || observationEntries.length === 0) {
     throw new Error('No observations found in bundle');
   }

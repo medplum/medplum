@@ -46,7 +46,8 @@ describe('DurableQueue', () => {
   // InboundRow member, so it can't be read through the typed row.
   function rawColumn(id: number, column: string): unknown {
     const row = queue.getDb().prepare(`SELECT ${column} AS v FROM inbound_hl7_messages WHERE id = ?`).get(id) as
-      { v: unknown } | undefined;
+      | { v: unknown }
+      | undefined;
     return row?.v ?? null;
   }
 

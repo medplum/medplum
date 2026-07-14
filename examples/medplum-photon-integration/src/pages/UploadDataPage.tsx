@@ -13,7 +13,8 @@ import { useNavigate, useParams } from 'react-router';
 import formularyData from '../../data/example-data.json';
 
 type UploadFunction =
-  ((medplum: MedplumClient, profile: Practitioner) => Promise<void>) | ((medplum: MedplumClient) => Promise<void>);
+  | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
+  | ((medplum: MedplumClient) => Promise<void>);
 
 export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
@@ -95,7 +96,8 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
     const botName = (entry?.resource as Bot)?.name as string;
     const distUrl = (entry.resource as Bot).executableCode?.url;
     const distBinaryEntry = exampleBotData.entry?.find((e: any) => e.fullUrl === distUrl) as
-      BundleEntry<Binary> | undefined;
+      | BundleEntry<Binary>
+      | undefined;
     if (!distBinaryEntry) {
       throw new Error('Error finding Bundle entry with fullUrl: ' + distUrl);
     }

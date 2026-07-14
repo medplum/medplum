@@ -365,11 +365,13 @@ async function getSearchEntries<T extends Resource>(
   if (resources.length > searchRequest.count) {
     nextResource = resources.pop();
   }
-  const entries = resources.map((resource): BundleEntry<WithId<T>> => ({
-    fullUrl: getFullUrl(resource.resourceType, resource.id),
-    search: { mode: 'match' },
-    resource,
-  }));
+  const entries = resources.map(
+    (resource): BundleEntry<WithId<T>> => ({
+      fullUrl: getFullUrl(resource.resourceType, resource.id),
+      search: { mode: 'match' },
+      resource,
+    })
+  );
 
   if (searchRequest.include || searchRequest.revInclude) {
     await getExtraEntries(repo, searchRequest, resources, entries);

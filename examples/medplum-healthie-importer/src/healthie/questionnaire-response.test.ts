@@ -27,13 +27,14 @@ describe('fetchHealthieFormAnswerGroups', () => {
 
   beforeEach(() => {
     healthieClient = new HealthieClient(mockBaseUrl, mockClientSecret);
-    mockFetch = vi.fn().mockImplementation((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch = vi.fn().mockImplementation(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
     global.fetch = mockFetch as unknown as typeof fetch;
   });
@@ -54,13 +55,14 @@ describe('fetchHealthieFormAnswerGroups', () => {
       },
     ];
 
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { formAnswerGroups: mockForms } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { formAnswerGroups: mockForms } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
 
     const result = await fetchHealthieFormAnswerGroups('patient123', healthieClient);
@@ -68,13 +70,14 @@ describe('fetchHealthieFormAnswerGroups', () => {
   });
 
   test('returns empty array when no forms found', async () => {
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
 
     const result = await fetchHealthieFormAnswerGroups('patient123', healthieClient);
@@ -104,21 +107,23 @@ describe('fetchHealthieFormAnswerGroups', () => {
     }));
 
     mockFetch
-      .mockImplementationOnce((): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { formAnswerGroups: page1Forms } }),
-          ok: true,
-          status: 200,
-          headers: { get: () => null },
-        })
+      .mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { formAnswerGroups: page1Forms } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
       )
-      .mockImplementationOnce((): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { formAnswerGroups: page2Forms } }),
-          ok: true,
-          status: 200,
-          headers: { get: () => null },
-        })
+      .mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { formAnswerGroups: page2Forms } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
       );
 
     const result = await fetchHealthieFormAnswerGroups('patient123', healthieClient);

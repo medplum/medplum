@@ -42,13 +42,14 @@ describe('list-healthie-patients handler', () => {
 
   beforeEach(() => {
     medplum = new MockClient();
-    mockFetch = vi.fn().mockImplementation((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { users: [] } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch = vi.fn().mockImplementation(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { users: [] } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
     global.fetch = mockFetch as unknown as typeof fetch;
   });
@@ -79,13 +80,14 @@ describe('list-healthie-patients handler', () => {
       { id: '2', updated_at: '2024-01-02T00:00:00Z' },
     ];
 
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { users: mockUsers } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { users: mockUsers } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
 
     const event = createTestEvent({}, mockSecrets);
@@ -109,13 +111,14 @@ describe('list-healthie-patients handler', () => {
       { id: '3', updated_at: '2024-01-03T00:00:00Z' },
     ];
 
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { users: mockUsers } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { users: mockUsers } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
 
     const event = createTestEvent({ pagination: { page: 0, pageSize: 2 } }, mockSecrets);
@@ -141,13 +144,14 @@ describe('list-healthie-patients handler', () => {
       { id: '3', updated_at: '2024-01-03T00:00:00Z' },
     ];
 
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { users: mockUsers } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { users: mockUsers } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
 
     const event = createTestEvent({ pagination: { page: 1, pageSize: 2 } }, mockSecrets);
@@ -173,13 +177,14 @@ describe('list-healthie-patients handler', () => {
       { id: '4', updated_at: '2024-01-04T00:00:00Z' },
     ];
 
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { users: mockUsers } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { users: mockUsers } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
 
     const event = createTestEvent({ maxResults: 2 }, mockSecrets);
@@ -197,13 +202,14 @@ describe('list-healthie-patients handler', () => {
       { id: '3', updated_at: '2024-02-01T00:00:00Z' },
     ];
 
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { users: mockUsers } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { users: mockUsers } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
 
     const event = createTestEvent({ filters: { sinceLastUpdated: '2024-01-10T00:00:00Z' } }, mockSecrets);
@@ -221,13 +227,14 @@ describe('list-healthie-patients handler', () => {
       { id: '3', updated_at: '2024-01-03T00:00:00Z', first_name: 'Bob', last_name: 'Johnson' },
     ];
 
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { users: mockUsers } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { users: mockUsers } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
 
     const event = createTestEvent({ filters: { name: 'john' }, includeDemographics: true }, mockSecrets);
@@ -245,13 +252,14 @@ describe('list-healthie-patients handler', () => {
       { id: '3', updated_at: '2024-01-03T00:00:00Z', dob: '1990-01-15' },
     ];
 
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { users: mockUsers } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { users: mockUsers } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
 
     const event = createTestEvent({ filters: { dateOfBirth: '1990-01-15' }, includeDemographics: true }, mockSecrets);
@@ -273,13 +281,14 @@ describe('list-healthie-patients handler', () => {
       },
     ];
 
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { users: mockUsers } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { users: mockUsers } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
 
     const event = createTestEvent({ includeDemographics: true }, mockSecrets);
@@ -294,13 +303,14 @@ describe('list-healthie-patients handler', () => {
   });
 
   test('handles empty result', async () => {
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { users: [] } }),
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { users: [] } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
     );
 
     const event = createTestEvent({}, mockSecrets);
@@ -332,21 +342,23 @@ describe('list-healthie-patients handler', () => {
     }));
 
     mockFetch
-      .mockImplementationOnce((): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { users: page1Users } }),
-          ok: true,
-          status: 200,
-          headers: { get: () => null },
-        })
+      .mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { users: page1Users } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
       )
-      .mockImplementationOnce((): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { users: page2Users } }),
-          ok: true,
-          status: 200,
-          headers: { get: () => null },
-        })
+      .mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { users: page2Users } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
       );
 
     const event = createTestEvent({}, mockSecrets);
@@ -363,49 +375,53 @@ describe('list-healthie-patients handler', () => {
       const mockUsers = [{ id: '1', updated_at: '2024-01-01T00:00:00Z' }];
 
       // Mock the users query
-      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { users: mockUsers } }),
-          ok: true,
-          status: 200,
-          headers: { get: () => null },
-        })
+      mockFetch.mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { users: mockUsers } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
       );
 
       // Mock the clinical data queries (medications, allergies, forms)
       mockFetch
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () =>
-              Promise.resolve({
-                data: { medications: [{ id: 'med1', created_at: '2024-02-01T00:00:00Z' }] },
-              }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () =>
+                Promise.resolve({
+                  data: { medications: [{ id: 'med1', created_at: '2024-02-01T00:00:00Z' }] },
+                }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         )
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () =>
-              Promise.resolve({
-                data: { user: { last_updated_allergy: { id: 'allergy1', created_at: '2024-03-01T00:00:00Z' } } },
-              }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () =>
+                Promise.resolve({
+                  data: { user: { last_updated_allergy: { id: 'allergy1', created_at: '2024-03-01T00:00:00Z' } } },
+                }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         )
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () =>
-              Promise.resolve({
-                data: { formAnswerGroups: [{ id: 'form1', created_at: '2024-01-15T00:00:00Z' }] },
-              }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () =>
+                Promise.resolve({
+                  data: { formAnswerGroups: [{ id: 'form1', created_at: '2024-01-15T00:00:00Z' }] },
+                }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         );
 
       const event = createTestEvent({ includeClinicalUpdateDates: true }, mockSecrets);
@@ -423,73 +439,80 @@ describe('list-healthie-patients handler', () => {
       ];
 
       // Mock the users query
-      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { users: mockUsers } }),
-          ok: true,
-          status: 200,
-          headers: { get: () => null },
-        })
+      mockFetch.mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { users: mockUsers } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
       );
 
       // Patient 1: clinical update from Jan 15 (before filter)
       mockFetch
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () =>
-              Promise.resolve({
-                data: { medications: [{ id: 'med1', created_at: '2024-01-15T00:00:00Z' }] },
-              }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () =>
+                Promise.resolve({
+                  data: { medications: [{ id: 'med1', created_at: '2024-01-15T00:00:00Z' }] },
+                }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         )
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         )
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         );
 
       // Patient 2: clinical update from Feb 15 (after filter)
       mockFetch
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () =>
-              Promise.resolve({
-                data: { medications: [{ id: 'med2', created_at: '2024-02-15T00:00:00Z' }] },
-              }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () =>
+                Promise.resolve({
+                  data: { medications: [{ id: 'med2', created_at: '2024-02-15T00:00:00Z' }] },
+                }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         )
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         )
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         );
 
       const event = createTestEvent(
@@ -511,40 +534,44 @@ describe('list-healthie-patients handler', () => {
       const mockUsers = [{ id: '1', updated_at: '2024-01-01T00:00:00Z' }];
 
       // Mock the users query
-      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { users: mockUsers } }),
-          ok: true,
-          status: 200,
-          headers: { get: () => null },
-        })
+      mockFetch.mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { users: mockUsers } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
       );
 
       // No clinical data for patient
       mockFetch
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { medications: [] } }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { medications: [] } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         )
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         )
-        .mockImplementationOnce((): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
         );
 
       const event = createTestEvent(

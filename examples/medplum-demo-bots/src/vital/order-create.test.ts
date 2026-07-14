@@ -84,7 +84,8 @@ describe('Create Order Bot', () => {
 
     // Patient
     const patient = bundle.entry?.find((e: any) => e.resource.resourceType === 'Patient') as
-      BundleEntry<Patient> | undefined;
+      | BundleEntry<Patient>
+      | undefined;
     expect(patient?.resource?.name).toStrictEqual(ctx.patient.name);
     expect(patient?.resource?.address?.[0].country).toStrictEqual('US');
 
@@ -96,21 +97,25 @@ describe('Create Order Bot', () => {
 
     // Practitioner
     const practitioner = bundle.entry?.find((e: any) => e.resource.resourceType === 'Practitioner') as
-      BundleEntry<Practitioner> | undefined;
+      | BundleEntry<Practitioner>
+      | undefined;
     expect(practitioner?.resource).toStrictEqual(resourceWithoutMeta(ctx.requestingPhysician));
 
     const performer = bundle.entry?.find((e: any) => e.resource.resourceType === 'Organization') as
-      BundleEntry<Organization> | undefined;
+      | BundleEntry<Organization>
+      | undefined;
     expect(performer?.resource).toStrictEqual(resourceWithoutMeta(ctx.performer));
 
     // ServiceRequest
     const serviceRequest = bundle.entry?.find((e: any) => e.resource.resourceType === 'ServiceRequest') as
-      BundleEntry<ServiceRequest> | undefined;
+      | BundleEntry<ServiceRequest>
+      | undefined;
     expect(serviceRequest?.resource).toStrictEqual(resourceWithoutMeta(ctx.order));
 
     // Coverage
     const coverage = bundle.entry?.find((e: any) => e.resource.resourceType === 'Coverage') as
-      BundleEntry<Coverage> | undefined;
+      | BundleEntry<Coverage>
+      | undefined;
     expect(coverage?.resource).toStrictEqual(resourceWithoutMeta(ctx.coverage));
   });
 

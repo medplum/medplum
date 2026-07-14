@@ -58,12 +58,13 @@ describe('fetchAllergySensitivities', () => {
     ];
 
     // Allergies are queried through the User object
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { user: { allergy_sensitivities: mockAllergies } } }),
-        ok: true,
-        status: 200,
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { user: { allergy_sensitivities: mockAllergies } } }),
+          ok: true,
+          status: 200,
+        })
     );
 
     const result = await fetchAllergySensitivities(healthieClient, 'patient123');
@@ -71,12 +72,13 @@ describe('fetchAllergySensitivities', () => {
   });
 
   test('returns empty array when no allergies found', async () => {
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { user: { allergy_sensitivities: [] } } }),
-        ok: true,
-        status: 200,
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { user: { allergy_sensitivities: [] } } }),
+          ok: true,
+          status: 200,
+        })
     );
 
     const result = await fetchAllergySensitivities(healthieClient, 'patient123');
@@ -84,12 +86,13 @@ describe('fetchAllergySensitivities', () => {
   });
 
   test('returns empty array when user is null', async () => {
-    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
-      Promise.resolve({
-        json: () => Promise.resolve({ data: { user: null } }),
-        ok: true,
-        status: 200,
-      })
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { user: null } }),
+          ok: true,
+          status: 200,
+        })
     );
 
     const result = await fetchAllergySensitivities(healthieClient, 'patient123');

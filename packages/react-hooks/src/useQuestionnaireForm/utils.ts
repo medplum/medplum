@@ -611,5 +611,6 @@ export function getItemEnableWhenValueAnswer(enableWhen: QuestionnaireItemEnable
 
 export function getResponseItemAnswerValue(answer: QuestionnaireResponseItemAnswer): TypedValue | undefined {
   return getTypedPropertyValueWithoutSchema({ type: 'QuestionnaireResponseItemAnswer', value: answer }, 'value') as
-    TypedValue | undefined;
+    | TypedValue
+    | undefined;
 }

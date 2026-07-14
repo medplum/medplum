@@ -2191,7 +2191,8 @@ describe('Durable queue integration', () => {
     // release it by hand after the storm, so the timing is deterministic.
     const transmits: string[] = [];
     let firstTransmit:
-      { socket: Client; command: { channel: string; remote: string; callback: string; body: string } } | undefined;
+      | { socket: Client; command: { channel: string; remote: string; callback: string; body: string } }
+      | undefined;
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
