@@ -47,10 +47,10 @@ import type {
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
-import { DatabaseMode } from '../database';
 import { clamp } from './operations/utils/parameters';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
+import { repoAccess } from './repository/access-tracker';
 import { parseHistoryContent } from './repository/row-builder';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
@@ -98,6 +98,8 @@ interface Cursor {
   excludedIds?: string[];
 }
 
+type TrackedResourceTypes = Set<ResourceType>;
+
 /** Linking direction for chained search. */
 export const Direction = {
   FORWARD: 1,
@@ -131,8 +133,9 @@ export async function searchImpl<T extends Resource>(
   let rowCount = undefined;
   let nextResource: T | undefined;
   if (searchRequest.count > 0) {
-    const builder = getSelectQueryForSearch(repo, searchRequest, options);
-    ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder));
+    const trackedResourceTypes = new Set<ResourceType>();
+    const builder = getSelectQueryForSearch(repo, searchRequest, { ...options, trackedResourceTypes });
+    ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder, trackedResourceTypes));
   }
 
   let total = undefined;
@@ -161,10 +164,12 @@ export async function searchByReferenceImpl<T extends Resource>(
   // Hold on to references to parts of the SelectQuery that need to be modified per reference value
   const referenceConditions: Condition[] = [];
   const referenceColumns: Column[] = [];
+  const trackedResourceTypes = new Set<ResourceType>();
 
   const searchQuery = getSelectQueryForSearch(repo, searchRequest, {
     addColumns: true,
     limitModifier: 0,
+    trackedResourceTypes,
     resourceTypeQueryCallback: (resourceType, builder) => {
       const param = getSearchParameter(resourceType, referenceField);
       if (param?.type !== 'reference') {
@@ -204,7 +209,10 @@ export async function searchByReferenceImpl<T extends Resource>(
   const rows: {
     content: string;
     ref: string;
-  }[] = await unionAllBuilder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  }[] = await repo.executeSql(
+    unionAllBuilder,
+    repoAccess.sqlRead(trackedResourceTypes, { source: 'search.searchByReference' })
+  );
 
   const results: Record<string, WithId<T>[]> = Object.create(null);
   for (const ref of referenceValues) {
@@ -316,12 +324,14 @@ export function getSelectQueryForSearch<T extends Resource>(
  * @param repo - The repository.
  * @param searchRequest - The search request.
  * @param builder - The `SelectQuery` builder that is ready to execute.
+ * @param trackedResourceTypes - Resource types involved in the logical query.
  * @returns The bundle entries for the search result.
  */
 async function getSearchEntries<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequestWithCountAndOffset<T>,
-  builder: SelectQuery
+  builder: SelectQuery,
+  trackedResourceTypes: TrackedResourceTypes
 ): Promise<{ entry: BundleEntry<WithId<T>>[]; rowCount: number; nextResource?: T }> {
   const config = getConfig();
   const originalLimit = builder.limit_;
@@ -330,18 +340,27 @@ async function getSearchEntries<T extends Resource>(
     builder.limit(config.fhirSearchMinLimit);
   }
 
-  const client = repo.getDatabaseClient(DatabaseMode.READER);
-  let rows: any[];
+  let rows: { id: string; content: string; lastUpdated?: Date }[];
   try {
     if (config.fhirSearchDiscourageSeqScan) {
       // Despite the name, this doesn't truly remove the possibility of a sequential scan,
       // just massively inflates the cost of a sequential scan to the planner.
-      await client.query('SET enable_seqscan = off');
+      await repo.executeRawSql(
+        'SET enable_seqscan = off',
+        undefined,
+        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.setSeqScan' })
+      );
     }
-    rows = await builder.execute(client);
+    rows = await repo.sqlRead<(typeof rows)[number]>(builder, trackedResourceTypes, {
+      source: 'search.getSearchEntries',
+    });
   } finally {
     if (config.fhirSearchDiscourageSeqScan) {
-      await client.query('RESET enable_seqscan');
+      await repo.executeRawSql(
+        'RESET enable_seqscan',
+        undefined,
+        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.resetSeqScan' })
+      );
     }
   }
 
@@ -349,7 +368,7 @@ async function getSearchEntries<T extends Resource>(
   const resources: WithId<T>[] = [];
   for (let i = 0; i < rowCount; i++) {
     const row = rows[i];
-    const parsed = parseHistoryContent(row.content as string);
+    const parsed = parseHistoryContent(row.content);
     if (!parsed.meta?.deleted) {
       resources.push(parsed as WithId<T>);
     } else {
@@ -396,6 +415,8 @@ interface GetBaseSelectQueryOptions {
   resourceTypeQueryCallback?: (resourceType: SearchRequest['resourceType'], builder: SelectQuery) => void;
   /** The maximum resource version to include in the search. If zero is specified, only resources with a NULL version are included. */
   maxResourceVersion?: number;
+  /** Resource types involved in the logical search query. */
+  trackedResourceTypes?: TrackedResourceTypes;
 }
 function getBaseSelectQuery(
   repo: Repository,
@@ -425,6 +446,7 @@ function getBaseSelectQueryForResourceType(
   searchRequest: SearchRequest,
   opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
+  opts?.trackedResourceTypes?.add(resourceType);
   const builder = new SelectQuery(resourceType);
   const addColumns = opts?.addColumns !== false;
   const idColumn = new Column(resourceType, 'id');
@@ -441,7 +463,7 @@ function getBaseSelectQueryForResourceType(
     repo.addDeletedFilter(builder);
   }
   repo.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.SEARCH);
-  addSearchFilters(repo, builder, resourceType, searchRequest);
+  addSearchFilters(repo, builder, resourceType, searchRequest, opts?.trackedResourceTypes);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
   }
@@ -579,8 +601,9 @@ async function getSearchIncludeEntries(
         count: DEFAULT_MAX_SEARCH_COUNT,
         offset: 0,
       };
-      const query = getSelectQueryForSearch(repo, searchRequest);
-      return getSearchEntries(repo, searchRequest, query);
+      const trackedResourceTypes = new Set<ResourceType>();
+      const query = getSelectQueryForSearch(repo, searchRequest, { trackedResourceTypes });
+      return getSearchEntries(repo, searchRequest, query, trackedResourceTypes);
     });
 
     const searchResults = await Promise.all(canonicalSearches);
@@ -650,8 +673,9 @@ async function getSearchRevIncludeEntries(
     offset: 0,
   };
 
-  const query = getSelectQueryForSearch(repo, searchRequest);
-  const entries = (await getSearchEntries(repo, searchRequest, query)).entry;
+  const trackedResourceTypes = new Set<ResourceType>();
+  const query = getSelectQueryForSearch(repo, searchRequest, { trackedResourceTypes });
+  const entries = (await getSearchEntries(repo, searchRequest, query, trackedResourceTypes)).entry;
   for (const entry of entries) {
     entry.search = { mode: 'include' };
   }
@@ -916,7 +940,8 @@ export async function getCount(
  * @returns The total number of matching results.
  */
 async function getAccurateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
-  const builder = getBaseSelectQuery(repo, searchRequest, { addColumns: false });
+  const trackedResourceTypes = new Set<ResourceType>();
+  const builder = getBaseSelectQuery(repo, searchRequest, { addColumns: false, trackedResourceTypes });
 
   if (builder.joins.length > 0) {
     builder.raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`);
@@ -924,8 +949,11 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
     builder.raw('COUNT(*)::int AS "count"');
   }
 
-  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-  return rows[0].count as number;
+  const rows = await repo.executeSql<{ count: number }>(
+    builder,
+    repoAccess.sqlRead(trackedResourceTypes, { source: 'search.getAccurateCount' })
+  );
+  return rows[0].count;
 }
 
 /**
@@ -937,12 +965,16 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
  * @returns The total number of matching results.
  */
 async function getEstimateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
-  const builder = getBaseSelectQuery(repo, searchRequest);
+  const trackedResourceTypes = new Set<ResourceType>();
+  const builder = getBaseSelectQuery(repo, searchRequest, { trackedResourceTypes });
   builder.explain = true;
 
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.
-  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  const rows = await repo.executeSql<{ 'QUERY PLAN': string }>(
+    builder,
+    repoAccess.sqlRead(trackedResourceTypes, { source: 'search.getEstimateCount' })
+  );
   for (const row of rows) {
     const queryPlan = row['QUERY PLAN'];
     const match = /rows=(\d+)/.exec(queryPlan);
@@ -979,14 +1011,16 @@ export function clampEstimateCount(searchRequest: SearchRequest, estimateCount: 
  * @param selectQuery - The select query builder.
  * @param resourceType - The type of resources requested.
  * @param searchRequest - The search request.
+ * @param trackedResourceTypes - Resource types involved in the logical query.
  */
 function addSearchFilters(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
-  searchRequest: SearchRequest
+  searchRequest: SearchRequest,
+  trackedResourceTypes?: TrackedResourceTypes
 ): void {
-  const expr = buildSearchExpression(repo, selectQuery, resourceType, searchRequest);
+  const expr = buildSearchExpression(repo, selectQuery, resourceType, searchRequest, trackedResourceTypes);
   if (expr) {
     selectQuery.predicate.expressions.push(expr);
   }
@@ -1000,11 +1034,19 @@ export function buildSearchExpression(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
-  searchRequest: SearchRequest
+  searchRequest: SearchRequest,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression | undefined {
   const expressions: Expression[] = [];
   for (const filter of searchRequest.filters ?? EMPTY) {
-    const expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
+    const expr = buildSearchFilterExpression(
+      repo,
+      selectQuery,
+      resourceType,
+      resourceType,
+      filter,
+      trackedResourceTypes
+    );
     expressions.push(expr);
   }
   if (expressions.length === 0) {
@@ -1023,6 +1065,7 @@ export function buildSearchExpression(
  * @param resourceType - The type of resources requested.
  * @param table - The resource table.
  * @param filter - The search filter.
+ * @param trackedResourceTypes - Resource types involved in the logical query.
  * @returns The search query where expression
  */
 function buildSearchFilterExpression(
@@ -1030,7 +1073,8 @@ function buildSearchFilterExpression(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
-  filter: Filter
+  filter: Filter,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
   if (typeof filter.value !== 'string') {
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
@@ -1042,10 +1086,17 @@ function buildSearchFilterExpression(
 
   if (isChainedSearchFilter(filter)) {
     const chain = parseChainedParameter(resourceType, filter);
-    return buildChainedSearch(repo, selectQuery, resourceType, chain);
+    return buildChainedSearch(repo, selectQuery, resourceType, chain, trackedResourceTypes);
   }
 
-  const specialParamExpression = trySpecialSearchParameter(repo, selectQuery, resourceType, table, filter);
+  const specialParamExpression = trySpecialSearchParameter(
+    repo,
+    selectQuery,
+    resourceType,
+    table,
+    filter,
+    trackedResourceTypes
+  );
   if (specialParamExpression) {
     return specialParamExpression;
   }
@@ -1154,6 +1205,7 @@ function buildNormalSearchFilterExpression(
  * @param resourceType - The type of resources requested.
  * @param table - The resource table.
  * @param filter - The search filter.
+ * @param trackedResourceTypes - Resource types involved in the logical query.
  * @returns True if the search parameter is a special code.
  */
 function trySpecialSearchParameter(
@@ -1161,7 +1213,8 @@ function trySpecialSearchParameter(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
-  filter: Filter
+  filter: Filter,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression | undefined {
   switch (filter.code) {
     case '_id':
@@ -1238,7 +1291,7 @@ function trySpecialSearchParameter(
     }
     case '_filter': {
       const filterExpr = parseFilterParameter(filter.value);
-      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpr);
+      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpr, trackedResourceTypes);
     }
 
     default:
@@ -1251,14 +1304,38 @@ function buildFilterParameterExpression(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
-  filterExpression: FhirFilterExpression
+  filterExpression: FhirFilterExpression,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
   if (filterExpression instanceof FhirFilterNegation) {
-    return new Negation(buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpression.child));
+    return new Negation(
+      buildFilterParameterExpression(
+        repo,
+        selectQuery,
+        resourceType,
+        table,
+        filterExpression.child,
+        trackedResourceTypes
+      )
+    );
   } else if (filterExpression instanceof FhirFilterConnective) {
-    return buildFilterParameterConnective(repo, selectQuery, resourceType, table, filterExpression);
+    return buildFilterParameterConnective(
+      repo,
+      selectQuery,
+      resourceType,
+      table,
+      filterExpression,
+      trackedResourceTypes
+    );
   } else if (filterExpression instanceof FhirFilterComparison) {
-    return buildFilterParameterComparison(repo, selectQuery, resourceType, table, filterExpression);
+    return buildFilterParameterComparison(
+      repo,
+      selectQuery,
+      resourceType,
+      table,
+      filterExpression,
+      trackedResourceTypes
+    );
   } else {
     throw new OperationOutcomeError(badRequest('Unknown filter expression type'));
   }
@@ -1269,11 +1346,19 @@ function buildFilterParameterConnective(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
-  filterConnective: FhirFilterConnective
+  filterConnective: FhirFilterConnective,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
   const expressions = [
-    buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.left),
-    buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.right),
+    buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.left, trackedResourceTypes),
+    buildFilterParameterExpression(
+      repo,
+      selectQuery,
+      resourceType,
+      table,
+      filterConnective.right,
+      trackedResourceTypes
+    ),
   ];
   return filterConnective.keyword === 'and' ? new Conjunction(expressions) : new Disjunction(expressions);
 }
@@ -1283,13 +1368,17 @@ function buildFilterParameterComparison(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
-  filterComparison: FhirFilterComparison
+  filterComparison: FhirFilterComparison,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
-  return buildSearchFilterExpression(repo, selectQuery, resourceType, table, {
-    code: filterComparison.path,
-    operator: filterComparison.operator,
-    value: filterComparison.value,
-  });
+  return buildSearchFilterExpression(
+    repo,
+    selectQuery,
+    resourceType,
+    table,
+    { code: filterComparison.path, operator: filterComparison.operator, value: filterComparison.value },
+    trackedResourceTypes
+  );
 }
 
 /**
@@ -1699,10 +1788,16 @@ function buildChainedSearch(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: string,
-  param: ChainedSearchParameter
+  param: ChainedSearchParameter,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
   if (param.chain.length > 3) {
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
+  }
+
+  for (const link of param.chain) {
+    trackedResourceTypes?.add(link.originType as ResourceType);
+    trackedResourceTypes?.add(link.targetType as ResourceType);
   }
 
   // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
@@ -1711,14 +1806,17 @@ function buildChainedSearch(
   if (param.chain.length === 1 && param.filter?.code === '_id' && param.chain[0].direction === Direction.FORWARD) {
     const { targetType, code } = param.chain[0];
     const targetId = param.filter.value;
-    return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
-      code,
-      operator: param.filter.operator,
-      value: `${targetType}/${targetId}`,
-    });
+    return buildSearchFilterExpression(
+      repo,
+      selectQuery,
+      resourceType as ResourceType,
+      resourceType,
+      { code, operator: param.filter.operator, value: `${targetType}/${targetId}` },
+      trackedResourceTypes
+    );
   }
 
-  return buildChainedSearchUsingReferenceTable(repo, selectQuery, param);
+  return buildChainedSearchUsingReferenceTable(repo, selectQuery, param, trackedResourceTypes);
 }
 
 /**
@@ -1729,12 +1827,14 @@ function buildChainedSearch(
  * @param repo - The repository.
  * @param selectQuery - The select query builder.
  * @param param - The chained search parameter.
+ * @param trackedResourceTypes - Resource types involved in the logical query.
  * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceTable(
   repo: Repository,
   selectQuery: SelectQuery,
-  param: ChainedSearchParameter
+  param: ChainedSearchParameter,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
   let link = param.chain[0];
   validateSearchResourceType(repo, link.targetType as ResourceType);
@@ -1769,7 +1869,14 @@ function buildChainedSearchUsingReferenceTable(
   innerQuery
     .where(new Column(currentTable, 'id'), '!=', null)
     .whereExpr(
-      buildSearchFilterExpression(repo, innerQuery, link.targetType as ResourceType, currentTable, param.filter)
+      buildSearchFilterExpression(
+        repo,
+        innerQuery,
+        link.targetType as ResourceType,
+        currentTable,
+        param.filter,
+        trackedResourceTypes
+      )
     );
   return new SqlFunction('EXISTS', [innerQuery]);
 }

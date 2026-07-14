@@ -24,6 +24,7 @@ import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
+import { repoAccess } from '../fhir/repository/access-tracker';
 import { SelectQuery } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { createTestProject, withQueryInterceptor, withTestContext } from '../test.setup';
@@ -783,7 +784,7 @@ describe('Reindex Worker', () => {
         identifier: [{ system: idSystem, value: mrn }],
       });
 
-      const client = repo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = repo.getDatabaseClient(repoAccess.sqlWrite('Patient'));
       const getVersionQuery = (id: string[]): SelectQuery =>
         new SelectQuery('Patient').column('id').column('__version').where('id', 'IN', id);
       await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, outdatedPatient.id]);

@@ -19,6 +19,7 @@ import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../da
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
+import { repoAccess } from '../fhir/repository/access-tracker';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
@@ -304,8 +305,9 @@ export class ReindexJob {
     let cursor = '';
     let nextTimestamp = new Date(0).toISOString();
     try {
-      await systemRepo.withTransaction(async (txRepo) => {
-        /*
+      await systemRepo.withTransaction(
+        async (txRepo) => {
+          /*
         When a ReindexJob needs to scan a very large table for resources to reindex,
         but most/all have already been reindexed, the search will scan the most/all of table
         before finding any results with a query such as the following. Depending on factors
@@ -322,30 +324,40 @@ export class ReindexJob {
         ORDER BY "Task"."lastUpdated" LIMIT 501
         ```
         */
-        const conn = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-        let bundle: Bundle<WithId<Resource>>;
-        try {
-          await conn.query(`SELECT set_config('statement_timeout', $1, true)`, [String(searchStatementTimeout)]);
-          bundle = await txRepo.search(searchRequest, { maxResourceVersion });
-        } finally {
-          if (upsertStatementTimeout === 'DEFAULT') {
-            await conn.query(`RESET statement_timeout`);
-          } else {
-            await conn.query(`SELECT set_config('statement_timeout', $1, true)`, [String(upsertStatementTimeout)]);
+          const sqlOpts = repoAccess.sqlWriteConfig({ source: 'ReindexJobExecutor.processIteration' });
+          let bundle: Bundle<WithId<Resource>>;
+          try {
+            await txRepo.executeRawSql(
+              `SELECT set_config('statement_timeout', $1, true)`,
+              [String(searchStatementTimeout)],
+              sqlOpts
+            );
+            bundle = await txRepo.search(searchRequest, { maxResourceVersion });
+          } finally {
+            if (upsertStatementTimeout === 'DEFAULT') {
+              await txRepo.executeRawSql(`RESET statement_timeout`, undefined, sqlOpts);
+            } else {
+              await txRepo.executeRawSql(
+                `SELECT set_config('statement_timeout', $1, true)`,
+                [String(upsertStatementTimeout)],
+                sqlOpts
+              );
+            }
           }
-        }
-        if (bundle.entry?.length) {
-          const resources = bundle.entry.map((e) => e.resource as WithId<Resource>);
-          await txRepo.reindexResources(resources);
-          newCount += resources.length;
-          nextTimestamp = bundle.entry.at(-1)?.resource?.meta?.lastUpdated ?? nextTimestamp;
-        }
+          if (bundle.entry?.length) {
+            const resources = bundle.entry.map((e) => e.resource as WithId<Resource>);
+            await txRepo.reindexResources(resources);
+            newCount += resources.length;
+            nextTimestamp = bundle.entry.at(-1)?.resource?.meta?.lastUpdated ?? nextTimestamp;
+          }
 
-        const nextLink = bundle.link?.find((link) => link.relation === 'next');
-        if (nextLink) {
-          cursor = parseSearchRequest(nextLink.url).cursor ?? '';
-        }
-      });
+          const nextLink = bundle.link?.find((link) => link.relation === 'next');
+          if (nextLink) {
+            cursor = parseSearchRequest(nextLink.url).cursor ?? '';
+          }
+        },
+        { resourceTypes: resourceType, source: 'ReindexJobExecutor.processIteration' }
+      );
     } catch (err: any) {
       return { count: newCount, cursor, nextTimestamp, err, errSearchRequest: searchRequest };
     }

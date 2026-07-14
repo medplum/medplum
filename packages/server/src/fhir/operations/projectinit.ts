@@ -139,74 +139,77 @@ export async function createProject(
 
   log.info('Project creation request received', { name: projectName });
 
-  return systemRepo.withTransaction(async (txRepo) => {
-    // Pre-generate the project ID so the default access policies (which reference the project via
-    // meta.project) can be created first, then the Project can be created in a single write with its
-    // default policies already set.
-    const projectId = txRepo.generateId();
+  return systemRepo.withTransaction(
+    async (txRepo) => {
+      // Pre-generate the project ID so the default access policies (which reference the project via
+      // meta.project) can be created first, then the Project can be created in a single write with its
+      // default policies already set.
+      const projectId = txRepo.generateId();
 
-    const patientAccessPolicy = await createPatientCompartmentAccessPolicy(
-      txRepo,
-      projectId,
-      'Default Patient Access Policy'
-    );
-    const relatedPersonAccessPolicy = await createPatientCompartmentAccessPolicy(
-      txRepo,
-      projectId,
-      'Default RelatedPerson Access Policy'
-    );
-    const adminAccessPolicy = await createAdminAccessPolicy(txRepo, projectId, 'Default Admin Access Policy');
-    const practitionerAccessPolicy = await createPractitionerAccessPolicy(
-      txRepo,
-      projectId,
-      'Default Practitioner Access Policy'
-    );
-
-    const project = await txRepo.createResource<Project>(
-      {
-        resourceType: 'Project',
-        id: projectId,
-        name: projectName,
-        owner: admin ? createReference(admin) : undefined,
-        strictMode: true,
-        features: config.defaultProjectFeatures,
-        systemSetting: config.defaultProjectSystemSetting,
-        defaultPatientAccessPolicy: createReference(patientAccessPolicy),
-        defaultAccessPolicies: [
-          { profileType: 'Patient', accessPolicy: createReference(patientAccessPolicy) },
-          { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
-          { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
-          { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
-        ],
-      },
-      { assignedId: true }
-    );
-
-    log.info('Project created', {
-      id: project.id,
-      name: projectName,
-    });
-
-    const client = await createClient(txRepo, {
-      project,
-      name: project.name + ' Default Client',
-      description: 'Default client for ' + project.name,
-    });
-
-    if (admin) {
-      const profile = await createProfile(
+      const patientAccessPolicy = await createPatientCompartmentAccessPolicy(
         txRepo,
-        project,
-        'Practitioner',
-        admin.firstName,
-        admin.lastName,
-        admin.email
+        projectId,
+        'Default Patient Access Policy'
       );
-      const membership = await createProjectMembership(txRepo, admin, project, profile, { admin: true });
-      return { project, profile, membership, client };
-    }
-    return { project, client };
-  });
+      const relatedPersonAccessPolicy = await createPatientCompartmentAccessPolicy(
+        txRepo,
+        projectId,
+        'Default RelatedPerson Access Policy'
+      );
+      const adminAccessPolicy = await createAdminAccessPolicy(txRepo, projectId, 'Default Admin Access Policy');
+      const practitionerAccessPolicy = await createPractitionerAccessPolicy(
+        txRepo,
+        projectId,
+        'Default Practitioner Access Policy'
+      );
+
+      const project = await txRepo.createResource<Project>(
+        {
+          resourceType: 'Project',
+          id: projectId,
+          name: projectName,
+          owner: admin ? createReference(admin) : undefined,
+          strictMode: true,
+          features: config.defaultProjectFeatures,
+          systemSetting: config.defaultProjectSystemSetting,
+          defaultPatientAccessPolicy: createReference(patientAccessPolicy),
+          defaultAccessPolicies: [
+            { profileType: 'Patient', accessPolicy: createReference(patientAccessPolicy) },
+            { profileType: 'RelatedPerson', accessPolicy: createReference(relatedPersonAccessPolicy) },
+            { profileType: 'Admin', accessPolicy: createReference(adminAccessPolicy) },
+            { profileType: 'Practitioner', accessPolicy: createReference(practitionerAccessPolicy) },
+          ],
+        },
+        { assignedId: true }
+      );
+
+      log.info('Project created', {
+        id: project.id,
+        name: projectName,
+      });
+
+      const client = await createClient(txRepo, {
+        project,
+        name: project.name + ' Default Client',
+        description: 'Default client for ' + project.name,
+      });
+
+      if (admin) {
+        const profile = await createProfile(
+          txRepo,
+          project,
+          'Practitioner',
+          admin.firstName,
+          admin.lastName,
+          admin.email
+        );
+        const membership = await createProjectMembership(txRepo, admin, project, profile, { admin: true });
+        return { project, profile, membership, client };
+      }
+      return { project, client };
+    },
+    { resourceTypes: ['Project', 'AccessPolicy', 'ClientApplication', 'Practitioner', 'ProjectMembership'] }
+  );
 }
 
 async function createPatientCompartmentAccessPolicy(
