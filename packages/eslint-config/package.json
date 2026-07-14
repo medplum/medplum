@@ -28,11 +28,11 @@
     "eslint": "9.39.4",
     "eslint-plugin-header": "3.1.1",
     "eslint-plugin-import": "2.32.0",
-    "eslint-plugin-jsdoc": "63.0.13",
+    "eslint-plugin-jsdoc": "63.0.9",
     "eslint-plugin-no-only-tests": "3.4.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.5.3",
-    "typescript-eslint": "8.63.0"
+    "typescript-eslint": "8.62.0"
   },
   "peerDependencies": {
     "eslint": "^9",
