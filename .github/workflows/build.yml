@@ -589,6 +589,56 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Build Medplum
         run: npm run build:fast
+      - name: Smoke test npm run dev
+        run: |
+          pushd packages/server
+          setsid npm run dev > server-dev.log 2>&1 &
+          SERVER_PID=$!
+          popd
+
+          MAX_RETRIES=24
+          RETRY_COUNT=0
+
+          until curl -s -f http://localhost:8103/healthcheck > /dev/null; do
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              echo "Dev server process exited before healthcheck passed."
+              cat packages/server/server-dev.log
+              exit 1
+            fi
+
+            if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+              echo "Max retries reached. Dev server not ready."
+              cat packages/server/server-dev.log
+              kill -- "-$SERVER_PID" 2>/dev/null || true
+              exit 1
+            fi
+
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "Waiting for healthcheck... (Attempt $RETRY_COUNT/$MAX_RETRIES)"
+            sleep 5
+          done
+
+          echo "Healthcheck passed. Stopping dev server."
+          kill -- "-$SERVER_PID" 2>/dev/null || true
+          wait "$SERVER_PID" 2>/dev/null || true
+
+          SHUTDOWN_MAX_RETRIES=24
+          SHUTDOWN_RETRY_COUNT=0
+
+          until ! curl -s -f http://localhost:8103/healthcheck > /dev/null; do
+            if [ $SHUTDOWN_RETRY_COUNT -ge $SHUTDOWN_MAX_RETRIES ]; then
+              echo "Max retries reached. Dev server did not release port 8103."
+              exit 1
+            fi
+
+            SHUTDOWN_RETRY_COUNT=$((SHUTDOWN_RETRY_COUNT + 1))
+            echo "Waiting for port 8103 to free up... (Attempt $SHUTDOWN_RETRY_COUNT/$SHUTDOWN_MAX_RETRIES)"
+            sleep 1
+          done
+
+          echo "Port 8103 is free."
+        env:
+          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Start server and app
         run: |
           pushd packages/server
