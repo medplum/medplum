@@ -2,8 +2,6 @@
 
 ![Medplum](packages/docs/static/img/cover.webp)
 
-![Medplum](https://www.medplum.com)
-
 Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
 
 We unify auth, access control, data, and automation into a single tenant-isolated system for your apps—whether built with our components and SDK or forked from our pre-built apps. Medplum Bridge connects on-prem systems, integrations extend your apps' capabilities, and our compliance and security are built in.
