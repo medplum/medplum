@@ -177,9 +177,9 @@ describe('quantity-qualifiers', () => {
       expect(resolver('gram')).toBe('C48155');
       expect(resolver('TAB')).toBe('C48542');
       expect(resolver('caps')).toBe('C48480');
-      expect(
-        buildDispenseUnitNameResolver([{ potencyUnit: 'C48542', name: 'Tablet dosing unit' }])('Tablet')
-      ).toBe('C48542');
+      expect(buildDispenseUnitNameResolver([{ potencyUnit: 'C48542', name: 'Tablet dosing unit' }])('Tablet')).toBe(
+        'C48542'
+      );
     });
 
     test('returns undefined for unknown/blank names', () => {
