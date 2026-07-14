@@ -2,7 +2,7 @@
 
 ![Medplum](packages/docs/static/img/cover.webp)
 
-![Medplum](https://medplum.com)
+![Medplum](https://www.medplum.com)
 
 Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
 
@@ -10,10 +10,15 @@ We unify auth, access control, data, and automation into a single tenant-isolate
 
 ![Medplum Architecture](packages/docs/static/img/architecture.webp)
 
-## Docs
+## Contents
 
 - [Contributing](#contributing)
   - [Ground Rules](#ground-rules)
+  - [Contributing Guidelines](#contributing-guidelines)
+    - [Filing Issues](#filing-issues)
+    - [Writing Docs or Case Studies](#writing-documentation-or-case-studies)
+    - [Opening Pull Requests](#opening-pull-requests)
+- [License](#license)
 
 ## Contributing
 
@@ -35,7 +40,7 @@ the other side of the screen!
 
 - [Filing Issues](#filing-issues)
 - [Writing Docs or Case Studies](#writing-documentation-or-case-studies)
-- [Opening Pull Requests]
+- [Opening Pull Requests](#opening-pull-requests)
 
 #### Filing Issues
 
