@@ -32,6 +32,19 @@ describe('useSyncOrderSet', () => {
     expect(body).toEqual({ planDefinitionId: 'plan-def-123' });
   });
 
+  test('threads organizationId to $sync-orderset for multi-practice deployments', async () => {
+    const medplum = new MockClient();
+    const post = vi.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'Parameters', parameter: [] });
+
+    const { result } = renderHook(() => useSyncOrderSet(), { wrapper: wrapper(medplum) });
+
+    await act(async () => {
+      await result.current('plan-def-123', 'org-9');
+    });
+
+    expect(post.mock.calls[0][1]).toEqual({ planDefinitionId: 'plan-def-123', organizationId: 'org-9' });
+  });
+
   test('decodes per-action results and counts so partial failures surface', async () => {
     const medplum = new MockClient();
     vi.spyOn(medplum, 'post').mockResolvedValue({
@@ -74,6 +87,17 @@ describe('useSyncOrderSet', () => {
     expect(response?.results).toHaveLength(2);
     expect(response?.results[0]).toMatchObject({ actionTitle: 'Jardiance', status: 'synced' });
     expect(response?.results[1]).toMatchObject({ actionTitle: 'Ozempic', status: 'failed', error: 'drug not in FDB' });
+  });
+
+  test('resolves undefined when the response is not a Parameters resource', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'post').mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useSyncOrderSet(), { wrapper: wrapper(medplum) });
+
+    await act(async () => {
+      await expect(result.current('plan-def-123')).resolves.toBeUndefined();
+    });
   });
 
   test('silently no-ops when operation is not deployed (not-found)', async () => {
