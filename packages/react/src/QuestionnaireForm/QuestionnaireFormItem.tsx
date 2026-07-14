@@ -322,13 +322,15 @@ interface QuestionnaireChoiceInputProps {
 function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, required, initial, onChangeAnswer, response, multiselect } = props;
 
+  // Track the multi-select values in state so the optionExclusive rule can be enforced on change.
+  const [selectedValues, setSelectedValues] = useState<string[]>(() => getCurrentMultiSelectAnswer(response));
+
   if (!item.answerOption?.length && !item.answerValueSet) {
     return <NoAnswerDisplay />;
   }
 
   const initialValue = getItemInitialValue(initial);
   const defaultValue = getCurrentAnswer(response) ?? initialValue;
-  const currentAnswer = getCurrentMultiSelectAnswer(response);
   const isMultiSelect = item.repeats || multiselect;
 
   if (item.answerValueSet) {
@@ -357,18 +359,21 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
 
   if (isMultiSelect) {
     const { propertyName, data } = formatSelectData(item);
+    const exclusiveOptionValues = getExclusiveOptionValues(item);
     return (
       <MultiSelect
         data={data}
         placeholder="Select items"
         searchable
-        defaultValue={currentAnswer || [typedValueToString(initialValue)]}
+        value={selectedValues}
         required={required}
         onChange={(selected) => {
-          if (selected.length === 0) {
+          const newSelected = applyExclusiveSelection(selected, selectedValues, exclusiveOptionValues);
+          setSelectedValues(newSelected);
+          if (newSelected.length === 0) {
             onChangeAnswer([{}]);
           } else {
-            const values = getNewMultiSelectValues(selected, propertyName, item);
+            const values = getNewMultiSelectValues(newSelected, propertyName, item);
             onChangeAnswer(values);
           }
         }}
@@ -611,16 +616,11 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
     } else {
       const currentValues = selectedValues as string[];
       const optionValueStr = typedValueToString(optionValue);
-      let newValues: string[];
-
-      if (selected) {
-        // An exclusive option clears every other selection; a non-exclusive one clears any exclusive selection.
-        newValues = exclusiveOptionValues.has(optionValueStr)
-          ? [optionValueStr]
-          : [...currentValues.filter((v) => !exclusiveOptionValues.has(v)), optionValueStr];
-      } else {
-        newValues = currentValues.filter((v) => v !== optionValueStr);
-      }
+      const nextValues = selected
+        ? [...currentValues, optionValueStr]
+        : currentValues.filter((v) => v !== optionValueStr);
+      // Enforce the optionExclusive rule with the same reconciliation used by the multi-select dropdown.
+      const newValues = applyExclusiveSelection(nextValues, currentValues, exclusiveOptionValues);
 
       setSelectedValues(newValues);
       if (newValues.length === 0) {
@@ -689,7 +689,7 @@ function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: T
 
 /**
  * Returns the set of string-encoded answer option values that are marked as exclusive via the
- * `questionnaire-optionExclusive` extension. 
+ * `questionnaire-optionExclusive` extension.
  * @param item - The questionnaire item to inspect.
  * @returns A set of `typedValueToString` values for the item's exclusive answer options.
  */
@@ -704,6 +704,32 @@ function getExclusiveOptionValues(item: QuestionnaireItem): Set<string> {
     }
   }
   return exclusiveOptionValues;
+}
+
+/**
+ * Applies the `questionnaire-optionExclusive` rule to a multi-select change. Given the newly
+ * requested selection and the previous one, it enforces that selecting an exclusive option clears
+ * every other selection, and selecting any other option clears a previously selected exclusive one.
+ * @param next - The selection requested by the control's onChange.
+ * @param prev - The previously selected values.
+ * @param exclusiveOptionValues - The set of values marked exclusive (see getExclusiveOptionValues).
+ * @returns The reconciled selection.
+ */
+function applyExclusiveSelection(next: string[], prev: string[], exclusiveOptionValues: Set<string>): string[] {
+  if (exclusiveOptionValues.size === 0) {
+    return next;
+  }
+  const added = next.filter((v) => !prev.includes(v));
+  const addedExclusive = added.find((v) => exclusiveOptionValues.has(v));
+  if (addedExclusive) {
+    // Selecting an exclusive option clears every other selection.
+    return [addedExclusive];
+  }
+  if (added.some((v) => !exclusiveOptionValues.has(v))) {
+    // Selecting a non-exclusive option clears any previously selected exclusive option.
+    return next.filter((v) => !exclusiveOptionValues.has(v));
+  }
+  return next;
 }
 
 type ChoiceControl = {
