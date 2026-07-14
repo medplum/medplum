@@ -39,7 +39,10 @@ describe('valueSetAvailability', () => {
   test('concurrent checks share a single probe', async () => {
     const medplum = new MockMedplumClient();
     const spy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue(AVAILABLE_VS);
-    const [a, b] = await Promise.all([checkValueSetAvailability(medplum, URL), checkValueSetAvailability(medplum, URL)]);
+    const [a, b] = await Promise.all([
+      checkValueSetAvailability(medplum, URL),
+      checkValueSetAvailability(medplum, URL),
+    ]);
     expect(a).toEqual({ status: 'available' });
     expect(b).toEqual({ status: 'available' });
     expect(spy).toHaveBeenCalledTimes(1);
@@ -56,7 +59,10 @@ describe('valueSetAvailability', () => {
   test('a 400 marks the value set unavailable with the error message', async () => {
     const medplum = new MockMedplumClient();
     vi.spyOn(medplum, 'valueSetExpand').mockRejectedValue(new OperationOutcomeError(badRequest('ValueSet not found')));
-    expect(await checkValueSetAvailability(medplum, URL)).toEqual({ status: 'unavailable', message: 'ValueSet not found' });
+    expect(await checkValueSetAvailability(medplum, URL)).toEqual({
+      status: 'unavailable',
+      message: 'ValueSet not found',
+    });
     expect(isValueSetUnavailable(medplum, URL)).toBe(true);
   });
 

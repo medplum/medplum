@@ -4,13 +4,7 @@ import { Alert } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { checkValueSetAvailability, normalizeErrorString } from '@medplum/core';
 import type { Questionnaire, QuestionnaireItem, QuestionnaireResponse } from '@medplum/fhirtypes';
-import {
-  AIRealTimeQuestionnaireForm,
-  Document,
-  Loading,
-  useMedplum,
-  useMedplumProfile,
-} from '@medplum/react';
+import { AIRealTimeQuestionnaireForm, Document, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
