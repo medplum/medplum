@@ -18,6 +18,7 @@ import type {
   OperationOutcome,
   ParametersParameter,
   Resource,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
@@ -29,13 +30,17 @@ const maxSerializableTransactionEntries = 8;
 
 const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 
-type BundleEntryIdentity = { placeholder: string; reference: string };
+interface BundleEntryIdentity {
+  placeholder: string;
+  reference: string;
+}
 
-export type BundlePreprocessInfo = {
+export interface BundlePreprocessInfo {
   ordering: number[];
   requiresStrongTransaction: boolean;
   updates: number;
-};
+  resourceTypes: Set<ResourceType>;
+}
 
 /**
  * The durable, JSON-serializable state produced by preprocessing a batch bundle. This is
@@ -201,7 +206,10 @@ export class BatchProcessor {
           this.state = cloneState(preTransactionState);
           return this.processEntriesAndBuild();
         }),
-      { serializable: bundleInfo.requiresStrongTransaction }
+      {
+        serializable: bundleInfo.requiresStrongTransaction,
+        resourceTypes: bundleInfo.resourceTypes,
+      }
     );
   }
 
@@ -248,6 +256,7 @@ export class BatchProcessor {
       bundle: this.bundle,
       bundleInfo: {
         ordering: this.bundleInfo.ordering,
+        resourceTypes: this.bundleInfo.resourceTypes,
         requiresStrongTransaction: this.bundleInfo.requiresStrongTransaction,
         updates: this.bundleInfo.updates,
       },
@@ -381,6 +390,7 @@ export class BatchProcessor {
       'history-instance': [],
     };
     const seenIdentities = new Set<string>();
+    const resourceTypes = new Set<ResourceType>();
     let requiresStrongTransaction = false;
     let updates = 0;
 
@@ -409,6 +419,17 @@ export class BatchProcessor {
           badRequest(`Invalid REST interaction in batch: ${entry.request?.method} ${entry.request?.url}`)
         );
       }
+
+      // Track the resource type touched by this entry, derived from the parsed route.
+      // The URL is used rather than entry.resource since reads/deletes have no resource
+      // and PATCH carries a Binary/Parameters payload instead of the target resource.
+      // System-level interactions (search-system, history-system, nested bundles) have no
+      // resource type and are skipped. GraphQL and custom operations can touch arbitrary
+      // resource types that are not derivable from the URL, so they are under-reported here.
+      const entryResourceType = route?.params?.resourceType as ResourceType | undefined;
+      if (entryResourceType) {
+        resourceTypes.add(entryResourceType);
+      }
       if (interaction === 'create' && entry.request?.ifNoneExist) {
         // Conditional create requires strong (serializable) transaction to
         // guarantee uniqueness of created resource
@@ -435,6 +456,7 @@ export class BatchProcessor {
       ordering,
       requiresStrongTransaction,
       updates,
+      resourceTypes,
     };
   }
 

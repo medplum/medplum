@@ -748,7 +748,7 @@ export async function createProposedAppointment(
       });
       return [createdAppointment, ...createdSlots];
     },
-    { serializable: true }
+    { serializable: true, resourceTypes: ['Appointment', 'Slot'], source: 'createProposedAppointment' }
   );
 
   return {
