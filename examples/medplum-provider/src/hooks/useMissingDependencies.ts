@@ -8,6 +8,11 @@ import { DEPENDENCY_GROUPS } from '../config/appDependencies';
 
 type ProbeResult = 'present' | 'missing' | 'unknown';
 
+export interface UseMissingDependenciesOptions {
+  /** Set to false to skip probing entirely, e.g. once the banner has been dismissed. Defaults to true. */
+  readonly enabled?: boolean;
+}
+
 export interface UseMissingDependenciesResult {
   /** Dependency groups detected as missing (unlinked). */
   readonly missingGroups: DependencyGroup[];
@@ -30,9 +35,11 @@ export interface UseMissingDependenciesResult {
  * which throws) can therefore produce a false positive for a restricted user. The banner is
  * advisory and dismissible, and the users who can act on it (project admins) are not usually
  * restricted this way — but the ValueSet probe is the only one that cannot false-alarm.
+ * @param options - Options controlling whether the probes run.
  * @returns The missing dependency groups and a loading flag.
  */
-export function useMissingDependencies(): UseMissingDependenciesResult {
+export function useMissingDependencies(options?: UseMissingDependenciesOptions): UseMissingDependenciesResult {
+  const enabled = options?.enabled ?? true;
   const medplum = useMedplum();
   // Callers only mount this hook after sign-in; re-key on the active project so the probes re-run
   // if the user switches projects without a full reload.
@@ -42,6 +49,9 @@ export function useMissingDependencies(): UseMissingDependenciesResult {
   const [result, setResult] = useState<{ projectId?: string; missing: DependencyGroup[] }>();
 
   useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
     let active = true;
     detectMissingGroups(medplum)
       .then((missing) => {
@@ -55,8 +65,11 @@ export function useMissingDependencies(): UseMissingDependenciesResult {
     return () => {
       active = false;
     };
-  }, [medplum, projectId]);
+  }, [medplum, projectId, enabled]);
 
+  if (!enabled) {
+    return { missingGroups: [], loading: false };
+  }
   const resolved = result?.projectId === projectId ? result : undefined;
   return { missingGroups: resolved?.missing ?? [], loading: !resolved };
 }

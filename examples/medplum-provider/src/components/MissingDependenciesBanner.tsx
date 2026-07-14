@@ -22,8 +22,10 @@ function readDismissed(key: string): boolean {
 function writeDismissed(key: string): void {
   try {
     sessionStorage.setItem(key, 'true');
-  } catch {
-    // Ignore storage failures; dismissal falls back to component state.
+  } catch (err) {
+    // Dismissal falls back to component state, but log so a persistently non-dismissible banner
+    // (e.g. Safari private mode, sandboxed iframe, quota exceeded) is debuggable.
+    console.error('Failed to persist banner dismissal', err);
   }
 }
 
@@ -39,9 +41,9 @@ function writeDismissed(key: string): void {
 export function MissingDependenciesBanner(): JSX.Element | null {
   const medplum = useMedplum();
   const sessionKey = medplum.getProject()?.id ?? medplum.getProfile()?.id ?? 'default';
-  const { missingGroups, loading } = useMissingDependencies();
   const dismissedKey = DISMISSED_KEY_PREFIX + sessionKey;
   const [dismissed, setDismissed] = useState(() => readDismissed(dismissedKey));
+  const { missingGroups, loading } = useMissingDependencies({ enabled: !dismissed });
 
   if (loading || dismissed || missingGroups.length === 0) {
     return null;
