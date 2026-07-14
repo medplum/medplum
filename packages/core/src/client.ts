@@ -2897,8 +2897,20 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The FHIR batch/transaction response bundle.
    */
-  executeBatch(bundle: Bundle, options?: MedplumRequestOptions): Promise<Bundle> {
-    return this.post(this.fhirBaseUrl, bundle, undefined, options);
+  async executeBatch(bundle: Bundle, options?: MedplumRequestOptions): Promise<Bundle> {
+    const result = await this.post(this.fhirBaseUrl, bundle, undefined, options);
+    if (result.entry) {
+      const resourceTypes = new Set<ResourceType>();
+      for (const entry of result.entry) {
+        if (entry.resource?.resourceType) {
+          resourceTypes.add(entry.resource.resourceType as ResourceType);
+        }
+      }
+      for (const resourceType of resourceTypes) {
+        this.invalidateSearches(resourceType);
+      }
+    }
+    return result;
   }
 
   /**

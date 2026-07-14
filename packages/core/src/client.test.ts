@@ -3118,6 +3118,35 @@ describe('Client', () => {
         })
       );
     });
+
+    test('Execute batch invalidates search cache', async () => {
+      const fetch = mockFetch(200, {
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Patient',
+              id: '123',
+              name: [{ given: ['Alice'], family: 'Smith' }],
+            },
+          },
+          {
+            resource: {
+              resourceType: 'Appointment',
+              id: '456',
+              status: 'booked',
+            },
+          },
+        ],
+      });
+      const client = new MedplumClient({ fetch });
+      const invalidateSpy = vi.spyOn(client, 'invalidateSearches');
+      await client.executeBatch(bundle);
+      expect(invalidateSpy).toHaveBeenCalledWith('Patient');
+      expect(invalidateSpy).toHaveBeenCalledWith('Appointment');
+      invalidateSpy.mockRestore();
+    });
   });
 
   test('Send email', async () => {
