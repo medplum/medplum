@@ -136,7 +136,15 @@ function SchedulingPreview(): JSX.Element {
       <line x1="167" y1="54" x2="167" y2="300" stroke={CAP.grid} strokeWidth="1.5" />
 
       {/* Day headers */}
-      <text x={(gutterW + 167) / 2} y="74" fontFamily={f} fontSize="12" fontWeight="700" fill={CAP.fg} textAnchor="middle">
+      <text
+        x={(gutterW + 167) / 2}
+        y="74"
+        fontFamily={f}
+        fontSize="12"
+        fontWeight="700"
+        fill={CAP.fg}
+        textAnchor="middle"
+      >
         01 Fri
       </text>
       <text x="233" y="74" fontFamily={f} fontSize="12" fontWeight="700" fill={CAP.fg} textAnchor="middle">
