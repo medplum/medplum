@@ -38,10 +38,6 @@ the other side of the screen!
 
 ### Contributing Guidelines
 
-- [Filing Issues](#filing-issues)
-- [Writing Docs or Case Studies](#writing-documentation-or-case-studies)
-- [Opening Pull Requests](#opening-pull-requests)
-
 #### Filing Issues
 
 If you found a technical bug on Medplum or have ideas for features we should implement, the [issue tracker](https://github.com/medplum/medplum/issues) is the best
