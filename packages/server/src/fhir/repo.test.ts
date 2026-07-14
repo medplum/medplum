@@ -1086,8 +1086,7 @@ describe('FHIR Repo', () => {
       ).toBe(true);
 
       const latestVersion = history.entry?.find((e) => e.response?.status === '200' && e.resource)?.resource as
-        | WithId<Patient>
-        | undefined;
+        WithId<Patient> | undefined;
       expect(latestVersion).toBeDefined();
       if (!latestVersion) {
         throw new Error('Expected latest version');

@@ -40,8 +40,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Resource>)
 
       const bundle = await buildVitalOrder(medplum, resource);
       const patient = bundle.entry?.find((e) => e.resource?.resourceType === 'Patient')?.resource as
-        | Patient
-        | undefined;
+        Patient | undefined;
 
       if (!patient) {
         throw new Error('Patient is missing');
