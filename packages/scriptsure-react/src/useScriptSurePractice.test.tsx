@@ -63,7 +63,10 @@ describe('useScriptSurePractice', () => {
       { resourceType: 'PractitionerRole', organization: { reference: 'Organization/org-2' } },
     ] as Awaited<ReturnType<typeof medplum.searchResources>>);
     vi.spyOn(medplum, 'readReference').mockImplementation((async (ref: { reference: string }) =>
-      practiceOrg(ref.reference.slice('Organization/'.length), ref.reference.endsWith('1') ? '7256' : '7257')) as typeof medplum.readReference);
+      practiceOrg(
+        ref.reference.slice('Organization/'.length),
+        ref.reference.endsWith('1') ? '7256' : '7257'
+      )) as typeof medplum.readReference);
 
     const { result } = setup(medplum);
 
@@ -82,7 +85,11 @@ describe('useScriptSurePractice', () => {
     vi.spyOn(medplum, 'readReference').mockImplementation((async (ref: { reference: string }) =>
       ref.reference === 'Organization/org-1'
         ? practiceOrg('org-1', '7256')
-        : ({ resourceType: 'Organization', id: 'org-bare', name: 'Not a practice' } as Organization)) as typeof medplum.readReference);
+        : ({
+            resourceType: 'Organization',
+            id: 'org-bare',
+            name: 'Not a practice',
+          } as Organization)) as typeof medplum.readReference);
 
     const { result } = setup(medplum);
 
@@ -100,7 +107,10 @@ describe('useScriptSurePractice', () => {
       { resourceType: 'PractitionerRole', organization: { reference: 'Organization/org-2' } },
     ] as Awaited<ReturnType<typeof medplum.searchResources>>);
     vi.spyOn(medplum, 'readReference').mockImplementation((async (ref: { reference: string }) =>
-      practiceOrg(ref.reference.slice('Organization/'.length), ref.reference.endsWith('1') ? '7256' : '7257')) as typeof medplum.readReference);
+      practiceOrg(
+        ref.reference.slice('Organization/'.length),
+        ref.reference.endsWith('1') ? '7256' : '7257'
+      )) as typeof medplum.readReference);
 
     const { result } = setup(medplum);
 

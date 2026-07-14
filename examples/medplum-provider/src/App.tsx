@@ -22,8 +22,8 @@ import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-rou
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
-import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 import './index.css';
+import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
@@ -277,9 +277,5 @@ export function App(): JSX.Element | null {
     </AppShell>
   );
 
-  return hasScriptSure ? (
-    <ScriptSurePracticeProvider>{appShellContent}</ScriptSurePracticeProvider>
-  ) : (
-    appShellContent
-  );
+  return hasScriptSure ? <ScriptSurePracticeProvider>{appShellContent}</ScriptSurePracticeProvider> : appShellContent;
 }

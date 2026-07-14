@@ -1082,8 +1082,10 @@ export function parametersToOrderSetSyncResponse(params: Parameters): OrderSetSy
     mode: map.mode === 'noop-already-synced' ? 'noop-already-synced' : 'created',
     planDefinitionId: typeof map.planDefinitionId === 'string' ? map.planDefinitionId : undefined,
     scriptSureOrdersetId: typeof map.scriptSureOrdersetId === 'number' ? map.scriptSureOrdersetId : undefined,
-    syncedCount: typeof map.syncedCount === 'number' ? map.syncedCount : results.filter((r) => r.status === 'synced').length,
-    failedCount: typeof map.failedCount === 'number' ? map.failedCount : results.filter((r) => r.status === 'failed').length,
+    syncedCount:
+      typeof map.syncedCount === 'number' ? map.syncedCount : results.filter((r) => r.status === 'synced').length,
+    failedCount:
+      typeof map.failedCount === 'number' ? map.failedCount : results.filter((r) => r.status === 'failed').length,
     results,
   };
 }

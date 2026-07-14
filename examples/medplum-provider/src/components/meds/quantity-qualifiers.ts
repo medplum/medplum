@@ -346,7 +346,10 @@ const LEADING_UNIT_NAME_ALIASES: Readonly<Record<string, string>> = {
  * @returns Normalized lookup key.
  */
 function normalizeUnitName(name: string): string {
-  const lowered = name.trim().toLowerCase().replace(/\s+dosing unit$/, '');
+  const lowered = name
+    .trim()
+    .toLowerCase()
+    .replace(/\s+dosing unit$/, '');
   return LEADING_UNIT_NAME_ALIASES[lowered] ?? lowered;
 }
 

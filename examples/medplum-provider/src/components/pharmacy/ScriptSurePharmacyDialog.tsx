@@ -97,4 +97,3 @@ export function ScriptSurePharmacyDialog(props: PharmacyDialogBaseProps): JSX.El
     />
   );
 }
-
