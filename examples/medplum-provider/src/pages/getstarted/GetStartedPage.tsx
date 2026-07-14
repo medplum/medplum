@@ -134,15 +134,27 @@ export function GetStartedPage(): JSX.Element {
       const pdLocation = result.entry?.find((e) => e.response?.location?.startsWith('PlanDefinition/'))?.response
         ?.location;
       const pdId = pdLocation?.split('/')[1];
-      if (pdId) {
-        await syncOrderSet(pdId);
-      }
+      const syncResult = pdId ? await syncOrderSet(pdId) : undefined;
 
-      showNotification({
-        color: 'green',
-        title: 'Success',
-        message: `Imported ${resourceCount} resources for Geriatric T2DM Order Set`,
-      });
+      if (syncResult && syncResult.failedCount > 0) {
+        const failedTitles = syncResult.results
+          .filter((r) => r.status === 'failed')
+          .map((r) => r.actionTitle ?? r.activityDefinitionUrl ?? 'medication')
+          .join(', ');
+        showNotification({
+          color: 'yellow',
+          title: 'Order set partially synced',
+          message: `Imported ${resourceCount} resources, but ${syncResult.failedCount} of ${
+            syncResult.syncedCount + syncResult.failedCount
+          } medications failed to sync and will not appear when prescribing: ${failedTitles}`,
+        });
+      } else {
+        showNotification({
+          color: 'green',
+          title: 'Success',
+          message: `Imported ${resourceCount} resources for Geriatric T2DM Order Set`,
+        });
+      }
     } catch (error) {
       showErrorNotification(error);
     } finally {

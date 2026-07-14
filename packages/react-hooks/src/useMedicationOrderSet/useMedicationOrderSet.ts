@@ -19,6 +19,8 @@ export interface UseMedicationOrderSetOptions {
   /** Vendor-side order set id, when picked directly (escape hatch when no synced PD exists yet). */
   readonly vendorOrderSetId?: number | string;
   readonly appId?: string;
+  /** Selected practice-location Organization (id or reference) for multi-practice deployments. */
+  readonly organizationId?: string;
 }
 
 export interface UseMedicationOrderSetReturn {
@@ -66,7 +68,7 @@ export interface UseMedicationOrderSetReturn {
  */
 export function useMedicationOrderSet(options: UseMedicationOrderSetOptions): UseMedicationOrderSetReturn {
   const medplum = useMedplum();
-  const { patientId, planDefinitionId, vendorOrderSetId, appId } = options;
+  const { patientId, planDefinitionId, vendorOrderSetId, appId, organizationId } = options;
 
   const [url, setUrl] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
@@ -74,8 +76,8 @@ export function useMedicationOrderSet(options: UseMedicationOrderSetOptions): Us
 
   // Latest options snapshot so `refresh` always uses current values without
   // re-creating the callback when only the inputs change.
-  const optionsRef = useRef({ patientId, planDefinitionId, vendorOrderSetId, appId });
-  optionsRef.current = { patientId, planDefinitionId, vendorOrderSetId, appId };
+  const optionsRef = useRef({ patientId, planDefinitionId, vendorOrderSetId, appId, organizationId });
+  optionsRef.current = { patientId, planDefinitionId, vendorOrderSetId, appId, organizationId };
 
   const buildRequest = (): MedicationOrderSetRequest | undefined => {
     const o = optionsRef.current;
@@ -92,6 +94,7 @@ export function useMedicationOrderSet(options: UseMedicationOrderSetOptions): Us
       planDefinitionId: hasPd ? o.planDefinitionId : undefined,
       vendorOrderSetId: hasVendorId ? o.vendorOrderSetId : undefined,
       appId: o.appId,
+      organizationId: o.organizationId,
     };
     return req;
   };
@@ -195,7 +198,7 @@ export function useMedicationOrderSet(options: UseMedicationOrderSetOptions): Us
     return (): void => {
       cancelled = true;
     };
-  }, [callOperation, patientId, planDefinitionId, vendorOrderSetId, appId]);
+  }, [callOperation, patientId, planDefinitionId, vendorOrderSetId, appId, organizationId]);
 
   return { url, loading, error, refresh };
 }

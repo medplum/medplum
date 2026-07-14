@@ -52,6 +52,7 @@ export function usePharmacySearch<T extends PharmacySearchParams = PharmacySearc
         patientId: params.patientId,
         pharmacy: params.pharmacy,
         setAsPrimary: params.setAsPrimary,
+        organizationId: params.organizationId,
       });
 
       if (!isAddPharmacyResponse(response)) {
