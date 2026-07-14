@@ -65,7 +65,7 @@
     "@opentelemetry/instrumentation-runtime-node": "0.32.0",
     "@opentelemetry/propagator-aws-xray": "2.2.0",
     "@opentelemetry/sdk-metrics": "2.8.0",
-    "@opentelemetry/sdk-node": "0.219.0",
+    "@opentelemetry/sdk-node": "0.220.0",
     "@smithy/util-retry": "4.5.2",
     "@smithy/util-stream": "4.7.2",
     "bcrypt": "6.0.0",
