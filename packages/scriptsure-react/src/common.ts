@@ -36,6 +36,17 @@ export const SCRIPTSURE_ORDER_MEDICATION_BOT: Identifier = {
 /** Identifier system for ScriptSure ROUTED_MED_ID on in-memory Medication resources from drug search. */
 export const SCRIPTSURE_ROUTED_MED_ID_SYSTEM = 'https://scriptsure.com/routed-med-id';
 
+/**
+ * Identifier/coding system for the FDB GCN Sequence Number (`GCN_SEQNO`) — the
+ * clinical-formulation key (ingredient+strength+dose-form+route), independent of
+ * brand and NDC. Stamped as a `medicationCodeableConcept.coding` on the draft
+ * MedicationRequest so the ScriptSure prescription webhook can reconcile a draft
+ * to its sent prescription even when the NDC drifts or the pharmacy substitutes a
+ * generic (brand and generic share the same GCN). Mirrors the medplum-ee bot
+ * constant of the same name.
+ */
+export const SCRIPTSURE_GCN_SEQNO_SYSTEM = 'https://scriptsure.com/gcn-seqno';
+
 export const SCRIPTSURE_PENDING_ORDER_ID_SYSTEM = 'https://scriptsure.com/pending-order-id';
 
 export const SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION = 'https://scriptsure.com/pending-order-status';

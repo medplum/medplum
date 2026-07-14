@@ -3,19 +3,24 @@
 
 import { describe, expect, test } from 'vitest';
 import {
+  buildDispenseUnitNameResolver,
   buildQualifierMatcher,
+  extractLeadingSigDispenseUnit,
   getQuantityQualifierLabel,
   inferQuantityQualifierCode,
   inferQuantityQualifierCodeWith,
   mergeQuantityQualifierCatalog,
+  STATIC_DISPENSE_UNIT_NAME_RESOLVER,
   STATIC_QUALIFIER_MATCHER,
 } from './quantity-qualifiers';
 
 describe('quantity-qualifiers', () => {
   test('getQuantityQualifierLabel returns label for known code', () => {
-    expect(getQuantityQualifierLabel('C48542')).toBe('Tablet dosing unit');
-    expect(getQuantityQualifierLabel('C48486')).toBe('Suppository');
-    expect(getQuantityQualifierLabel('  C48483  ')).toBe('Capsule');
+    // Codes verified against the live GET /v3/prescription/quantityqualifier catalog.
+    expect(getQuantityQualifierLabel('C48542')).toBe('Tablet');
+    expect(getQuantityQualifierLabel('C48539')).toBe('Suppository');
+    expect(getQuantityQualifierLabel('  C48480  ')).toBe('Capsule');
+    expect(getQuantityQualifierLabel('C48155')).toBe('Gram');
   });
 
   test('getQuantityQualifierLabel returns undefined for empty/unknown codes', () => {
@@ -27,12 +32,12 @@ describe('quantity-qualifiers', () => {
   test('inferQuantityQualifierCode picks suppository for rectal sigs', () => {
     expect(
       inferQuantityQualifierCode('Insert 1 suppository rectally daily', 'Anusol-HC 25 mg rectal suppository')
-    ).toBe('C48486');
+    ).toBe('C48539');
   });
 
   test('inferQuantityQualifierCode falls back to formulation text when sig is generic', () => {
-    expect(inferQuantityQualifierCode('Use as directed', 'Lidocaine 5% patch')).toBe('C48484');
-    expect(inferQuantityQualifierCode('Use as directed', 'Albuterol HFA inhalation spray')).toBe('C48485');
+    expect(inferQuantityQualifierCode('Use as directed', 'Lidocaine 5% patch')).toBe('C48524');
+    expect(inferQuantityQualifierCode('Use as directed', 'Albuterol HFA inhalation spray')).toBe('C48537');
   });
 
   test('inferQuantityQualifierCode prefers more specific terms', () => {
@@ -87,8 +92,8 @@ describe('quantity-qualifiers', () => {
   });
 
   test('STATIC_QUALIFIER_MATCHER backs the legacy inferQuantityQualifierCode helper', () => {
-    expect(STATIC_QUALIFIER_MATCHER('Insert 1 suppository rectally daily')).toBe('C48486');
-    expect(inferQuantityQualifierCode('Insert 1 suppository rectally daily')).toBe('C48486');
+    expect(STATIC_QUALIFIER_MATCHER('Insert 1 suppository rectally daily')).toBe('C48539');
+    expect(inferQuantityQualifierCode('Insert 1 suppository rectally daily')).toBe('C48539');
   });
 
   test('buildQualifierMatcher prefers dose-form keywords over strength units regardless of catalog name length', () => {
@@ -131,5 +136,61 @@ describe('quantity-qualifiers', () => {
     expect(merged.find((r) => r.code === 'C48542')?.label).toBe('Tablet');
     expect(merged.find((r) => r.code === 'C99999')?.label).toBe('Made-up unit');
     expect(merged).toEqual([...merged].sort((a, b) => a.label.localeCompare(b.label)));
+  });
+
+  describe('extractLeadingSigDispenseUnit', () => {
+    test('reads the unit token from a ScriptSure pre-built sig line', () => {
+      // Verbatim staging shapes: mupirocin ointment and metformin tablet.
+      expect(extractLeadingSigDispenseUnit('30 Gram - Apply to skin three times daily (use small amount)')).toBe(
+        'Gram'
+      );
+      expect(extractLeadingSigDispenseUnit('80 Tablet - Take 2 tablet by mouth four times daily')).toBe('Tablet');
+      expect(extractLeadingSigDispenseUnit('150 Milliliter - Take 5 mL by mouth twice daily')).toBe('Milliliter');
+    });
+
+    test('tolerates decimals and en/em dashes', () => {
+      expect(extractLeadingSigDispenseUnit('2.5 Milliliter – inject subcutaneously')).toBe('Milliliter');
+    });
+
+    test('returns undefined when the line does not lead with <number> <unit> -', () => {
+      expect(extractLeadingSigDispenseUnit('Take as directed')).toBeUndefined();
+      expect(extractLeadingSigDispenseUnit('Apply to affected area')).toBeUndefined();
+      expect(extractLeadingSigDispenseUnit('')).toBeUndefined();
+      expect(extractLeadingSigDispenseUnit(undefined)).toBeUndefined();
+    });
+  });
+
+  describe('buildDispenseUnitNameResolver', () => {
+    const resolver = buildDispenseUnitNameResolver([
+      { potencyUnit: 'C48155', name: 'Gram' },
+      { potencyUnit: 'C48542', name: 'Tablet' },
+      { potencyUnit: 'C48480', name: 'Capsule' },
+      { potencyUnit: 'C28254', name: 'Milliliter' },
+    ]);
+
+    test('resolves a leading sig unit to its NCI code (including "strength" units like Gram)', () => {
+      expect(resolver(extractLeadingSigDispenseUnit('30 Gram - Apply to skin'))).toBe('C48155');
+      expect(resolver(extractLeadingSigDispenseUnit('80 Tablet - Take 2 tablet'))).toBe('C48542');
+    });
+
+    test('is case-insensitive and maps tab/cap abbreviations and "... dosing unit"', () => {
+      expect(resolver('gram')).toBe('C48155');
+      expect(resolver('TAB')).toBe('C48542');
+      expect(resolver('caps')).toBe('C48480');
+      expect(
+        buildDispenseUnitNameResolver([{ potencyUnit: 'C48542', name: 'Tablet dosing unit' }])('Tablet')
+      ).toBe('C48542');
+    });
+
+    test('returns undefined for unknown/blank names', () => {
+      expect(resolver('Widget')).toBeUndefined();
+      expect(resolver('')).toBeUndefined();
+      expect(resolver(undefined)).toBeUndefined();
+    });
+
+    test('STATIC_DISPENSE_UNIT_NAME_RESOLVER resolves Gram and Tablet from the static fallback', () => {
+      expect(STATIC_DISPENSE_UNIT_NAME_RESOLVER('Gram')).toBe('C48155');
+      expect(STATIC_DISPENSE_UNIT_NAME_RESOLVER('Tablet')).toBe('C48542');
+    });
   });
 });
