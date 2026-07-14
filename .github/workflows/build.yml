@@ -590,6 +590,8 @@ jobs:
       - name: Build Medplum
         run: npm run build:fast
       - name: Smoke test npm run dev
+        env:
+          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
         run: |
           pushd packages/server
           setsid npm run dev > server-dev.log 2>&1 &
@@ -620,26 +622,13 @@ jobs:
 
           echo "Healthcheck passed. Stopping dev server."
           kill -- "-$SERVER_PID" 2>/dev/null || true
+          # wait only reaps the shell child; descendants may still hold port 8103
           wait "$SERVER_PID" 2>/dev/null || true
-
-          SHUTDOWN_MAX_RETRIES=24
-          SHUTDOWN_RETRY_COUNT=0
-
-          until ! curl -s -f http://localhost:8103/healthcheck > /dev/null; do
-            if [ $SHUTDOWN_RETRY_COUNT -ge $SHUTDOWN_MAX_RETRIES ]; then
-              echo "Max retries reached. Dev server did not release port 8103."
-              exit 1
-            fi
-
-            SHUTDOWN_RETRY_COUNT=$((SHUTDOWN_RETRY_COUNT + 1))
-            echo "Waiting for port 8103 to free up... (Attempt $SHUTDOWN_RETRY_COUNT/$SHUTDOWN_MAX_RETRIES)"
-            sleep 1
-          done
-
-          echo "Port 8103 is free."
+          # last resort if something is still listening
+          kill -9 -- "-$SERVER_PID" 2>/dev/null || true
+      - name: Start server and app
         env:
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
-      - name: Start server and app
         run: |
           pushd packages/server
           npm start > server.log 2>&1 &
@@ -647,8 +636,6 @@ jobs:
           pushd packages/app
           npm run preview > app.log 2>&1 &
           popd
-        env:
-          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Wait for deployment to be ready
         run: |
           # Add retry mechanism for deployment readiness check
