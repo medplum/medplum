@@ -22,6 +22,20 @@ In order to integrate with Health Gorilla for labs, your organization must:
 - Be a provider organization, i.e. with a clinician licensed to review lab orders,
 - Have an account number with a [connected lab](https://developer.healthgorilla.com/docs/list-of-connected-labs), such as Quest or LabCorp.
 
+## Lab Integration Eligibility: Do I Qualify?
+
+Medplum integrates with labs like Labcorp and Quest Diagnostics through Health Gorilla to bring lab ordering and results directly into your workflow. Before we can submit an interface request on your behalf, there are a few things worth confirming so the process goes smoothly.
+
+### Eligibility Checklist
+
+- **An existing relationship with a lab rep**: Interface setup ultimately depends on your lab representative approving and processing the request on the lab's side. Before starting, you should already have an account with the lab and a point of contact there. We'll ask you to loop them in directly once the request is submitted, so having that relationship in place ahead of time avoids delays.
+- **Transaction volume**: Labs generally require a minimum order volume to justify standing up a dedicated interface. If your organization doesn't yet meet a lab's internal volume threshold, they may deny the interface request outright. If you're not sure whether you meet this bar, your lab rep can tell you.
+- **Bi-directional HL7 support**: Your organization (or your EHR/system) needs to support a bi-directional HL7 interface - one that can both send orders out and receive results back. If your setup can only handle one direction, the lab may not be able to complete the integration.
+
+### What Happens Next
+
+If you meet the criteria above, reach out to your Medplum contact to start the process. We'll create your Health Gorilla tenancy, collect your lab details, and submit the interface request - but note that lab-side timelines vary, and your involvement (especially with your lab rep) is often the key to moving things along.
+
 ## Requisite information for successful lab order
 
 Below is a decision tree that helps determine what information must be collected for a successful lab order with this integration.
