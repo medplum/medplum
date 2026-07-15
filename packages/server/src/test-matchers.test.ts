@@ -64,3 +64,29 @@ describe('toEqualUnordered', () => {
     expect(() => expect({ arr: [3, 1, 2] }).toEqual({ arr: expect.not.toEqualUnordered([1, 2, 3]) })).toThrow();
   });
 });
+
+describe('toHaveStatus', () => {
+  test('passes when status matches', () => {
+    expect({ status: 200, body: {}, text: '' }).toHaveStatus(200);
+  });
+
+  test('fails with response body in message when status differs', () => {
+    expect(() =>
+      expect({ status: 400, body: { issue: [{ details: { text: 'Bad request' } }] }, text: '' }).toHaveStatus(200)
+    ).toThrow(/Expected status 200, received 400[\s\S]*Bad request/);
+  });
+
+  test('falls back to response text when body is not serializable', () => {
+    const body: Record<string, unknown> = {};
+    body.self = body;
+    expect(() => expect({ status: 500, body, text: 'raw text' }).toHaveStatus(200)).toThrow(/raw text/);
+  });
+
+  test('negated form passes when status differs', () => {
+    expect({ status: 404, body: {}, text: '' }).not.toHaveStatus(200);
+  });
+
+  test('negated form fails when status matches', () => {
+    expect(() => expect({ status: 200, body: {}, text: '' }).not.toHaveStatus(200)).toThrow(/not to be 200/);
+  });
+});
