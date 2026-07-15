@@ -8,12 +8,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { sendEmail } from '../email/email';
 import type { SystemRepository } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import {
-  WELCOME_EMAIL_SUBJECT,
-  buildWelcomeEmail,
-  sendWelcomeEmail,
-  welcomeEmailMarkdown,
-} from './welcomeemail';
+import { WELCOME_EMAIL_SUBJECT, buildWelcomeEmail, sendWelcomeEmail, welcomeEmailMarkdown } from './welcomeemail';
 
 vi.mock('../email/email');
 
