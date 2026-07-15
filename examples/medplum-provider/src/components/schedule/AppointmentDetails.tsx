@@ -1,19 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Divider, Group, Loader, Stack, Tooltip } from '@mantine/core';
+import { Button, Divider, Group, Loader, Stack, Text, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   createReference,
   EMPTY,
   formatDateTime,
-  formatHumanName,
   getExtension,
   getReferenceString,
+  isDefined,
   isOk,
   isReference,
   isResource,
+  parseReference,
 } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Patient, Slot } from '@medplum/fhirtypes';
 import {
   CodeableConceptDisplay,
   Form,
@@ -21,9 +22,10 @@ import {
   OperationOutcomeAlert,
   ResourceAvatar,
   ResourceInput,
+  ResourceName,
   useMedplum,
 } from '@medplum/react';
-import { useResource, useSearchOne } from '@medplum/react-hooks';
+import { useSearchOne } from '@medplum/react-hooks';
 import { IconFileCheck, IconNotes, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
@@ -109,17 +111,17 @@ export function AppointmentDetails(props: {
   const { appointment, onAppointmentUpdate, onSlotUpdate } = props;
   const medplum = useMedplum();
 
-  const [encounter, encounterLoading, encounterOutcome] = useSearchOne('Encounter', {
-    appointment: getReferenceString(appointment),
-  });
-
-  // Extract references to a Patient and a Practitioner from `Appointment.participants`; we expect
-  // one of each.
-  const participants = props.appointment.participant.map((p) => p.actor);
-  const patientRef = participants.find((r) => isReference<Patient>(r, 'Patient'));
-  const practitionerRef = participants.find((r) => isReference<Practitioner>(r, 'Practitioner'));
-
-  const patient = useResource(patientRef);
+  const [encounter, encounterLoading, encounterOutcome] = useSearchOne(
+    'Encounter',
+    {
+      appointment: getReferenceString(appointment),
+    },
+    {
+      // Disable debouncer for faster encounter loading. This search is not driven by
+      // keyboard input and so won't benefit from debouncing.
+      debounceMs: 0,
+    }
+  );
 
   const cancellable =
     appointment.status === 'booked' || appointment.status === 'pending' || appointment.status === 'proposed';
@@ -172,22 +174,43 @@ export function AppointmentDetails(props: {
     }
   }, [medplum, appointment, confirmable, onAppointmentUpdate, onSlotUpdate]);
 
+  const sortedParticipants = appointment.participant
+    .map((participant) => {
+      const actor = participant.actor;
+      if (!isReference(actor)) {
+        return undefined;
+      }
+      const [resourceType] = parseReference(actor);
+      return { actor, resourceType };
+    })
+    .filter(isDefined)
+    .sort((a, b) => (a.resourceType === 'Patient' ? 0 : 1) - (b.resourceType === 'Patient' ? 0 : 1));
+
+  // If there is a "Patient" participant, we sorted it to the front of the list, so we can
+  // check just the first entry.
+  const hasPatient = sortedParticipants[0]?.resourceType === 'Patient';
+
   return (
     <Stack gap="md" className={classes.AppointmentDetails}>
       <Divider />
 
-      {!patientRef && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onAppointmentUpdate} />}
+      {!hasPatient && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onAppointmentUpdate} />}
 
-      {!!patient && (
-        <Group align="center" gap="sm">
-          <MedplumLink to={patient}>
-            <ResourceAvatar value={patient} size={48} radius={48} />
-          </MedplumLink>
-          <MedplumLink to={patient} fw={800} size="lg">
-            {formatHumanName(patient.name?.[0])}
-          </MedplumLink>
-        </Group>
-      )}
+      {sortedParticipants.map(({ actor, resourceType }, index) => {
+        return (
+          <Group align="center" gap="sm" key={`${actor.reference ?? ''}_${index}`}>
+            <MedplumLink to={actor} tabIndex={-1}>
+              <ResourceAvatar value={actor} size={48} radius={48} />
+            </MedplumLink>
+            <div>
+              <ResourceName value={actor} size="lg" fw={800} link />
+              <Text size="xs" c="dimmed">
+                {resourceType}
+              </Text>
+            </div>
+          </Group>
+        );
+      })}
 
       <Divider />
 
@@ -220,8 +243,8 @@ export function AppointmentDetails(props: {
       {encounterOutcome && !isOk(encounterOutcome) && (
         <OperationOutcomeAlert outcome={encounterOutcome} title="Loading Encounter failed" />
       )}
-      {patientRef && !encounter && !encounterLoading && encounterOutcome && isOk(encounterOutcome) && (
-        <CreateEncounterForm appointment={appointment} patientRef={patientRef} practitionerRef={practitionerRef} />
+      {hasPatient && !encounter && !encounterLoading && encounterOutcome && isOk(encounterOutcome) && (
+        <CreateEncounterForm appointment={appointment} />
       )}
 
       <Divider />

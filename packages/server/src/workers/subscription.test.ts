@@ -101,6 +101,7 @@ describe('Subscription Worker', () => {
 
   beforeEach(async () => {
     fetchMock.mockClear();
+    getConfig().allowUnsafeOutbound = false;
 
     // Create one simple project with no advanced features enabled
     const { client, repo: _repo } = await withTestContext(() =>
@@ -548,7 +549,7 @@ describe('Subscription Worker', () => {
       await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
-  test('Reject insecure rest-hook URLs by default', () =>
+  test('Ignore insecure rest-hook URLs by default', () =>
     withTestContext(async () => {
       const subscription = await repo.createResource<Subscription>({
         resourceType: 'Subscription',
@@ -568,49 +569,42 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('HTTPS is required');
-      expect(fetch).not.toHaveBeenCalled();
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
-  test('Allow insecure rest-hook URLs when configured', () =>
+  test('Send insecure rest-hook URLs to fetch when unsafe outbound is allowed', () =>
     withTestContext(async () => {
+      getConfig().allowUnsafeOutbound = true;
       const url = 'http://localhost:8080/subscription';
-      const savedConfig = getConfig().allowInsecureRestHookUrl;
-      getConfig().allowInsecureRestHookUrl = true;
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription).toBeDefined();
 
-      try {
-        const subscription = await repo.createResource<Subscription>({
-          resourceType: 'Subscription',
-          reason: 'test',
-          status: 'active',
-          criteria: 'Patient',
-          channel: {
-            type: 'rest-hook',
-            endpoint: url,
-          },
-        });
-        expect(subscription).toBeDefined();
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
 
-        const patient = await repo.createResource<Patient>({
-          resourceType: 'Patient',
-          name: [{ given: ['Alice'], family: 'Smith' }],
-        });
-        expect(patient).toBeDefined();
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
-        fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await findAndExecSubscriptionJob(patient, 'create');
 
-        await findAndExecSubscriptionJob(patient, 'create');
-
-        expect(fetch).toHaveBeenCalledWith(
-          url,
-          expect.objectContaining({
-            method: 'POST',
-            body: stringify(patient),
-          })
-        );
-      } finally {
-        getConfig().allowInsecureRestHookUrl = savedConfig;
-      }
+      expect(fetch).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          method: 'POST',
+          body: stringify(patient),
+        })
+      );
     }));
 
   test('Server-scoped subscription fires across projects when enabled', () =>
@@ -3159,10 +3153,7 @@ describe('Subscription Worker', () => {
 
         const message = await nextMessagePromise;
         const subIds = message.events.map(([subId]) => subId);
-        expect(subIds).toHaveLength(3);
-        expect(subIds).toContain(sub1.id);
-        expect(subIds).toContain(sub2.id);
-        expect(subIds).toContain(sub3.id);
+        expect(subIds).toContainExactly([sub1.id, sub2.id, sub3.id]);
       }));
 
     test('Cached criteria - multiple subscriptions with same non-matching criteria do not fire', () =>
@@ -3269,9 +3260,7 @@ describe('Subscription Worker', () => {
         // Only the Alice subscriptions should fire; Bob subscriptions should be skipped via cached result
         const message = await nextMessagePromise;
         const subIds = message.events.map(([subId]) => subId);
-        expect(subIds).toHaveLength(2);
-        expect(subIds).toContain(aliceSub1.id);
-        expect(subIds).toContain(aliceSub2.id);
+        expect(subIds).toContainExactly([aliceSub1.id, aliceSub2.id]);
       }));
 
     test('Logs WS subscription eval info after evaluating criteria', () =>

@@ -3,6 +3,9 @@
 
 import type { Medication, MedicationRequest, Parameters } from '@medplum/fhirtypes';
 import type {
+  MedicationCartManageResponse,
+  MedicationCheckoutRequest,
+  MedicationCheckoutResponse,
   MedicationOrderRequest,
   MedicationOrderResponse,
   MedicationOrderSetRequest,
@@ -10,6 +13,8 @@ import type {
   MedicationSearchParams,
 } from './medication-order-utils';
 import {
+  INVALID_MEDICATION_CART_RESPONSE,
+  INVALID_MEDICATION_CHECKOUT_RESPONSE,
   INVALID_MEDICATION_ORDER_RESPONSE,
   INVALID_MEDICATION_ORDER_SET_RESPONSE,
   MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
@@ -19,13 +24,21 @@ import {
   getPendingMedicationOrderId,
   getPendingMedicationOrderStatus,
   isMedicationArray,
+  isMedicationCartManageResponse,
+  isMedicationCheckoutResponse,
   isMedicationOrderResponse,
   isMedicationOrderSetResponse,
+  medicationCartClearRequestToParameters,
+  medicationCartRemoveRequestToParameters,
+  medicationCheckoutRequestToParameters,
   medicationOrderRequestToParameters,
   medicationOrderSetRequestToParameters,
   medicationSearchParamsToParameters,
+  parametersToMedicationCartManageResponse,
+  parametersToMedicationCheckoutResponse,
   parametersToMedicationOrderResponse,
   parametersToMedicationOrderSetResponse,
+  parametersToOrderSetSyncResponse,
 } from './medication-order-utils';
 
 const TEST_EXT = {
@@ -290,6 +303,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
       pharmacyNote: 'Call patient first',
       patientInstruction: 'With food',
       appId: 'provider-app',
+      organization: { reference: 'Organization/practice-1' },
     };
     const result = medicationOrderRequestToParameters(req);
     expect(result.parameter).toContainEqual({ name: 'medicationRequestId', valueId: 'mr-1' });
@@ -304,6 +318,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
     expect(result.parameter).toContainEqual({ name: 'pharmacyNote', valueString: 'Call patient first' });
     expect(result.parameter).toContainEqual({ name: 'patientInstruction', valueString: 'With food' });
     expect(result.parameter).toContainEqual({ name: 'appId', valueString: 'provider-app' });
+    expect(result.parameter).toContainEqual({ name: 'organizationId', valueString: 'practice-1' });
 
     const drugs = result.parameter?.find((p) => p.name === 'drugs');
     expect(drugs?.part).toContainEqual({ name: 'routedMedId', valueInteger: 6876 });
@@ -388,6 +403,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
       patientId: 'pat-1',
       planDefinitionId: 'pd-1',
       appId: 'provider-app',
+      organization: { reference: 'Organization/practice-1' },
     };
     const result = medicationOrderSetRequestToParameters(req);
     expect(result.resourceType).toBe('Parameters');
@@ -395,6 +411,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
       { name: 'patientId', valueId: 'pat-1' },
       { name: 'planDefinitionId', valueId: 'pd-1' },
       { name: 'appId', valueString: 'provider-app' },
+      { name: 'organizationId', valueString: 'practice-1' },
     ]);
   });
 
@@ -458,5 +475,293 @@ describe('Custom FHIR operation Parameters helpers', () => {
       parameter: [{ name: 'vendorPatientId', valueInteger: 1 }],
     };
     expect(() => parametersToMedicationOrderSetResponse(params)).toThrow(INVALID_MEDICATION_ORDER_SET_RESPONSE);
+  });
+
+  describe('isMedicationCheckoutResponse', () => {
+    test('accepts valid response (including empty items)', () => {
+      expect(
+        isMedicationCheckoutResponse({ approvalUrl: 'https://example.com/approve', vendorPatientId: 2, items: [] })
+      ).toBe(true);
+    });
+
+    test('rejects missing or malformed fields', () => {
+      expect(isMedicationCheckoutResponse({})).toBe(false);
+      expect(isMedicationCheckoutResponse(null)).toBe(false);
+      expect(isMedicationCheckoutResponse({ approvalUrl: '', vendorPatientId: 2, items: [] })).toBe(false);
+      expect(isMedicationCheckoutResponse({ approvalUrl: 'x', vendorPatientId: 2 })).toBe(false);
+      expect(isMedicationCheckoutResponse({ approvalUrl: 'x', vendorPatientId: Number.NaN, items: [] })).toBe(false);
+    });
+  });
+
+  test('medicationCheckoutRequestToParameters emits one medicationRequestIds entry per id', () => {
+    const req: MedicationCheckoutRequest = {
+      patientId: 'pat-1',
+      medicationRequestIds: ['mr-1', 'mr-2', 'mr-3'],
+      appId: 'provider-app',
+    };
+    const result = medicationCheckoutRequestToParameters(req);
+    expect(result.resourceType).toBe('Parameters');
+    expect(result.parameter).toEqual([
+      { name: 'patientId', valueId: 'pat-1' },
+      { name: 'medicationRequestIds', valueId: 'mr-1' },
+      { name: 'medicationRequestIds', valueId: 'mr-2' },
+      { name: 'medicationRequestIds', valueId: 'mr-3' },
+      { name: 'appId', valueString: 'provider-app' },
+    ]);
+  });
+
+  test('medicationCheckoutRequestToParameters omits appId when not provided', () => {
+    const result = medicationCheckoutRequestToParameters({ patientId: 'pat-1', medicationRequestIds: ['mr-1'] });
+    expect(result.parameter).toEqual([
+      { name: 'patientId', valueId: 'pat-1' },
+      { name: 'medicationRequestIds', valueId: 'mr-1' },
+    ]);
+  });
+
+  test('medicationCheckoutRequestToParameters emits organizationId when provided', () => {
+    const result = medicationCheckoutRequestToParameters({
+      patientId: 'pat-1',
+      medicationRequestIds: ['mr-1'],
+      organization: { reference: 'Organization/org-7' },
+    });
+    expect(result.parameter).toEqual([
+      { name: 'patientId', valueId: 'pat-1' },
+      { name: 'medicationRequestIds', valueId: 'mr-1' },
+      { name: 'organizationId', valueString: 'org-7' },
+    ]);
+  });
+
+  test('parametersToMedicationCheckoutResponse round-trips the checkout response shape', () => {
+    const expected: MedicationCheckoutResponse = {
+      approvalUrl: 'https://ui.example.com/widgets/medcart/24057?sessiontoken=tok',
+      vendorPatientId: 24057,
+      items: [
+        { medicationRequestId: 'mr-1', vendorLineId: 'rx-1', status: 'queued' },
+        { medicationRequestId: 'mr-2', status: 'failed', error: 'no rxnorm' },
+      ],
+    };
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://ui.example.com/widgets/medcart/24057?sessiontoken=tok' },
+        { name: 'vendorPatientId', valueInteger: 24057 },
+        {
+          name: 'items',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-1' },
+            { name: 'vendorLineId', valueString: 'rx-1' },
+            { name: 'status', valueCode: 'queued' },
+          ],
+        },
+        {
+          name: 'items',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-2' },
+            { name: 'status', valueCode: 'failed' },
+            { name: 'error', valueString: 'no rxnorm' },
+          ],
+        },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params)).toEqual(expected);
+  });
+
+  test('parametersToMedicationCheckoutResponse tolerates zero items', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params)).toEqual({
+      approvalUrl: 'https://example.com/approve',
+      vendorPatientId: 7,
+      items: [],
+    });
+  });
+
+  test('parametersToMedicationCheckoutResponse drops malformed item parts (missing status)', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+        { name: 'items', part: [{ name: 'medicationRequestId', valueId: 'mr-1' }] },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params).items).toEqual([]);
+  });
+
+  test('parametersToMedicationCheckoutResponse rejects missing approvalUrl', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [{ name: 'vendorPatientId', valueInteger: 1 }],
+    };
+    expect(() => parametersToMedicationCheckoutResponse(params)).toThrow(INVALID_MEDICATION_CHECKOUT_RESPONSE);
+  });
+
+  describe('cart management helpers', () => {
+    test('isMedicationCartManageResponse accepts valid response', () => {
+      expect(
+        isMedicationCartManageResponse({
+          vendorPatientId: 24057,
+          removedCount: 1,
+          items: [{ medicationRequestId: 'mr-1', status: 'removed' }],
+        })
+      ).toBe(true);
+    });
+
+    test('isMedicationCartManageResponse rejects malformed response', () => {
+      expect(isMedicationCartManageResponse({})).toBe(false);
+      expect(isMedicationCartManageResponse(null)).toBe(false);
+      expect(isMedicationCartManageResponse({ vendorPatientId: 1, removedCount: 0 })).toBe(false);
+    });
+
+    test('medicationCartRemoveRequestToParameters encodes remove action', () => {
+      const result = medicationCartRemoveRequestToParameters({ patientId: 'pat-1', medicationRequestId: 'mr-1' });
+      expect(result.parameter).toEqual([
+        { name: 'patientId', valueId: 'pat-1' },
+        { name: 'action', valueCode: 'remove' },
+        { name: 'medicationRequestId', valueId: 'mr-1' },
+      ]);
+    });
+
+    test('medicationCartClearRequestToParameters encodes clear action', () => {
+      const result = medicationCartClearRequestToParameters({ patientId: 'pat-1' });
+      expect(result.parameter).toEqual([
+        { name: 'patientId', valueId: 'pat-1' },
+        { name: 'action', valueCode: 'clear' },
+      ]);
+    });
+
+    test('parametersToMedicationCartManageResponse round-trips remove/clear outcomes', () => {
+      const expected: MedicationCartManageResponse = {
+        vendorPatientId: 24057,
+        removedCount: 2,
+        items: [
+          { medicationRequestId: 'mr-1', vendorLineId: 'rx-1', status: 'removed' },
+          { medicationRequestId: 'mr-2', status: 'failed', error: 'vendor 500' },
+        ],
+      };
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'vendorPatientId', valueInteger: 24057 },
+          { name: 'removedCount', valueInteger: 2 },
+          {
+            name: 'items',
+            part: [
+              { name: 'medicationRequestId', valueId: 'mr-1' },
+              { name: 'vendorLineId', valueString: 'rx-1' },
+              { name: 'status', valueCode: 'removed' },
+            ],
+          },
+          {
+            name: 'items',
+            part: [
+              { name: 'medicationRequestId', valueId: 'mr-2' },
+              { name: 'status', valueCode: 'failed' },
+              { name: 'error', valueString: 'vendor 500' },
+            ],
+          },
+        ],
+      };
+      expect(parametersToMedicationCartManageResponse(params)).toEqual(expected);
+    });
+
+    test('parametersToMedicationCartManageResponse drops malformed item parts', () => {
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'vendorPatientId', valueInteger: 7 },
+          { name: 'removedCount', valueInteger: 0 },
+          { name: 'items', part: [{ name: 'medicationRequestId', valueId: 'mr-1' }] },
+        ],
+      };
+      expect(parametersToMedicationCartManageResponse(params)).toEqual({
+        vendorPatientId: 7,
+        removedCount: 0,
+        items: [],
+      });
+    });
+
+    test('parametersToMedicationCartManageResponse rejects missing vendorPatientId', () => {
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'removedCount', valueInteger: 0 }],
+      };
+      expect(() => parametersToMedicationCartManageResponse(params)).toThrow(INVALID_MEDICATION_CART_RESPONSE);
+    });
+  });
+
+  test('parametersToOrderSetSyncResponse decodes counts + repeating per-action results', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'mode', valueCode: 'created' },
+        { name: 'planDefinitionId', valueId: 'pd-1' },
+        { name: 'scriptSureOrdersetId', valueInteger: 379 },
+        { name: 'syncedCount', valueInteger: 1 },
+        { name: 'failedCount', valueInteger: 1 },
+        {
+          name: 'results',
+          part: [
+            { name: 'actionTitle', valueString: 'Jardiance' },
+            { name: 'activityDefinitionUrl', valueCanonical: 'https://x/ActivityDefinition/j|1.0.0' },
+            { name: 'scriptSureSequenceId', valueInteger: 1011 },
+            { name: 'status', valueCode: 'synced' },
+          ],
+        },
+        {
+          name: 'results',
+          part: [
+            { name: 'actionTitle', valueString: 'Ozempic' },
+            { name: 'status', valueCode: 'failed' },
+            { name: 'error', valueString: 'drug not in FDB' },
+          ],
+        },
+      ],
+    };
+    expect(parametersToOrderSetSyncResponse(params)).toEqual({
+      mode: 'created',
+      planDefinitionId: 'pd-1',
+      scriptSureOrdersetId: 379,
+      syncedCount: 1,
+      failedCount: 1,
+      results: [
+        {
+          actionTitle: 'Jardiance',
+          activityDefinitionUrl: 'https://x/ActivityDefinition/j|1.0.0',
+          scriptSureSequenceId: 1011,
+          scriptSureOrderId: undefined,
+          status: 'synced',
+          error: undefined,
+        },
+        {
+          actionTitle: 'Ozempic',
+          activityDefinitionUrl: undefined,
+          scriptSureSequenceId: undefined,
+          scriptSureOrderId: undefined,
+          status: 'failed',
+          error: 'drug not in FDB',
+        },
+      ],
+    });
+  });
+
+  test('parametersToOrderSetSyncResponse derives counts from results when scalars absent', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'mode', valueCode: 'noop-already-synced' },
+        { name: 'results', part: [{ name: 'status', valueCode: 'synced' }] },
+        { name: 'results', part: [{ name: 'status', valueCode: 'failed' }] },
+      ],
+    };
+    const decoded = parametersToOrderSetSyncResponse(params);
+    expect(decoded.mode).toBe('noop-already-synced');
+    expect(decoded.syncedCount).toBe(1);
+    expect(decoded.failedCount).toBe(1);
   });
 });

@@ -18,6 +18,7 @@ import type {
   OperationOutcome,
   ParametersParameter,
   Resource,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
@@ -29,13 +30,17 @@ const maxSerializableTransactionEntries = 8;
 
 const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 
-type BundleEntryIdentity = { placeholder: string; reference: string };
+interface BundleEntryIdentity {
+  placeholder: string;
+  reference: string;
+}
 
-export type BundlePreprocessInfo = {
+export interface BundlePreprocessInfo {
   ordering: number[];
   requiresStrongTransaction: boolean;
   updates: number;
-};
+  resourceTypes: Set<ResourceType>;
+}
 
 /**
  * The durable, JSON-serializable state produced by preprocessing a batch bundle. This is
@@ -86,6 +91,17 @@ export async function processBatch(
   return processor.run();
 }
 
+interface ProcessingState {
+  /** Index into `bundleInfo.ordering` of the next entry to process. */
+  position: number;
+  /** The result entries for the bundle */
+  resultEntries: (BundleEntry | OperationOutcome)[];
+  /** Indices (into the original bundle) of results produced since the last {@link BatchProcessor.takePendingResults} call. */
+  pendingIndices: number[];
+  /** Error messages accumulated across processed entries, for the post-batch telemetry event. */
+  errors: string[];
+}
+
 /**
  * The BatchProcessor class contains the state for processing a batch/transaction bundle.
  * In particular, it tracks rewritten IDs as necessary.
@@ -109,13 +125,9 @@ export class BatchProcessor {
   private readonly req: FhirRequest;
   private resolvedIdentities: Record<string, string>;
   private bundleInfo: BundlePreprocessInfo | undefined;
-  private resultEntries: (BundleEntry | OperationOutcome)[];
-  /** Index into `bundleInfo.ordering` of the next entry to process. */
-  private position: number;
-  /** Indices (into the original bundle) of results produced since the last {@link BatchProcessor.takePendingResults} call. */
-  private pendingIndices: number[];
-  /** Error messages accumulated across processed entries, for the post-batch telemetry event. */
-  private readonly errors: string[];
+
+  /** The state mutated through processing (and preprocessing) */
+  private state: ProcessingState;
 
   /**
    * Creates a batch processor.
@@ -130,10 +142,12 @@ export class BatchProcessor {
     this.bundle = bundle;
     this.req = req;
     this.resolvedIdentities = Object.create(null);
-    this.resultEntries = new Array(bundle.entry?.length ?? 0);
-    this.position = 0;
-    this.pendingIndices = [];
-    this.errors = [];
+    this.state = {
+      position: 0,
+      resultEntries: new Array(bundle.entry?.length ?? 0),
+      pendingIndices: [],
+      errors: [],
+    };
   }
 
   /**
@@ -161,7 +175,7 @@ export class BatchProcessor {
     processor.bundleInfo = {
       ...initialState.bundleInfo,
     };
-    processor.position = position;
+    processor.state.position = position;
     return processor;
   }
 
@@ -177,9 +191,26 @@ export class BatchProcessor {
       return this.processEntriesAndBuild();
     }
 
-    return this.repo.withTransaction((txRepo) => this.withRepo(txRepo, () => this.processEntriesAndBuild()), {
-      serializable: bundleInfo.requiresStrongTransaction,
-    });
+    // withTransaction re-runs this callback on a retryable failure (e.g. a serialization conflict,
+    // which SERIALIZABLE transactions commonly surface at COMMIT time). Each attempt must reprocess
+    // every entry from scratch: the progress marker (`position`) and per-entry results
+    // (`resultEntries`) are instance state carried over from the failed attempt, so without resetting
+    // them a retry would re-enter with `position` already at the end, skip every entry, commit an
+    // empty transaction, and return the stale success responses from the rolled-back attempt.
+    // Preprocessing (ID assignment, conditional-URL rewriting) is intentionally NOT redone, so
+    // reprocessed entries reuse the same resource IDs and remain idempotent across attempts.
+    const preTransactionState = cloneState(this.state);
+    return this.repo.withTransaction(
+      (txRepo) =>
+        this.withRepo(txRepo, () => {
+          this.state = cloneState(preTransactionState);
+          return this.processEntriesAndBuild();
+        }),
+      {
+        serializable: bundleInfo.requiresStrongTransaction,
+        resourceTypes: bundleInfo.resourceTypes,
+      }
+    );
   }
 
   /**
@@ -197,13 +228,16 @@ export class BatchProcessor {
       throw new OperationOutcomeError(badRequest('Unrecognized bundle type: ' + bundleType));
     }
 
-    this.bundleInfo = await this.preprocessBundle(this.resultEntries);
+    this.bundleInfo = await this.preprocessBundle();
 
     if (this.isTransaction()) {
       if (this.bundleInfo.updates > maxUpdates) {
         throw new OperationOutcomeError(badRequest('Transaction contains more update operations than allowed'));
       }
-      if (this.bundleInfo.requiresStrongTransaction && this.resultEntries.length > maxSerializableTransactionEntries) {
+      if (
+        this.bundleInfo.requiresStrongTransaction &&
+        this.state.resultEntries.length > maxSerializableTransactionEntries
+      ) {
         throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
       }
     }
@@ -211,9 +245,10 @@ export class BatchProcessor {
     // Capture any result entries produced during preprocessing itself (error responses for
     // malformed entries). These are never re-processed, so they belong in the initial state.
     const preprocessResults: Record<number, BundleEntry> = Object.create(null);
-    for (let i = 0; i < this.resultEntries.length; i++) {
-      if (this.resultEntries[i]) {
-        preprocessResults[i] = this.resultEntries[i];
+    for (let i = 0; i < this.state.resultEntries.length; i++) {
+      if (this.state.resultEntries[i]) {
+        // despite the type, resultEntries can have EMPTY/undefined entries
+        preprocessResults[i] = this.state.resultEntries[i];
       }
     }
 
@@ -221,6 +256,7 @@ export class BatchProcessor {
       bundle: this.bundle,
       bundleInfo: {
         ordering: this.bundleInfo.ordering,
+        resourceTypes: this.bundleInfo.resourceTypes,
         requiresStrongTransaction: this.bundleInfo.requiresStrongTransaction,
         updates: this.bundleInfo.updates,
       },
@@ -234,7 +270,7 @@ export class BatchProcessor {
    * called again.
    */
   hasMoreEntries(): boolean {
-    return this.bundleInfo !== undefined && this.position < this.bundleInfo.ordering.length;
+    return this.bundleInfo !== undefined && this.state.position < this.bundleInfo.ordering.length;
   }
 
   /**
@@ -243,7 +279,7 @@ export class BatchProcessor {
    * to allow resuming via {@link BatchProcessor.fromState}.
    */
   getPosition(): number {
-    return this.position;
+    return this.state.position;
   }
 
   /**
@@ -254,15 +290,15 @@ export class BatchProcessor {
    * if no new entries were produced.
    */
   takePendingResults(): Record<number, BundleEntry> | undefined {
-    if (this.pendingIndices.length === 0) {
+    if (this.state.pendingIndices.length === 0) {
       return undefined;
     }
 
     const out: Record<number, BundleEntry> = Object.create(null);
-    for (const index of this.pendingIndices) {
-      out[index] = this.resultEntries[index];
+    for (const index of this.state.pendingIndices) {
+      out[index] = this.state.resultEntries[index];
     }
-    this.pendingIndices = [];
+    this.state.pendingIndices = [];
     return out;
   }
 
@@ -289,7 +325,7 @@ export class BatchProcessor {
     const postEvent: BatchEvent = {
       type: 'batch',
       bundleType: this.bundle.type,
-      errors: this.errors.length ? this.errors : undefined,
+      errors: this.state.errors.length ? this.state.errors : undefined,
     };
     this.router.dispatchEvent(postEvent);
   }
@@ -304,7 +340,7 @@ export class BatchProcessor {
     return {
       resourceType: 'Bundle',
       type: `${this.bundle.type}-response` as Bundle['type'],
-      entry: this.resultEntries,
+      entry: this.state.resultEntries,
     };
   }
 
@@ -328,10 +364,9 @@ export class BatchProcessor {
    * Scans the Bundle in order to ensure entries are processed in the correct sequence,
    * as well as to identify any operations that might require specific handling.
    *
-   * @param results - The array of result entries, to track partial results.
    * @returns The information gathered from scanning the Bundle.
    */
-  private async preprocessBundle(results: BundleEntry[]): Promise<BundlePreprocessInfo> {
+  private async preprocessBundle(): Promise<BundlePreprocessInfo> {
     const entries = this.bundle.entry;
     if (!entries?.length) {
       throw new OperationOutcomeError(badRequest('Missing bundle entries'));
@@ -355,6 +390,7 @@ export class BatchProcessor {
       'history-instance': [],
     };
     const seenIdentities = new Set<string>();
+    const resourceTypes = new Set<ResourceType>();
     let requiresStrongTransaction = false;
     let updates = 0;
 
@@ -362,7 +398,7 @@ export class BatchProcessor {
       const entry = entries[i];
       const method = entry.request?.method;
       if (!method) {
-        results[i] = buildBundleResponse(
+        this.state.resultEntries[i] = buildBundleResponse(
           badRequest('Missing Bundle entry request method', `Bundle.entry[${i}].request.method`)
         );
         continue;
@@ -370,7 +406,7 @@ export class BatchProcessor {
       const outcome = await this.preprocessEntry(entry, i, seenIdentities);
       if (outcome) {
         if (!this.isTransaction()) {
-          results[i] = buildBundleResponse(outcome);
+          this.state.resultEntries[i] = buildBundleResponse(outcome);
           continue;
         }
         throw new OperationOutcomeError(outcome);
@@ -382,6 +418,17 @@ export class BatchProcessor {
         throw new OperationOutcomeError(
           badRequest(`Invalid REST interaction in batch: ${entry.request?.method} ${entry.request?.url}`)
         );
+      }
+
+      // Track the resource type touched by this entry, derived from the parsed route.
+      // The URL is used rather than entry.resource since reads/deletes have no resource
+      // and PATCH carries a Binary/Parameters payload instead of the target resource.
+      // System-level interactions (search-system, history-system, nested bundles) have no
+      // resource type and are skipped. GraphQL and custom operations can touch arbitrary
+      // resource types that are not derivable from the URL, so they are under-reported here.
+      const entryResourceType = route?.params?.resourceType as ResourceType | undefined;
+      if (entryResourceType) {
+        resourceTypes.add(entryResourceType);
       }
       if (interaction === 'create' && entry.request?.ifNoneExist) {
         // Conditional create requires strong (serializable) transaction to
@@ -409,6 +456,7 @@ export class BatchProcessor {
       ordering,
       requiresStrongTransaction,
       updates,
+      resourceTypes,
     };
   }
 
@@ -592,40 +640,40 @@ export class BatchProcessor {
     if (!entries) {
       throw new OperationOutcomeError(badRequest('Missing bundle entry'));
     }
-    if (this.position >= bundleInfo.ordering.length) {
+    if (this.state.position >= bundleInfo.ordering.length) {
       return;
     }
 
-    const n = this.position;
+    const n = this.state.position;
     const entryIndex = bundleInfo.ordering[n];
     const entry = entries[entryIndex];
     const rewritten = this.rewriteIdsInObject(entry);
     try {
       this.setResult(entryIndex, await this.processBatchEntry(rewritten));
-      this.position = n + 1;
+      this.state.position = n + 1;
     } catch (err: any) {
       if (this.isTransaction()) {
         throw err;
       }
 
-      this.errors.push(err.message);
+      this.state.errors.push(err.message);
       if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 429) {
         // Rate limit reached; terminate batch and finish to avoid further load on server
         for (let i = n; i < bundleInfo.ordering.length; i++) {
           this.setResult(bundleInfo.ordering[i], buildBundleResponse(err.outcome));
         }
-        this.position = bundleInfo.ordering.length;
+        this.state.position = bundleInfo.ordering.length;
         return;
       }
 
       this.setResult(entryIndex, buildBundleResponse(normalizeOperationOutcome(err)));
-      this.position = n + 1;
+      this.state.position = n + 1;
     }
   }
 
   private setResult(index: number, entry: BundleEntry): void {
-    this.resultEntries[index] = entry;
-    this.pendingIndices.push(index);
+    this.state.resultEntries[index] = entry;
+    this.state.pendingIndices.push(index);
   }
 
   /**
@@ -842,4 +890,13 @@ export interface BatchEvent extends Event {
 export interface LogEvent extends Event {
   message: string;
   data?: Record<string, any>;
+}
+
+function cloneState(state: ProcessingState): ProcessingState {
+  return {
+    position: state.position,
+    resultEntries: state.resultEntries.slice(),
+    pendingIndices: state.pendingIndices.slice(),
+    errors: state.errors.slice(),
+  };
 }

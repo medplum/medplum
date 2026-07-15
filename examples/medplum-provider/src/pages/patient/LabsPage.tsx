@@ -1,85 +1,104 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  ActionIcon,
-  Box,
-  Divider,
-  Flex,
-  Group,
-  Modal,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Tabs,
-  Text,
-  Tooltip,
-} from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
-import type { ServiceRequest } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { ActionIcon, Box, Flex, Modal, Stack, Text, Tooltip } from '@mantine/core';
+import type { Filter, SearchRequest, SortRule, WithId } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
+import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
+import type { ListWithDetailPaneTab } from '@medplum/react';
+import { ListWithDetailPane, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router';
+import { LabDetailPane } from '../../components/labs/LabDetailPane';
 import { LabListItem } from '../../components/labs/LabListItem';
-import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
+import { LabResultListItem } from '../../components/labs/LabResultListItem';
 import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
-import classes from './LabsPage.module.css';
 
-type LabTab = 'open' | 'completed';
+export type LabTab = 'open' | 'completed';
+type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
 
-export function LabsPage(): JSX.Element {
-  const { patientId, serviceRequestId } = useParams();
+// The "Completed" tab lists finalized results; the "Open" tab lists orders that
+// have not yet resolved into a result.
+const COMPLETED_RESOURCE_TYPE = 'DiagnosticReport';
+const OPEN_RESOURCE_TYPE = 'ServiceRequest';
+const COMPLETED_REPORT_STATUS = 'final';
+const OPEN_ORDER_STATUS = 'active,draft,on-hold';
+const DEFAULT_SORT_RULES: SortRule[] = [{ code: '_lastUpdated', descending: true }];
+const DEFAULT_COUNT = 20;
+
+export interface LabsPageProps {
+  tab: LabTab;
+}
+
+export function LabsPage(props: LabsPageProps): JSX.Element {
+  const { tab: activeTab } = props;
+  const { patientId, serviceRequestId, diagnosticReportId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const medplum = useMedplum();
-
-  const [activeTab, setActiveTab] = useState<LabTab>('completed');
-  const [openOrders, setOpenOrders] = useState<ServiceRequest[]>([]);
-  const [completedOrders, setCompletedOrders] = useState<ServiceRequest[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
 
   const patient = usePatient();
   const patientReference = useMemo(() => (patient ? getReferenceString(patient) : undefined), [patient]);
-  const [currentOrder, setCurrentOrder] = useState<ServiceRequest>();
 
-  const fetchOrders = useCallback(async (): Promise<void> => {
-    if (!patientReference) {
-      showErrorNotification('Patient not found');
-      return;
+  const resourceType = activeTab === 'completed' ? COMPLETED_RESOURCE_TYPE : OPEN_RESOURCE_TYPE;
+  const selectedId = activeTab === 'completed' ? diagnosticReportId : serviceRequestId;
+
+  const [items, setItems] = useState<LabItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [selected, setSelected] = useState<LabItem>();
+  const [loading, setLoading] = useState(false);
+  const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
+
+  // The active search is parsed from the URL query string, then has the tab's
+  // default status filter and a default sort applied.
+  const search = useMemo(
+    () => addDefaultLabSearchValues(parseSearchRequest(`${resourceType}${location.search}`), activeTab),
+    [resourceType, location.search, activeTab]
+  );
+
+  // Keep the URL in sync with the effective filters/sort. When the URL lacks a
+  // sort (or status), this rewrites it to the normalized query (e.g. adds
+  // _sort=-_lastUpdated).
+  useEffect(() => {
+    const normalizedQuery = formatSearchQuery(search);
+    if (location.search !== normalizedQuery) {
+      navigate(`${location.pathname}${normalizedQuery}`, { replace: true })?.catch(console.error);
     }
-    try {
-      const searchParams = new URLSearchParams({
-        subject: patientReference,
-        _count: '100',
-        _sort: '-_lastUpdated',
-        _fields:
-          '_lastUpdated,code,status,orderDetail,category,subject,requester,performer,requisition,identifier,authoredOn,priority,reasonCode,note,supportingInfo,basedOn',
-      });
-
-      const results: ServiceRequest[] = await medplum.searchResources('ServiceRequest', searchParams, {
-        cache: 'no-cache',
-      });
-
-      setOpenOrders(filterOpenOrders(results));
-      setCompletedOrders(filterCompletedOrders(results));
-    } catch (error) {
-      showErrorNotification(error);
-    }
-  }, [medplum, patientReference]);
+  }, [search, location.pathname, location.search, navigate]);
 
   const fetchData = useCallback(async (): Promise<void> => {
+    if (!patientReference) {
+      return;
+    }
     setLoading(true);
     try {
-      await fetchOrders();
+      const filters: Filter[] = [
+        ...(search.filters ?? []),
+        { code: 'subject', operator: Operator.EQUALS, value: patientReference },
+      ];
+      if (activeTab === 'open') {
+        // A lab order is a top-level ServiceRequest plus one child ServiceRequest
+        // per test (basedOn the parent), all sharing a requisition. Listing only
+        // top-level requests shows each order once, and keeps the server total
+        // (used for pagination) consistent with the rows displayed.
+        filters.push({ code: 'based-on', operator: Operator.MISSING, value: 'true' });
+      }
+      const fetchQuery: SearchRequest = { ...search, filters, total: 'accurate' };
+      const results = await medplum.searchResources(resourceType, formatSearchQuery(fetchQuery), {
+        cache: 'no-cache',
+      });
+      setItems(results);
+      setTotal(results.bundle?.total ?? results.length);
+    } catch (error) {
+      showErrorNotification(error);
     } finally {
       setLoading(false);
     }
-  }, [fetchOrders]);
+  }, [medplum, patientReference, resourceType, search, activeTab]);
 
   useEffect(() => {
     if (patientId) {
@@ -87,137 +106,115 @@ export function LabsPage(): JSX.Element {
     }
   }, [patientId, fetchData]);
 
-  const handleOrderSelect = useCallback(
-    (order: ServiceRequest): string => {
-      return `/Patient/${patientId}/ServiceRequest/${order.id}`;
+  // Resolve the selected item from the loaded list, falling back to a read.
+  useEffect(() => {
+    const resolveSelected = async (): Promise<void> => {
+      if (!selectedId) {
+        setSelected(undefined);
+        return;
+      }
+      const found = items.find((item) => item.id === selectedId);
+      if (found) {
+        setSelected(found);
+        return;
+      }
+      setSelected(await medplum.readResource(resourceType, selectedId));
+    };
+    resolveSelected().catch(showErrorNotification);
+  }, [selectedId, items, resourceType, medplum]);
+
+  const tabs: ListWithDetailPaneTab[] = useMemo(() => {
+    const completedQuery = formatSearchQuery(
+      addDefaultLabSearchValues(parseSearchRequest(COMPLETED_RESOURCE_TYPE), 'completed')
+    );
+    const openQuery = formatSearchQuery(addDefaultLabSearchValues(parseSearchRequest(OPEN_RESOURCE_TYPE), 'open'));
+    return [
+      { value: 'completed', label: 'Completed', uri: `/Patient/${patientId}/DiagnosticReport${completedQuery}` },
+      { value: 'open', label: 'Open', uri: `/Patient/${patientId}/ServiceRequest${openQuery}` },
+    ];
+  }, [patientId]);
+
+  const handleTabChange = useCallback(
+    (value: string): void => {
+      const tab = tabs.find((t) => t.value === value);
+      if (tab) {
+        navigate(tab.uri)?.catch(console.error);
+      }
     },
-    [patientId]
+    [navigate, tabs]
   );
 
-  useEffect(() => {
-    const fetchOrder = async (): Promise<void> => {
-      if (serviceRequestId) {
-        const currentItems = activeTab === 'open' ? openOrders : completedOrders;
-        const order = currentItems.find((order: ServiceRequest) => order.id === serviceRequestId);
-        if (order) {
-          setCurrentOrder(order);
-        } else {
-          const order = await medplum.readResource('ServiceRequest', serviceRequestId);
-          if (order) {
-            setCurrentOrder(order);
-          }
-        }
-      } else {
-        setCurrentOrder(undefined);
-      }
-    };
-    fetchOrder().catch(showErrorNotification);
-  }, [activeTab, openOrders, completedOrders, serviceRequestId, medplum]);
+  const count = search.count ?? DEFAULT_COUNT;
+  const page = Math.floor((search.offset ?? 0) / count) + 1;
+  const pageCount = Math.max(1, Math.ceil(total / count));
 
-  const handleTabChange = (value: string): void => {
-    const newTab = value as LabTab;
-    setActiveTab(newTab);
-  };
+  const handlePageChange = useCallback(
+    (newPage: number): void => {
+      // Navigate to the list (dropping any selected item) with the new offset.
+      const nextSearch: SearchRequest = { ...search, offset: (newPage - 1) * (search.count ?? DEFAULT_COUNT) };
+      navigate(`/Patient/${patientId}/${resourceType}${formatSearchQuery(nextSearch)}`)?.catch(console.error);
+    },
+    [search, navigate, patientId, resourceType]
+  );
 
-  const handleNewOrderCreated = (): void => {
+  const handleNewOrderCreated = useCallback((): void => {
     setNewOrderModalOpened(false);
-
+    const openTab = tabs.find((t) => t.value === 'open');
     fetchData()
-      .then(() => {
-        setActiveTab('open');
-        navigate(`/Patient/${patientId}/ServiceRequest`)?.catch(console.error);
-      })
+      .then(() => (openTab ? navigate(openTab.uri)?.catch(console.error) : undefined))
       .catch(showErrorNotification);
-  };
+  }, [fetchData, navigate, tabs]);
 
-  const currentItems = activeTab === 'completed' ? completedOrders : openOrders;
+  const headerActions = (
+    <Tooltip label="Order Labs" position="bottom" openDelay={500}>
+      <ActionIcon
+        radius="xl"
+        variant="filled"
+        color="blue"
+        size={32}
+        aria-label="Order Labs"
+        onClick={() => setNewOrderModalOpened(true)}
+      >
+        <IconPlus size={16} />
+      </ActionIcon>
+    </Tooltip>
+  );
 
   return (
     <Box w="100%" h="100%">
-      <Flex h="100%">
-        <Box w={350} h="100%">
-          <Flex direction="column" h="100%" className={classes.borderRight}>
-            <Paper>
-              <Flex h={64} align="center" justify="space-between" p="md">
-                <Group gap="xs">
-                  <Tabs
-                    value={activeTab}
-                    onChange={(value) => handleTabChange(value as string)}
-                    variant="unstyled"
-                    className="pill-tabs"
-                  >
-                    <Tabs.List>
-                      <Tabs.Tab value="completed">Completed</Tabs.Tab>
-                      <Tabs.Tab value="open">Open</Tabs.Tab>
-                    </Tabs.List>
-                  </Tabs>
-                </Group>
-
-                <Tooltip label="Order Labs" position="bottom" openDelay={500}>
-                  <ActionIcon
-                    radius="xl"
-                    variant="filled"
-                    color="blue"
-                    size={32}
-                    onClick={() => setNewOrderModalOpened(true)}
-                  >
-                    <IconPlus size={16} />
-                  </ActionIcon>
-                </Tooltip>
-              </Flex>
-            </Paper>
-
-            <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden' }}>
-              <ScrollArea h="100%" id="lab-list-scrollarea" p="0.5rem">
-                {loading && <LabListSkeleton />}
-                {!loading && currentItems.length === 0 && <EmptyLabsState activeTab={activeTab} />}
-                {!loading &&
-                  currentItems.length > 0 &&
-                  currentItems.map((item, index) => {
-                    return (
-                      <React.Fragment key={item.id}>
-                        <LabListItem
-                          item={item}
-                          selectedItem={currentOrder}
-                          activeTab={activeTab}
-                          onItemSelect={handleOrderSelect}
-                        />
-                        {index < currentItems.length - 1 && (
-                          <Box px="0.5rem">
-                            <Divider />
-                          </Box>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-              </ScrollArea>
-            </Paper>
-          </Flex>
-        </Box>
-
-        {currentItems.length > 0 ? (
-          <>
-            <Box
-              h="100%"
-              style={{
-                flex: 1,
-              }}
-              className={classes.borderRight}
-            >
-              {currentOrder ? (
-                <LabOrderDetails key={currentOrder.id} order={currentOrder} />
-              ) : (
-                <LabSelectEmpty activeTab={'open'} />
-              )}
-            </Box>
-          </>
-        ) : (
-          <Flex direction="column" h="100%" style={{ flex: 1 }}>
-            <LabSelectEmpty activeTab={activeTab} />
-          </Flex>
-        )}
-      </Flex>
+      <ListWithDetailPane<LabItem>
+        items={items}
+        loading={loading}
+        selectedKey={selectedId}
+        selected={selected}
+        refresh={fetchData}
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        headerActions={headerActions}
+        emptyList={<EmptyLabsState activeTab={activeTab} />}
+        emptyDetail={<LabSelectEmpty activeTab={activeTab} />}
+        page={page}
+        pageCount={pageCount}
+        onPageChange={handlePageChange}
+        renderItem={(item, ctx) =>
+          item.resourceType === 'DiagnosticReport' ? (
+            <LabResultListItem
+              report={item}
+              selected={ctx.selected}
+              to={`/Patient/${patientId}/DiagnosticReport/${item.id}${location.search}`}
+            />
+          ) : (
+            <LabListItem
+              item={item}
+              selectedItem={ctx.selected ? item : undefined}
+              activeTab="open"
+              onItemSelect={(order) => `/Patient/${patientId}/ServiceRequest/${order.id}${location.search}`}
+            />
+          )
+        }
+        renderDetail={(item) => <LabDetailPane item={item} />}
+      />
 
       {/* New Order Modal */}
       <Modal
@@ -233,77 +230,23 @@ export function LabsPage(): JSX.Element {
   );
 }
 
-function filterOpenOrders(orders: ServiceRequest[]): ServiceRequest[] {
-  const filteredOutStatuses = ['completed', 'draft', 'entered-in-error'];
-  const completedServiceRequestIds = new Set<string>();
-  orders.forEach((order) => {
-    if (order.status === 'completed' && order.id) {
-      completedServiceRequestIds.add(order.id);
-    }
-  });
-
-  const completedRequisitionNumbers = new Set<string>();
-  const filtered = orders.filter((order) => {
-    if (filteredOutStatuses.includes(order.status || '')) {
-      return false;
-    }
-
-    if (order.basedOn) {
-      const basedOnCompleted = order.basedOn.find((basedOn) => {
-        if (basedOn.reference?.startsWith('ServiceRequest/')) {
-          const [, id] = basedOn.reference.split('/');
-          return completedServiceRequestIds.has(id);
-        }
-        return false;
-      });
-      if (basedOnCompleted) {
-        return false;
-      }
-    }
-
-    const requisitionNumber = order.requisition?.value;
-    if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
-      return false;
-    }
-
-    if (requisitionNumber) {
-      completedRequisitionNumbers.add(requisitionNumber);
-    }
-
-    return true;
-  });
-
-  return filtered.sort((a, b) => {
-    const aDate = a.meta?.lastUpdated || a.authoredOn;
-    const bDate = b.meta?.lastUpdated || b.authoredOn;
-    return new Date(bDate || 0).getTime() - new Date(aDate || 0).getTime();
-  });
-}
-
-function filterCompletedOrders(orders: ServiceRequest[]): ServiceRequest[] {
-  const completedRequisitionNumbers = new Set<string>();
-  const filtered = orders.filter((order) => {
-    if (order.status !== 'completed') {
-      return false;
-    }
-
-    const requisitionNumber = order.requisition?.value;
-    if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
-      return false;
-    }
-
-    if (requisitionNumber) {
-      completedRequisitionNumbers.add(requisitionNumber);
-    }
-
-    return true;
-  });
-
-  return filtered.sort((a, b) => {
-    const aDate = a.meta?.lastUpdated || a.authoredOn;
-    const bDate = b.meta?.lastUpdated || b.authoredOn;
-    return new Date(bDate || 0).getTime() - new Date(aDate || 0).getTime();
-  });
+/**
+ * Applies the tab's default status filter and a default sort to a parsed search.
+ * Anything already present in the URL (status, sort, count) is preserved.
+ * @param search - The search parsed from the URL.
+ * @param tab - The active tab, which determines the default status filter.
+ * @returns The search with default lab values populated.
+ */
+function addDefaultLabSearchValues(search: SearchRequest, tab: LabTab): SearchRequest {
+  const filters = search.filters ?? [];
+  const hasStatus = filters.some((filter) => filter.code === 'status');
+  const defaultStatus = tab === 'completed' ? COMPLETED_REPORT_STATUS : OPEN_ORDER_STATUS;
+  return {
+    ...search,
+    filters: hasStatus ? filters : [...filters, { code: 'status', operator: Operator.EQUALS, value: defaultStatus }],
+    sortRules: search.sortRules ?? DEFAULT_SORT_RULES,
+    count: search.count ?? DEFAULT_COUNT,
+  };
 }
 
 function EmptyLabsState({ activeTab }: { activeTab: LabTab }): JSX.Element {
@@ -315,22 +258,5 @@ function EmptyLabsState({ activeTab }: { activeTab: LabTab }): JSX.Element {
         </Text>
       </Stack>
     </Flex>
-  );
-}
-
-function LabListSkeleton(): JSX.Element {
-  return (
-    <Stack gap="md" p="md">
-      {Array.from({ length: 6 }).map((_, index) => (
-        <Stack key={index}>
-          <Flex direction="column" gap="xs" align="flex-start">
-            <Skeleton height={16} width={`${Math.random() * 40 + 60}%`} />
-            <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
-            <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
-          </Flex>
-          <Divider />
-        </Stack>
-      ))}
-    </Stack>
   );
 }

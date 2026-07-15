@@ -66,15 +66,13 @@ Below are explanations of the different extensions Medplum Provides
 ## Interactions
 
 :::caution[Note]
-By default, FHIR Subscriptions will execute on "create" and "update" operations.
+By default, FHIR Subscriptions will execute on all "create", "update", and "delete" operations. To restrict a Subscription to a subset of these interactions, use one or more `subscription-supported-interaction` extensions as described below.
 :::
 
 You can use extensions as follows for more fine-grained control over when Subscriptions execute. To confirm if your Subscriptions are executing, navigate to `https://app.medplum.com/Subscription/<id>/event` to view related [AuditEvents](/docs/api/fhir/resources/auditevent). Note that if you configure the subscription to use `log`-only destination for AuditEvents (see [AuditEvent Destination](#auditevent-destination) below), these events will not appear in the UI.
 
-:::caution[Note]
-Only **one** `subscription-supported-interaction` extension is supported per Subscription. If you need to listen for multiple interaction types (e.g., both "create" and "update"), you should either use the default behavior (which fires on both "create" and "update") or create separate Subscription resources for each interaction type.
-
-Adding multiple `subscription-supported-interaction` extensions to a single Subscription will result in only the first one being evaluated, and the Subscription will revert to default behavior for any unrecognized configuration.
+:::note
+A Subscription may declare **multiple** `subscription-supported-interaction` extensions. When one or more are present, the Subscription will only execute for the listed interactions. For example, adding one extension with `valueCode` of `create` and another with `valueCode` of `update` will fire on "create" and "update" but **not** "delete". When no `subscription-supported-interaction` extension is present, the Subscription fires on all interactions ("create", "update", and "delete").
 :::
 
 ### Subscriptions for "create"-only or "update"-only events
@@ -113,6 +111,31 @@ You can also restrict the FHIR Subscription to only execute on "update", using t
     "endpoint": "https://example.com/webhook"
   },
   "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
+      "valueCode": "update"
+    }
+  ]
+}
+```
+
+To listen for more than one interaction while excluding the others (for example, "create" and "update" but not "delete"), include a separate `subscription-supported-interaction` extension for each interaction you want:
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "Patient",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  },
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
+      "valueCode": "create"
+    },
     {
       "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
       "valueCode": "update"

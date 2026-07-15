@@ -365,7 +365,7 @@ describe('External', () => {
     );
   });
 
-  test('Insecure token URL requires config flag', async () => {
+  test('Insecure token URL is passed to fetch', async () => {
     const insecureAuthClient = await withTestContext(async () => {
       const client = await createClient(systemRepo, {
         project,
@@ -387,22 +387,11 @@ describe('External', () => {
 
     fetchMock.mockImplementation(() => mockFetchJson(buildTokens('test@' + domain)));
     fetchMock.mockClear();
-    let res = await request(app).get(url);
-    expect(res.status).toBe(400);
-    expect(fetch).not.toHaveBeenCalled();
-
-    const savedConfig = getConfig().allowInsecureExternalAuthUrl;
-    getConfig().allowInsecureExternalAuthUrl = true;
-    try {
-      fetchMock.mockClear();
-      res = await request(app).get(url);
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8080/oauth2/token',
-        expect.objectContaining({ method: 'POST' })
-      );
-    } finally {
-      getConfig().allowInsecureExternalAuthUrl = savedConfig;
-    }
+    await request(app).get(url);
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:8080/oauth2/token',
+      expect.objectContaining({ method: 'POST' })
+    );
   });
 
   test('Subject auth success', async () => {
