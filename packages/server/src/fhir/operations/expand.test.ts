@@ -780,14 +780,11 @@ describe('Expand', () => {
       const expansion = res.body.expansion as ValueSetExpansion;
 
       const system = codeSystem.url;
-      expect(expansion.contains).toHaveLength(3);
-      expect(expansion.contains).toStrictEqual(
-        expect.arrayContaining<ValueSetExpansionContains>([
-          { system, code: 'PAR', display: 'parent' },
-          { system, code: 'CHD', display: 'child' },
-          { system, code: 'PET', display: 'pet' },
-        ])
-      );
+      expect(expansion.contains).toContainExactly([
+        { system, code: 'PAR', display: 'parent' },
+        { system, code: 'CHD', display: 'child' },
+        { system, code: 'PET', display: 'pet' },
+      ]);
     });
 
     test('Text filter with is-a', async () => {
@@ -798,10 +795,7 @@ describe('Expand', () => {
       const expansion = res.body.expansion as ValueSetExpansion;
 
       const system = codeSystem.url;
-      expect(expansion.contains).toHaveLength(1);
-      expect(expansion.contains).toStrictEqual(
-        expect.arrayContaining<ValueSetExpansionContains>([{ system, code: 'CHD', display: 'child' }])
-      );
+      expect(expansion.contains).toContainExactly([{ system, code: 'CHD', display: 'child' }]);
     });
 
     test('Excludes ancestor code in descendent-of filter', async () => {
@@ -812,13 +806,10 @@ describe('Expand', () => {
       const expansion = res.body.expansion as ValueSetExpansion;
 
       const system = codeSystem.url;
-      expect(expansion.contains).toHaveLength(2);
-      expect(expansion.contains).toStrictEqual(
-        expect.arrayContaining([
-          { system, code: 'CHD', display: 'child' },
-          { system, code: 'PET', display: 'pet' },
-        ])
-      );
+      expect(expansion.contains).toContainExactly([
+        { system, code: 'CHD', display: 'child' },
+        { system, code: 'PET', display: 'pet' },
+      ]);
     });
 
     test('Text filter with descendent-of', async () => {
@@ -829,8 +820,7 @@ describe('Expand', () => {
       const expansion = res.body.expansion as ValueSetExpansion;
 
       const system = codeSystem.url;
-      expect(expansion.contains).toHaveLength(1);
-      expect(expansion.contains).toStrictEqual(expect.arrayContaining([{ system, code: 'PET', display: 'pet' }]));
+      expect(expansion.contains).toContainExactly([{ system, code: 'PET', display: 'pet' }]);
     });
   });
 
@@ -861,10 +851,7 @@ describe('Expand', () => {
     const expansion = res.body.expansion as ValueSetExpansion;
 
     const expandedCodes = expansion.contains?.map((coding) => coding.code);
-    expect(expandedCodes).toHaveLength(6);
-    expect(expandedCodes).toStrictEqual(
-      expect.arrayContaining(['ADOPTP', 'ADOPTF', 'ADOPTM', 'CHLDADOPT', 'DAUADOPT', 'SONADOPT'])
-    );
+    expect(expandedCodes).toContainExactly(['ADOPTP', 'ADOPTF', 'ADOPTM', 'CHLDADOPT', 'DAUADOPT', 'SONADOPT']);
   });
 
   test('Filter out abstract codes', async () => {
@@ -1155,12 +1142,13 @@ describe('Expand', () => {
 
     expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
-    expect(expansion.contains).toHaveLength(1);
-    expect(expansion.contains).toContainEqual<ValueSetExpansionContains>({
-      system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
-      code: 'MT',
-      display: 'Meat',
-    });
+    expect(expansion.contains).toContainExactly([
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+        code: 'MT',
+        display: 'Meat',
+      },
+    ]);
   });
 
   test('Exact code match with abstract filter', async () => {
@@ -1172,12 +1160,13 @@ describe('Expand', () => {
 
     expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
-    expect(expansion.contains).toHaveLength(1);
-    expect(expansion.contains).toContainEqual<ValueSetExpansionContains>({
-      system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
-      code: 'MT',
-      display: 'Meat',
-    });
+    expect(expansion.contains).toContainExactly([
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+        code: 'MT',
+        display: 'Meat',
+      },
+    ]);
   });
 
   test('Include pre-expanded ValueSet', async () => {
@@ -1240,26 +1229,23 @@ describe('Expand', () => {
     expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
-    expect(expansion.contains).toHaveLength(3);
-    expect(expansion.contains).toStrictEqual(
-      expect.arrayContaining([
-        {
-          system: 'http://loinc.org',
-          code: '86645-9',
-          display: 'Pregnancy intention in the next year - Reported',
-        },
-        {
-          system: 'http://loinc.org',
-          code: '8480-6',
-          display: 'Systolic BP - Reported',
-        },
-        {
-          system: 'http://loinc.org',
-          code: '8462-4',
-          display: 'Diastolic BP - Reported',
-        },
-      ])
-    );
+    expect(expansion.contains).toContainExactly([
+      {
+        system: 'http://loinc.org',
+        code: '86645-9',
+        display: 'Pregnancy intention in the next year - Reported',
+      },
+      {
+        system: 'http://loinc.org',
+        code: '8480-6',
+        display: 'Systolic BP - Reported',
+      },
+      {
+        system: 'http://loinc.org',
+        code: '8462-4',
+        display: 'Diastolic BP - Reported',
+      },
+    ]);
   });
 
   test('Resolve synonyms', async () => {
