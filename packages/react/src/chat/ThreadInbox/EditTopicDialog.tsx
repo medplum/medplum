@@ -34,9 +34,7 @@ export const EditTopicDialog = (props: EditTopicDialogProps): JSX.Element => {
   // Existing practitioner recipients, identified by the "Practitioner/" reference prefix
   // (the patient subject and any other recipient types are excluded).
   const initialPractitioners = useMemo(() => {
-    const fromRecipients = (thread.recipient ?? []).filter((r): r is Reference<Practitioner> =>
-      Boolean(r.reference?.startsWith('Practitioner/'))
-    );
+    const fromRecipients = (thread.recipient ?? []).filter((r) => isReference<Practitioner>(r, 'Practitioner'));
     if (fromRecipients.length > 0) {
       return fromRecipients;
     }
@@ -44,8 +42,8 @@ export const EditTopicDialog = (props: EditTopicDialogProps): JSX.Element => {
     // surface the sender when it is a Practitioner, so the field isn't empty. Saving then
     // migrates this practitioner into the recipient list.
     const sender = thread.sender;
-    if (sender?.reference?.startsWith('Practitioner/')) {
-      return [sender as Reference<Practitioner>];
+    if (isReference<Practitioner>(sender, 'Practitioner')) {
+      return [sender];
     }
     return [];
   }, [thread.recipient, thread.sender]);
@@ -101,9 +99,7 @@ export const EditTopicDialog = (props: EditTopicDialogProps): JSX.Element => {
       ...thread,
       recipient: [
         ...preservedRecipients,
-        ...practitioners.map((practitioner) => ({
-          reference: practitioner.reference,
-        })),
+        ...practitioners,
       ],
       topic: { text: topic },
     };

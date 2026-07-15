@@ -120,9 +120,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
             <TextInput placeholder="Enter your topic" value={topic} onChange={(e) => setTopic(e.target.value)} />
           </Stack>
 
-          <Box pt="xs">
-            <Divider />
-          </Box>
+          <Divider pt="xs" />
         </Stack>
 
         <Box px="lg" pb="lg">
