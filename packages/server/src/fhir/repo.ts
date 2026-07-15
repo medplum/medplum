@@ -1975,7 +1975,7 @@ export class Repository extends FhirRepository implements Disposable {
       return resolveId(updated.project);
     }
 
-    if (['User', 'Subscription'].includes(updated.resourceType) && this.isSuperAdmin()) {
+    if (this.isSuperAdmin() && SuperAdminProjectIdEditableResourceTypes.includes(updated.resourceType)) {
       // Super admins can add, remove, and the project compartment of users
       // and subscriptions (to manage server-scoped subscriptions)
       return updated?.meta?.project;
@@ -2645,3 +2645,5 @@ const patchOperationDefinition: OperationDefinition = {
     ]),
   ],
 };
+
+const SuperAdminProjectIdEditableResourceTypes = ['User', 'Subscription'];
