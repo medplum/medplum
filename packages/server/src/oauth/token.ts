@@ -27,7 +27,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import { createHash, randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
@@ -35,6 +35,7 @@ import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
+import { safeFetch } from '../util/url';
 import { validateClientCert } from './cert';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
@@ -761,7 +762,7 @@ async function parseClientAssertion(
     return { error: 'Client must have a JWK Set URL' };
   }
 
-  const JWKS = createRemoteJWKSet(new URL(client.jwksUri));
+  const JWKS = createRemoteJWKSet(new URL(client.jwksUri), { [customFetch]: safeFetch });
 
   const verifyOptions: JWTVerifyOptions = {
     issuer: clientId,

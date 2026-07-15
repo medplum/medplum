@@ -19,6 +19,10 @@
   padding: 0.5rem;
   border-radius: 0.5rem;
   color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-2));
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .contentContainer:hover {

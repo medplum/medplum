@@ -33,6 +33,7 @@ export interface SyncTableResult {
   destination: string;
   rowsInserted: number;
   syncDurationMs: number;
+  watermarkDurationMs: number;
 }
 
 export interface SyncResult {
@@ -132,19 +133,13 @@ async function syncWarehouseTable(
   const tablesCompleted = index + 1;
   const destination = options.destination.getDestinationName(spec);
 
-  globalLogger.info(`Data warehouse table sync starting for table=${destination}`, {
-    tableIndex: tablesCompleted,
-    tablesTotal,
-    destination,
-    startDate: options.startDate,
-    subsystem: 'data-warehouse-sync',
-  });
-
   const syncStartTime = Date.now();
 
   await options.destination.ensureTargetExists(spec, namespace);
 
+  const watermarkStartTime = Date.now();
   const sourcePredicate = await buildWarehouseSourcePredicate(connection, options, spec, namespace);
+  const watermarkDurationMs = Date.now() - watermarkStartTime;
 
   for (const query of options.destination.getPostgresAttachQueries(sourceConnectionString)) {
     await connection.run(query);
@@ -159,13 +154,14 @@ async function syncWarehouseTable(
   const syncEndTime = Date.now();
   const syncDurationMs = syncEndTime - syncStartTime;
 
-  globalLogger.info(`Data warehouse table sync completed for table=${destination}`, {
+  globalLogger.info(`Data warehouse sync finished for table=${destination}`, {
     tableIndex: tablesCompleted,
     tablesCompleted,
     tablesTotal,
     destination,
     rowsInserted,
     syncDurationMs,
+    watermarkDurationMs,
     startDate: options.startDate,
     subsystem: 'data-warehouse-sync',
   });
@@ -186,6 +182,7 @@ async function syncWarehouseTable(
     destination,
     rowsInserted,
     syncDurationMs,
+    watermarkDurationMs,
   };
 }
 
@@ -197,14 +194,6 @@ async function runWarehouseTableSync(
   const tables: SyncTableResult[] = [];
 
   const tablesTotal = options.warehouseSources.length;
-
-  globalLogger.info('Starting data warehouse sync', {
-    tablesTotal,
-    startDate: options.startDate,
-    includeResourceTypes: options.includeResourceTypes,
-    excludeResourceTypes: options.excludeResourceTypes,
-    subsystem: 'data-warehouse-sync',
-  });
 
   for (const [index, spec] of options.warehouseSources.entries()) {
     // Close and re-open the DuckDB database between tables so each table sync

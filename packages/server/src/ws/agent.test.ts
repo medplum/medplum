@@ -460,6 +460,64 @@ describe('Agent WebSockets', () => {
     });
   });
 
+  test('Heartbeat version survives slow status update on connect', async () => {
+    // Regression test: the connect handler updates the agent status with a non-atomic
+    // read-modify-write (GET last info, SET merged status). It must complete before the
+    // server sends "agent:connect:response" -- when it ran after, a slow GET reply meant
+    // the merged write could land after the agent's heartbeat response was recorded,
+    // clobbering the reported version with stale info.
+    // Simulate a loaded Redis by delaying the reply of the first agent info GET.
+    const realRedis = getCacheRedis();
+    let delayedOnce = false;
+    const delayedRedis = new Proxy(realRedis, {
+      get(target, prop, receiver) {
+        if (prop === 'get') {
+          return async (key: string): Promise<string | null> => {
+            const result = await target.get(key);
+            if (!delayedOnce && key.includes('medplum:agent:')) {
+              delayedOnce = true;
+              await sleep(300);
+            }
+            return result;
+          };
+        }
+        const value = Reflect.get(target, prop, receiver);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    const cacheSpy = vi.spyOn(redisModule, 'getCacheRedis').mockReturnValue(delayedRedis);
+
+    try {
+      await request(server)
+        .ws('/ws/agent')
+        .sendText(JSON.stringify({ type: 'agent:connect:request', accessToken, agentId: agent.id }))
+        .expectText('{"type":"agent:connect:response"}')
+        // Report the agent version via a heartbeat response
+        .sendText(JSON.stringify({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION }))
+        // Give any (buggy) in-flight status update time to land before closing
+        .exec(() => sleep(400))
+        .close()
+        .expectClosed();
+    } finally {
+      cacheSpy.mockRestore();
+    }
+
+    let info: AgentInfo = { status: AgentConnectionState.UNKNOWN, version: 'unknown' };
+    for (let i = 0; i < 5; i++) {
+      await sleep(50);
+      const infoStr = (await getCacheRedis().get(`medplum:agent:${agent.id}:info`)) as string;
+      info = JSON.parse(infoStr) as AgentInfo;
+      if (info.status === AgentConnectionState.DISCONNECTED) {
+        break;
+      }
+    }
+    expect(info).toMatchObject<AgentInfo>({
+      status: AgentConnectionState.DISCONNECTED,
+      version: MEDPLUM_VERSION,
+      lastUpdated: expect.any(String),
+    });
+  });
+
   test('Logs when updating agent status fails on disconnect', async () => {
     const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
     // Simulate Redis being unavailable (e.g. closing during shutdown) so the disconnect

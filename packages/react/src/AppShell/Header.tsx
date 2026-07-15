@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Group, AppShell as MantineAppShell, Menu, Text, UnstyledButton } from '@mantine/core';
+import { Box, Group, AppShell as MantineAppShell, Menu, Stack, Text, UnstyledButton } from '@mantine/core';
 import { formatHumanName } from '@medplum/core';
-import { useMedplumProfile } from '@medplum/react-hooks';
+import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
@@ -28,8 +28,10 @@ export interface HeaderProps {
 }
 
 export function Header(props: HeaderProps): JSX.Element {
+  const medplum = useMedplum();
   const profile = useMedplumProfile();
   const [userMenuOpened, setUserMenuOpened] = useState(false);
+  const projectDisplay = medplum.getProject()?.name ?? medplum.getActiveLogin()?.project.display;
 
   return (
     <MantineAppShell.Header p={0} style={{ zIndex: 101 }}>
@@ -68,9 +70,16 @@ export function Header(props: HeaderProps): JSX.Element {
                 >
                   <Group gap={7}>
                     <ResourceAvatar value={profile} radius="xl" size={24} />
-                    <Text size="sm" className={classes.userName}>
-                      {formatHumanName(profile?.name?.[0])}
-                    </Text>
+                    <Stack gap={0} className={classes.userInfo}>
+                      <Text size="sm" className={classes.userName} truncate>
+                        {formatHumanName(profile?.name?.[0])}
+                      </Text>
+                      {projectDisplay && (
+                        <Text size="xs" c="dimmed" className={classes.userProject} title={projectDisplay} truncate>
+                          {projectDisplay}
+                        </Text>
+                      )}
+                    </Stack>
                     <IconChevronDown size={12} stroke={1.5} />
                   </Group>
                 </UnstyledButton>

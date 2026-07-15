@@ -2419,6 +2419,7 @@ describe('OAuth2 Token', () => {
 
   test('Token exchange invalid external URL', async () => {
     fetchMock.mockClear();
+    fetchMock.mockRejectedValueOnce(new TypeError('fetch failed'));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2428,8 +2429,8 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
-    expect(res.body.error_description).toBe('Invalid user info URL - check your identity provider configuration');
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(res.body.error_description).toBe('Failed to verify code - check your identity provider configuration');
+    expect(fetchMock).toHaveBeenCalled();
   });
 
   test('FHIRcast scopes added to client credentials flow', async () => {

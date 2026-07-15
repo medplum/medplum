@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, parseSearchRequest } from '@medplum/core';
+import { allOk, getSearchResourceTypes, parseSearchRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { RepositoryMode } from '@medplum/fhir-router';
 import type { Project, Reference } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../context';
 import { escapeUnicode } from '../../migrations/migrate-utils';
+import { repoAccess } from '../repository/access-tracker';
 import { getCount, getSelectQueryForSearch } from '../search';
 import { SqlBuilder } from '../sql';
 import { makeOperationDefinition } from './definitions';
@@ -65,8 +66,11 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     selectQuery.explain.push('format json');
   }
 
-  const { result, countResult } = await repo.withStatementTimeout({ timeoutMs: 0 }, async (client) => {
-    const result = await selectQuery.execute(client);
+  const { result, countResult } = await repo.withStatementTimeout({ timeoutMs: 0 }, async () => {
+    const result = await repo.executeSql<{ 'QUERY PLAN': string[] }>(
+      selectQuery,
+      repoAccess.sqlRead(getSearchResourceTypes(searchReq), { source: 'dbExplainHandler' })
+    );
     const countResult = params.count ? await getCount(repo, searchReq, { forceAccurate: true }) : undefined;
     return { result, countResult };
   });
