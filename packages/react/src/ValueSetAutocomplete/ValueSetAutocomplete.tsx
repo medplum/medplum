@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Text } from '@mantine/core';
+import { ActionIcon, Group, Text, Tooltip } from '@mantine/core';
 import type { ValueSetExpandParams } from '@medplum/core';
-import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
-import { IconCheck } from '@tabler/icons-react';
-import type { JSX } from 'react';
-import { forwardRef, useCallback } from 'react';
+import { normalizeErrorString } from '@medplum/core';
+import type { ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { useMedplum, useValueSetAvailability } from '@medplum/react-hooks';
+import { IconCheck, IconInfoCircle } from '@tabler/icons-react';
+import type { JSX, ReactNode } from 'react';
+import { forwardRef, useCallback, useState } from 'react';
 import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
 
@@ -58,45 +59,133 @@ function createValue(input: string): ValueSetExpansionContains {
  */
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
-  const { binding, creatable, clearable, expandParams, withHelpText, ...rest } = props;
+  const { binding, creatable, clearable, expandParams, withHelpText, error, description, ...rest } = props;
+  const isCreatable = creatable ?? true;
+  const isUnavailable = useValueSetAvailability(binding) === false;
+  const [searchError, setSearchError] = useState<string>();
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<ValueSetExpansionContains[]> => {
-      if (!binding) {
+      if (!binding || isUnavailable) {
         return [];
       }
-      const valueSet = await medplum.valueSetExpand(
-        {
-          count: 10,
-          ...expandParams,
-          url: binding,
-          filter: input,
-        },
-        { signal }
-      );
-      const valueSetElements = valueSet.expansion?.contains ?? [];
-      const newData: ValueSetExpansionContains[] = [];
-      for (const valueSetElement of valueSetElements) {
-        if (valueSetElement.code && !newData.some((item) => item.code === valueSetElement.code)) {
-          newData.push(valueSetElement);
+      try {
+        const valueSet: ValueSet = await medplum.valueSetExpand(
+          {
+            count: 10,
+            ...expandParams,
+            url: binding,
+            filter: input,
+          },
+          { signal }
+        );
+        setSearchError(undefined);
+        const valueSetElements = valueSet.expansion?.contains ?? [];
+        const newData: ValueSetExpansionContains[] = [];
+        for (const valueSetElement of valueSetElements) {
+          if (valueSetElement.code && !newData.some((item) => item.code === valueSetElement.code)) {
+            newData.push(valueSetElement);
+          }
         }
+        return newData;
+      } catch (err) {
+        // Surface the failure inline (below) and swallow it, so the shared AsyncAutocomplete does
+        // not also raise a toast. A search 400 is never treated as "value set missing" - that
+        // verdict comes only from the filter-free mount probe in useValueSetAvailability.
+        const message = normalizeErrorString(err);
+        if (!(signal.aborted || message.includes('aborted'))) {
+          setSearchError(message);
+        }
+        return [];
       }
-
-      return newData;
     },
-    [medplum, expandParams, binding]
+    [medplum, expandParams, binding, isUnavailable]
   );
+
+  // An unavailable value set degrades the field by severity: if manual entry is allowed the field
+  // stays usable with a quiet helper note, otherwise it is truly unusable and gets disabled.
+  let inputDescription: ReactNode = description;
+  let inputError: ReactNode = error;
+  let inputDisabled = rest.disabled;
+  if (isUnavailable) {
+    const unavailableMessage = `Value set ${binding} is unavailable`;
+    if (isCreatable) {
+      // The field is still usable, so show a non-error helper note (in the description slot)
+      const unavailableNote = (
+        <UnavailableNote text="Suggestions unavailable" color="yellow.9" message={unavailableMessage} />
+      );
+      inputDescription = combineNodes(description, unavailableNote);
+    } else {
+      // The field is unusable: disable it and explain why alongside any consumer validation error
+      const unavailableNote = (
+        <UnavailableNote text="This field is unavailable." color="red" message={unavailableMessage} />
+      );
+      inputError = combineNodes(error, unavailableNote);
+      inputDisabled = true;
+    }
+  } else if (searchError) {
+    // A transient search failure shows inline, below the input, alongside any validation error
+    inputError = combineNodes(error, searchError);
+  }
 
   return (
     <AsyncAutocomplete
       {...rest}
-      creatable={creatable ?? true}
+      description={inputDescription}
+      error={inputError}
+      disabled={inputDisabled}
+      creatable={isCreatable}
       clearable={clearable ?? true}
       toOption={toOption}
       loadOptions={loadValues}
       onCreate={createValue}
       itemComponent={withHelpText ? ItemComponent : undefined}
     />
+  );
+}
+
+/**
+ * Stacks two pieces of field text on separate lines, dropping either if absent.
+ * @param first - The first node (e.g. a consumer-supplied error or description).
+ * @param second - The second node (e.g. the unavailable/search-error note).
+ * @returns Both nodes separated by a line break, or whichever one is present.
+ */
+function combineNodes(first: ReactNode, second: ReactNode): ReactNode {
+  if (first && second) {
+    return (
+      <>
+        {first}
+        <br />
+        {second}
+      </>
+    );
+  }
+  return first || second;
+}
+
+export interface UnavailableNoteProps {
+  readonly text: string;
+  readonly color: string;
+  readonly message: string;
+}
+
+export function UnavailableNote({ text, color, message }: UnavailableNoteProps): JSX.Element {
+  return (
+    <Text span size="xs" c={color}>
+      {text}
+      <Tooltip label={message} position="top-start" withArrow events={{ hover: true, focus: true, touch: true }}>
+        <ActionIcon
+          variant="subtle"
+          color={color}
+          size={16}
+          ml={4}
+          aria-label={`Why is this unavailable? ${message}`}
+          style={{ verticalAlign: 'text-bottom' }}
+        >
+          <IconInfoCircle size={14} />
+        </ActionIcon>
+      </Tooltip>
+    </Text>
   );
 }
 
