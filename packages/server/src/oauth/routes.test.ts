@@ -31,13 +31,13 @@ describe('OAuth Routes', () => {
         client_secret: client.secret as string,
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app)
       .post('/fhir/R4/Patient/$validate')
       .set('Authorization', 'Bearer ' + res.body.access_token)
       .send({ resourceType: 'Patient' });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
   });
 });

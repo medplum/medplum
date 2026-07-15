@@ -557,6 +557,6 @@ async function createResource<T extends Resource>(resource: T, token?: string): 
     .set('Authorization', 'Bearer ' + currentToken)
     .set('Content-Type', ContentType.FHIR_JSON)
     .send(resource);
-  expect(res.status).toBe(201);
+  expect(res).toHaveStatus(201);
   return res.body;
 }

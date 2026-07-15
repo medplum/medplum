@@ -69,7 +69,7 @@ describe('Project $init', () => {
           },
         ],
       });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const project = res.body as WithId<Project>;
     expect(project.id).toBeDefined();
@@ -147,7 +147,7 @@ describe('Project $init', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Requires owner to be User', async () => {
@@ -177,7 +177,7 @@ describe('Project $init', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Requires server User', async () => {
@@ -210,7 +210,7 @@ describe('Project $init', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Looks up existing user by email', async () => {
@@ -243,7 +243,7 @@ describe('Project $init', () => {
           },
         ],
       });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const project = res.body as Project;
     expect(project.owner).toStrictEqual(createReference(owner));
@@ -273,7 +273,7 @@ describe('Project $init', () => {
           },
         ],
       });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
   });
 
   test('Defaults to no owner if unspecified', async () => {
@@ -294,7 +294,7 @@ describe('Project $init', () => {
           },
         ],
       });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     const project = res.body as Project;
     expect(project.owner).toBeUndefined();
   });
@@ -319,7 +319,7 @@ describe('Project $init', () => {
           },
         ],
       });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     const project = res.body as Project;
     expect(project.owner).toBeUndefined();
     expect(project.systemSetting).toStrictEqual(config.defaultProjectSystemSetting);

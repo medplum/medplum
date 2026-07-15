@@ -53,7 +53,7 @@ describe('Email API Routes', () => {
       subject: 'Subject',
       text: 'Body',
     });
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
     expect(mockSESv2Client.send.callCount).toBe(0);
   });
 
@@ -68,7 +68,7 @@ describe('Email API Routes', () => {
         subject: 'Subject',
         text: 'Body',
       });
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
     expect(res.body.issue[0].details.text).toBe('Only project administrators can send emails');
   });
 
@@ -86,7 +86,7 @@ describe('Email API Routes', () => {
         subject: 'Subject',
         text: 'Body',
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Email feature is not enabled for this project');
   });
 
@@ -111,7 +111,7 @@ describe('Email API Routes', () => {
           subject: 'Subject',
           text: 'Body',
         });
-      expect(res.status).toBe(400);
+      expect(res).toHaveStatus(400);
       expect(res.body.issue[0].details.text).toBe('Email is not configured on this server. Set up SMTP or AWS SES.');
     } finally {
       // Restore config
@@ -127,7 +127,7 @@ describe('Email API Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('hello');
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Send email as project admin', async () => {
@@ -141,7 +141,7 @@ describe('Email API Routes', () => {
         subject: 'Subject',
         text: 'Body',
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
@@ -179,7 +179,7 @@ describe('Email API Routes', () => {
         subject: 'Subject',
         text: 'Body',
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     expect(mockCreateTransport).toHaveBeenCalledWith(
       expect.objectContaining({ host: 'smtp.project.example.com', port: 587, secure: false })
@@ -203,7 +203,7 @@ describe('Email API Routes', () => {
         subject: 'Subject',
         text: 'Body',
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Error sending email: BadRequestException: Illegal address');
   });
 });
