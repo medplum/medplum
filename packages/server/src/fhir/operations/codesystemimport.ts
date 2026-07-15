@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinitionParameter } from '@medplum/fhirtypes';
+import { getLogger } from 'nodemailer/lib/shared';
 import { getAuthenticatedContext } from '../../context';
 import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
@@ -169,6 +170,14 @@ export async function importCodeSystem(
     }
     const query = new InsertQuery('Coding', synonyms).ignoreOnConflict();
     await query.execute(db);
+  }
+
+  if ((concepts?.length ?? 0) > 1000 || (properties?.length ?? 0) > 1000 || (designations?.length ?? 0) > 1000) {
+    getLogger().warn('Oversized CodeSystem import', {
+      concepts: concepts?.length ?? 0,
+      properties: properties?.length ?? 0,
+      designations: designations?.length ?? 0,
+    });
   }
 }
 
