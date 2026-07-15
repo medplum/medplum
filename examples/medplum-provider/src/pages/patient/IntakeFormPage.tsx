@@ -4,7 +4,14 @@ import { Alert } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Questionnaire, QuestionnaireItem, QuestionnaireResponse } from '@medplum/fhirtypes';
-import { AIRealTimeQuestionnaireForm, Document, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
+import {
+  AIRealTimeQuestionnaireForm,
+  Document,
+  isValueSetUnavailableError,
+  Loading,
+  useMedplum,
+  useMedplumProfile,
+} from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -77,8 +84,8 @@ export function IntakeFormPage({
           if (abortController.signal.aborted) {
             return;
           }
-          const isAvailable = await checkValueSetAvailability(vs.url, medplum);
-          if (!isAvailable && !abortController.signal.aborted) {
+          const isUnavailable = await isValueSetUnavailable(medplum, vs.url, abortController.signal);
+          if (isUnavailable && !abortController.signal.aborted) {
             unavailable.push(vs);
           }
         })
@@ -185,23 +192,25 @@ function extractValueSets(items: QuestionnaireItem[] | undefined, result: ValueS
 }
 
 /**
- * Checks if a valueset is available by attempting to expand it
- * @param valueSetUrl - The URL of the valueset to check
- * @param medplum - The Medplum client instance
- * @returns Promise that resolves to true if valueset is available, false otherwise
+ * Probes a valueset with a filter-free, count-limited expansion to decide whether it is available.
+ * Only a permanent 400/404 counts as unavailable; a transient failure (429/5xx/network) is ignored
+ * so a blip doesn't flag an otherwise-working valueset. Repeat probes are deduplicated by the
+ * MedplumClient request cache.
+ * @param medplum - The Medplum client instance.
+ * @param url - The valueset URL to probe.
+ * @param signal - Abort signal to cancel the probe.
+ * @returns True if the valueset is known to be unavailable.
  */
-async function checkValueSetAvailability(
-  valueSetUrl: string,
-  medplum: ReturnType<typeof useMedplum>
+async function isValueSetUnavailable(
+  medplum: ReturnType<typeof useMedplum>,
+  url: string,
+  signal: AbortSignal
 ): Promise<boolean> {
   try {
-    await medplum.valueSetExpand({
-      url: valueSetUrl,
-      count: 1,
-    });
-    return true;
-  } catch {
+    await medplum.valueSetExpand({ url, count: 1 }, { signal });
     return false;
+  } catch (err) {
+    return isValueSetUnavailableError(err);
   }
 }
 
