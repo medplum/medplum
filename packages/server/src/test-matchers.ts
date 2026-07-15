@@ -9,7 +9,7 @@ interface CustomMatchers<R = unknown> {
    * and every entry in `expected` deep-equals a distinct entry in `received`,
    * regardless of order. Supports asymmetric matchers in `expected`.
    */
-  toEqualUnordered(expected: readonly unknown[]): R;
+  toContainExactly(expected: readonly unknown[]): R;
 
   /**
    * Passes when the supertest response has the expected HTTP status code.
@@ -24,7 +24,7 @@ declare module 'vitest' {
 }
 
 expect.extend({
-  toEqualUnordered(received: unknown, expected: readonly unknown[]) {
+  toContainExactly(received: unknown, expected: readonly unknown[]) {
     const utils = this.utils;
     if (!Array.isArray(received)) {
       return {
