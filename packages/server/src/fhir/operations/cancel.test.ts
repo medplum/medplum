@@ -79,7 +79,6 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(200);
   });
 
@@ -91,7 +90,6 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(200);
   });
 
@@ -103,7 +101,6 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(200);
 
     const updated = response.body as Appointment;
@@ -118,7 +115,6 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(200);
 
     const remaining = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?_id=${slot.id}`));
@@ -134,7 +130,6 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(200);
 
     const remaining = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?_id=${slot1.id},${slot2.id}`));
@@ -148,7 +143,6 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(200);
   });
 

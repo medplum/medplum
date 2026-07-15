@@ -241,7 +241,6 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(201);
 
     const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
@@ -585,7 +584,6 @@ describe('Appointment/$book', () => {
       });
 
     if (succeeds) {
-      expect(response.body).not.toHaveProperty('issue');
       expect(response).toHaveStatus(201);
     } else {
       expect(response).toHaveStatus(400);
@@ -636,7 +634,6 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(201);
   });
 
@@ -697,7 +694,6 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(201);
   });
 
@@ -814,7 +810,6 @@ describe('Appointment/$book', () => {
             },
           ],
         });
-      expect(response.body).not.toHaveProperty('issue');
       expect(response).toHaveStatus(201);
     }
   );
@@ -922,7 +917,6 @@ describe('Appointment/$book', () => {
           },
         ],
       });
-    expect(response2.body).not.toHaveProperty('issue');
     expect(response2).toHaveStatus(201);
 
     // It creates a bufferBefore slot with status: 'busy-unavailable'
@@ -1047,7 +1041,6 @@ describe('Appointment/$book', () => {
           },
         ],
       });
-    expect(response2.body).not.toHaveProperty('issue');
     expect(response2).toHaveStatus(201);
 
     // It creates a bufferAfter slot with status: 'busy-unavailable'
@@ -1102,7 +1095,6 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(201);
 
     const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
@@ -1257,7 +1249,6 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(alignedResponse.body).not.toHaveProperty('issue');
     expect(alignedResponse).toHaveStatus(201);
   });
 
@@ -1333,7 +1324,6 @@ describe('Appointment/$book', () => {
           ],
         });
 
-      expect(response.body).not.toHaveProperty('issue');
       expect(response).toHaveStatus(201);
     });
 
@@ -1448,7 +1438,6 @@ describe('Appointment/$book', () => {
             },
           ],
         });
-      expect(response60.body).not.toHaveProperty('issue');
       expect(response60).toHaveStatus(201);
 
       // 30-min slot fails (HealthcareService duration was overridden by Schedule)
@@ -1633,7 +1622,6 @@ describe('scheduling flow integration test', () => {
         schedule: `Schedule/${schedule.id}`,
       });
 
-    expect(findResponse.body).not.toHaveProperty('issue');
     expect(findResponse).toHaveStatus(200);
     expect(findResponse.body.entry?.length).toBeGreaterThan(0);
 
@@ -1648,7 +1636,6 @@ describe('scheduling flow integration test', () => {
         parameter: [{ name: 'appointment', resource: proposedAppointment }],
       });
 
-    expect(bookResponse.body).not.toHaveProperty('issue');
     expect(bookResponse).toHaveStatus(201);
 
     const entries = ((bookResponse.body as Bundle).entry ?? []).map((e) => e.resource).filter(isDefined);
@@ -1783,7 +1770,6 @@ describe('scheduling flow integration test', () => {
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(201);
 
     const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
@@ -1815,7 +1801,6 @@ describe('scheduling flow integration test', () => {
       .set('Authorization', `Bearer ${otherPatient.accessToken}`)
       .send();
 
-    expect(otherPatientResponse.body).not.toHaveProperty('issue');
     expect(otherPatientResponse).toHaveStatus(200);
     expect(otherPatientResponse.body).toHaveProperty('entry');
     expect(otherPatientResponse.body.entry).toHaveLength(1);

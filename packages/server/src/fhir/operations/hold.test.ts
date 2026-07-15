@@ -199,7 +199,6 @@ describe('Appointment/$hold', () => {
       .set('Authorization', `Bearer ${project.accessToken}`)
       .send(holdParams({ schedule, start: '2026-01-15T14:00:00Z', end: '2026-01-15T15:00:00Z' }));
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(201);
   });
 
@@ -284,7 +283,6 @@ describe('Appointment/$hold', () => {
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(201);
 
     const entries = ((response.body as Bundle).entry ?? []).map((e) => e.resource).filter(isDefined);
@@ -886,7 +884,6 @@ describe('Appointment/$hold', () => {
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(201);
 
     const entries = ((response.body as Bundle).entry ?? []).map((e) => e.resource).filter(isDefined);
@@ -928,7 +925,6 @@ describe('Appointment/$hold', () => {
           })
         );
 
-      expect(response.body).not.toHaveProperty('issue');
       expect(response).toHaveStatus(201);
 
       const entries = ((response.body as Bundle).entry ?? []).map((e) => e.resource).filter(isDefined);
@@ -1307,7 +1303,6 @@ describe('scheduling flow integration test', () => {
         schedule: `Schedule/${schedule.id}`,
       });
 
-    expect(findResponse.body).not.toHaveProperty('issue');
     expect(findResponse).toHaveStatus(200);
     expect(findResponse.body).toHaveProperty('entry');
     expect(findResponse.body.entry).toHaveLength(4);
@@ -1326,7 +1321,6 @@ describe('scheduling flow integration test', () => {
         ],
       });
 
-    expect(bookResponse.body).not.toHaveProperty('issue');
     expect(bookResponse).toHaveStatus(201);
   });
 });

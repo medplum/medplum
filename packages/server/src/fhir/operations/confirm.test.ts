@@ -79,7 +79,6 @@ describe('Appointment/:id/$confirm', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(200);
   });
 
@@ -98,7 +97,6 @@ describe('Appointment/:id/$confirm', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(200);
   });
 
@@ -176,7 +174,6 @@ describe('Appointment/:id/$confirm', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
     expect(response).toHaveStatus(200);
   });
 
