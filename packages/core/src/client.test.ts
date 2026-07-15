@@ -3119,33 +3119,51 @@ describe('Client', () => {
       );
     });
 
-    test('Execute batch invalidates search cache', async () => {
+    test('Execute batch invalidates search cache only for mutations', async () => {
       const fetch = mockFetch(200, {
         resourceType: 'Bundle',
         type: 'transaction-response',
-        entry: [
-          {
-            resource: {
-              resourceType: 'Patient',
-              id: '123',
-              name: [{ given: ['Alice'], family: 'Smith' }],
-            },
-          },
-          {
-            resource: {
-              resourceType: 'Appointment',
-              id: '456',
-              status: 'booked',
-            },
-          },
-        ],
+        entry: [{ response: { status: '201' } }, { response: { status: '200' } }],
       });
       const client = new MedplumClient({ fetch });
       const invalidateSpy = vi.spyOn(client, 'invalidateSearches');
-      await client.executeBatch(bundle);
+      await client.executeBatch({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            resource: { resourceType: 'Patient', name: [{ family: 'Smith' }] },
+            request: { method: 'POST', url: 'Patient' },
+          },
+          {
+            request: { method: 'GET', url: 'Observation?patient=123' },
+          },
+        ],
+      });
+      // POST Patient invalidates; the GET read must not
       expect(invalidateSpy).toHaveBeenCalledWith('Patient');
-      expect(invalidateSpy).toHaveBeenCalledWith('Appointment');
-      invalidateSpy.mockRestore();
+      expect(invalidateSpy).not.toHaveBeenCalledWith('Observation');
+    });
+
+    test('Execute batch invalidates search cache for absolute entry URLs', async () => {
+      const fetch = mockFetch(200, {
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+        entry: [{ response: { status: '201' } }],
+      });
+      const client = new MedplumClient({ fetch });
+      const invalidateSpy = vi.spyOn(client, 'invalidateSearches');
+      await client.executeBatch({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            resource: { resourceType: 'Patient', name: [{ family: 'Smith' }] },
+            request: { method: 'POST', url: 'https://api.medplum.com/fhir/R4/Patient' },
+          },
+        ],
+      });
+      expect(invalidateSpy).toHaveBeenCalledWith('Patient');
     });
   });
 

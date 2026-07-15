@@ -2899,16 +2899,24 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   async executeBatch(bundle: Bundle, options?: MedplumRequestOptions): Promise<Bundle> {
     const result = await this.post(this.fhirBaseUrl, bundle, undefined, options);
-    if (result.entry) {
-      const resourceTypes = new Set<ResourceType>();
-      for (const entry of result.entry) {
-        if (entry.resource?.resourceType) {
-          resourceTypes.add(entry.resource.resourceType as ResourceType);
+    // Only invalidate for mutations (POST/PUT/PATCH/DELETE); reads should not evict the cache.
+    // The request URL's first path segment is the resource type, which also covers DELETE
+    // entries that carry no resource body. Entry URLs may be relative ("Patient/123") or
+    // absolute (same server), so strip the FHIR base URL prefix first if present.
+    const resourceTypes = new Set<ResourceType>();
+    for (const entry of bundle.entry ?? []) {
+      const method = entry.request?.method;
+      if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
+        const url = entry.request?.url;
+        const relativeUrl = url?.startsWith(this.fhirBaseUrl) ? url.replace(this.fhirBaseUrl, '') : url;
+        const resourceType = relativeUrl?.split(/[/?]/).filter(Boolean)[0];
+        if (resourceType) {
+          resourceTypes.add(resourceType as ResourceType);
         }
       }
-      for (const resourceType of resourceTypes) {
-        this.invalidateSearches(resourceType);
-      }
+    }
+    for (const resourceType of resourceTypes) {
+      this.invalidateSearches(resourceType);
     }
     return result;
   }
