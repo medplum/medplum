@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Divider, Group, Loader, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference, isReference, normalizeErrorString } from '@medplum/core';
 import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
