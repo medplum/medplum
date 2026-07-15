@@ -2419,7 +2419,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const url = this.fhirSearchUrl(resource.resourceType, query);
 
     let result = await this.put(url, resource, undefined, options);
-    const notModified = !result;
+    const wasModified = result !== undefined;
     if (!result) {
       // On 304 not modified, result will be undefined
       // Return the user input instead
@@ -2428,7 +2428,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
     this.invalidateSearches(resource.resourceType);
-    if (!notModified) {
+    if (wasModified) {
       this.dispatchResourceModified({
         resourceType: resource.resourceType,
         operation: 'update',
@@ -2805,7 +2805,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       throw new Error('Missing id');
     }
     let result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource, undefined, options);
-    const notModified = !result;
+    const wasModified = result !== undefined;
     if (!result) {
       // On 304 not modified, result will be undefined
       // Return the user input instead
@@ -2814,7 +2814,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id, '_history'));
     this.invalidateSearches(resource.resourceType);
-    if (!notModified) {
+    if (wasModified) {
       this.dispatchResourceModified({
         resourceType: resource.resourceType,
         operation: 'update',
