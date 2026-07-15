@@ -35,17 +35,17 @@ describe('Status', () => {
 
   test('Missing login parameter', async () => {
     const res = await request(app).get('/auth/login/');
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 
   test('Invalid login parameter', async () => {
     const res = await request(app).get('/auth/login/x');
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Login not found', async () => {
     const res = await request(app).get('/auth/login/' + randomUUID());
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 
   test('Success', async () => {
@@ -59,7 +59,7 @@ describe('Status', () => {
     );
 
     const res = await request(app).get('/auth/login/' + login.id);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.login).toStrictEqual(login.id);
   });
 
@@ -75,7 +75,7 @@ describe('Status', () => {
     );
 
     const res = await request(app).get('/auth/login/' + login.id);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Revoked', async () => {
@@ -90,6 +90,6 @@ describe('Status', () => {
     );
 
     const res = await request(app).get('/auth/login/' + login.id);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 });

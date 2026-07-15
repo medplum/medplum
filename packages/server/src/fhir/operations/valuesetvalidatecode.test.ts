@@ -56,7 +56,7 @@ describe('ValueSet validate-code', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(testValueSet);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     valueSet = res.body as ValueSet;
   });
 
@@ -76,7 +76,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system, code: 'WARD' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -109,7 +109,7 @@ describe('ValueSet validate-code', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'url', valueUri: valueSet.url }, ...params],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -128,7 +128,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system, code: 'RETIREE' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
@@ -147,7 +147,7 @@ describe('ValueSet validate-code', () => {
           { name: 'display', valueString: 'ant' },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
@@ -166,7 +166,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system: 'http://example.com/other', code: 'foo' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
@@ -185,7 +185,7 @@ describe('ValueSet validate-code', () => {
           { name: 'code', valueCode: 'RETIREE' },
         ],
       });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.resourceType).toStrictEqual('OperationOutcome');
   });
 
@@ -201,7 +201,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system, code: 'NOK' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -220,7 +220,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system, code: 'PEDC' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -239,7 +239,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system: 'http://loinc.org', code: '10727-6' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -259,7 +259,7 @@ describe('ValueSet validate-code', () => {
           { name: 'display', valueString: 'Cat parasites' },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
@@ -271,7 +271,7 @@ describe('ValueSet validate-code', () => {
       .get(`/fhir/R4/ValueSet/$validate-code?url=${valueSet.url}&system=${system}&code=WARD`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -283,7 +283,7 @@ describe('ValueSet validate-code', () => {
       .get(`/fhir/R4/ValueSet/${valueSet.id}/$validate-code?system=${system}&code=WARD`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -299,7 +299,7 @@ describe('ValueSet validate-code', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system, code: 'WARD' } }],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -318,7 +318,7 @@ describe('ValueSet validate-code', () => {
         status: 'active',
         compose: { include: [{ system }] },
       } satisfies ValueSet);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     const vs = res.body as ValueSet;
 
     const res2 = await request(app)
@@ -332,7 +332,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system, code: randomUUID() } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
