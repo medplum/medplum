@@ -18,7 +18,7 @@ export interface UseThreadInboxReturn {
   selectedThread: Communication | undefined;
   total: number | undefined;
   addThreadMessage: (message: Communication) => void;
-  updateThreadParent: (updated: Communication) => void;
+  updateThread: (updated: Communication) => void;
   handleThreadStatusChange: (newStatus: Communication['status']) => void;
   refreshThreadMessages: () => Promise<void>;
 }
@@ -186,11 +186,11 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     doAdd().catch((err: Error) => setError(err));
   };
 
-  // Update an already-listed thread's parent in place (e.g. after editing its topic/participants),
+  // Update an already-listed thread in place (e.g. after editing its topic/participants),
   // preserving its last-message slot. A full refetch would drop a draft thread that has no reply
   // yet, since fetchAllCommunications only keeps threads with a message; this keeps the draft
   // visible in the list until the user navigates away.
-  const updateThreadParent = useCallback((updated: Communication): void => {
+  const updateThread = useCallback((updated: Communication): void => {
     setSelectedThread((current) => (current?.id === updated.id ? updated : current));
     setThreadMessages((prev) =>
       prev.map(([parent, lastMsg]) => (parent.id === updated.id ? [updated, lastMsg] : [parent, lastMsg]))
@@ -204,7 +204,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     selectedThread,
     total,
     addThreadMessage,
-    updateThreadParent,
+    updateThread,
     handleThreadStatusChange,
     refreshThreadMessages: fetchAllCommunications,
   };

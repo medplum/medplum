@@ -33,7 +33,7 @@ import { PatientSummary } from '../../PatientSummary/PatientSummary';
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
 import { ThreadChat } from '../ThreadChat/ThreadChat';
 import { ChatList } from './ChatList';
-import { EditTopicDialog } from './EditTopicDialog';
+import { EditThreadDialog } from './EditThreadDialog';
 import { NewTopicDialog } from './NewTopicDialog';
 import { ParticipantFilter } from './ParticipantFilter';
 import classes from './ThreadInbox.module.css';
@@ -117,7 +117,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     total,
     handleThreadStatusChange,
     addThreadMessage,
-    updateThreadParent,
+    updateThread,
     refreshThreadMessages,
   } = useThreadInbox({
     query,
@@ -371,13 +371,13 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
       {/* Mount only while open so every open is a fresh instance — any edits dismissed
           without saving are abandoned, with no leftover form state. */}
       {selectedThread && editModalOpened && (
-        <EditTopicDialog
+        <EditThreadDialog
           thread={selectedThread}
           opened={editModalOpened}
           onClose={closeEditModal}
           // Update the thread in place rather than refetching, so a draft thread (no reply yet)
           // stays in the list after editing its settings instead of being filtered out.
-          onSaved={(updated) => updateThreadParent(updated)}
+          onSaved={(updated) => updateThread(updated)}
         />
       )}
     </>

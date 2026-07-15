@@ -12,20 +12,20 @@ import { ResourceInput } from '../../ResourceInput/ResourceInput';
 import { MESSAGE_MODAL_STYLES } from './messageModalStyles';
 
 /**
- * Props for the EditTopicDialog component.
+ * Props for the EditThreadDialog component.
  * @param thread - The thread (root Communication) to edit.
  * @param opened - Whether the dialog is open.
  * @param onClose - Callback fired when the dialog is closed.
  * @param onSaved - Callback fired with the updated Communication resource after a successful save.
  */
-export interface EditTopicDialogProps {
+export interface EditThreadDialogProps {
   thread: Communication;
   opened: boolean;
   onClose: () => void;
   onSaved?: (communication: Communication) => void;
 }
 
-export const EditTopicDialog = (props: EditTopicDialogProps): JSX.Element => {
+export const EditThreadDialog = (props: EditThreadDialogProps): JSX.Element => {
   const { thread, opened, onClose, onSaved } = props;
   const medplum = useMedplum();
 

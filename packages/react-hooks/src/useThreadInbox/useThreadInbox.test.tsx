@@ -293,7 +293,7 @@ describe('useThreadInbox', () => {
       topic: { text: 'Edited topic' },
     };
 
-    await act(async () => result.current.updateThreadParent(updated));
+    await act(async () => result.current.updateThread(updated));
 
     await waitFor(() => {
       // Selected thread and the list entry's parent both reflect the edit...

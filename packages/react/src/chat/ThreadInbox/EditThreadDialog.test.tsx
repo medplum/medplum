@@ -7,7 +7,7 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { render, screen, waitFor } from '../../test-utils/render';
-import { EditTopicDialog } from './EditTopicDialog';
+import { EditThreadDialog } from './EditThreadDialog';
 
 const mockOnClose = vi.fn();
 const mockOnSaved = vi.fn();
@@ -21,7 +21,7 @@ const baseThread: Communication = {
   topic: { text: 'Original topic' },
 };
 
-describe('EditTopicDialog', () => {
+describe('EditThreadDialog', () => {
   let medplum: MockClient;
 
   beforeEach(() => {
@@ -33,7 +33,7 @@ describe('EditTopicDialog', () => {
     render(
       <>
         <Notifications />
-        <EditTopicDialog thread={thread} opened={true} onClose={mockOnClose} onSaved={mockOnSaved} />
+        <EditThreadDialog thread={thread} opened={true} onClose={mockOnClose} onSaved={mockOnSaved} />
       </>,
       ({ children }) => (
         <MemoryRouter>
