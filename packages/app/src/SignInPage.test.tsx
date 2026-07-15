@@ -92,25 +92,6 @@ describe('SignInPage', () => {
     });
   });
 
-  test('Register while logged in clears session and shows register form', async () => {
-    getConfig().registerEnabled = true;
-    const loggedInMedplum = new MockClient({ profile: DrAliceSmith });
-    // MockClient#clear() does not reset the mock profile the way the real
-    // client does; simulate that so RegisterPage sees a logged-out profile.
-    const originalClear = loggedInMedplum.clear.bind(loggedInMedplum);
-    loggedInMedplum.clear = (): void => {
-      originalClear();
-      loggedInMedplum.setProfile(undefined);
-    };
-    setup('/signin', loggedInMedplum);
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Register'));
-    });
-
-    expect(await screen.findByText('Register a new account')).toBeInTheDocument();
-  });
-
   test('Register link hidden on project=new re-auth screen', async () => {
     getConfig().registerEnabled = true;
     setup('/signin?project=new', new MockClient({ profile: DrAliceSmith }));

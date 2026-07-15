@@ -1,14 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
-import { getAppName, Logo, SignInForm, useMedplum, useMedplumProfile } from '@medplum/react';
+import { getAppName, Logo, SignInForm, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { getConfig, isRegisterEnabled } from './config';
 
 export function SignInPage(): JSX.Element {
-  const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -32,16 +31,8 @@ export function SignInPage(): JSX.Element {
       onSuccess={() => navigateToNext()}
       onForgotPassword={() => navigate('/resetpassword')?.catch(console.error)}
       onRegister={
-        isRegisterEnabled() && searchParams.get('project') !== 'new'
-          ? async () => {
-              // Only clear a live session; RegisterPage bounces logged-in users
-              // back to /signin?project=new otherwise. Fall back to clear() if
-              // the server logout call fails.
-              if (medplum.getProfile()) {
-                await medplum.signOut().catch(() => medplum.clear());
-              }
-              navigate('/register')?.catch(console.error);
-            }
+        isRegisterEnabled() && !profile
+          ? () => navigate('/register')?.catch(console.error)
           : undefined
       }
       googleClientId={config.googleClientId}
