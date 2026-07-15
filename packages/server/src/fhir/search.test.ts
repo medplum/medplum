@@ -2758,7 +2758,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
 
       expect(
         bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
-      ).toEqualUnordered([
+      ).toContainExactly([
         `match:Patient/${patient.id}`,
         `include:Patient/${linked1.id}`,
         `include:Patient/${linked2.id}`,
@@ -2808,7 +2808,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       // does not match the include target type.
       expect(
         bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
-      ).toEqualUnordered([`include:Task/${task.id}`, `match:AuditEvent/${auditEvent.id}`]);
+      ).toContainExactly([`include:Task/${task.id}`, `match:AuditEvent/${auditEvent.id}`]);
     }));
 
   test('_revinclude with target type', () =>
@@ -2838,7 +2838,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
       expect(
         matched.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
-      ).toEqualUnordered([`include:AuditEvent/${auditEvent.id}`, `match:Task/${task.id}`]);
+      ).toContainExactly([`include:AuditEvent/${auditEvent.id}`, `match:Task/${task.id}`]);
 
       // Target type Patient does not match the Task base result: nothing is reverse included.
       const notMatched = await repo.search({
@@ -2980,7 +2980,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
 
       expect(
         bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
-      ).toEqualUnordered([
+      ).toContainExactly([
         `match:Patient/${patient.id}`,
         `include:Patient/${linked1.id}`,
         `include:Patient/${linked2.id}`,
@@ -3926,7 +3926,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         ],
       });
 
-      expect(getEntryIds(result)).toEqualUnordered([observation1.id, observation2.id]);
+      expect(getEntryIds(result)).toContainExactly([observation1.id, observation2.id]);
 
       // Patients with observations performed by themselves with an ID equal to observation1.id
       const result2 = await repo.search(
@@ -4557,7 +4557,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       }
 
       expect(pageSizes).toStrictEqual([2, 2, 1]);
-      expect(seenIds).toEqualUnordered(expectedIds);
+      expect(seenIds).toContainExactly(expectedIds);
     }));
 
   test('Binary search not allowed', async () =>
@@ -5139,7 +5139,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         ]);
 
         // Second patient has one ServiceRequest and one Observation
-        expect(result[getReferenceString(patients[1])].map((r) => r.resourceType)).toEqualUnordered([
+        expect(result[getReferenceString(patients[1])].map((r) => r.resourceType)).toContainExactly([
           'Observation',
           'ServiceRequest',
         ]);
@@ -5264,7 +5264,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         }
 
         expect(seenIds.length).toBe(50);
-        expect(seenIds).toEqualUnordered(expectedIds);
+        expect(seenIds).toContainExactly(expectedIds);
       }));
 
     test('V1 cursor is not parsed as V2', () =>
@@ -5405,7 +5405,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         const result = await repo.search(
           parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=gt80')
         );
-        expect(result.entry?.map((e) => e.resource?.valueQuantity?.value)).toEqualUnordered([85, 90]);
+        expect(result.entry?.map((e) => e.resource?.valueQuantity?.value)).toContainExactly([85, 90]);
       }));
 
     test('With units', async () =>
@@ -5413,7 +5413,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         const result = await repo.search(
           parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=gt80|http://unitsofmeasure.org|kg')
         );
-        expect(result.entry?.map((e: any) => e.resource?.valueQuantity?.value)).toEqualUnordered([85, 90]);
+        expect(result.entry?.map((e: any) => e.resource?.valueQuantity?.value)).toContainExactly([85, 90]);
       }));
 
     test('Approximately', async () =>
@@ -5421,7 +5421,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         const result = await repo.search(
           parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=ap80|http://unitsofmeasure.org|kg')
         );
-        expect(result.entry?.map((e: any) => e.resource?.valueQuantity?.value)).toEqualUnordered([75, 80, 85]);
+        expect(result.entry?.map((e: any) => e.resource?.valueQuantity?.value)).toContainExactly([75, 80, 85]);
       }));
   });
 

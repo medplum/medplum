@@ -177,7 +177,7 @@ describe('Profile', () => {
     expect(res1.body.login).toBeDefined();
     expect(res1.body.code).toBeUndefined();
     expect(res1.body.memberships).toBeDefined();
-    expect(res1.body.memberships.map((m: any) => m.profile.reference)).toEqualUnordered([
+    expect(res1.body.memberships.map((m: any) => m.profile.reference)).toContainExactly([
       getReferenceString(profile1),
       getReferenceString(profile2),
     ]);
@@ -232,7 +232,7 @@ describe('Profile', () => {
     expect(res1.body.login).toBeDefined();
     expect(res1.body.code).toBeUndefined();
     expect(res1.body.memberships).toBeDefined();
-    expect(res1.body.memberships.map((m: any) => m.profile.reference)).toEqualUnordered([
+    expect(res1.body.memberships.map((m: any) => m.profile.reference)).toContainExactly([
       getReferenceString(profile1),
       getReferenceString(profile2),
     ]);

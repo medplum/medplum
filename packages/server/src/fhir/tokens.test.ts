@@ -780,7 +780,7 @@ describe('Non-strict mode', () => {
         ],
       });
       //TODO what is actually the expected behavior here?
-      expect(toIdentifierValues(res)).toEqualUnordered([]);
+      expect(toIdentifierValues(res)).toContainExactly([]);
     }));
 
   test('Handle malformed value', () =>
@@ -810,7 +810,7 @@ describe('Non-strict mode', () => {
         ],
       });
       //TODO what is actually the expected behavior here?
-      expect(toIdentifierValues(res)).toEqualUnordered([undefined]);
+      expect(toIdentifierValues(res)).toContainExactly([undefined]);
     }));
 });
 
@@ -994,7 +994,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toIdentifierValues(res)).toEqualUnordered(expected);
+    expect(toIdentifierValues(res)).toContainExactly(expected);
   });
 
   test.each<[string, Conditions[]]>([
@@ -1012,7 +1012,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toIdentifierValues(resEquals)).toEqualUnordered(expected);
+    expect(toIdentifierValues(resEquals)).toContainExactly(expected);
 
     const resContains = await repo.search<Condition>({
       resourceType: 'Condition',
@@ -1024,7 +1024,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toIdentifierValues(resContains)).toEqualUnordered([]);
+    expect(toIdentifierValues(resContains)).toContainExactly([]);
   });
 
   test.each<[string, string, Conditions[]]>([
@@ -1043,7 +1043,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toIdentifierValues(res)).toEqualUnordered(expected);
+    expect(toIdentifierValues(res)).toContainExactly(expected);
   });
 
   test.each<[string, Conditions[]]>([
@@ -1060,7 +1060,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toIdentifierValues(res)).toEqualUnordered(expected);
+    expect(toIdentifierValues(res)).toContainExactly(expected);
   });
 
   test.each<[string, string, Conditions[]]>([
@@ -1086,7 +1086,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toIdentifierValues(res)).toEqualUnordered(expected);
+    expect(toIdentifierValues(res)).toContainExactly(expected);
   });
 
   test.each<string>([val1, val1.slice(0, 3)])('code :contains beginning of value %s', async (value) => {
@@ -1100,7 +1100,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toIdentifierValues(resContains)).toEqualUnordered([]);
+    expect(toIdentifierValues(resContains)).toContainExactly([]);
   });
 
   test.each<[string]>([[val1.slice(1, 3)], [val2.slice(1, 3)]])(`code :contains middle of value %s`, async (value) => {
@@ -1135,7 +1135,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toIdentifierValues(resContains)).toEqualUnordered(expected);
+    expect(toIdentifierValues(resContains)).toContainExactly(expected);
   });
 
   describe('code :text search for special chars', () => {

@@ -122,7 +122,7 @@ describe('Patient Everything Operation', () => {
     expect(result.entry?.length).toStrictEqual(5);
     expect(
       result.entry?.map((e) => `${e.search?.mode}:${getReferenceString(e.resource as Resource)}`)
-    ).toEqualUnordered([
+    ).toContainExactly([
       'include:' + getReferenceString(organization),
       'include:' + getReferenceString(practitioner),
       'match:' + getReferenceString(condition),
@@ -153,7 +153,7 @@ describe('Patient Everything Operation', () => {
     const sinceResult = res6.body as Bundle;
     expect(
       sinceResult.entry?.map((e) => `${e.search?.mode}:${getReferenceString(e.resource as Resource)}`)
-    ).toEqualUnordered([
+    ).toContainExactly([
       'include:' + getReferenceString(organization),
       'include:' + getReferenceString(practitioner),
       'match:' + getReferenceString(newObservation),
@@ -577,7 +577,7 @@ describe('searchPatientCompartment', () => {
         break;
       }
     }
-    expect(results).toEqualUnordered([
+    expect(results).toContainExactly([
       expect.objectContaining({ resource: patient, search: { mode: 'match' } }),
       expect.objectContaining({ resource: observation, search: { mode: 'match' } }),
       expect.objectContaining({ resource: condition, search: { mode: 'match' } }),

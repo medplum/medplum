@@ -391,9 +391,9 @@ describe('FHIR Repo', () => {
         layer: 'cache',
         operation: 'read',
         source: 'repo.getCacheEntries',
-        specialResourceTypes: expect.toEqualUnordered(['Project']),
-        otherResourceTypes: expect.toEqualUnordered(['Patient']),
-        resourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
+        specialResourceTypes: expect.toContainExactly(['Project']),
+        otherResourceTypes: expect.toContainExactly(['Patient']),
+        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
       })
     );
   });
@@ -417,9 +417,9 @@ describe('FHIR Repo', () => {
         layer: 'sql',
         operation: 'read',
         source: 'search.getSearchEntries',
-        specialResourceTypes: expect.toEqualUnordered(['Project']),
-        otherResourceTypes: expect.toEqualUnordered(['Patient']),
-        resourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
+        specialResourceTypes: expect.toContainExactly(['Project']),
+        otherResourceTypes: expect.toContainExactly(['Patient']),
+        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
       })
     );
   });
@@ -445,10 +445,10 @@ describe('FHIR Repo', () => {
       expect.objectContaining({
         scope: 'transaction',
         status: 'committed',
-        specialResourceTypes: expect.toEqualUnordered(['Project']),
-        otherResourceTypes: expect.toEqualUnordered(['Patient']),
-        readResourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
-        writeResourceTypes: expect.toEqualUnordered([]),
+        specialResourceTypes: expect.toContainExactly(['Project']),
+        otherResourceTypes: expect.toContainExactly(['Patient']),
+        readResourceTypes: expect.toContainExactly(['Patient', 'Project']),
+        writeResourceTypes: expect.toContainExactly([]),
       })
     );
   });
@@ -541,7 +541,7 @@ describe('FHIR Repo', () => {
         meta: { profile: [profileUrl] },
         name: [{ given: ['Update1'], family: 'Update1' }],
       });
-      expect(patient1.meta?.profile).toEqualUnordered([profileUrl]);
+      expect(patient1.meta?.profile).toContainExactly([profileUrl]);
 
       const patientWithoutProfile = { ...patient1 };
       delete (patientWithoutProfile.meta as any).profile;
@@ -2017,7 +2017,7 @@ describe('FHIR Repo', () => {
       });
 
       const projects = await repo.searchResources({ resourceType: 'Project' });
-      expect(projects.map((p) => p.id)).toEqualUnordered([project.id, linkedProject.id, r4ProjectId]);
+      expect(projects.map((p) => p.id)).toContainExactly([project.id, linkedProject.id, r4ProjectId]);
 
       const patients = await repo.searchResources({ resourceType: 'Patient' });
       expect(patients.length).toStrictEqual(1);
@@ -2025,7 +2025,7 @@ describe('FHIR Repo', () => {
       expect(patients.map((p) => p.id)).not.toContain(linkedPatient.id);
 
       const orgs = await repo.searchResources({ resourceType: 'Organization' });
-      expect(orgs.map((p) => p.id)).toEqualUnordered([org.id, linkedOrg.id]);
+      expect(orgs.map((p) => p.id)).toContainExactly([org.id, linkedOrg.id]);
 
       // Regression: a non-exported resource in a linked project should not be
       // readable even when it is present in the Redis cache. Previously,

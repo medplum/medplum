@@ -129,7 +129,7 @@ describe('$get-ws-sub-project-stats', () => {
       // Criteria sorted descending by count
       expect(obType?.criteria[0].criteria).toBe('Observation?code=85354-9');
       expect(obType?.criteria[0].count).toBe(2);
-      expect(obType?.criteria[0].entries).toEqualUnordered([
+      expect(obType?.criteria[0].entries).toContainExactly([
         { subscriptionId: 'sub1', criteria: entry1.criteria, expiration: entry1.expiration, author: entry1.author },
         { subscriptionId: 'sub2', criteria: entry2.criteria, expiration: entry2.expiration, author: entry2.author },
       ]);

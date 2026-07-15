@@ -84,7 +84,7 @@ describe('ReferenceTable', () => {
       });
 
       const createRows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
-      expect(createRows).toEqualUnordered([
+      expect(createRows).toContainExactly([
         {
           resourceId: obs.id,
           code: 'patient',
@@ -104,7 +104,7 @@ describe('ReferenceTable', () => {
       });
 
       const updateRows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
-      expect(updateRows).toEqualUnordered([
+      expect(updateRows).toContainExactly([
         {
           resourceId: obs.id,
           code: 'encounter',
@@ -166,7 +166,7 @@ describe('ReferenceTable', () => {
       });
 
       const rows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
-      expect(rows).toEqualUnordered([
+      expect(rows).toContainExactly([
         {
           resourceId: obs.id,
           code: 'patient',

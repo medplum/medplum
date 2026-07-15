@@ -68,7 +68,7 @@ describe('importConceptMap()', () => {
     db.release();
 
     const results = await getMappingRows(pool, resource);
-    expect(results).toEqualUnordered([
+    expect(results).toContainExactly([
       expect.objectContaining({
         conceptMap: resource.id,
         sourceSystem: SNOMED,
@@ -133,7 +133,7 @@ describe('importConceptMap()', () => {
     db.release();
 
     const results = await getMappingRows(pool, resource);
-    expect(results).toEqualUnordered([
+    expect(results).toContainExactly([
       expect.objectContaining({
         conceptMap: resource.id,
         sourceSystem: SNOMED,

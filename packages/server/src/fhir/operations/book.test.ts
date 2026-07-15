@@ -268,7 +268,7 @@ describe('Appointment/$book', () => {
     });
 
     // The appointment holds references to the created slots
-    expect(appointments[0].slot?.map((slot) => slot.reference)).toEqualUnordered(
+    expect(appointments[0].slot?.map((slot) => slot.reference)).toContainExactly(
       slots.map((slot) => `Slot/${slot.id}`)
     );
   });

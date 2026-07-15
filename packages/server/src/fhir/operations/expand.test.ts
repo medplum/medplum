@@ -780,7 +780,7 @@ describe('Expand', () => {
       const expansion = res.body.expansion as ValueSetExpansion;
 
       const system = codeSystem.url;
-      expect(expansion.contains).toEqualUnordered([
+      expect(expansion.contains).toContainExactly([
         { system, code: 'PAR', display: 'parent' },
         { system, code: 'CHD', display: 'child' },
         { system, code: 'PET', display: 'pet' },
@@ -795,7 +795,7 @@ describe('Expand', () => {
       const expansion = res.body.expansion as ValueSetExpansion;
 
       const system = codeSystem.url;
-      expect(expansion.contains).toEqualUnordered([{ system, code: 'CHD', display: 'child' }]);
+      expect(expansion.contains).toContainExactly([{ system, code: 'CHD', display: 'child' }]);
     });
 
     test('Excludes ancestor code in descendent-of filter', async () => {
@@ -806,7 +806,7 @@ describe('Expand', () => {
       const expansion = res.body.expansion as ValueSetExpansion;
 
       const system = codeSystem.url;
-      expect(expansion.contains).toEqualUnordered([
+      expect(expansion.contains).toContainExactly([
         { system, code: 'CHD', display: 'child' },
         { system, code: 'PET', display: 'pet' },
       ]);
@@ -820,7 +820,7 @@ describe('Expand', () => {
       const expansion = res.body.expansion as ValueSetExpansion;
 
       const system = codeSystem.url;
-      expect(expansion.contains).toEqualUnordered([{ system, code: 'PET', display: 'pet' }]);
+      expect(expansion.contains).toContainExactly([{ system, code: 'PET', display: 'pet' }]);
     });
   });
 
@@ -851,7 +851,7 @@ describe('Expand', () => {
     const expansion = res.body.expansion as ValueSetExpansion;
 
     const expandedCodes = expansion.contains?.map((coding) => coding.code);
-    expect(expandedCodes).toEqualUnordered(['ADOPTP', 'ADOPTF', 'ADOPTM', 'CHLDADOPT', 'DAUADOPT', 'SONADOPT']);
+    expect(expandedCodes).toContainExactly(['ADOPTP', 'ADOPTF', 'ADOPTM', 'CHLDADOPT', 'DAUADOPT', 'SONADOPT']);
   });
 
   test('Filter out abstract codes', async () => {
@@ -1142,7 +1142,7 @@ describe('Expand', () => {
 
     expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
-    expect(expansion.contains).toEqualUnordered([
+    expect(expansion.contains).toContainExactly([
       {
         system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
         code: 'MT',
@@ -1160,7 +1160,7 @@ describe('Expand', () => {
 
     expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
-    expect(expansion.contains).toEqualUnordered([
+    expect(expansion.contains).toContainExactly([
       {
         system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
         code: 'MT',
@@ -1229,7 +1229,7 @@ describe('Expand', () => {
     expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
-    expect(expansion.contains).toEqualUnordered([
+    expect(expansion.contains).toContainExactly([
       {
         system: 'http://loinc.org',
         code: '86645-9',
