@@ -69,6 +69,7 @@ import {
   STATIC_DISPENSE_UNIT_NAME_RESOLVER,
   STATIC_QUALIFIER_MATCHER,
 } from '../../components/meds/quantity-qualifiers';
+import { ScriptSurePracticeSwitcher, useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderSetTabPanel } from './OrderSetTabPanel';
 
@@ -656,6 +657,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
   const medplum = useMedplum();
   const { patientId } = useParams();
   const { searchMedications, orderMedication } = useScriptSureOrderMedication();
+  const { selectedOrganization } = useScriptSurePractice();
 
   const [patient, setPatient] = useState(patientProp);
   const [requester, setRequester] = useState<Practitioner | undefined>();
@@ -1029,6 +1031,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
         pharmacyOrganizationId: pharmacyOrg?.id,
         writtenDate: writtenDateYmd,
         fillDate: fillDateYmd.trim() || undefined,
+        organization: selectedOrganization,
       });
 
       onOrderComplete?.({ launchUrl: res.launchUrl, medicationRequestId: res.medicationRequestId });
@@ -1114,6 +1117,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
         fillDate: compoundFillYmd.trim() || undefined,
         durationDays: compoundDaysSupply,
         pharmacyNote: compoundNotesPharmacist.trim() || undefined,
+        organization: selectedOrganization,
       });
       onOrderComplete?.({ launchUrl: res.launchUrl, medicationRequestId: res.medicationRequestId });
     } catch (e) {
@@ -1126,6 +1130,9 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
   return (
     <Container size="md">
       <Panel>
+        <Group justify="flex-end" mb="sm">
+          <ScriptSurePracticeSwitcher />
+        </Group>
         <Tabs value={activeTab} onChange={(v) => setActiveTab(v ?? 'single')}>
           <Tabs.List>
             <Tabs.Tab value="single">Single medication</Tabs.Tab>

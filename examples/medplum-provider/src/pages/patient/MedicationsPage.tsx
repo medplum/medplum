@@ -43,6 +43,7 @@ import { MedSelectEmpty } from '../../components/meds/MedSelectEmpty';
 import { PrescriptionIFrameModal } from '../../components/meds/PrescriptionIFrameModal';
 import { hasDoseSpotIdentifier, hasScriptSureIdentifier } from '../../components/utils';
 import { usePatient } from '../../hooks/usePatient';
+import { useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderMedicationPage } from '../meds/OrderMedicationPage';
 import classes from './MedsPage.module.css';
@@ -75,6 +76,7 @@ export function MedicationsPage(): JSX.Element {
   const medplum = useMedplum();
   const { orderMedication } = useScriptSureOrderMedication();
   const { addToCart, adding, checkout, removeFromCart, clearCart } = useScriptSureCart();
+  const { selectedOrganization } = useScriptSurePractice();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const statusParam = searchParams.get('status') ?? TAB_TO_STATUS_PARAM[DEFAULT_TAB];
@@ -334,7 +336,10 @@ export function MedicationsPage(): JSX.Element {
       // widget is only designed for the initial prescribing flow and cannot
       // approve/deny an order that was added to the queue (issue #9300); the
       // chart surface handles every state (queued, sent, etc.).
-      const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, { patientId });
+      const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, {
+        patientId,
+        organization: selectedOrganization,
+      });
       if (!res?.url) {
         throw new Error('ScriptSure did not return a prescriptions URL');
       }
@@ -346,7 +351,7 @@ export function MedicationsPage(): JSX.Element {
     } catch (e) {
       showErrorNotification(e);
     }
-  }, [patientId, currentOrder, medplum, fetchData]);
+  }, [patientId, currentOrder, medplum, fetchData, selectedOrganization]);
 
   const refreshLaunchUrl = useCallback(async (): Promise<string | undefined> => {
     if (!patientId) {
@@ -355,16 +360,19 @@ export function MedicationsPage(): JSX.Element {
     // Refresh from whichever surface is currently shown so an expired session
     // token is replaced with a matching URL (single-order widget vs chart).
     if (iframeMode === 'chart') {
-      const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, { patientId });
+      const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, {
+        patientId,
+        organization: selectedOrganization,
+      });
       return res?.url ?? iframeUrlRef.current;
     }
     const mrId = iframePollMrId ?? currentOrder?.id;
     if (!mrId) {
       return iframeUrlRef.current;
     }
-    const res = await orderMedication({ patientId, medicationRequestId: mrId });
+    const res = await orderMedication({ patientId, medicationRequestId: mrId, organization: selectedOrganization });
     return res.launchUrl;
-  }, [patientId, currentOrder, iframePollMrId, iframeMode, medplum, orderMedication]);
+  }, [patientId, currentOrder, iframePollMrId, iframeMode, medplum, orderMedication, selectedOrganization]);
 
   const handleIframeFhirSynced = useCallback((): void => {
     setIframeModalOpened(false);
@@ -462,7 +470,11 @@ export function MedicationsPage(): JSX.Element {
       if (medicationRequestIds.length === 0) {
         return;
       }
-      const res = await checkout({ patientId: checkoutPatientId, medicationRequestIds });
+      const res = await checkout({
+        patientId: checkoutPatientId,
+        medicationRequestIds,
+        organization: selectedOrganization,
+      });
       const failed = res.items.filter((i) => i.status === 'failed');
       const queuedIds = res.items.filter((i) => i.status === 'queued').map((i) => i.medicationRequestId);
       if (failed.length > 0) {
@@ -488,7 +500,7 @@ export function MedicationsPage(): JSX.Element {
     } finally {
       setCheckingOut(false);
     }
-  }, [patient, total, fetchAllDraftIds, checkout, fetchData]);
+  }, [patient, total, fetchAllDraftIds, checkout, fetchData, selectedOrganization]);
 
   const handleRemoveFromCart = useCallback(
     async (mrId: string): Promise<void> => {
