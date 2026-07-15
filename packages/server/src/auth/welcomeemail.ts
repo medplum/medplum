@@ -40,8 +40,8 @@ export interface WelcomeEmailContext {
 export const WELCOME_EMAIL_SUBJECT = 'Welcome to Medplum';
 
 export function welcomeEmailMarkdown(ctx: WelcomeEmailContext): string {
-  const greetingName = ctx.firstName ? ` ${ctx.firstName}` : '';
-  return `Hi ${greetingName},
+  const greeting = ctx.firstName ? `Hi ${ctx.firstName}` : 'Hi';
+  return `${greeting},
 
 Welcome to Medplum! Your new project **${ctx.projectName}** is ready to go.
 
