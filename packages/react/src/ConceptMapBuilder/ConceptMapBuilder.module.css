@@ -1,0 +1,90 @@
+.group {
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-sm);
+  padding: var(--mantine-spacing-md);
+}
+
+.header {
+  padding-bottom: var(--mantine-spacing-md);
+  margin-bottom: var(--mantine-spacing-sm);
+  border-bottom: 1px solid var(--mantine-color-gray-2);
+}
+
+.toolbar {
+  padding: var(--mantine-spacing-xs) 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(120px, 160px) minmax(200px, 1.4fr) 28px;
+  gap: var(--mantine-spacing-md);
+  align-items: start;
+}
+
+.columnHeader {
+  padding: var(--mantine-spacing-xs) 0;
+  border-bottom: 1px solid var(--mantine-color-gray-2);
+  color: var(--mantine-color-dimmed);
+}
+
+.elementRow {
+  position: relative;
+  padding: var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  border: 1.5px solid transparent;
+  transition: background-color 0.1s ease;
+}
+
+.elementRow:not(:last-of-type) {
+  border-bottom: 1px solid var(--mantine-color-gray-1);
+}
+
+.hovering {
+  border: 1.5px solid var(--mantine-color-blue-5);
+}
+
+.editing {
+  border: 1.5px solid var(--mantine-color-gray-2);
+  border-left: 4px solid var(--mantine-color-blue-5);
+  background-color: var(--mantine-color-gray-0);
+}
+
+.noMap {
+  opacity: 0.75;
+}
+
+.target {
+  padding: var(--mantine-spacing-xs);
+  border: 1px solid var(--mantine-color-gray-2);
+  border-radius: var(--mantine-radius-sm);
+}
+
+.noMapToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* Dark mode: use Mantine's light-dark tokens so contrast holds in both themes. */
+[data-mantine-color-scheme='dark'] .group {
+  border-color: var(--mantine-color-dark-4);
+}
+
+[data-mantine-color-scheme='dark'] .header,
+[data-mantine-color-scheme='dark'] .columnHeader {
+  border-bottom-color: var(--mantine-color-dark-4);
+}
+
+[data-mantine-color-scheme='dark'] .elementRow:not(:last-of-type) {
+  border-bottom-color: var(--mantine-color-dark-5);
+}
+
+[data-mantine-color-scheme='dark'] .editing {
+  background-color: var(--mantine-color-dark-6);
+  border-color: var(--mantine-color-dark-4);
+}
+
+[data-mantine-color-scheme='dark'] .target {
+  border-color: var(--mantine-color-dark-4);
+}
