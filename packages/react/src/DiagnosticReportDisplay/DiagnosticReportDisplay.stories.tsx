@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
 import { createReference, deepClone } from '@medplum/core';
 import type { DiagnosticReport, Observation, Reference, Specimen } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerSimpsonSpecimen, TestOrganization } from '@medplum/mock';
@@ -22,6 +23,37 @@ export default {
   title: 'Medplum/DiagnosticReportDisplay',
   component: DiagnosticReportDisplay,
 } as Meta;
+
+async function createHealthGorillaGroups(medplum: MedplumClient): Promise<[Observation, Observation]> {
+  const obs1 = await medplum.createResource<Observation>({
+    ...deepClone(HealthGorillaObservation1),
+    id: undefined,
+  });
+  const obs2 = await medplum.createResource<Observation>({
+    ...deepClone(HealthGorillaObservation2),
+    id: undefined,
+  });
+  const group1 = await medplum.createResource<Observation>({
+    ...deepClone(HealthGorillaObservationGroup1),
+    id: undefined,
+    hasMember: [createReference(obs1)],
+  });
+  const group2 = await medplum.createResource<Observation>({
+    ...deepClone(HealthGorillaObservationGroup2),
+    id: undefined,
+    hasMember: [createReference(obs2)],
+  });
+  return [group1, group2];
+}
+
+async function createHealthGorillaReport(medplum: MedplumClient): Promise<DiagnosticReport> {
+  const [group1, group2] = await createHealthGorillaGroups(medplum);
+  return medplum.createResource<DiagnosticReport>({
+    ...deepClone(HealthGorillaDiagnosticReport),
+    id: undefined,
+    result: [createReference(group1), createReference(group2)],
+  });
+}
 
 export const Simple = (): JSX.Element => (
   <Document>
@@ -119,16 +151,16 @@ export const KitchenSink = (): JSX.Element => {
 
   useEffect(() => {
     (async (): Promise<DiagnosticReport> => {
-      const creatinine = await medplum.createResource(CreatinineObservation);
+      const creatinine = await medplum.createResource<Observation>({
+        ...deepClone(CreatinineObservation),
+        id: undefined,
+      });
 
-      await medplum.createResource(HealthGorillaObservation1);
-      await medplum.createResource(HealthGorillaObservation2);
-      const group1 = await medplum.createResource(HealthGorillaObservationGroup1);
-      const group2 = await medplum.createResource(HealthGorillaObservationGroup2);
+      const [group1, group2] = await createHealthGorillaGroups(medplum);
 
       const receivedSpecimen = await medplum.createResource<Specimen>({
         ...deepClone(HomerSimpsonSpecimen),
-        id: 'kitchen-sink-specimen',
+        id: undefined,
         receivedTime: '2020-01-02T14:30:00Z',
         note: [{ text: 'Second specimen received in good condition.' }],
       });
@@ -177,79 +209,81 @@ export const KitchenSink = (): JSX.Element => {
  */
 export const LabPanelWithCorrections = (): JSX.Element => {
   const medplum = useMedplum();
-  const [loaded, setLoaded] = useState(false);
+  const [report, setReport] = useState<DiagnosticReport>();
 
   useEffect(() => {
-    (async (): Promise<boolean> => {
-      await medplum.createResource(LabPanelSpecimen);
+    (async (): Promise<DiagnosticReport> => {
+      const specimen = await medplum.createResource<Specimen>({
+        ...deepClone(LabPanelSpecimen),
+        id: undefined,
+      });
+
+      const observations: Observation[] = [];
       for (const observation of LabPanelObservations) {
-        await medplum.createResource(observation);
+        observations.push(
+          await medplum.createResource<Observation>({
+            ...deepClone(observation),
+            id: undefined,
+          })
+        );
       }
-      return true;
+
+      return medplum.createResource<DiagnosticReport>({
+        ...deepClone(LabPanelDiagnosticReport),
+        id: undefined,
+        specimen: [createReference(specimen)],
+        result: observations.map(createReference),
+      });
     })()
-      .then(setLoaded)
+      .then(setReport)
       .catch(console.log);
   }, [medplum]);
 
-  if (!loaded) {
+  if (!report) {
     return <></>;
   }
 
   return (
     <Document>
-      <DiagnosticReportDisplay value={LabPanelDiagnosticReport} />
+      <DiagnosticReportDisplay value={report} />
     </Document>
   );
 };
 
 export const ObservationGroups = (): JSX.Element => {
   const medplum = useMedplum();
-  const [loaded, setLoaded] = useState(false);
+  const [report, setReport] = useState<DiagnosticReport>();
 
   useEffect(() => {
-    medplum
-      .createResource(HealthGorillaObservation1)
-      .then(() => medplum.createResource(HealthGorillaObservation2))
-      .then(() => medplum.createResource(HealthGorillaObservationGroup1))
-      .then(() => medplum.createResource(HealthGorillaObservationGroup2))
-      .then(() => medplum.createResource(HealthGorillaDiagnosticReport))
-      .then(() => setLoaded(true))
-      .catch(console.log);
+    createHealthGorillaReport(medplum).then(setReport).catch(console.log);
   }, [medplum]);
 
-  if (!loaded) {
+  if (!report) {
     return <></>;
   }
 
   return (
     <Document>
-      <DiagnosticReportDisplay value={HealthGorillaDiagnosticReport} />
+      <DiagnosticReportDisplay value={report} />
     </Document>
   );
 };
 
 export const HideSubject = (): JSX.Element => {
   const medplum = useMedplum();
-  const [loaded, setLoaded] = useState(false);
+  const [report, setReport] = useState<DiagnosticReport>();
 
   useEffect(() => {
-    medplum
-      .createResource(HealthGorillaObservation1)
-      .then(() => medplum.createResource(HealthGorillaObservation2))
-      .then(() => medplum.createResource(HealthGorillaObservationGroup1))
-      .then(() => medplum.createResource(HealthGorillaObservationGroup2))
-      .then(() => medplum.createResource(HealthGorillaDiagnosticReport))
-      .then(() => setLoaded(true))
-      .catch(console.log);
+    createHealthGorillaReport(medplum).then(setReport).catch(console.log);
   }, [medplum]);
 
-  if (!loaded) {
+  if (!report) {
     return <></>;
   }
 
   return (
     <Document>
-      <DiagnosticReportDisplay hideSubject value={HealthGorillaDiagnosticReport} />
+      <DiagnosticReportDisplay hideSubject value={report} />
     </Document>
   );
 };
