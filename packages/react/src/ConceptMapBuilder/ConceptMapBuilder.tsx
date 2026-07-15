@@ -144,12 +144,7 @@ export function ConceptMapBuilder(props: ConceptMapBuilderProps): JSX.Element | 
     <div>
       <Form testid="conceptmap-form" onSubmit={handleSubmit}>
         {readOnly && (
-          <Alert
-            icon={<IconInfoCircle size={16} />}
-            color="yellow"
-            title="Map too large to edit visually"
-            mb="md"
-          >
+          <Alert icon={<IconInfoCircle size={16} />} color="yellow" title="Map too large to edit visually" mb="md">
             This ConceptMap has {totalElements.toLocaleString()} mappings, above the {EDIT_LIMIT.toLocaleString()}
             -row visual editing limit. It is shown read-only here — edit it on the JSON tab or via import tooling.
           </Alert>
@@ -355,9 +350,7 @@ function SystemInput(props: SystemInputProps): JSX.Element {
         resourceType="CodeSystem"
         disabled={props.disabled}
         placeholder={props.system ?? 'Search for a CodeSystem'}
-        onChange={(codeSystem) =>
-          props.onChangeSystem(codeSystem?.url, codeSystem?.version, codeSystem?.valueSet)
-        }
+        onChange={(codeSystem) => props.onChangeSystem(codeSystem?.url, codeSystem?.version, codeSystem?.valueSet)}
       />
       {props.system && (
         <Text size="xs" c="dimmed">
@@ -745,7 +738,11 @@ function CodeSummary(props: CodeSummaryProps): JSX.Element {
   }
   return (
     <Text size="sm">
-      {props.code && <Text component="span" fw={600} mr={6}>{props.code}</Text>}
+      {props.code && (
+        <Text component="span" fw={600} mr={6}>
+          {props.code}
+        </Text>
+      )}
       {props.display}
     </Text>
   );
@@ -836,9 +833,7 @@ function findMissingEquivalence(conceptMap: ConceptMap): string | undefined {
 // Drop groups the user never touched: no source, no target, and no elements. Display-only slices
 // never reach here, so a partially-viewed large map still saves every element.
 function pruneEmptyGroups(conceptMap: ConceptMap): ConceptMap {
-  const group = (conceptMap.group ?? []).filter(
-    (g) => g.source || g.target || (g.element && g.element.length > 0)
-  );
+  const group = (conceptMap.group ?? []).filter((g) => g.source || g.target || (g.element && g.element.length > 0));
   return { ...conceptMap, group };
 }
 

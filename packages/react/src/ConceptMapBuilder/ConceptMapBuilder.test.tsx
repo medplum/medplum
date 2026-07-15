@@ -203,7 +203,11 @@ describe('ConceptMapBuilder', () => {
         status: 'draft',
         // Intentionally omits equivalence to exercise the required-relationship guard.
         group: [
-          { source: SNOMED, target: ICD10, element: [{ code: 'a', target: [{ code: 'b' } as ConceptMapGroupElementTarget] }] },
+          {
+            source: SNOMED,
+            target: ICD10,
+            element: [{ code: 'a', target: [{ code: 'b' } as ConceptMapGroupElementTarget] }],
+          },
         ],
       },
       onSubmit,
@@ -237,9 +241,7 @@ describe('ConceptMapBuilder', () => {
       fireEvent.click(screen.getByText('Save'));
     });
     const submitted: ConceptMap = onSubmit.mock.calls[0][0];
-    expect(submitted.group?.[0].element?.[0].target).toEqual([
-      expect.objectContaining({ equivalence: 'unmatched' }),
-    ]);
+    expect(submitted.group?.[0].element?.[0].target).toEqual([expect.objectContaining({ equivalence: 'unmatched' })]);
     expect(submitted.group?.[0].element?.[0].target?.[0].code).toBeUndefined();
   });
 

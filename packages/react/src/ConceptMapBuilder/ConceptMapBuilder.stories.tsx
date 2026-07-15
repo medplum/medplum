@@ -27,7 +27,9 @@ const singleGroupExample: ConceptMap = {
         {
           code: '73211009',
           display: 'Diabetes mellitus',
-          target: [{ code: 'E11.9', display: 'Type 2 diabetes mellitus without complications', equivalence: 'equivalent' }],
+          target: [
+            { code: 'E11.9', display: 'Type 2 diabetes mellitus without complications', equivalence: 'equivalent' },
+          ],
         },
         {
           code: '386661006',
@@ -85,12 +87,18 @@ export const Empty = (): JSX.Element => (
 
 export const SingleGroup = (): JSX.Element => (
   <Document>
-    <ConceptMapBuilder value={singleGroupExample} onSubmit={(formData) => console.log(JSON.stringify(formData, null, 2))} />
+    <ConceptMapBuilder
+      value={singleGroupExample}
+      onSubmit={(formData) => console.log(JSON.stringify(formData, null, 2))}
+    />
   </Document>
 );
 
 export const MultipleGroups = (): JSX.Element => (
   <Document>
-    <ConceptMapBuilder value={multiGroupExample} onSubmit={(formData) => console.log(JSON.stringify(formData, null, 2))} />
+    <ConceptMapBuilder
+      value={multiGroupExample}
+      onSubmit={(formData) => console.log(JSON.stringify(formData, null, 2))}
+    />
   </Document>
 );
