@@ -14,7 +14,6 @@ describe('Data version manifest', () => {
     const manifest = JSON.parse(file);
     const manifestEntries = Object.keys(manifest);
 
-    expect(migrations.length).toStrictEqual(manifestEntries.length);
-    expect(migrations).toStrictEqual(expect.arrayContaining(manifestEntries));
+    expect(migrations).toEqualUnordered(manifestEntries);
   });
 });

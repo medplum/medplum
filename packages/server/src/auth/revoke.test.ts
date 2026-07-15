@@ -69,10 +69,8 @@ describe('Revoke', () => {
     // Should be 2 sessions
     const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
     expect(res2.status).toBe(200);
-    expect(res2.body).toBeDefined();
-    expect(res2.body.security.sessions).toHaveLength(2);
-    expect(res2.body.security.sessions.find((s: any) => s.id === login.id)).toBeTruthy();
-    expect(res2.body.security.sessions.find((s: any) => s.id === login2.id)).toBeTruthy();
+    assert(res2.body);
+    expect(res2.body.security.sessions.map((s: any) => s.id)).toEqualUnordered([login.id, login2.id]);
 
     // Revoke the 2nd session
     const res3 = await request(app)

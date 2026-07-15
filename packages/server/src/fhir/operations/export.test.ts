@@ -80,11 +80,7 @@ describe('Export', () => {
     const resBody = statusRes.body;
 
     const output = resBody?.output as BulkDataExportOutput[];
-    expect(
-      Object.values(output)
-        .map((ex) => ex.type)
-        .sort()
-    ).toStrictEqual([
+    expect(Object.values(output).map((ex) => ex.type)).toEqualUnordered([
       'ClientApplication',
       'Observation',
       'OperationDefinition',

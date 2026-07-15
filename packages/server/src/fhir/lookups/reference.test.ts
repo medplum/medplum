@@ -10,7 +10,6 @@ import { getGlobalSystemRepo } from '../repo';
 import { repoAccess } from '../repository/access-tracker';
 import { lookupTables } from '../searchparameter';
 import type { PgQueryable } from '../sql';
-import type { ReferenceTableRow } from './reference';
 import { ReferenceTable } from './reference';
 
 describe('ReferenceTable', () => {
@@ -30,10 +29,6 @@ describe('ReferenceTable', () => {
   afterAll(async () => {
     await shutdownApp();
   });
-
-  function sortFn(a: ReferenceTableRow, b: ReferenceTableRow): number {
-    return a.code.localeCompare(b.code);
-  }
 
   function getReferenceTestClient(resourceTypes: ResourceType | ResourceType[]): PgQueryable {
     return systemRepo.getDatabaseClient(repoAccess.sqlWrite(resourceTypes));
@@ -89,8 +84,7 @@ describe('ReferenceTable', () => {
       });
 
       const createRows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
-      expect(createRows).toHaveLength(2);
-      expect(createRows.sort(sortFn)).toStrictEqual([
+      expect(createRows).toEqualUnordered([
         {
           resourceId: obs.id,
           code: 'patient',
@@ -110,8 +104,7 @@ describe('ReferenceTable', () => {
       });
 
       const updateRows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
-      expect(updateRows).toHaveLength(3);
-      expect(updateRows.sort(sortFn)).toStrictEqual([
+      expect(updateRows).toEqualUnordered([
         {
           resourceId: obs.id,
           code: 'encounter',
@@ -173,8 +166,7 @@ describe('ReferenceTable', () => {
       });
 
       const rows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
-      expect(rows).toHaveLength(2);
-      expect(rows.sort(sortFn)).toStrictEqual([
+      expect(rows).toEqualUnordered([
         {
           resourceId: obs.id,
           code: 'patient',

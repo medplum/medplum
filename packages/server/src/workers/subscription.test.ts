@@ -3005,10 +3005,7 @@ describe('Subscription Worker', () => {
 
         const message = await nextMessagePromise;
         const subIds = message.events.map(([subId]) => subId);
-        expect(subIds).toHaveLength(3);
-        expect(subIds).toContain(sub1.id);
-        expect(subIds).toContain(sub2.id);
-        expect(subIds).toContain(sub3.id);
+        expect(subIds).toEqualUnordered([sub1.id, sub2.id, sub3.id]);
       }));
 
     test('Cached criteria - multiple subscriptions with same non-matching criteria do not fire', () =>
@@ -3115,9 +3112,7 @@ describe('Subscription Worker', () => {
         // Only the Alice subscriptions should fire; Bob subscriptions should be skipped via cached result
         const message = await nextMessagePromise;
         const subIds = message.events.map(([subId]) => subId);
-        expect(subIds).toHaveLength(2);
-        expect(subIds).toContain(aliceSub1.id);
-        expect(subIds).toContain(aliceSub2.id);
+        expect(subIds).toEqualUnordered([aliceSub1.id, aliceSub2.id]);
       }));
 
     test('Logs WS subscription eval info after evaluating criteria', () =>

@@ -806,9 +806,10 @@ describe('WebSocket Subscription', () => {
         .expectClosed();
 
       // Verify both subscriptions received notifications
-      expect(receivedSubRefs.sort()).toEqual(
-        [`Subscription/${subscription1.id}`, `Subscription/${subscription2.id}`].sort()
-      );
+      expect(receivedSubRefs).toEqualUnordered([
+        `Subscription/${subscription1.id}`,
+        `Subscription/${subscription2.id}`,
+      ]);
     }));
 
   test('Attachments are rewritten', () =>
