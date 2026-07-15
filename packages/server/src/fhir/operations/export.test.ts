@@ -44,7 +44,7 @@ describe('Export', () => {
           { system: 'email', value: 'alice@example.com' },
         ],
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     // Create observation
     const res2 = await request(app)
@@ -57,7 +57,7 @@ describe('Export', () => {
         code: { text: 'test' },
         subject: { reference: `Patient/${res1.body.id}` },
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     // Start the export
     const initRes = await request(app)
@@ -66,7 +66,7 @@ describe('Export', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
-    expect(initRes.status).toBe(202);
+    expect(initRes).toHaveStatus(202);
     expect(initRes.headers['content-location']).toBeDefined();
 
     // Check the export status
@@ -76,7 +76,7 @@ describe('Export', () => {
     const statusRes = await request(app)
       .get(contentLocation.pathname)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(statusRes.status).toBe(200);
+    expect(statusRes).toHaveStatus(200);
     const resBody = statusRes.body;
 
     const output = resBody?.output as BulkDataExportOutput[];
@@ -114,7 +114,7 @@ describe('Export', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
-    expect(initRes.status).toBe(202);
+    expect(initRes).toHaveStatus(202);
     expect(initRes.headers['content-location']).toBeDefined();
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });
@@ -129,7 +129,7 @@ describe('Export', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
-    expect(initRes.status).toBe(202);
+    expect(initRes).toHaveStatus(202);
     expect(initRes.headers['content-location']).toBeDefined();
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });

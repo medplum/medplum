@@ -80,7 +80,7 @@ describe('Appointment/:id/$confirm', () => {
       .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
   });
 
   test('Succeeds for a proposed appointment', async () => {
@@ -99,7 +99,7 @@ describe('Appointment/:id/$confirm', () => {
       .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
   });
 
   test('Returns a Bundle containing the booked Appointment', async () => {
@@ -110,7 +110,7 @@ describe('Appointment/:id/$confirm', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
 
     const bundle = response.body as Bundle;
     const entries = (bundle.entry ?? []).map((e) => e.resource).filter(isDefined);
@@ -128,7 +128,7 @@ describe('Appointment/:id/$confirm', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
 
     const bundle = response.body as Bundle;
     const entries = (bundle.entry ?? []).map((e) => e.resource).filter(isDefined);
@@ -146,7 +146,7 @@ describe('Appointment/:id/$confirm', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
 
     const bundle = response.body as Bundle;
     const entries = (bundle.entry ?? []).map((e) => e.resource).filter(isDefined);
@@ -163,7 +163,7 @@ describe('Appointment/:id/$confirm', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
 
     const persisted = await systemRepo.readResource<Slot>('Slot', slot.id);
     expect(persisted.status).toEqual('busy');
@@ -177,7 +177,7 @@ describe('Appointment/:id/$confirm', () => {
       .set('Authorization', `Bearer ${project.accessToken}`);
 
     expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
   });
 
   test.each(['booked', 'cancelled', 'fulfilled', 'noshow', 'entered-in-error'] as Appointment['status'][])(
@@ -198,7 +198,7 @@ describe('Appointment/:id/$confirm', () => {
           },
         ],
       });
-      expect(response.status).toEqual(400);
+      expect(response).toHaveStatus(400);
     }
   );
 
@@ -207,7 +207,7 @@ describe('Appointment/:id/$confirm', () => {
       .post('/fhir/R4/Appointment/00000000-0000-0000-0000-000000000000/$confirm')
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.status).toEqual(404);
+    expect(response).toHaveStatus(404);
   });
 
   test('Returns 400 when a referenced slot does not exist', async () => {
@@ -225,7 +225,7 @@ describe('Appointment/:id/$confirm', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
     expect(response.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', details: { text: 'Loading slots failed' } }],

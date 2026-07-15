@@ -73,7 +73,7 @@ describe('User/$rescope', () => {
           { name: 'project', valueReference: createReference(project) },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const updated = res.body as User;
     expect(updated.project?.reference).toStrictEqual(`Project/${project.id}`);
     expect(updated.meta?.project).toStrictEqual(project.id);
@@ -93,7 +93,7 @@ describe('User/$rescope', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const updated = res.body as User;
     expect(updated.project).toBeUndefined();
     expect(updated.meta?.project).toBeUndefined();
@@ -111,7 +111,7 @@ describe('User/$rescope', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const updated = res.body as User;
     expect(updated.project).toBeUndefined();
 
@@ -137,7 +137,7 @@ describe('User/$rescope', () => {
           { name: 'project', valueReference: createReference(project) },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 
   test('Project admin cannot rescope User from a different project', async () => {
@@ -153,7 +153,7 @@ describe('User/$rescope', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
 
     // Verify untouched
     const systemRepo = getGlobalSystemRepo();
@@ -183,7 +183,7 @@ describe('User/$rescope', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Project admin attempting project rescope on User in their project returns 403', async () => {
@@ -203,7 +203,7 @@ describe('User/$rescope', () => {
           { name: 'project', valueReference: createReference(project) },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   describe('Non-admin', () => {
@@ -247,7 +247,7 @@ describe('User/$rescope', () => {
           resourceType: 'Parameters',
           parameter: [{ name: 'scope', valueCode: 'server' }],
         } satisfies Parameters);
-      expect(res.status).toBe(403);
+      expect(res).toHaveStatus(403);
     });
 
     test('cannot rescope to project', async () => {
@@ -263,7 +263,7 @@ describe('User/$rescope', () => {
             { name: 'project', valueReference: createReference(project) },
           ],
         } satisfies Parameters);
-      expect(res.status).toBe(403);
+      expect(res).toHaveStatus(403);
     });
   });
 
@@ -280,7 +280,7 @@ describe('User/$rescope', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'project' }],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Invalid scope value returns 400', async () => {
@@ -296,7 +296,7 @@ describe('User/$rescope', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'elsewhere' }],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Already server-scoped returns 400 when rescoping to server', async () => {
@@ -312,7 +312,7 @@ describe('User/$rescope', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Already in target project returns 400 when rescoping to same project', async () => {
@@ -331,7 +331,7 @@ describe('User/$rescope', () => {
           { name: 'project', valueReference: createReference(project) },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Super admin can move User between projects', async () => {
@@ -361,7 +361,7 @@ describe('User/$rescope', () => {
           { name: 'project', valueReference: createReference(otherProject) },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const updated = res.body as User;
     expect(updated.project?.reference).toStrictEqual(`Project/${otherProject.id}`);
     expect(updated.meta?.project).toStrictEqual(otherProject.id);
@@ -392,7 +392,7 @@ describe('User/$rescope', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
 
     const systemRepo = getGlobalSystemRepo();
     const reread = await systemRepo.readResource<User>('User', user.id);
@@ -420,7 +420,7 @@ describe('User/$rescope', () => {
           { name: 'project', valueReference: { reference } },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Target project does not exist returns 404', async () => {
@@ -439,7 +439,7 @@ describe('User/$rescope', () => {
           { name: 'project', valueReference: { reference: `Project/${randomUUID()}` } },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 
   test('Cannot rescope to project when User has membership in another project', async () => {
@@ -460,7 +460,7 @@ describe('User/$rescope', () => {
           { name: 'project', valueReference: createReference(project) },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(JSON.stringify(res.body)).toMatch(/another project/);
   });
 });

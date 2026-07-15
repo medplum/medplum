@@ -183,7 +183,7 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
     expect(response.body).toHaveProperty('issue', [
       {
         code: 'invalid',
@@ -242,7 +242,7 @@ describe('Appointment/$book', () => {
       });
 
     expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
+    expect(response).toHaveStatus(201);
 
     const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
 
@@ -326,7 +326,7 @@ describe('Appointment/$book', () => {
         expression: ['Parameters.appointment.contained[0].start', 'Parameters.appointment.contained[1].start'],
       },
     ]);
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
   });
 
   test('with mismatched slot ends', async () => {
@@ -381,7 +381,7 @@ describe('Appointment/$book', () => {
         expression: ['Parameters.appointment.contained[0].end', 'Parameters.appointment.contained[1].end'],
       },
     ]);
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
   });
 
   test('fails when there is an overlapping busy slot booked', async () => {
@@ -428,7 +428,7 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
 
     // Check no appointment was created
     const appointments = await systemRepo.searchResources<Appointment>(
@@ -481,7 +481,7 @@ describe('Appointment/$book', () => {
         },
       ],
     });
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
   });
 
   test('it fails when trying to book outside of availability windows', async () => {
@@ -529,7 +529,7 @@ describe('Appointment/$book', () => {
         },
       ],
     });
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
   });
 
   test.each([
@@ -586,9 +586,9 @@ describe('Appointment/$book', () => {
 
     if (succeeds) {
       expect(response.body).not.toHaveProperty('issue');
-      expect(response.status).toEqual(201);
+      expect(response).toHaveStatus(201);
     } else {
-      expect(response.status).toEqual(400);
+      expect(response).toHaveStatus(400);
     }
   });
 
@@ -637,7 +637,7 @@ describe('Appointment/$book', () => {
       });
 
     expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
+    expect(response).toHaveStatus(201);
   });
 
   test('succeeds over adjacent explicit "free" slots', async () => {
@@ -698,7 +698,7 @@ describe('Appointment/$book', () => {
       });
 
     expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
+    expect(response).toHaveStatus(201);
   });
 
   test('booking a slot with a different duration than scheduling parameters fails', async () => {
@@ -742,7 +742,7 @@ describe('Appointment/$book', () => {
         severity: 'error',
       },
     ]);
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
   });
 
   test.each([
@@ -815,7 +815,7 @@ describe('Appointment/$book', () => {
           ],
         });
       expect(response.body).not.toHaveProperty('issue');
-      expect(response.status).toEqual(201);
+      expect(response).toHaveStatus(201);
     }
   );
 
@@ -884,7 +884,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
-    expect(response1.status).toEqual(400);
+    expect(response1).toHaveStatus(400);
 
     // Booking with buffer in the availability window succeeds
     const response2 = await request
@@ -923,7 +923,7 @@ describe('Appointment/$book', () => {
         ],
       });
     expect(response2.body).not.toHaveProperty('issue');
-    expect(response2.status).toEqual(201);
+    expect(response2).toHaveStatus(201);
 
     // It creates a bufferBefore slot with status: 'busy-unavailable'
     const entries = ((response2.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
@@ -1009,7 +1009,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
-    expect(response1.status).toEqual(400);
+    expect(response1).toHaveStatus(400);
 
     // Booking with buffer in the availability window succeeds
     const response2 = await request
@@ -1048,7 +1048,7 @@ describe('Appointment/$book', () => {
         ],
       });
     expect(response2.body).not.toHaveProperty('issue');
-    expect(response2.status).toEqual(201);
+    expect(response2).toHaveStatus(201);
 
     // It creates a bufferAfter slot with status: 'busy-unavailable'
     const entries = ((response2.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
@@ -1103,7 +1103,7 @@ describe('Appointment/$book', () => {
       });
 
     expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
+    expect(response).toHaveStatus(201);
 
     const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
 
@@ -1161,7 +1161,7 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
     expect(response.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [{ details: { text: 'Proposed appointment must not have Slot references' } }],
@@ -1218,7 +1218,7 @@ describe('Appointment/$book', () => {
         ],
       });
 
-    expect(misalignedResponse.status).toEqual(400);
+    expect(misalignedResponse).toHaveStatus(400);
     expect(misalignedResponse.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [{ details: { text: 'Slot start time is not aligned to the scheduling grid' } }],
@@ -1258,7 +1258,7 @@ describe('Appointment/$book', () => {
       });
 
     expect(alignedResponse.body).not.toHaveProperty('issue');
-    expect(alignedResponse.status).toEqual(201);
+    expect(alignedResponse).toHaveStatus(201);
   });
 
   describe('Loading schedulingParameters from HealthcareService', () => {
@@ -1334,7 +1334,7 @@ describe('Appointment/$book', () => {
         });
 
       expect(response.body).not.toHaveProperty('issue');
-      expect(response.status).toEqual(201);
+      expect(response).toHaveStatus(201);
     });
 
     test('fails when booking outside HealthcareService availability', async () => {
@@ -1372,7 +1372,7 @@ describe('Appointment/$book', () => {
           ],
         });
 
-      expect(response.status).toEqual(400);
+      expect(response).toHaveStatus(400);
     });
 
     test('Schedule-specific parameters override HealthcareService parameters', async () => {
@@ -1449,7 +1449,7 @@ describe('Appointment/$book', () => {
           ],
         });
       expect(response60.body).not.toHaveProperty('issue');
-      expect(response60.status).toEqual(201);
+      expect(response60).toHaveStatus(201);
 
       // 30-min slot fails (HealthcareService duration was overridden by Schedule)
       const response30 = await request
@@ -1480,7 +1480,7 @@ describe('Appointment/$book', () => {
             },
           ],
         });
-      expect(response30.status).toEqual(400);
+      expect(response30).toHaveStatus(400);
       expect(response30.body).toMatchObject({
         resourceType: 'OperationOutcome',
         issue: [
@@ -1529,7 +1529,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe('Appointment falls outside schedule planning horizon');
   });
 
@@ -1568,7 +1568,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe('Appointment falls outside schedule planning horizon');
   });
 });
@@ -1634,7 +1634,7 @@ describe('scheduling flow integration test', () => {
       });
 
     expect(findResponse.body).not.toHaveProperty('issue');
-    expect(findResponse.status).toBe(200);
+    expect(findResponse).toHaveStatus(200);
     expect(findResponse.body.entry?.length).toBeGreaterThan(0);
 
     const proposedAppointment: Appointment = findResponse.body.entry[1].resource;
@@ -1649,7 +1649,7 @@ describe('scheduling flow integration test', () => {
       });
 
     expect(bookResponse.body).not.toHaveProperty('issue');
-    expect(bookResponse.status).toBe(201);
+    expect(bookResponse).toHaveStatus(201);
 
     const entries = ((bookResponse.body as Bundle).entry ?? []).map((e) => e.resource).filter(isDefined);
     const appointments = entries.filter(isAppointment);
@@ -1784,7 +1784,7 @@ describe('scheduling flow integration test', () => {
       });
 
     expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
+    expect(response).toHaveStatus(201);
 
     const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
 
@@ -1816,7 +1816,7 @@ describe('scheduling flow integration test', () => {
       .send();
 
     expect(otherPatientResponse.body).not.toHaveProperty('issue');
-    expect(otherPatientResponse.status).toEqual(200);
+    expect(otherPatientResponse).toHaveStatus(200);
     expect(otherPatientResponse.body).toHaveProperty('entry');
     expect(otherPatientResponse.body.entry).toHaveLength(1);
     expect(otherPatientResponse.body.entry[0].resource).toEqual({

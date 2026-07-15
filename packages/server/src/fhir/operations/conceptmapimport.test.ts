@@ -257,7 +257,7 @@ describe('ConceptMap/$import', () => {
           },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const pool = getDatabasePool(DatabaseMode.READER);
 
@@ -309,7 +309,7 @@ describe('ConceptMap/$import', () => {
           },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Allows selecting ConceptMap by URL', async () => {
@@ -336,7 +336,7 @@ describe('ConceptMap/$import', () => {
           },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Requires ConceptMap to be specified', async () => {
@@ -356,7 +356,7 @@ describe('ConceptMap/$import', () => {
           },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [expect.objectContaining({ details: { text: 'ConceptMap to import into must be specified' } })],
@@ -387,7 +387,7 @@ describe('ConceptMap/$import', () => {
           },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [
@@ -419,7 +419,7 @@ describe('ConceptMap/$import', () => {
           },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [expect.objectContaining({ details: { text: 'Source code for mapping is required' } })],

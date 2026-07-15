@@ -39,7 +39,7 @@ describe('Measure evaluate-measure', () => {
           active: true,
           gender: i % 2 === 0 ? 'male' : 'female',
         });
-      expect(patientResponse.status).toBe(201);
+      expect(patientResponse).toHaveStatus(201);
     }
 
     // 1. Create a Measure
@@ -72,7 +72,7 @@ describe('Measure evaluate-measure', () => {
           },
         ],
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     // 2. Invoke $evaluate-measure
     const res2 = await request(app)
@@ -92,7 +92,7 @@ describe('Measure evaluate-measure', () => {
           },
         ],
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.resourceType).toBe('MeasureReport');
     expect(res2.body.group?.[0].population).toHaveLength(2);
     expect(res2.body.group?.[0].population?.[0].count).toStrictEqual(10);
@@ -102,7 +102,7 @@ describe('Measure evaluate-measure', () => {
     const res3 = await request(app)
       .get(`/fhir/R4/MeasureReport/${res2.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.resourceType).toBe('MeasureReport');
     expect(res3.body.group?.[0].population).toHaveLength(2);
     expect(res3.body.group?.[0].population?.[0].count).toStrictEqual(10);
@@ -118,14 +118,14 @@ describe('Measure evaluate-measure', () => {
         resourceType: 'Measure',
         status: 'active',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const res2 = await request(app)
       .post(`/fhir/R4/Measure/${res1.body.id}/$evaluate-measure`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('hello');
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       "Expected at least 1 value(s) for required input parameter 'periodStart'"
     );
@@ -140,7 +140,7 @@ describe('Measure evaluate-measure', () => {
         resourceType: 'Measure',
         status: 'active',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const res2 = await request(app)
       .post(`/fhir/R4/Measure/${res1.body.id}/$evaluate-measure`)
@@ -149,7 +149,7 @@ describe('Measure evaluate-measure', () => {
       .send({
         resourceType: 'Patient',
       });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       "Expected at least 1 value(s) for required input parameter 'periodStart'"
     );
@@ -164,7 +164,7 @@ describe('Measure evaluate-measure', () => {
         resourceType: 'Measure',
         status: 'active',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const res2 = await request(app)
       .post(`/fhir/R4/Measure/${res1.body.id}/$evaluate-measure`)
@@ -179,7 +179,7 @@ describe('Measure evaluate-measure', () => {
           },
         ],
       });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Expected 1 value(s) for input parameter periodStart, but 0 provided'
     );
@@ -197,7 +197,7 @@ describe('Measure evaluate-measure', () => {
           },
         ],
       });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect((res3.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Expected 1 value(s) for input parameter periodEnd, but 0 provided'
     );

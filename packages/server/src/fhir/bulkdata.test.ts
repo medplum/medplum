@@ -43,7 +43,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended');
-    expect(initRes.status).toBe(200);
+    expect(initRes).toHaveStatus(200);
     expect(initRes.body).toMatchObject({
       request: exportResource.request,
       output: exportResource.output,
@@ -68,13 +68,13 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended');
-    expect(cancelRes.status).toBe(202);
+    expect(cancelRes).toHaveStatus(202);
 
     const initRes = await request(app)
       .get('/fhir/R4/bulkdata/export/' + exportResource.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended');
-    expect(initRes.status).toBe(404);
+    expect(initRes).toHaveStatus(404);
   });
 });

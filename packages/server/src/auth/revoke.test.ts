@@ -26,7 +26,7 @@ describe('Revoke', () => {
 
   test('Unauthenticated', async () => {
     const res = await request(app).post('/auth/revoke').type('json').send({ loginId: randomUUID() });
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Revoke session', async () => {
@@ -48,7 +48,7 @@ describe('Revoke', () => {
     // Get sessions 1st time
     // Should be 1 session
     const res1 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body).toBeDefined();
     expect(res1.body.security.sessions).toHaveLength(1);
     expect(res1.body.security.sessions.find((s: any) => s.id === login.id)).toBeTruthy();
@@ -68,7 +68,7 @@ describe('Revoke', () => {
     // Get sessions 2nd time
     // Should be 2 sessions
     const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toBeDefined();
     expect(res2.body.security.sessions).toHaveLength(2);
     expect(res2.body.security.sessions.find((s: any) => s.id === login.id)).toBeTruthy();
@@ -80,12 +80,12 @@ describe('Revoke', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ loginId: login2.id });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     // Get sessions 3rd time
     // Should be 1 session
     const res4 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body).toBeDefined();
     expect(res4.body.security.sessions).toHaveLength(1);
     expect(res4.body.security.sessions.find((s: any) => s.id === login.id)).toBeTruthy();
@@ -98,7 +98,7 @@ describe('Revoke', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({});
-    expect(res5.status).toBe(400);
+    expect(res5).toHaveStatus(400);
 
     // Try to revoke a random session
     // This should fail
@@ -107,7 +107,7 @@ describe('Revoke', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ loginId: randomUUID() });
-    expect(res6.status).toBe(404);
+    expect(res6).toHaveStatus(404);
   });
 
   test('Different user', async () => {
@@ -158,6 +158,6 @@ describe('Revoke', () => {
       .set('Authorization', `Bearer ${aliceAccessToken}`)
       .type('json')
       .send({ loginId: bobLogin.id });
-    expect(revokeResponse.status).toBe(404);
+    expect(revokeResponse).toHaveStatus(404);
   });
 });

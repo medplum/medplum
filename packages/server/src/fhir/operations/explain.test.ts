@@ -35,7 +35,7 @@ describe('$explain', () => {
           { name: 'format', valueString: format },
         ],
       } satisfies Parameters);
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     const output = res1.body.parameter as ParametersParameter[];
     expect(output).toHaveLength(3);
@@ -63,7 +63,7 @@ describe('$explain', () => {
         ],
       } satisfies Parameters);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const output = res.body.parameter as ParametersParameter[];
     expect(output).toContainEqual(expect.objectContaining({ name: 'countEstimate', valueInteger: expect.any(Number) }));
     expect(output).toContainEqual(expect.objectContaining({ name: 'countAccurate', valueInteger: expect.any(Number) }));
@@ -81,7 +81,7 @@ describe('$explain', () => {
         parameter: [{ name: 'query', valueString: 'Patient?active=true' }],
       } satisfies Parameters);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const output = res.body.parameter as ParametersParameter[];
     expect(output.find((p) => p.name === 'countEstimate')).toBeUndefined();
     expect(output.find((p) => p.name === 'countAccurate')).toBeUndefined();
@@ -104,7 +104,7 @@ describe('$explain', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'query', valueString: 'Patient?active=true' }],
       } satisfies Parameters);
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     const output = res1.body.parameter as ParametersParameter[];
     const plan = output.find((p) => p.name === 'explain')?.valueString;
