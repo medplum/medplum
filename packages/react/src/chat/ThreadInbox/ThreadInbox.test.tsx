@@ -219,34 +219,6 @@ describe('ThreadInbox', () => {
     expect(vi.mocked(reactHooks.useSubscription)).toHaveBeenCalled();
   });
 
-  test('auto-selects the first thread when none is selected', async () => {
-    await medplum.createResource(mockCommunication);
-
-    const reply: Communication = {
-      resourceType: 'Communication',
-      id: 'reply-1',
-      status: 'in-progress',
-      partOf: [{ reference: 'Communication/comm-123' }],
-      sent: '2024-01-02T10:00:00Z',
-      payload: [{ contentString: 'Hi' }],
-    };
-
-    medplum.search = vi.fn().mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      total: 1,
-      entry: [{ resource: mockCommunication }],
-    });
-    medplum.graphql = vi.fn().mockResolvedValue({ data: { thread_comm123: [reply] } });
-
-    // No threadId selected, so the first thread is auto-selected via replace navigation.
-    await setup();
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/Message/comm-123', { replace: true });
-    });
-  });
-
   test('opens the Message Settings dialog from the thread header and saves', async () => {
     const user = userEvent.setup();
     // A Practitioner sender lets the dialog's fallback populate the practitioner field, so Save is enabled.

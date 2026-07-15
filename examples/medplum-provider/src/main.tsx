@@ -41,7 +41,7 @@ const theme = createTheme({
 
 const router = createBrowserRouter([{ path: '*', element: <App /> }]);
 
-const navigate = (path: string, options?: { replace?: boolean }): Promise<void> => router.navigate(path, options);
+const navigate = (path: string): Promise<void> => router.navigate(path);
 
 const container = document.getElementById('root') as HTMLDivElement;
 const root = createRoot(container);
