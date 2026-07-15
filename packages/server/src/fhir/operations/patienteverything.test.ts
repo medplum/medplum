@@ -48,7 +48,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Organization' });
-    expect(orgRes.status).toBe(201);
+    expect(orgRes).toHaveStatus(201);
     const organization = orgRes.body as Organization;
 
     // Create practitioner
@@ -60,7 +60,7 @@ describe('Patient Everything Operation', () => {
         resourceType: 'Practitioner',
         qualification: [{ code: { text: 'MD' }, issuer: createReference(organization) }],
       });
-    expect(practRes.status).toBe(201);
+    expect(practRes).toHaveStatus(201);
     const practitioner = practRes.body as Practitioner;
 
     // Create patient
@@ -78,7 +78,7 @@ describe('Patient Everything Operation', () => {
         ],
         managingOrganization: createReference(organization),
       } satisfies Patient);
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const patient = res1.body as Patient;
 
     // Create observation
@@ -93,7 +93,7 @@ describe('Patient Everything Operation', () => {
         subject: createReference(patient),
         performer: [createReference(practitioner), createReference(organization)],
       } satisfies Observation);
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     const observation = res2.body as Observation;
 
     // Create condition
@@ -110,14 +110,14 @@ describe('Patient Everything Operation', () => {
         subject: createReference(patient),
         recorder: createReference(practitioner),
       } satisfies Condition);
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
     const condition = res3.body as Condition;
 
     // Execute the operation
     const res4 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}/$everything`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     const result = res4.body as Bundle;
     expect(result.entry?.length).toStrictEqual(5);
     expect(
@@ -142,14 +142,14 @@ describe('Patient Everything Operation', () => {
         subject: createReference(patient),
         performer: [createReference(practitioner), createReference(organization)],
       } satisfies Observation);
-    expect(res5.status).toBe(201);
+    expect(res5).toHaveStatus(201);
     const newObservation = res5.body as Observation;
 
     // Execute the operation with _since
     const res6 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}/$everything?_since=${newObservation.meta?.lastUpdated}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     const sinceResult = res6.body as Bundle;
     expect(
       sinceResult.entry?.map((e) => `${e.search?.mode}:${getReferenceString(e.resource as Resource)}`)
@@ -163,7 +163,7 @@ describe('Patient Everything Operation', () => {
     const res7 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}/$everything?_count=1&_offset=1`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
 
     // Bundle should have pagination links
     const bundle = res7.body as Bundle;
@@ -188,7 +188,7 @@ describe('Patient Everything Operation', () => {
     const res8 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}/$everything?_count=1&_type=Observation`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res8.status).toBe(200);
+    expect(res8).toHaveStatus(200);
     const typeBundle = res8.body as Bundle;
     for (const link of typeBundle.link ?? []) {
       const url = new URL(link.url);
@@ -201,7 +201,7 @@ describe('Patient Everything Operation', () => {
     const res9 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}/$everything?start=2020-01-01&end=2040-01-01`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res9.status).toBe(200);
+    expect(res9).toHaveStatus(200);
   });
 
   test('Inline DocumentReference attachments', async () => {
@@ -211,7 +211,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient', name: [{ given: ['Bob'], family: 'Jones' }] } satisfies Patient);
-    expect(patientRes.status).toBe(201);
+    expect(patientRes).toHaveStatus(201);
     const patient = patientRes.body as Patient;
 
     // Upload a binary
@@ -220,7 +220,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('Hello attachment');
-    expect(binaryRes.status).toBe(201);
+    expect(binaryRes).toHaveStatus(201);
     const binary = binaryRes.body as Binary;
 
     // Create a DocumentReference pointing to the binary
@@ -234,13 +234,13 @@ describe('Patient Everything Operation', () => {
         subject: createReference(patient),
         content: [{ attachment: { url: binary.url } }],
       } satisfies DocumentReference);
-    expect(docRefRes.status).toBe(201);
+    expect(docRefRes).toHaveStatus(201);
 
     // Without _inlineAttachments, the URL should remain
     const withoutInline = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}/$everything`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(withoutInline.status).toBe(200);
+    expect(withoutInline).toHaveStatus(200);
     const bundleWithout = withoutInline.body as Bundle;
     const docRefWithout = bundleWithout.entry
       ?.map((e) => e.resource)
@@ -255,7 +255,7 @@ describe('Patient Everything Operation', () => {
       const withInline = await request(app)
         .get(`/fhir/R4/Patient/${patient.id}/$everything?_inlineAttachments=true`)
         .set('Authorization', 'Bearer ' + accessToken);
-      expect(withInline.status).toBe(200);
+      expect(withInline).toHaveStatus(200);
       const bundleWith = withInline.body as Bundle;
       const docRefWith = bundleWith.entry
         ?.map((e) => e.resource)
@@ -286,7 +286,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + projectAccessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient', name: [{ given: ['Project'], family: 'Setting' }] } satisfies Patient);
-    expect(patientRes.status).toBe(201);
+    expect(patientRes).toHaveStatus(201);
     const patient = patientRes.body as Patient;
 
     const binaryRes = await request(app)
@@ -294,7 +294,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + projectAccessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('Project setting attachment');
-    expect(binaryRes.status).toBe(201);
+    expect(binaryRes).toHaveStatus(201);
     const binary = binaryRes.body as Binary;
 
     const docRefRes = await request(app)
@@ -307,13 +307,13 @@ describe('Patient Everything Operation', () => {
         subject: createReference(patient),
         content: [{ attachment: { url: binary.url, contentType: ContentType.TEXT } }],
       } satisfies DocumentReference);
-    expect(docRefRes.status).toBe(201);
+    expect(docRefRes).toHaveStatus(201);
 
     try {
       const res = await request(app)
         .get(`/fhir/R4/Patient/${patient.id}/$everything`)
         .set('Authorization', 'Bearer ' + projectAccessToken);
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       const bundle = res.body as Bundle;
       const docRef = findDocumentReference(bundle);
       expect(docRef?.content?.[0]?.attachment?.url).toBeUndefined();
@@ -324,7 +324,7 @@ describe('Patient Everything Operation', () => {
       const optOutRes = await request(app)
         .get(`/fhir/R4/Patient/${patient.id}/$everything?_inlineAttachments=false`)
         .set('Authorization', 'Bearer ' + projectAccessToken);
-      expect(optOutRes.status).toBe(200);
+      expect(optOutRes).toHaveStatus(200);
       const optOutDocRef = findDocumentReference(optOutRes.body as Bundle);
       expect(optOutDocRef?.content?.[0]?.attachment?.url).toBeDefined();
       expect(optOutDocRef?.content?.[0]?.attachment?.data).toBeUndefined();
@@ -339,7 +339,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' } satisfies Patient);
-    expect(patientRes.status).toBe(201);
+    expect(patientRes).toHaveStatus(201);
     const patient = patientRes.body as Patient;
 
     const expectedIds = new Set<string>([patient.id as string]);
@@ -354,7 +354,7 @@ describe('Patient Everything Operation', () => {
           code: { text: 'patient_everything_cursor_test' },
           subject: createReference(patient),
         } satisfies Observation);
-      expect(obsRes.status).toBe(201);
+      expect(obsRes).toHaveStatus(201);
       expectedIds.add(obsRes.body.id);
     }
 
@@ -364,7 +364,7 @@ describe('Patient Everything Operation', () => {
       const res = await request(app)
         .get(url)
         .set('Authorization', 'Bearer ' + accessToken);
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
 
       const bundle = res.body as Bundle;
       for (const entry of bundle.entry ?? []) {
@@ -398,7 +398,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient', name: [{ given: ['Max'], family: 'SizeTest' }] } satisfies Patient);
-    expect(patientRes.status).toBe(201);
+    expect(patientRes).toHaveStatus(201);
     const patient = patientRes.body as Patient;
 
     const binaryRes = await request(app)
@@ -406,7 +406,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('123456');
-    expect(binaryRes.status).toBe(201);
+    expect(binaryRes).toHaveStatus(201);
     const binary = binaryRes.body as Binary;
 
     const secondBinaryRes = await request(app)
@@ -414,7 +414,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('67890');
-    expect(secondBinaryRes.status).toBe(201);
+    expect(secondBinaryRes).toHaveStatus(201);
     const secondBinary = secondBinaryRes.body as Binary;
 
     const thirdBinaryRes = await request(app)
@@ -422,7 +422,7 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('x');
-    expect(thirdBinaryRes.status).toBe(201);
+    expect(thirdBinaryRes).toHaveStatus(201);
     const thirdBinary = thirdBinaryRes.body as Binary;
 
     const docRefRes = await request(app)
@@ -451,13 +451,13 @@ describe('Patient Everything Operation', () => {
           { attachment: { url: thirdBinary.url, contentType: ContentType.TEXT } },
         ],
       } satisfies DocumentReference);
-    expect(docRefRes.status).toBe(201);
+    expect(docRefRes).toHaveStatus(201);
 
     try {
       const res = await request(app)
         .get(`/fhir/R4/Patient/${patient.id}/$everything?_inlineAttachments=true`)
         .set('Authorization', 'Bearer ' + accessToken);
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       const bundle = res.body as Bundle;
       const docRef = findDocumentReference(bundle);
       expect(docRef?.content?.[0]?.attachment?.url).toBeDefined();

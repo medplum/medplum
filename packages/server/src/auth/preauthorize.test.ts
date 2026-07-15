@@ -41,7 +41,7 @@ describe('Pre-authorize', () => {
 
   test('Requires auth', async () => {
     const res = await request(app).post('/auth/preauthorize').type('json').send({ clientId: client.id });
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Requires project admin', async () => {
@@ -50,7 +50,7 @@ describe('Pre-authorize', () => {
       .set('Authorization', `Bearer ${testAccount.accessToken}`)
       .type('json')
       .send({ clientId: client.id });
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Requires clientId', async () => {
@@ -59,7 +59,7 @@ describe('Pre-authorize', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({});
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Client ID is required'));
   });
 
@@ -69,7 +69,7 @@ describe('Pre-authorize', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ clientId: client.id });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Pre-authorization requires onBehalfOfMembership'));
   });
 
@@ -80,7 +80,7 @@ describe('Pre-authorize', () => {
       .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
       .type('json')
       .send({ clientId: randomUUID() });
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject(notFound);
   });
 
@@ -90,7 +90,7 @@ describe('Pre-authorize', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ clientId: client.id, expiresIn: 0 });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(
       badRequest(`expiresIn must be a positive integer not exceeding ${MAX_PRE_AUTH_CODE_TTL} seconds`)
     );
@@ -102,7 +102,7 @@ describe('Pre-authorize', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ clientId: client.id, expiresIn: MAX_PRE_AUTH_CODE_TTL + 1 });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(
       badRequest(`expiresIn must be a positive integer not exceeding ${MAX_PRE_AUTH_CODE_TTL} seconds`)
     );
@@ -115,7 +115,7 @@ describe('Pre-authorize', () => {
       .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
       .type('json')
       .send({ clientId: client.id });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.preAuthorizedCode).toBeDefined();
     expect(res.body.expiresAt).toBeDefined();
     expect(res.body.code).toBeUndefined();

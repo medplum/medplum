@@ -68,7 +68,7 @@ describe('Anonymous webhooks', () => {
         description: 'Alice bot description',
         accessPolicy: createReference(testSetup.accessPolicy),
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     expect(res1.body.resourceType).toBe('Bot');
     expect(res1.body.id).toBeDefined();
     bot = res1.body as WithId<Bot>;
@@ -81,13 +81,13 @@ describe('Anonymous webhooks', () => {
       .send({
         code: cjsCode,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Get the bot ProjectMembership
     const res3 = await request(app)
       .get(`/fhir/R4/ProjectMembership?profile=Bot/${bot.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.entry).toBeDefined();
     expect(res3.body.entry.length).toBe(1);
     botMembership = res3.body.entry[0].resource as WithId<ProjectMembership>;
@@ -102,7 +102,7 @@ describe('Anonymous webhooks', () => {
         description: 'Binary response bot description',
         accessPolicy: createReference(testSetup.accessPolicy),
       });
-    expect(res4.status).toBe(201);
+    expect(res4).toHaveStatus(201);
     expect(res4.body.resourceType).toBe('Bot');
     expect(res4.body.id).toBeDefined();
     binaryResponseBot = res4.body as WithId<Bot>;
@@ -115,13 +115,13 @@ describe('Anonymous webhooks', () => {
       .send({
         code: binaryResponseCode,
       });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
 
     // Get the bot ProjectMembership for the binary response bot
     const res6 = await request(app)
       .get(`/fhir/R4/ProjectMembership?profile=Bot/${binaryResponseBot.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     expect(res6.body.entry).toBeDefined();
     expect(res6.body.entry.length).toBe(1);
     binaryResponseBotMembership = res6.body.entry[0].resource as WithId<ProjectMembership>;
@@ -138,7 +138,7 @@ describe('Anonymous webhooks', () => {
           value: true,
         },
       ]);
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
 
     // Do the same for the binary response bot
     const res8 = await request(app)
@@ -152,7 +152,7 @@ describe('Anonymous webhooks', () => {
           value: true,
         },
       ]);
-    expect(res8.status).toBe(200);
+    expect(res8).toHaveStatus(200);
   });
 
   afterAll(async () => {
@@ -165,7 +165,7 @@ describe('Anonymous webhooks', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('x-signature', 'signature')
       .send('input');
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 
   test('Non-bot project membership', async () => {
@@ -174,7 +174,7 @@ describe('Anonymous webhooks', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('x-signature', 'signature')
       .send('input');
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
     expect(res.text).toStrictEqual('ProjectMembership must be for a Bot resource');
   });
 
@@ -184,7 +184,7 @@ describe('Anonymous webhooks', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('x-signature', 'signature')
       .send('input');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Success with OperationOutcome', async () => {
@@ -193,7 +193,7 @@ describe('Anonymous webhooks', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('x-signature', 'signature')
       .send(allOk);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Response contains a body', async () => {
@@ -214,7 +214,7 @@ describe('Anonymous webhooks', () => {
       .set('Content-Type', ContentType.JSON)
       .set('x-signature', 'signature')
       .send(input);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.header['content-type']).toContain('text/xml');
     expect(res.text.trim()).toBe('<Response><Say>Hello, world!</Say></Response>');
   });
@@ -229,7 +229,7 @@ describe('Anonymous webhooks', () => {
         description: 'Alice bot description',
         accessPolicy: createReference(accessPolicy),
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     expect(res1.body.resourceType).toBe('Bot');
     expect(res1.body.id).toBeDefined();
 
@@ -238,7 +238,7 @@ describe('Anonymous webhooks', () => {
     const res2 = await request(app)
       .get(`/fhir/R4/ProjectMembership?profile=Bot/${botWithoutPublicWebhook.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.entry).toBeDefined();
     expect(res2.body.entry.length).toBe(1);
 
@@ -249,7 +249,7 @@ describe('Anonymous webhooks', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('x-signature', 'signature')
       .send('input');
-    expect(res3.status).toBe(403);
+    expect(res3).toHaveStatus(403);
     expect(res3.text).toStrictEqual('Bot is not configured for public webhook access');
   });
 
@@ -262,7 +262,7 @@ describe('Anonymous webhooks', () => {
         name: 'Alice personal bot',
         description: 'Alice bot description',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     expect(res1.body.resourceType).toBe('Bot');
     expect(res1.body.id).toBeDefined();
 
@@ -271,7 +271,7 @@ describe('Anonymous webhooks', () => {
     const res2 = await request(app)
       .get(`/fhir/R4/ProjectMembership?profile=Bot/${botWithoutPublicWebhook.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.entry).toBeDefined();
     expect(res2.body.entry.length).toBe(1);
 
@@ -288,14 +288,14 @@ describe('Anonymous webhooks', () => {
           value: true,
         },
       ]);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     const res4 = await request(app)
       .post(`/webhook/${projectMembership.id}`)
       .set('Content-Type', ContentType.TEXT)
       .set('x-signature', 'signature')
       .send('input');
-    expect(res4.status).toBe(403);
+    expect(res4).toHaveStatus(403);
     expect(res4.text).toStrictEqual('ProjectMembership must have an Access Policy');
   });
 });

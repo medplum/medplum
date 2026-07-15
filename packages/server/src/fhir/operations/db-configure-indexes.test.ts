@@ -50,7 +50,7 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
@@ -78,7 +78,7 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
@@ -106,7 +106,7 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
@@ -150,7 +150,7 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(202);
+    expect(res).toHaveStatus(202);
 
     const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
 
@@ -208,7 +208,7 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(202);
+    expect(res).toHaveStatus(202);
 
     const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
 
@@ -287,7 +287,7 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
