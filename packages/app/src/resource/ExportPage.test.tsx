@@ -39,7 +39,7 @@ describe('ExportPage', () => {
   });
 
   test('Unsupported', async () => {
-    await setup('/Practitioner/123/export');
+    await setup('/Practitioner/124/export');
     expect(await screen.findByText('Unsupported export type')).toBeInTheDocument();
   });
 });

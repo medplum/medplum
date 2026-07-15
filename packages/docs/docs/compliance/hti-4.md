@@ -1,4 +1,4 @@
-# HTI-4/CMS-0057-F
+# HTI-4 & CMS-0057-F
 
 The "Health Data, Technology, and Interoperability" (HTI-4) rule is a new ONC regulation finalized on July 31, 2025, becoming effective October 1, 2025. This rule modernizes the entire prescribing workflow by mandating new technical certifications across all certified health IT systems, shifting key interoperability functions from optional features to mandatory requirements for certification.
 
@@ -6,11 +6,11 @@ The regulation aims to reduce administrative burden and clinician burnout relate
 
 Medplum can be used for both [CMS-0057-F](https://www.cms.gov/files/document/fact-sheet-cms-interoperability-and-prior-authorization-final-rule-cms-0057-f.pdf) and [CMS-9115-F](https://www.cms.gov/files/document/cms-9115-f.pdf) compliance. Medplum flexibly supports both scenarios through use of our terminology services, FHIR profiles, and other key infrastructure primitives.
 
-Medplum is pursuing certification for all three technical mandates for payor and provider organizations. Reach out to [hello@medplum.com](mailto:hello@medplum.com) if you are interested in learning more.
+Medplum is pursuing certification for all [three mandatory criteria](/docs/integration/electronic-prior-auth) for payer, intermediary, and provider organizations. Reach out to [hello@medplum.com](mailto:hello@medplum.com) if you are interested in learning more.
 
-##  Technical Mandates
+## Mandatory Criteria
 
-HTI-4 updates the ONC Certification Program by linking three critical criteria that work together to create a seamless, automated workflow:
+HTI-4 updates the ONC Certification Program by linking three mandatory criteria that work together to create a seamless, automated workflow:
 
 ### e-Prescribing (eRx) Update
 
@@ -22,10 +22,12 @@ A new, mandatory criterion requiring the NCPDP RTPB v13 standard for cost transp
 
 ### Electronic Prior Authorization (ePA)
 
-Three new mandatory criteria based on HL7 FHIR APIs for medical benefits automation. This fully automates ePA by requiring EHRs to support:
-- **CRD** (Coverage Requirements Discovery)
-- **DTR** (Documentation Templates & Rules)
-- **PAS** (Prior Authorization Support)
+Three new FHIR API criteria based on HL7 FHIR standards for medical benefits automation. This fully automates ePA by requiring EHRs to support:
+- **CRD** (Coverage Requirements Discovery) — ONC criterion **(g)(31)**
+- **DTR** (Documentation Templates & Rules) — ONC criterion **(g)(32)**
+- **PAS** (Prior Authorization Support) — ONC criterion **(g)(33)**
+
+Live-testing these three criteria also satisfies the related FHIR subscription / CDS Hooks criteria (referred to as (j)(20) and (j)(21)).
 
 ## Stakeholders
 
@@ -44,6 +46,7 @@ A parallel CMS rule (CMS-0057-F) forces payers to build the other side of the FH
 | Date | Milestone |
 | ---- | --------- |
 | Oct 1, 2025 | **Rule Effective** - HTI-4 becomes official. Developers can begin certifying to the new standards. |
+| ~Q4 2026 | **ePA Test Tooling** - ONC's Inferno test kits for (g)(31)–(g)(33) expected to be available; earliest date certifications can be issued. |
 | Jan 1, 2027 | **Payer Deadline** - Payers must have their Prior Authorization FHIR APIs (CRD, DTR, PAS) operational. |
 | CY 2027 | **Provider Reporting** - Providers begin the first MIPS reporting year for the new ePA measure. |
 | Dec 31, 2027 | **Transition Period Ends** - Last day developers can use the old NCPDP SCRIPT v2017071 standard. |
@@ -57,7 +60,9 @@ A parallel CMS rule (CMS-0057-F) forces payers to build the other side of the FH
 - [DaVinci PDEX Payer Network](http://hl7.org/fhir/us/davinci-pdex-plan-net/STU1/)
 - [DaVinci Payer Data Exchange (PDex) US Drug Formulary](http://hl7.org/fhir/us/davinci-drug-formulary/STU1.0.1/)
 - [ONC API Resource Guide](https://onc-healthit.github.io/api-resource-guide/)
+- [Medplum ONC Certification](/docs/compliance/onc)
 - [Medplum Bulk FHIR Implementation](/docs/api/fhir/operations/bulk-fhir)
 - [CDS Hooks](/docs/integration/cds-hooks)
+- [Electronic Prior Authorization](/docs/integration/electronic-prior-auth)
 - [DaVinci IG for Notifications](http://hl7.org/fhir/us/davinci-alerts/)
 - [DaVinci Project](https://confluence.hl7.org/display/DVP)

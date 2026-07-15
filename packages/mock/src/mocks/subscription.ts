@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { createReference } from '@medplum/core';
 import type { AuditEvent, Subscription } from '@medplum/fhirtypes';
+import { DrAliceSmith } from './alice';
 
 export const ExampleSubscription: Subscription = {
   resourceType: 'Subscription',
@@ -23,9 +25,7 @@ export const ExampleAuditEvent: AuditEvent = {
   meta: {
     lastUpdated: new Date().toISOString(),
     versionId: '456',
-    author: {
-      reference: 'Practitioner/123',
-    },
+    author: createReference(DrAliceSmith),
   },
   type: {
     system: 'http://terminology.hl7.org/CodeSystem/audit-event-type',
@@ -35,9 +35,7 @@ export const ExampleAuditEvent: AuditEvent = {
   agent: [
     {
       requestor: true,
-      who: {
-        reference: 'Practitioner/123',
-      },
+      who: createReference(DrAliceSmith),
     },
   ],
   source: {

@@ -92,6 +92,22 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
 
       // Otherwise, we're done
       textractResult = response;
+
+      // Text detection results may be paginated; follow NextToken to gather all blocks
+      let nextToken = response.NextToken;
+      while (nextToken) {
+        const nextResponse = await textractClient.send(
+          new GetDocumentTextDetectionCommand({
+            JobId: startResponse.JobId,
+            NextToken: nextToken,
+          })
+        );
+        if (nextResponse.Blocks) {
+          (textractResult.Blocks ??= []).push(...nextResponse.Blocks);
+        }
+        nextToken = nextResponse.NextToken;
+      }
+      textractResult.NextToken = undefined;
     }
   } catch (err: any) {
     getLogger().error('Error getting text detection:', err);

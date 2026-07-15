@@ -211,11 +211,12 @@ describe('Auth middleware', () => {
   });
 
   test('Basic auth with super admin client', async () => {
-    const { client } = await createTestProject({ superAdmin: true, withClient: true });
+    const { client, project } = await createTestProject({ superAdmin: true, withClient: true });
+    const { project: otherProject } = await createTestProject({ withClient: false });
     const res = await request(app)
-      .get('/fhir/R4/Project?_total=accurate')
+      .get(`/fhir/R4/Project?_total=accurate&_id=${project.id},${otherProject.id}`)
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
     expect(res.status).toBe(200);
-    expect(res.body.total).toBeGreaterThan(1);
+    expect(res.body.total).toBe(2);
   });
 });

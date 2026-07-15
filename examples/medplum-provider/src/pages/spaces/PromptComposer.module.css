@@ -1,0 +1,196 @@
+.chatInputBox {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
+  border-radius: var(--mantine-radius-lg);
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  padding-inline: 10px;
+  transition: border-color 100ms ease;
+
+  &:focus-within {
+    border-color: var(--mantine-color-blue-filled);
+  }
+}
+
+/* Voice mode keeps the focused blue border for the whole session — regardless of where the
+   user clicks — and only reverts when the Stop action ends voice mode. */
+.chatInputBox[data-voice-active] {
+  border-color: var(--mantine-color-blue-filled);
+}
+
+.chatPillsRow {
+  padding: 14px 4px 10px;
+}
+
+.chatInputBox[data-scrollable='true'] .chatPillsRow {
+  padding-bottom: 14px;
+}
+
+.chatAttachmentPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 1.75rem;
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  border-radius: var(--mantine-radius-xl);
+  padding-inline: 4px 6px;
+  max-width: 100%;
+}
+
+.chatAttachmentPillDismiss {
+  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-5));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+
+  &:hover {
+    color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+  }
+}
+
+.chatTextareaRoot {
+  &:first-child .chatTextarea {
+    padding-top: 14px;
+  }
+}
+
+.chatTextarea {
+  border: none;
+  background: transparent;
+  padding: 0 8px calc(10px + 1lh);
+  min-height: unset;
+  font-size: var(--mantine-font-size-sm);
+  /* Hidden until real overflow: the autosize height is an integer while 1lh padding is
+     fractional, which can leave a 1-2px scrollable remainder at some zoom levels */
+  overflow-y: hidden;
+
+  &:focus {
+    border: none;
+    outline: none;
+    box-shadow: none;
+  }
+}
+
+.chatInputBox[data-scrollable='true'] .chatTextarea {
+  overflow-y: auto;
+}
+
+.chatActionBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+
+/* Listening indicator, matching the Patient Intake Questionnaire recording status */
+.listeningStatus {
+  display: flex;
+  align-items: center;
+  /* Match the patient pill: 4px group gap + 2px label margin = 6px between dot and label */
+  gap: 4px;
+  min-width: 0;
+  height: 32px;
+}
+
+.listeningDotWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* 16px dot with an 8px offset centers it on the Patients icon it temporarily replaces */
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+  /* Static gray at the pulse's smallest size while connecting; turns red and pulses up once listening */
+  color: var(--mantine-color-gray-5);
+  transform: scale(0.8);
+
+  & svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.listeningStatus[data-state='recording'] .listeningDotWrapper {
+  color: var(--mantine-color-red-6);
+  animation: recordingPulse 2.5s ease-in-out infinite;
+}
+
+/* The brief moment a transcript auto-sends on a speech pause */
+.listeningStatus[data-state='sending'] .listeningDotWrapper {
+  color: var(--mantine-color-blue-6);
+  animation: recordingPulse 2.5s ease-in-out infinite;
+}
+
+.listeningLabel {
+  color: var(--mantine-color-gray-6);
+  white-space: nowrap;
+}
+
+@keyframes recordingPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Subtle action bar buttons: gray-0 on hover, gray-1 while their menu/popover is open.
+   No hover effect while selected. */
+.subtleActionButton {
+  /* Keep the dark-scheme icons close to white; the default "dark" subtle color is too dim on a dark-6 box.
+     !important is needed to beat Mantine's inline --ai-color; disabled state sets `color` directly so it's unaffected. */
+  --ai-color: light-dark(var(--mantine-color-dark-light-color), var(--mantine-color-dark-0)) !important;
+
+  &:hover:not(:disabled):not([data-disabled]):not([data-selected]) {
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
+  }
+
+  &[data-selected] {
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-4));
+  }
+}
+
+.modelPickerButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding-right: 12px;
+  border: none;
+  border-radius: var(--mantine-radius-xl);
+  background: transparent;
+  color: light-dark(var(--mantine-color-dark-light-color), var(--mantine-color-dark-0));
+  cursor: pointer;
+  transition: background-color 100ms ease;
+  white-space: nowrap;
+
+  &:hover:not([data-open]) {
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
+  }
+
+  &[data-open] {
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-4));
+  }
+}
+
+/* Filled send: Mantine's disabled filled styles are nearly invisible on the dark-6 input box */
+.sendActionButton:disabled,
+.sendActionButton[data-disabled] {
+  --ai-bg: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4)) !important;
+  --ai-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-1)) !important;
+  --ai-bd: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4)) !important;
+  background-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4)) !important;
+  color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-1)) !important;
+  opacity: 1 !important;
+}
+
+.modelMenuItem {
+  padding: calc(var(--mantine-spacing-xs) / 1.5) var(--mantine-spacing-xs);
+}

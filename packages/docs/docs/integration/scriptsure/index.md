@@ -16,6 +16,10 @@ Medplum has partnered with [DAW Systems](https://www.dawsystems.com/) to offer e
 - Pharmacy search and preferred pharmacy management
 - Prescription order sets
 
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/Yw05lnNOtpE" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
 ## Prerequisites
 
 Medplum will create your organization in the ScriptSure vendor portal and configure the integration before you begin. Once setup is complete, you'll receive an invite email. Once onboarded, you can send invites to new users.
@@ -32,3 +36,4 @@ Medplum will create your organization in the ScriptSure vendor portal and config
 | [Drug Interaction Check](/docs/integration/scriptsure/drug-interaction) | Check candidate drugs against the patient's current medications |
 | [Pharmacy Search](/docs/integration/scriptsure/pharmacy-search) | Search pharmacies and set a patient's preferred pharmacy |
 | [Order Sets](/docs/integration/scriptsure/order-sets) | Import and launch ScriptSure order sets |
+| [Medication Cart](/docs/integration/scriptsure/medication-cart) | Stage multiple prescriptions and approve them in a single signing session |

@@ -2,22 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference, isUUID } from '@medplum/core';
-import type { Practitioner, Project } from '@medplum/fhirtypes';
+import type { AccessPolicy, Practitioner, Project, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { createUser } from '../../auth/newuser';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
+import { PRACTITIONER_READONLY_RESOURCE_TYPES } from './projectinit';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
-
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('Project $init', () => {
@@ -33,10 +34,10 @@ describe('Project $init', () => {
   });
 
   beforeEach(() => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    fetchMock.mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(true);
   });
 
   test('Success', async () => {
@@ -81,6 +82,45 @@ describe('Project $init', () => {
     );
     expect(updatedProject.defaultPatientAccessPolicy).toBeDefined();
     expect(updatedProject.defaultPatientAccessPolicy?.reference).toMatch(/^AccessPolicy\//);
+
+    // Verify defaultAccessPolicies array is provisioned with Patient, RelatedPerson, Admin, and Practitioner entries
+    expect(updatedProject.defaultAccessPolicies).toHaveLength(4);
+    const patientEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Patient');
+    const relatedPersonEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'RelatedPerson');
+    const adminEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Admin');
+    const practitionerEntry = updatedProject.defaultAccessPolicies?.find((p) => p.profileType === 'Practitioner');
+    expect(patientEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
+    expect(relatedPersonEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
+    expect(adminEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
+    expect(practitionerEntry?.accessPolicy.reference).toMatch(/^AccessPolicy\//);
+    // Each role gets a separate policy instance
+    const references = [
+      patientEntry?.accessPolicy.reference,
+      relatedPersonEntry?.accessPolicy.reference,
+      adminEntry?.accessPolicy.reference,
+      practitionerEntry?.accessPolicy.reference,
+    ];
+    expect(new Set(references).size).toBe(4);
+
+    // Verify the Admin default policy grants full read/write to everything
+    const adminPolicy = await withTestContext(() =>
+      getGlobalSystemRepo().readReference<AccessPolicy>(adminEntry?.accessPolicy as Reference<AccessPolicy>)
+    );
+    expect(adminPolicy.resource).toStrictEqual([{ resourceType: '*' }]);
+
+    // Verify the Practitioner default policy is read-all + write-all-except-knowledge-resources
+    const practitionerPolicy = await withTestContext(() =>
+      getGlobalSystemRepo().readReference<AccessPolicy>(practitionerEntry?.accessPolicy as Reference<AccessPolicy>)
+    );
+    // Read access to everything via a readonly wildcard
+    expect(practitionerPolicy.resource).toContainEqual({ resourceType: '*', readonly: true });
+    // Writable clinical resource types are granted explicitly
+    expect(practitionerPolicy.resource).toContainEqual({ resourceType: 'Patient' });
+    expect(practitionerPolicy.resource).toContainEqual({ resourceType: 'Observation' });
+    // Read-only resource types are NOT writable (only the readonly wildcard covers them)
+    for (const readonlyType of PRACTITIONER_READONLY_RESOURCE_TYPES) {
+      expect(practitionerPolicy.resource).not.toContainEqual({ resourceType: readonlyType });
+    }
   });
 
   test('Requires project name', async () => {

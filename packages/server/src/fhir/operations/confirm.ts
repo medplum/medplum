@@ -26,6 +26,7 @@ const confirmOperation = makeOperationDefinition(
  * Endpoints:
  *   [fhir base]/Appointment/:id/$confirm
  *
+ * @experimental - Scheduling Beta API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */
@@ -59,7 +60,7 @@ export async function appointmentConfirmHandler(req: FhirRequest): Promise<FhirR
 
       return [updatedAppointment, ...updatedSlots];
     },
-    { serializable: true }
+    { serializable: true, resourceTypes: ['Appointment', 'Slot'], source: 'appointmentConfirm' }
   );
   const bundle = {
     resourceType: 'Bundle',

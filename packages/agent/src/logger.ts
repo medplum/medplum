@@ -67,6 +67,25 @@ export interface WinstonWrapperLoggerInitOptions extends WinstonWrapperLoggerOpt
 
 export interface FetchLogsOptions {
   limit?: number;
+  /**
+   * Opaque pagination cursor. Pass the `nextBefore` value from a previous
+   * result to fetch the next (older) page. Treat it as an opaque token rather
+   * than parsing it; it encodes the boundary timestamp plus a same-timestamp
+   * offset so pagination is exact even when entries share a millisecond.
+   */
+  before?: string;
+}
+
+export interface FetchLogsResult {
+  /** The page of log entries, newest first. */
+  logs: LogMessage[];
+  /** Whether older log entries exist beyond this page. */
+  hasMore: boolean;
+  /**
+   * Opaque cursor to pass as `before` on the next request to fetch the next
+   * older page. Only set when `hasMore` is true.
+   */
+  nextBefore?: string;
 }
 
 export function cleanupLoggerConfig(config: Partial<AgentLoggerConfig>, configPathRoot: string = 'config'): string[] {
@@ -331,27 +350,89 @@ export class WinstonWrapperLogger implements ILogger {
     return this.winston;
   }
 
-  async fetchLogs(options?: FetchLogsOptions): Promise<LogMessage[]> {
+  async fetchLogs(options?: FetchLogsOptions): Promise<FetchLogsResult> {
     if (
       options?.limit !== undefined &&
-      (typeof options.limit !== 'number' || options.limit <= 0 || options.limit > MAX_LOG_LIMIT)
+      (typeof options.limit !== 'number' ||
+        !Number.isInteger(options.limit) ||
+        options.limit <= 0 ||
+        options.limit > MAX_LOG_LIMIT)
     ) {
       throw new Error(
         `Invalid limit: ${options.limit} - must be a valid positive integer less than or equal to ${MAX_LOG_LIMIT}`
       );
     }
     const limit = options?.limit ?? DEFAULT_LOG_LIMIT;
-    return new Promise((resolve, reject) => {
+
+    // Decode the pagination cursor. It is an opaque string of the form
+    // `<ISO timestamp>@<skip>`, where `skip` is the number of entries sharing
+    // that exact timestamp that have already been returned on prior pages.
+    // Log timestamps only have millisecond resolution, so a burst of entries
+    // (e.g. on startup) can share a single timestamp. A plain timestamp cursor
+    // would then either duplicate those entries (inclusive bound) or silently
+    // drop the ones that did not fit in the previous page (exclusive bound).
+    // The `skip` component lets us resume precisely within a same-timestamp
+    // block via winston's `start` offset, guaranteeing no duplicates, no
+    // dropped entries, and forward progress.
+    let until: Date | undefined;
+    let skip = 0;
+    if (options?.before !== undefined) {
+      const at = options.before.lastIndexOf('@');
+      const timestampPart = at === -1 ? options.before : options.before.slice(0, at);
+      const skipPart = at === -1 ? '0' : options.before.slice(at + 1);
+      const beforeMs = new Date(timestampPart).getTime();
+      const parsedSkip = Number(skipPart);
+      if (Number.isNaN(beforeMs) || !Number.isInteger(parsedSkip) || parsedSkip < 0) {
+        throw new Error(`Invalid before cursor: ${options.before}`);
+      }
+      // `winston-daily-rotate-file` treats `until` as inclusive (`time > until`
+      // is excluded), so entries at exactly this timestamp are included and the
+      // `skip` offset advances past the ones already returned.
+      until = new Date(beforeMs);
+      skip = parsedSkip;
+    }
+
+    // `winston-daily-rotate-file` defaults `from` to 24 hours before `until`,
+    // which silently drops any entries that have rotated into older files. We
+    // pass epoch 0 so the query considers every rotated log file, letting a
+    // single request page across file boundaries. We over-fetch by one entry
+    // beyond the skip window to determine whether an older page exists without
+    // a second query.
+    const queryLogs = await new Promise<LogMessage[]>((resolve, reject) => {
       this.winston.query(
-        { order: 'desc', limit, fields: ['level', 'msg', 'timestamp'] },
+        {
+          order: 'desc',
+          start: skip,
+          limit: limit + 1,
+          from: new Date(0),
+          ...(until ? { until } : {}),
+          fields: ['level', 'msg', 'timestamp'],
+        },
         (err, results: { dailyRotateFile: LogMessage[] }) => {
           if (err) {
             reject(err);
             return;
           }
-          resolve(results.dailyRotateFile);
+          resolve(results.dailyRotateFile ?? []);
         }
       );
     });
+
+    const hasMore = queryLogs.length > limit;
+    const logs = queryLogs.slice(0, limit);
+
+    let nextBefore: string | undefined;
+    if (hasMore && logs.length > 0) {
+      const oldest = (logs.at(-1) as LogMessage).timestamp;
+      // Number of returned entries sharing the oldest timestamp in this page.
+      const sameTimestampInPage = logs.filter((l) => l.timestamp === oldest).length;
+      // If this page continued within the same timestamp block as the incoming
+      // cursor, carry the previously-skipped count forward so the next page
+      // resumes past everything already shown at that timestamp.
+      const carriedSkip = new Date(oldest).getTime() === until?.getTime() ? skip : 0;
+      nextBefore = `${oldest}@${carriedSkip + sameTimestampInPage}`;
+    }
+
+    return { logs, hasMore, nextBefore };
   }
 }

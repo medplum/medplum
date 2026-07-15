@@ -4,6 +4,7 @@ import type { Express } from 'express';
 import express from 'express';
 import type { Server } from 'node:http';
 import request from 'superwstest';
+import { vi } from 'vitest';
 import type { WebSocket } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -47,20 +48,52 @@ describe('Echo websocket', () => {
   test('Logs when subscribe rejects', () =>
     withTestContext(async () => {
       const subscribeError = new Error('Connection is closed.');
-      const subscriberSpy = jest.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
-        subscribe: jest.fn().mockRejectedValue(subscribeError),
-        on: jest.fn(),
-        disconnect: jest.fn(),
+      const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+        status: 'ready',
+        subscribe: vi.fn().mockRejectedValue(subscribeError),
+        on: vi.fn(),
+        disconnect: vi.fn(),
       } as any);
-      const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+      const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
 
-      const socket = { on: jest.fn(), send: jest.fn() } as unknown as WebSocket;
+      const socket = { on: vi.fn(), send: vi.fn() } as unknown as WebSocket;
 
       try {
         await expect(handleEchoConnection(socket)).resolves.toBeUndefined();
         expect(errorSpy).toHaveBeenCalledWith('[WS] Failed to subscribe to echo channel', {
           error: subscribeError,
         });
+      } finally {
+        subscriberSpy.mockRestore();
+        errorSpy.mockRestore();
+      }
+    }));
+
+  test('Logs when echoing a message fails', () =>
+    withTestContext(async () => {
+      // A failed subscribe means the in-flight `subscribed` promise rejects; the message
+      // handler must catch that instead of leaking an unhandled rejection on every message
+      const subscribeError = new Error('Connection is closed.');
+      const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+        subscribe: vi.fn().mockRejectedValue(subscribeError),
+        on: vi.fn(),
+        disconnect: vi.fn(),
+      } as any);
+      const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+
+      const handlers: Record<string, (...args: any[]) => any> = {};
+      const socket = {
+        on: vi.fn((event: string, cb: (...args: any[]) => any) => {
+          handlers[event] = cb;
+        }),
+        send: vi.fn(),
+      } as unknown as WebSocket;
+
+      try {
+        await handleEchoConnection(socket);
+        // Drive the registered message handler; awaiting the rejected `subscribed` must be caught
+        await handlers.message(Buffer.from('hello'));
+        expect(errorSpy).toHaveBeenCalledWith('[WS] Failed to echo message', { error: subscribeError });
       } finally {
         subscriberSpy.mockRestore();
         errorSpy.mockRestore();

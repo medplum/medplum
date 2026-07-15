@@ -14,9 +14,9 @@ import type {
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 import type { Repository } from '../repo';
+import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
 import {
   Column,
@@ -61,11 +61,14 @@ type ValueSetExpandParameters = {
  */
 export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ValueSetExpandParameters>(operation, req);
-
   const filter = params.filter;
   if (filter !== undefined && typeof filter !== 'string') {
     return [badRequest('Invalid filter')];
   }
+  if (filter?.includes('\0')) {
+    throw new OperationOutcomeError(badRequest('Filter value cannot contain null bytes'));
+  }
+
   const repo = getAuthenticatedContext().repo;
   let valueSet = params.valueSet;
   if (!valueSet) {
@@ -239,7 +242,10 @@ async function includeInExpansion(
   codeSystem: WithId<CodeSystem>,
   params: ValueSetExpandParameters
 ): Promise<void> {
-  const db = getAuthenticatedContext().repo.getDatabaseClient(DatabaseMode.READER);
+  const db = getAuthenticatedContext().repo.getDatabaseClient(
+    // for non resource tables derived from CodeSystem, e.g. Coding and CodeSystem_Property
+    repoAccess.sqlRead('CodeSystem', { source: 'expand.includeInExpansion' })
+  );
   await hydrateCodeSystemProperties(db, codeSystem);
 
   const query = expansionQuery(include, codeSystem, params);
@@ -364,6 +370,7 @@ function applyValueSetFilters(
         break;
       }
 
+      case 'exists':
       case '=':
       case 'in': {
         const property = codeSystem.property?.find((p) => p.code === condition.property);

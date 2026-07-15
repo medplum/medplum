@@ -48,17 +48,31 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
   // Otherwise, use the body
   const input = req.method === 'GET' ? parseQueryString(req.query, inputParameters) : req.body;
 
+  if (isResourceInputParam(inputParameters, input)) {
+    const param = inputParameters[0];
+    return { [param.name]: validateInputParam(param, input) } as T;
+  }
+
   if (input.resourceType === 'Parameters') {
     if (!input.parameter) {
       return {} as T;
     }
     validateResource(input as Parameters);
-    return parseParams(inputParameters, input.parameter) as T;
+    return parseParametersFromDefinitions(inputParameters, input.parameter) as T;
   } else {
     return Object.fromEntries(
       inputParameters.map((param) => [param.name, validateInputParam(param, input[param.name])])
     ) as T;
   }
+}
+
+function isResourceInputParam(inputParameters: OperationDefinitionParameter[], input: unknown): boolean {
+  if (!isResource(input) || input.resourceType === 'Parameters' || inputParameters.length !== 1) {
+    return false;
+  }
+
+  const paramType = inputParameters[0].type;
+  return paramType === 'Resource' || (!!paramType && isResource(input, paramType as ResourceType));
 }
 
 function parseQueryString(
@@ -156,7 +170,7 @@ function validateInputParam(param: OperationDefinitionParameter, value: unknown)
   return Array.isArray(value) && max === 1 ? value[0] : value;
 }
 
-function parseParams(
+export function parseParametersFromDefinitions(
   params: OperationDefinitionParameter[],
   inputParameters: ParametersParameter[]
 ): Record<string, unknown> {
@@ -168,7 +182,7 @@ function parseParams(
     const inParams = inputParameters.filter((p) => p.name === param.name);
     let value: unknown;
     if (param.part?.length) {
-      value = inParams.map((input) => parseParams(param.part as [], input.part ?? []));
+      value = inParams.map((input) => parseParametersFromDefinitions(param.part as [], input.part ?? []));
     } else {
       value = inParams?.map((v) => {
         const paramType = param.type ?? 'string';

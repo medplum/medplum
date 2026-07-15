@@ -1,20 +1,32 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Modal, Title } from '@mantine/core';
+import { Anchor, Button, Center, Group, List, Modal, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
-import type { MfaFormFields } from '@medplum/react';
-import { Document, MfaForm, useMedplum } from '@medplum/react';
+import type { MfaMethod } from '@medplum/react';
+import { Document, Logo, MfaEnrollForm, MfaForm, MfaVerificationForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+
+const METHOD_LABELS: Record<MfaMethod, string> = {
+  totp: 'Authenticator app',
+  email: 'Email',
+};
 
 export function MfaPage(): JSX.Element | null {
   const medplum = useMedplum();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>();
   const [enrolled, setEnrolled] = useState<boolean | undefined>(undefined);
+  const [enrolledMethods, setEnrolledMethods] = useState<MfaMethod[]>([]);
+  const [allowedMethods, setAllowedMethods] = useState<MfaMethod[]>([]);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [email, setEmail] = useState<string>();
+  const [addingTotp, setAddingTotp] = useState(false);
+  const [enrollingEmail, setEnrollingEmail] = useState(false);
   const [disabling, setDisabling] = useState(false);
+  const [removingMethod, setRemovingMethod] = useState<MfaMethod>();
 
   const fetchStatus = useCallback(() => {
     medplum
@@ -22,6 +34,10 @@ export function MfaPage(): JSX.Element | null {
       .then((response) => {
         setQrCodeUrl(response.enrollQrCode);
         setEnrolled(response.enrolled);
+        setEnrolledMethods(response.enrolledMethods ?? []);
+        setAllowedMethods(response.allowedMethods ?? ['totp']);
+        setMfaRequired(Boolean(response.mfaRequired));
+        setEmail(response.email);
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum]);
@@ -30,42 +46,139 @@ export function MfaPage(): JSX.Element | null {
     fetchStatus();
   }, [fetchStatus]);
 
-  const enableMfa = useCallback(
-    (formData: Record<MfaFormFields, string>) => {
+  const markEnrolled = useCallback((method: MfaMethod) => {
+    setEnrolled(true);
+    setEnrolledMethods((prev) => (prev.includes(method) ? prev : [...prev, method]));
+  }, []);
+
+  const enrollTotp = useCallback(
+    (token: string) => {
       medplum
-        .post('auth/mfa/enroll', formData)
+        .post('auth/mfa/enroll', { method: 'totp', token })
         .then(() => {
-          setEnrolled(true);
-          showNotification({ color: 'green', message: 'Success' });
+          setAddingTotp(false);
+          markEnrolled('totp');
+          showNotification({ color: 'green', message: 'Authenticator app enabled' });
         })
         .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+    },
+    [medplum, markEnrolled]
+  );
+
+  // Email a verification code to the current user so they can prove control of
+  // their email address — both when reverifying to enroll in email-based MFA
+  // and when changing MFA settings.
+  const requestEmailChallenge = useCallback(async (): Promise<void> => {
+    await medplum.post('auth/mfa/send-email-challenge', {});
+  }, [medplum]);
+
+  // Begin email MFA enrollment by emailing a verification code and opening the
+  // code-entry dialog. Enrollment only completes once the user reverifies their
+  // email by entering the code (see completeEnrollEmail).
+  const enrollEmail = useCallback((): void => {
+    requestEmailChallenge()
+      .then(() => setEnrollingEmail(true))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }, [requestEmailChallenge]);
+
+  const completeEnrollEmail = useCallback(
+    async (token: string): Promise<void> => {
+      // This will throw if the emailed code is missing, invalid, or expired.
+      await medplum.post('auth/mfa/enroll', { method: 'email', token });
+      setEnrollingEmail(false);
+      markEnrolled('email');
+      showNotification({ color: 'green', message: 'Email-based MFA enabled' });
+    },
+    [medplum, markEnrolled]
+  );
+
+  const disableMfa = useCallback(
+    async (token: string): Promise<OperationOutcome> => {
+      return medplum.post('auth/mfa/disable', { token });
     },
     [medplum]
   );
 
-  const disableMfa = useCallback(
-    async (formData: Record<MfaFormFields, string>): Promise<OperationOutcome> => {
-      return medplum.post('auth/mfa/disable', { token: formData.token });
+  const removeMethod = useCallback(
+    async (method: MfaMethod, token: string): Promise<void> => {
+      // This will throw if the factor failed to be removed
+      await medplum.post('auth/mfa/disable', { method, token });
+      setRemovingMethod(undefined);
+      showNotification({ color: 'green', message: `${METHOD_LABELS[method]} removed` });
+      // Refresh the status so the remaining methods (and TOTP QR code) are up to date
+      fetchStatus();
     },
-    [medplum]
+    [medplum, fetchStatus]
   );
 
   if (enrolled === undefined) {
     return null;
   }
 
+  const emailAllowed = allowedMethods.includes('email');
+  const totpAllowed = allowedMethods.includes('totp');
+  const emailEnrolled = enrolledMethods.includes('email');
+  const totpEnrolled = enrolledMethods.includes('totp');
+
+  // Shown in both the enrolled and not-yet-enrolled views: enrolling in email
+  // MFA requires the user to reverify their email by entering an emailed code.
+  const emailEnrollModal = (
+    <Modal title="Verify your email" opened={enrollingEmail} onClose={() => setEnrollingEmail(false)}>
+      <MfaVerificationForm
+        methods={['email']}
+        email={email}
+        initialEmailMode
+        onRequestEmailCode={requestEmailChallenge}
+        onSubmit={completeEnrollEmail}
+        buttonText="Verify and enable"
+      />
+    </Modal>
+  );
+
   if (enrolled) {
+    const canAddEmail = emailAllowed && !emailEnrolled;
+    const canAddTotp = totpAllowed && !totpEnrolled;
+    // Removing an individual factor only makes sense when more than one is
+    // enrolled; removing the last one is handled by "Disable MFA" below.
+    const canRemoveMethods = enrolledMethods.length > 1;
+    // When email is the only connected factor, verification happens via an
+    // emailed code, so send it as the verification dialog opens.
+    const emailOnly = emailEnrolled && !totpEnrolled;
+
+    const openDisable = (): void => {
+      if (emailOnly) {
+        requestEmailChallenge().catch((err) =>
+          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false })
+        );
+      }
+      setDisabling(true);
+    };
+
+    const openRemove = (method: MfaMethod): void => {
+      if (emailOnly) {
+        requestEmailChallenge().catch((err) =>
+          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false })
+        );
+      }
+      setRemovingMethod(method);
+    };
+
     return (
-      <Document>
+      <Document width={400}>
+        {emailEnrollModal}
         <Modal title="Disable MFA" opened={disabling} onClose={() => setDisabling(false)}>
-          <MfaForm
-            title="Disable MFA"
-            buttonText="Submit code"
-            onSubmit={async (formData) => {
+          <MfaVerificationForm
+            methods={enrolledMethods}
+            email={email}
+            initialEmailMode={emailOnly}
+            onRequestEmailCode={requestEmailChallenge}
+            onSubmit={async (token) => {
               // This will throw if MFA failed to disable
-              await disableMfa(formData);
+              await disableMfa(token);
               setDisabling(false);
               setEnrolled(false);
+              setEnrolledMethods([]);
+              setAddingTotp(false);
               showNotification({
                 id: 'mfa-disabled',
                 color: 'green',
@@ -78,17 +191,92 @@ export function MfaPage(): JSX.Element | null {
             }}
           />
         </Modal>
-        <Group>
-          <Title>MFA is enabled</Title>
-          <Button onClick={() => setDisabling(true)}>Disable MFA</Button>
-        </Group>
+        <Modal
+          title={removingMethod ? `Remove ${METHOD_LABELS[removingMethod]}` : undefined}
+          opened={Boolean(removingMethod)}
+          onClose={() => setRemovingMethod(undefined)}
+        >
+          {removingMethod && (
+            <MfaVerificationForm
+              methods={enrolledMethods}
+              email={email}
+              initialEmailMode={emailOnly}
+              onRequestEmailCode={requestEmailChallenge}
+              onSubmit={(token) => removeMethod(removingMethod, token)}
+            />
+          )}
+        </Modal>
+        <Modal opened={addingTotp} onClose={() => setAddingTotp(false)}>
+          <MfaForm
+            title="Add an authenticator app"
+            description="Scan this QR code with your authenticator app, then enter the code it generates."
+            buttonText="Enroll"
+            qrCodeUrl={qrCodeUrl}
+            onSubmit={(fields) => enrollTotp(fields.token)}
+          />
+        </Modal>
+        <Stack>
+          <Center py="xs" style={{ flexDirection: 'column' }}>
+            <Logo size={32} />
+            <Title order={3} py="md" ta="center">
+              Multi-factor authentication
+            </Title>
+          </Center>
+          <Stack pb="lg">
+            <Text c="dimmed">Enabled methods:</Text>
+            <List>
+              {enrolledMethods.map((method) => (
+                <List.Item key={method}>
+                  <Group justify="space-between" wrap="nowrap">
+                    <Text>{METHOD_LABELS[method]}</Text>
+                    {canRemoveMethods && (
+                      <Anchor href="#" c="red" onClick={() => openRemove(method)}>
+                        Remove
+                      </Anchor>
+                    )}
+                  </Group>
+                </List.Item>
+              ))}
+            </List>
+          </Stack>
+          {(canAddEmail || canAddTotp) && (
+            <Stack>
+              {canAddEmail && (
+                <Button variant="default" onClick={enrollEmail}>
+                  Add email-based MFA
+                </Button>
+              )}
+              {canAddTotp && (
+                <Button variant="default" onClick={() => setAddingTotp(true)}>
+                  Add an authenticator app
+                </Button>
+              )}
+            </Stack>
+          )}
+
+          {!mfaRequired && (
+            <Group>
+              <Button color="red" variant="outline" onClick={openDisable} fullWidth>
+                Disable MFA
+              </Button>
+            </Group>
+          )}
+        </Stack>
       </Document>
     );
   }
 
+  // Not yet enrolled: chooser, email-only, or authenticator (TOTP) enrollment.
   return (
     <Document width={400}>
-      <MfaForm title="Multi Factor Auth Setup" buttonText="Enroll" qrCodeUrl={qrCodeUrl} onSubmit={enableMfa} />
+      {emailEnrollModal}
+      <MfaEnrollForm
+        allowedMethods={allowedMethods}
+        qrCodeUrl={qrCodeUrl}
+        onEnrollEmail={enrollEmail}
+        onEnrollTotp={enrollTotp}
+        totpTitle="Multi Factor Auth Setup"
+      />
     </Document>
   );
 }

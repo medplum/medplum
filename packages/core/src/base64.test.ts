@@ -55,9 +55,9 @@ describe('Base64', () => {
   });
 
   test('Error', () => {
-    // Mock environment with neither browser nor Node.js
+    // Mock environment with neither browser nor Node.js (base64.ts uses getBuffer, not isNodeEnvironment)
     mockEnvironment.isBrowserEnvironment.mockReturnValue(false);
-    mockEnvironment.isNodeEnvironment.mockReturnValue(false);
+    mockEnvironment.getBuffer.mockReturnValue(undefined);
 
     expect(() => encodeBase64('Hello world')).toThrow('Unable to encode base64');
     expect(() => decodeBase64('SGVsbG8gd29ybGQ=')).toThrow('Unable to decode base64');

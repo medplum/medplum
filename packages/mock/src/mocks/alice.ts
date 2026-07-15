@@ -3,14 +3,25 @@
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference, lazy } from '@medplum/core';
 import type { Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import { MOCK_ALICE_PRACTITIONER_ID, MOCK_TEST_ORGANIZATION_ID } from '../constants';
 
 export const TestOrganization: WithId<Organization> = {
   resourceType: 'Organization',
-  id: '123',
+  id: MOCK_TEST_ORGANIZATION_ID,
   meta: {
     versionId: '1',
   },
   name: 'Test Organization',
+  address: [
+    {
+      use: 'work',
+      line: ['123 Test Street'],
+      city: 'Springfield',
+      state: 'CA',
+      postalCode: '90210',
+      country: 'US',
+    },
+  ],
 };
 
 export const DifferentOrganization: WithId<Organization> = {
@@ -24,12 +35,12 @@ export const DifferentOrganization: WithId<Organization> = {
 
 export const DrAliceSmith: WithId<Practitioner> = {
   resourceType: 'Practitioner',
-  id: '123',
+  id: MOCK_ALICE_PRACTITIONER_ID,
   meta: {
     versionId: '2',
     lastUpdated: '2021-01-02T12:00:00Z',
     author: {
-      reference: 'Practitioner/123',
+      reference: `Practitioner/${MOCK_ALICE_PRACTITIONER_ID}`,
     },
   },
   name: [
@@ -48,12 +59,12 @@ export const DrAliceSmith: WithId<Practitioner> = {
 
 export const DrAliceSmithPreviousVersion: WithId<Practitioner> = {
   resourceType: 'Practitioner',
-  id: '123',
+  id: MOCK_ALICE_PRACTITIONER_ID,
   meta: {
     versionId: '1',
     lastUpdated: '2021-01-01T12:00:00Z',
     author: {
-      reference: 'Practitioner/123',
+      reference: `Practitioner/${MOCK_ALICE_PRACTITIONER_ID}`,
     },
   },
   name: [{ given: ['Medplum'], family: 'Admin' }],
@@ -64,7 +75,7 @@ export const DrAliceSmithSchedule: WithId<Schedule> = {
   id: 'alice-smith-schedule',
   actor: [
     {
-      reference: 'Practitioner/123',
+      reference: `Practitioner/${MOCK_ALICE_PRACTITIONER_ID}`,
       display: 'Dr. Alice Smith',
     },
   ],

@@ -4,8 +4,10 @@ sidebar_position: 100
 
 # Electronic Prior Auth
 
-:::info[]
-Medplum CMS-0057-F Electronic Prior Auth is currently in alpha.
+:::info[Alpha]
+
+Medplum CMS-0057-F Electronic Prior Auth is currently in [alpha](/docs/compliance/alpha-beta).
+
 :::
 
 This document describes the recommended process for establishing connectivity and beginning CRD (Coverage Requirements Discovery) testing with Medplum.
@@ -309,3 +311,8 @@ If issues arise during testing, please provide:
 - Whether traffic was routed through the Drummond proxy
 
 Scheduling live troubleshooting sessions is often the fastest way to resolve interoperability issues.
+
+## Related Reading
+
+- [HTI-4 & CMS-0057-F](/docs/compliance/hti-4) — regulatory background, ONC criteria (g)(31)–(g)(33), certification vs. interoperability testing, and compliance timeline
+- [CDS Hooks](/docs/integration/cds-hooks)

@@ -17,7 +17,7 @@ const options = {
   tsconfig: 'tsconfig.json',
   minify: true,
   sourcemap: true,
-  external: ['@medplum/core', '@medplum/fhir-router', 'rfc6902'],
+  external: ['@medplum/core', '@medplum/fhir-router'],
 };
 
 esbuild

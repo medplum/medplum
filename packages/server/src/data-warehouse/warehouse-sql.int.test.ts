@@ -8,13 +8,18 @@ import pg from 'pg';
 import { loadTestConfig } from '../config/loader';
 import { SqlBuilder } from '../fhir/sql';
 import { buildPgConnectionURI } from './config';
+import type { DuckdbConnection } from './warehouse-sql';
 import {
   buildDuckdbPostgresAttachQuery,
   buildInsertIntoSelectQuery,
   buildSelectFromHistoryTableQuery,
+  fetchIcebergWatermark,
   runParameterizedWarehouseSql,
   runParameterizedWarehouseSqlReadAll,
 } from './warehouse-sql';
+
+const PATIENT_HISTORY_TABLE = 'iceberg_catalog.default.patient_history';
+const DELETED_ONLY_TABLE = 'iceberg_catalog.default.deleted_only';
 
 const HISTORY_TABLE = 'DwWarehouseSqlIntTest_history';
 const DEST_TABLE = 'wh_sql_int_dest';
@@ -84,6 +89,8 @@ describe('warehouse SQL (integration)', () => {
     const connection = await instance.connect();
     try {
       await connection.run('INSTALL postgres; LOAD postgres;');
+      await connection.run('SET threads = 1');
+      await connection.run('SET pg_use_ctid_scan = false');
       await connection.run(buildDuckdbPostgresAttachQuery(connStr));
       await connection.run(`
         CREATE TABLE "${DEST_TABLE}" (
@@ -109,4 +116,83 @@ describe('warehouse SQL (integration)', () => {
       instance.closeSync();
     }
   }, 30_000);
+
+  test('fetchIcebergWatermark executes parameterized iceberg_column_stats against DuckDB', async () => {
+    // given
+    const instance = await DuckDBInstance.create(':memory:');
+    const connection = await instance.connect();
+    try {
+      await setupFakeIcebergColumnStats(connection);
+
+      // when
+      const watermark = await fetchIcebergWatermark(connection, PATIENT_HISTORY_TABLE);
+      // then
+      expect(watermark).toBeDefined();
+      expect(new Date(watermark as string).toISOString()).toBe('2024-07-15T08:30:00.000Z');
+    } finally {
+      connection.closeSync();
+      instance.closeSync();
+    }
+  });
+
+  test('fetchIcebergWatermark returns undefined when table has no manifest stats', async () => {
+    const instance = await DuckDBInstance.create(':memory:');
+    const connection = await instance.connect();
+    try {
+      await setupFakeIcebergColumnStats(connection);
+
+      const watermark = await fetchIcebergWatermark(connection, 'iceberg_catalog.default.empty_table');
+      expect(watermark).toBeUndefined();
+    } finally {
+      connection.closeSync();
+      instance.closeSync();
+    }
+  });
+
+  test('fetchIcebergWatermark ignores DELETED status and empty upper_bound rows', async () => {
+    const instance = await DuckDBInstance.create(':memory:');
+    const connection = await instance.connect();
+    try {
+      await setupFakeIcebergColumnStats(connection);
+
+      const watermark = await fetchIcebergWatermark(connection, DELETED_ONLY_TABLE);
+      expect(watermark).toBeUndefined();
+    } finally {
+      connection.closeSync();
+      instance.closeSync();
+    }
+  });
 });
+
+/**
+ * Stand-in for the Iceberg extension's `iceberg_column_stats` table function.
+ * @param connection - The DuckDB connection to use.
+ * @returns A promise that resolves when the fake iceberg_column_stats table function is set up.
+ */
+async function setupFakeIcebergColumnStats(connection: DuckdbConnection): Promise<void> {
+  await connection.run(`
+    CREATE TABLE iceberg_column_stats_fixture (
+      table_name VARCHAR,
+      column_name VARCHAR,
+      status VARCHAR,
+      upper_bound VARCHAR
+    );
+  `);
+  await connection.run(`
+    INSERT INTO iceberg_column_stats_fixture VALUES
+      ('${PATIENT_HISTORY_TABLE}', 'last_updated', 'ADDED', '2024-06-01T12:00:00.000Z'),
+      ('${PATIENT_HISTORY_TABLE}', 'last_updated', 'ADDED', '2024-07-15T08:30:00.000Z'),
+      ('${PATIENT_HISTORY_TABLE}', 'last_updated', 'DELETED', '2024-08-01T00:00:00.000Z'),
+      ('${PATIENT_HISTORY_TABLE}', 'last_updated', 'ADDED', ''),
+      ('${PATIENT_HISTORY_TABLE}', 'id', 'ADDED', '999'),
+      ('iceberg_catalog.default.other_table', 'last_updated', 'ADDED', '2024-12-01T00:00:00.000Z'),
+      ('${DELETED_ONLY_TABLE}', 'last_updated', 'DELETED', '2024-08-01T00:00:00.000Z'),
+      ('${DELETED_ONLY_TABLE}', 'last_updated', 'ADDED', '');
+  `);
+  await connection.run(`
+    CREATE OR REPLACE MACRO iceberg_column_stats(qualified_table) AS TABLE
+    SELECT column_name, status, upper_bound
+    FROM iceberg_column_stats_fixture f
+    WHERE f.table_name = qualified_table;
+  `);
+}

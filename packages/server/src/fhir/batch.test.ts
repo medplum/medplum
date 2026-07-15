@@ -6,6 +6,7 @@ import type {
   Bundle,
   BundleEntryResponse,
   CareTeam,
+  Coverage,
   Observation,
   OperationOutcome,
   OperationOutcomeIssue,
@@ -17,17 +18,45 @@ import type {
   UserConfiguration,
 } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
+import { DelayedError } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import type { PoolClient } from 'pg';
 import type { RateLimiterRes } from 'rate-limiter-flexible';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { runInAuthenticatedContext } from '../context';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
-import type { BatchJobData } from '../workers/batch';
+import type { ReentrantBatchJobData } from '../workers/batch';
 import { execBatchJob, getBatchQueue } from '../workers/batch';
+import { queueRegistry } from '../workers/utils';
+import { PostgresError } from './sql';
+
+/**
+ * Builds a minimal mock BullMQ Job for driving execBatchJob in tests. Provides an in-memory
+ * `updateData` so the re-entrant worker can persist its progress marker, and `queueName`/`token`
+ * so graceful-shutdown/delay code paths can be exercised.
+ * @param data - The batch job data.
+ * @param overrides - Optional overrides applied on top of the defaults.
+ * @returns A mock Job usable with execBatchJob.
+ */
+function mockBatchJob(data: ReentrantBatchJobData, overrides?: Record<string, unknown>): Job<ReentrantBatchJobData> {
+  const job: any = {
+    id: '1',
+    data,
+    queueName: 'BatchQueue',
+    token: 'test-token',
+    async updateData(newData: ReentrantBatchJobData) {
+      job.data = newData;
+    },
+    async moveToDelayed() {},
+    ...overrides,
+  };
+  return job as Job<ReentrantBatchJobData>;
+}
 
 describe('Batch and Transaction processing', () => {
   const app = express();
@@ -35,12 +64,25 @@ describe('Batch and Transaction processing', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    // Async batches throttle by sleeping `points * asyncDelayScaling` ms per DB op in the async
+    // authenticated context (see Repository.recordFhirQuota). These tests exercise behavior, not
+    // throttle timing, so zero the delay to avoid real sleeps that slow the suite down.
+    config.asyncDelayScaling = 0;
     await initApp(app, config);
-    accessToken = await initTestAuth({ project: { features: ['transaction-bundles'] }, membership: { admin: true } });
+    accessToken = await initTestAuth({
+      project: {
+        features: ['transaction-bundles'],
+        // Opt in to re-entrant async batch processing (see workers/batch.ts). The async batch tests
+        // below exercise the re-entrant worker (checkpoints, resume, cancellation); without this
+        // flag the project defaults to the legacy single-shot path.
+        systemSetting: [{ name: 'reentrantAsyncBatch', valueBoolean: true }],
+      },
+      membership: { admin: true },
+    });
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterAll(async () => {
@@ -1174,15 +1216,15 @@ describe('Batch and Transaction processing', () => {
     const outcome = res.body as OperationOutcome;
     expect(outcome.issue[0].diagnostics).toMatch('http://');
 
-    // Manually push through BullMQ job
+    // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<BatchJobData>>({
-        bundle,
-      })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
     );
+    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    expect(enqueued.bundle).toBeUndefined();
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
     await expect(execBatchJob(job)).resolves.toBe(undefined);
@@ -1225,15 +1267,15 @@ describe('Batch and Transaction processing', () => {
     const outcome = res.body as OperationOutcome;
     expect(outcome.issue[0].diagnostics).toMatch('http://');
 
-    // Manually push through BullMQ job
+    // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<BatchJobData>>({
-        bundle,
-      })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
     );
+    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    expect(enqueued.bundle).toBeUndefined();
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
     await expect(execBatchJob(job)).resolves.toBe(undefined);
@@ -1259,6 +1301,143 @@ describe('Batch and Transaction processing', () => {
     });
 
     expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  test('Async batch resumes after graceful shutdown', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [1, 2, 3, 4].map(() => ({
+        request: { method: 'POST', url: 'Patient' },
+        resource: { resourceType: 'Patient' },
+      })),
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send(bundle);
+    expect(res.status).toStrictEqual(202);
+    const outcome = res.body as OperationOutcome;
+
+    const job = mockBatchJob(queue.add.mock.calls[0][1] as ReentrantBatchJobData);
+    queue.add.mockClear();
+
+    // Simulate the queue closing after the first two entries are processed. isClosing is checked
+    // at the top of each loop iteration, so returning false twice lets two entries process before
+    // the job detects shutdown and delays itself.
+    let checks = 0;
+    const closeAfterChecks = 2;
+    const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= closeAfterChecks);
+
+    // The delayed job re-throws DelayedError so BullMQ can re-queue it.
+    await expect(execBatchJob(job)).rejects.toBeInstanceOf(DelayedError);
+    isClosingSpy.mockRestore();
+
+    // Progress was checkpointed into the job data so a future worker can resume.
+    expect(job.data.position).toStrictEqual(closeAfterChecks);
+
+    // The AsyncJob must still be in progress (not failed/completed) after being delayed.
+    // The status endpoint returns 202 while a job is not in a final state.
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const inProgress = await request(app)
+      .get(new URL(jobUrl).pathname)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
+      .send();
+    expect(inProgress.status).toStrictEqual(202);
+
+    // Resume on a fresh worker: it rehydrates from durable state and finishes the batch.
+    const resumeJob = mockBatchJob(job.data);
+    await expect(execBatchJob(resumeJob)).resolves.toBe(undefined);
+
+    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+    const resultsReference = asyncJob.output?.parameter?.find((p) => p.name === 'results')?.valueReference?.reference;
+    expect(resultsReference).toMatch(/^Binary\//);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/${resultsReference}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res2.status).toStrictEqual(200);
+    const results = res2.body as Bundle;
+    expect(results.type).toStrictEqual('batch-response');
+    // All four entries are present exactly once, across the pre- and post-resume runs.
+    expect(results.entry).toHaveLength(4);
+    expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201', '201']);
+  });
+
+  test('Async batch makes partial results available when cancelled', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [1, 2, 3, 4].map(() => ({
+        request: { method: 'POST', url: 'Patient' },
+        resource: { resourceType: 'Patient' },
+      })),
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send(bundle);
+    expect(res.status).toStrictEqual(202);
+    const outcome = res.body as OperationOutcome;
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const asyncJobId = new URL(jobUrl).pathname.split('/').at(-2) as string;
+
+    const job = mockBatchJob(queue.add.mock.calls[0][1] as ReentrantBatchJobData);
+    queue.add.mockClear();
+
+    // Process two entries, then delay (simulating a shutdown) to leave durable partial state.
+    let checks = 0;
+    const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= 2);
+    await expect(execBatchJob(job)).rejects.toBeInstanceOf(DelayedError);
+    isClosingSpy.mockRestore();
+    const processedBeforeCancel = job.data.position as number;
+    expect(processedBeforeCancel).toBeGreaterThan(0);
+
+    // Cancel the AsyncJob out of band.
+    const cancelRes = await request(app)
+      .post(`/fhir/R4/AsyncJob/${asyncJobId}/$cancel`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(cancelRes.status).toStrictEqual(200);
+
+    // Resuming a cancelled job must not process further entries; it publishes partial results.
+    const resumeJob = mockBatchJob(job.data);
+    await expect(execBatchJob(resumeJob)).resolves.toBe(undefined);
+
+    const cancelled = await request(app)
+      .get(new URL(jobUrl).pathname)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
+      .send();
+    expect(cancelled.status).toStrictEqual(200);
+    expect(cancelled.body.status).toStrictEqual('cancelled');
+    const partialRef = cancelled.body.output?.parameter?.find((p: any) => p.name === 'partialResults')?.valueReference
+      ?.reference;
+    expect(partialRef).toMatch(/^Binary\//);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/${partialRef}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res2.status).toStrictEqual(200);
+    const partial = res2.body as Bundle;
+    expect(partial.type).toStrictEqual('batch-response');
+    // Only the entries processed before cancellation have results; the rest are absent.
+    expect(partial.entry?.filter(Boolean)).toHaveLength(processedBeforeCancel);
   });
 
   test('Transaction bundle account propagation', async () => {
@@ -1483,6 +1662,8 @@ describe('Batch and Transaction processing', () => {
         systemSetting: [
           { name: 'userFhirQuota', valueInteger: 200 },
           { name: 'enableFhirQuota', valueBoolean: true },
+          // Opt in to re-entrant async batch processing (see workers/batch.ts).
+          { name: 'reentrantAsyncBatch', valueBoolean: true },
         ],
       },
     });
@@ -1521,17 +1702,19 @@ describe('Batch and Transaction processing', () => {
     const outcome = res.body as OperationOutcome;
     expect(outcome.issue[0].diagnostics).toMatch('http://');
 
-    // Manually push through BullMQ job
+    // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<BatchJobData>>({ bundle: batch })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
     );
+    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    expect(enqueued.bundle).toBeUndefined();
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
     let count = 0;
-    const consumeMock = jest.spyOn(RateLimiterRedis.prototype, 'consume').mockImplementation(async (key, _points) => {
+    const consumeMock = vi.spyOn(RateLimiterRedis.prototype, 'consume').mockImplementation(async (key, _points) => {
       count = (count + 1) % 3;
       if (!key.toString().includes(membership.id)) {
         // allowed
@@ -1545,7 +1728,7 @@ describe('Batch and Transaction processing', () => {
 
       return {
         remainingPoints: 200 - count * 100, // Allow every third call
-        msBeforeNext: 20, // Wait for one fake timers tick before next retry
+        msBeforeNext: 20,
         consumedPoints: 100,
         isFirstInDuration: false,
       } as RateLimiterRes;
@@ -1559,10 +1742,9 @@ describe('Batch and Transaction processing', () => {
       () => execBatchJob(job)
     );
 
-    // Must wait here, but `RateLimiterRedis` uses TTL time from Redis `PTTL` command
-
     await expect(jobResult).resolves.toBe(undefined);
-    // Rate limits should not actually be consumed
+    // In async context the rate limiter is bypassed entirely (the worker self-throttles via
+    // Repository.recordFhirQuota instead), so RateLimiterRedis.consume must never be called.
     expect(consumeMock).toHaveBeenCalledTimes(0);
 
     const jobUrl = outcome.issue[0].diagnostics as string;
@@ -1588,5 +1770,135 @@ describe('Batch and Transaction processing', () => {
     expect(results.entry?.map((e) => Number.parseInt(e.response?.status ?? '', 10))).toStrictEqual([
       201, 201, 201, 201,
     ]);
+  });
+});
+
+describe('Transaction bundle SERIALIZABLE retry', () => {
+  const app = express();
+  let accessToken: string;
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    ({ accessToken } = await createTestProject({
+      project: { features: ['transaction-bundles'] },
+      withAccessToken: true,
+    }));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('does not silently drop writes on serialization failure', async () => {
+    // Mock a one-time serialization failure on the batch's SERIALIZABLE transaction.
+    // We wrap the writer pool so that the FIRST COMMIT on a connection that opened a SERIALIZABLE
+    // transaction throws 40001 (leaving the real transaction open so withTransaction's rollback
+    // path discards the attempt's writes, exactly as a real 40001 at COMMIT would).
+    const writerPool = getDatabasePool(DatabaseMode.WRITER);
+    const originalConnect = writerPool.connect.bind(writerPool);
+
+    let serializableBegins = 0;
+    let commitFailuresInjected = 0;
+
+    vi.spyOn(writerPool, 'connect').mockImplementation(async (...args: any[]) => {
+      const client = (await (originalConnect as any)(...args)) as PoolClient;
+      const originalQuery = client.query.bind(client);
+      let clientOpenedSerializableTx = false;
+
+      vi.spyOn(client, 'query').mockImplementation((text, values, callback) => {
+        if (typeof text === 'string') {
+          if (text.startsWith('BEGIN ISOLATION LEVEL SERIALIZABLE')) {
+            clientOpenedSerializableTx = true;
+            serializableBegins++;
+          } else if (text === 'COMMIT' && clientOpenedSerializableTx && commitFailuresInjected === 0) {
+            commitFailuresInjected++;
+            // Surface the serialization failure to the retry loop WITHOUT actually committing.
+            // The real transaction stays open; withTransaction's catch will ROLLBACK it.
+            return Promise.reject(
+              Object.assign(new Error('could not serialize access due to read/write dependencies among transactions'), {
+                code: PostgresError.SerializationFailure,
+              })
+            );
+          }
+        }
+        return (originalQuery as any)(text, values, callback);
+      });
+
+      return client;
+    });
+
+    const identifier = randomUUID();
+    const patientUrn = 'urn:uuid:' + randomUUID();
+    const transaction: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          // Conditional update requires SERIALIZABLE transaction
+          fullUrl: patientUrn,
+          request: { method: 'PUT', url: `Patient?identifier=http://example.com/mrn|${identifier}` },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{ system: 'http://example.com/mrn', value: identifier }],
+          } satisfies Patient,
+        },
+        {
+          request: { method: 'POST', url: 'Coverage' },
+          resource: {
+            resourceType: 'Coverage',
+            status: 'active',
+            beneficiary: { reference: patientUrn },
+            payor: [{ display: 'Test Payor A' }],
+          } satisfies Coverage,
+        },
+        {
+          request: { method: 'POST', url: 'Coverage' },
+          resource: {
+            resourceType: 'Coverage',
+            status: 'active',
+            beneficiary: { reference: patientUrn },
+            payor: [{ display: 'Test Payor B' }],
+          } satisfies Coverage,
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post('/fhir/R4/')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transaction);
+
+    // The failure was injected exactly once, and the transaction was retried (second BEGIN)
+    expect(serializableBegins).toBe(2);
+    expect(commitFailuresInjected).toBe(1);
+
+    // The server reports success to the client...
+    expect(res.status).toBe(200);
+    const responseBundle = res.body as Bundle;
+    expect(responseBundle.type).toBe('transaction-response');
+    expect(responseBundle.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201']);
+
+    const createdPatientRef = responseBundle.entry?.[0]?.response?.location as string;
+    expect(createdPatientRef).toBeDefined();
+
+    // ...so those resources MUST actually exist. Otherwise, the transaction retry committed
+    // an empty transaction and these reads come back empty — silent data loss
+    const patientSearch = await request(app)
+      .get(`/fhir/R4/Patient?identifier=http://example.com/mrn|${identifier}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(patientSearch.status).toBe(200);
+    expect((patientSearch.body as Bundle).entry).toHaveLength(1);
+
+    const coverageSearch = await request(app)
+      .get(`/fhir/R4/Coverage?beneficiary=${createdPatientRef}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(coverageSearch.status).toBe(200);
+    expect((coverageSearch.body as Bundle).entry).toHaveLength(2);
   });
 });

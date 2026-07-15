@@ -3,8 +3,10 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Scheduling
 
-:::info[]
-Medplum Scheduling is currently in alpha.
+:::info[Beta]
+
+Medplum Scheduling is currently in [beta](/docs/compliance/alpha-beta).
+
 :::
 
 Welcome to the Medplum Scheduling documentation. We currently support a range of scheduling operations that are available via the FHIR API. The following sections walk through the FHIR resources that are used to model scheduling and how the operations interact with them.
@@ -15,20 +17,19 @@ Welcome to the Medplum Scheduling documentation. We currently support a range of
 
 ## Step 1: Defining Service Types
 
-Decide what types of appointments you would like to offer. Create a [HealthcareService](/docs/api/fhir/resources/healthcareservice) resource for each type. Set a SchedulingParameters extension on each to define attributes like the length of the visit.
+Decide what types of appointments you would like to offer. Create a [HealthcareService](/docs/api/fhir/resources/healthcareservice) resource for each appointment type or service. Set a SchedulingParameters extension on each to define attributes like the length of the visit.
 
 Mark which [Schedule](/docs/api/fhir/resources/schedule) resources should be able to schedule appointments of that type by setting a reference to the HealthcareService in the Schedule.serviceType attribute.
 
 <details>
   <summary>Referencing a HealthcareService</summary>
 
-  In future FHIR revisions, Schedule.serviceType will have type `CodeableReference(HealthcareService)`. In Medplum's R4 implementation, this is achieved by including an extension on a `CodeableConcept` in that attribute.
+In future FHIR revisions, Schedule.serviceType will have type `CodeableReference(HealthcareService)`. In Medplum's R4 implementation, this is achieved by including an extension on a `CodeableConcept` in that attribute.
 
   <MedplumCodeBlock language="ts" selectBlocks="scheduleServiceTypeLink">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
-
 
 ## Step 2: [Defining Availability](/docs/scheduling/defining-availability)
 
@@ -62,10 +63,9 @@ graph TD
 
 Based on the availability defined in the previous step, we can now find available appointment slots. This is done via the `$find` operation.
 
-
-| Operation | Description | Status |
-| --------- | ----------- | ------ |
-| [`$find`](/docs/scheduling/appointment-find) | Find available appointment slots | **Alpha** |
+| Operation                                    | Description                      | Status   |
+| -------------------------------------------- | -------------------------------- | -------- |
+| [`$find`](/docs/scheduling/appointment-find) | Find available appointment slots | **Beta** |
 
 ---
 
@@ -73,33 +73,32 @@ Based on the availability defined in the previous step, we can now find availabl
 
 Once a desired slot has been found, the appointment booking process can be handled in several steps.
 
-| Operation | Description | Status |
-| --------- | ----------- | ------ |
-| [`$book`](/docs/scheduling/appointment-book) | Book an appointment in one step | **Alpha** |
-| [`$hold`](/docs/scheduling/appointment-hold) | Temporarily hold a slot | **Alpha** |
-| [`$confirm`](/docs/scheduling/appointment-confirm) | Confirm a held appointment | **Alpha** |
-| [`$cancel`](/docs/scheduling/appointment-cancel) | Cancel an appointment | **Alpha** |
+| Operation                                          | Description                     | Status   |
+| -------------------------------------------------- | ------------------------------- | -------- |
+| [`$book`](/docs/scheduling/appointment-book)       | Book an appointment in one step | **Beta** |
+| [`$hold`](/docs/scheduling/appointment-hold)       | Create a pending appointment    | **Beta** |
+| [`$confirm`](/docs/scheduling/appointment-confirm) | Confirm a held appointment      | **Beta** |
+| [`$cancel`](/docs/scheduling/appointment-cancel)   | Cancel an appointment           | **Beta** |
 
 ---
 
 ## Key FHIR Resources
 
-| Resource | Purpose |
-| -------- | ------- |
-| [`Schedule`](/docs/api/fhir/resources/schedule) | Represents a provider's, room's, or device's availability. Each Schedule belongs to exactly one actor. |
-| [`Slot`](/docs/api/fhir/resources/slot) | A specific time block on a Schedule. Only exists in the datastore for booked or blocked time — free slots are computed on demand. |
-| [`Appointment`](/docs/api/fhir/resources/appointment) | A confirmed booking linking one or more Slots to a patient and provider. |
-| [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) | Defines default scheduling parameters (duration, buffers, alignment) for a service type, shared across multiple providers. |
-
+| Resource                                                          | Purpose                                                                                                                           |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| [`Schedule`](/docs/api/fhir/resources/schedule)                   | Represents a provider's, room's, or device's availability. Each Schedule belongs to exactly one actor.                            |
+| [`Slot`](/docs/api/fhir/resources/slot)                           | A specific time block on a Schedule. Only exists in the datastore for booked or blocked time — free slots are computed on demand. |
+| [`Appointment`](/docs/api/fhir/resources/appointment)             | A confirmed booking linking one or more Slots to a patient and provider.                                                          |
+| [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) | Defines default scheduling parameters (duration, buffers, alignment) for a service type, shared across multiple providers.        |
 
 ## Medplum Scheduling FHIR Model Design Decisions
 
-Scheduling can be built in FHIR in many different ways. The key design decisions in Meduplum's specific scheduling FHIR model are:
+Scheduling can be built in FHIR in many different ways. The key design decisions in Medplum's specific scheduling FHIR model are:
 
 - **Recurring availability does not require pre-generated slots**: Synthetic[`Slot`](/docs/api/fhir/resources/slot) resources are **computed on-demand** by [`$find`](/docs/scheduling/appointment-find) as drafted resources that are not persisted in the datastore until an Appointment is booked. This means you don't need to maintain a bulk set of Slot resources across a planning horizon.
-:::note[]
-Available Slots can still be persisted for one time availability.
-:::
+  :::note[]
+  Available Slots can still be persisted for one time availability.
+  :::
 
 - **One-to-one actor–Schedule relationship**: Medplum's scheduling system requires each [`Schedule`](/docs/api/fhir/resources/schedule) to have **exactly one actor**. While the FHIR spec allows `Schedule.actor` to hold multiple references, Medplum enforces a single-actor constraint so that availability can be unambiguously resolved per resource. See [Defining Availability](/docs/scheduling/defining-availability) for the full model.
 
@@ -111,3 +110,129 @@ Available Slots can still be persisted for one time availability.
   valueCode: 'America/New_York'
 }
 ```
+
+---
+
+## Quickstart: Seed the Resources You Need
+
+The minimum set of resources required for scheduling to work for a single provider is a [`Practitioner`](/docs/api/fhir/resources/practitioner) (the actor), a [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) (the bookable appointment type and its shared parameters), and a [`Schedule`](/docs/api/fhir/resources/schedule) (the actor's availability, linked to the service).
+
+<details>
+  <summary>Seed Bundle: Practitioner + HealthcareService + Schedule</summary>
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:2f8b7a10-9c3d-4e2a-b1f5-6d0a1c9e4b21",
+      "resource": {
+        "resourceType": "Practitioner",
+        "name": [{ "given": ["Sarah"], "family": "Johnson", "prefix": ["Dr."] }],
+        "identifier": [{ "system": "http://example.org/practitioners", "value": "dr-sarah-johnson" }],
+        "extension": [
+          { "url": "http://hl7.org/fhir/StructureDefinition/timezone", "valueCode": "America/New_York" }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Practitioner",
+        "ifNoneExist": "identifier=http://example.org/practitioners|dr-sarah-johnson"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:7c1e5d84-3b62-4a97-8e0d-92f4a6b13c58",
+      "resource": {
+        "resourceType": "HealthcareService",
+        "name": "Office Visit",
+        "type": [
+          {
+            "text": "Office Visit",
+            "coding": [
+              { "system": "http://example.org/appointment-types", "code": "office-visit", "display": "Office Visit" }
+            ]
+          }
+        ],
+        "identifier": [{ "system": "http://example.org/serviceTypes", "value": "office-visit" }],
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
+            "extension": [
+              { "url": "duration", "valueDuration": { "value": 1, "unit": "h", "system": "http://unitsofmeasure.org", "code": "h" } },
+              { "url": "alignmentInterval", "valueDuration": { "value": 15, "unit": "min", "system": "http://unitsofmeasure.org", "code": "min" } },
+              { "url": "alignmentTimezone", "valueCode": "America/New_York" }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "HealthcareService",
+        "ifNoneExist": "identifier=http://example.org/serviceTypes|office-visit"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Schedule",
+        "active": true,
+        "comment": "Dr. Sarah Johnson - Office Visit availability",
+        "actor": [
+          { "reference": "urn:uuid:2f8b7a10-9c3d-4e2a-b1f5-6d0a1c9e4b21", "display": "Dr. Sarah Johnson" }
+        ],
+        "serviceType": [
+          {
+            "text": "Office Visit",
+            "coding": [{ "system": "http://example.org/appointment-types", "code": "office-visit" }],
+            "extension": [
+              {
+                "url": "https://medplum.com/fhir/service-type-reference",
+                "valueReference": {
+                  "reference": "urn:uuid:7c1e5d84-3b62-4a97-8e0d-92f4a6b13c58",
+                  "display": "Office Visit"
+                }
+              }
+            ]
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
+            "extension": [
+              {
+                "url": "service",
+                "valueReference": {
+                  "reference": "urn:uuid:7c1e5d84-3b62-4a97-8e0d-92f4a6b13c58",
+                  "display": "Office Visit"
+                }
+              },
+              {
+                "url": "availability",
+                "extension": [
+                  {
+                    "url": "availableTime",
+                    "extension": [
+                      { "url": "daysOfWeek", "valueCode": "mon" },
+                      { "url": "daysOfWeek", "valueCode": "tue" },
+                      { "url": "daysOfWeek", "valueCode": "wed" },
+                      { "url": "daysOfWeek", "valueCode": "thu" },
+                      { "url": "daysOfWeek", "valueCode": "fri" },
+                      { "url": "availableStartTime", "valueTime": "09:00:00" },
+                      { "url": "availableEndTime", "valueTime": "17:00:00" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]x
+      },
+      "request": { "method": "POST", "url": "Schedule" }
+    }
+  ]
+}
+```
+
+After uploading, you can immediately search for open slots with [`$find`](/docs/scheduling/appointment-find) using `service-type=office-visit`, then book with [`$book`](/docs/scheduling/appointment-book). To add more providers, duplicate the `Practitioner` + `Schedule` pair. For richer setups (multiple services, rooms, and overrides) see [Defining Availability](/docs/scheduling/defining-availability).
+
+</details>

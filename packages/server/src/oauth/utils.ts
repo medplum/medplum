@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter, ProfileResource, SearchRequest, WithId } from '@medplum/core';
+import type { Filter, JWTPayload, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
@@ -33,10 +33,8 @@ import type {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import type { Request } from 'express';
-import type { JWTPayload, VerifyOptions } from 'jose';
+import type { VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
-import type { RequestInit as FetchRequestInit } from 'node-fetch';
-import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
@@ -58,6 +56,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
+import { safeFetch } from '../util/url';
 import { getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
@@ -311,6 +310,28 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
 
   const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
+
+  // Email-based MFA: the token is the 6-digit code that was emailed to the
+  // user. login.emailMfa holds a bcrypt hash of that code and its expiration;
+  // clear it on success.
+  if (login.emailMfa) {
+    if (new Date(login.emailMfa.expiresAt).getTime() < Date.now()) {
+      throw new OperationOutcomeError(badRequest('MFA code expired'));
+    }
+    if (await bcrypt.compare(token, login.emailMfa.codeHash)) {
+      // Entering the emailed code proves the user controls the email address.
+      if (!user.emailVerified) {
+        await systemRepo.updateResource<User>({ ...user, emailVerified: true });
+      }
+      return systemRepo.updateResource<Login>({
+        ...login,
+        mfaVerified: true,
+        emailMfa: undefined,
+      });
+    }
+  }
+
+  // TOTP authenticator application
   const secret = user.mfaSecret;
   if (!secret) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
@@ -824,14 +845,6 @@ function includeRefreshToken(request: LoginRequest, client: ClientApplication | 
   return !!(client?.grantType?.includes('refresh_token') || scopeArray?.includes('offline_access'));
 }
 
-export function normalizeUserInfoUrl(userInfoUrl: string): string {
-  const url = new URL(userInfoUrl);
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error('Must use http or https protocol');
-  }
-  return url.toString();
-}
-
 /**
  * Returns the external identity provider user info for an access token.
  * This can be used to verify the access token and get the user's email address.
@@ -844,21 +857,14 @@ export async function getExternalUserInfo(
   userInfoUrl: string,
   externalAccessToken: string,
   idp?: IdentityProvider
-): Promise<Record<string, unknown>> {
+): Promise<JWTPayload> {
   const log = getLogger();
-
-  try {
-    userInfoUrl = normalizeUserInfoUrl(userInfoUrl);
-  } catch (err: unknown) {
-    log.warn('Invalid user info URL', { userInfoUrl, clientId: idp?.clientId, err });
-    throw new OperationOutcomeError(badRequest('Invalid user info URL - check your identity provider configuration'));
-  }
 
   const request = buildExternalUserInfoRequest(userInfoUrl, externalAccessToken, idp);
 
   let response;
   try {
-    response = await fetch(request.url, request.init);
+    response = await safeFetch(request.url, request.init);
   } catch (err: any) {
     log.warn('Error while verifying external auth code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
@@ -885,7 +891,7 @@ export async function getExternalUserInfo(
     if (err instanceof OperationOutcomeError) {
       throw err;
     }
-    log.warn('Failed to verify external authorization code', err);
+    log.warn('Failed to verify external authorization code', { err, userInfoUrl, contentType });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
@@ -896,7 +902,7 @@ function buildExternalUserInfoRequest(
   userInfoUrl: string,
   externalAccessToken: string,
   idp: IdentityProvider | undefined
-): { url: string; init: FetchRequestInit } {
+): { url: string; init: RequestInit } {
   if (idp?.userInfoMode === 'gcip') {
     const apiKey = idp.userInfoApiKey;
     if (!apiKey) {
@@ -914,6 +920,7 @@ function buildExternalUserInfoRequest(
         method: 'POST',
         headers: {
           Accept: ContentType.JSON,
+          'Accept-Encoding': 'identity',
           'Content-Type': ContentType.JSON,
         },
         body: JSON.stringify({ idToken: externalAccessToken }),
@@ -927,6 +934,7 @@ function buildExternalUserInfoRequest(
       method: 'GET',
       headers: {
         Accept: ContentType.JSON,
+        'Accept-Encoding': 'identity',
         Authorization: `Bearer ${externalAccessToken}`,
       },
     },

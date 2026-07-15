@@ -9,7 +9,10 @@ import { withPath } from '../../../util/withpath';
 import type { Repository } from '../../repo';
 import {
   applyExistingSlots,
+  intersectIntervals,
+  isAlignedToGrid,
   normalizeIntervals,
+  pairWithOverlaps,
   removeAvailability,
   resolveAvailability,
   slotsOverlappingInterval,
@@ -63,6 +66,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -96,6 +100,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -124,6 +129,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -154,6 +160,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -182,6 +189,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -211,6 +219,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -239,6 +248,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -277,6 +287,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -319,6 +330,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -349,6 +361,7 @@ describe('resolveAvailability', () => {
       bufferAfter: 0,
       alignmentInterval: 60,
       alignmentOffset: 0,
+      alignmentTimezone: 'America/New_York',
       service: createReference(service),
     });
 
@@ -365,7 +378,56 @@ describe('resolveAvailability', () => {
   });
 });
 
+describe('intersectIntervals', () => {
+  test('returns the intersection of two overlapping intervals', () => {
+    const left = { start: new Date('2025-12-01'), end: new Date('2025-12-10') };
+    const right = { start: new Date('2025-12-05'), end: new Date('2025-12-15') };
+    expect(intersectIntervals(left, right)).toEqual({ start: new Date('2025-12-05'), end: new Date('2025-12-10') });
+  });
+
+  test('returns the inner interval when one contains the other', () => {
+    const outer = { start: new Date('2025-12-01'), end: new Date('2025-12-31') };
+    const inner = { start: new Date('2025-12-10'), end: new Date('2025-12-20') };
+    expect(intersectIntervals(outer, inner)).toEqual(inner);
+    expect(intersectIntervals(inner, outer)).toEqual(inner);
+  });
+
+  test('returns the interval itself when two identical intervals are intersected', () => {
+    const interval = { start: new Date('2025-12-01'), end: new Date('2025-12-10') };
+    expect(intersectIntervals(interval, { ...interval })).toEqual(interval);
+  });
+
+  test('returns undefined for non-overlapping intervals', () => {
+    const left = { start: new Date('2025-12-01'), end: new Date('2025-12-10') };
+    const right = { start: new Date('2025-12-15'), end: new Date('2025-12-20') };
+    expect(intersectIntervals(left, right)).toBeUndefined();
+  });
+
+  test('returns undefined for adjacent intervals (touching at a single point)', () => {
+    const left = { start: new Date('2025-12-01'), end: new Date('2025-12-10') };
+    const right = { start: new Date('2025-12-10'), end: new Date('2025-12-20') };
+    expect(intersectIntervals(left, right)).toBeUndefined();
+  });
+});
+
 describe('normalizeIntervals', () => {
+  test('returns an empty array unchanged', () => {
+    expect(normalizeIntervals([])).toEqual([]);
+  });
+
+  test('returns a single interval unchanged', () => {
+    const interval = { start: new Date('2025-12-01'), end: new Date('2025-12-02') };
+    expect(normalizeIntervals([interval])).toEqual([interval]);
+  });
+
+  test('does not merge non-overlapping, non-adjacent intervals', () => {
+    const intervals = [
+      { start: new Date('2025-12-01'), end: new Date('2025-12-02') },
+      { start: new Date('2025-12-05'), end: new Date('2025-12-06') },
+    ];
+    expect(normalizeIntervals(intervals)).toEqual(intervals);
+  });
+
   test('it sorts the input intervals', () => {
     const intervals = [
       { start: new Date('2025-12-03'), end: new Date('2025-12-04') },
@@ -515,6 +577,51 @@ describe('slotsOverlappingInterval', () => {
         end: new Date('2025-12-31'),
       })
     ).rejects.toThrow('Too many slots found in range');
+  });
+});
+
+describe('pairWithOverlaps', () => {
+  test('returns an empty result when listA is empty', () => {
+    const listB = [{ start: new Date('2025-12-01'), end: new Date('2025-12-02') }];
+    expect(pairWithOverlaps([], listB)).toEqual([]);
+  });
+
+  test('pairs each listA interval with an empty overlaps list when listB is empty', () => {
+    const a1 = { start: new Date('2025-12-01'), end: new Date('2025-12-10') };
+    expect(pairWithOverlaps([a1], [])).toEqual([[a1, []]]);
+  });
+
+  test('pairs an interval with its overlapping interval from listB', () => {
+    const a1 = { start: new Date('2025-12-01'), end: new Date('2025-12-10') };
+    const b1 = { start: new Date('2025-12-03'), end: new Date('2025-12-05') };
+    expect(pairWithOverlaps([a1], [b1])).toEqual([[a1, [b1]]]);
+  });
+
+  test('returns an empty overlaps list when no listB interval overlaps', () => {
+    const a1 = { start: new Date('2025-12-01'), end: new Date('2025-12-05') };
+    const b1 = { start: new Date('2025-12-10'), end: new Date('2025-12-15') };
+    expect(pairWithOverlaps([a1], [b1])).toEqual([[a1, []]]);
+  });
+
+  test('a listB interval spanning multiple listA intervals appears in each relevant pair', () => {
+    const a1 = { start: new Date('2025-12-01'), end: new Date('2025-12-05') };
+    const a2 = { start: new Date('2025-12-10'), end: new Date('2025-12-15') };
+    const b1 = { start: new Date('2025-12-03'), end: new Date('2025-12-12') };
+    expect(pairWithOverlaps([a1, a2], [b1])).toEqual([
+      [a1, [b1]],
+      [a2, [b1]],
+    ]);
+  });
+
+  test('correctly pairs multiple listA intervals with distinct listB intervals', () => {
+    const a1 = { start: new Date('2025-12-01'), end: new Date('2025-12-10') };
+    const a2 = { start: new Date('2025-12-20'), end: new Date('2025-12-31') };
+    const b1 = { start: new Date('2025-12-03'), end: new Date('2025-12-07') };
+    const b2 = { start: new Date('2025-12-22'), end: new Date('2025-12-28') };
+    expect(pairWithOverlaps([a1, a2], [b1, b2])).toEqual([
+      [a1, [b1]],
+      [a2, [b2]],
+    ]);
   });
 });
 
@@ -702,5 +809,72 @@ describe('applyExistingSlots', () => {
     const serviceType = [{ coding: [{ system: 'http://example.com', code: 'office-visit' }] }];
 
     expect(applyExistingSlots({ availability: [], slots, range, serviceType })).toEqual(freeIntervals);
+  });
+});
+
+describe('isAlignedToGrid', () => {
+  const opts = { interval: 60, offset: 0, timezone: 'Etc/UTC' };
+
+  test('returns true for a date exactly on the hourly grid', () => {
+    expect(isAlignedToGrid(new Date('2025-12-01T09:00:00Z'), opts)).toBe(true);
+  });
+
+  test('returns false for a date not on the grid', () => {
+    expect(isAlignedToGrid(new Date('2025-12-01T09:37:00Z'), opts)).toBe(false);
+  });
+
+  test('returns false for a date with non-zero seconds', () => {
+    expect(isAlignedToGrid(new Date('2025-12-01T09:00:30Z'), opts)).toBe(false);
+  });
+
+  test('returns false for a date with non-zero milliseconds', () => {
+    expect(isAlignedToGrid(new Date('2025-12-01T09:00:00.500Z'), opts)).toBe(false);
+  });
+
+  test('respects alignmentOffset', () => {
+    const withOffset = { interval: 20, offset: 5, timezone: 'Etc/UTC' };
+    expect(isAlignedToGrid(new Date('2025-12-01T09:05:00Z'), withOffset)).toBe(true);
+    expect(isAlignedToGrid(new Date('2025-12-01T09:25:00Z'), withOffset)).toBe(true);
+    expect(isAlignedToGrid(new Date('2025-12-01T09:00:00Z'), withOffset)).toBe(false);
+    expect(isAlignedToGrid(new Date('2025-12-01T09:10:00Z'), withOffset)).toBe(false);
+  });
+
+  test('anchors to local midnight for non-UTC timezones', () => {
+    // America/Chicago in December is CST (UTC-6); local midnight = 06:00 UTC.
+    // With 50-min alignment, the Chicago and UTC grids differ (360 % 50 = 10).
+    // 09:20 UTC = 03:20 CST = 200 min since local midnight; 200 % 50 = 0 — on the Chicago grid
+    expect(
+      isAlignedToGrid(new Date('2025-12-01T09:20:00Z'), {
+        interval: 50,
+        offset: 0,
+        timezone: 'America/Chicago',
+      })
+    ).toBe(true);
+    // 09:10 UTC = 03:10 CST = 190 min since local midnight; 190 % 50 = 40 — not on the Chicago grid
+    expect(
+      isAlignedToGrid(new Date('2025-12-01T09:10:00Z'), {
+        interval: 50,
+        offset: 0,
+        timezone: 'America/Chicago',
+      })
+    ).toBe(false);
+  });
+
+  test('re-anchors the grid at local midnight for slots spanning midnight', () => {
+    // America/Chicago in December is CST (UTC-6); local midnight = 06:00 UTC.
+    // With 50-min alignment, the last grid point on Dec 1 is 23:20 CST = 05:20 UTC Dec 2
+    // (1400 min since Dec 1 midnight; 1400 % 50 = 0).
+    const lastSlotDec1 = new Date('2025-12-02T05:20:00Z');
+    expect(isAlignedToGrid(lastSlotDec1, { interval: 50, offset: 0, timezone: 'America/Chicago' })).toBe(true);
+
+    // Naïve continuation past Dec 1's grid would land at 00:10 CST Dec 2 = 06:10 UTC Dec 2
+    // (10 min since Dec 2 midnight; 10 % 50 = 10) — not on the re-anchored Dec 2 grid.
+    const naiveContinuation = new Date('2025-12-02T06:10:00Z');
+    expect(isAlignedToGrid(naiveContinuation, { interval: 50, offset: 0, timezone: 'America/Chicago' })).toBe(false);
+
+    // The actual first slot on Dec 2 is 00:00 CST = 06:00 UTC Dec 2
+    // (0 min since Dec 2 midnight; 0 % 50 = 0).
+    const firstSlotDec2 = new Date('2025-12-02T06:00:00Z');
+    expect(isAlignedToGrid(firstSlotDec2, { interval: 50, offset: 0, timezone: 'America/Chicago' })).toBe(true);
   });
 });

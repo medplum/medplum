@@ -4,17 +4,24 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { createReference, ReadablePromise } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, HealthcareService, Schedule, Slot } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  Bundle,
+  CodeableConcept,
+  HealthcareService,
+  ResourceType,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, getByText, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { SchedulingParametersURI } from '../../utils/scheduling';
 import { toCodeableReferenceLike } from '../../utils/servicetype';
 import { SchedulePage } from './SchedulePage';
-
-const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 
 describe('SchedulePage', () => {
   let medplum: MockClient;
@@ -25,12 +32,6 @@ describe('SchedulePage', () => {
 
     vi.clearAllMocks();
 
-    // mockPractitioner = {
-    //   resourceType: 'Practitioner',
-    //   id: 'practitioner-1',
-    //   name: [{ given: ['Dr.'], family: 'Smith' }],
-    // };
-
     mockSchedule = {
       resourceType: 'Schedule',
       id: 'schedule-1',
@@ -38,51 +39,37 @@ describe('SchedulePage', () => {
       active: true,
     };
 
-    // Mock window.innerHeight for calendar height calculation
-    Object.defineProperty(window, 'innerHeight', {
-      writable: true,
-      configurable: true,
-      value: 800,
-    });
-
     // Store the schedule so readResource('Schedule', 'schedule-1') works
     await medplum.createResource(mockSchedule);
     medplum.searchOne = vi.fn().mockResolvedValue(mockSchedule);
     medplum.searchResources = vi.fn().mockResolvedValue([]);
   });
 
-  const setup = (initialPath = '/Calendar/Schedule/schedule-1'): ReturnType<typeof render> => {
-    return render(
-      <MemoryRouter initialEntries={[initialPath]}>
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
-              <Route path="/Calendar/Schedule" element={<SchedulePage />} />
-              <Route path="/Calendar/Schedule/:id/settings" element={<div>Settings Page</div>} />
-            </Routes>
-          </MantineProvider>
-        </MedplumProvider>
-      </MemoryRouter>
+  const setup = (
+    initialPath = '/Calendar/Schedule/schedule-1'
+  ): ReturnType<typeof render> & { navigate: ReturnType<typeof createMemoryRouter>['navigate'] } => {
+    const router = createMemoryRouter(
+      [
+        { path: '/Calendar/Schedule/:id/settings', element: <div>Settings Page</div> },
+        { path: '/Calendar/Schedule/:id', element: <SchedulePage /> },
+        { path: '/Calendar/Schedule', element: <SchedulePage /> },
+      ],
+      { initialEntries: [initialPath] }
     );
+
+    const result = render(
+      <MedplumProvider medplum={medplum}>
+        <MantineProvider>
+          <Notifications />
+          <RouterProvider router={router} />
+        </MantineProvider>
+      </MedplumProvider>
+    );
+
+    return { ...result, navigate: router.navigate.bind(router) };
   };
 
   describe('Initial Rendering', () => {
-    test('returns null when schedule is not loaded', async () => {
-      medplum.searchOne = vi.fn().mockResolvedValue(undefined);
-      medplum.createResource = vi.fn().mockResolvedValue(mockSchedule);
-
-      await act(async () => {
-        setup('/Calendar/Schedule');
-      });
-
-      // Component should return null until schedule is loaded
-      await waitFor(() => {
-        expect(medplum.searchOne).toHaveBeenCalled();
-      });
-    });
-
     test('loads existing schedule for practitioner', async () => {
       await act(async () => {
         setup('/Calendar/Schedule');
@@ -93,22 +80,21 @@ describe('SchedulePage', () => {
       });
     });
 
-    test('creates schedule if one does not exist', async () => {
+    test('shows the no-schedule empty state when profile has no schedule', async () => {
       medplum.searchOne = vi.fn().mockResolvedValue(undefined);
-      medplum.createResource = vi.fn().mockResolvedValue(mockSchedule);
+      medplum.createResource = vi.fn();
 
       await act(async () => {
         setup('/Calendar/Schedule');
       });
 
       await waitFor(() => {
-        expect(medplum.createResource).toHaveBeenCalledWith(
-          expect.objectContaining({
-            resourceType: 'Schedule',
-            active: true,
-          })
-        );
+        expect(screen.getByText(/No schedule found/)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Create Schedule' })).toBeInTheDocument();
       });
+
+      // Must not auto-create — the user must click the button
+      expect(medplum.createResource).not.toHaveBeenCalled();
     });
 
     test('renders calendar when schedule is loaded', async () => {
@@ -119,162 +105,6 @@ describe('SchedulePage', () => {
       await waitFor(() => {
         // Calendar should be rendered (check for Today button in toolbar)
         expect(screen.getByText('Today')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Toolbar', () => {
-    test('renders toolbar with navigation buttons', async () => {
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Today')).toBeInTheDocument();
-        // Check for navigation buttons (they contain chevron icons)
-        const buttons = screen.getAllByRole('button');
-        expect(buttons.length).toBeGreaterThan(0);
-      });
-    });
-
-    test('renders view switcher with Month, Week, Day options', async () => {
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Month')).toBeInTheDocument();
-        expect(screen.getByText('Week')).toBeInTheDocument();
-        expect(screen.getByText('Day')).toBeInTheDocument();
-      });
-    });
-
-    test('displays current month/year in title for non-day views', async () => {
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        // Check for month/year format (e.g., "January 2024")
-        const title = screen.getByText(/\w+\s+\d{4}/);
-        expect(title).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Calendar Events', () => {
-    test('searches for slots when date range is set', async () => {
-      const mockSlots: Slot[] = [
-        {
-          resourceType: 'Slot',
-          id: 'slot-1',
-          schedule: { reference: 'Schedule/schedule-1' },
-          status: 'free',
-          start: '2024-01-15T10:00:00Z',
-          end: '2024-01-15T10:30:00Z',
-        },
-      ];
-
-      medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Slot') {
-          return Promise.resolve(mockSlots);
-        }
-        return Promise.resolve([]);
-      });
-
-      await act(async () => {
-        setup();
-      });
-
-      // Wait for calendar to render and trigger range change
-      await waitFor(() => {
-        expect(screen.getByText('Today')).toBeInTheDocument();
-      });
-
-      // The calendar will trigger range change which calls refreshEvents
-      // This may take some time, so we check if searchResources was called with Slot
-      await waitFor(
-        () => {
-          const slotCalls = (medplum.searchResources as ReturnType<typeof vi.fn>).mock.calls.filter(
-            (call) => call[0] === 'Slot'
-          );
-          expect(slotCalls.length).toBeGreaterThan(0);
-        },
-        { timeout: 5000 }
-      );
-    });
-
-    test('searches for appointments when date range is set', async () => {
-      const mockAppointments: Appointment[] = [
-        {
-          resourceType: 'Appointment',
-          id: 'appt-1',
-          status: 'booked',
-          start: '2024-01-15T10:00:00Z',
-          end: '2024-01-15T10:30:00Z',
-          participant: [
-            {
-              actor: { reference: 'Practitioner/practitioner-1' },
-              status: 'accepted',
-            },
-          ],
-        },
-      ];
-
-      medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Appointment') {
-          return Promise.resolve(mockAppointments);
-        }
-        return Promise.resolve([]);
-      });
-
-      await act(async () => {
-        setup();
-      });
-
-      // Wait for calendar to render
-      await waitFor(() => {
-        expect(screen.getByText('Today')).toBeInTheDocument();
-      });
-
-      // Check if searchResources was called with Appointment
-      await waitFor(
-        () => {
-          const appointmentCalls = (medplum.searchResources as ReturnType<typeof vi.fn>).mock.calls.filter(
-            (call) => call[0] === 'Appointment'
-          );
-          expect(appointmentCalls.length).toBeGreaterThan(0);
-        },
-        { timeout: 5000 }
-      );
-    });
-  });
-
-  describe('Slot Selection', () => {
-    test('opens drawer when slot is selected', async () => {
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Today')).toBeInTheDocument();
-      });
-
-      // The drawer should not be visible initially
-      expect(screen.queryByText('New Calendar Event')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('View Changes', () => {
-    test('renders view switcher buttons', async () => {
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Month')).toBeInTheDocument();
-        expect(screen.getByText('Week')).toBeInTheDocument();
-        expect(screen.getByText('Day')).toBeInTheDocument();
       });
     });
   });
@@ -294,8 +124,166 @@ describe('SchedulePage', () => {
       // Component should handle error (may return null or show error state)
       // The exact behavior depends on error handling implementation
     });
+  });
 
-    test('handles schedule creation error gracefully', async () => {
+  describe('Loading indicator', () => {
+    test('shows a loader while searching for the profile schedule', async () => {
+      medplum.searchOne = vi.fn().mockReturnValue(new Promise(() => {}));
+
+      await act(async () => {
+        setup('/Calendar/Schedule');
+      });
+
+      // Neither the calendar nor the empty-state button should appear while loading
+      expect(screen.queryByText('Today')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Create Schedule' })).not.toBeInTheDocument();
+    });
+
+    test('shows a loader while fetching a schedule by id', () => {
+      medplum.readResource = vi.fn().mockReturnValue(new Promise(() => {}));
+
+      setup('/Calendar/Schedule/schedule-1');
+
+      expect(screen.queryByText('Today')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Create Schedule' })).not.toBeInTheDocument();
+    });
+
+    test('shows a loader immediately when navigating to a different schedule id', async () => {
+      // Intercept reads for schedule-2 and keep them pending, pass through everything else
+      const origReadResource = medplum.readResource.bind(medplum);
+      medplum.readResource = vi.fn().mockImplementation((resourceType: ResourceType, id: string) => {
+        if (id === 'schedule-2') {
+          return new Promise(() => {}); // never resolves — keeps the loading state visible
+        }
+        return origReadResource(resourceType, id);
+      });
+
+      const { navigate } = setup('/Calendar/Schedule/schedule-1');
+
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+
+      // Trigger navigation without other interaction, similar to using browser "back" button
+      await act(async () => navigate('/Calendar/Schedule/schedule-2'));
+
+      expect(screen.queryByText('Today')).not.toBeInTheDocument();
+    });
+
+    test('clears the loading state when re-selecting the actor of the displayed schedule', async () => {
+      const user = userEvent.setup();
+
+      // Make the schedule's actor selectable in the ReferenceInput dropdown
+      const practitioner = {
+        resourceType: 'Practitioner',
+        id: 'practitioner-1',
+        name: [{ given: ['Jane'], family: 'Practitioner' }],
+      };
+      medplum.searchResources = vi
+        .fn()
+        .mockImplementation((resourceType: ResourceType) =>
+          Promise.resolve(resourceType === 'Practitioner' ? [practitioner] : [])
+        );
+
+      await act(async () => {
+        setup('/Calendar/Schedule/schedule-1');
+      });
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+
+      // Re-select the actor whose schedule is already displayed. The search
+      // finds schedule-1 again, so navigation would be a no-op.
+      const actorInput = screen
+        .getAllByRole('searchbox')
+        .find((el) => el.getAttribute('name') === 'schedule-actor-id') as HTMLElement;
+      await user.type(actorInput, 'Jane');
+      await user.click(await screen.findByText('Jane Practitioner'));
+
+      await waitFor(() => {
+        expect(medplum.searchOne).toHaveBeenCalledWith('Schedule', { actor: 'Practitioner/practitioner-1' });
+      });
+
+      // The spinner must clear and the calendar must remain visible
+      await waitFor(() => expect(screen.queryByRole('progressbar')).not.toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+    });
+
+    test('clears the loading state when readResource rejects during navigation', async () => {
+      const origReadResource = medplum.readResource.bind(medplum);
+      medplum.readResource = vi.fn().mockImplementation((resourceType: ResourceType, id: string) => {
+        if (id === 'schedule-2') {
+          return Promise.reject(new Error('Not found'));
+        }
+        return origReadResource(resourceType, id);
+      });
+
+      const { navigate } = setup('/Calendar/Schedule/schedule-1');
+
+      await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+      await act(async () => navigate('/Calendar/Schedule/schedule-2'));
+
+      // Spinner must clear — page must not be permanently stuck
+      await waitFor(() => expect(screen.queryByRole('progressbar')).not.toBeInTheDocument());
+
+      // It should not show a mismatched schedule
+      expect(screen.queryByText('Today')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('No-schedule empty state', () => {
+    test('shows practitioner name in message when the reference has a display', async () => {
+      // Use DrAliceSmith so createReference produces a display name
+      medplum = new MockClient({ profile: DrAliceSmith });
+      medplum.searchOne = vi.fn().mockResolvedValue(undefined);
+      medplum.searchResources = vi.fn().mockResolvedValue([]);
+
+      await act(async () => {
+        render(
+          <MemoryRouter initialEntries={['/Calendar/Schedule']}>
+            <MedplumProvider medplum={medplum}>
+              <MantineProvider>
+                <Notifications />
+                <Routes>
+                  <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
+                  <Route path="/Calendar/Schedule" element={<SchedulePage />} />
+                </Routes>
+              </MantineProvider>
+            </MedplumProvider>
+          </MemoryRouter>
+        );
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/No schedule found for Alice Smith/)).toBeInTheDocument();
+      });
+    });
+
+    test('clicking Create Schedule creates the resource and navigates to the calendar', async () => {
+      const user = userEvent.setup();
+      medplum.searchOne = vi.fn().mockResolvedValue(undefined);
+      medplum.createResource = vi.fn().mockResolvedValue(mockSchedule);
+
+      await act(async () => {
+        setup('/Calendar/Schedule');
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Create Schedule' })).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Create Schedule' }));
+
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({ resourceType: 'Schedule', active: true })
+        );
+      });
+
+      // After creation the page navigates to the new schedule and renders the calendar
+      await waitFor(() => {
+        expect(screen.getByText('Today')).toBeInTheDocument();
+      });
+    });
+
+    test('shows an error notification and keeps the empty state when creation fails', async () => {
+      const user = userEvent.setup();
       medplum.searchOne = vi.fn().mockResolvedValue(undefined);
       medplum.createResource = vi.fn().mockRejectedValue(new Error('Creation failed'));
 
@@ -304,8 +292,17 @@ describe('SchedulePage', () => {
       });
 
       await waitFor(() => {
-        expect(medplum.createResource).toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Create Schedule' })).toBeInTheDocument();
       });
+
+      await user.click(screen.getByRole('button', { name: 'Create Schedule' }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/Creation failed/)).toBeInTheDocument();
+      });
+
+      // Empty state remains visible after a failed creation
+      expect(screen.getByRole('button', { name: 'Create Schedule' })).toBeInTheDocument();
     });
   });
 

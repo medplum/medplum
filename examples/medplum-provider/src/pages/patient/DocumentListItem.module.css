@@ -1,0 +1,21 @@
+.item {
+  display: block;
+  cursor: pointer;
+  padding: calc(0.5rem * var(--mantine-scale)) var(--mantine-spacing-xs);
+  border-radius: 0.5rem;
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-2));
+  text-decoration: none;
+}
+
+.item :global(.mantine-Text-root) {
+  line-height: var(--mantine-line-height-sm);
+}
+
+.item:hover:not(.selected) {
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+}
+
+.item.selected,
+.item.selected:hover {
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+}

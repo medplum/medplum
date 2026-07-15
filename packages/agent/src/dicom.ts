@@ -104,7 +104,7 @@ export class AgentDicomChannel extends BaseChannel {
             });
 
             // Parse the DICOM file into DICOM JSON
-            const dicomDict = dcmjs.data.DicomMessage.readFile(buffer.buffer);
+            const dicomDict = dcmjs.data.DicomMessage.readFile(new Uint8Array(buffer));
             dicomJson = {
               ...dicomDict.meta,
               ...dicomDict.dict,
@@ -229,7 +229,7 @@ export class AgentDicomChannel extends BaseChannel {
     this.log.info('Channel stopped successfully');
   }
 
-  sendToRemote(msg: AgentTransmitResponse): void {
+  sendToRemote(msg: AgentTransmitResponse): boolean {
     throw new Error(`sendToRemote not implemented (${JSON.stringify(msg)})`);
   }
 }

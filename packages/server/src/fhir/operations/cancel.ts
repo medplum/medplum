@@ -27,6 +27,7 @@ type CancelParameters = {};
  * Endpoints:
  *   [fhir base]/Appointment/:id/$cancel
  *
+ * @experimental - Scheduling Beta API
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */
@@ -53,7 +54,11 @@ export async function appointmentCancelHandler(req: FhirRequest): Promise<FhirRe
       await Promise.all(slots.map((slot) => txRepo.deleteResource('Slot', slot.id)));
       return updatedAppointment;
     },
-    { serializable: true }
+    {
+      resourceTypes: ['Appointment', 'Slot'],
+      source: 'appointmentCancelHandler',
+      serializable: true,
+    }
   );
 
   return [allOk, buildOutputParameters(cancelOperation, updatedAppointment)];

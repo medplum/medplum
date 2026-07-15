@@ -9,12 +9,21 @@ import {
   getReferenceString,
   isCreated,
   isNotFound,
+  multipleMatches,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
   resolveId,
 } from '@medplum/core';
-import type { AccessPolicy, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type {
+  AccessPolicy,
+  Patient,
+  Project,
+  ProjectMembership,
+  Reference,
+  RelatedPerson,
+  User,
+} from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
@@ -42,6 +51,10 @@ export const inviteValidator = makeValidationMiddleware([
     ],
     { message: 'Either email or externalId is required' }
   ),
+  body('patient.reference')
+    .optional()
+    .matches(/^Patient\/[^/]+$/)
+    .withMessage('Patient must be a reference to a Patient resource'),
 ]);
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
@@ -128,7 +141,11 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
         return txRepo.conditionalCreate(userResource, searchRequest);
       },
-      { serializable: true }
+      {
+        resourceTypes: ['ProjectMembership', 'User'],
+        source: 'inviteUser.upsertUser',
+        serializable: true,
+      }
     );
     user = result;
     existingUser = !isCreated(outcome);
@@ -200,7 +217,7 @@ async function upsertProfileResource(
     }
     return profile;
   } else {
-    const { resourceType, firstName, lastName, project, email } = request;
+    const { resourceType, firstName, lastName, project, email, patient } = request;
     const resource = {
       resourceType,
       meta: {
@@ -215,21 +232,60 @@ async function upsertProfileResource(
       telecom: email ? [{ system: 'email', use: 'work', value: email }] : undefined,
     } as ProfileResource;
 
+    // RelatedPerson.patient is a required FHIR field. Validate and attach the
+    // patient reference when one is provided. The requirement is only enforced
+    // below, when a new RelatedPerson would actually be created.
+    if (resourceType === 'RelatedPerson' && patient) {
+      let referencedPatient: WithId<Patient>;
+      try {
+        referencedPatient = await systemRepo.readReference<Patient>(patient);
+      } catch (err) {
+        // Convert notFound into a descriptive badRequest, since a bad patient
+        // reference in the request is a client error (consistent with access policies).
+        if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
+          throw new OperationOutcomeError(badRequest(`Patient ${getReferenceString(patient)} does not exist`));
+        }
+        throw err;
+      }
+      if (referencedPatient.meta?.project !== project.id) {
+        throw new OperationOutcomeError(badRequest('Patient does not belong to project'));
+      }
+      (resource as RelatedPerson).patient = createReference(referencedPatient);
+    }
+
     if (email) {
+      const filters = [
+        {
+          code: '_project',
+          operator: Operator.EQUALS,
+          value: project.id,
+        },
+        {
+          code: 'email',
+          operator: Operator.EQUALS,
+          value: email,
+        },
+      ];
+
+      // Inviting by email may match an existing profile (e.g. a previously
+      // created RelatedPerson), in which case no patient is required. Only
+      // enforce the patient requirement when a new RelatedPerson would be created.
+      if (resourceType === 'RelatedPerson' && !patient) {
+        // Search for up to 2 matches so duplicates are detected deterministically
+        // rather than arbitrarily picking one (mirrors conditionalCreate).
+        const matches = await systemRepo.searchResources<RelatedPerson>({ resourceType, filters, count: 2 });
+        if (matches.length > 1) {
+          throw new OperationOutcomeError(multipleMatches);
+        }
+        if (matches.length === 0) {
+          throw new OperationOutcomeError(badRequest('Patient is required to create a RelatedPerson'));
+        }
+        return matches[0];
+      }
+
       const { resource: result, outcome } = await systemRepo.conditionalCreate(resource, {
         resourceType,
-        filters: [
-          {
-            code: '_project',
-            operator: Operator.EQUALS,
-            value: project.id,
-          },
-          {
-            code: 'email',
-            operator: Operator.EQUALS,
-            value: email,
-          },
-        ],
+        filters,
       });
 
       if (isCreated(outcome)) {
@@ -241,6 +297,11 @@ async function upsertProfileResource(
       }
       return result;
     } else {
+      // Without an email there is nothing to match against, so a new resource is
+      // always created and the RelatedPerson patient requirement applies.
+      if (resourceType === 'RelatedPerson' && !patient) {
+        throw new OperationOutcomeError(badRequest('Patient is required to create a RelatedPerson'));
+      }
       const profile = await systemRepo.createResource(resource);
       getLogger().info('Profile created', {
         reference: getReferenceString(profile),
@@ -337,6 +398,47 @@ async function upsertProjectMembership(
     ...request.membership,
   };
 
+  // Patients only. RelatedPerson and Practitioner invites are unchanged.
+  // Also applies on upsert when no policy is provided in the request.
+  // Prefers defaultAccessPolicies over the legacy defaultPatientAccessPolicy field.
+  if (request.resourceType === 'Patient' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'Patient');
+    if (defaultPolicy) {
+      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+    } else if (project.defaultPatientAccessPolicy) {
+      // Fallback to legacy field for backwards compatibility
+      partialMembership.accessPolicy = project.defaultPatientAccessPolicy;
+    }
+  }
+
+  // Apply default membership policy for RelatedPerson invites, with patient as a parameter.
+  if (
+    request.resourceType === 'RelatedPerson' &&
+    !partialMembership.accessPolicy &&
+    !partialMembership.access?.length
+  ) {
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'RelatedPerson');
+    const patientRef = (profile as RelatedPerson).patient;
+    if (defaultPolicy && patientRef) {
+      partialMembership.access = [
+        {
+          policy: defaultPolicy.accessPolicy,
+          parameter: [{ name: 'patient', valueReference: patientRef }],
+        },
+      ];
+    }
+  }
+
+  // Apply default membership policy for Practitioner invites, based on whether the member is
+  // an admin. Admins get the Admin default policy; everyone else gets the Practitioner default.
+  if (request.resourceType === 'Practitioner' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
+    const profileType = partialMembership.admin ? 'Admin' : 'Practitioner';
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === profileType);
+    if (defaultPolicy) {
+      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+    }
+  }
+
   if (request.forceNewMembership) {
     return createProjectMembership(systemRepo, user, project, profile, partialMembership);
   }
@@ -371,7 +473,11 @@ async function upsertProjectMembership(
         return createProjectMembership(txRepo, user, project, profile, partialMembership);
       }
     },
-    { serializable: true }
+    {
+      resourceTypes: ['ProjectMembership', profile.resourceType],
+      source: 'upsertProjectMembership',
+      serializable: true,
+    }
   );
 
   return membership;

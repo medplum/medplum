@@ -28,7 +28,7 @@ Artillery Scenarios define the steps you want the virtual users to go through du
 
 ### Healthcheck Testing
 
-One of the most basic Medplum server endpoints is the healtcheck at `/healthcheck`. This endpoint is unauthenticated. It connects to the Postgres database and Redis cache to verify connectivity. The healthcheck endpoint is used by load balancers to determine if the server instance is healthy.
+One of the most basic Medplum server endpoints is the healthcheck at `/healthcheck`. This endpoint is unauthenticated. It connects to the Postgres database and Redis cache to verify connectivity. The healthcheck endpoint is used by load balancers to determine if the server instance is healthy.
 
 Here is a sample Artillery configuration for testing the healthcheck endpoint:
 

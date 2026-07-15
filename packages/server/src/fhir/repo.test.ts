@@ -7,6 +7,7 @@ import {
   created,
   createReference,
   getReferenceString,
+  isGone,
   isOk,
   normalizeErrorString,
   notFound,
@@ -15,6 +16,7 @@ import {
   parseSearchRequest,
   preconditionFailed,
 } from '@medplum/core';
+import { RepositoryMode } from '@medplum/fhir-router';
 import type {
   Binary,
   BundleEntry,
@@ -33,21 +35,24 @@ import type {
   UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'node:crypto';
+import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { runInAuthenticatedContext } from '../context';
-import { DatabaseMode } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
-import { bundleContains, createTestProject, spyOnQuery, withTestContext } from '../test.setup';
+import { bundleContains, createTestProject, mockStdoutWrite, spyOnQuery, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
+import { repoAccess } from './repository/access-tracker';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
-jest.mock('hibp');
+vi.mock('hibp');
 
 describe('FHIR Repo', () => {
   const globalSystemRepo = getGlobalSystemRepo();
@@ -55,8 +60,11 @@ describe('FHIR Repo', () => {
 
   let testProjectRepo: Repository;
   let systemRepo: Repository;
+  let stdoutSpy: MockInstance<typeof process.stdout.write>;
 
   beforeAll(async () => {
+    stdoutSpy = mockStdoutWrite();
+
     const config = await loadTestConfig();
     await initAppServices(config);
 
@@ -68,6 +76,7 @@ describe('FHIR Repo', () => {
     testProjectRepo = new Repository({
       projects: [testProject],
       extendedMode: true,
+      strictMode: true,
       author: {
         reference: 'Practitioner/' + randomUUID(),
       },
@@ -76,6 +85,7 @@ describe('FHIR Repo', () => {
 
   afterAll(async () => {
     await shutdownApp();
+    stdoutSpy.mockRestore();
   });
 
   test('getRepoForLogin', async () => {
@@ -93,10 +103,108 @@ describe('FHIR Repo', () => {
     ).rejects.toThrow('Invalid reference');
   });
 
+  describe('setMode routes reads to reader until writer promotion', () => {
+    type PoolQuerySpy = MockInstance<ReturnType<typeof getDatabasePool>['query']>;
+    let readerPoolQuerySpy: PoolQuerySpy;
+    let writerPoolQuerySpy: PoolQuerySpy;
+
+    function resetSpies(): void {
+      readerPoolQuerySpy.mockClear();
+      writerPoolQuerySpy.mockClear();
+    }
+
+    beforeAll(() => {
+      readerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      writerPoolQuerySpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    });
+
+    beforeEach(() => {
+      resetSpies();
+    });
+
+    afterAll(() => {
+      readerPoolQuerySpy.mockRestore();
+      writerPoolQuerySpy.mockRestore();
+    });
+
+    test('on creates', () =>
+      withTestContext(async () => {
+        const repo = testProjectRepo.clone();
+
+        repo.setMode(RepositoryMode.READER);
+        await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(repo.mode).toBe(RepositoryMode.READER);
+        resetSpies();
+
+        await repo.createResource<Patient>({ resourceType: 'Patient' });
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found'); // randomUUID to ensure cache miss
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        repo.setMode(RepositoryMode.READER);
+        await expect(repo.readResource('Patient', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(repo.mode).toBe(RepositoryMode.READER);
+      }));
+
+    test('on updates', () =>
+      withTestContext(async () => {
+        // AuditEvent since it does not get cached on writes
+        const auditEvent = await testProjectRepo
+          .clone()
+          .createResource(
+            createAuditEvent(
+              RestfulOperationType,
+              ReadInteraction,
+              randomUUID(),
+              { reference: 'Practitioner/user-123' },
+              undefined,
+              AuditEventOutcome.Success
+            )
+          );
+
+        const repo = testProjectRepo.clone();
+
+        repo.setMode(RepositoryMode.READER);
+        await expect(repo.readResource('AuditEvent', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        resetSpies();
+
+        // in reader mode, no reader pool query is made for updateResource
+        await repo.updateResource({ ...auditEvent, outcomeDesc: 'updated' });
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        await expect(repo.readResource('AuditEvent', randomUUID())).rejects.toThrow('Not found');
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+        resetSpies();
+
+        await repo.updateResource({ ...auditEvent, outcomeDesc: 'something new' });
+        expect(readerPoolQuerySpy).toHaveBeenCalledTimes(0);
+        expect(writerPoolQuerySpy).toHaveBeenCalledTimes(1);
+        expect(repo.mode).toBe(RepositoryMode.WRITER);
+      }));
+  });
+
   test('Read resource with undefined id', async () => {
     try {
       await systemRepo.readResource('Patient', undefined as unknown as string);
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -106,7 +214,7 @@ describe('FHIR Repo', () => {
   test('Read resource with blank id', async () => {
     try {
       await systemRepo.readResource('Patient', '');
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -116,7 +224,7 @@ describe('FHIR Repo', () => {
   test('Read resource with invalid id', async () => {
     try {
       await systemRepo.readResource('Patient', 'x');
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
@@ -215,28 +323,28 @@ describe('FHIR Repo', () => {
   test('Repo read malformed reference', async () => {
     try {
       await systemRepo.readReference({ reference: undefined });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: '' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: '////' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
 
     try {
       await systemRepo.readReference({ reference: 'Patient/123/foo' });
-      fail('Should have thrown');
+      expect.fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
@@ -267,6 +375,82 @@ describe('FHIR Repo', () => {
     expect((results[3] as OperationOutcomeError).outcome.id).toBe('not-found');
     expect((results[4] as WithId<Patient>).id).toBe(patient.id);
     expect((results[5] as OperationOutcomeError).outcome.id).toBe('not-found');
+  });
+
+  test('Logs mixed cache access for readReferences across split resource types', async () => {
+    const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
+    const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Split Cache Project' });
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+    await systemRepo.readReferences([{ reference: `Project/${project.id}` }, { reference: `Patient/${patient.id}` }]);
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[RepoSplit] Mixed resource access',
+      expect.objectContaining({
+        scope: 'statement',
+        layer: 'cache',
+        operation: 'read',
+        source: 'repo.getCacheEntries',
+        specialResourceTypes: expect.toEqualUnordered(['Project']),
+        otherResourceTypes: expect.toEqualUnordered(['Patient']),
+        resourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
+      })
+    );
+  });
+
+  test('Logs mixed SQL access for multi-type search across split resource types', async () => {
+    const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
+    await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Split Search Project' });
+    await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+    await systemRepo.search({
+      resourceType: 'Patient',
+      types: ['Project', 'Patient'],
+      count: 10,
+      offset: 0,
+    });
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[RepoSplit] Mixed resource access',
+      expect.objectContaining({
+        scope: 'statement',
+        layer: 'sql',
+        operation: 'read',
+        source: 'search.getSearchEntries',
+        specialResourceTypes: expect.toEqualUnordered(['Project']),
+        otherResourceTypes: expect.toEqualUnordered(['Patient']),
+        resourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
+      })
+    );
+  });
+
+  test('Logs mixed transaction access across repo and system repo', async () => {
+    const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
+    const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Split Tx Project' });
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+    await systemRepo.withTransaction(
+      async (txRepo) => {
+        await txRepo.readResource('Patient', patient.id);
+        await txRepo.getSystemRepo().readResource('Project', project.id);
+      },
+      {
+        resourceTypes: ['Patient', 'Project'],
+        source: 'repo.test.mixedTransactionAccess',
+      }
+    );
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[RepoSplit] Mixed transaction access',
+      expect.objectContaining({
+        scope: 'transaction',
+        status: 'committed',
+        specialResourceTypes: expect.toEqualUnordered(['Project']),
+        otherResourceTypes: expect.toEqualUnordered(['Patient']),
+        readResourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
+        writeResourceTypes: expect.toEqualUnordered([]),
+      })
+    );
   });
 
   describe('Read history', () => {
@@ -451,7 +635,7 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.author?.reference).toStrictEqual('system');
     }));
 
-  test('Create Patient as system on behalf of author', () =>
+  test('Create Patient as system ignores submitted meta.author', () =>
     withTestContext(async () => {
       const author = 'Practitioner/' + randomUUID();
       const patient = await systemRepo.createResource<Patient>({
@@ -464,13 +648,83 @@ describe('FHIR Repo', () => {
         },
       });
 
-      expect(patient.meta?.author?.reference).toStrictEqual(author);
+      expect(patient.meta?.author?.reference).toStrictEqual('system');
+    }));
+
+  test('Super Admin update ignores submitted meta.author', () =>
+    withTestContext(async () => {
+      const { client, repo } = await createTestProject({ withClient: true, withRepo: true, superAdmin: true });
+      const fakeAuthor = 'Practitioner/' + randomUUID();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
+
+      const updated = await repo.updateResource<Patient>({
+        ...patient,
+        name: [{ given: ['Alice'], family: 'Jones' }],
+        meta: {
+          ...patient.meta,
+          author: { reference: fakeAuthor },
+        },
+      });
+
+      expect(updated.meta?.author?.reference).toStrictEqual(getReferenceString(client));
+    }));
+
+  test('Create Patient ignores submitted meta.deleted', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        meta: {
+          deleted: true,
+        },
+      });
+
+      expect(patient.meta?.deleted).toBeUndefined();
+
+      const searchResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
+      });
+      expect(searchResult.entry?.length).toBe(1);
+      expect((searchResult.entry?.[0]?.resource as Patient)?.name?.[0]?.family).toStrictEqual('Smith');
+    }));
+
+  test('Update Patient ignores submitted meta.deleted', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const updated = await systemRepo.updateResource<Patient>({
+        ...patient,
+        name: [{ given: ['Alice'], family: 'Jones' }],
+        meta: {
+          ...patient.meta,
+          deleted: true,
+        },
+      });
+
+      expect(updated.meta?.deleted).toBeUndefined();
+
+      const searchResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
+      });
+      expect(searchResult.entry?.length).toBe(1);
+      expect((searchResult.entry?.[0]?.resource as Patient)?.name?.[0]?.family).toStrictEqual('Jones');
     }));
 
   test('Create Patient as ClientApplication with no author', () =>
     withTestContext(async () => {
       const { client, repo } = await createTestProject({ withClient: true, withRepo: true });
-      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
       try {
         const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
@@ -569,7 +823,7 @@ describe('FHIR Repo', () => {
         getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
       ).toBe(true);
 
-      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
+      const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
       // Check that createResource, updateResource, and deleteResource all skip addBackgroundJobs.
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
@@ -666,7 +920,7 @@ describe('FHIR Repo', () => {
 
       try {
         await systemRepo.updateResource(rest);
-        fail('Should have thrown');
+        expect.fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(badRequest('Missing id'));
       }
@@ -745,6 +999,68 @@ describe('FHIR Repo', () => {
       expect(patched.identifier?.at(0)?.value).toStrictEqual('123');
     }));
 
+  test('Patch resource with FHIRPath Patch body', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(patient.resourceType, patient.id, {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'operation',
+            part: [
+              { name: 'type', valueCode: 'add' },
+              { name: 'path', valueString: `Patient.name.where(family = 'Test')` },
+              { name: 'name', valueString: 'given' },
+              { name: 'value', valueString: 'Jan' },
+            ],
+          },
+        ],
+      });
+      expect(patched.name?.[0]?.given).toStrictEqual(['Jan']);
+    }));
+
+  test('Patch resource with empty FHIRPath Patch body', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(patient.resourceType, patient.id, {
+        resourceType: 'Parameters',
+        // Invalid patch body: patch operation with unknown type
+        parameter: [
+          {
+            name: 'operation',
+            part: [
+              { name: 'type', valueCode: 'unsupported' },
+              { name: 'path', valueString: 'Patient' },
+            ],
+          },
+        ],
+      });
+      // Resource should be returned unaltered, since invalid operation was ignored
+      expect(patched.meta?.versionId).toStrictEqual(patient.meta?.versionId);
+    }));
+
+  test('Patch resource with invalid FHIRPath Patch body', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(patient.resourceType, patient.id, {
+        resourceType: 'Parameters',
+      });
+      // Resource should be returned unaltered
+      expect(patched.meta?.versionId).toStrictEqual(patient.meta?.versionId);
+    }));
+
   test('Compartment permissions', () =>
     withTestContext(async () => {
       const { repo: repo1 } = await createTestProject({ withRepo: true });
@@ -762,7 +1078,7 @@ describe('FHIR Repo', () => {
       const { repo: repo2 } = await createTestProject({ withRepo: true });
       try {
         await repo2.readResource('Patient', patient1.id);
-        fail('Should have thrown');
+        expect.fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
       }
@@ -784,6 +1100,37 @@ describe('FHIR Repo', () => {
 
       const history2 = await systemRepo.readHistory('Patient', patient.id);
       expect(history2.entry?.length).toBe(2);
+      expect(history2.entry?.[0]?.request?.method).toStrictEqual('DELETE');
+      expect(history2.entry?.[0]?.request?.url).toStrictEqual(`Patient/${patient.id}`);
+
+      const tombstoneRows = await systemRepo.sqlRead(
+        new SelectQuery('Patient_History')
+          .column('versionId')
+          .column('content')
+          .where('id', '=', patient.id)
+          .orderBy('lastUpdated', true)
+          .limit(1),
+        'Patient'
+      );
+      expect(tombstoneRows).toHaveLength(1);
+      const deleteVersionId = tombstoneRows[0].versionId as string;
+      const tombstone = JSON.parse(tombstoneRows[0].content as string);
+      expect(tombstone).toMatchObject({
+        resourceType: 'Patient',
+        id: patient.id,
+        meta: {
+          versionId: deleteVersionId,
+          deleted: true,
+        },
+      });
+      expect(tombstone.meta?.author?.reference).toBeDefined();
+
+      try {
+        await systemRepo.readVersion('Patient', patient.id, deleteVersionId);
+        expect.fail('Expected error');
+      } catch (err) {
+        expect(isGone((err as OperationOutcomeError).outcome)).toBe(true);
+      }
 
       // Restore the patient
       await systemRepo.updateResource({ ...patient, meta: undefined });
@@ -794,11 +1141,61 @@ describe('FHIR Repo', () => {
       const entries = history3.entry as BundleEntry[];
       expect(entries[0].response?.status).toStrictEqual('200');
       expect(entries[0].resource).toBeDefined();
+      expect(entries[1].request?.method).toStrictEqual('DELETE');
+      expect(entries[1].request?.url).toStrictEqual(`Patient/${patient.id}`);
       expect(entries[1].response?.status).toStrictEqual('410');
       expect((entries[1].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toMatch(/Deleted on /);
       expect(entries[1].resource).toBeUndefined();
       expect(entries[2].response?.status).toStrictEqual('200');
       expect(entries[2].resource).toBeDefined();
+    }));
+
+  test('Restore deleted resource', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await systemRepo.deleteResource('Patient', patient.id);
+
+      const history = await systemRepo.readHistory<Patient>('Patient', patient.id);
+      expect(
+        history.entry?.some(
+          (entry) =>
+            entry.response?.status === '410' &&
+            entry.response?.outcome?.issue?.some((issue) => issue.code === 'deleted') === true
+        ) ?? false
+      ).toBe(true);
+
+      const latestVersion = history.entry?.find((e) => e.response?.status === '200' && e.resource)?.resource as
+        WithId<Patient> | undefined;
+      expect(latestVersion).toBeDefined();
+      if (!latestVersion) {
+        throw new Error('Expected latest version');
+      }
+
+      let resourceToRestore: WithId<Patient> = latestVersion;
+      if (latestVersion.meta?.deleted) {
+        const { deleted: _deleted, ...meta } = latestVersion.meta;
+        resourceToRestore = { ...latestVersion, meta };
+      }
+      const restored = await systemRepo.updateResource(resourceToRestore);
+
+      expect(restored.name?.[0]?.family).toStrictEqual('Smith');
+      expect(restored.meta?.deleted).toBeUndefined();
+
+      const readResult = await systemRepo.readResource('Patient', patient.id);
+      expect(readResult.id).toStrictEqual(patient.id);
+
+      const searchResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
+      });
+      expect(searchResult.entry?.length).toBe(1);
+
+      const historyAfterRestore = await systemRepo.readHistory('Patient', patient.id);
+      expect(historyAfterRestore.entry?.length).toBe(3);
     }));
 
   test('Delete Binary', () =>
@@ -821,7 +1218,7 @@ describe('FHIR Repo', () => {
 
     try {
       await repo.reindexResource('Practitioner', randomUUID());
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
@@ -833,7 +1230,7 @@ describe('FHIR Repo', () => {
 
     try {
       await repo.reindexResources([patient]);
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
@@ -842,10 +1239,19 @@ describe('FHIR Repo', () => {
   test('Reindex resource not found', async () => {
     try {
       await systemRepo.reindexResource('Practitioner', randomUUID());
-      fail('Expected error');
+      expect.fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
+  });
+
+  test('Reindex mixed resource types not allowed', async () => {
+    await expect(() =>
+      systemRepo.reindexResources([
+        { resourceType: 'Patient', id: randomUUID() },
+        { resourceType: 'Practitioner', id: randomUUID() },
+      ])
+    ).rejects.toThrow('All resources must be of the same type');
   });
 
   test('Reindex resource errors logged', async () => {
@@ -856,11 +1262,11 @@ describe('FHIR Repo', () => {
     });
 
     // rely on Patient having a search parameter with token-column strategy
-    const buildTokenColumnsSpy = jest.spyOn(tokenColumnModule, 'buildTokenColumns').mockImplementation(() => {
+    const buildTokenColumnsSpy = vi.spyOn(tokenColumnModule, 'buildTokenColumns').mockImplementation(() => {
       throw new Error('test error');
     });
     const logger = getLogger();
-    const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
 
     await expect(systemRepo.reindexResources([patient1])).rejects.toThrow('test error');
     expect(errorSpy).toHaveBeenCalledWith('Error building row for resource', {
@@ -1002,7 +1408,7 @@ describe('FHIR Repo', () => {
 
     async function countRows(tableName: string, id: string): Promise<number> {
       const query = new SelectQuery(tableName).column('id').where('id', '=', id);
-      return (await query.execute(systemRepo.getDatabaseClient(DatabaseMode.READER))).length;
+      return (await systemRepo.sqlRead(query, 'Patient')).length;
     }
 
     async function expectPatientExpunged(patient: WithId<Patient>): Promise<void> {
@@ -1398,8 +1804,7 @@ describe('FHIR Repo', () => {
 
   async function getProjectIdColumn(id: string): Promise<string | null> {
     const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
-    const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
-    return (await projectIdQuery.execute(client))[0].projectId;
+    return (await systemRepo.sqlRead(projectIdQuery, 'User', { mode: DatabaseMode.WRITER }))[0].projectId;
   }
 
   test('Super admin can edit User.meta.project', async () =>
@@ -1450,10 +1855,17 @@ describe('FHIR Repo', () => {
       { async: true },
       async () => {
         const startTime = Date.now();
-        await repo.withTransaction(async (txRepo) => {
-          await txRepo.createResource({ resourceType: 'Patient' });
-          expect(Date.now() - startTime).toBeLessThan(100);
-        });
+        await repo.withTransaction(
+          async (txRepo) => {
+            await txRepo.createResource({ resourceType: 'Patient' });
+            expect(Date.now() - startTime).toBeLessThan(100);
+          },
+          {
+            source: 'repo.test.asyncQuotaDelay',
+
+            resourceTypes: ['Patient'],
+          }
+        );
         expect(Date.now() - startTime).toBeGreaterThan(100);
       }
     );
@@ -1476,17 +1888,25 @@ describe('FHIR Repo', () => {
       }
 
       let finishedTransaction = false;
-      await repo.withTransaction(async (txRepo) => {
-        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-        const querySpy = spyOnQuery(client);
-        await txRepo.createResource(patient);
-        const calls = querySpy.mock.calls;
-        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
-        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
-        expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_References"')).length).toBeGreaterThanOrEqual(2);
-        querySpy.mockRestore();
-        finishedTransaction = true;
-      });
+      await repo.withTransaction(
+        async (txRepo) => {
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWrite('Patient'));
+          const querySpy = spyOnQuery(client);
+          await txRepo.createResource(patient);
+          const calls = querySpy.mock.calls;
+          expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient"'))).toHaveLength(1);
+          expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_History"'))).toHaveLength(1);
+          expect(calls.filter((c) => c[0].includes('INSERT INTO "Patient_References"')).length).toBeGreaterThanOrEqual(
+            2
+          );
+          querySpy.mockRestore();
+          finishedTransaction = true;
+        },
+        {
+          resourceTypes: ['Patient'],
+          source: 'repo.test.insertReferenceBatching',
+        }
+      );
       expect(finishedTransaction).toBe(true);
     }));
 
@@ -1500,33 +1920,41 @@ describe('FHIR Repo', () => {
       });
 
       const versionQuery = new SelectQuery('Patient').column('__version').where('id', '=', patient.id);
+      const readVersion = async (): Promise<number> =>
+        (await repo.sqlRead(versionQuery, 'Patient', { mode: DatabaseMode.WRITER }))[0].__version;
+      const setVersion = async (version: number): Promise<void> => {
+        await repo.executeRawSql(
+          'UPDATE "Patient" SET __version = $1 WHERE id = $2',
+          [version, patient.id],
+          repoAccess.sqlWrite('Patient')
+        );
+      };
 
-      const client = repo.getDatabaseClient(DatabaseMode.WRITER);
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+      expect(await readVersion()).toStrictEqual(Repository.VERSION);
 
       // Simulate the resource being at an older version
       const OLDER_VERSION = Repository.VERSION - 1;
-      await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient.id]);
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+      await setVersion(OLDER_VERSION);
+      expect(await readVersion()).toStrictEqual(OLDER_VERSION);
 
       // noop update should not change the version
       await repo.updateResource<Patient>(patient);
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+      expect(await readVersion()).toStrictEqual(OLDER_VERSION);
 
       // meaningful update should change the version
       await repo.updateResource<Patient>({
         ...patient,
         name: [{ given: ['Bob'], family: 'Smith' }],
       });
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+      expect(await readVersion()).toStrictEqual(Repository.VERSION);
 
       // Simulate the resource being at an older version
-      await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient.id]);
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+      await setVersion(OLDER_VERSION);
+      expect(await readVersion()).toStrictEqual(OLDER_VERSION);
 
       // reindex SHOULD change the version
       await repo.reindexResource('Patient', patient.id);
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+      expect(await readVersion()).toStrictEqual(Repository.VERSION);
     });
   });
 

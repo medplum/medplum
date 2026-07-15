@@ -17,6 +17,15 @@ export const AckCode = {
 } as const;
 export type AckCode = keyof typeof AckCode;
 
+/**
+ * Type guard for a valid HL7 acknowledgment code (MSA-1).
+ * @param value - The candidate code (already upper-cased, if applicable).
+ * @returns True if `value` is one of the recognized `AckCode` values.
+ */
+export function isAckCode(value: string | undefined): value is AckCode {
+  return value !== undefined && Object.hasOwn(AckCode, value);
+}
+
 export interface Hl7AckOptions {
   ackCode: AckCode;
   errSegment?: Hl7Segment;
@@ -247,6 +256,22 @@ export class Hl7Message {
       .map((s) => (typeof s === 'string' ? s : s.toString()))
       .join(this.context.segmentSeparator);
     return this.cachedString;
+  }
+
+  /**
+   * Returns this message's acknowledgment code (MSA-1), if it is a recognized
+   * HL7 ACK code.
+   *
+   * Useful on an ACK message to decide the outcome of the acknowledged message —
+   * e.g. AA/CA (accepted) vs AR/CR (rejected) vs AE/CE (error). The value is
+   * upper-cased before matching. Returns undefined when there is no MSA segment,
+   * MSA-1 is empty, or the value is not a known `AckCode`.
+   *
+   * @returns The `AckCode`, or undefined.
+   */
+  getAckType(): AckCode | undefined {
+    const code = this.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
+    return isAckCode(code) ? code : undefined;
   }
 
   /**

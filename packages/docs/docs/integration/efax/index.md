@@ -84,7 +84,7 @@ Send a fax from a `Communication` resource.
 
 **Request Body:** A `Communication` resource with:
 - `medium` containing code `FAXWRIT` from system `http://terminology.hl7.org/CodeSystem/v3-ParticipationMode`
-- `payload` with `contentAttachment` containing the document to fax (PDF, JPEG, or PNG)
+- `payload` with either a `contentReference` to a `DocumentReference` (recommended) or an inline `contentAttachment` containing the document to fax (PDF, JPEG, or PNG)
 - `sender` reference to a Practitioner with eFax identifier
 - `recipient` reference(s) to resources with fax numbers in their `telecom`
 
@@ -92,23 +92,32 @@ Recipient fax numbers must be in **E.164** format: a leading `+` followed by the
 
 When sending a fax, you need to create multiple FHIR resources:
 1. **Binary**: The document to fax (PDF, image) - created via `medplum.createAttachment()`
-2. **Organization**: The recipient with fax number
-3. **Communication**: Links the document and recipient together
+2. **DocumentReference**: Tracks the uploaded document in the chart, wrapping the attachment
+3. **Organization**: The recipient with fax number
+4. **Communication**: Links the document and recipient together
 
 ### Example: Sending a Fax
 
 ```typescript
 import { createReference } from '@medplum/core';
-import type { Communication, Organization, Practitioner } from '@medplum/fhirtypes';
+import type { Communication, DocumentReference, Organization, Practitioner } from '@medplum/fhirtypes';
 
 // Assuming you have a MedplumClient instance and the sender's Practitioner profile
 const profile = await medplum.getProfile() as Practitioner;
 
-// Step 1: Upload the file as an attachment (creates Binary resource)
+// Step 1: Upload the file and persist it as a DocumentReference (creates a Binary resource)
+// so the faxed document is tracked in the chart, not just embedded on the Communication.
 const attachment = await medplum.createAttachment({
   data: file,  // File object from input
   contentType: file.type,
   filename: file.name,
+});
+const documentReference = await medplum.createResource<DocumentReference>({
+  resourceType: 'DocumentReference',
+  status: 'current',
+  author: [createReference(profile)],
+  date: new Date().toISOString(),
+  content: [{ attachment }],
 });
 
 // Step 2: Create the recipient Organization (fax value must be E.164: + and country code)
@@ -135,7 +144,9 @@ const communication = await medplum.createResource<Communication>({
   ],
   sender: createReference(profile),
   recipient: [createReference(recipient)],
-  payload: [{ contentAttachment: attachment }],
+  // Reference the DocumentReference via `contentReference`. The operation also accepts
+  // an inline `contentAttachment` (e.g. `payload: [{ contentAttachment: attachment }]`).
+  payload: [{ contentReference: createReference(documentReference) }],
 });
 
 // Step 4: Call the $send-efax operation
@@ -211,9 +222,8 @@ The samples below show the `Communication` resource only. For outbound sends, th
   ],
   "payload": [
     {
-      "contentAttachment": {
-        "url": "Binary/document-id",
-        "contentType": "application/pdf"
+      "contentReference": {
+        "reference": "DocumentReference/document-id"
       }
     }
   ]

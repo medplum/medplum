@@ -22,7 +22,7 @@ You can find complete example bots for these examples in the [Medplum Demo Bots 
 
 ## HTTP File Uploads
 
-To upload to a file using http, you will have to submit an HTTP request with the `Content-Type` `multipart/form-data`. Medplum Bots ship with the npm [`form-data`](https://www.npmjs.com/package/form-data) package to make it easier to create form data.
+To upload to a file using http, you will have to submit an HTTP request with the `Content-Type` `multipart/form-data`. Modern JavaScript runtimes provide the standard [`FormData`](https://developer.mozilla.org/en-US/docs/Web/API/FormData) API to make it easier to create form data.
 
 Let's take a look at an example. First, we'll create a pdf (see the [Create a PDF tutorial](./creating-a-pdf) for more details)
 
@@ -36,7 +36,7 @@ Let's take a look at an example. First, we'll create a pdf (see the [Create a PD
   {ExampleCode}
 </MedplumCodeBlock>
 
-Next, we'll construct the request body using the `form-data` library
+Next, we'll construct the request body using `FormData`.
 
 <MedplumCodeBlock language="ts" selectBlocks="formData">
   {ExampleCode}
@@ -52,7 +52,7 @@ This is what it looks like all put together. You can also see this example in ou
 
 <MedplumCodeBlock
   language="ts"
-  selectBlocks="coreImports,formImports,botFn,createPdf,checkBinary,downloadPdf,nl,formData,nl,postForm,closeFn"
+  selectBlocks="coreImports,botFn,createPdf,checkBinary,downloadPdf,nl,formData,nl,postForm,closeFn"
 >
   {ExampleCode}
 </MedplumCodeBlock>

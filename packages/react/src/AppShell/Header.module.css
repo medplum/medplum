@@ -22,12 +22,21 @@
   }
 }
 
-.userName {
-  font-weight: 500;
-  line-height: 1px;
+.userInfo {
   margin-right: 3px;
+  min-width: 0;
+  max-width: 160px;
 
   @media (max-width: $mantine-breakpoint-xs) {
     display: none;
   }
+}
+
+.userName {
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.userProject {
+  line-height: 1.2;
 }
