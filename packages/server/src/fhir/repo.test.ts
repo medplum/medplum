@@ -31,6 +31,7 @@ import type {
   ResearchDefinition,
   ResourceType,
   ServiceRequest,
+  Subscription,
   User,
   UserConfiguration,
 } from '@medplum/fhirtypes';
@@ -1086,8 +1087,7 @@ describe('FHIR Repo', () => {
       ).toBe(true);
 
       const latestVersion = history.entry?.find((e) => e.response?.status === '200' && e.resource)?.resource as
-        | WithId<Patient>
-        | undefined;
+        WithId<Patient> | undefined;
       expect(latestVersion).toBeDefined();
       if (!latestVersion) {
         throw new Error('Expected latest version');
@@ -1711,8 +1711,8 @@ describe('FHIR Repo', () => {
       expect(results).toHaveLength(0);
     }));
 
-  async function getProjectIdColumn(id: string): Promise<string | null> {
-    const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
+  async function getProjectIdColumn(resourceType: ResourceType, id: string): Promise<string | null> {
+    const projectIdQuery = new SelectQuery(resourceType).column('projectId').where('id', '=', id);
     const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
     return (await projectIdQuery.execute(client))[0].projectId;
   }
@@ -1729,7 +1729,7 @@ describe('FHIR Repo', () => {
         lastName: randomUUID(),
       });
       expect(user1.meta?.project).toStrictEqual(project.id);
-      expect(await getProjectIdColumn(user1.id)).toStrictEqual(project.id);
+      expect(await getProjectIdColumn('User', user1.id)).toStrictEqual(project.id);
 
       // Try to change the project as the normal user
       // Should silently fail, and preserve the meta.project
@@ -1738,7 +1738,7 @@ describe('FHIR Repo', () => {
         meta: { project: undefined },
       });
       expect(user2.meta?.project).toStrictEqual(project.id);
-      expect(await getProjectIdColumn(user2.id)).toStrictEqual(project.id);
+      expect(await getProjectIdColumn('User', user2.id)).toStrictEqual(project.id);
 
       // Now try to change the project as the super admin
       // Should succeed
@@ -1747,8 +1747,34 @@ describe('FHIR Repo', () => {
         meta: { project: undefined },
       });
       expect(user3.meta?.project).toBeUndefined();
-      expect(await getProjectIdColumn(user3.id)).toStrictEqual(systemResourceProjectId);
+      expect(await getProjectIdColumn('User', user3.id)).toStrictEqual(systemResourceProjectId);
     }));
+
+  test('Super admin can edit Subscription.meta.project', async () => {
+    const sub1 = await testProjectRepo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      reason: 'testing',
+      criteria: `NutritionOrder?identifier=${randomUUID()}`,
+      channel: { type: 'rest-hook', endpoint: 'https://example.com/hook' },
+    });
+    expect(sub1.meta?.project).toStrictEqual(testProject.id);
+    expect(await getProjectIdColumn('Subscription', sub1.id)).toStrictEqual(testProject.id);
+
+    const sub2 = await testProjectRepo.updateResource<Subscription>({
+      ...sub1,
+      meta: { project: undefined },
+    });
+    expect(sub2.meta?.project).toStrictEqual(testProject.id);
+    expect(await getProjectIdColumn('Subscription', sub2.id)).toStrictEqual(testProject.id);
+
+    const sub3 = await systemRepo.updateResource<Subscription>({
+      ...sub2,
+      meta: { project: undefined },
+    });
+    expect(sub3.meta?.project).toBeUndefined();
+    expect(await getProjectIdColumn('Subscription', sub3.id)).toStrictEqual(systemResourceProjectId);
+  });
 
   test('Async quota delay is applied after transaction commit', async () => {
     const { repo, project, client, login, membership } = await createTestProject({
