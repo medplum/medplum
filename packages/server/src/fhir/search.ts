@@ -2155,7 +2155,10 @@ async function expandValueSetInFilters(
         continue;
       }
 
-      const values = expansion.map((entry) => `${entry.system}|${entry.code}`);
+      // Escape backslashes and commas so codes/systems containing a literal comma
+      // (or backslash) survive splitSearchOnComma() intact instead of being cut apart.
+      const escape = (s: string): string => s.replace(/[\\,]/g, c => '\\' + c);
+      const values = expansion.map((entry) => `${escape(entry.system)}|${escape(entry.code)}`);
       result.push({
         code: filter.code,
         operator: filter.operator === Operator.IN ? Operator.EQUALS : Operator.NOT_EQUALS,
