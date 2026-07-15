@@ -38,14 +38,11 @@ describe('$explain', () => {
     expect(res1.status).toBe(200);
 
     const output = res1.body.parameter as ParametersParameter[];
-    expect(output).toHaveLength(3);
-    expect(output).toStrictEqual(
-      expect.arrayContaining<ParametersParameter>([
-        { name: 'query', valueString: expect.stringContaining('SELECT "Patient"') },
-        { name: 'parameters', valueString: expect.stringContaining('$1 = ') },
-        { name: 'explain', valueString: expect.stringContaining(format === 'json' ? '{"Plan":' : '(cost=') },
-      ])
-    );
+    expect(output).toContainExactly([
+      { name: 'query', valueString: expect.stringContaining('SELECT "Patient"') },
+      { name: 'parameters', valueString: expect.stringContaining('$1 = ') },
+      { name: 'explain', valueString: expect.stringContaining(format === 'json' ? '{"Plan":' : '(cost=') },
+    ]);
   });
 
   test('Returns count when count parameter is true', async () => {

@@ -4,9 +4,12 @@ import {
   accepted,
   AccessPolicyInteraction,
   allOk,
+  badRequest,
   concatUrls,
   forbidden,
   getResourceTypes,
+  isResourceType,
+  OperationOutcomeError,
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
@@ -31,6 +34,9 @@ export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
   }
 
   const { resourceType, id } = req.params;
+  if (!isResourceType(resourceType)) {
+    throw new OperationOutcomeError(badRequest('Invalid resource type'), { cause: resourceType });
+  }
   const { everything } = req.query;
   if (resourceType === 'Project' || everything === 'true') {
     // Only super admins can expunge a project other than the current project.

@@ -3868,15 +3868,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const batch: Bundle = {
       resourceType: 'Bundle',
       type: 'batch',
-      entry: entries.map(
-        (e): BundleEntry => ({
-          request: {
-            method: e.method,
-            url: e.url,
-          },
-          resource: e.options.body ? (JSON.parse(e.options.body as string) as Resource) : undefined,
-        })
-      ),
+      entry: entries.map((e): BundleEntry => ({
+        request: {
+          method: e.method,
+          url: e.url,
+        },
+        resource: e.options.body ? (JSON.parse(e.options.body as string) as Resource) : undefined,
+      })),
     };
 
     // Execute the batch request

@@ -38,8 +38,6 @@ describe('AppointmentDetails', () => {
   const setup = async (options: SetupOptions): Promise<RenderResult> => {
     const { appointment, onAppointmentUpdate = vi.fn(), onSlotUpdate = vi.fn() } = options;
 
-    // AppointmentDetails uses `useResource` to load patient information; wrap the setup
-    // in `act` so that async effect is visible in the rendered result.
     let result!: RenderResult;
     await act(async () => {
       result = render(

@@ -121,8 +121,8 @@ describe('Patient Everything Operation', () => {
     const result = res4.body as Bundle;
     expect(result.entry?.length).toStrictEqual(5);
     expect(
-      result.entry?.map((e) => `${e.search?.mode}:${getReferenceString(e.resource as Resource)}`).sort()
-    ).toStrictEqual([
+      result.entry?.map((e) => `${e.search?.mode}:${getReferenceString(e.resource as Resource)}`)
+    ).toContainExactly([
       'include:' + getReferenceString(organization),
       'include:' + getReferenceString(practitioner),
       'match:' + getReferenceString(condition),
@@ -152,8 +152,8 @@ describe('Patient Everything Operation', () => {
     expect(res6.status).toBe(200);
     const sinceResult = res6.body as Bundle;
     expect(
-      sinceResult.entry?.map((e) => `${e.search?.mode}:${getReferenceString(e.resource as Resource)}`).sort()
-    ).toStrictEqual([
+      sinceResult.entry?.map((e) => `${e.search?.mode}:${getReferenceString(e.resource as Resource)}`)
+    ).toContainExactly([
       'include:' + getReferenceString(organization),
       'include:' + getReferenceString(practitioner),
       'match:' + getReferenceString(newObservation),
@@ -577,13 +577,10 @@ describe('searchPatientCompartment', () => {
         break;
       }
     }
-    expect(results).toHaveLength(3);
-    expect(results).toStrictEqual(
-      expect.arrayContaining<BundleEntry>([
-        expect.objectContaining({ resource: patient, search: { mode: 'match' } }),
-        expect.objectContaining({ resource: observation, search: { mode: 'match' } }),
-        expect.objectContaining({ resource: condition, search: { mode: 'match' } }),
-      ])
-    );
+    expect(results).toContainExactly([
+      expect.objectContaining({ resource: patient, search: { mode: 'match' } }),
+      expect.objectContaining({ resource: observation, search: { mode: 'match' } }),
+      expect.objectContaining({ resource: condition, search: { mode: 'match' } }),
+    ]);
   });
 });

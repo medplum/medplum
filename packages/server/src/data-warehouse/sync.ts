@@ -33,6 +33,7 @@ export interface SyncTableResult {
   destination: string;
   rowsInserted: number;
   syncDurationMs: number;
+  watermarkDurationMs: number;
 }
 
 export interface SyncResult {
@@ -43,12 +44,13 @@ function getSyncSourceConnectionString(options: SyncOptions): string {
   return buildPgConnectionURI(options.database);
 }
 
-export function buildWarehouseSourcePredicate(
+export async function buildWarehouseSourcePredicate(
+  connection: DuckdbConnection,
   options: SyncOptions,
   tableSpec: WarehouseSourceTable,
   namespace: string
-): Expression | undefined {
-  const destinationPredicate = options.destination.buildSourcePredicate(tableSpec, namespace);
+): Promise<Expression | undefined> {
+  const destinationPredicate = await options.destination.buildSourcePredicate(connection, tableSpec, namespace);
   if (!options.startDate) {
     return destinationPredicate;
   }
@@ -84,7 +86,7 @@ async function withWarehouseConnection<T>(
     const duckdbDatabasePath = join(duckdbTempDir, 'warehouse.duckdb');
     instance = await DuckDBInstance.create(duckdbDatabasePath);
     connection = await instance.connect();
-    for (const q of options.destination.getSetupQueries(sourceConnectionString)) {
+    for (const q of options.destination.getSetupQueries()) {
       await connection.run(q);
     }
 
@@ -124,24 +126,24 @@ async function syncWarehouseTable(
   options: SyncOptions,
   spec: WarehouseSourceTable,
   namespace: string,
+  sourceConnectionString: string,
   index: number,
   tablesTotal: number
 ): Promise<SyncTableResult> {
   const tablesCompleted = index + 1;
   const destination = options.destination.getDestinationName(spec);
 
-  globalLogger.info(`Data warehouse table sync starting for table=${destination}`, {
-    tableIndex: tablesCompleted,
-    tablesTotal,
-    destination,
-    startDate: options.startDate,
-    subsystem: 'data-warehouse-sync',
-  });
-
-  const sourcePredicate = buildWarehouseSourcePredicate(options, spec, namespace);
   const syncStartTime = Date.now();
 
   await options.destination.ensureTargetExists(spec, namespace);
+
+  const watermarkStartTime = Date.now();
+  const sourcePredicate = await buildWarehouseSourcePredicate(connection, options, spec, namespace);
+  const watermarkDurationMs = Date.now() - watermarkStartTime;
+
+  for (const query of options.destination.getPostgresAttachQueries(sourceConnectionString)) {
+    await connection.run(query);
+  }
 
   const rowsInserted = await options.destination.writeRows(connection, {
     tableSpec: spec,
@@ -152,13 +154,14 @@ async function syncWarehouseTable(
   const syncEndTime = Date.now();
   const syncDurationMs = syncEndTime - syncStartTime;
 
-  globalLogger.info(`Data warehouse table sync completed for table=${destination}`, {
+  globalLogger.info(`Data warehouse sync finished for table=${destination}`, {
     tableIndex: tablesCompleted,
     tablesCompleted,
     tablesTotal,
     destination,
     rowsInserted,
     syncDurationMs,
+    watermarkDurationMs,
     startDate: options.startDate,
     subsystem: 'data-warehouse-sync',
   });
@@ -179,6 +182,7 @@ async function syncWarehouseTable(
     destination,
     rowsInserted,
     syncDurationMs,
+    watermarkDurationMs,
   };
 }
 
@@ -191,19 +195,11 @@ async function runWarehouseTableSync(
 
   const tablesTotal = options.warehouseSources.length;
 
-  globalLogger.info('Starting data warehouse sync', {
-    tablesTotal,
-    startDate: options.startDate,
-    includeResourceTypes: options.includeResourceTypes,
-    excludeResourceTypes: options.excludeResourceTypes,
-    subsystem: 'data-warehouse-sync',
-  });
-
   for (const [index, spec] of options.warehouseSources.entries()) {
     // Close and re-open the DuckDB database between tables so each table sync
     // runs against a fresh instance/connection and temp directory.
     const result = await withWarehouseConnection(options, sourceConnectionString, (connection) =>
-      syncWarehouseTable(connection, options, spec, namespace, index, tablesTotal)
+      syncWarehouseTable(connection, options, spec, namespace, sourceConnectionString, index, tablesTotal)
     );
     tables.push(result);
   }
