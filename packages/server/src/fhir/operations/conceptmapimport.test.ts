@@ -68,29 +68,26 @@ describe('importConceptMap()', () => {
     db.release();
 
     const results = await getMappingRows(pool, resource);
-    expect(results).toHaveLength(2);
-    expect(results).toStrictEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          conceptMap: resource.id,
-          sourceSystem: SNOMED,
-          sourceCode: '263204007',
-          targetSystem: ICD10,
-          targetCode: 'S52.209A',
-          relationship: 'narrower',
-          comment: expect.stringContaining('subsequent'),
-        }),
-        expect.objectContaining({
-          conceptMap: resource.id,
-          sourceSystem: SNOMED,
-          sourceCode: '263204007',
-          targetSystem: ICD10,
-          targetCode: 'S52.209D',
-          relationship: 'narrower',
-          comment: expect.stringContaining('subsequent'),
-        }),
-      ])
-    );
+    expect(results).toContainExactly([
+      expect.objectContaining({
+        conceptMap: resource.id,
+        sourceSystem: SNOMED,
+        sourceCode: '263204007',
+        targetSystem: ICD10,
+        targetCode: 'S52.209A',
+        relationship: 'narrower',
+        comment: expect.stringContaining('subsequent'),
+      }),
+      expect.objectContaining({
+        conceptMap: resource.id,
+        sourceSystem: SNOMED,
+        sourceCode: '263204007',
+        targetSystem: ICD10,
+        targetCode: 'S52.209D',
+        relationship: 'narrower',
+        comment: expect.stringContaining('subsequent'),
+      }),
+    ]);
   });
 
   test('Imports mapping metadata', async () => {
@@ -136,59 +133,56 @@ describe('importConceptMap()', () => {
     db.release();
 
     const results = await getMappingRows(pool, resource);
-    expect(results).toHaveLength(4);
-    expect(results).toStrictEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          conceptMap: resource.id,
-          sourceSystem: SNOMED,
-          sourceCode: '1003470004',
-          targetSystem: ICD10,
-          targetCode: 'Z12.9',
-          relationship: null,
-          uri: null,
-          type: null,
-          value: null,
-          kind: null,
-        }),
-        expect.objectContaining({
-          conceptMap: resource.id,
-          sourceSystem: SNOMED,
-          sourceCode: '1003470004',
-          targetSystem: ICD10,
-          targetCode: 'Z12.11',
-          relationship: null,
-          kind: 'dependsOn',
-          uri: 'context',
-          type: 'Coding',
-          value: `{"system":"${SNOMED}","code":"460591000124101"}`,
-        }),
-        expect.objectContaining({
-          conceptMap: resource.id,
-          sourceSystem: SNOMED,
-          sourceCode: '1003470004',
-          targetSystem: ICD10,
-          targetCode: 'Z12.72',
-          relationship: null,
-          kind: 'dependsOn',
-          uri: 'context',
-          type: 'Coding',
-          value: `{"system":"${SNOMED}","code":"146861000119102"}`,
-        }),
-        expect.objectContaining({
-          conceptMap: resource.id,
-          sourceSystem: SNOMED,
-          sourceCode: '1003470004',
-          targetSystem: ICD10,
-          targetCode: 'Z12.72',
-          relationship: null,
-          kind: 'product',
-          uri: 'http://hl7.org/fhir/StructureDefinition/Patient#gender',
-          type: 'code',
-          value: `"female"`,
-        }),
-      ])
-    );
+    expect(results).toContainExactly([
+      expect.objectContaining({
+        conceptMap: resource.id,
+        sourceSystem: SNOMED,
+        sourceCode: '1003470004',
+        targetSystem: ICD10,
+        targetCode: 'Z12.9',
+        relationship: null,
+        uri: null,
+        type: null,
+        value: null,
+        kind: null,
+      }),
+      expect.objectContaining({
+        conceptMap: resource.id,
+        sourceSystem: SNOMED,
+        sourceCode: '1003470004',
+        targetSystem: ICD10,
+        targetCode: 'Z12.11',
+        relationship: null,
+        kind: 'dependsOn',
+        uri: 'context',
+        type: 'Coding',
+        value: `{"system":"${SNOMED}","code":"460591000124101"}`,
+      }),
+      expect.objectContaining({
+        conceptMap: resource.id,
+        sourceSystem: SNOMED,
+        sourceCode: '1003470004',
+        targetSystem: ICD10,
+        targetCode: 'Z12.72',
+        relationship: null,
+        kind: 'dependsOn',
+        uri: 'context',
+        type: 'Coding',
+        value: `{"system":"${SNOMED}","code":"146861000119102"}`,
+      }),
+      expect.objectContaining({
+        conceptMap: resource.id,
+        sourceSystem: SNOMED,
+        sourceCode: '1003470004',
+        targetSystem: ICD10,
+        targetCode: 'Z12.72',
+        relationship: null,
+        kind: 'product',
+        uri: 'http://hl7.org/fhir/StructureDefinition/Patient#gender',
+        type: 'code',
+        value: `"female"`,
+      }),
+    ]);
   });
 });
 

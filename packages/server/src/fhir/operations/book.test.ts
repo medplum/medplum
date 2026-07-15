@@ -267,9 +267,8 @@ describe('Appointment/$book', () => {
     });
 
     // The appointment holds references to the created slots
-    expect(appointments[0].slot).toHaveLength(2);
-    expect(appointments[0].slot?.map((slot) => slot.reference)).toEqual(
-      expect.arrayContaining(slots.map((slot) => `Slot/${slot.id}`))
+    expect(appointments[0].slot?.map((slot) => slot.reference)).toContainExactly(
+      slots.map((slot) => `Slot/${slot.id}`)
     );
   });
 

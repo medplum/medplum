@@ -49,9 +49,7 @@ describe('Revoke', () => {
     // Should be 1 session
     const res1 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
     expect(res1).toHaveStatus(200);
-    expect(res1.body).toBeDefined();
-    expect(res1.body.security.sessions).toHaveLength(1);
-    expect(res1.body.security.sessions.find((s: any) => s.id === login.id)).toBeTruthy();
+    expect(res1.body.security.sessions.map((s: any) => s.id)).toContainExactly([login.id]);
 
     // Sign in again
     const login2 = await withTestContext(() =>
@@ -69,10 +67,7 @@ describe('Revoke', () => {
     // Should be 2 sessions
     const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
     expect(res2).toHaveStatus(200);
-    expect(res2.body).toBeDefined();
-    expect(res2.body.security.sessions).toHaveLength(2);
-    expect(res2.body.security.sessions.find((s: any) => s.id === login.id)).toBeTruthy();
-    expect(res2.body.security.sessions.find((s: any) => s.id === login2.id)).toBeTruthy();
+    expect(res2.body.security.sessions.map((s: any) => s.id)).toContainExactly([login.id, login2.id]);
 
     // Revoke the 2nd session
     const res3 = await request(app)
@@ -86,10 +81,7 @@ describe('Revoke', () => {
     // Should be 1 session
     const res4 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
     expect(res4).toHaveStatus(200);
-    expect(res4.body).toBeDefined();
-    expect(res4.body.security.sessions).toHaveLength(1);
-    expect(res4.body.security.sessions.find((s: any) => s.id === login.id)).toBeTruthy();
-    expect(res4.body.security.sessions.find((s: any) => s.id === login2.id)).toBeUndefined();
+    expect(res4.body.security.sessions.map((s: any) => s.id)).toContainExactly([login.id]);
 
     // Try to revoke without a login
     // This should fail
