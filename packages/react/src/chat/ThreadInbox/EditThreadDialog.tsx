@@ -97,10 +97,7 @@ export const EditThreadDialog = (props: EditThreadDialogProps): JSX.Element => {
     const preservedRecipients = (thread.recipient ?? []).filter((r) => !r.reference?.startsWith('Practitioner/'));
     const updated: Communication = {
       ...thread,
-      recipient: [
-        ...preservedRecipients,
-        ...practitioners,
-      ],
+      recipient: [...preservedRecipients, ...practitioners],
       topic: { text: topic },
     };
 
