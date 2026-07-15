@@ -122,7 +122,7 @@ export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Elemen
         <PlanDefinitionSummary planDefinition={planDefinition} />
 
         <Button fullWidth type="submit" disabled={!encounterClass}>
-          Apply
+          Continue
         </Button>
       </Stack>
     </Form>

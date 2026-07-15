@@ -69,16 +69,16 @@ describe('CreateEncounterForm', () => {
     expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
     expect(screen.getByLabelText(/Encounter Class/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Care template/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   });
 
-  test('Apply button is disabled when class is not selected', async () => {
+  test('Continue button is disabled when class is not selected', async () => {
     setup(appointment);
 
-    expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
   });
 
-  test('Apply button is enabled once class is selected without a care template', async () => {
+  test('Continue button is enabled once class is selected without a care template', async () => {
     const user = userEvent.setup();
     setup(appointment);
 
@@ -90,7 +90,7 @@ describe('CreateEncounterForm', () => {
     await user.click(screen.getByText('Test Display'));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Apply' })).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled();
     });
   });
 
@@ -113,9 +113,9 @@ describe('CreateEncounterForm', () => {
     await user.click(screen.getByText('Test Display'));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Apply' })).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled();
     });
-    await user.click(screen.getByRole('button', { name: 'Apply' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => {
       expect(createEncounter).toHaveBeenCalledWith(
@@ -224,9 +224,9 @@ describe('CreateEncounterForm', () => {
     await user.click(screen.getByText('Test Plan'));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Apply' })).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled();
     });
-    await user.click(screen.getByRole('button', { name: 'Apply' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => {
       expect(showErrorNotification).toHaveBeenCalledWith(encounterError);
