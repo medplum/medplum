@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Group, Text, Tooltip } from '@mantine/core';
+import { Group, Text } from '@mantine/core';
 import type { ValueSetExpandParams } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useMedplum, useValueSetAvailability } from '@medplum/react-hooks';
-import { IconCheck, IconInfoCircle } from '@tabler/icons-react';
+import { IconCheck } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { forwardRef, useCallback, useState } from 'react';
 import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
+import { UnavailableNote } from '../UnavailableNote/UnavailableNote';
 
 export interface ValueSetAutocompleteProps extends Omit<
   AsyncAutocompleteProps<ValueSetExpansionContains>,
@@ -161,32 +162,6 @@ function combineNodes(first: ReactNode, second: ReactNode): ReactNode {
     );
   }
   return first || second;
-}
-
-export interface UnavailableNoteProps {
-  readonly text: string;
-  readonly color: string;
-  readonly message: string;
-}
-
-export function UnavailableNote({ text, color, message }: UnavailableNoteProps): JSX.Element {
-  return (
-    <Text span size="xs" c={color}>
-      {text}
-      <Tooltip label={message} position="top-start" withArrow events={{ hover: true, focus: true, touch: true }}>
-        <ActionIcon
-          variant="subtle"
-          color={color}
-          size={16}
-          ml={4}
-          aria-label={`Why is this unavailable? ${message}`}
-          style={{ verticalAlign: 'text-bottom' }}
-        >
-          <IconInfoCircle size={14} />
-        </ActionIcon>
-      </Tooltip>
-    </Text>
-  );
 }
 
 const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<ValueSetExpansionContains>>(
