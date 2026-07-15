@@ -616,8 +616,8 @@ describe('Subscription Worker', () => {
   test('Server-scoped subscription fires across projects when enabled', () =>
     withTestContext(async () => {
       const url = 'https://example.com/server-scoped-subscription';
-      const savedConfig = getConfig().serverScopedSubscriptions;
-      getConfig().serverScopedSubscriptions = true;
+      const savedConfig = getConfig().serverScopedSubscriptionsEnabled;
+      getConfig().serverScopedSubscriptionsEnabled = true;
 
       // Create a subscription with no project (i.e. server-scoped / system project)
       const subscription = await superAdminRepo.createResource<Subscription>({
@@ -682,7 +682,7 @@ describe('Subscription Worker', () => {
         // ...and, like that subscription, is not scoped to any project.
         expect(auditEvent?.meta?.project).toBeUndefined();
       } finally {
-        getConfig().serverScopedSubscriptions = savedConfig;
+        getConfig().serverScopedSubscriptionsEnabled = savedConfig;
         // Clean up the server-scoped subscription so it does not leak into the shared system project
         await superAdminRepo.deleteResource('Subscription', subscription.id);
       }
@@ -691,9 +691,9 @@ describe('Subscription Worker', () => {
   test('Server-scoped subscription does not fire when disabled', () =>
     withTestContext(async () => {
       const url = 'https://example.com/server-scoped-subscription-disabled';
-      const savedConfig = getConfig().serverScopedSubscriptions;
+      const savedConfig = getConfig().serverScopedSubscriptionsEnabled;
       // Explicitly disabled (this is also the default)
-      getConfig().serverScopedSubscriptions = false;
+      getConfig().serverScopedSubscriptionsEnabled = false;
 
       const subscription = await superAdminRepo.createResource<Subscription>({
         resourceType: 'Subscription',
@@ -721,7 +721,7 @@ describe('Subscription Worker', () => {
         await expect(findAndExecSubscriptionJob(patient, 'create', subscription)).rejects.toThrow('Job not found');
         expect(fetch).not.toHaveBeenCalledWith(url, expect.anything());
       } finally {
-        getConfig().serverScopedSubscriptions = savedConfig;
+        getConfig().serverScopedSubscriptionsEnabled = savedConfig;
         // Clean up the server-scoped subscription so it does not leak into the shared system project
         await superAdminRepo.deleteResource('Subscription', subscription.id);
       }

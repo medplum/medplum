@@ -38,7 +38,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
   config.autoDownloadEnabled ??= true;
-  config.serverScopedSubscriptions ??= false;
+  config.serverScopedSubscriptionsEnabled ??= false;
   config.base64BinaryMaxBytes ??= 1 * 1024 * 1024; // 1 MB default cap for base64Binary
   config.inlineAttachmentsMaxTotalBytes ??= 0;
   // History:
@@ -112,7 +112,7 @@ type DefaultConfigKeys =
   | 'defaultFhirQuota'
   | 'aiRealtimeTranscriptionUrl'
   | 'asyncDelayScaling'
-  | 'serverScopedSubscriptions';
+  | 'serverScopedSubscriptionsEnabled';
 
 const integerKeys = new Set([
   'accurateCountThreshold',
@@ -185,7 +185,7 @@ const booleanKeys = new Set([
   'logAuditEvents',
   'mcpEnabled',
   'registerEnabled',
-  'serverScopedSubscriptions',
+  'serverScopedSubscriptionsEnabled',
   'require',
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',

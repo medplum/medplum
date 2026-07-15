@@ -135,7 +135,7 @@ export interface MedplumServerConfig {
    * (i.e. stored in the system project). This allows a single set of subscriptions to
    * apply across every project on the server.
    */
-  serverScopedSubscriptions?: boolean;
+  serverScopedSubscriptionsEnabled?: boolean;
 
   /** Optional list of external authentication providers. */
   externalAuthProviders?: MedplumExternalAuthConfig[];

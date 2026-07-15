@@ -251,7 +251,7 @@ async function satisfiesAccessPolicy(
   //      own project context (see Repository.getProjectId in fhir/repo.ts), so only a super admin
   //      (operating with no project context) can create a project-less Subscription at all.
   //   2. Evaluation is gated. Project-less subscriptions are only ever loaded and evaluated when the
-  //      `serverScopedSubscriptions` server config flag is enabled (see getSubscriptions below);
+  //      `serverScopedSubscriptionsEnabled` server config flag is enabled (see getSubscriptions below);
   //      when it is off they are never matched against any resource.
   // A normal project-scoped Subscription always has `meta.project` set and is fully checked below.
   if (!subscription.meta?.project) {
@@ -487,7 +487,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
   // every project on the server. The two sets are matched by different `_project` operators
   // (EQUALS `<projectId>` vs MISSING), which Medplum cannot OR within a single ordinary filter, so
   // the server-scoped case uses a `_filter` expression to combine them into one query.
-  const projectFilter: Filter = getConfig().serverScopedSubscriptions
+  const projectFilter: Filter = getConfig().serverScopedSubscriptionsEnabled
     ? { code: '_filter', operator: Operator.EQUALS, value: `_project eq ${projectId} or _project pr false` }
     : { code: '_project', operator: Operator.EQUALS, value: projectId };
 
