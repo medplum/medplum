@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Divider, Modal, Stack, Text, TextInput } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { MultiResourceInput } from '../../ResourceInput/MultiResourceInput';
 import { ResourceInput } from '../../ResourceInput/ResourceInput';
-import { MESSAGE_MODAL_STYLES } from './messageModalStyles';
+import classes from './messageModalStyles.module.css';
+import { showErrorNotification } from './notifications';
 
 /**
  * Props for the NewTopicDialog component.
@@ -72,16 +72,12 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
       onSubmit?.(createdCommunication);
       onClose();
     } catch (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showErrorNotification(error);
     }
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="New Message" size="md" styles={MESSAGE_MODAL_STYLES}>
+    <Modal opened={opened} onClose={onClose} title="New Message" size="md" classNames={classes}>
       <Stack gap={0}>
         <Stack gap="lg" p="lg">
           <Stack gap={0}>

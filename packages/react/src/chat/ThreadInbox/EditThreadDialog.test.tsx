@@ -43,7 +43,7 @@ describe('EditThreadDialog', () => {
     );
   };
 
-  test('renders all fields once references resolve', async () => {
+  test('renders all fields', async () => {
     setup();
     expect(screen.getByText('Message Settings')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText('Practitioner')).toBeInTheDocument());
@@ -118,13 +118,13 @@ describe('EditThreadDialog', () => {
     expect(mockOnClose).not.toHaveBeenCalled();
   });
 
-  test('omits the patient field when the patient reference fails to resolve', async () => {
-    // The patient read rejects; the form still renders (degrading to no patient field)
-    // rather than blanking entirely.
+  test('renders the patient field from the reference even if it cannot be read', async () => {
+    // The subject reference is passed straight to ResourceInput, which owns resolution, so the
+    // field renders whenever the thread has a subject — regardless of whether the read succeeds.
     vi.spyOn(medplum, 'readReference').mockRejectedValue(new Error('not found'));
     setup();
 
     await waitFor(() => expect(screen.getByText('Practitioner')).toBeInTheDocument());
-    expect(screen.queryByText('Patient')).not.toBeInTheDocument();
+    expect(screen.getByText('Patient')).toBeInTheDocument();
   });
 });

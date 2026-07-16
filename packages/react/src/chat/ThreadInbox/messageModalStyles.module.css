@@ -1,0 +1,24 @@
+/*
+ * Shared Modal styling for the thread inbox dialogs (New Message / Message Settings),
+ * matching the Send Fax modal: a bold (700) title, a header with an inset bottom border
+ * acting as the divider under the header, and zero body padding so the body can lay out
+ * its own `lg` spacing around content and the bottom button.
+ *
+ * The header divider is painted with a single-color linear-gradient (as in SendFaxModal);
+ * a follow-up will refactor both to use a proper divider element.
+ */
+.body {
+  padding: 0;
+}
+
+.title {
+  font-weight: 700;
+}
+
+.header {
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+  background-image: linear-gradient(var(--mantine-color-gray-2), var(--mantine-color-gray-2));
+  background-size: calc(100% - 2 * var(--mantine-spacing-lg)) 1px;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+}

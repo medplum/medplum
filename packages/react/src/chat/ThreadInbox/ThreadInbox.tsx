@@ -21,9 +21,8 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
-import { getReferenceString, normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
+import { getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
 import { IconChevronDown, IconInfoCircle, IconMessageCircle, IconPlus } from '@tabler/icons-react';
@@ -35,6 +34,7 @@ import { ThreadChat } from '../ThreadChat/ThreadChat';
 import { ChatList } from './ChatList';
 import { EditThreadDialog } from './EditThreadDialog';
 import { NewTopicDialog } from './NewTopicDialog';
+import { showErrorNotification } from './notifications';
 import { ParticipantFilter } from './ParticipantFilter';
 import classes from './ThreadInbox.module.css';
 
@@ -150,11 +150,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   useEffect(() => {
     if (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showErrorNotification(error);
     }
   }, [error]);
 
@@ -163,11 +159,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     try {
       await refreshThreadMessages();
     } catch (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showErrorNotification(error);
     }
   };
 

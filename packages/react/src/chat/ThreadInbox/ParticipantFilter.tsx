@@ -14,14 +14,14 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { useDebouncedCallback, useDisclosure } from '@mantine/hooks';
-import { showNotification } from '@mantine/notifications';
-import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { createReference, formatHumanName, getReferenceString } from '@medplum/core';
 import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, useResource } from '@medplum/react-hooks';
 import { IconUsers } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
+import { showErrorNotification } from './notifications';
 import classes from './ParticipantFilter.module.css';
 
 export interface ParticipantFilterProps {
@@ -79,11 +79,7 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
 
       setSearchResults(results);
     } catch (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showErrorNotification(error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);

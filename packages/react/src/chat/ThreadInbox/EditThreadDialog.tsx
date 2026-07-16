@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Group, Loader, Modal, Stack, Text, TextInput } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
-import { createReference, isReference, normalizeErrorString } from '@medplum/core';
+import { Box, Button, Divider, Modal, Stack, Text, TextInput } from '@mantine/core';
+import { createReference, isReference } from '@medplum/core';
 import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { MultiResourceInput } from '../../ResourceInput/MultiResourceInput';
 import { ResourceInput } from '../../ResourceInput/ResourceInput';
-import { MESSAGE_MODAL_STYLES } from './messageModalStyles';
+import classes from './messageModalStyles.module.css';
+import { showErrorNotification } from './notifications';
 
 /**
  * Props for the EditThreadDialog component.
@@ -48,43 +48,6 @@ export const EditThreadDialog = (props: EditThreadDialogProps): JSX.Element => {
     return [];
   }, [thread.recipient, thread.sender]);
 
-  // Resolve every reference (patient subject + practitioner recipients) in parallel before
-  // rendering any field. Each ResourceInput/MultiResourceInput otherwise resolves its own
-  // defaultValue on its own timeline, so a cached field renders instantly while an uncached
-  // one (typically the patient) pops in late. Gating on a single Promise.all makes all fields
-  // appear together, fed pre-resolved resources so they have no further reads to do.
-  const [resolved, setResolved] = useState<{ patient?: Patient; practitioners: Practitioner[] } | undefined>(undefined);
-
-  useEffect(() => {
-    let cancelled = false;
-    // A failed patient read (deleted/inaccessible subject) must not blank the practitioner
-    // list too, so resolve it independently and degrade to "no patient field" on failure.
-    const patientPromise = patientRef
-      ? medplum.readReference(patientRef).catch(() => undefined)
-      : Promise.resolve(undefined);
-    const practitionerPromises = initialPractitioners.map((ref) => medplum.readReference(ref));
-
-    // Neither input rejects (patient read is caught above, practitioner reads use allSettled),
-    // so this Promise.all always resolves — no outer catch needed.
-    Promise.all([patientPromise, Promise.allSettled(practitionerPromises)])
-      .then(([patient, settledPractitioners]) => {
-        if (cancelled) {
-          return;
-        }
-        setResolved({
-          patient,
-          // Discriminant narrowing on `status` keeps the resolved value's type (WithId<Practitioner>)
-          // without an explicit type predicate, which would not be assignable here.
-          practitioners: settledPractitioners.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : [])),
-        });
-      })
-      .catch(() => undefined);
-
-    return () => {
-      cancelled = true;
-    };
-  }, [medplum, patientRef, initialPractitioners]);
-
   // The dialog is mounted only while open (see ThreadInbox), so this state initializes fresh on
   // each open — edits dismissed without saving are abandoned with no leftover form state.
   const [topic, setTopic] = useState(thread.topic?.text ?? '');
@@ -106,69 +69,54 @@ export const EditThreadDialog = (props: EditThreadDialogProps): JSX.Element => {
       onSaved?.(saved);
       onClose();
     } catch (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showErrorNotification(error);
     }
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Message Settings" size="md" styles={MESSAGE_MODAL_STYLES}>
-      {/* Hold the form until every reference is resolved so all fields appear together,
-          rather than each input popping in as its own read completes. */}
-      {resolved ? (
-        <Stack gap={0}>
-          <Stack gap="lg" p="lg">
-            {/* Only show the patient when the thread has a subject. The patient cannot be changed
-                or added after creation, so practitioner-only threads omit this field entirely. */}
-            {resolved.patient && (
-              <Stack gap={0}>
-                <Text fw={500}>Patient</Text>
-
-                <ResourceInput resourceType="Patient" name="patient" defaultValue={resolved.patient} disabled={true} />
-              </Stack>
-            )}
-
+    <Modal opened={opened} onClose={onClose} title="Message Settings" size="md" classNames={classes}>
+      <Stack gap={0}>
+        <Stack gap="lg" p="lg">
+          {/* The subject reference is passed straight to ResourceInput, which resolves it for
+              display. The patient cannot be changed or added after creation, so practitioner-only
+              threads (no subject) omit this field entirely. */}
+          {patientRef && (
             <Stack gap={0}>
-              <Text fw={500}>Practitioner</Text>
-              <Text c="dimmed">Select one or more practitioners</Text>
+              <Text fw={500}>Patient</Text>
 
-              {/* MultiResourceInput dedupes by reference string, so a practitioner can only be added once. */}
-              <MultiResourceInput<Practitioner>
-                resourceType="Practitioner"
-                name="practitioners"
-                defaultValue={resolved.practitioners}
-                onChange={(resources) =>
-                  setPractitioners(resources.map((practitioner) => createReference(practitioner)))
-                }
-              />
+              <ResourceInput resourceType="Patient" name="patient" defaultValue={patientRef} disabled={true} />
             </Stack>
+          )}
 
-            <Stack gap={0}>
-              <Text fw={500}>Topic (optional)</Text>
-              <Text c="dimmed">Enter a topic for the message</Text>
+          <Stack gap={0}>
+            <Text fw={500}>Practitioner</Text>
+            <Text c="dimmed">Select one or more practitioners</Text>
 
-              <TextInput placeholder="Enter your topic" value={topic} onChange={(e) => setTopic(e.target.value)} />
-            </Stack>
-
-            <Box pt="xs">
-              <Divider />
-            </Box>
+            {/* MultiResourceInput dedupes by reference string, so a practitioner can only be added once. */}
+            <MultiResourceInput<Practitioner>
+              resourceType="Practitioner"
+              name="practitioners"
+              defaultValue={initialPractitioners}
+              onChange={(resources) => setPractitioners(resources.map((practitioner) => createReference(practitioner)))}
+            />
           </Stack>
 
-          <Box px="lg" pb="lg">
-            <Button w="100%" onClick={handleSave} disabled={practitioners.length === 0}>
-              Save
-            </Button>
-          </Box>
+          <Stack gap={0}>
+            <Text fw={500}>Topic (optional)</Text>
+            <Text c="dimmed">Enter a topic for the message</Text>
+
+            <TextInput placeholder="Enter your topic" value={topic} onChange={(e) => setTopic(e.target.value)} />
+          </Stack>
+
+          <Divider pt="xs" />
         </Stack>
-      ) : (
-        <Group justify="center" p="xl">
-          <Loader size="sm" />
-        </Group>
-      )}
+
+        <Box px="lg" pb="lg">
+          <Button w="100%" onClick={handleSave} disabled={practitioners.length === 0}>
+            Save
+          </Button>
+        </Box>
+      </Stack>
     </Modal>
   );
 };
