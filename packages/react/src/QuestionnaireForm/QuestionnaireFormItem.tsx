@@ -494,8 +494,11 @@ function QuestionnaireRadioButtonInput(props: QuestionnaireChoiceInputProps): JS
   const { name, item, required, initial, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const initialValue = getItemInitialValue(initial);
-  const { options: valueSetOptions, loading: isLoading, available: isValueSetAvailable } =
-    useValueSetOptions(item.answerValueSet);
+  const {
+    options: valueSetOptions,
+    loading: isLoading,
+    available: isValueSetAvailable,
+  } = useValueSetOptions(item.answerValueSet);
 
   const options: [string, TypedValue][] = [];
   let defaultValue = undefined;
@@ -583,8 +586,11 @@ function QuestionnaireRadioButtonInput(props: QuestionnaireChoiceInputProps): JS
 function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
-  const { options: valueSetOptions, loading: isLoading, available: isValueSetAvailable } =
-    useValueSetOptions(item.answerValueSet);
+  const {
+    options: valueSetOptions,
+    loading: isLoading,
+    available: isValueSetAvailable,
+  } = useValueSetOptions(item.answerValueSet);
 
   // Get initial values from response
   const initialSelectedValues = item.answerValueSet
