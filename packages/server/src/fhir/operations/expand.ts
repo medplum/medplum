@@ -181,26 +181,74 @@ async function computeExpansion(
   const expansion: ValueSetExpansionContains[] = [];
   for (const include of valueSet.compose.include) {
     if (include.valueSet) {
+      const vsExpansion: ValueSetExpansionContains[] = [];
       for (const url of include.valueSet) {
         const includedValueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
         terminologyResources[includedValueSet.url as string] = includedValueSet;
 
-        const nestedExpansion = await computeExpansion(
+        let effectiveValueSet = includedValueSet;
+        if (include.system && includedValueSet.compose?.include?.length) {
+          const filteredInclude = includedValueSet.compose.include
+            .filter((nestedInclude) => nestedInclude.valueSet?.length || nestedInclude.system === include.system)
+            .map((nestedInclude) => {
+              if (include.filter?.length && nestedInclude.system && !nestedInclude.concept?.length) {
+                return { ...nestedInclude, filter: [...(nestedInclude.filter ?? []), ...include.filter] };
+              }
+              return nestedInclude;
+            });
+          if (!filteredInclude.length) {
+            continue;
+          }
+          effectiveValueSet = {
+            ...includedValueSet,
+            compose: {
+              ...includedValueSet.compose,
+              include: filteredInclude,
+            },
+          };
+        }
+
+        const nested = await computeExpansion(
           repo,
-          includedValueSet,
-          {
-            ...params,
-            count: maxCount - expansion.length,
-          },
+          effectiveValueSet,
+          { ...params, count: maxCount - expansion.length - vsExpansion.length },
           terminologyResources
         );
-        expansion.push(...nestedExpansion);
+        vsExpansion.push(...nested);
 
-        if (expansion.length >= maxCount) {
-          // Skip further expansion
+        if (vsExpansion.length >= maxCount - expansion.length) {
           break;
         }
       }
+
+      let filtered = vsExpansion;
+      if (include.system) {
+        filtered = filtered.filter((c) => c.system === include.system);
+      }
+      if (include.concept?.length) {
+        const conceptKeys = new Set(include.concept.filter((c) => c.code).map((c) => `${include.system}|${c.code}`));
+        filtered = filtered.filter((c) => conceptKeys.has(`${c.system}|${c.code}`));
+      }
+      if (include.filter?.length && include.system) {
+        const filterCodeSystem =
+          (terminologyResources[include.system] as WithId<CodeSystem>) ??
+          (await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', include.system));
+        terminologyResources[include.system] = filterCodeSystem;
+        const filterExpansion: ValueSetExpansionContains[] = [];
+        await includeInExpansion(
+          { system: include.system, filter: include.filter },
+          filterExpansion,
+          filterCodeSystem,
+          { ...params, filter: undefined, count: undefined, offset: undefined }
+        );
+        const allowed = new Set(filterExpansion.map((c) => `${c.system}|${c.code}`));
+        filtered = filtered.filter((c) => allowed.has(`${c.system}|${c.code}`));
+      }
+
+      if (expansion.length + filtered.length > maxCount) {
+        filtered = filtered.slice(0, maxCount - expansion.length);
+      }
+      expansion.push(...filtered);
       continue;
     }
     if (!include.system) {

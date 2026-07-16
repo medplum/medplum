@@ -284,6 +284,316 @@ describe('Expand', () => {
     });
   });
 
+  test('ValueSet with multi-system nested valueSet filters by outer system before truncation', async () => {
+    const csA: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/A-' + randomUUID(),
+      concept: [{ code: 'a1' }, { code: 'a2' }, { code: 'a3' }],
+    };
+    const csB: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/B-' + randomUUID(),
+      concept: [{ code: 'b1' }, { code: 'b2' }],
+    };
+    for (const cs of [csA, csB]) {
+      const r = await request(app)
+        .post(`/fhir/R4/CodeSystem`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(cs);
+      expect(r.status).toBe(201);
+    }
+
+    const nestedUrl = 'https://example.com/ValueSet/nested-' + randomUUID();
+    const nRes = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: nestedUrl,
+        compose: { include: [{ system: csA.url }, { system: csB.url }] },
+      });
+    expect(nRes.status).toBe(201);
+
+    const compoundUrl = 'https://example.com/ValueSet/compound-' + randomUUID();
+    const cRes = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: compoundUrl,
+        compose: { include: [{ valueSet: [nestedUrl], system: csB.url }] },
+      });
+    expect(cRes.status).toBe(201);
+
+    // count=2 truncates the nested expansion after CodeSystem/A; result must still be B's codes
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(compoundUrl)}&count=2`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    const codes = (res.body.expansion.contains as ValueSetExpansionContains[]).map((c) => c.code);
+    expect(codes.sort()).toStrictEqual(['b1', 'b2']);
+  });
+
+  test('ValueSet with system-based nested valueSet applies outer filter before truncation', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      hierarchyMeaning: 'is-a',
+      concept: [
+        { code: 'u1' },
+        { code: 'u2' },
+        { code: 'u3' },
+        { code: 'u4' },
+        { code: 'PAR', concept: [{ code: 'p1' }, { code: 'p2' }] },
+      ],
+    };
+    const csRes = await request(app)
+      .post(`/fhir/R4/CodeSystem`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(codeSystem);
+    expect(csRes.status).toBe(201);
+
+    const nestedUrl = 'https://example.com/ValueSet/nested-' + randomUUID();
+    const nRes = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: nestedUrl,
+        compose: { include: [{ system: codeSystem.url }] },
+      });
+    expect(nRes.status).toBe(201);
+
+    const compoundUrl = 'https://example.com/ValueSet/compound-' + randomUUID();
+    const cRes = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: compoundUrl,
+        compose: {
+          include: [
+            {
+              valueSet: [nestedUrl],
+              system: codeSystem.url,
+              filter: [{ property: 'concept', op: 'is-a', value: 'PAR' }],
+            },
+          ],
+        },
+      });
+    expect(cRes.status).toBe(201);
+
+    // At count=5 the raw system expansion returns the four non-descendants and drops p1/p2; the outer
+    // filter must be applied in the expansion query so all descendants of PAR survive the truncation
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(compoundUrl)}&count=5`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    const codes = (res.body.expansion.contains as ValueSetExpansionContains[]).map((c) => c.code);
+    expect(codes.sort()).toStrictEqual(['PAR', 'p1', 'p2']);
+  });
+
+  test('ValueSet with valueSet AND system+concept filter', async () => {
+    const parentUrl = 'https://example.com/ValueSet/parent-' + randomUUID();
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: parentUrl,
+        compose: {
+          include: [
+            {
+              system: 'http://hl7.org/fhir/resource-types',
+              concept: [{ code: 'Patient' }, { code: 'Practitioner' }, { code: 'Observation' }],
+            },
+          ],
+        },
+      });
+    expect(res1.status).toBe(201);
+
+    const childUrl = 'https://example.com/ValueSet/child-' + randomUUID();
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: childUrl,
+        compose: {
+          include: [
+            {
+              valueSet: [parentUrl],
+              system: 'http://hl7.org/fhir/resource-types',
+              concept: [{ code: 'Patient' }],
+            },
+          ],
+        },
+      });
+    expect(res2.status).toBe(201);
+
+    const res3 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(childUrl)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.body.expansion.contains).toHaveLength(1);
+    expect(res3.body.expansion.contains[0]).toMatchObject({
+      system: 'http://hl7.org/fhir/resource-types',
+      code: 'Patient',
+    });
+  });
+
+  test('ValueSet with valueSet AND system+filter', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      hierarchyMeaning: 'is-a',
+      concept: [
+        {
+          code: 'PAR',
+          display: 'parent',
+          concept: [
+            { code: 'CHD', display: 'child' },
+            { code: 'PET', display: 'pet' },
+          ],
+        },
+        { code: 'SIB', display: 'sibling not under PAR' },
+      ],
+    };
+    const csRes = await request(app)
+      .post(`/fhir/R4/CodeSystem`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(codeSystem);
+    expect(csRes.status).toBe(201);
+
+    const parentUrl = 'https://example.com/ValueSet/parent-' + randomUUID();
+    const vs1Res = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: parentUrl,
+        compose: {
+          include: [
+            {
+              system: codeSystem.url,
+              // SIB is present in the nested ValueSet but is NOT a descendant of PAR, so the outer
+              // `is-a PAR` filter on the child must exclude it from the final expansion.
+              concept: [{ code: 'CHD' }, { code: 'PET' }, { code: 'SIB' }],
+            },
+          ],
+        },
+      });
+    expect(vs1Res.status).toBe(201);
+
+    const childUrl = 'https://example.com/ValueSet/child-' + randomUUID();
+    const vs2Res = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: childUrl,
+        compose: {
+          include: [
+            {
+              valueSet: [parentUrl],
+              system: codeSystem.url,
+              filter: [{ property: 'code', op: 'is-a', value: 'PAR' }],
+            },
+          ],
+        },
+      });
+    expect(vs2Res.status).toBe(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(childUrl)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(2);
+    expect(expansion.contains).toStrictEqual(
+      expect.arrayContaining<ValueSetExpansionContains>([
+        { system: codeSystem.url, code: 'CHD', display: 'child' },
+        { system: codeSystem.url, code: 'PET', display: 'pet' },
+      ])
+    );
+  });
+
+  test('ValueSet with pre-expanded valueSet AND system filter', async () => {
+    const parentUrl = 'https://example.com/ValueSet/parent-' + randomUUID();
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: parentUrl,
+        expansion: {
+          timestamp: new Date().toISOString(),
+          contains: [
+            { system: 'http://loinc.org', code: '8480-6', display: 'Systolic BP' },
+            { system: SNOMED, code: '75367002', display: 'Blood pressure' },
+          ],
+        },
+      });
+    expect(res1.status).toBe(201);
+
+    const childUrl = 'https://example.com/ValueSet/child-' + randomUUID();
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: childUrl,
+        compose: {
+          include: [
+            {
+              valueSet: [parentUrl],
+              system: 'http://loinc.org',
+            },
+          ],
+        },
+      });
+    expect(res2.status).toBe(201);
+
+    const res3 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(childUrl)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.body.expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { system: 'http://loinc.org', code: '8480-6', display: 'Systolic BP' },
+    ]);
+  });
+
   test('CodeSystem resolution', async () => {
     const codeSystem: CodeSystem = {
       resourceType: 'CodeSystem',
