@@ -7,31 +7,6 @@
   padding: var(--landing-section-padding-y) 0;
 }
 
-.sectionHeader {
-  margin-bottom: var(--landing-section-header-gap);
-}
-
-.sectionHeadline {
-  font-family: var(--landing-font-display);
-  font-weight: var(--landing-section-weight);
-  font-size: var(--landing-section-size);
-  line-height: var(--landing-section-leading);
-  letter-spacing: var(--landing-section-tracking);
-  text-wrap-style: balance;
-  margin: 0 0 1rem;
-  color: var(--landing-color-heading);
-}
-
-.sectionLead {
-  font-family: var(--landing-font-display);
-  font-size: var(--landing-lead-size);
-  line-height: var(--landing-lead-leading);
-  font-weight: var(--landing-lead-weight);
-  color: var(--landing-color-body-alt);
-  margin: 0;
-  max-width: 64%;
-}
-
 /* ---- Carousel: list left, media right --------------------------------- */
 .carousel {
   display: grid;
@@ -172,13 +147,16 @@
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  background-image: linear-gradient(to right, rgba(var(--oc-indigo-1-rgb), 0.75) 1px, transparent 1px),
+  background-image:
+    linear-gradient(to right, rgba(var(--oc-indigo-1-rgb), 0.75) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(var(--oc-indigo-1-rgb), 0.75) 1px, transparent 1px);
   background-size: 20px 20px;
-  mask-image: linear-gradient(to right, transparent, black 100px, black calc(100% - 100px), transparent),
+  mask-image:
+    linear-gradient(to right, transparent, black 100px, black calc(100% - 100px), transparent),
     linear-gradient(to bottom, transparent, black 100px, black calc(100% - 100px), transparent);
   mask-composite: intersect;
-  -webkit-mask-image: linear-gradient(to right, transparent, black 100px, black calc(100% - 100px), transparent),
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, black 100px, black calc(100% - 100px), transparent),
     linear-gradient(to bottom, transparent, black 100px, black calc(100% - 100px), transparent);
   -webkit-mask-composite: source-in, source-in;
 }
@@ -275,45 +253,11 @@
   color: rgba(255, 255, 255, 0.45);
 }
 
-.panelBody {
-  margin: 0;
-  padding: 14px 16px 18px;
-  overflow: hidden;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  font-family: var(--ifm-font-family-monospace);
-  font-size: 10.5px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.85);
-  white-space: pre;
-}
-
-.panelBody code {
-  padding: 0;
-  background: none;
-  border: none;
-  font-family: inherit;
-}
-
-.dtBrace {
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.dtProp {
-  color: #7dd3fc;
-}
-
-.dtStr {
-  color: #86efac;
-}
-
-.dtNum {
-  color: #fcd34d;
-}
-
-.dtPunct {
-  color: rgba(255, 255, 255, 0.35);
+/* Code body rendered from an SVG asset (see the foundations code panels). Intrinsic size
+   (no width: 100%) keeps the 10.5px text crisp and 1:1; the panel's overflow: hidden clips it
+   on narrow viewports, exactly as the original <pre> was. */
+.panelBodyImage {
+  display: block;
 }
 
 /* Light UI card — the rendered-output surface that floats over the code panel.
@@ -553,27 +497,6 @@
   }
 }
 
-/* ---- Shared dark code-panel syntax tokens (TS / TSX) ------------------ */
-/* JSON tokens (.dtBrace/.dtProp/.dtStr/.dtNum/.dtPunct) are defined with the
-   FHIR code panel above; these add the keyword/type/fn/comment colors that
-   TypeScript snippets need. The panel is always dark, so colors are fixed. */
-.dtKeyword {
-  color: #c4b5fd;
-}
-
-.dtType {
-  color: #67e8f9;
-}
-
-.dtFn {
-  color: #93c5fd;
-}
-
-.dtComment {
-  color: rgba(255, 255, 255, 0.4);
-  font-style: italic;
-}
-
 /* ---- SDK: typed-client result card ------------------------------------ */
 /* Floats front-right over the app.ts code panel — the rendered result of the
    readResource / searchResources calls shown in the code behind it. */
@@ -718,11 +641,6 @@
   bottom: 44px;
   width: 80%;
   transform: rotate(1.25deg);
-}
-
-.hl7Seg {
-  color: #67e8f9;
-  font-weight: 600;
 }
 
 /* Connection diagram: on-prem node → encrypted link → cloud node. */
@@ -1232,15 +1150,12 @@
 }
 
 [data-theme='dark'] .imageArea::before {
-  background-image: linear-gradient(to right, rgba(var(--oc-indigo-8-rgb), 0.3) 1px, transparent 1px),
+  background-image:
+    linear-gradient(to right, rgba(var(--oc-indigo-8-rgb), 0.3) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(var(--oc-indigo-8-rgb), 0.3) 1px, transparent 1px);
 }
 
 @media (max-width: 996px) {
-  .sectionLead {
-    max-width: 90%;
-  }
-
   .carousel {
     grid-template-columns: 1fr;
     gap: 1.5rem;

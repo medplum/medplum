@@ -15,6 +15,7 @@ import type { CSSProperties, JSX } from 'react';
 import { HERO_HEADLINE, HERO_SUB } from '../../data/products-content';
 import { BuildDropdown } from './BuildDropdown';
 import styles from './ProductsHero.module.css';
+import { WindowChrome } from './WindowChrome';
 
 /* The hero shows the product as an ASSEMBLY: a browser window at the center, ringed by the
    capabilities and foundations it's built from. When scrolled into view the card scales in,
@@ -112,15 +113,7 @@ const HERO_CHIPS: HeroChip[] = [
 function HeroAppWindow(): JSX.Element {
   return (
     <div className={styles.heroBrowser}>
-      <div className={styles.browserBar}>
-        <span className={`${styles.browserDot} ${styles.browserDotRed}`} />
-        <span className={`${styles.browserDot} ${styles.browserDotYellow}`} />
-        <span className={`${styles.browserDot} ${styles.browserDotGreen}`} />
-        <span className={styles.browserAddress}>
-          <IconLock size={10} stroke={2} aria-hidden />
-          provider.medplum.com
-        </span>
-      </div>
+      <WindowChrome address="provider.medplum.com" />
       <div className={styles.heroBrowserImage}>
         <img
           src="/img/screenshots/product-hero-app.webp"

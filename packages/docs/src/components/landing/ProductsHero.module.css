@@ -156,58 +156,6 @@
   mask-composite: intersect;
 }
 
-.browserBar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 12px;
-  background: var(--landing-surface-inset);
-  border-bottom: 1px solid var(--landing-divider);
-}
-
-.browserDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.browserDotRed {
-  background: #ff5f57;
-}
-
-.browserDotYellow {
-  background: #febc2e;
-}
-
-.browserDotGreen {
-  background: #28c840;
-}
-
-.browserAddress {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex: 1;
-  margin-left: 8px;
-  padding: 4px 10px;
-  border-radius: 7px;
-  background: var(--landing-surface-elevated);
-  border: 1px solid var(--landing-border);
-  font-family:
-    system-ui,
-    -apple-system,
-    'Helvetica Neue',
-    sans-serif;
-  font-size: 10.5px;
-  color: var(--landing-color-muted);
-}
-
-.browserAddress svg {
-  color: var(--oc-gray-6);
-  flex-shrink: 0;
-}
-
 .heroBrowserImage {
   aspect-ratio: 2812 / 2220;
   overflow: hidden;
@@ -262,7 +210,11 @@
 }
 
 .compChipLabel {
-  font-family: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Helvetica Neue',
+    sans-serif;
   font-size: clamp(11px, 2.4cqw, 12px);
   font-weight: 500;
   line-height: 1.2;
@@ -270,7 +222,11 @@
 }
 
 .compChipSub {
-  font-family: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Helvetica Neue',
+    sans-serif;
   font-size: clamp(10px, 2cqw, 11.5px);
   font-weight: 400;
   line-height: 1.15;
@@ -366,8 +322,4 @@
 
 [data-theme='dark'] .compCard {
   filter: drop-shadow(-10px -8px 36px rgba(0, 0, 0, 0.45));
-}
-
-[data-theme='dark'] .browserAddress svg {
-  color: var(--oc-green-4);
 }

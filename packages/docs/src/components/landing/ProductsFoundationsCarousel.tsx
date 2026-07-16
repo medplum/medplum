@@ -23,6 +23,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FOUNDATIONS } from '../../data/products-content';
 import styles from './ProductsFoundationsCarousel.module.css';
+import { ProductsSectionHeader } from './ProductsSectionHeader';
 
 const AUTO_ADVANCE_MS = 5000;
 
@@ -65,45 +66,10 @@ function FhirDatastoreExample(): JSX.Element {
           <span className={styles.panelDot} />
           <span className={styles.panelFile}>Bundle.json</span>
         </div>
-        <pre className={styles.panelBody}>
-          <code>
-            <span className={styles.dtBrace}>{'{'}</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Bundle&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;type&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;searchset&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;total&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtNum}>3</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;entry&quot;</span>
-            <span className={styles.dtPunct}>: [</span>
-            {'\n    '}
-            <span className={styles.dtBrace}>{'{'}</span> <span className={styles.dtProp}>&quot;resource&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtBrace}>{'{'}</span>
-            {'\n      '}
-            <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Patient&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n      '}
-            <span className={styles.dtProp}>&quot;name&quot;</span>
-            <span className={styles.dtPunct}>: [</span> <span className={styles.dtBrace}>{'{'}</span>{' '}
-            <span className={styles.dtProp}>&quot;family&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Simpson&quot;</span>{' '}
-            <span className={styles.dtBrace}>{'}'}</span> <span className={styles.dtPunct}>]</span>
-            {'\n    '}
-            <span className={styles.dtBrace}>{'}'}</span> <span className={styles.dtBrace}>{'}'}</span>
-            {'\n  '}
-            <span className={styles.dtPunct}>]</span>
-            {'\n'}
-            <span className={styles.dtBrace}>{'}'}</span>
-          </code>
-        </pre>
+        {/* The code body is a crisp SVG asset rather than hand-tokenized spans. Only the body is
+            imaged — the panel chrome + background stay HTML so the dark-mode background shift still
+            applies. Padding is baked into the SVG coordinates. Same pattern for every panel below. */}
+        <img className={styles.panelBodyImage} src="/img/products/foundations/bundle-json.svg" alt="" aria-hidden />
       </div>
 
       {/* Foreground: REST search UI card floating over the code. */}
@@ -179,41 +145,7 @@ function SdkCodeExample(): JSX.Element {
           <span className={styles.panelDot} />
           <span className={styles.panelFile}>app.ts</span>
         </div>
-        <pre className={styles.panelBody}>
-          <code>
-            <span className={styles.dtKeyword}>import</span>
-            {' { '}
-            <span className={styles.dtType}>MedplumClient</span>
-            {' } '}
-            <span className={styles.dtKeyword}>from</span>{' '}
-            <span className={styles.dtStr}>&apos;@medplum/core&apos;</span>
-            {';\n\n'}
-            <span className={styles.dtKeyword}>const</span>
-            {' medplum = '}
-            <span className={styles.dtKeyword}>new</span> <span className={styles.dtFn}>MedplumClient</span>
-            {'();\n\n'}
-            <span className={styles.dtComment}>{'// Typed reads, searches, and writes'}</span>
-            {'\n'}
-            <span className={styles.dtKeyword}>const</span>
-            {' patient = '}
-            <span className={styles.dtKeyword}>await</span>
-            {' medplum.'}
-            <span className={styles.dtFn}>readResource</span>
-            {'('}
-            <span className={styles.dtStr}>&apos;Patient&apos;</span>
-            {', id);\n\n'}
-            <span className={styles.dtKeyword}>const</span>
-            {' vitals = '}
-            <span className={styles.dtKeyword}>await</span>
-            {' medplum.'}
-            <span className={styles.dtFn}>searchResources</span>
-            {'(\n  '}
-            <span className={styles.dtStr}>&apos;Observation&apos;</span>
-            {',\n  { subject: '}
-            <span className={styles.dtStr}>{'`Patient/${id}`'}</span>
-            {' }\n);'}
-          </code>
-        </pre>
+        <img className={styles.panelBodyImage} src="/img/products/foundations/app-ts.svg" alt="" aria-hidden />
       </div>
 
       {/* Foreground: the typed Patient + Observations those calls resolve to. */}
@@ -261,33 +193,7 @@ function ComponentLibraryExample(): JSX.Element {
           <span className={styles.panelDot} />
           <span className={styles.panelFile}>App.tsx</span>
         </div>
-        <pre className={styles.panelBody}>
-          <code>
-            <span className={styles.dtKeyword}>import</span>
-            {' { '}
-            <span className={styles.dtType}>SearchControl</span>
-            {' } '}
-            <span className={styles.dtKeyword}>from</span>{' '}
-            <span className={styles.dtStr}>&apos;@medplum/react&apos;</span>
-            {';\n\n'}
-            <span className={styles.dtKeyword}>export function</span> <span className={styles.dtFn}>Patients</span>
-            {'() {\n  '}
-            <span className={styles.dtKeyword}>return</span>
-            {' (\n    <'}
-            <span className={styles.dtType}>SearchControl</span>
-            {'\n      '}
-            <span className={styles.dtProp}>resourceType</span>
-            {'='}
-            <span className={styles.dtStr}>&quot;Patient&quot;</span>
-            {'\n      '}
-            <span className={styles.dtProp}>fields</span>
-            {'={['}
-            <span className={styles.dtStr}>&apos;name&apos;</span>
-            {', '}
-            <span className={styles.dtStr}>&apos;status&apos;</span>
-            {']}\n    />\n  );\n}'}
-          </code>
-        </pre>
+        <img className={styles.panelBodyImage} src="/img/products/foundations/app-tsx.svg" alt="" aria-hidden />
       </div>
 
       {/* Foreground: the live SearchControl the JSX renders. */}
@@ -353,37 +259,7 @@ function BotsExample(): JSX.Element {
           <span className={styles.panelDot} />
           <span className={styles.panelFile}>welcome-bot.ts</span>
         </div>
-        <pre className={styles.panelBody}>
-          <code>
-            <span className={styles.dtKeyword}>import</span>
-            {' { '}
-            <span className={styles.dtType}>BotEvent</span>
-            {', '}
-            <span className={styles.dtType}>MedplumClient</span>
-            {' } '}
-            <span className={styles.dtKeyword}>from</span>{' '}
-            <span className={styles.dtStr}>&apos;@medplum/core&apos;</span>
-            {';\n\n'}
-            <span className={styles.dtKeyword}>export async function</span> <span className={styles.dtFn}>handler</span>
-            {'(\n  medplum: '}
-            <span className={styles.dtType}>MedplumClient</span>
-            {',\n  event: '}
-            <span className={styles.dtType}>BotEvent</span>
-            {'<'}
-            <span className={styles.dtType}>Patient</span>
-            {'>\n) {\n  '}
-            <span className={styles.dtKeyword}>const</span>
-            {' patient = event.input;\n  '}
-            <span className={styles.dtKeyword}>await</span>
-            {' medplum.'}
-            <span className={styles.dtFn}>createResource</span>
-            {'({\n    resourceType: '}
-            <span className={styles.dtStr}>&apos;Communication&apos;</span>
-            {',\n    status: '}
-            <span className={styles.dtStr}>&apos;completed&apos;</span>
-            {',\n  });\n}'}
-          </code>
-        </pre>
+        <img className={styles.panelBodyImage} src="/img/products/foundations/welcome-bot-ts.svg" alt="" aria-hidden />
       </div>
 
       {/* Foreground: the automation log — each row is a trigger → action. */}
@@ -435,40 +311,12 @@ function SubscriptionsExample(): JSX.Element {
           <span className={styles.panelDot} />
           <span className={styles.panelFile}>Subscription.json</span>
         </div>
-        <pre className={styles.panelBody}>
-          <code>
-            <span className={styles.dtBrace}>{'{'}</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Subscription&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;status&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;active&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;criteria&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;Observation?status=final&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;channel&quot;</span>
-            <span className={styles.dtPunct}>: </span>
-            <span className={styles.dtBrace}>{'{'}</span>
-            {'\n    '}
-            <span className={styles.dtProp}>&quot;type&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;rest-hook&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n    '}
-            <span className={styles.dtProp}>&quot;endpoint&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;https://example.com/hook&quot;</span>
-            {'\n  '}
-            <span className={styles.dtBrace}>{'}'}</span>
-            {'\n'}
-            <span className={styles.dtBrace}>{'}'}</span>
-          </code>
-        </pre>
+        <img
+          className={styles.panelBodyImage}
+          src="/img/products/foundations/subscription-json.svg"
+          alt=""
+          aria-hidden
+        />
       </div>
 
       {/* Foreground: the live dashboard — events stream in as resources change. */}
@@ -522,20 +370,7 @@ function BridgeExample(): JSX.Element {
           <span className={styles.panelDot} />
           <span className={styles.panelFile}>ADT^A01.hl7</span>
         </div>
-        <pre className={styles.panelBody}>
-          <code>
-            <span className={styles.hl7Seg}>MSH</span>
-            {'|^~\\&|EPIC|MERCY|MEDPLUM|CLOUD|20250301101530||'}
-            <span className={styles.hl7Seg}>ADT^A01</span>
-            {'|18457|P|2.5\n'}
-            <span className={styles.hl7Seg}>EVN</span>
-            {'|A01|20250301101530\n'}
-            <span className={styles.hl7Seg}>PID</span>
-            {'|1||44218^^^MERCY||Simpson^Homer||19560515|M\n'}
-            <span className={styles.hl7Seg}>PV1</span>
-            {'|1|I|ICU^301^01|||^Nguyen^Amy'}
-          </code>
-        </pre>
+        <img className={styles.panelBodyImage} src="/img/products/foundations/adt-a01-hl7.svg" alt="" aria-hidden />
       </div>
 
       {/* Foreground: a connection diagram — on-prem tunnels to the cloud, with the
@@ -601,31 +436,7 @@ function AuthExample(): JSX.Element {
           <span className={styles.panelDot} />
           <span className={styles.panelFile}>auth.ts</span>
         </div>
-        <pre className={styles.panelBody}>
-          <code>
-            <span className={styles.dtKeyword}>import</span>
-            {' { '}
-            <span className={styles.dtType}>MedplumClient</span>
-            {' } '}
-            <span className={styles.dtKeyword}>from</span>{' '}
-            <span className={styles.dtStr}>&apos;@medplum/core&apos;</span>
-            {';\n\n'}
-            <span className={styles.dtKeyword}>const</span>
-            {' medplum = '}
-            <span className={styles.dtKeyword}>new</span> <span className={styles.dtFn}>MedplumClient</span>
-            {'();\n\n'}
-            <span className={styles.dtComment}>{'// Route through Medplum or your own IdP'}</span>
-            {'\n'}
-            <span className={styles.dtKeyword}>await</span>
-            {' medplum.'}
-            <span className={styles.dtFn}>signInWithRedirect</span>
-            {'({\n  clientId: '}
-            <span className={styles.dtStr}>&apos;my-app&apos;</span>
-            {',\n  scope: '}
-            <span className={styles.dtStr}>&apos;openid profile&apos;</span>
-            {',\n});'}
-          </code>
-        </pre>
+        <img className={styles.panelBodyImage} src="/img/products/foundations/auth-ts.svg" alt="" aria-hidden />
       </div>
 
       {/* Foreground: the rendered sign-in screen. */}
@@ -682,33 +493,12 @@ function AccessControlExample(): JSX.Element {
           <span className={styles.panelDot} />
           <span className={styles.panelFile}>AccessPolicy.json</span>
         </div>
-        <pre className={styles.panelBody}>
-          <code>
-            <span className={styles.dtBrace}>{'{'}</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;AccessPolicy&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;name&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Front Desk&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;resource&quot;</span>
-            <span className={styles.dtPunct}>: [</span>
-            {'\n    '}
-            <span className={styles.dtBrace}>{'{'}</span>{' '}
-            <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Patient&quot;</span>
-            <span className={styles.dtPunct}>,</span> <span className={styles.dtProp}>&quot;readonly&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtKeyword}>true</span>{' '}
-            <span className={styles.dtBrace}>{'}'}</span>
-            {'\n  '}
-            <span className={styles.dtPunct}>]</span>
-            {'\n'}
-            <span className={styles.dtBrace}>{'}'}</span>
-          </code>
-        </pre>
+        <img
+          className={styles.panelBodyImage}
+          src="/img/products/foundations/accesspolicy-json.svg"
+          alt=""
+          aria-hidden
+        />
       </div>
 
       {/* Foreground: the permissions matrix that policy produces. */}
@@ -769,28 +559,7 @@ function MultiTenancyExample(): JSX.Element {
           <span className={styles.panelDot} />
           <span className={styles.panelFile}>Project.json</span>
         </div>
-        <pre className={styles.panelBody}>
-          <code>
-            <span className={styles.dtBrace}>{'{'}</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Project&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;name&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;Northwind Clinic&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;strictMode&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtKeyword}>true</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;superAdmin&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtKeyword}>false</span>
-            {'\n'}
-            <span className={styles.dtBrace}>{'}'}</span>
-          </code>
-        </pre>
+        <img className={styles.panelBodyImage} src="/img/products/foundations/project-json.svg" alt="" aria-hidden />
       </div>
 
       {/* Foreground: the project switcher — isolated tenants on one deployment. */}
@@ -843,33 +612,7 @@ function AuditLoggingExample(): JSX.Element {
           <span className={styles.panelDot} />
           <span className={styles.panelFile}>AuditEvent.json</span>
         </div>
-        <pre className={styles.panelBody}>
-          <code>
-            <span className={styles.dtBrace}>{'{'}</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;resourceType&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;AuditEvent&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;action&quot;</span>
-            <span className={styles.dtPunct}>:</span> <span className={styles.dtStr}>&quot;R&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;recorded&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;2025-03-01T09:42:11Z&quot;</span>
-            <span className={styles.dtPunct}>,</span>
-            {'\n  '}
-            <span className={styles.dtProp}>&quot;agent&quot;</span>
-            <span className={styles.dtPunct}>: [{'{'} </span>
-            <span className={styles.dtProp}>&quot;who&quot;</span>
-            <span className={styles.dtPunct}>:</span>{' '}
-            <span className={styles.dtStr}>&quot;Practitioner/nguyen&quot;</span>{' '}
-            <span className={styles.dtPunct}>{'}]'}</span>
-            {'\n'}
-            <span className={styles.dtBrace}>{'}'}</span>
-          </code>
-        </pre>
+        <img className={styles.panelBodyImage} src="/img/products/foundations/auditevent-json.svg" alt="" aria-hidden />
       </div>
 
       {/* Foreground: the searchable audit trail those events form. */}
@@ -975,13 +718,10 @@ export function ProductsFoundationsCarousel(): JSX.Element {
 
   return (
     <div className={styles.section}>
-      <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionHeadline}>Build on the strongest foundations in healthcare</h2>
-        <p className={styles.sectionLead}>
-          The building blocks that make everything else possible, all sharing one FHIR data model. These power the
-          capabilities and apps across the Medplum platform.
-        </p>
-      </div>
+      <ProductsSectionHeader headline="Build on the strongest foundations in healthcare">
+        The building blocks that make everything else possible, all sharing one FHIR data model. These power the
+        capabilities and apps across the Medplum platform.
+      </ProductsSectionHeader>
 
       <div className={styles.carousel}>
         <ul className={styles.list} role="tablist" aria-label="Foundations">

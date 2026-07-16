@@ -7,33 +7,6 @@
   padding: var(--landing-section-padding-y) 0;
 }
 
-.sectionIntro {
-  max-width: var(--layout-max-width);
-  margin: 0 auto var(--landing-section-header-gap);
-  padding: 0 var(--layout-padding);
-}
-
-.sectionHeadline {
-  font-family: var(--landing-font-display);
-  font-weight: var(--landing-section-weight);
-  font-size: var(--landing-section-size);
-  line-height: var(--landing-section-leading);
-  letter-spacing: var(--landing-section-tracking);
-  text-wrap-style: balance;
-  margin: 0 0 1rem;
-  color: var(--landing-color-heading);
-}
-
-.sectionLead {
-  font-family: var(--landing-font-display);
-  font-size: var(--landing-lead-size);
-  line-height: var(--landing-lead-leading);
-  font-weight: var(--landing-lead-weight);
-  color: var(--landing-color-body-alt);
-  margin: 0;
-  max-width: 64%;
-}
-
 .showcaseWrap {
   max-width: var(--layout-max-width);
   margin: 0 auto;
@@ -331,7 +304,7 @@
 [data-theme='dark'] .stackImage {
   box-shadow: 0px 8px 40px rgba(var(--oc-gray-7-rgb), 0.5);
   border: 1px solid rgba(var(--oc-gray-5-rgb), 0.25);
-  background: #FFF;
+  background: #fff;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -346,13 +319,8 @@
 }
 
 @media (max-width: 996px) {
-  .sectionIntro,
   .showcaseWrap {
     padding: 0 var(--layout-padding-md);
-  }
-
-  .sectionLead {
-    max-width: 90%;
   }
 
   .imageStage {
@@ -375,7 +343,6 @@
 }
 
 @media (max-width: 600px) {
-  .sectionIntro,
   .showcaseWrap {
     padding: 0 var(--layout-padding-sm);
   }

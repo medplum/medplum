@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
-import { IconLock } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { BuildDropdown } from './BuildDropdown';
 import styles from './ProductsCta.module.css';
+import { WindowChrome } from './WindowChrome';
 
 /* Screenshots that cross-fade inside the app window. */
 const SLIDES = [
@@ -79,15 +79,7 @@ export function ProductsCta(): JSX.Element {
 
           <div className={styles.browserCol}>
             <div className={styles.browser}>
-              <div className={styles.browserBar}>
-                <span className={`${styles.browserDot} ${styles.browserDotRed}`} />
-                <span className={`${styles.browserDot} ${styles.browserDotYellow}`} />
-                <span className={`${styles.browserDot} ${styles.browserDotGreen}`} />
-                <span className={styles.browserAddress}>
-                  <IconLock size={10} stroke={2} aria-hidden />
-                  app.yourclinic.com
-                </span>
-              </div>
+              <WindowChrome address="app.yourclinic.com" />
               <AppSlideshow />
             </div>
           </div>

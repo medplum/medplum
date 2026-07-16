@@ -7,6 +7,7 @@ import { useCallback, useRef, useState } from 'react';
 import type { AppItem } from '../../data/products-content';
 import { FEATURED_APPS } from '../../data/products-content';
 import styles from './ProductsApps.module.css';
+import { ProductsSectionHeader } from './ProductsSectionHeader';
 
 const AUTO_ADVANCE_MS = 5000;
 
@@ -171,13 +172,10 @@ export function ProductsApps(): JSX.Element {
 
   return (
     <div id="apps" className={styles.section}>
-      <div className={styles.sectionIntro}>
-        <h2 className={styles.sectionHeadline}>Start using Medplum today, with our pre-built apps</h2>
-        <p className={styles.sectionLead}>
-          Developed by Medplum using our powerful capabilities and foundations, these prepackaged apps are ready to be
-          modified for your clinical needs—or used as a reference when building your own custom apps.
-        </p>
-      </div>
+      <ProductsSectionHeader variant="intro" headline="Start using Medplum today, with our pre-built apps">
+        Developed by Medplum using our powerful capabilities and foundations, these prepackaged apps are ready to be
+        modified for your clinical needs—or used as a reference when building your own custom apps.
+      </ProductsSectionHeader>
 
       <div className={styles.showcaseWrap}>
         <div className={styles.showcaseBox}>

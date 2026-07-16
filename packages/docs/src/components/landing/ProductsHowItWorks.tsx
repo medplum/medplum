@@ -8,6 +8,7 @@ import { COMPLIANCE_BADGES, ComplianceBadges } from './ComplianceBadges';
 import { ProductsDiagram } from './ProductsDiagram';
 import diagramStyles from './ProductsDiagram.module.css';
 import styles from './ProductsHowItWorks.module.css';
+import { ProductsSectionHeader } from './ProductsSectionHeader';
 
 // Same badges as the home page, but with the plain HITRUST logo (no "e1") and ISO 9001 added.
 const PRODUCTS_COMPLIANCE_BADGES: Badge[] = [
@@ -21,15 +22,11 @@ const PRODUCTS_COMPLIANCE_BADGES: Badge[] = [
 export function ProductsHowItWorks(): JSX.Element {
   return (
     <div id="howitworks" className={`${styles.section} ${diagramStyles.diagramScale}`}>
-      <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionHeadline}>How it all works together</h2>
-        <p className={styles.sectionLead}>
-          Medplum unifies auth, access control, data, and automation into a single tenant-isolated system for your
-          apps—whether built with our components and SDK or forked from our pre-built apps. Medplum Bridge connects
-          on-prem systems, integrations extend your apps&apos; capabilities, and our compliance and security are built
-          in.
-        </p>
-      </div>
+      <ProductsSectionHeader headline="How it all works together" leadFullMobile>
+        Medplum unifies auth, access control, data, and automation into a single tenant-isolated system for your
+        apps—whether built with our components and SDK or forked from our pre-built apps. Medplum Bridge connects
+        on-prem systems, integrations extend your apps&apos; capabilities, and our compliance and security are built in.
+      </ProductsSectionHeader>
 
       {/* The diagram is a fixed-width figure; below ~1050px it scrolls horizontally within
           its own box so it never forces the whole page to scroll sideways. */}

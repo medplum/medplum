@@ -7,31 +7,6 @@
   padding: var(--landing-section-padding-y) 0 0;
 }
 
-.sectionHeader {
-  margin-bottom: var(--landing-section-header-gap);
-}
-
-.sectionHeadline {
-  font-family: var(--landing-font-display);
-  font-weight: var(--landing-section-weight);
-  font-size: var(--landing-section-size);
-  line-height: var(--landing-section-leading);
-  letter-spacing: var(--landing-section-tracking);
-  text-wrap-style: balance;
-  margin: 0 0 1rem;
-  color: var(--landing-color-heading);
-}
-
-.sectionLead {
-  font-family: var(--landing-font-display);
-  font-size: var(--landing-lead-size);
-  line-height: var(--landing-lead-leading);
-  font-weight: var(--landing-lead-weight);
-  color: var(--landing-color-body-alt);
-  margin: 0;
-  max-width: 64%;
-}
-
 /* The diagram is a fixed-width figure (~1000px). Rather than force the whole page to scroll
    sideways on narrow viewports, it scrolls within its own box. overscroll-behavior keeps the
    swipe from chaining out to the page. */
@@ -141,17 +116,7 @@
 }
 
 @media (max-width: 996px) {
-  .sectionLead {
-    max-width: 90%;
-  }
-
   .complianceCard {
     padding: 2rem;
-  }
-}
-
-@media (max-width: 600px) {
-  .sectionLead {
-    max-width: 100%;
   }
 }
