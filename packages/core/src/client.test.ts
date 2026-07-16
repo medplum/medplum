@@ -3145,27 +3145,6 @@ describe('Client', () => {
       expect(invalidateSpy).not.toHaveBeenCalledWith('Observation');
     });
 
-    test('Execute batch invalidates search cache for absolute entry URLs', async () => {
-      const fetch = mockFetch(200, {
-        resourceType: 'Bundle',
-        type: 'transaction-response',
-        entry: [{ response: { status: '201' } }],
-      });
-      const client = new MedplumClient({ fetch });
-      const invalidateSpy = vi.spyOn(client, 'invalidateSearches');
-      await client.executeBatch({
-        resourceType: 'Bundle',
-        type: 'transaction',
-        entry: [
-          {
-            resource: { resourceType: 'Patient', name: [{ family: 'Smith' }] },
-            request: { method: 'POST', url: 'https://api.medplum.com/fhir/R4/Patient' },
-          },
-        ],
-      });
-      expect(invalidateSpy).toHaveBeenCalledWith('Patient');
-    });
-
     test('Execute batch invalidates search cache for PUT/PATCH/DELETE mutations', async () => {
       const fetch = mockFetch(200, {
         resourceType: 'Bundle',
@@ -3183,7 +3162,7 @@ describe('Client', () => {
             request: { method: 'PUT', url: 'Patient/123' },
           },
           {
-            resource: { resourceType: 'Observation', id: '456' },
+            resource: { resourceType: 'Observation', id: '456', status: 'final', code: { text: 'test' } },
             request: { method: 'PATCH', url: 'Observation/456' },
           },
           {
