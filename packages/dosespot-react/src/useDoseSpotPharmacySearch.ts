@@ -7,10 +7,11 @@ import { DOSESPOT_ADD_PATIENT_PHARMACY_BOT, DOSESPOT_SEARCH_PHARMACY_BOT } from 
 
 export type UseDoseSpotPharmacySearchReturn = UsePharmacySearchReturn;
 
+/* eslint-disable jsdoc/escape-inline-tags -- TSDoc cross-package {@link @package#symbol} references */
 /**
  * React hook that provides DoseSpot-specific pharmacy search and add-to-favorites functionality.
  *
- * Thin wrapper around the generic {@link usePharmacySearch} hook,
+ * Thin wrapper around the generic {@link @medplum/react-hooks#usePharmacySearch} hook,
  * pre-configured with DoseSpot bot identifiers.
  *
  * @returns An object with `searchPharmacies` and `addToFavorites` callbacks.
