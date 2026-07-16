@@ -110,3 +110,21 @@ const result = await medplum.executeBot(
 ```
 
 `register: true` enrolls the provider on SureScripts for electronic prescribing.
+
+---
+
+## Supporting (non-prescriber) users
+
+Staff users—MAs, care coordinators, and other non-prescribers—can be enrolled in ScriptSure using the same `scriptsure-provider-sync-bot` by passing `prescriber: false`. The bot creates the account with `userType: 'Staff'` and skips SureScripts registration.
+
+```typescript
+const result = await medplum.executeBot(
+  { system: 'https://www.medplum.com/bots', value: 'scriptsure-provider-sync-bot' },
+  { practitionerId: 'abc123', prescriber: false, activate: true }
+);
+// { status: 'created' | 'updated' | 'synced', scriptSureUserId: 55555 }
+```
+
+The bot still requires the user to be a `Practitioner` resource in Medplum with a `ProjectMembership` and an `email` telecom. NPI is not required for staff users—pass an empty string or omit it from the `Practitioner` resource.
+
+Staff users can search pharmacies and set a patient's preferred pharmacy. They cannot send prescriptions.
