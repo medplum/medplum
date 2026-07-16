@@ -15,11 +15,11 @@ import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import { usePharmacyDialog } from '../pharmacy/usePharmacyDialog';
+import { ScriptSureMessageTaskActions } from './ScriptSureMessageTaskActions';
+import { isScriptSureMessageTask } from './ScriptSureMessageTaskActions.utils';
 import classes from './TaskBoard.module.css';
 import { TaskInputNote } from './TaskInputNote';
 import { TaskProperties } from './TaskProperties';
-import { ScriptSureMessageTaskActions } from './ScriptSureMessageTaskActions';
-import { isScriptSureMessageTask } from './ScriptSureMessageTaskActions.utils';
 
 interface TaskDetailPanelProps {
   task: Task | Reference<Task>;

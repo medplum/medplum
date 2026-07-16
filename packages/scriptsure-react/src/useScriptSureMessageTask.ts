@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { isResource } from '@medplum/core';
 import type { Task } from '@medplum/fhirtypes';
-import { useCallback } from 'react';
 import { useMedplum } from '@medplum/react-hooks';
+import { useCallback } from 'react';
 import { SCRIPTSURE_MESSAGE_TASK_BOT } from './common';
 
 export type ScriptSureMessageTaskAction = 'launch' | 'reconcile' | 'acknowledge';
@@ -72,18 +72,9 @@ export function useScriptSureMessageTask(): UseScriptSureMessageTaskReturn {
     [medplum]
   );
 
-  const launch = useCallback(
-    (params: ScriptSureMessageTaskParams) => execute('launch', params),
-    [execute]
-  );
-  const reconcile = useCallback(
-    (params: ScriptSureMessageTaskParams) => execute('reconcile', params),
-    [execute]
-  );
-  const acknowledge = useCallback(
-    (params: ScriptSureMessageTaskParams) => execute('acknowledge', params),
-    [execute]
-  );
+  const launch = useCallback((params: ScriptSureMessageTaskParams) => execute('launch', params), [execute]);
+  const reconcile = useCallback((params: ScriptSureMessageTaskParams) => execute('reconcile', params), [execute]);
+  const acknowledge = useCallback((params: ScriptSureMessageTaskParams) => execute('acknowledge', params), [execute]);
 
   return { launch, reconcile, acknowledge };
 }

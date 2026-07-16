@@ -3,10 +3,7 @@
 import type { MedplumClient, WithId } from '@medplum/core';
 import { resolveId } from '@medplum/core';
 import type { Extension, MedicationRequest, Reference, Task, TaskOutput } from '@medplum/fhirtypes';
-import {
-  SCRIPTSURE_IFRAME_URL_EXTENSION,
-  SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION,
-} from '@medplum/scriptsure-react';
+import { SCRIPTSURE_IFRAME_URL_EXTENSION, SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION } from '@medplum/scriptsure-react';
 
 export const SCRIPTSURE_MESSAGE_TYPE_SYSTEM = 'https://scriptsure.com/message-type';
 export const SCRIPTSURE_REPLACEMENT_OUTPUT_SYSTEM = 'https://scriptsure.com/task-output';
@@ -97,8 +94,7 @@ function isReplacementOutput(output: TaskOutput): boolean {
   return (
     output.type?.coding?.some(
       (coding) =>
-        coding.system === SCRIPTSURE_REPLACEMENT_OUTPUT_SYSTEM &&
-        coding.code === SCRIPTSURE_REPLACEMENT_OUTPUT_CODE
+        coding.system === SCRIPTSURE_REPLACEMENT_OUTPUT_SYSTEM && coding.code === SCRIPTSURE_REPLACEMENT_OUTPUT_CODE
     ) ?? false
   );
 }
