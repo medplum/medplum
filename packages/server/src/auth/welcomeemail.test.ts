@@ -8,7 +8,14 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { sendEmail } from '../email/email';
 import type { SystemRepository } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { WELCOME_EMAIL_SUBJECT, buildWelcomeEmail, sendWelcomeEmail, welcomeEmailMarkdown } from './welcomeemail';
+import {
+  WELCOME_EMAIL_SUBJECT,
+  buildWelcomeEmail,
+  sendWelcomeEmail,
+  welcomeEmailHtml,
+  welcomeEmailMarkdown,
+  welcomeEmailText,
+} from './welcomeemail';
 
 vi.mock('../email/email');
 
@@ -16,6 +23,13 @@ const sendEmailMock = vi.mocked(sendEmail);
 
 // The repo is only forwarded to sendEmail (which is mocked), so a sentinel is fine.
 const systemRepo = { id: 'system' } as unknown as SystemRepository;
+
+const CTX = {
+  projectName: 'Hamilton Project',
+  firstName: 'Alexander',
+  appBaseUrl: 'https://app.example.com/',
+  supportEmail: 'support@example.com',
+} as const;
 
 function makeProject(overrides: Partial<Project> = {}): WithId<Project> {
   return { resourceType: 'Project', id: randomUUID(), name: 'Test Project', ...overrides };
@@ -43,12 +57,7 @@ describe('Welcome email', () => {
 
   describe('welcomeEmailMarkdown', () => {
     test('Includes project name and dynamic links', () => {
-      const body = welcomeEmailMarkdown({
-        projectName: 'Hamilton Project',
-        firstName: 'Alexander',
-        appBaseUrl: 'https://app.example.com/',
-        supportEmail: 'support@example.com',
-      });
+      const body = welcomeEmailMarkdown(CTX);
       expect(body).toContain('Hi Alexander');
       expect(body).toContain('Hamilton Project');
       expect(body).toContain('https://app.example.com/signin');
@@ -57,27 +66,52 @@ describe('Welcome email', () => {
     });
 
     test('Omits first name when not provided', () => {
-      const body = welcomeEmailMarkdown({
-        projectName: 'Hamilton Project',
-        appBaseUrl: 'https://app.example.com/',
-        supportEmail: 'support@example.com',
-      });
+      const body = welcomeEmailMarkdown({ ...CTX, firstName: undefined });
       // Clean greeting with no dangling name or stray whitespace.
       expect(body).not.toContain('undefined');
       expect(body.startsWith('Hi,\n')).toBe(true);
     });
   });
 
+  describe('welcomeEmailText', () => {
+    test('Strips bold markers and contains no markup', () => {
+      const text = welcomeEmailText(CTX);
+      expect(text).not.toContain('**');
+      expect(text).toContain('Your new project Hamilton Project is ready to go.');
+      expect(text).not.toContain('<');
+    });
+  });
+
+  describe('welcomeEmailHtml', () => {
+    test('Renders bold project name and nested lists', () => {
+      const html = welcomeEmailHtml(CTX);
+      expect(html).toContain('<strong>Hamilton Project</strong>');
+      // A nested list produces two <ul> elements (outer + nested).
+      expect((html.match(/<ul>/g) ?? []).length).toBe(2);
+      expect(html).not.toContain('**');
+    });
+
+    test('Auto-links URLs', () => {
+      const html = welcomeEmailHtml(CTX);
+      expect(html).toContain('href="https://app.example.com/signin"');
+      expect(html).toContain('href="https://discord.gg/medplum"');
+    });
+
+    test('Escapes HTML in free-form values to prevent injection', () => {
+      const html = welcomeEmailHtml({ ...CTX, projectName: '<script>alert(1)</script>' });
+      expect(html).not.toContain('<script>');
+      expect(html).toContain('&lt;script&gt;');
+    });
+  });
+
   describe('buildWelcomeEmail', () => {
-    test('Sets recipient, subject, and text body but no from address', () => {
-      const options = buildWelcomeEmail('alex@example.com', {
-        projectName: 'Hamilton Project',
-        appBaseUrl: 'https://app.example.com/',
-        supportEmail: 'support@example.com',
-      });
+    test('Sets recipient, subject, and both text and html parts', () => {
+      const options = buildWelcomeEmail('alex@example.com', CTX);
       expect(options.to).toBe('alex@example.com');
       expect(options.subject).toBe(WELCOME_EMAIL_SUBJECT);
       expect(options.text).toContain('Hamilton Project');
+      expect(options.text).not.toContain('**');
+      expect(options.html).toContain('<strong>Hamilton Project</strong>');
       // from is resolved by sendEmail from server settings, not set here.
       expect(options.from).toBeUndefined();
     });
@@ -97,8 +131,19 @@ describe('Welcome email', () => {
       expect(optionsArg.to).toBe('alex@example.com');
       expect(optionsArg.subject).toBe(WELCOME_EMAIL_SUBJECT);
       expect(optionsArg.text).toContain('Hamilton Project');
-      expect(optionsArg.text).toContain(getConfig().supportEmail);
       expect(optionsArg.text).toContain(`${getConfig().appBaseUrl}signin`);
+    });
+
+    test('Uses the bare support email address in the body, not the display-name form', async () => {
+      // Test config supportEmail is `"Medplum" <support@medplum.com>`.
+      const project = makeProject();
+      const user = makeUser();
+
+      await sendWelcomeEmail(systemRepo, project, user);
+
+      const text = sendEmailMock.mock.calls[0][1].text as string;
+      expect(text).toContain('support@medplum.com');
+      expect(text).not.toContain('"Medplum" <support@medplum.com>');
     });
 
     test('Falls back to a default project name when unnamed', async () => {

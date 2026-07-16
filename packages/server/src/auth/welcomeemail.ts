@@ -3,9 +3,11 @@
 import type { WithId } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { Project, User } from '@medplum/fhirtypes';
+import { marked } from 'marked';
 import type Mail from 'nodemailer/lib/mailer';
 import { getConfig } from '../config/loader';
 import { sendEmail } from '../email/email';
+import { extractEmailFromAddress } from '../email/utils';
 import type { SystemRepository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 
@@ -20,21 +22,21 @@ export interface WelcomeEmailContext {
   readonly firstName?: string;
   /** Base URL of the Medplum app, e.g. https://app.medplum.com/ */
   readonly appBaseUrl: string;
-  /** Support email address configured on the server (server setting `supportEmail`). */
+  /** Bare support email address, e.g. support@medplum.com (not the display-name form). */
   readonly supportEmail: string;
 }
 
 // ---------------------------------------------------------------------------
 // EMAIL COPY — edit freely below.
 //
-// This is the entire body of the welcome email. It is written as a Markdown
-// template literal so it is easy to edit and read. `${...}` placeholders are
-// filled in from the WelcomeEmailContext at send time.
+// This is the entire body of the welcome email, written as Markdown. It is the
+// single source of truth: it is rendered to HTML (for rich clients) and to
+// plain text (fallback / text-only clients), and both are sent together as a
+// multipart/alternative message.
 //
-// Note: emails are currently delivered as plain text (see buildWelcomeEmail
-// below), so Markdown syntax like **bold** or [links](url) will appear
-// literally in most email clients. Keep the formatting light, or see the
-// note in buildWelcomeEmail() for how to render Markdown to HTML.
+// Markdown works as expected: **bold**, nested "- " bullets (indent by two
+// spaces), and bare URLs/emails are auto-linked. Keep the formatting light —
+// email clients (Gmail, Outlook, Apple Mail) render inconsistently.
 // ---------------------------------------------------------------------------
 
 export const WELCOME_EMAIL_SUBJECT = 'Welcome to Medplum';
@@ -62,11 +64,55 @@ The Medplum Team
 }
 
 // ---------------------------------------------------------------------------
-// Delivery — you should rarely need to edit below this line.
+// Rendering & delivery — you should rarely need to edit below this line.
 // ---------------------------------------------------------------------------
 
 /**
+ * Escapes the HTML-significant characters so free-form values can't inject markup.
+ * @param value - The raw string to escape.
+ * @returns The HTML-escaped string.
+ */
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * Renders the welcome email as plain text.
+ * The Markdown source reads cleanly as text; we only strip the `**` bold markers
+ * so they don't show up as literal asterisks.
+ * @param ctx - Template context.
+ * @returns The plain-text email body.
+ */
+export function welcomeEmailText(ctx: WelcomeEmailContext): string {
+  return welcomeEmailMarkdown(ctx).replace(/\*\*/g, '');
+}
+
+/**
+ * Renders the welcome email as HTML.
+ *
+ * Free-form values (project name, first name) are HTML-escaped before Markdown
+ * rendering, since `marked` otherwise passes raw HTML through. Trusted config
+ * values (app URL, support email) are left as-is so they auto-link.
+ * @param ctx - Template context.
+ * @returns The HTML email body wrapped in a minimal inline-styled container.
+ */
+export function welcomeEmailHtml(ctx: WelcomeEmailContext): string {
+  const safeCtx: WelcomeEmailContext = {
+    ...ctx,
+    projectName: escapeHtml(ctx.projectName),
+    firstName: ctx.firstName ? escapeHtml(ctx.firstName) : undefined,
+  };
+  const body = marked.parse(welcomeEmailMarkdown(safeCtx), { gfm: true, breaks: true, async: false });
+  // Inline styles only — many email clients strip <head>/<style>. Keep it minimal.
+  return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto;">${body}</div>`;
+}
+
+/**
  * Builds the nodemailer options for the welcome email.
+ *
+ * Both `text` and `html` are set so nodemailer sends a multipart/alternative
+ * message: rich clients show the HTML, text-only clients (and spam filters) get
+ * the plain-text part.
  *
  * The `from` address is intentionally NOT set here: `sendEmail` resolves it
  * from server settings (`supportEmail` / `approvedSenderEmails`) and any
@@ -80,9 +126,8 @@ export function buildWelcomeEmail(to: string, ctx: WelcomeEmailContext): Mail.Op
   return {
     to,
     subject: WELCOME_EMAIL_SUBJECT,
-    text: welcomeEmailMarkdown(ctx),
-    // To send rich HTML instead, add a Markdown renderer (e.g. `marked`) and set:
-    //   html: marked.parse(welcomeEmailMarkdown(ctx)),
+    text: welcomeEmailText(ctx),
+    html: welcomeEmailHtml(ctx),
   };
 }
 
@@ -106,11 +151,14 @@ export async function sendWelcomeEmail(
   }
 
   const config = getConfig();
+  // config.supportEmail may be in display-name form (`"Medplum" <support@medplum.com>`);
+  // use the bare address for the body copy.
+  const supportEmail = extractEmailFromAddress(config.supportEmail) ?? config.supportEmail;
   const options = buildWelcomeEmail(user.email, {
     projectName: project.name ?? 'your project',
     firstName: user.firstName,
     appBaseUrl: config.appBaseUrl,
-    supportEmail: config.supportEmail,
+    supportEmail,
   });
 
   try {
