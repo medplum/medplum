@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  Anchor,
   Badge,
   Box,
   Button,
@@ -265,9 +266,21 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
           <Box pt="md">
             {!benefitsLoading && !eligibilityResponse && (
               <Text size="sm" c="dimmed">
-                {eligibilityBot
-                  ? 'No eligibility check found. Click "Check Eligibility" to run a check.'
-                  : 'No eligibility check found. Contact support to enable eligibility checks.'}
+                {eligibilityBot ? (
+                  'No eligibility check found. Click "Check Eligibility" to run a check.'
+                ) : (
+                  <>
+                    No eligibility check found. Contact support to enable eligibility checks, or{' '}
+                    <Anchor
+                      href="https://www.medplum.com/docs/integration/stedi/insurance-eligibility/eligibility-checks"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      learn about insurance eligibility
+                    </Anchor>
+                    .
+                  </>
+                )}
               </Text>
             )}
             {!benefitsLoading && eligibilityResponse?.outcome === 'error' && (
