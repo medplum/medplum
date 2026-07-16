@@ -265,7 +265,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body?.issue?.[0]?.details?.text).toBe('Operation requires "Prefer: respond-async"');
     expect(mockRebuildR4ValueSets).not.toHaveBeenCalled();
   });
@@ -278,7 +278,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(mockRebuildR4ValueSets).toHaveBeenCalledTimes(1);
@@ -292,7 +292,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
     expect(mockRebuildR4ValueSets).not.toHaveBeenCalled();
   });
 
@@ -303,7 +303,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
     expect(mockRebuildR4StructureDefinitions).not.toHaveBeenCalled();
   });
@@ -316,7 +316,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledTimes(1);
@@ -334,7 +334,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(job.status).toStrictEqual('error');
     expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledTimes(1);
@@ -348,7 +348,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
     expect(mockRebuildR4StructureDefinitions).not.toHaveBeenCalled();
   });
 
@@ -359,7 +359,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
     expect(mockRebuildR4SearchParameters).not.toHaveBeenCalled();
   });
@@ -372,7 +372,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(mockRebuildR4SearchParameters).toHaveBeenCalledTimes(1);
@@ -390,7 +390,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(job.status).toStrictEqual('error');
     expect(mockRebuildR4SearchParameters).toHaveBeenCalledTimes(1);
@@ -404,7 +404,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
     expect(mockRebuildR4SearchParameters).not.toHaveBeenCalled();
   });
 
@@ -417,7 +417,7 @@ describe('Super Admin routes', () => {
         resourceType: 'PaymentNotice',
       });
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Reindex require async', async () => {
@@ -429,7 +429,7 @@ describe('Super Admin routes', () => {
         resourceType: 'PaymentNotice',
       });
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
@@ -442,7 +442,7 @@ describe('Super Admin routes', () => {
         resourceType: 'XYZ',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test.each([
@@ -464,7 +464,7 @@ describe('Super Admin routes', () => {
         maxResourceVersion,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -499,7 +499,7 @@ describe('Super Admin routes', () => {
         maxResourceVersion,
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe(expectedError);
   });
 
@@ -517,7 +517,7 @@ describe('Super Admin routes', () => {
         reindexType: 'outdated',
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -548,7 +548,7 @@ describe('Super Admin routes', () => {
         maxIterationAttempts: 5,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -578,7 +578,7 @@ describe('Super Admin routes', () => {
         reindexType: 'outdated',
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -610,7 +610,7 @@ describe('Super Admin routes', () => {
         delayBetweenBatches: 1000,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -658,7 +658,7 @@ describe('Super Admin routes', () => {
         [paramName]: paramValue,
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe(expectedError);
     expect(queue.add).not.toHaveBeenCalled();
   });
@@ -691,7 +691,7 @@ describe('Super Admin routes', () => {
         [paramName]: paramValue,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -718,7 +718,7 @@ describe('Super Admin routes', () => {
         delayBetweenBatches: 0,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -754,7 +754,7 @@ describe('Super Admin routes', () => {
 
       const afterTime = Date.now();
 
-      expect(res.status).toStrictEqual(202);
+      expect(res).toHaveStatus(202);
       expect(res.headers['content-location']).toBeDefined();
 
       // endTimestampBufferMinutes is consumed to calculate endTimestamp, not stored directly
@@ -777,7 +777,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
@@ -796,7 +796,7 @@ describe('Super Admin routes', () => {
         dryRun: false,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'LambdaCleanerJob',
@@ -825,7 +825,7 @@ describe('Super Admin routes', () => {
         deleteConcurrency: 0,
       });
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(queue.add).not.toHaveBeenCalled();
   });
 
@@ -839,7 +839,7 @@ describe('Super Admin routes', () => {
         password: 'password123',
       });
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Set password missing password', async () => {
@@ -852,7 +852,7 @@ describe('Super Admin routes', () => {
         password: '',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 8 characters');
   });
 
@@ -866,7 +866,7 @@ describe('Super Admin routes', () => {
         password: 'password123',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
@@ -892,7 +892,7 @@ describe('Super Admin routes', () => {
         password: 'new-password!@#',
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Purge access denied', async () => {
@@ -905,7 +905,7 @@ describe('Super Admin routes', () => {
         before: '2020-01-01',
       });
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Purge invalid resource type', async () => {
@@ -918,7 +918,7 @@ describe('Super Admin routes', () => {
         before: '2020-01-01',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid resource type');
   });
 
@@ -932,7 +932,7 @@ describe('Super Admin routes', () => {
         before: '2020-01-01',
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Remove Bot Id from Jobs Queue access denied', async () => {
@@ -944,7 +944,7 @@ describe('Super Admin routes', () => {
         botId: 'testBotId',
       });
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Remove Bot Id from Jobs Queue success', async () => {
@@ -956,7 +956,7 @@ describe('Super Admin routes', () => {
         botId: 'TestBotId',
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Remove Bot Id from Jobs Queue missing bot id', async () => {
@@ -968,7 +968,7 @@ describe('Super Admin routes', () => {
         botId: '',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Rebuild projectId as super admin with respond-async', async () => {
@@ -979,7 +979,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res1.status).toStrictEqual(202);
+    expect(res1).toHaveStatus(202);
     expect(res1.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
   });
@@ -994,7 +994,7 @@ describe('Super Admin routes', () => {
         postDeployMigrations: [1, 2, 3],
         pendingPostDeployMigration: 0,
       });
-      expect(res1.status).toStrictEqual(200);
+      expect(res1).toHaveStatus(200);
     });
   });
 
@@ -1008,7 +1008,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation', settings: { autovacuum_analyze_scale_factor: 0.005 } });
 
-      expect(res1.status).toStrictEqual(200);
+      expect(res1).toHaveStatus(200);
       expect(res1.body).toMatchObject(allOk);
 
       expect(mockPgMaintenanceQueries).toContain(
@@ -1033,7 +1033,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ settings: { autovacuum_analyze_scale_factor: 0.005 } });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject(badRequest('Table name must be a string'));
 
       expect(infoSpy).not.toHaveBeenCalled();
@@ -1049,7 +1049,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation' });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject({
         resourceType: 'OperationOutcome',
         issue: [
@@ -1085,7 +1085,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation', settings: { autovacuum_analyze_scale: 0.005 } });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject({
         resourceType: 'OperationOutcome',
         issue: [
@@ -1113,7 +1113,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation', settings: { autovacuum_analyze_threshold: 0.005 } });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject(badRequest('settings.autovacuum_analyze_threshold must be an integer value'));
 
       expect(infoSpy).not.toHaveBeenCalled();
@@ -1129,7 +1129,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation', settings: { autovacuum_analyze_scale_factor: 'testing' } });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject(badRequest('settings.autovacuum_analyze_scale_factor must be a float value'));
 
       expect(infoSpy).not.toHaveBeenCalled();
@@ -1148,7 +1148,7 @@ describe('Super Admin routes', () => {
           settings: { autovacuum_analyze_scale_factor: 0.005, autovacuum_vacuum_scale_factor: 0.01 },
         });
 
-      expect(res1.status).toStrictEqual(200);
+      expect(res1).toHaveStatus(200);
       expect(res1.body).toMatchObject(allOk);
 
       expect(mockPgMaintenanceQueries).toContain(
@@ -1176,7 +1176,7 @@ describe('Super Admin routes', () => {
           settings: { autovacuum_analyze_scale_factor: 0.005, autovacuum_vacuum_scale: 0.01 },
         });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject(badRequest('autovacuum_vacuum_scale is not a valid table setting'));
 
       expect(infoSpy).not.toHaveBeenCalled();
@@ -1194,7 +1194,7 @@ describe('Super Admin routes', () => {
         .set('Prefer', 'respond-async')
         .type('json');
 
-      expect(res1.status).toStrictEqual(202);
+      expect(res1).toHaveStatus(202);
       expect(res1.headers['content-location']).toBeDefined();
       const asyncJob = await waitForAsyncJob(
         res1.headers['content-location'],
@@ -1227,7 +1227,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation History', settings: { autovacuum_analyze_scale_factor: 0.005 } });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject(badRequest('Table name must be a snake_cased_string'));
 
       expect(infoSpy).not.toHaveBeenCalled();
@@ -1244,7 +1244,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 'Observation_History'] });
 
-      expect(res1.status).toStrictEqual(202);
+      expect(res1).toHaveStatus(202);
       expect(res1.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
@@ -1269,7 +1269,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 'Observation_History'], analyze: true });
 
-      expect(res1.status).toStrictEqual(202);
+      expect(res1).toHaveStatus(202);
       expect(res1.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
@@ -1294,7 +1294,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 'Observation_History'], analyze: true, vacuum: false });
 
-      expect(res1.status).toStrictEqual(202);
+      expect(res1).toHaveStatus(202);
       expect(res1.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
@@ -1317,7 +1317,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 'Observation_History'], analyze: false, vacuum: false });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
     });
 
     test('Vacuum -- Non-string table names', async () => {
@@ -1330,7 +1330,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 123] });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.headers['content-location']).not.toBeDefined();
       expect(res1.body).toMatchObject(badRequest('Table name(s) must be a string'));
 
@@ -1348,7 +1348,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 'Observation History'] });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.headers['content-location']).not.toBeDefined();
       expect(res1.body).toMatchObject(badRequest('Table name(s) must be a snake_cased_string'));
 
@@ -1366,7 +1366,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: ['Observation', 123] }); // should be tableNames
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.headers['content-location']).not.toBeDefined();
       expect(res1.body).toMatchObject(badRequest('Unknown field(s)'));
 
@@ -1380,7 +1380,7 @@ describe('Super Admin routes', () => {
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json');
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.headers['content-location']).not.toBeDefined();
       expect(res1.body).toMatchObject(badRequest('Operation requires "Prefer: respond-async"'));
     });
@@ -1397,7 +1397,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ resourceType: 'Bot', cronString: '*/20 * * * *' } satisfies Bot);
 
-      expect(res1.status).toStrictEqual(201);
+      expect(res1).toHaveStatus(201);
       expect(res1.body).toBeDefined();
 
       const bot = res1.body as Bot & { id: string };
@@ -1411,7 +1411,7 @@ describe('Super Admin routes', () => {
         .set('Prefer', 'respond-async')
         .type('json');
 
-      expect(res2.status).toStrictEqual(202);
+      expect(res2).toHaveStatus(202);
       expect(res2.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res2.headers['content-location'], app, adminAccessToken);
 

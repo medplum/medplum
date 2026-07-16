@@ -59,7 +59,7 @@ describe('Project clone', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Success', async () => {
@@ -92,7 +92,7 @@ describe('Project clone', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const newProjectId = res.body.id;
     expect(newProjectId).toBeDefined();
@@ -135,7 +135,7 @@ describe('Project clone', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ name: newProjectName });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const newProjectId = res.body.id;
     const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
@@ -185,7 +185,7 @@ describe('Project clone', () => {
     const login = await globalSystemRepo.readResource<Login>('Login', res1.body.login);
     const user = await globalSystemRepo.readReference<User>(login.user as Reference<User>);
 
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     const { project } = await withTestContext(() => createProject('Test Project Name', user));
     const newProjectName = 'A New Name for a cloned project';
     expect(project).toBeDefined();
@@ -199,7 +199,7 @@ describe('Project clone', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ name: newProjectName });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const systemRepo = await getProjectSystemRepo(project);
     const ClientApplicationBundle = await systemRepo.search({
@@ -231,7 +231,7 @@ describe('Project clone', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ resourceTypes });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const newProjectId = res.body.id;
     const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
@@ -268,7 +268,7 @@ describe('Project clone', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ includeIds });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const newProjectId = res.body.id;
     const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
@@ -305,7 +305,7 @@ describe('Project clone', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ excludeIds });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const newProjectId = res.body.id;
     const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
@@ -362,7 +362,7 @@ describe('Project clone', () => {
         .set('Content-Type', ContentType.FHIR_JSON)
         .set('X-Medplum', 'extended')
         .send({});
-      expect(res.status).toBe(201);
+      expect(res).toHaveStatus(201);
 
       const newProjectId = res.body.id;
       expect(newProjectId).toBeDefined();

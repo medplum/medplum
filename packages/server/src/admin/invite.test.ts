@@ -98,7 +98,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
       });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.invitedBy).toMatchObject(createReference(aliceUser));
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
@@ -154,7 +154,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
       });
 
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
@@ -196,7 +196,7 @@ describe('Admin Invite', () => {
         name: [{ given: ['Bob'], family: 'Jones' }],
         telecom: [{ system: 'email', value: bobEmail }],
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.id).toBeDefined();
 
     // Third, Alice invites Bob to the project
@@ -212,7 +212,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
       });
 
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
     const rows = await new SelectQuery('User')
@@ -245,7 +245,7 @@ describe('Admin Invite', () => {
         resourceType: 'Practitioner',
         name: [{ given: ['Bob'], family: 'Jones' }],
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.id).toBeDefined();
 
     // Third, Alice invites Bob to the project
@@ -264,7 +264,7 @@ describe('Admin Invite', () => {
         },
       });
 
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
     const rows = await new SelectQuery('User')
@@ -303,7 +303,7 @@ describe('Admin Invite', () => {
         email: `carol${randomUUID()}@example.com`,
       });
 
-    expect(res3.status).toBe(403);
+    expect(res3).toHaveStatus(403);
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
@@ -333,7 +333,7 @@ describe('Admin Invite', () => {
         email: '',
       });
 
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue).toBeDefined();
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
@@ -364,7 +364,7 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
@@ -396,7 +396,7 @@ describe('Admin Invite', () => {
         externalId: bobSub,
       });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.profile.reference).toContain('Patient/');
     expect(res2.body.admin).toBe(undefined);
     expect(mockSESv2Client.send.callCount).toBe(0);
@@ -433,7 +433,7 @@ describe('Admin Invite', () => {
         externalId: bobSub,
       });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Third, Alice tries to invite Carol to the project with the same externalId
     // This should fail
@@ -448,7 +448,7 @@ describe('Admin Invite', () => {
         externalId: carolSub,
       });
 
-    expect(res3.status).toBe(409);
+    expect(res3).toHaveStatus(409);
     expect(res3.body.issue[0].details.text).toMatch(/already exists/);
   });
 
@@ -475,7 +475,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         externalId: bobSub,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.profile.reference).toContain('Patient/');
 
     // Delete the ProjectMembership
@@ -485,7 +485,7 @@ describe('Admin Invite', () => {
       .delete('/fhir/R4/ProjectMembership/' + res2.body.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     // Alice invites Bob to the project again
     // Make sure that we can reuse the same externalId
@@ -498,7 +498,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         externalId: bobSub,
       });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body.profile.reference).toContain('Patient/');
   });
 
@@ -518,7 +518,7 @@ describe('Admin Invite', () => {
     const res2 = await request(app)
       .get('/fhir/R4/ProjectMembership?profile=' + getReferenceString(client))
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const clientMembership = res2.body.entry.find(
       (e: BundleEntry<ProjectMembership>) => e.resource?.profile?.reference === getReferenceString(client)
@@ -529,7 +529,7 @@ describe('Admin Invite', () => {
     const res4 = await request(app)
       .get('/admin/projects/' + project.id + '/members/' + clientMembership.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
 
     // Promote the client to admin
     const res7 = await request(app)
@@ -540,7 +540,7 @@ describe('Admin Invite', () => {
         ...res4.body,
         admin: true,
       });
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
 
     // Call the invite endpoint as the client
     const bobEmail = `bob${randomUUID()}@example.com`;
@@ -554,7 +554,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: bobEmail,
       });
-    expect(res8.status).toBe(200);
+    expect(res8).toHaveStatus(200);
     expect(res8.body.profile.reference).toContain('Patient/');
   });
 
@@ -582,7 +582,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
         admin: true,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.admin).toBe(true);
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
@@ -618,7 +618,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
         admin: false,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.admin).toBe(false);
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
@@ -649,7 +649,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: bobEmail,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(res2.body.issue?.[0].details.text).toBe('Could not send email. Make sure you have AWS SES set up.');
   });
@@ -678,7 +678,7 @@ describe('Admin Invite', () => {
         email: `bob${randomUUID()}@example.com`,
         sendEmail: false,
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect((res.body as ProjectMembership).project?.reference).toBe(getReferenceString(aliceRegistration.project));
   });
 
@@ -707,7 +707,7 @@ describe('Admin Invite', () => {
         email: upperBobEmail,
       });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.user.display).toBe(lowerBobEmail);
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
@@ -742,7 +742,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: bobEmail,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toBe('ProjectMembership');
 
     // Invite Bob second time - should fail
@@ -755,7 +755,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: bobEmail,
       });
-    expect(res3.status).toBe(409);
+    expect(res3).toHaveStatus(409);
     expect(normalizeErrorString(res3.body)).toStrictEqual('User is already a member of this project');
 
     // Invite Bob third time with "upsert = true" - should succeed
@@ -769,7 +769,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
         upsert: true,
       });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body.resourceType).toBe('ProjectMembership');
     expect(res4.body.id).toStrictEqual(res2.body.id);
     expect(res4.body.invitedBy).toBeDefined();
@@ -786,7 +786,7 @@ describe('Admin Invite', () => {
         upsert: true,
         membership: { profile: createReference(profile) },
       });
-    expect(res5.status).toBe(409);
+    expect(res5).toHaveStatus(409);
     expect(normalizeErrorString(res5.body)).toStrictEqual(
       'User is already a member of this project with a different profile'
     );
@@ -802,7 +802,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
         forceNewMembership: true,
       });
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     expect(res6.body.resourceType).toBe('ProjectMembership');
     expect(res6.body.id).not.toStrictEqual(res2.body.id);
   });
@@ -829,7 +829,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: bobEmail,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toBe('ProjectMembership');
 
     // Invite Bob second time as project scoped user - should fail
@@ -843,7 +843,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
         scope: 'project',
       });
-    expect(res3.status).toBe(409);
+    expect(res3).toHaveStatus(409);
     expect(normalizeErrorString(res3.body)).toStrictEqual('User is already a member of this project');
   });
 
@@ -870,7 +870,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
         scope: 'project',
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toBe('ProjectMembership');
 
     // Invite Bob second time as server-scoped user - should fail
@@ -883,7 +883,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: bobEmail,
       });
-    expect(res3.status).toBe(409);
+    expect(res3).toHaveStatus(409);
     expect(normalizeErrorString(res3.body)).toStrictEqual('User is already a member of this project');
   });
 
@@ -909,7 +909,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: bobEmail,
       });
-    expect(resBob1.status).toBe(200);
+    expect(resBob1).toHaveStatus(200);
     expect(resBob1.body.resourceType).toBe('ProjectMembership');
 
     const resBob2 = await request(app)
@@ -922,7 +922,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
         forceNewMembership: true,
       });
-    expect(resBob2.status).toBe(200);
+    expect(resBob2).toHaveStatus(200);
     expect(resBob2.body.resourceType).toBe('ProjectMembership');
     expect(resBob2.body.id).not.toStrictEqual(resBob1.body.id);
 
@@ -937,7 +937,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: jackEmail,
       });
-    expect(resJack1.status).toBe(200);
+    expect(resJack1).toHaveStatus(200);
     expect(resJack1.body.resourceType).toBe('ProjectMembership');
 
     const resJack2 = await request(app)
@@ -950,7 +950,7 @@ describe('Admin Invite', () => {
         email: jackEmail,
         forceNewMembership: true,
       });
-    expect(resJack2.status).toBe(200);
+    expect(resJack2).toHaveStatus(200);
     expect(resJack2.body.resourceType).toBe('ProjectMembership');
     expect(resJack2.body.id).not.toStrictEqual(resJack1.body.id);
 
@@ -966,7 +966,7 @@ describe('Admin Invite', () => {
         email: jillEmail,
         scope: 'project',
       });
-    expect(resJill1.status).toBe(200);
+    expect(resJill1).toHaveStatus(200);
     expect(resJill1.body.resourceType).toBe('ProjectMembership');
 
     const resJill2 = await request(app)
@@ -980,7 +980,7 @@ describe('Admin Invite', () => {
         scope: 'project',
         forceNewMembership: true,
       });
-    expect(resJill2.status).toBe(200);
+    expect(resJill2).toHaveStatus(200);
     expect(resJill2.body.resourceType).toBe('ProjectMembership');
     expect(resJill2.body.id).not.toStrictEqual(resJill1.body.id);
 
@@ -995,7 +995,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: camEmail,
       });
-    expect(resCam1.status).toBe(200);
+    expect(resCam1).toHaveStatus(200);
     expect(resCam1.body.resourceType).toBe('ProjectMembership');
 
     const resCam2 = await request(app)
@@ -1009,7 +1009,7 @@ describe('Admin Invite', () => {
         scope: 'project',
         forceNewMembership: true,
       });
-    expect(resCam2.status).toBe(200);
+    expect(resCam2).toHaveStatus(200);
     expect(resCam2.body.resourceType).toBe('ProjectMembership');
     expect(resCam2.body.id).not.toStrictEqual(resCam1.body.id);
 
@@ -1024,7 +1024,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: tomEmail,
       });
-    expect(resTom1.status).toBe(200);
+    expect(resTom1).toHaveStatus(200);
     expect(resTom1.body.resourceType).toBe('ProjectMembership');
 
     const resTom2 = await request(app)
@@ -1038,7 +1038,7 @@ describe('Admin Invite', () => {
         scope: 'project',
         forceNewMembership: true,
       });
-    expect(resTom2.status).toBe(200);
+    expect(resTom2).toHaveStatus(200);
     expect(resTom2.body.resourceType).toBe('ProjectMembership');
     expect(resTom2.body.id).not.toStrictEqual(resTom1.body.id);
   });
@@ -1067,11 +1067,11 @@ describe('Admin Invite', () => {
         scope: 'project',
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const res2 = await request(app)
       .get('/fhir/R4/User?email=' + bobEmail)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     const user = res2.body.entry[0].resource;
     expect(user.resourceType).toBe('User');
     expect(user.project.reference).toBe(getReferenceString(project));
@@ -1101,11 +1101,11 @@ describe('Admin Invite', () => {
         scope: 'server',
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const res2 = await request(app)
       .get('/fhir/R4/User?email=' + bobEmail)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toBe('Bundle');
     expect(res2.body.entry).toBeUndefined();
   });
@@ -1135,7 +1135,7 @@ describe('Admin Invite', () => {
         mfaRequired: true,
       });
 
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
@@ -1161,7 +1161,7 @@ describe('Admin Invite', () => {
       secret: setPasswordSecret,
       password: bobPassword,
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toMatchObject(allOk);
 
     // Start new login
@@ -1170,7 +1170,7 @@ describe('Admin Invite', () => {
       password: bobPassword,
       scope: 'openid',
     });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.login).toBeDefined();
     expect(res3.body.mfaEnrollRequired).toBe(true);
     expect(res3.body.enrollUri).toBeDefined();
@@ -1184,7 +1184,7 @@ describe('Admin Invite', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ login: res3.body.login, token: 'invalid' });
-    expect(res4.status).toBe(400);
+    expect(res4).toHaveStatus(400);
     expect(res4.body.issue[0].details.text).toBe('Invalid MFA token');
 
     // Enroll with actual token, should succeed
@@ -1193,7 +1193,7 @@ describe('Admin Invite', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ login: res3.body.login, token: authenticator.generate(secret) });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     expect(res5.body.login).toBeDefined();
     expect(res5.body.code).toBeDefined();
 
@@ -1203,7 +1203,7 @@ describe('Admin Invite', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ login: res3.body.login, token: authenticator.generate(secret) });
-    expect(res6.status).toBe(400);
+    expect(res6).toHaveStatus(400);
     expect(res6.body.issue[0].details.text).toBe('Already enrolled');
   });
 
@@ -1227,7 +1227,7 @@ describe('Admin Invite', () => {
         resourceType: 'AccessPolicy',
         resource: [{ resourceType: 'Patient' }],
       });
-    expect(accessPolicyRes.status).toBe(201);
+    expect(accessPolicyRes).toHaveStatus(201);
     const accessPolicy = accessPolicyRes.body;
 
     // Invite Bob with the valid access policy
@@ -1244,7 +1244,7 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('ProjectMembership');
     expect(res.body.accessPolicy?.reference).toBe(getReferenceString(accessPolicy));
   });
@@ -1275,7 +1275,7 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue).toBeDefined();
     expect(normalizeErrorString(res.body)).toContain('Access policy');
     expect(normalizeErrorString(res.body)).toContain('does not exist');
@@ -1302,7 +1302,7 @@ describe('Admin Invite', () => {
         resourceType: 'AccessPolicy',
         resource: [{ resourceType: 'Patient' }],
       });
-    expect(accessPolicyRes.status).toBe(201);
+    expect(accessPolicyRes).toHaveStatus(201);
     const accessPolicy = accessPolicyRes.body;
 
     // Create second project with Bob
@@ -1330,7 +1330,7 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue).toBeDefined();
     expect(normalizeErrorString(res.body)).toContain('Access policy');
     expect(normalizeErrorString(res.body)).toContain('does not belong to this project');
@@ -1361,7 +1361,7 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('ProjectMembership');
   });
 
@@ -1385,7 +1385,7 @@ describe('Admin Invite', () => {
         resourceType: 'AccessPolicy',
         resource: [{ resourceType: 'Patient' }],
       });
-    expect(accessPolicyRes.status).toBe(201);
+    expect(accessPolicyRes).toHaveStatus(201);
     const validAccessPolicy = accessPolicyRes.body;
 
     // Try to invite with access array containing both valid and invalid policies
@@ -1406,7 +1406,7 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue).toBeDefined();
     expect(normalizeErrorString(res.body)).toContain('Access policy');
     expect(normalizeErrorString(res.body)).toContain('does not exist');
@@ -1440,7 +1440,7 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue).toBeDefined();
     expect(normalizeErrorString(res.body)).toContain('Access policy');
     expect(normalizeErrorString(res.body)).toContain('does not exist');
@@ -1470,14 +1470,14 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('ProjectMembership');
 
     // Server-scoped user should NOT be visible from the project context
     const res2 = await request(app)
       .get('/fhir/R4/User?email=' + bobEmail)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toBe('Bundle');
     expect(res2.body.entry).toBeUndefined();
   });
@@ -1505,13 +1505,13 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     // Project-scoped user should be visible from the project context
     const res2 = await request(app)
       .get('/fhir/R4/User?email=' + bobEmail)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     const user = res2.body.entry[0].resource;
     expect(user.resourceType).toBe('User');
     expect(user.project?.reference).toBe(getReferenceString(project));
@@ -1541,7 +1541,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
         sendEmail: false,
       });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     // Invite Bob again as server-scoped Patient - should fail (different scope, same project)
     const res2 = await request(app)
@@ -1555,7 +1555,7 @@ describe('Admin Invite', () => {
         scope: 'server',
         sendEmail: false,
       });
-    expect(res2.status).toBe(409);
+    expect(res2).toHaveStatus(409);
     expect(normalizeErrorString(res2.body)).toStrictEqual('User is already a member of this project');
   });
 
@@ -1800,7 +1800,7 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.profile).toMatchObject(createReference(relatedPerson));
   });
 
@@ -1849,7 +1849,7 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
 
-    expect(res.status).toBe(412);
+    expect(res).toHaveStatus(412);
     expect(res.body.issue?.[0]?.code).toStrictEqual('multiple-matches');
   });
 
