@@ -40,6 +40,7 @@ import orderSetBundleData from '../../data/order-set-example-bundle.json';
 import patientBundleData from '../../data/patient-david-james-williams.json';
 import visitBundleData from '../../data/simple-initial-visit-bundle.json';
 import { showErrorNotification } from '../../utils/notifications';
+import { WorkflowDependenciesPanel } from '../../workflow/WorkflowDependenciesPanel';
 import classes from './GetStartedPage.module.css';
 
 export function GetStartedPage(): JSX.Element {
@@ -162,33 +163,38 @@ export function GetStartedPage(): JSX.Element {
   return (
     <Box className={classes.page} py="6rem">
       <Container size="md" className={classes.container}>
-        {/* Header */}
-        <Box mb="6rem">
-          <Title order={2} fw={800}>
-            Get Started with Medplum Provider
-          </Title>
-          <Text size="lg" mt=".25rem" className={classes.textSecondary}>
-            Below are our recommended first steps to get set up and familiar with the available features and workflows
-            in Provider. Please note: if you are using the free version of Provider, some services may not be
-            available—lab ordering, prescriptions, billing, and access to code systems (such as CPT and ICD-10) require
-            a paid plan.{' '}
-            <Text
-              component="a"
-              href="https://www.medplum.com/pricing"
-              target="_blank"
-              c="blue.6"
-              className={classes.link}
-              span
-            >
-              Subscribe
-            </Text>{' '}
-            or{' '}
-            <Text component="a" href="mailto:support@medplum.com" c="blue.6" className={classes.link} span>
-              contact us
-            </Text>{' '}
-            to integrate these services.
-          </Text>
-        </Box>
+        {/* Header, with the admin-only missing-dependencies banner above it. The banner lives in a
+            tight group so it never inherits the 6rem section rhythm; when it renders null (non-admin
+            or nothing missing) the Stack gap simply collapses, leaving the header spacing unchanged. */}
+        <Stack gap="2.5rem" mb="6rem">
+          <WorkflowDependenciesPanel />
+          <Box>
+            <Title order={2} fw={800}>
+              Get Started with Medplum Provider
+            </Title>
+            <Text size="lg" mt=".25rem" className={classes.textSecondary}>
+              Below are our recommended first steps to get set up and familiar with the available features and workflows
+              in Provider. Please note: if you are using the free version of Provider, some services may not be
+              available—lab ordering, prescriptions, billing, and access to code systems (such as CPT and ICD-10)
+              require a paid plan.{' '}
+              <Text
+                component="a"
+                href="https://www.medplum.com/pricing"
+                target="_blank"
+                c="blue.6"
+                className={classes.link}
+                span
+              >
+                Subscribe
+              </Text>{' '}
+              or{' '}
+              <Text component="a" href="mailto:support@medplum.com" c="blue.6" className={classes.link} span>
+                contact us
+              </Text>{' '}
+              to integrate these services.
+            </Text>
+          </Box>
+        </Stack>
 
         <Stack gap="6rem">
           {/* Sample Data */}
