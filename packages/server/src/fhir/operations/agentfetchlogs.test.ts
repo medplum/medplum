@@ -52,7 +52,7 @@ describe('Agent/$fetch-logs', () => {
 
     const responses = await Promise.all(promises);
     for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
-      expect(responses[i].status).toBe(201);
+      expect(responses[i]).toHaveStatus(201);
       agents[i] = responses[i].body;
     }
 
@@ -95,7 +95,7 @@ describe('Agent/$fetch-logs', () => {
       .get('/fhir/R4/Agent/$fetch-logs')
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<Parameters>;
 
     for (const agent of agents) {
@@ -130,7 +130,7 @@ describe('Agent/$fetch-logs', () => {
       .get(`/fhir/R4/Agent/${agents[0].id}/$fetch-logs`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const params = res.body as Parameters;
 
     expect(params).toMatchObject<Parameters>({
@@ -168,7 +168,7 @@ describe('Agent/$fetch-logs', () => {
       .query({ limit: 2, before: '2020-01-02T00:00:02.000Z' })
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const params = res.body as Parameters;
 
     expect(params).toMatchObject<Parameters>({
@@ -196,7 +196,7 @@ describe('Agent/$fetch-logs', () => {
       .query({ limit: 'true' })
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     const outcome = res.body as OperationOutcome;
 
     expect(outcome).toMatchObject(badRequest("Invalid value 'true' provided for integer parameter 'limit'"));

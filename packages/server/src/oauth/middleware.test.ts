@@ -41,7 +41,7 @@ describe('Auth middleware', () => {
     const res = await request(app)
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Login revoked', async () => {
@@ -71,81 +71,81 @@ describe('Auth middleware', () => {
     const res = await request(app)
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('No auth header', async () => {
     const res = await request(app).get('/fhir/R4/Patient');
     expect(res.header['www-authenticate']).toBe(`Bearer realm="${getConfig().baseUrl}"`);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('No auth header with magic param', async () => {
     const res = await request(app).get(`/fhir/R4/Patient?${PROMPT_BASIC_AUTH_PARAM}=1`);
     expect(res.header['www-authenticate']).toBe(`Basic realm="${getConfig().baseUrl}"`);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Unrecognized auth header', async () => {
     const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'foo');
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Unrecognized auth token type', async () => {
     const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'foo foo');
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Invalid bearer token', async () => {
     const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Bearer foo');
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
     expect(res.header['www-authenticate']).toBe(`Bearer realm="${getConfig().baseUrl}"`);
   });
 
   test('Basic auth empty string', async () => {
     const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Basic ');
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
     expect(res.header['www-authenticate']).toBe(`Basic realm="${getConfig().baseUrl}"`);
   });
 
   test('Basic auth malformed string', async () => {
     const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Basic foo');
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Basic auth empty username', async () => {
     const res = await request(app)
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Basic ' + Buffer.from(':' + client.secret).toString('base64'));
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Basic auth empty password', async () => {
     const res = await request(app)
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':').toString('base64'));
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Basic auth client not found', async () => {
     const res = await request(app)
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Basic ' + Buffer.from(randomUUID() + ':' + client.secret).toString('base64'));
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Basic auth wrong password', async () => {
     const res = await request(app)
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':wrong').toString('base64'));
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Basic auth success', async () => {
     const res = await request(app)
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Basic auth project', async () => {
@@ -162,7 +162,7 @@ describe('Auth middleware', () => {
           },
         ],
       });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     expect(res.body.meta).toBeDefined();
     expect(res.body.meta.project).toBeUndefined();
   });
@@ -182,7 +182,7 @@ describe('Auth middleware', () => {
           },
         ],
       });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     expect(res.body.meta).toBeDefined();
     expect(res.body.meta.project).toBeDefined();
   });
@@ -199,7 +199,7 @@ describe('Auth middleware', () => {
     const res = await request(app)
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Basic auth with inactive project membership', async () => {
@@ -207,7 +207,7 @@ describe('Auth middleware', () => {
     const res = await request(app)
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Basic auth with super admin client', async () => {
@@ -216,7 +216,7 @@ describe('Auth middleware', () => {
     const res = await request(app)
       .get(`/fhir/R4/Project?_total=accurate&_id=${project.id},${otherProject.id}`)
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.total).toBe(2);
   });
 });

@@ -6,10 +6,11 @@ import { SCRIPTSURE_IFRAME_BOT, SCRIPTSURE_PATIENT_SYNC_BOT } from './common';
 
 export type ScriptSureIFrameOptions = MedicationIFrameOptions;
 
+/* eslint-disable jsdoc/escape-inline-tags -- TSDoc cross-package {@link @package#symbol} references */
 /**
  * React hook that syncs a patient to ScriptSure and returns the iframe URL.
  *
- * Thin wrapper around the generic {@link useMedicationIFrame} hook,
+ * Thin wrapper around the generic {@link @medplum/react-hooks#useMedicationIFrame} hook,
  * pre-configured with ScriptSure bot identifiers.
  *
  * @param options - Configuration and callback options.

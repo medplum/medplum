@@ -54,7 +54,7 @@ describe('Okta SCIM Tests', () => {
     const res1 = await request(app)
       .get('/scim/v2/Users')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.Resources).not.toBeNull();
     expect(res1.body.schemas).toContain('urn:ietf:params:scim:api:messages:2.0:ListResponse');
     expect(res1.body.itemsPerPage).toBeDefined();
@@ -74,7 +74,7 @@ describe('Okta SCIM Tests', () => {
     const res2 = await request(app)
       .get(`/scim/v2/Users/${isvUserId}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.id).toBeDefined();
     expect(res2.body.name.familyName).toBeDefined();
     expect(res2.body.name.givenName).toBeDefined();
@@ -88,7 +88,7 @@ describe('Okta SCIM Tests', () => {
     const res3 = await request(app)
       .get('/scim/v2/Users?filter=' + encodeURIComponent('userName eq "abcdefgh@atko.com"'))
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.schemas).toContain('urn:ietf:params:scim:api:messages:2.0:ListResponse');
     expect(res3.body.totalResults).toBe(0);
 
@@ -97,7 +97,7 @@ describe('Okta SCIM Tests', () => {
     const res4 = await request(app)
       .get('/scim/v2/Users/invaliduserid')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(404);
+    expect(res4).toHaveStatus(404);
     expect(res4.body.detail).toBe('Not found');
     expect(res4.body.schemas).toContain('urn:ietf:params:scim:api:messages:2.0:Error');
 
@@ -106,7 +106,7 @@ describe('Okta SCIM Tests', () => {
     const res5 = await request(app)
       .get('/scim/v2/Users?filter=' + encodeURIComponent('userName eq "Runscope258Fuhpfuwaw309@atko.com"'))
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     expect(res5.body.schemas).toContain('urn:ietf:params:scim:api:messages:2.0:ListResponse');
     expect(res5.body.totalResults).toBe(0);
 
@@ -124,7 +124,7 @@ describe('Okta SCIM Tests', () => {
         displayName: 'Runscope258 Fuhpfuwaw309',
         active: true,
       });
-    expect(res6.status).toBe(201);
+    expect(res6).toHaveStatus(201);
     expect(res6.body.active).toBe(true);
     expect(res6.body.id).toBeDefined();
     expect(res6.body.name.familyName).toBe('Fuhpfuwaw309');
@@ -140,7 +140,7 @@ describe('Okta SCIM Tests', () => {
     const res7 = await request(app)
       .get(`/scim/v2/Users/${idUserOne}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
     expect(res7.body.userName).toBe('Runscope258Fuhpfuwaw309@atko.com');
     expect(res7.body.name.familyName).toBe('Fuhpfuwaw309');
     expect(res7.body.name.givenName).toBe('Runscope258');
@@ -160,7 +160,7 @@ describe('Okta SCIM Tests', () => {
         displayName: 'Runscope258 Fuhpfuwaw309',
         active: true,
       });
-    expect(res8.status).toBe(409);
+    expect(res8).toHaveStatus(409);
     expect(res8.body.detail).toBe('User is already a member of this project');
     expect(res8.body.schemas).toContain('urn:ietf:params:scim:api:messages:2.0:Error');
 
@@ -169,7 +169,7 @@ describe('Okta SCIM Tests', () => {
     const res9 = await request(app)
       .get('/scim/v2/Users?filter=' + encodeURIComponent('userName eq "RUNSCOPE258FUHPFUWAW309@ATKO.COM"'))
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res9.status).toBe(200);
+    expect(res9).toHaveStatus(200);
     expect(res9.body.schemas).toContain('urn:ietf:params:scim:api:messages:2.0:ListResponse');
     expect(res9.body.totalResults).toBe(1);
   });

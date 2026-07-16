@@ -31,6 +31,7 @@ import type {
   ResearchDefinition,
   ResourceType,
   ServiceRequest,
+  Subscription,
   User,
   UserConfiguration,
 } from '@medplum/fhirtypes';
@@ -391,9 +392,9 @@ describe('FHIR Repo', () => {
         layer: 'cache',
         operation: 'read',
         source: 'repo.getCacheEntries',
-        specialResourceTypes: expect.toEqualUnordered(['Project']),
-        otherResourceTypes: expect.toEqualUnordered(['Patient']),
-        resourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
+        specialResourceTypes: expect.toContainExactly(['Project']),
+        otherResourceTypes: expect.toContainExactly(['Patient']),
+        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
       })
     );
   });
@@ -417,9 +418,9 @@ describe('FHIR Repo', () => {
         layer: 'sql',
         operation: 'read',
         source: 'search.getSearchEntries',
-        specialResourceTypes: expect.toEqualUnordered(['Project']),
-        otherResourceTypes: expect.toEqualUnordered(['Patient']),
-        resourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
+        specialResourceTypes: expect.toContainExactly(['Project']),
+        otherResourceTypes: expect.toContainExactly(['Patient']),
+        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
       })
     );
   });
@@ -445,10 +446,10 @@ describe('FHIR Repo', () => {
       expect.objectContaining({
         scope: 'transaction',
         status: 'committed',
-        specialResourceTypes: expect.toEqualUnordered(['Project']),
-        otherResourceTypes: expect.toEqualUnordered(['Patient']),
-        readResourceTypes: expect.toEqualUnordered(['Patient', 'Project']),
-        writeResourceTypes: expect.toEqualUnordered([]),
+        specialResourceTypes: expect.toContainExactly(['Project']),
+        otherResourceTypes: expect.toContainExactly(['Patient']),
+        readResourceTypes: expect.toContainExactly(['Patient', 'Project']),
+        writeResourceTypes: expect.toContainExactly([]),
       })
     );
   });
@@ -541,8 +542,7 @@ describe('FHIR Repo', () => {
         meta: { profile: [profileUrl] },
         name: [{ given: ['Update1'], family: 'Update1' }],
       });
-      expect(patient1.meta?.profile).toStrictEqual(expect.arrayContaining([profileUrl]));
-      expect(patient1.meta?.profile?.length).toStrictEqual(1);
+      expect(patient1.meta?.profile).toContainExactly([profileUrl]);
 
       const patientWithoutProfile = { ...patient1 };
       delete (patientWithoutProfile.meta as any).profile;
@@ -1802,9 +1802,9 @@ describe('FHIR Repo', () => {
       expect(results).toHaveLength(0);
     }));
 
-  async function getProjectIdColumn(id: string): Promise<string | null> {
-    const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
-    return (await systemRepo.sqlRead(projectIdQuery, 'User', { mode: DatabaseMode.WRITER }))[0].projectId;
+  async function getProjectIdColumn(resourceType: ResourceType, id: string): Promise<string | null> {
+    const projectIdQuery = new SelectQuery(resourceType).column('projectId').where('id', '=', id);
+    return (await systemRepo.sqlRead(projectIdQuery, resourceType, { mode: DatabaseMode.WRITER }))[0].projectId;
   }
 
   test('Super admin can edit User.meta.project', async () =>
@@ -1819,7 +1819,7 @@ describe('FHIR Repo', () => {
         lastName: randomUUID(),
       });
       expect(user1.meta?.project).toStrictEqual(project.id);
-      expect(await getProjectIdColumn(user1.id)).toStrictEqual(project.id);
+      expect(await getProjectIdColumn('User', user1.id)).toStrictEqual(project.id);
 
       // Try to change the project as the normal user
       // Should silently fail, and preserve the meta.project
@@ -1828,7 +1828,7 @@ describe('FHIR Repo', () => {
         meta: { project: undefined },
       });
       expect(user2.meta?.project).toStrictEqual(project.id);
-      expect(await getProjectIdColumn(user2.id)).toStrictEqual(project.id);
+      expect(await getProjectIdColumn('User', user2.id)).toStrictEqual(project.id);
 
       // Now try to change the project as the super admin
       // Should succeed
@@ -1837,8 +1837,34 @@ describe('FHIR Repo', () => {
         meta: { project: undefined },
       });
       expect(user3.meta?.project).toBeUndefined();
-      expect(await getProjectIdColumn(user3.id)).toStrictEqual(systemResourceProjectId);
+      expect(await getProjectIdColumn('User', user3.id)).toStrictEqual(systemResourceProjectId);
     }));
+
+  test('Super admin can edit Subscription.meta.project', async () => {
+    const sub1 = await testProjectRepo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      reason: 'testing',
+      criteria: `NutritionOrder?identifier=${randomUUID()}`,
+      channel: { type: 'rest-hook', endpoint: 'https://example.com/hook' },
+    });
+    expect(sub1.meta?.project).toStrictEqual(testProject.id);
+    expect(await getProjectIdColumn('Subscription', sub1.id)).toStrictEqual(testProject.id);
+
+    const sub2 = await testProjectRepo.updateResource<Subscription>({
+      ...sub1,
+      meta: { project: undefined },
+    });
+    expect(sub2.meta?.project).toStrictEqual(testProject.id);
+    expect(await getProjectIdColumn('Subscription', sub2.id)).toStrictEqual(testProject.id);
+
+    const sub3 = await systemRepo.updateResource<Subscription>({
+      ...sub2,
+      meta: { project: undefined },
+    });
+    expect(sub3.meta?.project).toBeUndefined();
+    expect(await getProjectIdColumn('Subscription', sub3.id)).toStrictEqual(systemResourceProjectId);
+  });
 
   test('Async quota delay is applied after transaction commit', async () => {
     const { repo, project, client, login, membership } = await createTestProject({
@@ -2018,10 +2044,7 @@ describe('FHIR Repo', () => {
       });
 
       const projects = await repo.searchResources({ resourceType: 'Project' });
-      expect(projects.length).toStrictEqual(3);
-      expect(projects.map((p) => p.id)).toContain(project.id);
-      expect(projects.map((p) => p.id)).toContain(linkedProject.id);
-      expect(projects.map((p) => p.id)).toContain(r4ProjectId);
+      expect(projects.map((p) => p.id)).toContainExactly([project.id, linkedProject.id, r4ProjectId]);
 
       const patients = await repo.searchResources({ resourceType: 'Patient' });
       expect(patients.length).toStrictEqual(1);
@@ -2029,9 +2052,7 @@ describe('FHIR Repo', () => {
       expect(patients.map((p) => p.id)).not.toContain(linkedPatient.id);
 
       const orgs = await repo.searchResources({ resourceType: 'Organization' });
-      expect(orgs.length).toStrictEqual(2);
-      expect(orgs.map((p) => p.id)).toContain(org.id);
-      expect(orgs.map((p) => p.id)).toContain(linkedOrg.id);
+      expect(orgs.map((p) => p.id)).toContainExactly([org.id, linkedOrg.id]);
 
       // Regression: a non-exported resource in a linked project should not be
       // readable even when it is present in the Redis cache. Previously,

@@ -7,6 +7,10 @@
     border: 0.1px solid var(--mantine-color-gray-5);
     padding: 4px;
   }
+
+  & :global(.mantine-Badge-root) {
+    min-width: max-content;
+  }
 }
 
 .criticalRow {

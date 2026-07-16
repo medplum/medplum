@@ -23,13 +23,13 @@ describe('OAuth utils', () => {
 
   test('Success with SignInForm', async () => {
     const res = await request(app).get(`/auth/clientinfo/${client.id}`).type('json');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.welcomeString).toBe(client.signInForm?.welcomeString);
     expect(res.body.logo.url).toBe(client.signInForm?.logo?.url);
   });
 
   test('Invalid client', async () => {
     const res = await request(app).get(`/auth/clientinfo/INVALIDID`).type('json');
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 });
