@@ -20,7 +20,7 @@ import {
   preparePostDeployMigrationAsyncJob,
 } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
-import { getCacheRedis } from './redis';
+import { closeRedis, getCacheRedis, initRedis } from './redis';
 import * as seedModule from './seed';
 import { deleteRedisKeys, withTestContext } from './test.setup';
 
@@ -69,13 +69,15 @@ describe('Seed', () => {
     // asynchronously. Instead, run them synchronously below.
     config.database.disableRunPostDeployMigrations = true;
 
+    // Delete all cache Redis keys to ensure a clean slate since the cache may be out of
+    // sync with the database, e.g. if postgres/init_test.sql or something similar was run beforehand.
+    // On CI/CD this is effectively a noop since a fresh Redis server is used for each test run
+    await initRedis(config);
+    await deleteRedisKeys(getCacheRedis(), '');
+    await closeRedis();
+
     globalLogger.write(`${new Date().toISOString()} - Initializing app services`);
     await initAppServices(config);
-
-    // Delete all cache Redis keys to ensure a clean slate since the cache may be out of
-    // sync with the database, e.g. if postgres/init_test.sql was. On CI/CD this will effectively
-    // be a noop since a fresh Redis server is used for each test run
-    await deleteRedisKeys(getCacheRedis(), '');
 
     const repo = getGlobalSystemRepo();
     // Run post-deploy migrations synchronously
