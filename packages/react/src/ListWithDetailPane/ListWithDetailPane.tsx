@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Center, Divider, Flex, Group, Pagination, ScrollArea, Stack, Tabs, Text } from '@mantine/core';
+import { Box, Center, Divider, Flex, Group, Pagination, ScrollArea, Stack, Tabs, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import cx from 'clsx';
@@ -189,9 +189,9 @@ export function ListWithDetailPane<T extends { id: string } = WithId<Resource>>(
         )}
       </Flex>
       {selected === undefined ? (
-        <Flex direction="column" style={{ flex: 1 }} h="100%">
+        <Box flex={1} h="100%">
           {emptyDetail ?? <DefaultEmptyDetail />}
-        </Flex>
+        </Box>
       ) : (
         renderDetail(selected, { refresh })
       )}

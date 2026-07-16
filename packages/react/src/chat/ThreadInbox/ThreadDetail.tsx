@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Divider, Flex, Menu, Paper, ScrollArea, Stack, Text } from '@mantine/core';
+import { Box, Button, Divider, Flex, Menu, Paper, ScrollArea, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
@@ -84,11 +84,11 @@ export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
 
       {/* Right sidebar - Patient summary */}
       {thread.subject && showPatientSummary && (
-        <Flex direction="column" w={300} h="100%">
+        <Box w={300} h="100%">
           <ScrollArea p={0} h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
             <PatientSummary key={thread.id} patient={thread.subject as Reference<Patient>} sections={sections} />
           </ScrollArea>
-        </Flex>
+        </Box>
       )}
     </>
   );
