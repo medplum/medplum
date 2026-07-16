@@ -3,16 +3,13 @@
 import { badRequest, Operator } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { pwnedPassword } from 'hibp';
 import request from 'supertest';
-import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { setupRecaptchaMock } from '../test.setup';
 
-vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
@@ -29,8 +26,6 @@ describe('New project', () => {
   beforeEach(async () => {
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
     fetchMock.mockClear();
-    (pwnedPassword as unknown as Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
     setupRecaptchaMock(true);
   });
 
