@@ -27,7 +27,7 @@ import type {
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconInfoCircle, IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
-import type { JSX, MouseEvent, SyntheticEvent } from 'react';
+import type { JSX, KeyboardEvent, MouseEvent, SyntheticEvent } from 'react';
 import { useEffect, useState } from 'react';
 import { CodingInput } from '../CodingInput/CodingInput';
 import { Form } from '../Form/Form';
@@ -490,6 +490,9 @@ function ElementBuilder(props: ElementBuilderProps): JSX.Element {
   const editing = props.selectedKey === element.id;
   const hovering = props.hoverKey === element.id;
   const noMap = isNoMap(element);
+  // Collapsed summary rows are keyboard-operable buttons; expanded (editing) rows are plain
+  // containers so their nested inputs/controls aren't wrapped in a button role.
+  const collapsed = !editing && !readOnly;
 
   function onClick(e: SyntheticEvent): void {
     if (readOnly) {
@@ -502,6 +505,18 @@ function ElementBuilder(props: ElementBuilderProps): JSX.Element {
   function onHover(e: SyntheticEvent): void {
     killEvent(e);
     props.setHoverKey(element.id);
+  }
+
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>): void {
+    // Only act when the row itself is focused, so Enter/Space typed in a child input is untouched.
+    if (readOnly || e.target !== e.currentTarget) {
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      props.setSelectedKey(element.id);
+    }
   }
 
   function changeProperty(property: keyof ConceptMapGroupElement, val: any): void {
@@ -523,7 +538,17 @@ function ElementBuilder(props: ElementBuilderProps): JSX.Element {
   });
 
   return (
-    <div className={className} data-testid={element.id} onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
+    <div
+      className={className}
+      data-testid={element.id}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      onMouseOver={onHover}
+      onFocus={onHover}
+      role={collapsed ? 'button' : undefined}
+      tabIndex={collapsed ? 0 : undefined}
+      aria-label={collapsed ? `Edit mapping${element.code ? ` ${element.code}` : ''}` : undefined}
+    >
       <Box>
         {editing && !noMap ? (
           <CodingInput
