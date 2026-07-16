@@ -35,7 +35,9 @@ export const ThreadMessageFields = (props: ThreadMessageFieldsProps): JSX.Elemen
           resourceType="Practitioner"
           name="practitioners"
           defaultValue={practitioners}
-          onChange={(resources) => onPractitionersChange(resources.map((practitioner) => createReference(practitioner)))}
+          onChange={(resources) =>
+            onPractitionersChange(resources.map((practitioner) => createReference(practitioner)))
+          }
         />
       </Stack>
 
