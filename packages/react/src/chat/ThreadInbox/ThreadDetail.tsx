@@ -68,7 +68,7 @@ export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
               </Menu>
             </Flex>
             <Divider />
-            <Flex direction="column" style={{ flex: 1 }} h="100%">
+            <Box flex={1} h="100%">
               <ThreadChat
                 key={`${getReferenceString(thread)}`}
                 title={'Messages'}
@@ -77,7 +77,7 @@ export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
                 uploadEnabled={uploadEnabled}
                 onViewInDocuments={onViewInDocuments}
               />
-            </Flex>
+            </Box>
           </Stack>
         </Paper>
       </Flex>
