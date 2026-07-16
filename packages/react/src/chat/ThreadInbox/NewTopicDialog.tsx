@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Modal, Stack, Text, TextInput } from '@mantine/core';
+import { Box, Button, Modal, Stack, Text } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
-import { MultiResourceInput } from '../../ResourceInput/MultiResourceInput';
 import { ResourceInput } from '../../ResourceInput/ResourceInput';
 import classes from './messageModalStyles.module.css';
 import { showErrorNotification } from './notifications';
+import { ThreadMessageFields } from './ThreadMessageFields';
 
 /**
  * Props for the NewTopicDialog component.
@@ -96,27 +96,12 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
             />
           </Stack>
 
-          <Stack gap={0}>
-            <Text fw={500}>Practitioner</Text>
-            <Text c="dimmed">Select one or more practitioners</Text>
-
-            {/* MultiResourceInput dedupes by reference string, so a practitioner can only be added once. */}
-            <MultiResourceInput<Practitioner>
-              resourceType="Practitioner"
-              name="practitioners"
-              defaultValue={initialPractitioners}
-              onChange={(resources) => setPractitioners(resources.map((practitioner) => createReference(practitioner)))}
-            />
-          </Stack>
-
-          <Stack gap={0}>
-            <Text fw={500}>Topic (optional)</Text>
-            <Text c="dimmed">Enter a topic for the message</Text>
-
-            <TextInput placeholder="Enter your topic" value={topic} onChange={(e) => setTopic(e.target.value)} />
-          </Stack>
-
-          <Divider pt="xs" />
+          <ThreadMessageFields
+            practitioners={initialPractitioners}
+            onPractitionersChange={setPractitioners}
+            topic={topic}
+            onTopicChange={setTopic}
+          />
         </Stack>
 
         <Box px="lg" pb="lg">
