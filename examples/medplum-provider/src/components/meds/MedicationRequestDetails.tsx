@@ -184,6 +184,17 @@ export function MedicationRequestDetails(props: MedicationRequestDetailsProps): 
             </Badge>
           </Group>
 
+          {medicationRequest.statusReason && (
+            <Paper p="sm" withBorder bg="var(--mantine-color-red-light)">
+              <Text size="sm" fw={600}>
+                Status reason
+              </Text>
+              <Text size="sm">
+                {medicationRequest.statusReason.text || formatCodeableConcept(medicationRequest.statusReason)}
+              </Text>
+            </Paper>
+          )}
+
           <Text size="sm" c="dimmed">
             Intent: {medicationRequest.intent ?? '—'}
             {medicationRequest.priority ? ` · Priority: ${medicationRequest.priority}` : ''}

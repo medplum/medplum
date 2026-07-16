@@ -116,6 +116,12 @@ export const SCRIPTSURE_ADD_PATIENT_PHARMACY_BOT: Identifier = {
   value: 'scriptsure-add-patient-pharmacy-bot',
 };
 
+/** Bot that launches and reconciles ScriptSure pharmacy-message Tasks. */
+export const SCRIPTSURE_MESSAGE_TASK_BOT: Identifier = {
+  system: MEDPLUM_BOT_SYSTEM,
+  value: 'scriptsure-message-task-bot',
+};
+
 export const SCRIPTSURE_PATIENT_ID_SYSTEM = 'https://scriptsure.com/patient-id';
 
 /**

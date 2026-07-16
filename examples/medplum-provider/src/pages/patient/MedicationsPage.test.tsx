@@ -189,6 +189,19 @@ describe('MedicationsPage', () => {
     expect(params).toContain('status=draft');
   });
 
+  test('medication row links preserve the current tab filter', async () => {
+    const medplum = new MockClient();
+    const draft = draftMr('mr-draft-link', 'Aspirin 81 mg tablet');
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(1, [draft]));
+
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest?status=draft`, medplum);
+
+    expect(await screen.findByRole('link', { name: /Aspirin 81 mg tablet/i })).toHaveAttribute(
+      'href',
+      `/Patient/${HomerSimpson.id}/MedicationRequest/${draft.id}?status=draft`
+    );
+  });
+
   test('Tab change updates the URL and triggers a per-status search', async () => {
     const medplum = new MockClient();
     const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
@@ -208,6 +221,53 @@ describe('MedicationsPage', () => {
       const calls = searchSpy.mock.calls.map((c) => paramsString(c[1]));
       expect(calls.some((p) => p.includes('status=draft'))).toBe(true);
     });
+  });
+
+  test('selected medication details stay full and current when the list tab changes', async () => {
+    const medplum = new MockClient();
+    const projectedListRow: WithId<MedicationRequest> = {
+      resourceType: 'MedicationRequest',
+      id: 'mr-selected',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      medicationCodeableConcept: { text: 'Diovan 80 mg tablet' },
+    };
+    const fullMedicationRequest: WithId<MedicationRequest> = {
+      ...projectedListRow,
+      note: [{ text: 'Full current detail' }],
+      identifier: [{ system: 'https://scriptsure.com/prescription-id', value: '12345' }],
+    };
+    const search = vi.spyOn(medplum, 'search') as unknown as ReturnType<typeof vi.fn>;
+    search.mockImplementation(async (_resourceType, params) =>
+      paramsString(params).includes('status=draft') ? emptyMrBundle(0) : emptyMrBundle(1, [projectedListRow])
+    );
+    const realRead = medplum.readResource.bind(medplum);
+    const readResource = vi.spyOn(medplum, 'readResource').mockImplementation((async (
+      resourceType: string,
+      id: string,
+      options?: unknown
+    ) => {
+      if (resourceType === 'MedicationRequest' && id === fullMedicationRequest.id) {
+        return fullMedicationRequest;
+      }
+      return realRead(resourceType as 'Patient', id, options as undefined);
+    }) as typeof medplum.readResource);
+    const handle = await setup(`/Patient/${HomerSimpson.id}/MedicationRequest/${fullMedicationRequest.id}`, medplum);
+
+    expect(await screen.findByText('Full current detail')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Draft'));
+
+    await waitFor(() => {
+      expect(handle.location.current?.search).toContain('status=draft');
+      expect(screen.getByText('Full current detail')).toBeInTheDocument();
+    });
+    expect(
+      readResource.mock.calls.filter(
+        ([resourceType, id]) => resourceType === 'MedicationRequest' && id === fullMedicationRequest.id
+      )
+    ).toHaveLength(2);
   });
 
   test('Pagination control changes the URL _offset and re-queries', async () => {
@@ -288,6 +348,17 @@ describe('MedicationsPage', () => {
     };
     vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(1, [draftOrder]));
     vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    const realRead = medplum.readResource.bind(medplum);
+    vi.spyOn(medplum, 'readResource').mockImplementation((async (
+      resourceType: string,
+      id: string,
+      options?: unknown
+    ) => {
+      if (resourceType === 'MedicationRequest' && id === draftOrder.id) {
+        return draftOrder;
+      }
+      return realRead(resourceType as 'Patient', id, options as undefined);
+    }) as typeof medplum.readResource);
     const executeBotSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue({
       url: 'https://ssu.scriptsure.com/chart/253312/prescriptions?sessiontoken=abc',
     });

@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import type { MedicationOrderRequest, MedicationOrderResponse } from '@medplum/core';
+import type { MedicationOrderRequest, MedicationOrderResponse, WithId } from '@medplum/core';
 import {
   MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
   MEDICATION_REQUEST_STATUS_REASON_SYSTEM,
+  OperationOutcomeError,
 } from '@medplum/core';
 import type { Medication, MedicationRequest } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
@@ -300,5 +301,132 @@ describe('OrderMedicationPage', () => {
 
     expect(await screen.findByRole('button', { name: /^Prescribe now$/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Add to cart$/ })).not.toBeInTheDocument();
+  });
+
+  test('re-prescription mode pre-fills and updates the linked replacement draft instead of adding to cart', async () => {
+    const medplum = new MockClient();
+    medplum.setProfile(DrAliceSmith);
+    const readReference = vi.spyOn(medplum, 'readReference').mockResolvedValue(DrAliceSmith);
+    const replacement: WithId<MedicationRequest> = {
+      resourceType: 'MedicationRequest',
+      id: 'replacement-rx',
+      status: 'draft',
+      intent: 'order',
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      requester: { reference: `Practitioner/${DrAliceSmith.id}` },
+      priorPrescription: { reference: 'MedicationRequest/failed-rx' },
+      medicationCodeableConcept: {
+        text: 'Diovan 80 mg tablet',
+        coding: [{ system: 'http://hl7.org/fhir/sid/ndc', code: '00078035834' }],
+      },
+      dosageInstruction: [{ text: 'Take 1 tablet daily', patientInstruction: 'With water' }],
+      dispenseRequest: {
+        quantity: { value: 90, unit: 'C48542' },
+        numberOfRepeatsAllowed: 1,
+        expectedSupplyDuration: { value: 90, unit: 'days' },
+      },
+      note: [{ text: 'Route to the new pharmacy' }],
+      substitution: { allowedBoolean: false },
+      authoredOn: '2026-07-15',
+    };
+    orderMedicationMock
+      .mockRejectedValueOnce(
+        new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'error',
+              code: 'not-found',
+              details: { text: 'Payer Organization not found' },
+            },
+          ],
+        })
+      )
+      .mockResolvedValueOnce({
+        launchUrl: 'https://ssu.example/widget/replacement',
+        medicationRequestId: replacement.id,
+      });
+    const updateResource = vi.spyOn(medplum, 'updateResource');
+    const createResource = vi.spyOn(medplum, 'createResource');
+    const onOrderComplete = vi.fn();
+    const onAddedToCart = vi.fn();
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <Notifications />
+          <MedplumProvider medplum={medplum}>
+            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+              <Routes>
+                <Route
+                  path="/Patient/:patientId/MedicationRequest"
+                  element={
+                    <OrderMedicationPage
+                      patient={HomerSimpson}
+                      replacementMedicationRequest={replacement}
+                      onOrderComplete={onOrderComplete}
+                      onAddedToCart={onAddedToCart}
+                    />
+                  }
+                />
+              </Routes>
+            </MemoryRouter>
+          </MedplumProvider>
+        </MantineProvider>
+      );
+    });
+
+    expect((await screen.findAllByText('Diovan 80 mg tablet')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/Alice Smith/i)).length).toBeGreaterThan(0);
+    expect(readReference).not.toHaveBeenCalledWith(replacement.requester);
+    const sigInput = screen.getByLabelText(/Sig \(directions\)/i);
+    expect(sigInput).toHaveValue('Take 1 tablet daily');
+    expect(screen.getByLabelText('Quantity to dispense')).toHaveValue('90');
+    expect(screen.getByLabelText('Notes to pharmacist')).toHaveValue('Route to the new pharmacy');
+    expect(screen.queryByRole('button', { name: 'Add to cart' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Compound' })).not.toBeInTheDocument();
+
+    await user.clear(sigInput);
+    await user.type(sigInput, 'Take 2 tablets daily');
+    const quantityInput = screen.getByLabelText('Quantity to dispense');
+    await user.clear(quantityInput);
+    await user.type(quantityInput, '60');
+    await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
+
+    expect((await screen.findAllByText('Payer Organization not found')).length).toBeGreaterThan(0);
+    expect(updateResource.mock.calls.some(([resource]) => (resource as MedicationRequest).status === 'unknown')).toBe(
+      false
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
+
+    await waitFor(() => {
+      expect(orderMedicationMock).toHaveBeenCalledTimes(2);
+      expect(orderMedicationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientId: HomerSimpson.id,
+          medicationRequestId: replacement.id,
+        })
+      );
+    });
+    const updatedReplacement = updateResource.mock.calls
+      .map(([resource]) => resource as MedicationRequest)
+      .find((resource) => resource.id === replacement.id && resource.status === 'draft');
+    expect(updatedReplacement).toMatchObject({
+      id: replacement.id,
+      priorPrescription: replacement.priorPrescription,
+      dosageInstruction: [{ text: 'Take 2 tablets daily', patientInstruction: 'With water' }],
+      dispenseRequest: expect.objectContaining({ quantity: { value: 60, unit: 'C48542' } }),
+    });
+    expect(
+      createResource.mock.calls.some(
+        ([resource]) => (resource as MedicationRequest).resourceType === 'MedicationRequest'
+      )
+    ).toBe(false);
+    expect(onOrderComplete).toHaveBeenCalledWith({
+      launchUrl: 'https://ssu.example/widget/replacement',
+      medicationRequestId: replacement.id,
+    });
   });
 });
