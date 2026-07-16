@@ -18,6 +18,17 @@ describe('LabsPage', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
+    // Lab ordering is gated on the Health Gorilla bot; make it present so the order flow is enabled.
+    await medplum.createResource({
+      resourceType: 'Bot',
+      name: 'Health Gorilla',
+      identifier: [
+        {
+          system: 'https://www.medplum.com/integrations/bot-identifier',
+          value: 'health-gorilla-labs/send-to-health-gorilla',
+        },
+      ],
+    });
   });
 
   // The page issues two searches (ServiceRequest for the Open tab, DiagnosticReport
