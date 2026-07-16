@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Operation } from '@medplum/core';
 import {
   EventTarget,
   OperationOutcomeError,
@@ -21,7 +22,6 @@ import type {
   ResourceType,
 } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
-import type { Operation } from 'rfc6902';
 import type { LogEvent } from './batch';
 import { processBatch } from './batch';
 import { graphqlHandler } from './graphql';
@@ -55,9 +55,7 @@ export type FhirResponseOptions = {
 };
 
 export type FhirResponse =
-  | [OperationOutcome]
-  | [OperationOutcome, Resource]
-  | [OperationOutcome, Resource, FhirResponseOptions];
+  [OperationOutcome] | [OperationOutcome, Resource] | [OperationOutcome, Resource, FhirResponseOptions];
 
 export type FhirRouteOptions = {
   batch?: boolean;
@@ -298,9 +296,7 @@ async function conditionalPatch(req: FhirRequest, repo: FhirRepository): Promise
 
 /** @see http://hl7.org/fhir/R4/codesystem-restful-interaction.html */
 export type RestInteraction =
-  | CapabilityStatementRestInteraction['code']
-  | CapabilityStatementRestResourceInteraction['code']
-  | 'operation';
+  CapabilityStatementRestInteraction['code'] | CapabilityStatementRestResourceInteraction['code'] | 'operation';
 
 export type FhirRouteMetadata = {
   interaction: RestInteraction;

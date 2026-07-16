@@ -12,7 +12,7 @@ import { normalizeErrorString, OperationOutcomeError, validationError } from '..
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
 import type { ProfileResource, WithId } from '../utils';
-import { deepEquals, extractAccountReferences, getExtension, getReferenceString, resolveId } from '../utils';
+import { deepEquals, EMPTY, extractAccountReferences, getExtension, getReferenceString, resolveId } from '../utils';
 import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../websockets/reconnecting-websocket';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 import {
@@ -752,14 +752,25 @@ export async function resourceMatchesSubscriptionCriteria({
     return false;
   }
 
-  const supportedInteractionExtension = getExtension(
-    subscription,
-    'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
-  );
-  if (supportedInteractionExtension && supportedInteractionExtension.valueCode !== context.interaction) {
-    logger?.debug(
-      `Ignore rest hook for different interaction (wanted "${supportedInteractionExtension.valueCode}", received "${context.interaction}")`
-    );
+  // A Subscription can declare one or more `subscription-supported-interaction` extensions.
+  // When present, the interaction is only supported if it matches one of the declared codes.
+  // When absent, all interactions ("create", "update", "delete") are supported by default.
+  let specifiedInteractions = false;
+  let supportsInteraction = false;
+  for (const ext of subscription.extension ?? EMPTY) {
+    if (ext.url === 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction') {
+      specifiedInteractions = true;
+      if (ext.valueCode === context.interaction) {
+        supportsInteraction = true;
+        break;
+      }
+    }
+  }
+  if (specifiedInteractions && !supportsInteraction) {
+    logger?.debug(`Ignored rest hook for unsupported interaction`, {
+      subscription: subscription.id,
+      interaction: context.interaction,
+    });
     return false;
   }
 

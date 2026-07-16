@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Organization, Reference } from '@medplum/fhirtypes';
 import type { UseMedicationOrderSetReturn } from '@medplum/react-hooks';
 import { useMedicationOrderSet } from '@medplum/react-hooks';
 
@@ -11,6 +12,8 @@ export interface UseScriptSureOrderSetOptions {
   /** ScriptSure orderset id (escape hatch when no synced PD exists yet). */
   readonly scriptSureOrdersetId?: number;
   readonly appId?: string;
+  /** Selected practice location for multi-practice deployments. */
+  readonly organization?: Reference<Organization>;
 }
 
 export type UseScriptSureOrderSetReturn = UseMedicationOrderSetReturn;
@@ -38,5 +41,6 @@ export function useScriptSureOrderSet(options: UseScriptSureOrderSetOptions): Us
     planDefinitionId: options.planDefinitionId,
     vendorOrderSetId: options.scriptSureOrdersetId,
     appId: options.appId,
+    organization: options.organization,
   });
 }

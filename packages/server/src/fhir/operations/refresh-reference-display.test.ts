@@ -82,7 +82,7 @@ describe('$refresh-reference-display', () => {
         .auth(accessToken, { type: 'bearer' })
         .set('X-Medplum', 'extended')
         .send();
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       const updated = res.body as Observation;
 
       expect(updated.meta?.author?.display).toBe('Client!');
@@ -123,7 +123,7 @@ describe('$refresh-reference-display', () => {
         .auth(accessToken, { type: 'bearer' })
         .set('X-Medplum', 'extended')
         .send();
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       const updated = res.body as Observation;
 
       expect(updated.subject?.display).toBe('Test Patient Jones-Smith');

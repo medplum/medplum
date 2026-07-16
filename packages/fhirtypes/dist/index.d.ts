@@ -188,6 +188,7 @@ export type * from './Signature.d.ts';
 export type * from './SimpleQuantity.d.ts';
 export type * from './Slot.d.ts';
 export type * from './SmartAppLaunch.d.ts';
+export type * from './SmartHealthLink.d.ts';
 export type * from './Specimen.d.ts';
 export type * from './SpecimenDefinition.d.ts';
 export type * from './StructureDefinition.d.ts';

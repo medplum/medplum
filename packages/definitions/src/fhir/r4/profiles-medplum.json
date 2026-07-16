@@ -290,7 +290,7 @@
           {
             "id" : "Project.defaultPatientAccessPolicy",
             "path" : "Project.defaultPatientAccessPolicy",
-            "definition" : "The default access policy for patients using open registration.",
+            "definition" : "@deprecated Use defaultAccessPolicies instead. The default access policy for patients using open registration.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -571,6 +571,52 @@
               "path": "Project.defaultProfile.profile",
               "min": 1,
               "max": "*"
+            }
+          },
+          {
+            "id": "Project.defaultAccessPolicies",
+            "path": "Project.defaultAccessPolicies",
+            "definition": "Default access policies to apply to project members by role when no explicit policy is provided.",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "BackboneElement"}],
+            "base": {
+              "path": "Project.defaultAccessPolicies",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Project.defaultAccessPolicies.profileType",
+            "path": "Project.defaultAccessPolicies.profileType",
+            "definition": "The member role this policy applies to.",
+            "min": 1,
+            "max": "1",
+            "type": [{"code": "code"}],
+            "base": {
+              "path": "Project.defaultAccessPolicies.profileType",
+              "min": 1,
+              "max": "1"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "https://medplum.com/fhir/ValueSet/project-membership-profile-type"
+            }
+          },
+          {
+            "id": "Project.defaultAccessPolicies.accessPolicy",
+            "path": "Project.defaultAccessPolicies.accessPolicy",
+            "definition": "The access policy to apply to members of this role.",
+            "min": 1,
+            "max": "1",
+            "type": [{
+              "code": "Reference",
+              "targetProfile": ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+            }],
+            "base": {
+              "path": "Project.defaultAccessPolicies.accessPolicy",
+              "min": 1,
+              "max": "1"
             }
           },
           {
@@ -1446,6 +1492,25 @@
               "path" : "User.mfaEnrolled",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "User.mfaMethod",
+            "path" : "User.mfaMethod",
+            "definition" : "The MFA methods the user has enrolled in. 'totp' uses an authenticator application; 'email' sends a magic link to the user's email address on login.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base": {
+              "path" : "User.mfaMethod",
+              "min" : 0,
+              "max" : "*"
+            },
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/user-mfa-method|4.0.1"
             }
           },
           {
@@ -2852,6 +2917,51 @@
             }
           },
           {
+            "id" : "Login.emailMfa",
+            "path" : "Login.emailMfa",
+            "definition" : "Single-use 6-digit code for email-based MFA. Set when a code is issued for this login and cleared on verification.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "Login.emailMfa",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Login.emailMfa.codeHash",
+            "path" : "Login.emailMfa.codeHash",
+            "definition" : "Hashed single-use 6-digit code that was emailed to the user.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "Login.emailMfa.codeHash",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Login.emailMfa.expiresAt",
+            "path" : "Login.emailMfa.expiresAt",
+            "definition" : "The time at which the emailed code expires and can no longer be used to verify the login.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "instant"
+            }],
+            "base" : {
+              "path" : "Login.emailMfa.expiresAt",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Login.expiresAt",
             "path" : "Login.expiresAt",
             "definition" : "The time at which a token will expire for this login.",
@@ -3419,7 +3529,7 @@
             "id": "JsonWebKey.kty",
             "path": "JsonWebKey.kty",
             "definition": "The family of cryptographic algorithms used with the key.",
-            "min": 1,
+            "min": 0,
             "max": "1",
             "type": [
               {
@@ -3428,7 +3538,7 @@
             ],
             "base": {
               "path": "JsonWebKey.kty",
-              "min": 1,
+              "min": 0,
               "max": "1"
             }
           },
@@ -5068,6 +5178,342 @@
               "path" : "SmartAppLaunch.fhirContext",
               "min" : 0,
               "max" : "*"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/SmartHealthLink",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "SmartHealthLink",
+      "name" : "SmartHealthLink",
+      "url" : "https://medplum.com/fhir/StructureDefinition/SmartHealthLink",
+      "status" : "active",
+      "kind" : "resource",
+      "abstract" : false,
+      "type" : "SmartHealthLink",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
+      "description" : "A SMART Health Link generated by Medplum.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "SmartHealthLink",
+            "path" : "SmartHealthLink",
+            "short" : "A SMART Health Link generated by Medplum.",
+            "definition" : "A SMART Health Link generated by Medplum.",
+            "min" : 0,
+            "max" : "*",
+            "base": {
+              "path" : "SmartHealthLink",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.id",
+            "path" : "SmartHealthLink.id",
+            "short" : "Logical id of this artifact",
+            "definition" : "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.id",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "SmartHealthLink.meta",
+            "path" : "SmartHealthLink.meta",
+            "definition" : "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.meta",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Meta"
+            }]
+          },
+          {
+            "id" : "SmartHealthLink.implicitRules",
+            "path" : "SmartHealthLink.implicitRules",
+            "definition" : "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.implicitRules",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "uri"
+            }]
+          },
+          {
+            "id" : "SmartHealthLink.language",
+            "path" : "SmartHealthLink.language",
+            "definition" : "The base language in which the resource is written.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "Resource.language",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.text",
+            "path" : "SmartHealthLink.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "SmartHealthLink.contained",
+            "path" : "SmartHealthLink.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "SmartHealthLink.extension",
+            "path" : "SmartHealthLink.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition and use of extensions.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "SmartHealthLink.modifierExtension",
+            "path" : "SmartHealthLink.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "SmartHealthLink.status",
+            "path" : "SmartHealthLink.status",
+            "short" : "active | revoked",
+            "definition" : "The status of the SMART Health Link.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.status",
+              "min" : 1,
+              "max" : "1"
+            },
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/smart-health-link-status"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.mode",
+            "path" : "SmartHealthLink.mode",
+            "short" : "manifest | direct",
+            "definition" : "The SMART Health Link delivery mode.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.mode",
+              "min" : 1,
+              "max" : "1"
+            },
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/smart-health-link-mode"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.subject",
+            "path" : "SmartHealthLink.subject",
+            "definition" : "The subject whose records are shared by the SMART Health Link.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Group"
+              ]
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.subject",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.url",
+            "path" : "SmartHealthLink.url",
+            "definition" : "The public SMART Health Link manifest or payload URL.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "url"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.url",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.label",
+            "path" : "SmartHealthLink.label",
+            "definition" : "Optional human-readable label for the SMART Health Link.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.label",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.flag",
+            "path" : "SmartHealthLink.flag",
+            "definition" : "Optional SMART Health Link flags.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.flag",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.expiresAt",
+            "path" : "SmartHealthLink.expiresAt",
+            "definition" : "Optional time when the SMART Health Link expires.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "instant"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.expiresAt",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.passcodeHash",
+            "path" : "SmartHealthLink.passcodeHash",
+            "definition" : "Optional hash of the SMART Health Link passcode.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.passcodeHash",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.file",
+            "path" : "SmartHealthLink.file",
+            "definition" : "Encrypted file available from the SMART Health Link.",
+            "min" : 1,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.file",
+              "min" : 1,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.file.contentType",
+            "path" : "SmartHealthLink.file.contentType",
+            "definition" : "The MIME type of the plaintext file content.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.file.contentType",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "SmartHealthLink.file.attachment",
+            "path" : "SmartHealthLink.file.attachment",
+            "definition" : "Attachment containing or referencing the encrypted SMART Health Link file.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Attachment"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.file.attachment",
+              "min" : 1,
+              "max" : "1"
             }
           }
         ]
@@ -8695,6 +9141,35 @@
           }
         ]
       }
+    }
+  },
+  {
+    "fullUrl": "https://medplum.com/fhir/OperationDefinition/rebuild-base-definitions",
+    "resource": {
+      "resourceType": "OperationDefinition",
+      "url": "https://medplum.com/fhir/OperationDefinition/rebuild-base-definitions",
+      "name": "rebuild-base-definitions",
+      "title": "Rebuild Base Definitions",
+      "status": "active",
+      "kind": "operation",
+      "code": "rebuild-base-definitions",
+      "system": true,
+      "type": false,
+      "instance": false,
+      "parameter": [
+        {
+          "use": "in",
+          "name": "resourceType",
+          "documentation": "StructureDefinition | SearchParameter | ValueSet | CodeSystem | OperationDefinition",
+          "min": 0,
+          "max": "*",
+          "type": "code",
+          "binding": {
+            "strength": "required",
+            "valueSet": "https://medplum.com/fhir/ValueSet/base-definition-types"
+          }
+        }
+      ]
     }
   }]
 }

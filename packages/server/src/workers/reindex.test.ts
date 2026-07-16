@@ -24,6 +24,7 @@ import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
+import { repoAccess } from '../fhir/repository/access-tracker';
 import { SelectQuery } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { createTestProject, withQueryInterceptor, withTestContext } from '../test.setup';
@@ -52,13 +53,13 @@ describe('Reindex Worker', () => {
   });
 
   beforeEach(() => {
-    jest.spyOn(process.stdout, 'write').mockImplementation(() => {
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => {
       return true;
     });
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterAll(async () => {
@@ -88,7 +89,7 @@ describe('Reindex Worker', () => {
 
       const jobData = queue.add.mock.calls[0][1] as ReindexJobData;
       const reindexJob = new ReindexJob(systemRepo);
-      const processIterationSpy = jest.spyOn(reindexJob, 'processIteration');
+      const processIterationSpy = vi.spyOn(reindexJob, 'processIteration');
       await reindexJob.execute(undefined, jobData);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
@@ -162,7 +163,7 @@ describe('Reindex Worker', () => {
         batchSize,
       });
       const reindexJob = new ReindexJob(systemRepo);
-      jest.spyOn(reindexJob, 'processIteration');
+      vi.spyOn(reindexJob, 'processIteration');
       await reindexJob.execute(undefined, jobData);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
@@ -220,7 +221,7 @@ describe('Reindex Worker', () => {
         delayBetweenBatches,
       });
       const reindexJob = new ReindexJob(systemRepo);
-      jest.spyOn(reindexJob, 'processIteration');
+      vi.spyOn(reindexJob, 'processIteration');
       await reindexJob.execute(undefined, jobData);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
@@ -232,7 +233,7 @@ describe('Reindex Worker', () => {
 
   test('Logs progress when threshold is crossed', () =>
     withTestContext(async () => {
-      const loggerSpy = jest.spyOn(globalLogger, 'info');
+      const loggerSpy = vi.spyOn(globalLogger, 'info');
 
       let asyncJob = await repo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
@@ -292,7 +293,7 @@ describe('Reindex Worker', () => {
       const jobData = prepareReindexJobData(resourceTypes, asyncJob.id);
 
       const reindexJob = new ReindexJob(systemRepo);
-      jest.spyOn(reindexJob, 'processIteration');
+      vi.spyOn(reindexJob, 'processIteration');
       await reindexJob.execute(undefined, jobData);
 
       expect(reindexJob.processIteration).toHaveBeenCalledTimes(2);
@@ -397,10 +398,10 @@ describe('Reindex Worker', () => {
       });
 
       const reindexJob = new ReindexJob(systemRepo);
-      const processIterationSpy = jest.spyOn(reindexJob, 'processIteration');
+      const processIterationSpy = vi.spyOn(reindexJob, 'processIteration');
 
       const transientErrors = [new Error('Transient error 1'), new Error('Transient error 2')];
-      const loggerWarnSpy = jest.spyOn(globalLogger, 'warn');
+      const loggerWarnSpy = vi.spyOn(globalLogger, 'warn');
       const originalLevel = globalLogger.level;
       globalLogger.level = LogLevel.NONE;
       await withQueryInterceptor(
@@ -455,7 +456,7 @@ describe('Reindex Worker', () => {
       });
 
       const reindexJob = new ReindexJob(systemRepo);
-      const processIterationSpy = jest.spyOn(reindexJob, 'processIteration');
+      const processIterationSpy = vi.spyOn(reindexJob, 'processIteration');
 
       const originalLevel = globalLogger.level;
       globalLogger.level = LogLevel.NONE;
@@ -501,13 +502,13 @@ describe('Reindex Worker', () => {
       const reindexJob = new ReindexJob(systemRepo);
 
       // Mock processIteration to throw an exception directly (not return an error result)
-      const processIterationSpy = jest
+      const processIterationSpy = vi
         .spyOn(reindexJob, 'processIteration')
         .mockRejectedValueOnce(new Error('Thrown exception 1'))
         .mockRejectedValueOnce(new Error('Thrown exception 2'))
         .mockResolvedValueOnce({ count: 0, durationMs: 100 });
 
-      const loggerWarnSpy = jest.spyOn(globalLogger, 'warn');
+      const loggerWarnSpy = vi.spyOn(globalLogger, 'warn');
       await reindexJob.execute(undefined, jobData);
 
       // Should have attempted 3 times, with first 2 throwing and 3rd succeeding
@@ -547,7 +548,7 @@ describe('Reindex Worker', () => {
       const reindexJob = new ReindexJob(systemRepo);
 
       // Mock processIteration to always throw
-      const processIterationSpy = jest
+      const processIterationSpy = vi
         .spyOn(reindexJob, 'processIteration')
         .mockRejectedValue(new Error('Persistent thrown exception'));
 
@@ -783,18 +784,15 @@ describe('Reindex Worker', () => {
         identifier: [{ system: idSystem, value: mrn }],
       });
 
-      const client = repo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = repo.getDatabaseClient(repoAccess.sqlWrite('Patient'));
       const getVersionQuery = (id: string[]): SelectQuery =>
         new SelectQuery('Patient').column('id').column('__version').where('id', 'IN', id);
       await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, outdatedPatient.id]);
       const beforeResults = await getVersionQuery([outdatedPatient.id, currentPatient.id]).execute(client);
-      expect(beforeResults).toHaveLength(2);
-      expect(beforeResults).toEqual(
-        expect.arrayContaining([
-          { id: outdatedPatient.id, __version: OLDER_VERSION },
-          { id: currentPatient.id, __version: Repository.VERSION },
-        ])
-      );
+      expect(beforeResults).toContainExactly([
+        { id: outdatedPatient.id, __version: OLDER_VERSION },
+        { id: currentPatient.id, __version: Repository.VERSION },
+      ]);
 
       const jobData = prepareReindexJobData(['Patient'], asyncJob.id, {
         searchFilter: parseSearchRequest(`Patient?identifier=${idSystem}|${mrn}`),
@@ -804,13 +802,10 @@ describe('Reindex Worker', () => {
       await new ReindexJob(systemRepo).execute(undefined, jobData);
 
       const afterResults = await getVersionQuery([outdatedPatient.id, currentPatient.id]).execute(client);
-      expect(afterResults).toHaveLength(2);
-      expect(afterResults).toEqual(
-        expect.arrayContaining([
-          { id: outdatedPatient.id, __version: CURRENT_VERSION },
-          { id: currentPatient.id, __version: CURRENT_VERSION },
-        ])
-      );
+      expect(afterResults).toContainExactly([
+        { id: outdatedPatient.id, __version: CURRENT_VERSION },
+        { id: currentPatient.id, __version: CURRENT_VERSION },
+      ]);
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
@@ -958,8 +953,8 @@ describe('Job cancellation', () => {
         throw new Error('Could not find queue');
       }
 
-      const isClosingSpy = jest.spyOn(queueRegistry, 'isClosing').mockReturnValue(true);
-      const globalErrorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => {});
+      const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockReturnValue(true);
+      const globalErrorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => {});
 
       const jobData = prepareReindexJobData(['MedicinalProductContraindication'], originalJob.id);
       const job = new Job(queue, 'ReindexJob', jobData, { attempts: 55 });
@@ -1036,7 +1031,7 @@ describe('Job cancellation', () => {
 
       const isIneligible = minReindexWorkerVersion && REINDEX_WORKER_VERSION < minReindexWorkerVersion;
 
-      const globalErrorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => {});
+      const globalErrorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => {});
 
       const result = await new ReindexJob(systemRepo).execute(job, jobData);
       expect(result).toBe(isIneligible ? 'ineligible' : 'finished');
@@ -1097,11 +1092,10 @@ describe('Job cancellation', () => {
       // Mock repo for the job to return error for version-conditional update
       const error = Promise.reject(new OperationOutcomeError(preconditionFailed));
       await expect(error).rejects.toBeDefined(); // Await promise to ensure it's settled to rejection state
-      jest.spyOn(systemRepo, 'updateResource').mockReturnValueOnce(error);
+      vi.spyOn(systemRepo, 'updateResource').mockReturnValueOnce(error);
       // Simulate job being cancelled in the middle of the worker execution, after the initial status check
       // but before the job would update the resource itself
-      jest
-        .spyOn(systemRepo, 'readResource')
+      vi.spyOn(systemRepo, 'readResource')
         .mockReturnValueOnce(Promise.resolve(originalJob))
         .mockReturnValueOnce(Promise.resolve(cancelledJob));
 
@@ -1130,7 +1124,7 @@ describe('Job cancellation', () => {
 
       // Mock updateAsyncJobOutput to throw a non-412 error
       const testError = new Error('Database connection failed');
-      jest.spyOn(workerUtils, 'updateAsyncJobOutput').mockRejectedValue(testError);
+      vi.spyOn(workerUtils, 'updateAsyncJobOutput').mockRejectedValue(testError);
 
       const reindexJob = new ReindexJob(systemRepo);
       await expect(reindexJob.execute(undefined, jobData)).rejects.toThrow('Database connection failed');

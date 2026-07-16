@@ -4,16 +4,16 @@ import { badRequest, Operator } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
-
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('New project', () => {
@@ -28,10 +28,10 @@ describe('New project', () => {
 
   beforeEach(async () => {
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    fetchMock.mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(true);
   });
 
   test('Success', async () => {
@@ -47,38 +47,38 @@ describe('New project', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     const res2 = await request(app).post('/auth/newproject').type('json').send({
       login: res1.body.login,
       projectName: 'Hamilton Project',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res2.body.code,
       code_verifier: 'xyz',
     });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     const res4 = await request(app)
       .get(`/fhir/R4/${res3.body.profile.reference}`)
       .set('Authorization', 'Bearer ' + res3.body.access_token);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
 
     // Try to reuse the login (this should fail)
     const res5 = await request(app).post('/auth/newproject').type('json').send({
       login: res1.body.login,
       projectName: 'Hamilton Project',
     });
-    expect(res5.status).toBe(400);
+    expect(res5).toHaveStatus(400);
 
     // Try without a login (this should fail)
     const res6 = await request(app).post('/auth/newproject').type('json').send({
       projectName: 'Hamilton Project',
     });
-    expect(res6.status).toBe(400);
+    expect(res6).toHaveStatus(400);
   });
 
   test('Default ClientApplication is restricted to project', async () => {
@@ -100,20 +100,20 @@ describe('New project', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(user1_res1.status).toBe(200);
+    expect(user1_res1).toHaveStatus(200);
 
     const user1_res2 = await request(app).post('/auth/newproject').type('json').send({
       login: user1_res1.body.login,
       projectName: 'User1 Project',
     });
-    expect(user1_res2.status).toBe(200);
+    expect(user1_res2).toHaveStatus(200);
 
     const user1_res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: user1_res2.body.code,
       code_verifier: 'xyz',
     });
-    expect(user1_res3.status).toBe(200);
+    expect(user1_res3).toHaveStatus(200);
 
     const user1_res4 = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -128,7 +128,7 @@ describe('New project', () => {
           },
         ],
       });
-    expect(user1_res4.status).toBe(201);
+    expect(user1_res4).toHaveStatus(201);
 
     const patient = user1_res4.body;
 
@@ -144,33 +144,33 @@ describe('New project', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(user2_res1.status).toBe(200);
+    expect(user2_res1).toHaveStatus(200);
 
     const user2_res2 = await request(app).post('/auth/newproject').type('json').send({
       login: user2_res1.body.login,
       projectName: 'User2 Project',
     });
-    expect(user2_res2.status).toBe(200);
+    expect(user2_res2).toHaveStatus(200);
 
     const user2_res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: user2_res2.body.code,
       code_verifier: 'xyz',
     });
-    expect(user2_res3.status).toBe(200);
+    expect(user2_res3).toHaveStatus(200);
 
     // Try to access User1 patient using User2 directly
     // This should fail
     const user2_res4 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}`)
       .set('Authorization', 'Bearer ' + user2_res3.body.access_token);
-    expect(user2_res4.status).toBe(404);
+    expect(user2_res4).toHaveStatus(404);
 
     // Get the client
     const user2_res5 = await request(app)
       .get(`/fhir/R4/ClientApplication`)
       .set('Authorization', 'Bearer ' + user2_res3.body.access_token);
-    expect(user2_res5.status).toBe(200);
+    expect(user2_res5).toHaveStatus(200);
     expect(user2_res5.body.entry).toHaveLength(1);
 
     const client = user2_res5.body.entry[0].resource;
@@ -181,7 +181,7 @@ describe('New project', () => {
       client_id: client.id,
       client_secret: client.secret,
     });
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     expect(res6.body.error).toBeUndefined();
     expect(res6.body.access_token).toBeDefined();
 
@@ -190,14 +190,14 @@ describe('New project', () => {
     const res7 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}`)
       .set('Authorization', 'Bearer ' + res6.body.access_token);
-    expect(res7.status).toBe(404);
+    expect(res7).toHaveStatus(404);
 
     // Try to search for patients using User2 client
     // This should return empty set
     const res8 = await request(app)
       .get(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + res6.body.access_token);
-    expect(res8.status).toBe(200);
+    expect(res8).toHaveStatus(200);
     expect(res8.body.entry).toBeUndefined();
   });
 
@@ -219,20 +219,20 @@ describe('New project', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(user1_res1.status).toBe(200);
+    expect(user1_res1).toHaveStatus(200);
 
     const user1_res2 = await request(app).post('/auth/newproject').type('json').send({
       login: user1_res1.body.login,
       projectName: 'User1 Project',
     });
-    expect(user1_res2.status).toBe(200);
+    expect(user1_res2).toHaveStatus(200);
 
     const user1_res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: user1_res2.body.code,
       code_verifier: 'xyz',
     });
-    expect(user1_res3.status).toBe(200);
+    expect(user1_res3).toHaveStatus(200);
 
     const user1_res4 = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -247,7 +247,7 @@ describe('New project', () => {
           },
         ],
       });
-    expect(user1_res4.status).toBe(201);
+    expect(user1_res4).toHaveStatus(201);
 
     const user2_res1 = await request(app)
       .post('/auth/newuser')
@@ -261,20 +261,20 @@ describe('New project', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(user2_res1.status).toBe(200);
+    expect(user2_res1).toHaveStatus(200);
 
     const user2_res2 = await request(app).post('/auth/newproject').type('json').send({
       login: user2_res1.body.login,
       projectName: 'User2 Project',
     });
-    expect(user2_res2.status).toBe(200);
+    expect(user2_res2).toHaveStatus(200);
 
     const user2_res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: user2_res2.body.code,
       code_verifier: 'xyz',
     });
-    expect(user2_res3.status).toBe(200);
+    expect(user2_res3).toHaveStatus(200);
 
     // Try to access User1 patient using User2 graphql
     // This should fail
@@ -291,7 +291,7 @@ describe('New project', () => {
           }
         }`,
       });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     expect(res5.body.data).toBeDefined();
     expect(res5.body.data.PatientList).toBeDefined();
     expect(res5.body.data.PatientList.length).toStrictEqual(0);
@@ -312,13 +312,13 @@ describe('New project', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     const res2 = await request(app).post('/auth/newproject').type('json').send({
       login: res1.body.login,
       projectName: 'Hamilton Project',
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body).toMatchObject(badRequest('Email verification is required to create a project'));
   });
 
@@ -335,7 +335,7 @@ describe('New project', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     const systemRepo = getGlobalSystemRepo();
     await systemRepo.conditionalPatch(
@@ -347,6 +347,6 @@ describe('New project', () => {
       login: res1.body.login,
       projectName: 'Hamilton Project',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
   });
 });

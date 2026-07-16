@@ -90,7 +90,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(testCodeSystem);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     codeSystem = res.body as CodeSystem;
   });
 
@@ -110,7 +110,7 @@ describe('CodeSystem lookup', () => {
           { name: 'code', valueCode: '1' },
         ],
       });
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -140,7 +140,7 @@ describe('CodeSystem lookup', () => {
           { name: 'code', valueCode: '2' },
         ],
       });
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: expect.arrayContaining([
@@ -175,7 +175,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
       });
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -205,7 +205,7 @@ describe('CodeSystem lookup', () => {
           { name: 'code', valueCode: 'wrong code' },
         ],
       });
-    expect(res.status).toStrictEqual(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'not-found', details: { text: 'Not found' } }],
@@ -221,7 +221,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'code', valueCode: '1' }],
       });
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid', details: { text: 'No code system specified' } }],
@@ -238,7 +238,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
       });
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid', details: { text: `CodeSystem ${codeSystem.url} not found` } }],
@@ -256,7 +256,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(updatedCodeSystem);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     const codeSystem = res.body as CodeSystem;
 
     const res2 = await request(app)
@@ -270,7 +270,7 @@ describe('CodeSystem lookup', () => {
           { name: 'version', valueString: '3.1.4' },
         ],
       });
-    expect(res2.status).toStrictEqual(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -280,13 +280,122 @@ describe('CodeSystem lookup', () => {
     });
   });
 
+  test('Prefers complete CodeSystem over example even when example is newer', async () => {
+    const sharedUrl = 'http://example.com/shared-code-system-' + randomUUID();
+
+    // Both CodeSystems share the URL and have no version. The "example" one has a more recent date
+    // and only a subset of codes, and is created last (most recently updated) so that neither the
+    // date nor recency causes it to be selected over the "complete" one.
+    const exampleCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: sharedUrl,
+      name: 'exampleCodeSystem',
+      status: 'active',
+      content: 'example',
+      date: '2026-06-27',
+      concept: [{ code: 'example-only', display: 'Example Only' }],
+    };
+
+    // The "complete" CodeSystem has an older date but the full set of codes
+    const completeCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: sharedUrl,
+      name: 'completeCodeSystem',
+      status: 'active',
+      content: 'complete',
+      date: '2024-03-12',
+      concept: [{ code: 'complete-only', display: 'Complete Only' }],
+    };
+    const completeRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(completeCodeSystem);
+    expect(completeRes).toHaveStatus(201);
+
+    const exampleRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(exampleCodeSystem);
+    expect(exampleRes).toHaveStatus(201);
+
+    // A code that only exists in the "complete" CodeSystem should be found
+    const foundRes = await request(app)
+      .post('/fhir/R4/CodeSystem/$lookup')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: sharedUrl },
+          { name: 'code', valueCode: 'complete-only' },
+        ],
+      });
+    expect(foundRes).toHaveStatus(200);
+    expect(foundRes.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'name', valueString: 'completeCodeSystem' },
+        { name: 'display', valueString: 'Complete Only' },
+      ],
+    });
+
+    // A code that only exists in the "example" CodeSystem should NOT be found,
+    // confirming that the "complete" CodeSystem was selected
+    const notFoundRes = await request(app)
+      .post('/fhir/R4/CodeSystem/$lookup')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: sharedUrl },
+          { name: 'code', valueCode: 'example-only' },
+        ],
+      });
+    expect(notFoundRes).toHaveStatus(404);
+  });
+
+  test('Excludes retired CodeSystem from selection', async () => {
+    const retiredCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: 'http://example.com/retired-code-system-' + randomUUID(),
+      name: 'retiredCodeSystem',
+      status: 'retired',
+      content: 'complete',
+      concept: [{ code: 'retired-code', display: 'Retired Code' }],
+    };
+    const res = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(retiredCodeSystem);
+    expect(res).toHaveStatus(201);
+
+    // The retired CodeSystem should not be selected, so the lookup fails to find it
+    const lookupRes = await request(app)
+      .post('/fhir/R4/CodeSystem/$lookup')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: retiredCodeSystem.url },
+          { name: 'code', valueCode: 'retired-code' },
+        ],
+      });
+    // The retired CodeSystem is filtered out, so no CodeSystem is found for the URL (400)
+    expect(lookupRes).toHaveStatus(400);
+  });
+
   test('GET endpoint', async () => {
     const res = await request(app)
       .get(`/fhir/R4/CodeSystem/$lookup?system=${testCodeSystem.url}&code=1`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -310,7 +419,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -334,7 +443,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
-    expect(res.status).toStrictEqual(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'not-found', details: { text: 'Not found' } }],
@@ -350,7 +459,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { code: '1' } }],
       });
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -377,7 +486,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: 'incorrect', code: '1' } }],
       });
-    expect(res.status).toStrictEqual(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'not-found', details: { text: 'Not found' } }],
@@ -426,7 +535,7 @@ describe('CodeSystem lookup', () => {
           },
         ],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$lookup`)
@@ -436,7 +545,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'code', valueCode: '1' }],
       });
-    expect(res2.status).toStrictEqual(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: expect.arrayContaining([
@@ -509,7 +618,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: expect.arrayContaining([

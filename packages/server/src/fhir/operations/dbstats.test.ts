@@ -28,7 +28,7 @@ describe('$db-stats', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
   });
 
   test('Success - Specified table names', async () => {
@@ -42,7 +42,7 @@ describe('$db-stats', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'tableNames', valueString: 'Observation,Observation_History' }],
       } satisfies Parameters);
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
   });
 
   test('Access denied', async () => {
@@ -53,6 +53,6 @@ describe('$db-stats', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
-    expect(res1.status).toBe(403);
+    expect(res1).toHaveStatus(403);
   });
 });

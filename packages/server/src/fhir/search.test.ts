@@ -54,13 +54,14 @@ import type {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import assert from 'node:assert';
+import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, Repository } from './repo';
+import { repoAccess } from './repository/access-tracker';
 import type { ChainedSearchLink } from './search';
 import { clampEstimateCount, Direction, getCount, parseChainedParameter } from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
@@ -68,7 +69,7 @@ import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 import { loadStructureDefinitions } from './structure';
 
-jest.mock('hibp');
+vi.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
@@ -162,7 +163,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           resourceType: 'Patient',
           offset: 300,
         });
-        fail('Expected error');
+        expect.fail('Expected error');
       } catch (err) {
         expect(normalizeErrorString(err)).toStrictEqual('Search offset exceeds maximum (got 300, max 200)');
       }
@@ -195,10 +196,10 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
   );
 
   describe('getCount', () => {
-    let getDbClientSpy: jest.SpyInstance;
+    let getDbClientSpy: MockInstance;
 
     beforeEach(() => {
-      getDbClientSpy = jest.spyOn(repo, 'getDatabaseClient');
+      getDbClientSpy = vi.spyOn(repo, 'getDatabaseClient');
     });
 
     afterEach(() => {
@@ -1265,7 +1266,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             },
           ],
         });
-        fail('Expected error');
+        expect.fail('Expected error');
       } catch (err) {
         expect(normalizeErrorString(err)).toStrictEqual('Search filter value must be a string');
       }
@@ -1284,7 +1285,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             },
           ],
         });
-        fail('Expected error');
+        expect.fail('Expected error');
       } catch (err) {
         expect(normalizeErrorString(err)).toStrictEqual('Search filter value cannot contain null bytes');
       }
@@ -2303,7 +2304,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             `Patient?_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.specimen.parent.collected=2023`
           )
         )
-      ).rejects.toThrow(new Error('Search chains longer than three links are not currently supported'));
+      ).rejects.toThrow('Search chains longer than three links are not currently supported');
     }));
 
   test.each([
@@ -2320,9 +2321,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
     ],
     ['Patient?_has:Observation:status=active', 'Invalid search chain: _has:Observation:status'],
   ])('Invalid chained search parameters: %s', (searchString: string, errorMsg: string) => {
-    return withTestContext(async () =>
-      expect(repo.search(parseSearchRequest(searchString))).rejects.toStrictEqual(new Error(errorMsg))
-    );
+    return withTestContext(async () => expect(repo.search(parseSearchRequest(searchString))).rejects.toThrow(errorMsg));
   });
 
   test('Chained search with modifier', () =>
@@ -2757,7 +2756,9 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         ],
       });
 
-      const expected = [
+      expect(
+        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
+      ).toContainExactly([
         `match:Patient/${patient.id}`,
         `include:Patient/${linked1.id}`,
         `include:Patient/${linked2.id}`,
@@ -2765,11 +2766,87 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         `include:Organization/${organization1.id}`,
         `include:Practitioner/${practitioner1.id}`,
         `include:Practitioner/${practitioner2.id}`,
-      ].sort();
+      ]);
+    }));
 
+  test('_include with target type', () =>
+    withTestContext(async () => {
+      // gh-9765: AuditEvent.entity.what can reference many types, so
+      // _include=AuditEvent:entity:Task must include only the Task, not every
+      // referenced resource type.
+      const task = await repo.createResource<Task>({
+        resourceType: 'Task',
+        status: 'completed',
+        intent: 'order',
+      });
+      const referencedAuditEvent = await repo.createResource<AuditEvent>({
+        resourceType: 'AuditEvent',
+        recorded: '2026-01-01T00:00:00.000Z',
+        type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+        agent: [{ requestor: true }],
+        source: { observer: { display: 'test' } },
+      });
+      const auditEvent = await repo.createResource<AuditEvent>({
+        resourceType: 'AuditEvent',
+        recorded: '2026-01-01T00:00:00.000Z',
+        type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+        agent: [{ requestor: true }],
+        source: { observer: { display: 'test' } },
+        entity: [
+          { what: { reference: getReferenceString(task) } },
+          { what: { reference: getReferenceString(referencedAuditEvent) } },
+        ],
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(task) }],
+        include: [{ resourceType: 'AuditEvent', searchParam: 'entity', targetType: 'Task' }],
+      });
+
+      // The Task is included; the referenced AuditEvent is not, because its type
+      // does not match the include target type.
       expect(
-        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
-      ).toStrictEqual(expected);
+        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
+      ).toContainExactly([`include:Task/${task.id}`, `match:AuditEvent/${auditEvent.id}`]);
+    }));
+
+  test('_revinclude with target type', () =>
+    withTestContext(async () => {
+      // gh-9765: _revinclude target type restricts which base resources are followed.
+      const identifier = randomUUID();
+      const task = await repo.createResource<Task>({
+        resourceType: 'Task',
+        status: 'completed',
+        intent: 'order',
+        identifier: [{ value: identifier }],
+      });
+      const auditEvent = await repo.createResource<AuditEvent>({
+        resourceType: 'AuditEvent',
+        recorded: '2026-01-01T00:00:00.000Z',
+        type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+        agent: [{ requestor: true }],
+        source: { observer: { display: 'test' } },
+        entity: [{ what: { reference: getReferenceString(task) } }],
+      });
+
+      // Target type matches the Task base result: the AuditEvent is reverse included.
+      const matched = await repo.search({
+        resourceType: 'Task',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+        revInclude: [{ resourceType: 'AuditEvent', searchParam: 'entity', targetType: 'Task' }],
+      });
+      expect(
+        matched.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
+      ).toContainExactly([`include:AuditEvent/${auditEvent.id}`, `match:Task/${task.id}`]);
+
+      // Target type Patient does not match the Task base result: nothing is reverse included.
+      const notMatched = await repo.search({
+        resourceType: 'Task',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+        revInclude: [{ resourceType: 'AuditEvent', searchParam: 'entity', targetType: 'Patient' }],
+      });
+      expect(notMatched.entry?.filter((e) => e.search?.mode === 'include')).toHaveLength(0);
     }));
 
   test('_revinclude:iterate', () =>
@@ -2901,7 +2978,9 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         ],
       });
 
-      const expected = [
+      expect(
+        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
+      ).toContainExactly([
         `match:Patient/${patient.id}`,
         `include:Patient/${linked1.id}`,
         `include:Patient/${linked2.id}`,
@@ -2909,11 +2988,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         `include:Observation/${observation2.id}`,
         `include:Observation/${observation3.id}`,
         `include:Observation/${observation4.id}`,
-      ].sort();
-
-      expect(
-        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
-      ).toStrictEqual(expected);
+      ]);
     }));
 
   test('_include depth limit', () =>
@@ -3011,7 +3086,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           ],
           include: [{ resourceType: 'Patient', searchParam: 'link', modifier: Operator.ITERATE }],
         })
-      ).resolves.toMatchObject<Bundle>({
+      ).resolves.toMatchObject({
         resourceType: 'Bundle',
         type: 'searchset',
         entry: [],
@@ -3052,7 +3127,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         include: [{ resourceType: 'Patient', searchParam: 'general-practitioner' }],
         count: 1,
       };
-      await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+      await expect(repo.search(searchRequest)).resolves.toMatchObject({
         resourceType: 'Bundle',
         type: 'searchset',
         entry: [
@@ -3068,7 +3143,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
 
       searchRequest.count = 2;
-      await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+      await expect(repo.search(searchRequest)).resolves.toMatchObject({
         resourceType: 'Bundle',
         type: 'searchset',
         entry: [
@@ -3851,8 +3926,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         ],
       });
 
-      expect(result.entry).toHaveLength(2);
-      expect(getEntryIds(result)).toStrictEqual(expect.arrayContaining([observation1.id, observation2.id]));
+      expect(getEntryIds(result)).toContainExactly([observation1.id, observation2.id]);
 
       // Patients with observations performed by themselves with an ID equal to observation1.id
       const result2 = await repo.search(
@@ -4483,7 +4557,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       }
 
       expect(pageSizes).toStrictEqual([2, 2, 1]);
-      expect(seenIds.sort()).toStrictEqual(expectedIds.sort());
+      expect(seenIds).toContainExactly(expectedIds);
     }));
 
   test('Binary search not allowed', async () =>
@@ -5065,9 +5139,10 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         ]);
 
         // Second patient has one ServiceRequest and one Observation
-        expect(
-          result[getReferenceString(patients[1])].map((r) => r.resourceType).sort((a, b) => a.localeCompare(b))
-        ).toStrictEqual(['Observation', 'ServiceRequest']);
+        expect(result[getReferenceString(patients[1])].map((r) => r.resourceType)).toContainExactly([
+          'Observation',
+          'ServiceRequest',
+        ]);
 
         // Third patient has only Observations
         expect(result[getReferenceString(patients[2])].map((r) => r.resourceType)).toStrictEqual([
@@ -5080,7 +5155,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       withTestContext(async () => {
         try {
           await repo.search({ resourceType: 'Patient', offset: 10, cursor: 'foo' });
-          fail('Expected error');
+          expect.fail('Expected error');
         } catch (err) {
           expect(normalizeErrorString(err)).toBe('Cannot use both offset and cursor');
         }
@@ -5189,7 +5264,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         }
 
         expect(seenIds.length).toBe(50);
-        expect(seenIds.sort()).toStrictEqual(expectedIds.sort());
+        expect(seenIds).toContainExactly(expectedIds);
       }));
 
     test('V1 cursor is not parsed as V2', () =>
@@ -5330,9 +5405,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         const result = await repo.search(
           parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=gt80')
         );
-        expect(result.entry).toHaveLength(2);
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 90)).toBeDefined();
+        expect(result.entry?.map((e) => e.resource?.valueQuantity?.value)).toContainExactly([85, 90]);
       }));
 
     test('With units', async () =>
@@ -5340,9 +5413,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         const result = await repo.search(
           parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=gt80|http://unitsofmeasure.org|kg')
         );
-        expect(result.entry).toHaveLength(2);
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 90)).toBeDefined();
+        expect(result.entry?.map((e: any) => e.resource?.valueQuantity?.value)).toContainExactly([85, 90]);
       }));
 
     test('Approximately', async () =>
@@ -5350,10 +5421,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         const result = await repo.search(
           parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=ap80|http://unitsofmeasure.org|kg')
         );
-        expect(result.entry).toHaveLength(3);
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 75)).toBeDefined();
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 80)).toBeDefined();
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
+        expect(result.entry?.map((e: any) => e.resource?.valueQuantity?.value)).toContainExactly([75, 80, 85]);
       }));
   });
 
@@ -5393,9 +5461,9 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
   );
 
   describe('discourage sequential scans', () => {
-    let querySpy: jest.SpyInstance;
+    let querySpy: MockInstance;
     beforeEach(() => {
-      querySpy = jest.spyOn(repo.getDatabaseClient(DatabaseMode.READER), 'query');
+      querySpy = vi.spyOn(repo.getDatabaseClient(repoAccess.sqlReadConfig()), 'query');
     });
 
     afterEach(() => {
@@ -5417,8 +5485,6 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringContaining('SET enable_seqscan = off'));
       expect(querySpy).toHaveBeenNthCalledWith(2, expect.stringContaining('SELECT'), expect.anything());
       expect(querySpy).toHaveBeenNthCalledWith(3, expect.stringContaining('RESET enable_seqscan'));
-
-      querySpy.mockRestore();
     });
 
     test('config.fhirSearchMinLimit', async () => {
@@ -5433,7 +5499,6 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
       expect(querySpy).toHaveBeenCalledTimes(1);
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
-      querySpy.mockClear();
     });
   });
 });
@@ -5720,7 +5785,7 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
     withTestContext(async () => {
       const type = randomUUID();
       const searchRequest = parseSearchRequest(`PractitionerRole?_total=accurate&organization.type=${type}`);
-      await expect(systemRepo.search(searchRequest)).resolves.toMatchObject<Partial<Bundle>>({
+      await expect(systemRepo.search(searchRequest)).resolves.toMatchObject({
         type: 'searchset',
         total: 0,
       });
@@ -5744,7 +5809,7 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
         new SelectQuery('Patient').column('__version').where('id', '=', id);
 
       // patient1 at OLDER_VERSION, patient2 at Repository.VERSION
-      const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = systemRepo.getDatabaseClient(repoAccess.sqlWrite('Patient'));
       const OLDER_VERSION = Repository.VERSION - 1;
       await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient1.id]);
       expect((await getVersionQuery(patient1.id).execute(client))[0].__version).toStrictEqual(OLDER_VERSION);

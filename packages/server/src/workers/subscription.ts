@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@medplum/core';
+import type { BackgroundJobContext, BackgroundJobInteraction, Operation, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   ContentType,
@@ -34,11 +34,9 @@ import type {
   ResourceType,
   Subscription,
 } from '@medplum/fhirtypes';
-import type { Job, MinimalJob, QueueBaseOptions } from 'bullmq';
+import type { Job, MinimalJob } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
-import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
-import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
@@ -58,6 +56,7 @@ import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscri
 import { getCacheRedis } from '../redis';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import {
   clearSubscriptionFailures,
@@ -67,8 +66,8 @@ import {
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
+  defaultQueueOptions,
   findProjectMembership,
-  getBullmqRedisConnectionOptions,
   getWorkerBullmqConfig,
   isJobSuccessful,
   queueRegistry,
@@ -76,7 +75,7 @@ import {
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.
- * This is passed into fetch and will make fetch abort the request after REQUEST_TIMEOUT milliseconds.
+ * This is passed into fetch using an AbortSignal and will abort the request after REQUEST_TIMEOUT milliseconds.
  */
 const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 
@@ -150,13 +149,11 @@ const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
 
 export const initSubscriptionWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
+      ...defaultOptions.defaultJobOptions,
       attempts: MAX_JOB_ATTEMPTS, // can be overridden in catchJobError() below
       backoff: { type: 'cappedExponential' }, // see below
     },
@@ -393,6 +390,13 @@ export async function addSubscriptionJobs(
       if (subscription.channel.type === 'websocket') {
         wsSubEvents.push([subscription.id, { includeResource: true }]);
         continue;
+      }
+      if (subscription.channel.type === 'rest-hook') {
+        const endpoint = subscription.channel.endpoint;
+        if (!endpoint?.startsWith('Bot/') && !isAllowedOutboundUrlForQueue(endpoint ?? '', getConfig())) {
+          logFn(`Subscription rest-hook URL is not allowed for outbound fetch`);
+          continue;
+        }
       }
       await addSubscriptionJobData({
         subscriptionId: subscription.id,
@@ -731,14 +735,18 @@ async function sendRestHook(
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }
   try {
-    validateRestHookUrl(url);
     log.info('Sending rest hook', {
       url,
       subscriptionId: subscription.id,
       projectId: subscription.meta?.project,
     });
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
-    const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
+    const response = await safeFetch(url, {
+      method: 'POST',
+      headers,
+      body,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT),
+    });
     fetchEndTime = Date.now();
     log.info('Received rest hook response', {
       status: response.status,
@@ -787,25 +795,6 @@ async function sendRestHook(
   if (error) {
     throw error;
   }
-}
-
-function validateRestHookUrl(url: string): void {
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url);
-  } catch {
-    throw new Error('Invalid rest-hook URL: must be an absolute HTTPS URL');
-  }
-
-  if (parsedUrl.protocol === 'https:') {
-    return;
-  }
-
-  if (parsedUrl.protocol === 'http:' && getConfig().allowInsecureRestHookUrl) {
-    return;
-  }
-
-  throw new Error('Invalid rest-hook URL: HTTPS is required unless allowInsecureRestHookUrl is enabled');
 }
 
 /**
@@ -969,18 +958,21 @@ async function autoDisableSubscription(
       { op: 'add', path: '/error', value: errorMessage },
     ];
 
-    await systemRepo.withTransaction(async (txRepo) => {
-      await txRepo.patchResource('Subscription', subscription.id, patch);
+    await systemRepo.withTransaction(
+      async (txRepo) => {
+        await txRepo.patchResource('Subscription', subscription.id, patch);
 
-      await createSubscriptionAuditEvent(
-        txRepo,
-        subscription,
-        new Date().toISOString(),
-        AuditEventOutcome.SeriousFailure,
-        errorMessage,
-        subscription
-      );
-    });
+        await createSubscriptionAuditEvent(
+          txRepo,
+          subscription,
+          new Date().toISOString(),
+          AuditEventOutcome.SeriousFailure,
+          errorMessage,
+          subscription
+        );
+      },
+      { resourceTypes: ['AuditEvent', 'Subscription'], source: 'autoDisableSubscription' }
+    );
 
     await clearSubscriptionFailures(subscription.id);
 
@@ -992,7 +984,10 @@ async function autoDisableSubscription(
   } catch (err) {
     globalLogger.warn('Failed to auto-disable subscription', {
       subscription: subscription.id,
+      projectId: subscription?.meta?.project,
+      failureCount,
       error: err,
+      timeWindowSeconds: trigger.timeWindowSeconds,
     });
   }
 }

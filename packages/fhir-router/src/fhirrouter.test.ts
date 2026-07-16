@@ -440,14 +440,14 @@ describe('FHIR Router', () => {
         body: patient,
         params: {},
         query: {
-          _account: 'Organization/123',
+          _account: 'Organization/125',
         },
       },
       repo
     );
     expect(res).toMatchObject(created);
     expect(resource).toMatchObject(patient);
-    expect(resource?.meta?.account?.reference).toStrictEqual('Organization/123');
+    expect(resource?.meta?.account?.reference).toStrictEqual('Organization/125');
   });
 
   test('Custom system-level operation returns not found', async () => {

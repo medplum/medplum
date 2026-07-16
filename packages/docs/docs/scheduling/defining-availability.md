@@ -1,13 +1,16 @@
 ---
-sidebar_label: Defining Availability (Alpha)
+sidebar_label: Defining Availability (Beta)
 sidebar_position: 10
 ---
 
+import ExampleCode from '!!raw-loader!@site/../examples/src/scheduling/defining-availability.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # Defining Availability
 
-:::info[Alpha]
+:::info[Beta]
 
-Medplum Scheduling APIs are currently in [alpha](/docs/compliance/alpha-beta).
+Medplum Scheduling APIs are currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
@@ -16,6 +19,8 @@ This guide covers how to configure availability using the `SchedulingParameters`
 Parameters may be defined on a HealthcareService and shared amongst all Schedules that book that type
 of appointment. Each Schedule may also override these parameters to define behaviors specific to that
 schedule as needed.
+
+A few constraints trip people up most often — see [Common Pitfalls](#common-pitfalls) for a quick reference before you start.
 
 The diagram below shows how availability can be defined at both
 - The [actor level](/docs/scheduling/defining-availability#actor-level-availability) (via Schedule)
@@ -75,190 +80,19 @@ When using scheduling APIs to interact with multiple `Schedule` resources at onc
 <details>
 <summary>Example of the `SchedulingParameters` extension on a `HealthcareService`</summary>
 
-```tsx
-{
-  "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-  "extension": [
-    // Recommended: duration determines how long the time increments for a Slot are.
-    // If not set here, must be defined on all related Schedules. To book on multiple
-    // schedules at once, they must all match in this dimension.
-    {
-      "url": "duration",
-      "valueDuration": {
-        "value": 1,
-        "unit": "h"
-      }
-    },
+<MedplumCodeBlock language="ts" selectBlocks="schedulingParamsHealthcareService">
+  {ExampleCode}
+</MedplumCodeBlock>
 
-    // Recommended: Time alignment interval (appointment start time boundaries)
-    // To book on multiple schedules at once, they must all match in this dimension.
-    {
-      "url": "alignmentInterval",
-      "valueDuration": {
-        "value": 15,
-        "unit": "min",
-        "system": "http://unitsofmeasure.org",
-        "code": "min"
-      }
-    },
-
-    // Recommended: Time alignment offset (shift from interval boundaries)
-    // To book on multiple schedules at once, they must all match in this dimension.
-    {
-      "url": "alignmentOffset",
-      "valueDuration": {
-        "value": 0,
-        "unit": "min",
-        "system": "http://unitsofmeasure.org",
-        "code": "min"
-      }
-    },
-
-    // Optional: Timezone for anchoring the alignment grid to local midnight
-    // Independent of `timezone`, which controls availability window interpretation
-    {
-      "url": "alignmentTimezone",
-      "valueCode": "America/New_York"
-    },
-
-    // Optional: specify time zone for availability interpretation
-    // Falls back to Schedule's actor time zone if not specified
-    {
-      "url": "timezone",
-      "valueCode": "America/Los_Angeles"
-    },
-
-
-    // Optional: Buffer time required before appointment
-    {
-      "url": "bufferBefore",
-      "valueDuration": {
-        "value": 15,
-        "unit": "min",
-        "system": "http://unitsofmeasure.org",
-        "code": "min"
-      }
-    },
-
-    // Optional: Buffer time required after appointment
-    {
-      "url": "bufferAfter",
-      "valueDuration": {
-        "value": 10,
-        "unit": "min",
-        "system": "http://unitsofmeasure.org",
-        "code": "min"
-      }
-    }
-  ]
-}
-```
 </details>
 
 
 <details>
 <summary>Example of the `SchedulingParameters` extension on a `Schedule`</summary>
 
-```tsx
-{
-  "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-  "extension": [
-    // Required on Schedule: you must specify what type of appointment these parameters apply to
-    {
-      "url": "service",
-      "valueReference": {
-        "reference": "HealthcareService/5d02acfd-fbe8-4537-84e4-31f5116be105",
-        "display": "Bariatric Surgery"
-      }
-    },
-
-    // Optional: specify time zone for availability interpretation
-    // Falls back to Schedule's actor time zone if not specified
-    {
-      "url": "timezone",
-      "valueCode": "America/Los_Angeles"
-    },
-
-    // Optional: duration determines how long the time increments for a Slot are.
-    // If not set here, must be defined on the related HealthcareService
-    {
-      "url": "duration",
-      "valueDuration": {
-        "value": 1,
-        "unit": "h"
-      }
-    },
-
-    // Recurring availability (Schedule only)
-    {
-      "url": "availability",
-      "extension": [
-        {
-          "url": "availableTime",
-          "extension": [
-            { "url": "daysOfWeek", "valueCode": "mon" },
-            { "url": "daysOfWeek", "valueCode": "wed" },
-            { "url": "daysOfWeek", "valueCode": "fri" },
-            { "url": "availableStartTime", "valueTime": "09:00:00" },
-            { "url": "availableEndTime", "valueTime": "17:00:00" }
-          ]
-        }
-      ]
-    },
-
-    // Buffer time before appointment
-    {
-      "url": "bufferBefore",
-      "valueDuration": {
-        "value": 15,
-        "unit": "min",
-        "system": "http://unitsofmeasure.org",
-        "code": "min"
-      }
-    },
-
-    // Buffer time after appointment
-    {
-      "url": "bufferAfter",
-      "valueDuration": {
-        "value": 10,
-        "unit": "min",
-        "system": "http://unitsofmeasure.org",
-        "code": "min"
-      }
-    },
-
-    // Time alignment interval (appointment start time boundaries)
-    {
-      "url": "alignmentInterval",
-      "valueDuration": {
-        "value": 15,
-        "unit": "min",
-        "system": "http://unitsofmeasure.org",
-        "code": "min"
-      }
-    },
-
-    // Time alignment offset (shift from interval boundaries)
-    {
-      "url": "alignmentOffset",
-      "valueDuration": {
-        "value": 0,
-        "unit": "min",
-        "system": "http://unitsofmeasure.org",
-        "code": "min"
-      }
-    },
-
-    // Timezone for anchoring the alignment grid to local midnight
-    // Independent of `timezone`, which controls availability window interpretation
-    {
-      "url": "alignmentTimezone",
-      "valueCode": "America/New_York"
-    }
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="schedulingParamsSchedule">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -292,6 +126,11 @@ The rare case in which they differ: a provider whose availability hours and appo
 
 ## Actor Level Availability
 
+Actor-level availability is defined per [`Schedule`](/docs/api/fhir/resources/schedule) and is resolved **field-by-field against** the [service-level parameters](#service-level-availability) on the [HealthcareService](/docs/api/fhir/resources/healthcareservice):
+
+- For each parameter (`duration`, buffers, alignment, **and `availability`**), the value set on the Schedule **overrides** the HealthcareService value for that field; any field the Schedule does not set is **inherited** from the service. This is an override, not a merge — a Schedule that sets its own `availability` fully replaces the service's `availableTime`, rather than narrowing it. See [Override Behavior](#override-behavior) for the full resolution order.
+- A separate **intersection** applies only when [booking across multiple Schedules at once](#example-3-location-specific-complex-surgical-scheduling) (e.g. surgeon + room + anesthesiologist): a time is offered only when *every* required Schedule is available. That intersection is between Schedules — not between a Schedule and its HealthcareService.
+
 ### The Concept of Implicit Availability
 
 Medplum's scheduling model uses **implicit availability**: time is assumed to be free by default. You define availability rules using extensions that specify when resources are available based on recurring patterns. [`Slot`](/docs/api/fhir/resources/slot) resources are only used for explicit overrides—either to mark time as busy (when an appointment is booked) or to block out unavailable time.
@@ -302,71 +141,29 @@ This approach avoids the need to pre-generate thousands of Slot resources for ev
 
 The [`Schedule`](/docs/api/fhir/resources/schedule) resource is the foundation for defining actor-level availability for a provider, location, or device.
 
-The Schedule resource should define the service types that it is capable of acting on in its `serviceType` attribute.
+The Schedule resource should define the service types that it is capable of acting on in its `serviceType` attribute. To use Medplum Scheduling APIs, this should include the extension `https://medplum.com/fhir/service-type-reference` holding a reference to the matching HealthcareService.
 
 Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource that defines availability for a [Practitioner](/docs/api/fhir/resources/practitioner).
 
-```tsx
-{
-  "resourceType": "Schedule",
-  "id": "dr-smith-schedule",
-  "actor": [{"reference": "Practitioner/dr-smith"}],
-  "serviceType": [
-    {
-      "text": "Office Visit",
-      "coding": [
-        { "code": "office-visit" }
-      ],
-      "extension": [
-        {
-          "url": "https://medplum.com/fhir/service-type-reference",
-          "valueReference": {
-            "reference": "HealthcareService/23c3f1cc-4f55-4990-9775-511b02487e7e",
-            "display": "Office Visit"
-          }
-        }
-      ]
-    }
-  ],
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [
-      {
-        "url": "service",
-        "valueReference": {
-            "reference": "HealthcareService/23c3f1cc-4f55-4990-9775-511b02487e7e",
-            "display": "Office Visit"
-        }
-      },
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 1,
-          "unit": "h"
-        }
-      },
-      {
-        "url": "availability",
-        "extension": [
-          {
-            "url": "availableTime",
-            "extension": [
-              { "url": "availableStartTime", "valueTime": "09:00:00" },
-              { "url": "availableEndTime", "valueTime": "17:00:00" },
-              { "url": "daysOfWeek", "valueCode": "mon" },
-              { "url": "daysOfWeek", "valueCode": "tue" },
-              { "url": "daysOfWeek", "valueCode": "wed" },
-              { "url": "daysOfWeek", "valueCode": "thu" },
-              { "url": "daysOfWeek", "valueCode": "fri" },
-            ]
-          }
-        ]
-      }
-    ]
-  }]
-  //...
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="scheduleResource">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+:::note[`Schedule` has no `name` element]
+
+In FHIR R4, [`Schedule`](/docs/api/fhir/resources/schedule) has no `name` element. This is easy to trip over because `Organization`, `HealthcareService`, and `Location` all *do* have `name`. Sending `name` on a `Schedule` fails validation with `Invalid additional property "name"`.
+
+Instead, use `comment` — a free-text field that's a good place for a human-readable description or label (for example, `"Dr. Smith's Office Visit availability"`).
+
+:::
+
+#### Choosing the actor: `Practitioner` vs `PractitionerRole`
+
+`Schedule.actor` may reference a [`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Location`](/docs/api/fhir/resources/location), or [`Device`](/docs/api/fhir/resources/device). When the actor is a person:
+
+- Use **`Practitioner`** when availability is for the individual regardless of role or location.
+- Use **`PractitionerRole`** when availability is specific to a role, organization, or location binding (for example, when licensure varies by state — see [state-by-state licensure](/docs/scheduling/state-by-state-licensure)).
+
 
 ### `availability` Extension
 
@@ -381,129 +178,45 @@ The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://h
 | ↳ `availableEndTime`  | `valueTime`   | Closing time (not allowed  when `allDay` is present) | No         |
 | `notAvailableTime`    | (nested)      | Typed for future use; not yet processed              | Yes        |
 
-```tsx
-{
-  "resourceType": "Schedule",
-  "id": "dr-smith-schedule",
-  "actor": [{"reference": "Practitioner/dr-smith"}],
-  "serviceType": [
-    {
-      "text": "Office Visit",
-      "coding": [
-        { "code": "office-visit" }
-      ],
-      "extension":[
-        {
-          "url": "https://medplum.com/fhir/service-type-reference",
-          "valueReference": {
-            "reference": "HealthcareService/23c3f1cc-4f55-4990-9775-511b02487e7e",
-            "display": "Office Visit"
-          }
-        }
-      ]
-    }
-  ],
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [
-      {
-        "url": "service",
-        "valueReference": {
-            "reference": "HealthcareService/23c3f1cc-4f55-4990-9775-511b02487e7e",
-            "display": "Office Visit"
-        }
-      },
-      {
-        "url": "duration",
-        "valueDuration": {"value": 1, "unit": "h"}
-      },
-      {
-        "url": "availability",
-        "extension": [
-          {
-            "url": "availableTime",
-            "extension": [
-              { "url": "daysOfWeek", "valueCode": "mon" },
-              { "url": "daysOfWeek", "valueCode": "tue" },
-              { "url": "daysOfWeek", "valueCode": "wed" },
-              { "url": "daysOfWeek", "valueCode": "thu" },
-              { "url": "daysOfWeek", "valueCode": "fri" },
-              { "url": "availableStartTime", "valueTime": "09:00:00" },
-              { "url": "availableEndTime",   "valueTime": "17:00:00" }
-            ]
-          }
-        ]
-      }
-    ]
-  }]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="scheduleAvailability">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ## Service Level Availability
 
 ### Service Types and HealthcareService
 
-A [HealthcareService](/docs/api/fhir/resources/healthcareservice) gives a mechanism to define common scheduling parameters for an appointment type, which can then be used by multiple [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedules](/docs/api/fhir/resources/schedule). This allows you to define standard appointment durations, buffer times, alignment intervals, and booking limits once and apply them across multiple providers.
+A [HealthcareService](/docs/api/fhir/resources/healthcareservice) gives a mechanism to define common scheduling parameters for an appointment type, which can then be used by multiple [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedules](/docs/api/fhir/resources/schedule). This allows you to define standard appointment durations, buffer times, and grid alignment settings once and apply them across multiple providers.
+
+In Medplum scheduling, **one HealthcareService represents one bookable appointment type** (e.g. "Office Visit", "New Patient Visit", "Bariatric Surgery"). It is the place where the shared `SchedulingParameters` extension lives, so the same `duration`, buffers, and alignment apply everywhere the type is booked.
+
+#### Coding a HealthcareService
+
+A `HealthcareService` carries several `CodeableConcept` fields. The most relevant for scheduling is `type` (the specific appointment/service type that the `Schedule.serviceType` matches against). The full set:
+
+| Field       | Meaning                                  | Conventional code system                                                                                                                  |
+| ----------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `category`  | Broad category of service                | HL7 [`service-category`](https://hl7.org/fhir/R4/valueset-service-category.html)                                                          |
+| `type`      | The specific service / appointment type  | HL7 [`service-type`](https://hl7.org/fhir/R4/valueset-service-type.html), or [SNOMED CT](https://www.snomed.org/) procedure codes         |
+| `specialty` | Clinical specialties handled by the site | [SNOMED CT](https://www.snomed.org/) practice-setting codes ([c80-practice-codes](https://hl7.org/fhir/R4/valueset-c80-practice-codes.html)) |
+
+These bindings are **example/preferred, not required** — FHIR does not force a particular terminology here. You can use a code from the HL7 `service-type` value set, a SNOMED CT code (as the surgical examples below do), or your own local system (as the `http://example.org/appointment-types` examples below do). What matters is that the same code/system you put on `HealthcareService.type` is what the `Schedule.serviceType` declares and what `$find` is queried with.
+
+:::note[LOINC is not used here]
+
+LOINC codes describe observations, lab tests, and documents — not services. Use the HL7 `service-type`/`service-category` systems or SNOMED CT for a `HealthcareService`, not LOINC.
+
+:::
 
 For a `Schedule` to use the `HealthcareService`'s scheduling parameters, the `Schedule.serviceType` must include a reference to the HealthcareService in its extensions.
 
-```tsx
-{
-  "resourceType": "HealthcareService",
-  "id": "23c3f1cc-4f55-4990-9775-511b02487e7e",
-  "type": [{
-    "text": "Office Visit",
-    "coding": [{
-      "system": "http://example.org/appointment-types",
-      "code": "office-visit"
-    }]
-  }],
-  "availableTime": [
-    "daysOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-    "availableStartTime": "09:00:00",
-    "availableEndTime": "17:00:00"
-  ],
-  //...
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 1,
-          "unit": "h"
-        }
-      }
-    ]
-  }]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="healthcareServiceServiceLevel">
+  {ExampleCode}
+</MedplumCodeBlock>
 
-```tsx
-{
-  "resourceType": "Schedule",
-  "id": "dr-smith-schedule",
-  "actor": [{"reference": "Practitioner/dr-smith"}],
-  "serviceType": [
-    {
-      "text": "Office Visit",
-      "coding": [
-        { "code": "office-visit" }
-      ],
-      "extension":[
-        {
-          "url": "https://medplum.com/fhir/service-type-reference",
-          "valueReference": {
-            "reference": "HealthcareService/23c3f1cc-4f55-4990-9775-511b02487e7e",
-            "display": "Office Visit"
-          }
-        }
-      ]
-    }
-  ]
-  //...
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="scheduleServiceTypeLink">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ### Override Behavior
 
@@ -511,55 +224,9 @@ A [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedule](/docs/api/f
 
 This means you only need to specify what differs. For example, to restrict availability to Tuesday and Thursday mornings while keeping all other parameters (duration, buffers, alignment) from the HealthcareService:
 
-```tsx
-{
-  "resourceType": "Schedule",
-  "id": "dr-chen-schedule",
-  "active": true,
-  "actor": [{"reference": "Practitioner/dr-chen"}],
-  "serviceType": [
-    {
-      "coding": [{"code": "new-patient-visit"}],
-      "extension": [{
-        "url": "https://medplum.com/fhir/service-type-reference",
-        "valueReference": {
-          "reference": "HealthcareService/f44bbf25-bf57-4263-8f10-be060cc91672",
-          "display": "New Patient Visit"
-        }
-      }]
-    }
-  ],
-  "extension": [
-    {
-      "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-      "extension": [
-        {
-          "url": "service",
-          "valueReference": {
-            "reference": "HealthcareService/f44bbf25-bf57-4263-8f10-be060cc91672",
-            "display": "New Patient Visit"
-          }
-        },
-        // Only availability is overridden; duration, buffers, and alignment are inherited from HealthcareService
-        {
-          "url": "availability",
-          "extension": [
-            {
-              "url": "availableTime",
-              "extension": [
-                { "url": "daysOfWeek", "valueCode": "tue" },
-                { "url": "daysOfWeek", "valueCode": "thu" },
-                { "url": "availableStartTime", "valueTime": "09:00:00" },
-                { "url": "availableEndTime", "valueTime": "13:00:00" }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="scheduleOverride">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 **Field-level inheritance**: When a Schedule has a `SchedulingParameters` extension for a service, each field is resolved independently using this priority order (highest to lowest):
 
@@ -574,17 +241,9 @@ If a Schedule has **no** `SchedulingParameters` extension at all, all parameters
 
 Here is an example of a [Slot](/docs/api/fhir/resources/slot) resource that blocks time for a specific service type.
 
-```tsx
-{
-  "resourceType": "Slot",
-  "schedule": {"reference": "Schedule/dr-johnson-schedule"},
-  "status": "busy-unavailable",
-  "start": "2025-12-24T08:00:00Z",
-  "end": "2025-12-27T07:59:59Z",
-  "comment": "Holiday vacation",
-  "serviceType": [{"coding": [{"code": "office-visit"}]}]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="slotBlocking">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 - **With serviceType**: Blocks only that specific service
 - **Without serviceType**: Blocks all services
@@ -601,26 +260,18 @@ The `timezone` parameter allows you to specify different timezones for different
 
 There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/practitioner), [`Location`](/docs/api/fhir/resources/location), or [`Device`](/docs/api/fhir/resources/device), so you must add it via the FHIR timezone extension:
 
-```ts
-{
-  resourceType: 'Practitioner',
-  // ...
-  extension: [
-    {
-      url: "http://hl7.org/fhir/StructureDefinition/timezone",
-      valueCode: "America/Los_Angeles"
-    }
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="actorTimezone">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 :::
 
 
 **Timezone Resolution Order:**
 
-1. If `timezone` is specified in the `scheduling-parameters` extension, use that time zone
-2. Otherwise, fall back to the time zone defined on the Schedule's actor reference (Practitioner, Location, or Device)
+1. If `timezone` is specified in the `scheduling-parameters` extension of a `Schedule` resource, use that time zone
+2. If `timezone` is specified in the `scheduling-parameters` extension of a `HealthcareService` resource, use that time zone
+3. Otherwise, fall back to the time zone defined on the Schedule's actor reference (Practitioner, PractitionerRole, Location, or Device)
 
 **Important Notes:**
 
@@ -629,105 +280,9 @@ There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/p
 
 Here is an example of a Schedule with multiple service types, each with its own time zone:
 
-```tsx
-{
-  "resourceType": "Schedule",
-  "id": "dr-smith-schedule",
-  "actor": [{"reference": "Practitioner/dr-smith"}],
-  "serviceType": [
-    {
-      "text": "Cardiac Surgery",
-      "coding": [
-        { "code": "cardiac-surgery" }
-      ]
-    },
-    {
-      "text": "Call Center Availability",
-      "coding": [
-        { "code": "call-center-availability" }
-      ]
-    }
-  ],
-  "extension": [
-    {
-      "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-      "extension": [
-        {
-          "url": "service",
-          "valueReference": {
-            "reference": "HealthcareService/a8f88a98-2578-4644-b408-7ba73f104298",
-            "display": "Cardiac Surgery"
-          }
-        },
-        {
-          "url": "timezone",
-          "valueCode": "America/Los_Angeles"
-        },
-        {
-          "url": "duration",
-          "valueDuration": {
-            "value": 1,
-            "unit": "h"
-          }
-        },
-        {
-          "url": "availability",
-          "extension": [
-            {
-              "url": "availableTime",
-              "extension": [
-                { "url": "daysOfWeek", "valueCode": "mon" },
-                { "url": "daysOfWeek", "valueCode": "tue" },
-                { "url": "daysOfWeek", "valueCode": "wed" },
-                { "url": "availableStartTime", "valueTime": "11:00:00" }, // Interpreted in America/Los_Angeles
-                { "url": "availableEndTime", "valueTime": "15:00:00" } // Interpreted in America/Los_Angeles
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-      "extension": [
-        {
-          "url": "timezone",
-          "valueCode": "America/New_York"
-        },
-        {
-          "url": "service",
-          "valueReference": {
-            "reference": "HealthcareService/0dbe6bf1-40b8-4204-a406-f78b5a0e59d0"
-            "display": "Call Center Availability"
-          }
-        },
-        {
-          "url": "duration",
-          "valueDuration": {
-            "value": 1,
-            "unit": "h"
-          }
-        },
-        {
-          "url": "availability",
-          "extension": [
-            {
-              "url": "availableTime",
-              "extension": [
-                { "url": "daysOfWeek", "valueCode": "mon" },
-                { "url": "daysOfWeek", "valueCode": "tue" },
-                { "url": "daysOfWeek", "valueCode": "wed" },
-                { "url": "availableStartTime", "valueTime": "09:00:00" }, // Interpreted in America/New_York
-                { "url": "availableEndTime", "valueTime": "17:00:00" } // Interpreted in America/New_York
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="multiTimezoneSchedule">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 In this example:
 
@@ -746,48 +301,9 @@ This example shows how to define availability for a simple primary care office w
 
 This HealthcareService defines default scheduling parameters for a 30-minute office visit with 5-minute buffers and 15-minute alignment intervals.
 
-```tsx
-{
-  "resourceType": "HealthcareService",
-  "id": "office-visit",
-  "type": [{
-    "text": "Office Visit",
-    "coding": [{
-      "system": "http://example.org/appointment-types",
-      "code": "office-visit",
-      "display": "Office Visit"
-    }]
-  }],
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 30,
-          "unit": "min"
-        }
-      },
-      {
-        "url": "bufferBefore",
-        "valueDuration": {"value": 5, "unit": "min"}
-      },
-      {
-        "url": "bufferAfter",
-        "valueDuration": {"value": 5, "unit": "min"}
-      },
-      {
-        "url": "alignmentInterval",
-        "valueDuration": {"value": 15, "unit": "min"}
-      },
-      {
-        "url": "alignmentOffset",
-        "valueDuration": {"value": 0, "unit": "min"}
-      }
-    ]
-  }]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="officeVisitService">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -796,33 +312,9 @@ This HealthcareService defines default scheduling parameters for a 30-minute off
 
 This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits all default parameters from the HealthcareService without any service-specific overrides.
 
-```tsx
-{
-  "resourceType": "Schedule",
-  "id": "dr-johnson-schedule",
-  "active": true,
-  "actor": [{
-    "reference": "Practitioner/dr-johnson",
-    "display": "Dr. Sarah Johnson"
-  }],
-  "planningHorizon": {
-    "start": "2025-01-01T00:00:00Z",
-    "end": "2025-12-31T23:59:59Z"
-  },
-  "serviceType": [
-    // This entry will allow using the office-visit shared HealthcareService definitions
-    {
-      "text": "Office Visit",
-      "coding": [
-        { "code": "office-visit" }
-      ]
-    }
-  ],
-  "extension": [
-    // No values here, everything is inherited from shared definitions
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="drJohnsonSchedule">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -856,37 +348,11 @@ A provider who offers different appointment types with varying availability and 
 <details>
 <summary>HealthcareService: New Patient Visit</summary>
 
-This HealthcareService defines a 60-minute new patient visit with 15-minute buffers, 30-minute alignment intervals, and a booking limit of 3 per day.
+This HealthcareService defines a 60-minute new patient visit with 15-minute buffers and 30-minute alignment intervals.
 
-```tsx
-{
-  "resourceType": "HealthcareService",
-  "id": "new-patient-visit",
-  "type": [{
-    "text": "New Patient Visit",
-    "coding": [{
-      "system": "http://example.org/appointment-types",
-      "code": "new-patient-visit",
-      "display": "New Patient Visit"
-    }]
-  }],
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 1,
-          "unit": "h"
-        }
-      },
-      {"url": "bufferBefore", "valueDuration": {"value": 15, "unit": "min"}},
-      {"url": "bufferAfter", "valueDuration": {"value": 15, "unit": "min"}},
-      {"url": "alignmentInterval", "valueDuration": {"value": 30, "unit": "min"}}
-    ]
-  }]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="newPatientService">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -897,40 +363,9 @@ This HealthcareService defines a 20-minute follow-up visit with 5-minute buffers
 
 It defines default availability of Monday-Friday, 9am-5pm.
 
-```tsx
-{
-  "resourceType": "HealthcareService",
-  "id": "follow-up-visit",
-  "type": {
-    "text": "Follow-up Visit",
-    "coding": [{
-      "system": "http://example.org/appointment-types",
-      "code": "follow-up",
-      "display": "Follow-up Visit"
-    }]
-  },
-  "availableTime": [{
-    "daysOfWeek": ["mon","tue","wed","thu","fri"],
-    "availableStartTime": "09:00:00",
-    "availableEndTime": "17:00:00",
-  }],
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 20,
-          "unit": "min"
-        }
-      },
-      {"url": "bufferBefore", "valueDuration": {"value": 5, "unit": "min"}},
-      {"url": "bufferAfter", "valueDuration": {"value": 5, "unit": "min"}},
-      {"url": "alignmentInterval", "valueDuration": {"value": 10, "unit": "min"}}
-    ]
-  }]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="followUpService">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -939,83 +374,11 @@ It defines default availability of Monday-Friday, 9am-5pm.
 
 This schedule declares in its `serviceType` array that it can be booked for New Patient visits and Follow-Up visits.
 
-This Schedule will use the default availability for the "Follow-Up" service (Mon-Fri 9am-5pm). It will override "New Patient Visit" appointment type to only be available on Tuesday and Thursday mornings (9am-1pm).
+This Schedule uses the shared availability from the "Follow-Up" service (Mon-Fri 9am-5pm). It overrides "New Patient Visit" appointment type to only be available on Tuesday and Thursday mornings (9am-1pm).
 
-```tsx
-{
-  "resourceType": "Schedule",
-  "id": "dr-chen-schedule",
-  "active": true,
-  "actor": [{"reference": "PractitionerRole/dr-chen"}],
-  "planningHorizon": {
-    "start": "2025-01-01T00:00:00Z",
-    "end": "2025-12-31T23:59:59Z"
-  },
-  "serviceType": [
-    {
-      "text": "New Patient Visit",
-      "coding": [
-        {
-          "system": "http://example.org/appointment-types",
-          "code": "new-patient-visit"
-        }
-      ],
-      "extension": [
-        "url": "https://medplum.com/fhir/service-type-reference",
-        "valueReference": {
-          "reference": "HealthcareService/new-patient-visit",
-          "display": "New Patient Visit"
-        }
-      ]
-    },
-    {
-      "text": "Follow-up Visit",
-      "coding": [
-        {
-          "system": "http://example.org/appointment-types",
-          "code": "follow-up"
-        }
-      ],
-      "extension": [
-        "url": "https://medplum.com/fhir/service-type-reference",
-        "valueReference": {
-          "reference": "HealthcareService/follow-up",
-          "display": "Follow-up Visit"
-        }
-      ]
-    }
-  ],
-  "extension": [
-    // New patient visits only on Tuesday and Thursday mornings
-    {
-      "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-      "extension": [
-        {
-          "url": "service",
-          "valueReference": {
-            "reference": "HeathcareService/new-patient-visit",
-            dislpay: "New Patient Visit"
-          }
-        },
-        {
-          "url": "availability",
-          "extension": [
-            {
-              "url": "availableTime",
-              "extension": [
-                { "url": "daysOfWeek", "valueCode": "tue" },
-                { "url": "daysOfWeek", "valueCode": "thu" },
-                { "url": "availableStartTime", "valueTime": "09:00:00" },
-                { "url": "availableEndTime", "valueTime": "13:00:00" }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="multiServiceSchedule">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -1052,48 +415,11 @@ A bariatric surgery requiring surgeon, OR room, and anesthesiologist coordinatio
 <details>
 <summary>HealthcareService: Bariatric Surgery</summary>
 
-This HealthcareService defines scheduling for a 120-minute surgical procedure with 45/30-minute buffers and multiple booking limits (2 per day, 8 per week).
+This HealthcareService defines scheduling for a 120-minute surgical procedure with 45/30-minute buffers.
 
-```tsx
-{
-  "resourceType": "HealthcareService",
-  "id": "bariatric-surgery",
-  "type": [{
-    "coding": [{
-      "system": "http://snomed.info/sct",
-      "code": "287809009",
-      "display": "Bariatric Surgery"
-    }]
-  }],
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 120,
-          "unit": "min"
-        }
-      },
-      {"url": "bufferBefore", "valueDuration": {"value": 45, "unit": "min"}},
-      {"url": "bufferAfter", "valueDuration": {"value": 30, "unit": "min"}},
-      {"url": "alignmentInterval", "valueDuration": {"value": 30, "unit": "min"}},
-      {
-        "url": "bookingLimit",
-        "valueTiming": {
-          "repeat": {"frequency": 2, "period": 1, "periodUnit": "d"}
-        }
-      },
-      {
-        "url": "bookingLimit",
-        "valueTiming": {
-          "repeat": {"frequency": 8, "period": 1, "periodUnit": "wk"}
-        }
-      }
-    ]
-  }]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="bariatricService">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -1102,56 +428,9 @@ This HealthcareService defines scheduling for a 120-minute surgical procedure wi
 
 This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited to Tuesday and Thursday mornings (8am-4pm).
 
-```tsx
-{
-  "resourceType": "Schedule",
-  "id": "surgeon-martinez-schedule",
-  "active": true,
-  "serviceType": [
-    {
-      "coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]
-      "extension": [{
-        "url": "https://medplum.com/fhir/service-type-reference",
-        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
-      }]
-    }
-  ],
-  "actor": [{
-    "reference": "PractitionerRole/surgeon-martinez",
-    "display": "Dr. Maria Martinez - Bariatric Surgeon"
-  }],
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [
-      {
-        "url": "service",
-        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
-      },
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 1,
-          "unit": "h"
-        }
-      },
-      {
-        "url": "availability",
-        "extension": [
-          {
-            "url": "availableTime",
-            "extension": [
-              { "url": "daysOfWeek", "valueCode": "tue" },
-              { "url": "daysOfWeek", "valueCode": "thu" },
-              { "url": "availableStartTime", "valueTime": "08:00:00" },
-              { "url": "availableEndTime", "valueTime": "16:00:00" }
-            ]
-          }
-        ]
-      }
-    ]
-  }]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="surgeonSchedule">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -1160,60 +439,9 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
 
 This Schedule shows Operating Room 3's availability for surgical procedures, available weekdays 7am-7pm with extended 12-hour blocks.
 
-```tsx
-{
-  "resourceType": "Schedule",
-  "id": "or-3-schedule",
-  "active": true,
-  "actor": [{
-    "reference": "Location/or-3",
-    "display": "Operating Room 3"
-  }],
-  "serviceType": [
-    {
-      "coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]
-      "extension": [{
-        "url": "https://medplum.com/fhir/service-type-reference",
-        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
-      }]
-    }
-  ],
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [
-      {
-        "url": "service",
-        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
-        }
-      },
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 1,
-          "unit": "h"
-        }
-      },
-      {
-        "url": "availability",
-        "extension": [
-          {
-            "url": "availableTime",
-            "extension": [
-              { "url": "daysOfWeek", "valueCode": "mon" },
-              { "url": "daysOfWeek", "valueCode": "tue" },
-              { "url": "daysOfWeek", "valueCode": "wed" },
-              { "url": "daysOfWeek", "valueCode": "thu" },
-              { "url": "daysOfWeek", "valueCode": "fri" },
-              { "url": "availableStartTime", "valueTime": "07:00:00" },
-              { "url": "availableEndTime", "valueTime": "19:00:00" }
-            ]
-          }
-        ]
-      }
-    ]
-  }]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="operatingRoomSchedule">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -1222,59 +450,9 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
 
 This Schedule shows Dr. Kim's availability for surgical procedures, covering weekdays 7am-5pm (10-hour blocks).
 
-```tsx
-{
-  "resourceType": "Schedule",
-  "id": "anesthesiologist-kim-schedule",
-  "active": true,
-  "serviceType": [
-    {
-      "coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]
-      "extension": [{
-        "url": "https://medplum.com/fhir/service-type-reference",
-        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
-      }]
-    }
-  ],
-  "actor": [{
-    "reference": "PractitionerRole/anesthesiologist-kim",
-    "display": "Dr. James Kim - Anesthesiologist"
-  }],
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [
-      {
-        "url": "service",
-        "valueReference": { "reference": "HealthcareService/bariatric-surgery" }
-      },
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 1,
-          "unit": "h"
-        }
-      },
-      {
-        "url": "availability",
-        "extension": [
-          {
-            "url": "availableTime",
-            "extension": [
-              { "url": "daysOfWeek", "valueCode": "mon" },
-              { "url": "daysOfWeek", "valueCode": "tue" },
-              { "url": "daysOfWeek", "valueCode": "wed" },
-              { "url": "daysOfWeek", "valueCode": "thu" },
-              { "url": "daysOfWeek", "valueCode": "fri" },
-              { "url": "availableStartTime", "valueTime": "07:00:00" },
-              { "url": "availableEndTime", "valueTime": "17:00:00" }
-            ]
-          }
-        ]
-      }
-    ]
-  }]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="anesthesiologistSchedule">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -1314,6 +492,30 @@ graph TD
     style E1 fill:#e8f5e8
 ```
 
+### Example 4: Canonical Seed Bundle — One Service, Multiple Practitioners and Rooms
+
+This is a complete, uploadable seed bundle for the common case of a single service (here, a "Surgical Procedure") that is bookable across multiple practitioners and rooms. It is the recommended starting point for configuring a multi-schedule setup.
+
+It demonstrates the patterns from [Common Pitfalls](#common-pitfalls):
+
+- **`type: transaction`** so a single bad entry rolls back the whole bundle (see [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests)).
+- **`urn:uuid` `fullUrl`s** so resources can cross-reference each other before they have server-assigned IDs.
+- **`comment`, not `name`,** on each `Schedule`.
+- **`Practitioner`/`Location` actors each carrying a timezone extension.**
+- **`ifNoneExist`** on the `Organization` and `HealthcareService` so re-running the seed is idempotent for those resources.
+
+Each `Schedule` sets only its own `availability` and inherits `duration`, buffers, and alignment from the `HealthcareService`. Add more practitioners or rooms by duplicating the Practitioner/Location + Schedule pair.
+
+:::note
+
+The service code below uses a placeholder `http://example.org/appointment-types` system. Replace it with a real SNOMED CT or CPT code before using this in production.
+
+:::
+
+<MedplumCodeBlock language="ts" selectBlocks="seedBundle">
+  {ExampleCode}
+</MedplumCodeBlock>
+
 ## Location Modeling
 
 ### Location Hierarchy Pattern
@@ -1352,7 +554,7 @@ graph TD
     B3 --> C3[Schedule<br/>*OR-3 Schedule*]
 ```
 
-### Best Practices
+## Best Practices
 
 #### 1. Set Defaults on HealthcareService, Override Only What Differs on Schedule
 
@@ -1367,6 +569,16 @@ Only create Slot resources for:
 
 Let `$find` calculate available windows dynamically.
 
-#### 3. Transaction Bundles for Multi-Resource Booking
+## Common Pitfalls
 
-Always use [FHIR transaction bundles](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions) when booking appointments that require multiple resources to ensure atomicity.
+A few constraints trip people up most often when configuring availability:
+
+- **`Schedule` has no `name` element** in FHIR R4. Use `comment` for a human-readable label — sending `name` fails validation with `Invalid additional property "name"`. See [The Schedule Resource](#the-schedule-resource).
+- **A Schedule's parameters override, they don't merge.** Setting `availability` on a Schedule fully replaces the service's `availableTime` rather than narrowing it. See [Override Behavior](#override-behavior).
+- **To book across multiple schedules at once**, `duration`, `alignmentInterval`, `alignmentOffset`, and `alignmentTimezone` must match across them. Prefer setting these only on the `HealthcareService`.
+
+## Beta Status
+
+The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.
+
+- `bookingLimit` - An upcoming scheduling parameter that will allow you to express how often a given service type may be added to a schedule. This is not yet implemented.

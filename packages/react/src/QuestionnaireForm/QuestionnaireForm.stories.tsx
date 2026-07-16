@@ -1688,7 +1688,7 @@ export const KitchenSink = (): JSX.Element => (
               },
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },
@@ -1867,7 +1867,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
               },
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },
@@ -1875,7 +1875,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
             initial: [
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },
@@ -1904,7 +1904,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
             initial: [
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                 },
               },
             ],
@@ -2041,7 +2041,7 @@ export const KitchenSinkWithQuestionnaireResponse = (): JSX.Element => (
               },
               {
                 valueReference: {
-                  reference: 'Organization/123',
+                  reference: 'Organization/125',
                   display: 'Test Organization',
                 },
               },

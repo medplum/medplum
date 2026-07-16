@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { Logger, OperationOutcomeError, badRequest, isUUID, parseLogLevel } from '@medplum/core';
+import { Logger, OperationOutcomeError, badRequest, forbidden, isUUID, parseLogLevel } from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -263,6 +263,10 @@ function requestIds(req: Request): { requestId: string; traceId: string } {
 }
 
 function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimiter | undefined {
+  if (!getConfig().rateLimitsEnabled) {
+    return undefined;
+  }
+
   const { userLimit, projectLimit } = getFhirQuotaConfig(authState);
   return authState.membership
     ? new FhirRateLimiter(getRateLimitRedis(), authState, userLimit, projectLimit, logger ?? globalLogger)
@@ -270,8 +274,20 @@ function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimi
 }
 
 function getResourceCap(authState: AuthState, logger?: Logger): ResourceCap | undefined {
+  if (!getConfig().rateLimitsEnabled) {
+    return undefined;
+  }
+
   const projectLimit = authState.project?.systemSetting?.find((s) => s.name === 'resourceCap')?.valueInteger;
   return authState.membership && projectLimit
     ? new ResourceCap(getRateLimitRedis(), authState, projectLimit, logger ?? globalLogger)
     : undefined;
+}
+
+export function requireSuperAdmin(): AuthenticatedRequestContext {
+  const ctx = getAuthenticatedContext();
+  if (!ctx.project.superAdmin) {
+    throw new OperationOutcomeError(forbidden);
+  }
+  return ctx;
 }

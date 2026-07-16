@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
 import { useScriptSureIFrame } from '@medplum/scriptsure-react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -14,11 +15,13 @@ import { ScriptSureTab } from './ScriptSureTab';
 const mockIframeUrl = 'https://scriptsure.example.com/chart/123/prescriptions';
 const mockRenderedIframeUrl = applyDarkmode(mockIframeUrl, 'light');
 
-vi.mock('@medplum/scriptsure-react', () => ({
-  useScriptSureIFrame: vi.fn(() => mockIframeUrl),
-  SCRIPTSURE_IFRAME_BOT: { system: 'https://www.medplum.com/bots', value: 'scriptsure-iframe-bot' },
-  SCRIPTSURE_PATIENT_SYNC_BOT: { system: 'https://www.medplum.com/bots', value: 'scriptsure-patient-sync-bot' },
-}));
+vi.mock('@medplum/scriptsure-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof ScriptSureReactModule>();
+  return {
+    ...actual,
+    useScriptSureIFrame: vi.fn(() => mockIframeUrl),
+  };
+});
 
 describe('ScriptSureTab', () => {
   let medplum: MockClient;

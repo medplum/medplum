@@ -553,6 +553,14 @@ This feature can be disabled if you want to preserve the original external URL o
 
 **Default:** `true`
 
+### allowUnsafeOutbound
+
+Optional flag to allow outbound `fetch` requests to private or local network addresses. Set `MEDPLUM_ALLOW_UNSAFE_OUTBOUND=true` when using environment variable config.
+
+This is intended only for on-premises deployments that must connect to trusted local services. Do not enable this setting in hosted or cloud-managed environments.
+
+**Default:** `false`
+
 ### redactAuditEvents
 
 If set, removes human-readable details from AuditEvent resources saved to the database and written to server logs.
@@ -735,7 +743,7 @@ Optional flag to enable custom functions in Bots.
 
 ### AWS Secrets
 
-Postgres and Redis connection details have special cases due the way CDK exposes them.
+Postgres and Redis connection details have special cases due to the way CDK exposes them.
 
 When using a JSON config file, use JSON objects for `database` and `redis`. For example:
 

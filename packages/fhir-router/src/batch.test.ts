@@ -28,7 +28,8 @@ import type {
   Subscription,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { processBatch } from './batch';
+import type { BatchInitialState } from './batch';
+import { BatchProcessor, buildBatchResponseBundle, processBatch } from './batch';
 import type { FhirRequest } from './fhirrouter';
 import { FhirRouter } from './fhirrouter';
 import type { FhirRepository } from './repo';
@@ -1411,6 +1412,273 @@ describe('Batch', () => {
         outcome: badRequest('Cannot provide ID for create by update'),
       }),
       resource: undefined,
+    });
+  });
+
+  describe('Re-entrant processing', () => {
+    /**
+     * Drives a batch bundle through the re-entrant BatchProcessor API, one entry at a time, the
+     * way the async batch worker does. All durable state (initial state, progress marker, and
+     * per-entry results) is round-tripped through JSON to simulate persistence to durable storage.
+     * @param bundle - The batch bundle to process.
+     * @param crashAfter - If set, simulate a crash + resume after this many entries have been
+     *   processed, rehydrating a fresh processor via BatchProcessor.fromState.
+     * @returns The assembled response bundle.
+     */
+    async function runReentrant(bundle: Bundle, crashAfter?: number): Promise<Bundle> {
+      const results: Record<number, BundleEntry> = Object.create(null);
+      const entryCount = bundle.entry?.length ?? 0;
+
+      let processor = new BatchProcessor(router, repo, bundle, req);
+      const initialState = await processor.preprocess();
+      // Simulate persisting the initial state to durable storage and reloading it.
+      const durableState: BatchInitialState = JSON.parse(JSON.stringify(initialState));
+      Object.assign(results, durableState.preprocessResults);
+
+      let processed = 0;
+      let crashed = false;
+      while (processor.hasMoreEntries()) {
+        await processor.processNextEntry();
+        // Checkpoint: persist newly produced results and the advanced progress marker.
+        const pending = processor.takePendingResults();
+        assert(pending);
+        Object.assign(results, pending);
+        processed++;
+
+        if (crashAfter !== undefined && !crashed && processed === crashAfter && processor.hasMoreEntries()) {
+          crashed = true;
+          // Simulate a crash and resume: rehydrate a fresh processor from the durable state at the
+          // last checkpointed position. Prior results live in `results` (durable storage).
+          const position = processor.getPosition();
+          processor = BatchProcessor.fromState(router, repo, req, JSON.parse(JSON.stringify(durableState)), position);
+        }
+      }
+
+      return buildBatchResponseBundle(durableState.bundle.type, entryCount, results);
+    }
+
+    function makeReferenceBundle(): Bundle {
+      const patientId = randomUUID();
+      const observationId = randomUUID();
+      return {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:' + patientId,
+            request: { method: 'POST', url: 'Patient' },
+            resource: { resourceType: 'Patient', id: patientId },
+          },
+          {
+            fullUrl: 'urn:uuid:' + observationId,
+            request: { method: 'POST', url: 'Observation' },
+            resource: {
+              resourceType: 'Observation',
+              status: 'final',
+              id: observationId,
+              subject: { reference: 'urn:uuid:' + patientId },
+              code: { text: 'test' },
+            },
+          },
+          { request: { method: 'GET', url: 'Patient?_count=1' } },
+        ],
+      };
+    }
+
+    test('Full run matches one-shot processBatch behavior', async () => {
+      const oneShot = await processBatch(req, repo, router, makeReferenceBundle());
+      const reentrant = await runReentrant(makeReferenceBundle());
+
+      expect(reentrant.type).toStrictEqual('batch-response');
+      expect(reentrant.entry).toHaveLength(3);
+      expect(reentrant.entry?.map((e) => e.response?.status)).toStrictEqual(
+        oneShot.entry?.map((e) => e.response?.status)
+      );
+      expect(reentrant.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '200']);
+    });
+
+    test('Placeholder references survive serialize -> fromState -> resume', async () => {
+      // Crash + resume BEFORE the Observation (entry 1) is processed, so the reference rewrite
+      // happens on the rehydrated processor using durably-persisted resolvedIdentities.
+      const bundle = await runReentrant(makeReferenceBundle(), 1);
+
+      const patientEntry = bundle.entry?.[0];
+      const observationEntry = bundle.entry?.[1];
+      expect(patientEntry?.response?.status).toStrictEqual('201');
+      expect(observationEntry?.response?.status).toStrictEqual('201');
+
+      const patientRef = patientEntry?.response?.location;
+      expect(patientRef).toMatch(/^Patient\//);
+      // The Observation's placeholder subject reference must resolve to the SAME patient that was
+      // created during preprocessing, not a newly-generated id.
+      expect((observationEntry?.resource as Observation)?.subject?.reference).toStrictEqual(patientRef);
+    });
+
+    test('Resume does not reprocess already-completed entries', async () => {
+      const bundle = makeReferenceBundle();
+      const processor = new BatchProcessor(router, repo, bundle, req);
+      const initialState = await processor.preprocess();
+
+      // Process the first entry, then take its results (checkpoint) and record the position.
+      await processor.processNextEntry();
+      const firstResults = processor.takePendingResults();
+      assert(firstResults);
+      expect(Object.keys(firstResults)).toHaveLength(1);
+      const secondTake = processor.takePendingResults();
+      expect(secondTake).toBeUndefined();
+      const resumePosition = processor.getPosition();
+      expect(resumePosition).toStrictEqual(1);
+
+      // Rehydrate at the checkpointed position and finish. The resumed processor must only
+      // produce results for the remaining entries, never re-producing the first entry.
+      const resumed = BatchProcessor.fromState(router, repo, req, initialState, resumePosition);
+      const producedIndices = new Set<number>();
+      while (resumed.hasMoreEntries()) {
+        await resumed.processNextEntry();
+        const pending = resumed.takePendingResults();
+        assert(pending);
+        for (const index of Object.keys(pending)) {
+          producedIndices.add(Number(index));
+        }
+      }
+      const firstIndex = Number(Object.keys(firstResults)[0]);
+      expect(producedIndices.has(firstIndex)).toBe(false);
+      // The remaining two entries (indices 1 and 2) should have been produced by the resumed run.
+      expect(resumed.getPosition()).toStrictEqual(3);
+      expect(producedIndices).toStrictEqual(new Set([1, 2]));
+    });
+
+    test('processNextEntry before preprocess throws', async () => {
+      const processor = new BatchProcessor(router, repo, makeReferenceBundle(), req);
+      await expect(processor.processNextEntry()).rejects.toThrow('processNextEntry called before preprocess()');
+    });
+
+    test('Malformed entries are captured as preprocess results', async () => {
+      const bundle = await runReentrant({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
+          // Missing request method -> error result produced during preprocessing
+          { resource: { resourceType: 'Patient' } },
+        ],
+      });
+      expect(bundle.entry).toHaveLength(2);
+      expect(bundle.entry?.[0]?.response?.status).toStrictEqual('201');
+      expect(bundle.entry?.[1]?.response?.status).toStrictEqual('400');
+    });
+  });
+
+  describe('Transaction resource type tracking', () => {
+    test('Gathers resource types from transaction entries', async () => {
+      // Pre-create resources so the patch/delete/read entries succeed within the transaction
+      const serviceRequest = await repo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        subject: { display: 'Test' },
+      });
+      const observation = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+      });
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+      const spy = vi.spyOn(repo, 'withTransaction');
+      try {
+        const bundle = await processBatch(req, repo, router, {
+          resourceType: 'Bundle',
+          type: 'transaction',
+          entry: [
+            {
+              // create: type derived from the route (URL)
+              request: { method: 'POST', url: 'Organization' },
+              resource: { resourceType: 'Organization', name: 'Test Org' },
+            },
+            {
+              // PATCH: type comes from the URL, NOT the Parameters payload
+              request: { method: 'PATCH', url: 'ServiceRequest/' + serviceRequest.id },
+              resource: {
+                resourceType: 'Parameters',
+                parameter: [
+                  {
+                    name: 'operation',
+                    part: [
+                      { name: 'op', valueCode: 'replace' },
+                      { name: 'path', valueString: '/status' },
+                      { name: 'value', valueString: '"completed"' },
+                    ],
+                  },
+                ],
+              },
+            },
+            {
+              // DELETE: no entry.resource at all; type comes from the URL
+              request: { method: 'DELETE', url: 'Observation/' + observation.id },
+            },
+            {
+              // read: no entry.resource; type comes from the URL
+              request: { method: 'GET', url: 'Patient/' + patient.id },
+            },
+          ],
+        });
+
+        expect(bundle.type).toStrictEqual('transaction-response');
+        expect(spy).toHaveBeenCalledTimes(1);
+
+        const { resourceTypes } = spy.mock.calls[0][1];
+        expect(Array.from(resourceTypes).sort()).toStrictEqual([
+          'Observation',
+          'Organization',
+          'Patient',
+          'ServiceRequest',
+        ]);
+        // The PATCH target type is recorded, not the Binary/Parameters payload
+        expect(Array.from(resourceTypes)).not.toContain('Parameters');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    test('De-duplicates repeated resource types', async () => {
+      const patient1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const patient2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+      const spy = vi.spyOn(repo, 'withTransaction');
+      try {
+        await processBatch(req, repo, router, {
+          resourceType: 'Bundle',
+          type: 'transaction',
+          entry: [
+            { request: { method: 'GET', url: 'Patient/' + patient1.id } },
+            { request: { method: 'GET', url: 'Patient/' + patient2.id } },
+            { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
+          ],
+        });
+
+        const { resourceTypes } = spy.mock.calls[0][1];
+        expect(Array.from(resourceTypes)).toStrictEqual(['Patient']);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    test('Skips system-level entries with no resource type', async () => {
+      const spy = vi.spyOn(repo, 'withTransaction');
+      try {
+        // search-system has no resourceType route param, so it is under-reported
+        await processBatch(req, repo, router, {
+          resourceType: 'Bundle',
+          type: 'transaction',
+          entry: [{ request: { method: 'GET', url: '?_type=Observation' } }],
+        });
+
+        const { resourceTypes } = spy.mock.calls[0][1];
+        expect(Array.from(resourceTypes)).toStrictEqual([]);
+      } finally {
+        spy.mockRestore();
+      }
     });
   });
 });

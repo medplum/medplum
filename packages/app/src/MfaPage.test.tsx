@@ -43,7 +43,93 @@ describe('MfaPage', () => {
     const user = await setup();
     await user.type(screen.getByLabelText('MFA code', { exact: false }), '123456');
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
-    expect(screen.getByText('MFA is enabled')).toBeInTheDocument();
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+  });
+
+  test('Add another method when one is available', async () => {
+    // Simulate a user already enrolled in email MFA, with TOTP allowed but not yet enrolled.
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['email'],
+      allowedMethods: ['totp', 'email'],
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    const postSpy = vi.spyOn(medplum, 'post');
+    const user = await setup();
+
+    // Already-enrolled view shows the existing method and an option to add TOTP
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+    expect(screen.getByText('Email')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add email-based MFA' })).not.toBeInTheDocument();
+
+    // Reveal the authenticator enrollment form
+    await user.click(screen.getByRole('button', { name: 'Add an authenticator app' }));
+
+    // Enter a code and enroll
+    await user.type(await screen.findByLabelText('MFA code', { exact: false }), '123456');
+    await user.click(screen.getByRole('button', { name: 'Enroll' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'totp', token: '123456' });
+    await expect(screen.findByText('Authenticator app')).resolves.toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Remove a single factor', async () => {
+    // Simulate a user enrolled in both methods so per-factor removal is offered.
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['totp', 'email'],
+      allowedMethods: ['totp', 'email'],
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    const postSpy = vi.spyOn(medplum, 'post');
+    const user = await setup();
+
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+
+    // Each enrolled factor has a Remove link
+    const removeLinks = screen.getAllByText('Remove');
+    expect(removeLinks).toHaveLength(2);
+
+    // Remove the email factor (first method row order: totp, email)
+    await user.click(removeLinks[1]);
+
+    // A modal prompts for the authenticator code
+    await expect(screen.findByLabelText(/mfa code*/i)).resolves.toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Submit code' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/disable', { method: 'email', token: '123456' });
+    await expect(screen.findByText('Email removed')).resolves.toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Disable MFA is hidden when MFA is required', async () => {
+    // An enrolled user whose account requires MFA cannot disable it, so the
+    // "Disable MFA" button is not rendered at all. Per-factor removal is still
+    // offered while more than one factor remains.
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['totp', 'email'],
+      allowedMethods: ['totp', 'email'],
+      mfaRequired: true,
+      email: 'alice.smith@example.com',
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    await setup();
+
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Disable MFA' })).not.toBeInTheDocument();
+    expect(screen.getAllByText('Remove')).toHaveLength(2);
+
+    getSpy.mockRestore();
   });
 
   test('Disable -- success', async () => {
@@ -56,7 +142,7 @@ describe('MfaPage', () => {
     // Enroll into MFA
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
 
-    expect(screen.getByText('MFA is enabled')).toBeInTheDocument();
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
 
     // Clean notifications
     await act(async () => {
@@ -92,7 +178,7 @@ describe('MfaPage', () => {
 
     // Enroll into MFA
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
-    expect(screen.getByText('MFA is enabled')).toBeInTheDocument();
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
 
     // Clean notifications
     await act(async () => {
@@ -119,5 +205,258 @@ describe('MfaPage', () => {
     await expect(screen.findByText('Enroll')).rejects.toThrow();
     expect(getSpy).not.toHaveBeenCalledWith('auth/mfa/status', expect.objectContaining({ cache: 'no-cache' }));
     getSpy.mockRestore();
+  });
+
+  test('Enroll with email-based MFA (email-only project)', async () => {
+    // Email is the only allowed method, so the form leads straight to the
+    // "enable email-based MFA" prompt.
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: false,
+      enrolledMethods: [],
+      allowedMethods: ['email'],
+    });
+    const postSpy = vi.spyOn(medplum, 'post');
+    const user = await setup();
+
+    expect(await screen.findByText('Set up email-based MFA')).toBeInTheDocument();
+    // No authenticator/QR step is offered for an email-only project
+    expect(screen.queryByLabelText('MFA code', { exact: false })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Enable email-based MFA' }));
+
+    // A verification code is emailed and the code-entry dialog opens; the user
+    // must reverify their email before enrollment completes.
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'email', token: '123456' });
+    await expect(screen.findByText('Email-based MFA enabled')).resolves.toBeInTheDocument();
+    // After enrolling we land on the enrolled view with Email listed
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+    expect(screen.getByText('Email')).toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Choose email from the method chooser', async () => {
+    // Both methods are allowed and the user is not yet enrolled, so a chooser
+    // is presented first.
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: false,
+      enrolledMethods: [],
+      allowedMethods: ['totp', 'email'],
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    const postSpy = vi.spyOn(medplum, 'post');
+    const user = await setup();
+
+    expect(await screen.findByText('Set up multi-factor authentication')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Continue with email-based MFA' }));
+
+    // The user must reverify their email by entering the emailed code
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'email', token: '123456' });
+    await expect(screen.findByText('Email-based MFA enabled')).resolves.toBeInTheDocument();
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Choose authenticator from the method chooser', async () => {
+    // Both methods allowed: selecting the authenticator reveals the TOTP/QR step.
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: false,
+      enrolledMethods: [],
+      allowedMethods: ['totp', 'email'],
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    const postSpy = vi.spyOn(medplum, 'post');
+    const user = await setup();
+
+    expect(await screen.findByText('Set up multi-factor authentication')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Use an authenticator app (recommended)' }));
+
+    // The TOTP enrollment step appears
+    expect(await screen.findByText('Multi Factor Auth Setup')).toBeInTheDocument();
+    await user.type(await screen.findByLabelText('MFA code', { exact: false }), '123456');
+    await user.click(screen.getByRole('button', { name: 'Enroll' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'totp', token: '123456' });
+    await expect(screen.findByText('Authenticator app enabled')).resolves.toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Add email-based MFA when only authenticator is enrolled', async () => {
+    // TOTP enrolled, email allowed but not yet enrolled.
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['totp'],
+      allowedMethods: ['totp', 'email'],
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    const postSpy = vi.spyOn(medplum, 'post');
+    const user = await setup();
+
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+    // TOTP is already enrolled, so only the email option is offered
+    expect(screen.queryByRole('button', { name: 'Add an authenticator app' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Add email-based MFA' }));
+
+    // Adding email requires reverifying the email via an emailed code
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'email', token: '123456' });
+    await expect(screen.findByText('Email-based MFA enabled')).resolves.toBeInTheDocument();
+    expect(screen.getByText('Email')).toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Disable email-only MFA sends an email challenge', async () => {
+    // Email is the only enrolled factor, so opening the disable dialog emails a
+    // verification code and the form starts in email-code-entry mode.
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['email'],
+      allowedMethods: ['email'],
+      email: 'alice.smith@example.com',
+    });
+    const postSpy = vi.spyOn(medplum, 'post');
+    const user = await setup();
+
+    expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+    // Only one factor enrolled, so there is no per-factor "Remove" link
+    expect(screen.queryByText('Remove')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Disable MFA' }));
+
+    // An email challenge is sent as the dialog opens
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+    // The form goes straight to entering the emailed code
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    expect(screen.getByText('alice.smith@example.com')).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Submit code' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/disable', { token: '123456' });
+    await expect(screen.findByText('MFA disabled')).resolves.toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Get a code by email instead during disable', async () => {
+    // Both factors enrolled: the disable dialog leads with the authenticator
+    // code but offers to email a code instead.
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['totp', 'email'],
+      allowedMethods: ['totp', 'email'],
+      email: 'alice.smith@example.com',
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    const postSpy = vi.spyOn(medplum, 'post');
+    const user = await setup();
+
+    await user.click(screen.getByRole('button', { name: 'Disable MFA' }));
+
+    // Starts in authenticator mode; no challenge sent yet
+    expect(await screen.findByText('Enter MFA code')).toBeInTheDocument();
+    expect(postSpy).not.toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+
+    await user.click(screen.getByRole('button', { name: 'Get a code by email instead' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Status fetch failure shows a notification', async () => {
+    const getSpy = vi.spyOn(medplum, 'get').mockRejectedValue(new Error('Network error'));
+    await setup();
+
+    // The page stays blank (enrolled is undefined) and surfaces the error
+    await expect(screen.findByText('Network error')).resolves.toBeInTheDocument();
+    expect(screen.queryByText('Multi-factor authentication')).not.toBeInTheDocument();
+
+    getSpy.mockRestore();
+  });
+
+  test('Authenticator enrollment failure shows a notification', async () => {
+    // Default mock: TOTP-only, not enrolled.
+    const postSpy = vi.spyOn(medplum, 'post').mockRejectedValue(new Error('Invalid authenticator code'));
+    const user = await setup();
+
+    await user.type(await screen.findByLabelText('MFA code', { exact: false }), '123456');
+    await user.click(screen.getByRole('button', { name: 'Enroll' }));
+
+    await expect(screen.findByText('Invalid authenticator code')).resolves.toBeInTheDocument();
+    // Enrollment failed, so we have not advanced to the enrolled view
+    expect(screen.queryByText('Multi-factor authentication')).not.toBeInTheDocument();
+
+    postSpy.mockRestore();
+  });
+
+  test('Email challenge failure on disable shows a notification', async () => {
+    // Email-only user: opening disable tries to email a code, which fails here.
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['email'],
+      allowedMethods: ['email'],
+      email: 'alice.smith@example.com',
+    });
+    const postSpy = vi.spyOn(medplum, 'post').mockRejectedValue(new Error('Unable to send verification email'));
+    const user = await setup();
+
+    await user.click(screen.getByRole('button', { name: 'Disable MFA' }));
+
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+    await expect(screen.findByText('Unable to send verification email')).resolves.toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Email enrollment failure shows a notification', async () => {
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: false,
+      enrolledMethods: [],
+      allowedMethods: ['email'],
+    });
+    const postSpy = vi.spyOn(medplum, 'post').mockRejectedValue(new Error('Email service unavailable'));
+    const user = await setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Enable email-based MFA' }));
+
+    await expect(screen.findByText('Email service unavailable')).resolves.toBeInTheDocument();
+    // Still on the enrollment screen since the request failed
+    expect(screen.getByText('Set up email-based MFA')).toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
   });
 });

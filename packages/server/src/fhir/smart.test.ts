@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { AccessPolicyInteraction, accessPolicySupportsInteraction } from '@medplum/core';
 import type { AccessPolicy, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -159,6 +160,132 @@ describe('SMART on FHIR', () => {
         resourceType: 'AccessPolicy',
         resource: [{ resourceType: 'Patient' }],
       });
+    });
+
+    test('Intersect with system wildcard read scope', () => {
+      const startAccessPolicy: PopulatedAccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'Observation' },
+          { resourceType: 'Patient' },
+          { resourceType: 'VisionPrescription' },
+        ],
+      };
+
+      const authState: AuthState = {
+        login: { ...login, scope: 'system/*.read' },
+        membership,
+        project,
+        userConfig: { resourceType: 'UserConfiguration' },
+      };
+
+      const result = applySmartScopes(startAccessPolicy, authState);
+      expect(result).toMatchObject<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Observation',
+            readonly: true,
+          },
+          {
+            resourceType: 'Patient',
+            readonly: true,
+          },
+          {
+            resourceType: 'VisionPrescription',
+            readonly: true,
+          },
+        ],
+      });
+      expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.READ, 'Observation')).toBe(true);
+      expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.SEARCH, 'Patient')).toBe(true);
+      expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.UPDATE, 'VisionPrescription')).toBe(false);
+    });
+
+    test('Intersect with patient and system wildcard read scopes', () => {
+      const patientId = randomUUID();
+      const startAccessPolicy: PopulatedAccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'Observation' },
+          { resourceType: 'Patient' },
+          { resourceType: 'VisionPrescription' },
+        ],
+      };
+
+      const authState: AuthState = {
+        login: { ...login, scope: 'patient/*.read system/*.read' },
+        membership,
+        project,
+        userConfig: { resourceType: 'UserConfiguration' },
+        smartAppLaunch: {
+          resourceType: 'SmartAppLaunch',
+          id: randomUUID(),
+          patient: { reference: `Patient/${patientId}` },
+        },
+      };
+
+      const result = applySmartScopes(startAccessPolicy, authState);
+      expect(result.resource).toMatchObject([
+        {
+          resourceType: 'Observation',
+          readonly: true,
+          criteria: `Observation?_compartment=Patient/${patientId}`,
+        },
+        {
+          resourceType: 'Observation',
+          readonly: true,
+        },
+        {
+          resourceType: 'Patient',
+          readonly: true,
+          criteria: `Patient?_compartment=Patient/${patientId}`,
+        },
+        {
+          resourceType: 'Patient',
+          readonly: true,
+        },
+        {
+          resourceType: 'VisionPrescription',
+          readonly: true,
+          criteria: `VisionPrescription?_compartment=Patient/${patientId}`,
+        },
+        {
+          resourceType: 'VisionPrescription',
+          readonly: true,
+        },
+      ]);
+      expect(result.resource.filter((r) => r.resourceType === 'Observation' && !r.criteria)).toHaveLength(1);
+      expect(result.resource.filter((r) => r.resourceType === 'Patient' && !r.criteria)).toHaveLength(1);
+      expect(result.resource.filter((r) => r.resourceType === 'VisionPrescription' && !r.criteria)).toHaveLength(1);
+      expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.UPDATE, 'Observation')).toBe(false);
+    });
+
+    test('Intersect system wildcard read scope with explicit interactions', () => {
+      const startAccessPolicy: PopulatedAccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'Observation', interaction: ['create', 'read', 'update', 'search'] },
+          { resourceType: 'Patient', interaction: ['create', 'update', 'delete'] },
+        ],
+      };
+
+      const authState: AuthState = {
+        login: { ...login, scope: 'system/*.read' },
+        membership,
+        project,
+        userConfig: { resourceType: 'UserConfiguration' },
+      };
+
+      const result = applySmartScopes(startAccessPolicy, authState);
+      expect(result).toMatchObject<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Observation', readonly: true, interaction: ['read', 'search'] }],
+      });
+      expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.READ, 'Observation')).toBe(true);
+      expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.SEARCH, 'Observation')).toBe(true);
+      expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.UPDATE, 'Observation')).toBe(false);
+      expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.READ, 'Patient')).toBe(false);
     });
 
     test('Intersect with wildcard access policy', () => {

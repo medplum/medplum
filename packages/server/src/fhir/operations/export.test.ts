@@ -4,6 +4,7 @@ import { ContentType } from '@medplum/core';
 import type { BulkDataExportOutput, Observation } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { FileSystemStorage } from '../../storage/filesystem';
@@ -43,7 +44,7 @@ describe('Export', () => {
           { system: 'email', value: 'alice@example.com' },
         ],
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     // Create observation
     const res2 = await request(app)
@@ -56,7 +57,7 @@ describe('Export', () => {
         code: { text: 'test' },
         subject: { reference: `Patient/${res1.body.id}` },
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     // Start the export
     const initRes = await request(app)
@@ -65,7 +66,7 @@ describe('Export', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
-    expect(initRes.status).toBe(202);
+    expect(initRes).toHaveStatus(202);
     expect(initRes.headers['content-location']).toBeDefined();
 
     // Check the export status
@@ -75,15 +76,18 @@ describe('Export', () => {
     const statusRes = await request(app)
       .get(contentLocation.pathname)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(statusRes.status).toBe(200);
+    expect(statusRes).toHaveStatus(200);
     const resBody = statusRes.body;
 
     const output = resBody?.output as BulkDataExportOutput[];
-    expect(
-      Object.values(output)
-        .map((ex) => ex.type)
-        .sort()
-    ).toStrictEqual(['ClientApplication', 'Observation', 'Patient', 'Project', 'ProjectMembership']);
+    expect(Object.values(output).map((ex) => ex.type)).toContainExactly([
+      'ClientApplication',
+      'Observation',
+      'OperationDefinition',
+      'Patient',
+      'Project',
+      'ProjectMembership',
+    ]);
 
     // Get the export content
     const outputLocation = new URL(output.find((o) => o.type === 'Observation')?.url as string);
@@ -106,7 +110,7 @@ describe('Export', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
-    expect(initRes.status).toBe(202);
+    expect(initRes).toHaveStatus(202);
     expect(initRes.headers['content-location']).toBeDefined();
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });
@@ -121,13 +125,16 @@ describe('Export', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
-    expect(initRes.status).toBe(202);
+    expect(initRes).toHaveStatus(202);
     expect(initRes.headers['content-location']).toBeDefined();
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });
 
   test('exportResourceType iterating through paginated search results', async () =>
     withTestContext(async () => {
+      // Scope export to observations created in this test so pagination stays fast.
+      const since = new Date().toISOString();
+
       await systemRepo.createResource<Observation>({
         resourceType: 'Observation',
         status: 'preliminary',
@@ -147,12 +154,12 @@ describe('Export', () => {
       });
 
       const exporter = new BulkExporter(systemRepo);
-      const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
+      const exportWriteResourceSpy = vi.spyOn(exporter, 'writeResource');
       await exporter.start('http://example.com');
 
       const { project } = await createTestProject();
       expect(project).toBeDefined();
-      await exportResourceType(exporter, 'Observation', 1);
+      await exportResourceType(exporter, 'Observation', 1, since);
       const bulkDataExport = await exporter.close(project);
       expect(bulkDataExport.status).toBe('completed');
       expect(exportWriteResourceSpy).toHaveBeenCalled();
@@ -214,7 +221,7 @@ describe('Export', () => {
       });
 
       const exporter = new BulkExporter(systemRepo);
-      const closeWriterSpy = jest.spyOn(exporter, 'closeWriter');
+      const closeWriterSpy = vi.spyOn(exporter, 'closeWriter');
 
       await exporter.start('http://example.com');
       const { project } = await createTestProject();

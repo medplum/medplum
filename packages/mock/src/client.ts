@@ -37,6 +37,7 @@ import type {
   Subscription,
   UserConfiguration,
 } from '@medplum/fhirtypes';
+import { MOCK_ALICE_PRACTITIONER_ID } from './constants';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -134,13 +135,11 @@ export class MockClient extends MedplumClient {
     let client: MockFetchClient;
 
     if (clientOptions?.mockFetchOverride) {
-      if (
-        !(
-          clientOptions.mockFetchOverride?.router &&
-          clientOptions.mockFetchOverride?.repo &&
-          clientOptions.mockFetchOverride?.client
-        )
-      ) {
+      if (!(
+        clientOptions.mockFetchOverride?.router &&
+        clientOptions.mockFetchOverride?.repo &&
+        clientOptions.mockFetchOverride?.client
+      )) {
         throw new Error('mockFetchOverride must specify all fields: client, repo, router');
       }
       router = clientOptions.mockFetchOverride.router;
@@ -586,6 +585,8 @@ export class MockFetchClient {
     if (path.startsWith('auth/mfa/status')) {
       return {
         enrolled: false,
+        enrolledMethods: [],
+        allowedMethods: ['totp'],
         enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
       };
     }
@@ -726,7 +727,7 @@ export class MockFetchClient {
           login_id: '123',
         }),
         refresh_token: createFakeJwt({ client_id: 123 }),
-        profile: { reference: 'Practitioner/123' },
+        profile: { reference: `Practitioner/${MOCK_ALICE_PRACTITIONER_ID}` },
       };
     }
 

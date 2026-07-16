@@ -43,14 +43,28 @@ This example application demonstrates how to use Medplum's custom FHIR operation
 
 Recipient fax numbers must be in **E.164** format: a leading `+` and country calling code (e.g. `+1` for US/Canada), then the number—eFax requires this; a local number without a country code may fail.
 
+The `$send-efax` operation supports **both** ways of attaching the document to the
+`Communication.payload`:
+
+- `contentReference` — a reference to a `DocumentReference` (used by this demo, so the
+  faxed document stays linked to the chart)
+- `contentAttachment` — the attachment inlined directly on the payload
+
 The demo creates resources sequentially when sending a fax:
 
 ```typescript
-// Step 1: Upload the file as an attachment (creates Binary resource)
+// Step 1: Upload the file (creates a Binary resource) and persist it as a DocumentReference
 const attachment = await medplum.createAttachment({
   data: file,
   contentType: file.type,
   filename: file.name,
+});
+const documentReference = await medplum.createResource<DocumentReference>({
+  resourceType: 'DocumentReference',
+  status: 'current',
+  author: [createReference(profile)],
+  date: new Date().toISOString(),
+  content: [{ attachment }],
 });
 
 // Step 2: Create the recipient Organization
@@ -68,7 +82,9 @@ const communication = await medplum.createResource<Communication>({
   medium: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode', code: 'FAXWRIT' }] }],
   sender: createReference(profile),
   recipient: [createReference(recipient)],
-  payload: [{ contentAttachment: attachment }],
+  // Reference the DocumentReference. Alternatively, inline the attachment with
+  // `payload: [{ contentAttachment: attachment }]`.
+  payload: [{ contentReference: createReference(documentReference) }],
 });
 
 // Step 4: Call the $send-efax operation

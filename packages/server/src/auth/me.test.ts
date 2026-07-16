@@ -27,7 +27,7 @@ describe('Me', () => {
 
   test('Unauthenticated', async () => {
     const res = await request(app).get('/auth/me');
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('User configuration', async () => {
@@ -45,7 +45,7 @@ describe('Me', () => {
 
     // Get the user profile with default user configuration
     const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toBeDefined();
     expect(res2.body.profile).toBeDefined();
     expect(res2.body.profile.resourceType).toBe('Practitioner');
@@ -67,7 +67,7 @@ describe('Me', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send(config);
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
     expect(res3.body.resourceType).toBe('UserConfiguration');
     expect(res3.body.id).toBeDefined();
     expect(res3.body).toMatchObject(config);
@@ -76,7 +76,7 @@ describe('Me', () => {
     const res4 = await request(app)
       .get(`/admin/projects/${project.id}/members/${membership.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body.resourceType).toBe('ProjectMembership');
 
     // Update the project membership
@@ -88,7 +88,7 @@ describe('Me', () => {
         ...res4.body,
         userConfiguration: createReference(res3.body),
       });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
 
     // As super admin user, add an identifier to the user
     const systemRepo = await getProjectSystemRepo(project);
@@ -102,10 +102,11 @@ describe('Me', () => {
 
     // Reload the user profile with the new user configuration
     const res6 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     expect(res6.body).toBeDefined();
     expect(res6.body.config).toMatchObject(config);
     expect(res6.body.security).toBeDefined();
+    expect(res6.body.security.mfaRequired).toBe(false);
     expect(res6.body.security.sessions).toBeDefined();
     expect(res6.body.security.sessions[0].browser).toBeDefined();
     expect(res6.body.security.sessions[0].os).toBeDefined();
@@ -129,7 +130,7 @@ describe('Me', () => {
 
     // Get the user profile with default user configuration
     const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toBeDefined();
     expect(res2.body.profile).toBeDefined();
     expect(res2.body.profile.resourceType).toBe('Practitioner');
@@ -147,7 +148,7 @@ describe('Me', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send(config);
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
     expect(res3.body.resourceType).toBe('UserConfiguration');
     expect(res3.body.id).toBeDefined();
     expect(res3.body).toMatchObject(config);
@@ -156,7 +157,7 @@ describe('Me', () => {
     const res4 = await request(app)
       .get(`/admin/projects/${project.id}/members/${membership.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body.resourceType).toBe('ProjectMembership');
 
     // Update the project membership
@@ -168,11 +169,11 @@ describe('Me', () => {
         ...res4.body,
         userConfiguration: createReference(res3.body),
       });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
 
     // Reload the user profile with the new user configuration
     const res6 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     expect(res6.body).toBeDefined();
     expect(res6.body.config.menu).toBeDefined();
     expect(res2.body.config.menu).toMatchObject(getUserConfigurationMenu(project, membership));
@@ -192,7 +193,7 @@ describe('Me', () => {
     const res = await request(app)
       .get('/auth/me')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
   });
 
@@ -207,7 +208,7 @@ describe('Me', () => {
     );
 
     const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toBeDefined();
     expect(res.body.accessPolicy).toBeDefined();
     expect(res.body.accessPolicy.basedOn).toBeDefined();
@@ -232,7 +233,7 @@ describe('Me', () => {
 
     // Get the user profile the initial memberships
     const res1 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body).toBeDefined();
     expect(res1.body.security.memberships).toHaveLength(1);
     expect(res1.body.security.memberships[0]).toMatchObject({
@@ -255,7 +256,7 @@ describe('Me', () => {
 
     // Reload the user profile with the new user memberships
     const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toBeDefined();
     expect(res2.body.security.memberships).toHaveLength(2);
 
@@ -274,7 +275,7 @@ describe('Me', () => {
 
     // Reload, should only see the 2 memberships from the original project
     const res3 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body).toBeDefined();
     expect(res3.body.security.memberships).toHaveLength(2);
 
@@ -290,7 +291,7 @@ describe('Me', () => {
 
     // Reload, should only see the 1 active membership
     const res4 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body).toBeDefined();
     expect(res4.body.security.memberships).toHaveLength(1);
   });
@@ -319,11 +320,56 @@ describe('Me', () => {
     });
 
     const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.project).toMatchObject({
       resourceType: 'Project',
       id: project.id,
     });
     expect(res.body.project.features).toEqual(['bots']);
+  });
+
+  test('Security mfaRequired reflects project setting', async () => {
+    const email = `mfa${randomUUID()}@example.com`;
+    const password = randomUUID();
+
+    const { project, user, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Mfa',
+        lastName: 'Required',
+        projectName: `Mfa Required Project ${randomUUID()}`,
+        email,
+        password,
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      })
+    );
+
+    const systemRepo = await getProjectSystemRepo(project);
+
+    // By default MFA is not required.
+    const res1 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.security.mfaRequired).toBe(false);
+
+    // Enabling the project setting makes MFA required for the user.
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...project,
+        setting: [{ name: 'mfaRequired', valueBoolean: true }],
+      })
+    );
+    const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res2.body.security.mfaRequired).toBe(true);
+
+    // The project requirement is enforced even when the user has explicitly set
+    // `User.mfaRequired` to false; the project setting can only tighten.
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...user,
+        mfaRequired: false,
+      })
+    );
+    const res3 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res3.body.security.mfaRequired).toBe(true);
   });
 });

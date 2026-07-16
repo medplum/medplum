@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "types": ["node", "jest"],
+    "types": ["node", "vitest/globals", "vite/client"],
     "lib": ["esnext", "dom", "dom.iterable"],
     "emitDeclarationOnly": true,
     "noEmit": false,

@@ -20,7 +20,7 @@ import {
 } from '@medplum/core';
 import type { Agent, AgentChannel, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import type { Hl7Connection } from '@medplum/hl7';
-import { Hl7Client, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
+import { getFreePort, Hl7Client, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
@@ -34,11 +34,14 @@ import {
   AgentHl7ChannelConnection,
   APP_LEVEL_ACK_CODES,
   APP_LEVEL_ACK_MODES,
+  describeAckCode,
   parseAppLevelAckMode,
   parseEnhancedMode,
+  resolveRetryPolicy,
   shouldSendAppLevelAck,
 } from './hl7';
-import { createEndpointWithRandomPort, createMockLogger, getFreePort } from './test-utils';
+import { DEFAULT_NORMAL_MODE_MAX_ATTEMPTS, DEFAULT_RETRY_POLICY } from './queue/worker';
+import { createEndpointWithRandomPort, createMockLogger } from './test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
   const actual = await importOriginal<typeof AgentConstants>();
@@ -2776,6 +2779,8 @@ describe('AgentHl7Channel application-level ACK gating', () => {
         dispatchEvent: vi.fn(),
       },
       getAgentConfig: vi.fn(),
+      getDurableQueue: vi.fn().mockReturnValue(undefined),
+      getChannelRetrySettings: vi.fn().mockReturnValue({}),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;
@@ -2942,6 +2947,27 @@ describe('parseEnhancedMode', () => {
   });
 });
 
+describe('describeAckCode', () => {
+  test('labels the positive commit/app ACK codes', () => {
+    expect(describeAckCode('CA')).toBe('Commit ACK (CA)');
+    expect(describeAckCode('AA')).toBe('App ACK (AA)');
+  });
+
+  // Regression: the enhanced-ACK-sent log used to treat anything that wasn't
+  // 'CA' as "Immediate ACK (AA)", so every NACK (CE/CR/AE/AR) was mislabeled.
+  test('labels the NACK codes distinctly instead of falling through to AA', () => {
+    expect(describeAckCode('CE')).toBe('Commit Error (CE)');
+    expect(describeAckCode('CR')).toBe('Commit Reject (CR)');
+    expect(describeAckCode('AE')).toBe('App Error (AE)');
+    expect(describeAckCode('AR')).toBe('App Reject (AR)');
+  });
+
+  test('falls back gracefully for unknown or missing codes', () => {
+    expect(describeAckCode('ZZ' as AckCode)).toBe('ACK (ZZ)');
+    expect(describeAckCode(undefined)).toBe('ACK (unknown)');
+  });
+});
+
 describe('shouldSendAppLevelAck', () => {
   test.each(APP_LEVEL_ACK_CODES)('non enhanced mode always returns true', (ackCode) => {
     expect(
@@ -3069,6 +3095,8 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
       getAgentConfig: vi.fn(),
       addToWebSocketQueue: vi.fn(),
       agentId: 'test-agent',
+      getDurableQueue: vi.fn().mockReturnValue(undefined),
+      getChannelRetrySettings: vi.fn().mockReturnValue({}),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;
@@ -3100,7 +3128,7 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
     await connection.close();
   });
 
-  test('logs Immediate ACK (AA) when enhanced ACK with AA is sent', async () => {
+  test('logs App ACK (AA) when enhanced ACK with AA is sent', async () => {
     const { channel, channelLog } = createTestChannelWithMockLogger('mllp://localhost:57201?enhanced=aa');
     const mockConnection = createMockHl7Connection();
 
@@ -3114,7 +3142,25 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
     const event = new Hl7EnhancedAckSentEvent(mockConnection, ackMessage);
     mockConnection.dispatchEvent(event);
 
-    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent Immediate ACK (AA) -- ID: MSG00001]'));
+    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent App ACK (AA) -- ID: MSG00001]'));
+    await connection.close();
+  });
+
+  // Regression: NACK codes used to fall through to the "Immediate ACK (AA)" label.
+  test.each([
+    ['CE', 'Commit Error (CE)'],
+    ['CR', 'Commit Reject (CR)'],
+    ['AE', 'App Error (AE)'],
+    ['AR', 'App Reject (AR)'],
+  ])('logs %s as %s instead of mislabeling it as AA', async (ackCode, label) => {
+    const { channel, channelLog } = createTestChannelWithMockLogger('mllp://localhost:57203?enhanced=true');
+    const mockConnection = createMockHl7Connection();
+    const connection = new AgentHl7ChannelConnection(channel, mockConnection);
+
+    const nackMessage = BASE_MESSAGE.buildAck({ ackCode: ackCode as 'CE' | 'CR' | 'AE' | 'AR' });
+    mockConnection.dispatchEvent(new Hl7EnhancedAckSentEvent(mockConnection, nackMessage));
+
+    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining(`[Sent ${label} -- ID: MSG00001]`));
     await connection.close();
   });
 
@@ -3137,5 +3183,144 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
 
     expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent Commit ACK (CA) -- ID: not provided]'));
     await connection.close();
+  });
+});
+
+describe('resolveRetryPolicy', () => {
+  test('returns the built-in defaults (enabled, guaranteed delivery) with no params and no agent settings', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({}, new URLSearchParams(), logger);
+    expect(policy).toStrictEqual(DEFAULT_RETRY_POLICY);
+    expect(policy.enabled).toBe(true);
+    // guaranteedDelivery is on by default — the server returns 400 for every Bot
+    // failure without disambiguating transient from permanent, so the only safe
+    // default is at-least-once delivery (retry everything, unlimited attempts).
+    expect(policy.guaranteedDelivery).toBe(true);
+    expect(policy.maxAttempts).toBe(0);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('agent settings override defaults, endpoint params override agent settings, per field', () => {
+    const logger = createMockLogger();
+    // mode:'normal' pins normal mode so the maxAttempts cap is honored (guaranteed
+    // mode would force maxAttempts to 0, masking the precedence check).
+    const agentDefaults = { mode: 'normal' as const, baseDelayMs: 5000, maxAttempts: 4 };
+    const params = new URLSearchParams('autoRetryBaseDelayMs=250&autoRetryBackoffMultiplier=1.5');
+    const policy = resolveRetryPolicy(agentDefaults, params, logger);
+    expect(policy).toStrictEqual({
+      enabled: true, // from agent setting mode (normal)
+      guaranteedDelivery: false, // normal mode (overrides the guaranteed default)
+      baseDelayMs: 250, // endpoint param wins over agent setting
+      maxDelayMs: DEFAULT_RETRY_POLICY.maxDelayMs, // built-in default
+      maxAttempts: 4, // from agent setting
+      backoffMultiplier: 1.5, // from endpoint param
+    });
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('retryMode=none on the endpoint disables retry even when the agent setting enables it', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({ mode: 'guaranteed' }, new URLSearchParams('retryMode=none'), logger);
+    expect(policy.enabled).toBe(false);
+    expect(policy.guaranteedDelivery).toBe(false);
+  });
+
+  test('invalid param values warn and fall through to the next layer', () => {
+    const logger = createMockLogger();
+    const params = new URLSearchParams('retryMode=sometimes&autoRetryBaseDelayMs=fast&autoRetryMaxAttempts=-1');
+    const policy = resolveRetryPolicy({ baseDelayMs: 3000 }, params, logger);
+    // Invalid retryMode falls through to the built-in default, which is guaranteed.
+    expect(policy.enabled).toBe(true);
+    expect(policy.guaranteedDelivery).toBe(true);
+    expect(policy.baseDelayMs).toBe(3000);
+    expect(policy.maxAttempts).toBe(DEFAULT_RETRY_POLICY.maxAttempts);
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Invalid retryMode value 'sometimes'; expected 'none', 'normal', or 'guaranteed'. Ignoring."
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Invalid autoRetryBaseDelayMs value 'fast'; expected a number >= 1. Ignoring."
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Invalid autoRetryMaxAttempts value '-1'; expected a number >= 0. Ignoring."
+    );
+  });
+
+  test('clamps out-of-range agent settings and raises maxDelayMs to baseDelayMs', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy(
+      { mode: 'normal', baseDelayMs: 30_000, maxDelayMs: 10_000, backoffMultiplier: 0.5 },
+      new URLSearchParams(),
+      logger
+    );
+    expect(policy.backoffMultiplier).toBe(1);
+    expect(policy.maxDelayMs).toBe(30_000);
+    expect(logger.warn).toHaveBeenCalledWith(
+      'autoRetryMaxDelayMs (10000) is less than autoRetryBaseDelayMs (30000); using autoRetryBaseDelayMs as the cap.'
+    );
+  });
+
+  test('maxAttempts=0 (retry indefinitely) is accepted from the endpoint param', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({}, new URLSearchParams('retryMode=normal&autoRetryMaxAttempts=0'), logger);
+    expect(policy.enabled).toBe(true);
+    expect(policy.maxAttempts).toBe(0);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('retryMode=guaranteed implies unlimited attempts', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({}, new URLSearchParams('retryMode=guaranteed'), logger);
+    expect(policy.guaranteedDelivery).toBe(true);
+    expect(policy.maxAttempts).toBe(0);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('retryMode is case-insensitive', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({}, new URLSearchParams('retryMode=Normal'), logger);
+    expect(policy.enabled).toBe(true);
+    expect(policy.guaranteedDelivery).toBe(false);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('mode flows through from the agent setting', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({ mode: 'guaranteed' }, new URLSearchParams(), logger);
+    expect(policy.guaranteedDelivery).toBe(true);
+    expect(policy.maxAttempts).toBe(0);
+  });
+
+  test('retryMode=normal on the endpoint overrides the agent setting', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({ mode: 'guaranteed' }, new URLSearchParams('retryMode=normal'), logger);
+    expect(policy.enabled).toBe(true);
+    expect(policy.guaranteedDelivery).toBe(false);
+    // Opting out of guaranteed mode falls back to the normal-mode cap, not the
+    // guaranteed default's unlimited (0).
+    expect(policy.maxAttempts).toBe(DEFAULT_NORMAL_MODE_MAX_ATTEMPTS);
+  });
+
+  test('retryMode=none disables retry and guaranteed delivery silently (no warning)', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({}, new URLSearchParams('retryMode=none'), logger);
+    expect(policy.enabled).toBe(false);
+    expect(policy.guaranteedDelivery).toBe(false);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('retryMode=guaranteed conflicts with an explicit nonzero maxAttempts — warn and respect the cap', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({}, new URLSearchParams('retryMode=guaranteed&autoRetryMaxAttempts=5'), logger);
+    expect(policy.guaranteedDelivery).toBe(true);
+    expect(policy.maxAttempts).toBe(5);
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('respecting autoRetryMaxAttempts'));
+  });
+
+  test('retryMode=guaranteed with an explicit maxAttempts=0 is not a conflict', () => {
+    const logger = createMockLogger();
+    const policy = resolveRetryPolicy({ maxAttempts: 0 }, new URLSearchParams('retryMode=guaranteed'), logger);
+    expect(policy.guaranteedDelivery).toBe(true);
+    expect(policy.maxAttempts).toBe(0);
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 });

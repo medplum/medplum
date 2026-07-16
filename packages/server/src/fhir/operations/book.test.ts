@@ -63,7 +63,6 @@ describe('Appointment/$book', () => {
   let practitioner2: Practitioner;
   let patient: Patient;
   let officeVisitService: WithId<HealthcareService>;
-  let followupService: WithId<HealthcareService>;
 
   const officeVisit: CodeableConcept = {
     coding: [{ system: 'https://example.com/fhir', code: 'office-visit' }],
@@ -83,12 +82,6 @@ describe('Appointment/$book', () => {
       resourceType: 'HealthcareService',
       name: 'Office Visit',
       type: [officeVisit],
-      meta: { project: project.project.id },
-    });
-
-    followupService = await systemRepo.createResource<HealthcareService>({
-      resourceType: 'HealthcareService',
-      name: 'Follow Up Visit',
       meta: { project: project.project.id },
     });
   });
@@ -160,31 +153,6 @@ describe('Appointment/$book', () => {
     });
   }
 
-  test('Succeeds with 201 Created', async () => {
-    const schedule = await makeSchedule({ actor: practitioner1 });
-    const response = await request
-      .post('/fhir/R4/Appointment/$book')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
-              serviceType: toCodeableReferenceLike(officeVisitService),
-              start: '2026-01-15T14:00:00Z',
-              end: '2026-01-15T15:00:00Z',
-              status: 'free',
-            } satisfies Slot,
-          },
-        ],
-      });
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
-  });
-
   test('When referencing a nonexistent schedule', async () => {
     const response = await request
       .post('/fhir/R4/Appointment/$book')
@@ -193,67 +161,42 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              serviceType: [officeVisit],
-              schedule: { reference: 'Schedule/fake-12345' },
+              resourceType: 'Appointment',
+              status: 'proposed',
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T15:00:00Z',
-              status: 'free',
-            },
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: createReference(practitioner1), status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: { reference: 'Schedule/fake-12345' },
+                  start: '2026-01-15T14:00:00Z',
+                  end: '2026-01-15T15:00:00Z',
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
 
-    expect(response.status).toEqual(400);
-    expect(response.body).toHaveProperty('issue');
+    expect(response).toHaveStatus(400);
+    expect(response.body).toHaveProperty('issue', [
+      {
+        code: 'invalid',
+        details: {
+          text: 'Schedule load failed',
+        },
+        expression: ['Parameters.appointment.contained[0].schedule'],
+        severity: 'error',
+      },
+    ]);
   });
 
-  test('creates an Appointment', async () => {
-    const schedule = await makeSchedule({ actor: practitioner1 });
-    const start = '2026-01-15T14:00:00Z';
-    const end = '2026-01-15T15:00:00Z';
-
-    const response = await request
-      .post('/fhir/R4/Appointment/$book')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
-              start,
-              end,
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
-          },
-        ],
-      });
-
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
-
-    const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
-
-    const appointments = entries.filter(isAppointment);
-    expect(appointments).toHaveLength(1);
-    expect(appointments[0]).toHaveProperty('id');
-    expect(appointments[0]).toHaveProperty('status', 'booked');
-    expect(appointments[0]).toHaveProperty('start', start);
-    expect(appointments[0]).toHaveProperty('end', end);
-
-    const slots = entries.filter(isSlot).filter((s) => s.status === 'busy');
-    expect(slots).toHaveLength(1);
-    expect(appointments[0].slot).toHaveLength(1);
-    expect(appointments[0].slot?.[0]?.reference).toEqual(`Slot/${slots[0].id}`);
-  });
-
-  test('creates slots with status: "busy"', async () => {
+  test('creates a "booked" appointment with "busy" slots', async () => {
     const schedule1 = await makeSchedule({ actor: practitioner1 });
     const schedule2 = await makeSchedule({ actor: practitioner2 });
     const start = '2026-01-15T14:00:00Z';
@@ -266,43 +209,67 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule1),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start,
               end,
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
-          },
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule2),
-              start,
-              end,
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [
+                { actor: schedule1.actor[0], status: 'tentative' },
+                { actor: schedule2.actor[0], status: 'tentative' },
+              ],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule1),
+                  start,
+                  end,
+                } satisfies Slot,
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule2),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
+    expect(response).toHaveStatus(201);
 
     const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
 
+    const appointments = entries.filter(isAppointment);
+    expect(appointments).toHaveLength(1);
+    expect(appointments[0]).toHaveProperty('id');
+    expect(appointments[0]).toMatchObject({
+      status: 'booked',
+      start,
+      end,
+    });
+
+    // The return bundle has two "busy" slots
     const slots = entries.filter(isSlot);
     expect(slots).toHaveLength(2);
     slots.forEach((slot) => {
       expect(slot).toHaveProperty('id');
-      expect(slot).toHaveProperty('status', 'busy');
-      expect(slot).toHaveProperty('start', start);
-      expect(slot).toHaveProperty('end', end);
+      expect(slot).toMatchObject({
+        status: 'busy',
+        start,
+        end,
+      });
     });
+
+    // The appointment holds references to the created slots
+    expect(appointments[0].slot?.map((slot) => slot.reference)).toContainExactly(
+      slots.map((slot) => `Slot/${slot.id}`)
+    );
   });
 
   test('with mismatched slot starts', async () => {
@@ -316,26 +283,34 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule1),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T15:00:00Z',
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
-          },
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule2),
-              start: '2026-01-15T08:00:00Z',
-              end: '2026-01-15T09:00:00Z',
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [
+                { actor: schedule1.actor[0], status: 'tentative' },
+                { actor: schedule2.actor[0], status: 'tentative' },
+              ],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule1),
+                  start: '2026-01-15T14:00:00Z',
+                  end: '2026-01-15T15:00:00Z',
+                } satisfies Slot,
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule2),
+                  start: '2026-01-15T08:00:00Z',
+                  end: '2026-01-15T09:00:00Z',
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
@@ -346,10 +321,10 @@ describe('Appointment/$book', () => {
         details: {
           text: 'Mismatched slot start times',
         },
-        expression: ['Parameters.slot[0].start', 'Parameters.slot[1].start'],
+        expression: ['Parameters.appointment.contained[0].start', 'Parameters.appointment.contained[1].start'],
       },
     ]);
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
   });
 
   test('with mismatched slot ends', async () => {
@@ -363,26 +338,34 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule1),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T15:00:00Z',
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
-          },
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule2),
-              start: '2026-01-15T14:00:00Z',
-              end: '2026-01-15T14:30:00Z',
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [
+                { actor: schedule1.actor[0], status: 'tentative' },
+                { actor: schedule2.actor[0], status: 'tentative' },
+              ],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule1),
+                  start: '2026-01-15T14:00:00Z',
+                  end: '2026-01-15T15:00:00Z',
+                } satisfies Slot,
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule2),
+                  start: '2026-01-15T14:00:00Z',
+                  end: '2026-01-15T14:30:00Z',
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
@@ -393,63 +376,13 @@ describe('Appointment/$book', () => {
         details: {
           text: 'Mismatched slot end times',
         },
-        expression: ['Parameters.slot[0].end', 'Parameters.slot[1].end'],
+        expression: ['Parameters.appointment.contained[0].end', 'Parameters.appointment.contained[1].end'],
       },
     ]);
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
   });
 
-  test('when slots have different service types', async () => {
-    const schedule1 = await makeSchedule({ actor: practitioner1 });
-    const schedule2 = await makeSchedule({ actor: practitioner2 });
-
-    const response = await request
-      .post('/fhir/R4/Appointment/$book')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule1),
-              start: '2026-01-15T14:00:00Z',
-              end: '2026-01-15T15:00:00Z',
-              status: 'free',
-              serviceType: toCodeableReferenceLike(officeVisitService),
-            } satisfies Slot,
-          },
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule2),
-              start: '2026-01-15T14:00:00Z',
-              end: '2026-01-15T15:00:00Z',
-              status: 'free',
-              serviceType: toCodeableReferenceLike(followupService),
-            } satisfies Slot,
-          },
-        ],
-      });
-    expect(response.body).toHaveProperty('issue', [
-      {
-        severity: 'error',
-        code: 'invalid',
-        details: {
-          text: 'Mismatched service types',
-        },
-        expression: [
-          'Parameters.slot[0].serviceType[0].extension[0].valueReference.reference',
-          'Parameters.slot[1].serviceType[0].extension[0].valueReference.reference',
-        ],
-      },
-    ]);
-    expect(response.status).toEqual(400);
-  });
-
-  test('fails with Conflict when there is an overlapping busy slot booked', async () => {
+  test('fails when there is an overlapping busy slot booked', async () => {
     const practitioner = await makePractitioner({ timezone: 'America/New_York' });
     const schedule = await makeSchedule({ actor: practitioner });
     const start = '2026-01-15T14:00:00Z';
@@ -471,21 +404,29 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start,
               end,
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
 
-    // Status: Conflict
-    expect(response.status).toEqual(409);
+    expect(response).toHaveStatus(400);
 
     // Check no appointment was created
     const appointments = await systemRepo.searchResources<Appointment>(
@@ -498,7 +439,7 @@ describe('Appointment/$book', () => {
     expect(slots).toHaveLength(1);
   });
 
-  test('fails when trying to use a service type that does not match scheduling parameters', async () => {
+  test('fails without a HealthcareService reference embedded in serviceType', async () => {
     const schedule = await makeSchedule({ actor: practitioner1 });
     const response = await request
       .post('/fhir/R4/Appointment/$book')
@@ -507,66 +448,38 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
-              serviceType: [
-                {
-                  coding: [{ code: 'other' }],
-                },
-              ],
+              resourceType: 'Appointment',
+              status: 'proposed',
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T15:00:00Z',
-              status: 'free',
-            } satisfies Slot,
+              serviceType: [{ coding: [{ code: 'other' }] }],
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start: '2026-01-15T14:00:00Z',
+                  end: '2026-01-15T15:00:00Z',
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
     expect(response.body).toMatchObject({
       resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'invalid', details: { text: 'No matching HealthcareService found' } }],
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: { text: 'Appointment has no service reference' },
+        },
+      ],
     });
-    expect(response.status).toEqual(400);
-  });
-
-  test('succeeds when there is an explicit "free" slot at the same time', async () => {
-    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
-    const schedule = await makeSchedule({ actor: practitioner });
-    const start = '2026-01-15T14:00:00Z';
-    const end = '2026-01-15T15:00:00Z';
-
-    await systemRepo.createResource<Slot>({
-      resourceType: 'Slot',
-      start,
-      end,
-      status: 'free',
-      schedule: createReference(schedule),
-      meta: { project: project.project.id },
-    });
-
-    const response = await request
-      .post('/fhir/R4/Appointment/$book')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
-              start,
-              end,
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
-          },
-        ],
-      });
-
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
+    expect(response).toHaveStatus(400);
   });
 
   test('it fails when trying to book outside of availability windows', async () => {
@@ -582,29 +495,39 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start,
               end,
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
 
-    expect(response.body).toHaveProperty('issue', [
-      {
-        severity: 'error',
-        code: 'invalid',
-        details: {
-          text: 'No availability found at this time',
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: { text: 'Requested time slot is not available' },
         },
-      },
-    ]);
-    expect(response.status).toEqual(400);
+      ],
+    });
+    expect(response).toHaveStatus(400);
   });
 
   test.each([
@@ -627,35 +550,42 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule1),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start,
               end,
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
-          },
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule2),
-              start,
-              end,
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [
+                { actor: schedule1.actor[0], status: 'tentative' },
+                { actor: schedule2.actor[0], status: 'tentative' },
+              ],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule1),
+                  start,
+                  end,
+                } satisfies Slot,
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule2),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
 
     if (succeeds) {
-      expect(response.body).not.toHaveProperty('issue');
-      expect(response.status).toEqual(201);
+      expect(response).toHaveStatus(201);
     } else {
-      expect(response.status).toEqual(400);
+      expect(response).toHaveStatus(400);
     }
   });
 
@@ -681,21 +611,29 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start,
               end,
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
+    expect(response).toHaveStatus(201);
   });
 
   test('succeeds over adjacent explicit "free" slots', async () => {
@@ -733,21 +671,29 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start,
               end,
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
+    expect(response).toHaveStatus(201);
   });
 
   test('booking a slot with a different duration than scheduling parameters fails', async () => {
@@ -759,21 +705,39 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T14:30:00Z',
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start: '2026-01-15T14:00:00Z',
+                  end: '2026-01-15T14:30:00Z',
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
 
-    expect(response.body).toHaveProperty('issue');
-    expect(response.status).toEqual(400);
+    expect(response.body).toHaveProperty('issue', [
+      {
+        code: 'invalid',
+        details: {
+          text: 'Slot duration does not match scheduling parameters duration',
+        },
+        expression: ['Parameters.appointment.contained[0]'],
+        severity: 'error',
+      },
+    ]);
+    expect(response).toHaveStatus(400);
   });
 
   test.each([
@@ -824,20 +788,28 @@ describe('Appointment/$book', () => {
           resourceType: 'Parameters',
           parameter: [
             {
-              name: 'slot',
+              name: 'appointment',
               resource: {
-                resourceType: 'Slot',
-                schedule: createReference(schedule),
+                resourceType: 'Appointment',
+                status: 'proposed',
                 start,
                 end,
-                status: 'free',
-                serviceType: [officeVisit],
-              } satisfies Slot,
+                serviceType: toCodeableReferenceLike(officeVisitService),
+                participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+                contained: [
+                  {
+                    resourceType: 'Slot',
+                    status: 'busy',
+                    schedule: createReference(schedule),
+                    start,
+                    end,
+                  } satisfies Slot,
+                ],
+              } satisfies Appointment,
             },
           ],
         });
-      expect(response.body).not.toHaveProperty('issue');
-      expect(response.status).toEqual(201);
+      expect(response).toHaveStatus(201);
     }
   );
 
@@ -869,7 +841,8 @@ describe('Appointment/$book', () => {
       ],
     });
 
-    // Trying to book at the front of the availability window fails
+    // Trying to book at the front of the availability window fails because the
+    // 20-min bufferBefore slot falls outside the window (08:40-09:00 ET)
     const response1 = await request
       .post('/fhir/R4/Appointment/$book')
       .set('Authorization', `Bearer ${project.accessToken}`)
@@ -877,19 +850,35 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start: '2026-01-15T09:00:00-05:00',
               end: '2026-01-15T10:00:00-05:00',
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start: '2026-01-15T09:00:00-05:00',
+                  end: '2026-01-15T10:00:00-05:00',
+                } satisfies Slot,
+                {
+                  resourceType: 'Slot',
+                  status: 'busy-unavailable',
+                  schedule: createReference(schedule),
+                  start: '2026-01-15T08:40:00.000-05:00',
+                  end: '2026-01-15T09:00:00.000-05:00',
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
-    expect(response1.status).toEqual(400);
+    expect(response1).toHaveStatus(400);
 
     // Booking with buffer in the availability window succeeds
     const response2 = await request
@@ -899,57 +888,49 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start: '2026-01-15T10:00:00-05:00',
               end: '2026-01-15T11:00:00-05:00',
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start: '2026-01-15T10:00:00-05:00',
+                  end: '2026-01-15T11:00:00-05:00',
+                } satisfies Slot,
+                {
+                  resourceType: 'Slot',
+                  status: 'busy-unavailable',
+                  schedule: createReference(schedule),
+                  start: '2026-01-15T09:40:00.000-05:00',
+                  end: '2026-01-15T10:00:00.000-05:00',
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
-    expect(response2.body).not.toHaveProperty('issue');
-    expect(response2.status).toEqual(201);
+    expect(response2).toHaveStatus(201);
 
-    // It creates a bufferBefore slot with status: 'busy-unavailable
+    // It creates a bufferBefore slot with status: 'busy-unavailable'
     const entries = ((response2.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
     const bufferSlots = entries.filter(isSlot).filter((slot) => slot.status === 'busy-unavailable');
     expect(bufferSlots).toHaveLength(1);
     expect(bufferSlots).toMatchObject([
       {
         resourceType: 'Slot',
-        start: '2026-01-15T14:40:00.000Z',
-        end: '2026-01-15T15:00:00.000Z',
+        start: '2026-01-15T09:40:00.000-05:00',
+        end: '2026-01-15T10:00:00.000-05:00',
         schedule: createReference(schedule),
         status: 'busy-unavailable',
       },
     ]);
-
-    // Trying to book immediately following the previously created booking
-    // does not have availability due to lack of bufferBefore.
-    const response3 = await request
-      .post('/fhir/R4/Appointment/$book')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
-              start: '2026-01-15T11:00:00-05:00',
-              end: '2026-01-15T12:00:00-05:00',
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
-          },
-        ],
-      });
-    expect(response3.status).toEqual(400);
   });
 
   test('with bufferAfter', async () => {
@@ -984,7 +965,8 @@ describe('Appointment/$book', () => {
       ],
     });
 
-    // Trying to book at the end of the availability window fails
+    // Trying to book at the end of the availability window fails because the
+    // 20-min bufferAfter slot falls outside the window (17:00-17:20 ET)
     const response1 = await request
       .post('/fhir/R4/Appointment/$book')
       .set('Authorization', `Bearer ${project.accessToken}`)
@@ -992,19 +974,35 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start: '2026-01-15T16:30:00-05:00',
               end: '2026-01-15T17:00:00-05:00',
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start: '2026-01-15T16:30:00-05:00',
+                  end: '2026-01-15T17:00:00-05:00',
+                } satisfies Slot,
+                {
+                  resourceType: 'Slot',
+                  status: 'busy-unavailable',
+                  schedule: createReference(schedule),
+                  start: '2026-01-15T17:00:00.000-05:00',
+                  end: '2026-01-15T17:20:00.000-05:00',
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
-    expect(response1.status).toEqual(400);
+    expect(response1).toHaveStatus(400);
 
     // Booking with buffer in the availability window succeeds
     const response2 = await request
@@ -1014,60 +1012,52 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start: '2026-01-15T16:00:00-05:00',
               end: '2026-01-15T16:30:00-05:00',
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start: '2026-01-15T16:00:00-05:00',
+                  end: '2026-01-15T16:30:00-05:00',
+                } satisfies Slot,
+                {
+                  resourceType: 'Slot',
+                  status: 'busy-unavailable',
+                  schedule: createReference(schedule),
+                  start: '2026-01-15T16:30:00.000-05:00',
+                  end: '2026-01-15T16:50:00.000-05:00',
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
-    expect(response2.body).not.toHaveProperty('issue');
-    expect(response2.status).toEqual(201);
+    expect(response2).toHaveStatus(201);
 
-    // It creates a bufferAfter slot with status: 'busy-unavailable
+    // It creates a bufferAfter slot with status: 'busy-unavailable'
     const entries = ((response2.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
     const bufferSlots = entries.filter(isSlot).filter((slot) => slot.status === 'busy-unavailable');
     expect(bufferSlots).toHaveLength(1);
     expect(bufferSlots).toMatchObject([
       {
         resourceType: 'Slot',
-        start: '2026-01-15T21:30:00.000Z',
-        end: '2026-01-15T21:50:00.000Z',
+        start: '2026-01-15T16:30:00.000-05:00',
+        end: '2026-01-15T16:50:00.000-05:00',
         schedule: createReference(schedule),
         status: 'busy-unavailable',
       },
     ]);
-
-    // Trying to book immediately before the previously created booking
-    // does not have availability due to lack of bufferAfter.
-    const response3 = await request
-      .post('/fhir/R4/Appointment/$book')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
-              start: '2026-01-15T15:15:00-05:00',
-              end: '2026-01-15T15:45:00-05:00',
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
-          },
-        ],
-      });
-    expect(response3.status).toEqual(400);
   });
 
-  test('with a patient reference', async () => {
+  test('patient references embedded in Appointment.participant are preserved', async () => {
     const schedule = await makeSchedule({ actor: practitioner1 });
     const start = '2026-01-15T14:00:00Z';
     const end = '2026-01-15T15:00:00Z';
@@ -1079,25 +1069,32 @@ describe('Appointment/$book', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
+              status: 'proposed',
               start,
               end,
-              status: 'free',
-              serviceType: [officeVisit],
-            } satisfies Slot,
-          },
-          {
-            name: 'patient-reference',
-            valueReference: createReference(patient),
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [
+                { actor: schedule.actor[0], status: 'tentative' },
+                { actor: createReference(patient), status: 'accepted' },
+              ],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
+    expect(response).toHaveStatus(201);
 
     const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
 
@@ -1120,9 +1117,15 @@ describe('Appointment/$book', () => {
     ]);
   });
 
-  describe('with appointment parameter', () => {
-    function appointmentParam(opts: { schedule: WithId<Schedule>; start: string; end: string }): object {
-      return {
+  test('errors when the appointment parameter already has the `slot` attribute', async () => {
+    const schedule = await makeSchedule({ actor: practitioner1 });
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
         resourceType: 'Parameters',
         parameter: [
           {
@@ -1130,239 +1133,130 @@ describe('Appointment/$book', () => {
             resource: {
               resourceType: 'Appointment',
               status: 'proposed',
-              start: opts.start,
-              end: opts.end,
+              start,
+              end,
               serviceType: toCodeableReferenceLike(officeVisitService),
-              participant: [{ actor: opts.schedule.actor[0], status: 'tentative' }],
+              participant: [{ actor: createReference(practitioner1), status: 'tentative' }],
+              slot: [{ reference: 'Slot/already-set' }],
               contained: [
                 {
                   resourceType: 'Slot',
                   status: 'busy',
-                  schedule: createReference(opts.schedule),
-                  start: opts.start,
-                  end: opts.end,
+                  schedule: createReference(schedule),
+                  start,
+                  end,
                 } satisfies Slot,
               ],
             } satisfies Appointment,
           },
         ],
-      };
-    }
-
-    test('creates a booked Appointment and busy Slots', async () => {
-      const schedule = await makeSchedule({ actor: practitioner1 });
-      const start = '2026-01-15T14:00:00Z';
-      const end = '2026-01-15T15:00:00Z';
-
-      const response = await request
-        .post('/fhir/R4/Appointment/$book')
-        .set('Authorization', `Bearer ${project.accessToken}`)
-        .send(appointmentParam({ schedule, start, end }));
-
-      expect(response.body).not.toHaveProperty('issue');
-      expect(response.status).toEqual(201);
-
-      const entries = ((response.body as Bundle).entry ?? []).map((e) => e.resource).filter(isDefined);
-
-      const appointments = entries.filter(isAppointment);
-      expect(appointments).toHaveLength(1);
-      expect(appointments[0]).toHaveProperty('status', 'booked');
-      expect(appointments[0]).toHaveProperty('start', start);
-      expect(appointments[0]).toHaveProperty('end', end);
-      expect(appointments[0]).not.toHaveProperty('contained');
-
-      const slots = entries.filter(isSlot);
-      expect(slots).toHaveLength(1);
-      expect(slots[0]).toHaveProperty('status', 'busy');
-      expect(appointments[0]).toHaveProperty('slot', [createReference(slots[0])]);
-    });
-
-    test('rejects when both appointment and slot are provided', async () => {
-      const schedule = await makeSchedule({ actor: practitioner1 });
-      const start = '2026-01-15T14:00:00Z';
-      const end = '2026-01-15T15:00:00Z';
-
-      const response = await request
-        .post('/fhir/R4/Appointment/$book')
-        .set('Authorization', `Bearer ${project.accessToken}`)
-        .send({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'appointment',
-              resource: {
-                resourceType: 'Appointment',
-                status: 'proposed',
-                start,
-                end,
-                serviceType: toCodeableReferenceLike(officeVisitService),
-                participant: [{ actor: createReference(practitioner1), status: 'tentative' }],
-                contained: [
-                  {
-                    resourceType: 'Slot',
-                    status: 'busy',
-                    schedule: createReference(schedule),
-                    start,
-                    end,
-                  } satisfies Slot,
-                ],
-              } satisfies Appointment,
-            },
-            {
-              name: 'slot',
-              resource: {
-                resourceType: 'Slot',
-                schedule: createReference(schedule),
-                start,
-                end,
-                status: 'free',
-                serviceType: [officeVisit],
-              } satisfies Slot,
-            },
-          ],
-        });
-
-      expect(response.status).toEqual(400);
-      expect(response.body).toMatchObject({
-        resourceType: 'OperationOutcome',
-        issue: [{ details: { text: 'Received exclusive parameters `slot` and `appointment`' } }],
-      });
-    });
-
-    test('rejects when patient-reference is provided alongside appointment', async () => {
-      const schedule = await makeSchedule({ actor: practitioner1 });
-      const start = '2026-01-15T14:00:00Z';
-      const end = '2026-01-15T15:00:00Z';
-
-      const response = await request
-        .post('/fhir/R4/Appointment/$book')
-        .set('Authorization', `Bearer ${project.accessToken}`)
-        .send({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'appointment',
-              resource: {
-                resourceType: 'Appointment',
-                status: 'proposed',
-                start,
-                end,
-                serviceType: toCodeableReferenceLike(officeVisitService),
-                participant: [{ actor: createReference(practitioner1), status: 'tentative' }],
-                contained: [
-                  {
-                    resourceType: 'Slot',
-                    status: 'busy',
-                    schedule: createReference(schedule),
-                    start,
-                    end,
-                  } satisfies Slot,
-                ],
-              } satisfies Appointment,
-            },
-            {
-              name: 'patient-reference',
-              valueReference: createReference(patient),
-            },
-          ],
-        });
-
-      expect(response.status).toEqual(400);
-      expect(response.body).toMatchObject({
-        resourceType: 'OperationOutcome',
-        issue: [{ details: { text: '`patient-reference` parameter not allowed with `appointment` parameter' } }],
-      });
-    });
-
-    test('rejects a proposed appointment that already has slot references', async () => {
-      const schedule = await makeSchedule({ actor: practitioner1 });
-      const start = '2026-01-15T14:00:00Z';
-      const end = '2026-01-15T15:00:00Z';
-
-      const response = await request
-        .post('/fhir/R4/Appointment/$book')
-        .set('Authorization', `Bearer ${project.accessToken}`)
-        .send({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'appointment',
-              resource: {
-                resourceType: 'Appointment',
-                status: 'proposed',
-                start,
-                end,
-                serviceType: toCodeableReferenceLike(officeVisitService),
-                participant: [{ actor: createReference(practitioner1), status: 'tentative' }],
-                slot: [{ reference: 'Slot/already-set' }],
-                contained: [
-                  {
-                    resourceType: 'Slot',
-                    status: 'busy',
-                    schedule: createReference(schedule),
-                    start,
-                    end,
-                  } satisfies Slot,
-                ],
-              } satisfies Appointment,
-            },
-          ],
-        });
-
-      expect(response.status).toEqual(400);
-      expect(response.body).toMatchObject({
-        resourceType: 'OperationOutcome',
-        issue: [{ details: { text: 'Proposed appointment must not have Slot references' } }],
-      });
-    });
-
-    test('rejects when the proposed appointment is outside of any availability window', async () => {
-      const schedule = await makeSchedule({ actor: practitioner1 });
-      const start = '2026-01-16T14:00:00Z';
-      const end = '2026-01-16T15:00:00Z';
-
-      const response = await request
-        .post('/fhir/R4/Appointment/$book')
-        .set('Authorization', `Bearer ${project.accessToken}`)
-        .send(appointmentParam({ schedule, start, end }));
-
-      expect(response.status).toEqual(400);
-      expect(response.body).toMatchObject({
-        resourceType: 'OperationOutcome',
-        issue: [{ details: { text: 'Requested time slot is not available' } }],
-      });
-    });
-
-    test('rejects when the proposed appointment conflicts with an existing slot', async () => {
-      const schedule = await makeSchedule({ actor: practitioner1 });
-      const start = '2026-01-15T14:00:00Z';
-      const end = '2026-01-15T15:00:00Z';
-
-      await systemRepo.createResource<Slot>({
-        resourceType: 'Slot',
-        start,
-        end,
-        status: 'busy',
-        schedule: createReference(schedule),
-        meta: { project: project.project.id },
       });
 
-      const response = await request
-        .post('/fhir/R4/Appointment/$book')
-        .set('Authorization', `Bearer ${project.accessToken}`)
-        .send(appointmentParam({ schedule, start, end }));
-
-      expect(response.status).toEqual(400);
-      expect(response.body).toMatchObject({
-        resourceType: 'OperationOutcome',
-        issue: [{ details: { text: 'Requested time slot is not available' } }],
-      });
+    expect(response).toHaveStatus(400);
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [{ details: { text: 'Proposed appointment must not have Slot references' } }],
     });
   });
 
+  test('rejects when the proposed slot start is not aligned to the scheduling grid', async () => {
+    const schedule = await makeSchedule({
+      actor: practitioner1,
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            threeDayAvailability,
+            { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+            { url: 'alignmentInterval', valueDuration: { value: 30, unit: 'min' } },
+            { url: 'alignmentOffset', valueDuration: { value: 0, unit: 'min' } },
+            { url: 'service', valueReference: createReference(officeVisitService) },
+          ],
+        },
+      ],
+    });
+
+    // 14:15Z is not on the 30-minute grid (valid starts are :00 and :30)
+    const misalignedStart = '2026-01-15T14:15:00Z';
+    const misalignedEnd = '2026-01-15T15:15:00Z';
+
+    const misalignedResponse = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start: misalignedStart,
+              end: misalignedEnd,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: createReference(practitioner1), status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start: misalignedStart,
+                  end: misalignedEnd,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(misalignedResponse).toHaveStatus(400);
+    expect(misalignedResponse.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [{ details: { text: 'Slot start time is not aligned to the scheduling grid' } }],
+    });
+
+    // 14:30Z is on the 30-minute grid
+    const alignedStart = '2026-01-15T14:30:00Z';
+    const alignedEnd = '2026-01-15T15:30:00Z';
+
+    const alignedResponse = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start: alignedStart,
+              end: alignedEnd,
+              serviceType: toCodeableReferenceLike(officeVisitService),
+              participant: [{ actor: createReference(practitioner1), status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start: alignedStart,
+                  end: alignedEnd,
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(alignedResponse).toHaveStatus(201);
+  });
+
   describe('Loading schedulingParameters from HealthcareService', () => {
-    async function makeHealthcareService(serviceType: CodeableConcept, duration: number): Promise<void> {
-      await systemRepo.createResource<HealthcareService>({
+    async function makeHealthcareService(
+      serviceType: CodeableConcept,
+      duration: number
+    ): Promise<WithId<HealthcareService>> {
+      return systemRepo.createResource<HealthcareService>({
         resourceType: 'HealthcareService',
         meta: { project: project.project.id },
         type: [serviceType],
@@ -1397,7 +1291,7 @@ describe('Appointment/$book', () => {
 
     test('succeeds when scheduling parameters are only on an HealthcareService', async () => {
       const serviceType = { coding: [{ system: 'http://example.com', code: 'consult' }] };
-      await makeHealthcareService(serviceType, 60);
+      const service = await makeHealthcareService(serviceType, 60);
       const schedule = await makeSchedule({ actor: practitioner1, extension: [] });
 
       const response = await request
@@ -1407,92 +1301,34 @@ describe('Appointment/$book', () => {
           resourceType: 'Parameters',
           parameter: [
             {
-              name: 'slot',
+              name: 'appointment',
               resource: {
-                resourceType: 'Slot',
-                schedule: createReference(schedule),
-                serviceType: [serviceType],
+                resourceType: 'Appointment',
+                status: 'proposed',
                 start: '2026-01-15T14:00:00Z',
                 end: '2026-01-15T15:00:00Z',
-                status: 'free',
-              } satisfies Slot,
+                serviceType: toCodeableReferenceLike(service),
+                participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+                contained: [
+                  {
+                    resourceType: 'Slot',
+                    status: 'busy',
+                    schedule: createReference(schedule),
+                    start: '2026-01-15T14:00:00Z',
+                    end: '2026-01-15T15:00:00Z',
+                  } satisfies Slot,
+                ],
+              } satisfies Appointment,
             },
           ],
         });
 
-      expect(response.body).not.toHaveProperty('issue');
-      expect(response.status).toEqual(201);
-    });
-
-    test('succeeds when the service-type has no system', async () => {
-      const serviceType = { coding: [{ code: 'checkup' }] };
-      await makeHealthcareService(serviceType, 60);
-      const schedule = await makeSchedule({ actor: practitioner1, extension: [] });
-
-      const response = await request
-        .post('/fhir/R4/Appointment/$book')
-        .set('Authorization', `Bearer ${project.accessToken}`)
-        .send({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'slot',
-              resource: {
-                resourceType: 'Slot',
-                schedule: createReference(schedule),
-                serviceType: [serviceType],
-                start: '2026-01-15T14:00:00Z',
-                end: '2026-01-15T15:00:00Z',
-                status: 'free',
-              } satisfies Slot,
-            },
-          ],
-        });
-
-      expect(response.body).not.toHaveProperty('issue');
-      expect(response.status).toEqual(201);
-    });
-
-    test('fails when multiple HealthcareServices match the slot service type tokens', async () => {
-      // Two HealthcareServices sharing the same coding — the token-based fallback is
-      // ambiguous and must fail rather than silently picking one.
-      const sharedCode = { coding: [{ system: 'http://example.com', code: 'shared-svc' }] };
-      await makeHealthcareService(sharedCode, 45);
-      await makeHealthcareService(sharedCode, 60);
-      const schedule = await makeScheduleNoParams(practitioner1);
-
-      const response = await request
-        .post('/fhir/R4/Appointment/$book')
-        .set('Authorization', `Bearer ${project.accessToken}`)
-        .send({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'slot',
-              resource: {
-                resourceType: 'Slot',
-                schedule: createReference(schedule),
-                serviceType: [sharedCode],
-                start: '2026-01-15T14:00:00Z',
-                end: '2026-01-15T15:00:00Z',
-                status: 'free',
-              } satisfies Slot,
-            },
-          ],
-        });
-
-      expect(response.body).toMatchObject({
-        resourceType: 'OperationOutcome',
-        issue: [
-          { severity: 'error', code: 'invalid', details: { text: 'Multiple matching HealthcareServices found' } },
-        ],
-      });
-      expect(response.status).toEqual(400);
+      expect(response).toHaveStatus(201);
     });
 
     test('fails when booking outside HealthcareService availability', async () => {
       const serviceType = { coding: [{ system: 'http://example.com', code: 'consult' }] };
-      await makeHealthcareService(serviceType, 60);
+      const service = await makeHealthcareService(serviceType, 60);
       const schedule = await makeScheduleNoParams(practitioner1);
 
       // 07:00-08:00 ET is outside the 09:00-17:00 ET window
@@ -1503,20 +1339,29 @@ describe('Appointment/$book', () => {
           resourceType: 'Parameters',
           parameter: [
             {
-              name: 'slot',
+              name: 'appointment',
               resource: {
-                resourceType: 'Slot',
-                schedule: createReference(schedule),
-                serviceType: [serviceType],
+                resourceType: 'Appointment',
+                status: 'proposed',
                 start: '2026-01-15T07:00:00-05:00',
                 end: '2026-01-15T08:00:00-05:00',
-                status: 'free',
-              } satisfies Slot,
+                serviceType: toCodeableReferenceLike(service),
+                participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+                contained: [
+                  {
+                    resourceType: 'Slot',
+                    status: 'busy',
+                    schedule: createReference(schedule),
+                    start: '2026-01-15T07:00:00-05:00',
+                    end: '2026-01-15T08:00:00-05:00',
+                  } satisfies Slot,
+                ],
+              } satisfies Appointment,
             },
           ],
         });
 
-      expect(response.status).toEqual(400);
+      expect(response).toHaveStatus(400);
     });
 
     test('Schedule-specific parameters override HealthcareService parameters', async () => {
@@ -1571,20 +1416,28 @@ describe('Appointment/$book', () => {
           resourceType: 'Parameters',
           parameter: [
             {
-              name: 'slot',
+              name: 'appointment',
               resource: {
-                resourceType: 'Slot',
-                schedule: createReference(schedule),
-                serviceType: [serviceType],
+                resourceType: 'Appointment',
+                status: 'proposed',
                 start: '2026-01-15T14:00:00Z',
                 end: '2026-01-15T15:00:00Z',
-                status: 'free',
-              } satisfies Slot,
+                serviceType: toCodeableReferenceLike(service),
+                participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+                contained: [
+                  {
+                    resourceType: 'Slot',
+                    status: 'busy',
+                    schedule: createReference(schedule),
+                    start: '2026-01-15T14:00:00Z',
+                    end: '2026-01-15T15:00:00Z',
+                  } satisfies Slot,
+                ],
+              } satisfies Appointment,
             },
           ],
         });
-      expect(response60.body).not.toHaveProperty('issue');
-      expect(response60.status).toEqual(201);
+      expect(response60).toHaveStatus(201);
 
       // 30-min slot fails (HealthcareService duration was overridden by Schedule)
       const response30 = await request
@@ -1594,127 +1447,39 @@ describe('Appointment/$book', () => {
           resourceType: 'Parameters',
           parameter: [
             {
-              name: 'slot',
+              name: 'appointment',
               resource: {
-                resourceType: 'Slot',
-                schedule: createReference(schedule),
-                serviceType: [serviceType],
+                resourceType: 'Appointment',
+                status: 'proposed',
                 start: '2026-01-15T14:00:00Z',
                 end: '2026-01-15T14:30:00Z',
-                status: 'free',
-              } satisfies Slot,
+                serviceType: toCodeableReferenceLike(service),
+                participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+                contained: [
+                  {
+                    resourceType: 'Slot',
+                    status: 'busy',
+                    schedule: createReference(schedule),
+                    start: '2026-01-15T14:00:00Z',
+                    end: '2026-01-15T14:30:00Z',
+                  } satisfies Slot,
+                ],
+              } satisfies Appointment,
             },
           ],
         });
-      expect(response30.status).toEqual(400);
-      expect(response30.body).toHaveProperty('issue', [
-        {
-          severity: 'error',
-          code: 'invalid',
-          details: {
-            text: 'No matching scheduling parameters found',
-          },
-        },
-      ]);
-    });
-  });
-
-  test('with an invalid patient reference', async () => {
-    const schedule = await makeSchedule({ actor: practitioner1 });
-    const start = '2026-01-15T14:00:00Z';
-    const end = '2026-01-15T15:00:00Z';
-
-    const response = await request
-      .post('/fhir/R4/Appointment/$book')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
+      expect(response30).toHaveStatus(400);
+      expect(response30.body).toMatchObject({
+        resourceType: 'OperationOutcome',
+        issue: [
           {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
-              start,
-              end,
-              status: 'free',
-            } satisfies Slot,
-          },
-          {
-            name: 'patient-reference',
-            valueReference: { reference: 'Patient/404' },
+            severity: 'error',
+            code: 'invalid',
+            details: { text: 'Slot duration does not match scheduling parameters duration' },
           },
         ],
       });
-
-    expect(response.body).toHaveProperty('issue', [
-      {
-        severity: 'error',
-        code: 'invalid',
-        details: {
-          text: 'Invalid patient-reference',
-        },
-      },
-    ]);
-    expect(response.status).toEqual(400);
-  });
-
-  test('when the service type has no system attribute', async () => {
-    const initialVisit: CodeableConcept = {
-      text: 'Simple initial visit',
-      coding: [{ code: 'simple-initial-visit' }],
-    };
-
-    const service = await systemRepo.createResource<HealthcareService>({
-      resourceType: 'HealthcareService',
-      type: [initialVisit],
-      meta: { project: project.project.id },
     });
-
-    const schedule = await systemRepo.createResource<Schedule>({
-      resourceType: 'Schedule',
-      meta: { project: project.project.id },
-      actor: [createReference(practitioner1)],
-      serviceType: toCodeableReferenceLike(service),
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            {
-              url: 'service',
-              valueReference: createReference(service),
-            },
-            threeDayAvailability,
-            {
-              url: 'duration',
-              valueDuration: { value: 60, unit: 'min' },
-            },
-          ],
-        },
-      ],
-    });
-
-    const response = await request
-      .post('/fhir/R4/Appointment/$book')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'slot',
-            resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
-              serviceType: [initialVisit],
-              start: '2026-01-15T14:00:00Z',
-              end: '2026-01-15T15:00:00Z',
-              status: 'free',
-            } satisfies Slot,
-          },
-        ],
-      });
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
   });
 
   test('errors when appointment is after Schedule.planningHorizon.end', async () => {
@@ -1752,7 +1517,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe('Appointment falls outside schedule planning horizon');
   });
 
@@ -1791,7 +1556,7 @@ describe('Appointment/$book', () => {
           },
         ],
       });
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe('Appointment falls outside schedule planning horizon');
   });
 });
@@ -1856,8 +1621,7 @@ describe('scheduling flow integration test', () => {
         schedule: `Schedule/${schedule.id}`,
       });
 
-    expect(findResponse.body).not.toHaveProperty('issue');
-    expect(findResponse.status).toBe(200);
+    expect(findResponse).toHaveStatus(200);
     expect(findResponse.body.entry?.length).toBeGreaterThan(0);
 
     const proposedAppointment: Appointment = findResponse.body.entry[1].resource;
@@ -1871,97 +1635,13 @@ describe('scheduling flow integration test', () => {
         parameter: [{ name: 'appointment', resource: proposedAppointment }],
       });
 
-    expect(bookResponse.body).not.toHaveProperty('issue');
-    expect(bookResponse.status).toBe(201);
+    expect(bookResponse).toHaveStatus(201);
 
     const entries = ((bookResponse.body as Bundle).entry ?? []).map((e) => e.resource).filter(isDefined);
     const appointments = entries.filter(isAppointment);
     expect(appointments).toHaveLength(1);
     expect(appointments[0]).toHaveProperty('status', 'booked');
     expect(appointments[0]).not.toHaveProperty('contained');
-  });
-
-  test('a slot from $find can be used as input to $book', async () => {
-    const practitioner = await systemRepo.createResource<Practitioner>({
-      resourceType: 'Practitioner',
-      meta: { project: project.project.id },
-      extension: [
-        {
-          url: 'http://hl7.org/fhir/StructureDefinition/timezone',
-          valueCode: 'America/Phoenix',
-        },
-      ],
-    });
-
-    const schedule = await systemRepo.createResource<Schedule>({
-      resourceType: 'Schedule',
-      meta: { project: project.project.id },
-      actor: [createReference(practitioner)],
-      serviceType: toCodeableReferenceLike(service),
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            threeDayAvailability,
-            {
-              url: 'duration',
-              valueDuration: { value: 35, unit: 'min' },
-            },
-            {
-              url: 'alignmentInterval',
-              valueDuration: { value: 30, unit: 'min' },
-            },
-            {
-              url: 'alignmentOffset',
-              valueDuration: { value: 5, unit: 'min' },
-            },
-            {
-              url: 'bufferBefore',
-              valueDuration: { value: 10, unit: 'min' },
-            },
-            {
-              url: 'bufferAfter',
-              valueDuration: { value: 15, unit: 'min' },
-            },
-            {
-              url: 'service',
-              valueReference: createReference(service),
-            },
-          ],
-        },
-      ],
-    });
-
-    const findResponse = await request
-      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .query({
-        start: new Date('2026-01-28T07:00:00.000-07:00'),
-        end: new Date('2026-01-28T12:00:00.000-07:00'),
-        'service-type-reference': `HealthcareService/${service.id}`,
-      });
-
-    expect(findResponse.body).not.toHaveProperty('issue');
-    expect(findResponse.status).toBe(200);
-    expect(findResponse.body).toHaveProperty('entry');
-    expect(findResponse.body.entry).toHaveLength(4);
-    const proposedSlot: Slot = findResponse.body.entry[1].resource;
-
-    const bookResponse = await request
-      .post('/fhir/R4/Appointment/$book')
-      .set('Authorization', `Bearer ${project.accessToken}`)
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'slot',
-            resource: proposedSlot,
-          },
-        ],
-      });
-
-    expect(bookResponse.body).not.toHaveProperty('issue');
-    expect(bookResponse.status).toBe(201);
   });
 
   test('booking a slot as a patient with a minimal access policy', async () => {
@@ -2013,6 +1693,9 @@ describe('scheduling flow integration test', () => {
       ],
     });
 
+    // When updating this policy, please try to update the sample "Patient Access Policy"
+    // in the documentation so that it includes these permissions.
+    // @see https://www.medplum.com/docs/access/access-policies#patient-access
     const minimalPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
       resource: [
@@ -2022,7 +1705,7 @@ describe('scheduling flow integration test', () => {
         },
         {
           resourceType: 'HealthcareService',
-          interaction: ['search'],
+          interaction: ['read'],
         },
         {
           resourceType: 'Schedule',
@@ -2060,25 +1743,33 @@ describe('scheduling flow integration test', () => {
         resourceType: 'Parameters',
         parameter: [
           {
-            name: 'slot',
+            name: 'appointment',
             resource: {
-              resourceType: 'Slot',
-              schedule: createReference(schedule),
+              resourceType: 'Appointment',
               start,
               end,
-              status: 'free',
-              serviceType: [officeVisitConcept],
-            } satisfies Slot,
-          },
-          {
-            name: 'patient-reference',
-            valueReference: createReference(profile),
+              status: 'proposed',
+              serviceType: toCodeableReferenceLike(service),
+              participant: [
+                { actor: createReference(profile), status: 'accepted' },
+                { actor: createReference(practitioner), status: 'accepted' },
+              ],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                  status: 'busy',
+                  serviceType: [officeVisitConcept],
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
           },
         ],
       });
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(201);
+    expect(response).toHaveStatus(201);
 
     const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
 
@@ -2109,8 +1800,7 @@ describe('scheduling flow integration test', () => {
       .set('Authorization', `Bearer ${otherPatient.accessToken}`)
       .send();
 
-    expect(otherPatientResponse.body).not.toHaveProperty('issue');
-    expect(otherPatientResponse.status).toEqual(200);
+    expect(otherPatientResponse).toHaveStatus(200);
     expect(otherPatientResponse.body).toHaveProperty('entry');
     expect(otherPatientResponse.body.entry).toHaveLength(1);
     expect(otherPatientResponse.body.entry[0].resource).toEqual({

@@ -63,7 +63,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       login: '1',
       code: '1',
     };
-  } else if (options.method === 'GET' && url.endsWith('Practitioner/123')) {
+  } else if (options.method === 'GET' && url.endsWith('Practitioner/124')) {
     status = 200;
     result = {
       resourceType: 'Practitioner',
@@ -80,7 +80,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       token_type: 'Bearer',
       scope: 'openid',
       project: { reference: 'Project/123' },
-      profile: { reference: 'Practitioner/123' },
+      profile: { reference: 'Practitioner/124' },
     };
   } else if (options.method === 'GET' && url.endsWith('auth/me')) {
     status = 200;
@@ -188,7 +188,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'new-password' },
       });
     });
@@ -210,6 +210,30 @@ describe('RegisterForm', () => {
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
 
     expect(onSuccess).toHaveBeenCalled();
+  });
+
+  test('Sign in link hidden by default', async () => {
+    await setup({
+      type: 'project',
+      recaptchaSiteKey,
+      onSuccess: vi.fn(),
+    });
+
+    expect(screen.queryByText('Sign In')).not.toBeInTheDocument();
+  });
+
+  test('Sign in link calls onSignIn', async () => {
+    const onSignIn = vi.fn();
+    await setup({
+      type: 'project',
+      recaptchaSiteKey,
+      onSuccess: vi.fn(),
+      onSignIn,
+    });
+
+    fireEvent.click(screen.getByText('Sign In'));
+
+    expect(onSignIn).toHaveBeenCalled();
   });
 
   test('Register new project success with empty recaptchaSiteKey', async () => {
@@ -238,7 +262,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'new-password' },
       });
     });
@@ -291,7 +315,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'new-password' },
       });
     });

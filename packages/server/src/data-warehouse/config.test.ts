@@ -1,24 +1,40 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type * as MedplumCore from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import pgConnectionString from 'pg-connection-string';
+import { vi } from 'vitest';
+import type * as DataWarehouseConfig from './config';
 
-jest.mock('@medplum/core', () => {
-  const actual = jest.requireActual('@medplum/core');
+const { mockGetResourceTypes } = vi.hoisted(() => ({
+  mockGetResourceTypes: vi.fn((): ResourceType[] => ['Patient', 'Observation', 'Account', 'AuditEvent']),
+}));
+
+vi.mock('@medplum/core', async () => {
+  const actual = await vi.importActual<typeof MedplumCore>('@medplum/core');
   return {
     ...actual,
-    getResourceTypes: jest.fn((): ResourceType[] => ['Patient', 'Observation', 'Account', 'AuditEvent']),
+    getResourceTypes: mockGetResourceTypes,
   };
 });
 
-import {
-  DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT,
-  appendMedplumDatabaseSslSearchParams,
-  buildPgConnectionURI,
-  getWarehouseSyncPostgresTableNames,
-  toIcebergTableName,
-} from './config';
+let DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT: typeof DataWarehouseConfig.DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT;
+let appendMedplumDatabaseSslSearchParams: typeof DataWarehouseConfig.appendMedplumDatabaseSslSearchParams;
+let buildPgConnectionURI: typeof DataWarehouseConfig.buildPgConnectionURI;
+let getWarehouseSyncPostgresTableNames: typeof DataWarehouseConfig.getWarehouseSyncPostgresTableNames;
+let toIcebergTableName: typeof DataWarehouseConfig.toIcebergTableName;
+
+beforeAll(async () => {
+  vi.resetModules();
+  ({
+    DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT,
+    appendMedplumDatabaseSslSearchParams,
+    buildPgConnectionURI,
+    getWarehouseSyncPostgresTableNames,
+    toIcebergTableName,
+  } = await import('./config'));
+});
 
 describe('buildPostgresConnectionUriFromMedplumDatabaseConfig', () => {
   test('builds a PostgreSQL URI with default statement_timeout', () => {

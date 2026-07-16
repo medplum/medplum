@@ -16,7 +16,6 @@ import { ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import express from 'express';
 import JSZip from 'jszip';
 import request from 'supertest';
@@ -142,7 +141,7 @@ describe('Deploy Streaming', () => {
         }
         `,
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const bot = res1.body as Bot;
     const name = `medplum-bot-lambda-${bot.id}`;
@@ -160,20 +159,24 @@ describe('Deploy Streaming', () => {
         }
         `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(CreateFunctionCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
-      FunctionName: name,
-    });
-    expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
-      FunctionName: name,
-    });
+    expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
+    expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(CreateFunctionCommand)).toHaveLength(1);
+    expect(
+      mockLambdaClient.commandCalls(GetFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(2);
+    expect(
+      mockLambdaClient.commandCalls(CreateFunctionCommand, {
+        FunctionName: name,
+      })
+    ).toHaveLength(1);
 
     // Verify that this was uploaded as a CJS zip file with streaming wrapper
-    const createCall = mockLambdaClient.commandCall(0, CreateFunctionCommand);
+    const createCall = mockLambdaClient.commandCalls(CreateFunctionCommand)[0];
     const createCodeBytes = createCall.args[0].input.Code?.ZipFile;
     expect(createCodeBytes).toBeInstanceOf(Uint8Array);
     const createZip = await new JSZip().loadAsync(createCodeBytes as Uint8Array);
@@ -204,16 +207,16 @@ describe('Deploy Streaming', () => {
         `,
         filename: 'updated.js',
       });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 0);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 1);
+    expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(GetFunctionConfigurationCommand)).toHaveLength(1);
+    expect(mockLambdaClient.commandCalls(UpdateFunctionConfigurationCommand)).toHaveLength(0);
+    expect(mockLambdaClient.commandCalls(UpdateFunctionCodeCommand)).toHaveLength(1);
 
     // Verify that this was uploaded as a MJS zip file with streaming wrapper
-    const updateCall = mockLambdaClient.commandCall(0, UpdateFunctionCodeCommand);
+    const updateCall = mockLambdaClient.commandCalls(UpdateFunctionCodeCommand)[0];
     const updateCodeBytes = updateCall.args[0].input?.ZipFile;
     expect(updateCodeBytes).toBeInstanceOf(Uint8Array);
     const updateZip = await new JSZip().loadAsync(updateCodeBytes as Uint8Array);
@@ -239,7 +242,7 @@ describe('Deploy Streaming', () => {
         runtimeVersion: 'awslambda',
         streamingEnabled: true,
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const bot = res1.body as Bot;
 
@@ -255,10 +258,10 @@ describe('Deploy Streaming', () => {
         }
         `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Verify the zip contents contain streaming-specific code
-    const createCall = mockLambdaClient.commandCall(0, CreateFunctionCommand);
+    const createCall = mockLambdaClient.commandCalls(CreateFunctionCommand)[0];
     const codeBytes = createCall.args[0].input.Code?.ZipFile;
     expect(codeBytes).toBeInstanceOf(Uint8Array);
     const zip = await new JSZip().loadAsync(codeBytes as Uint8Array);
@@ -301,7 +304,7 @@ describe('Deploy Streaming', () => {
         runtimeVersion: 'awslambda',
         streamingEnabled: false,
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const bot = res1.body as Bot;
 
@@ -317,10 +320,10 @@ describe('Deploy Streaming', () => {
         }
         `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Verify the zip does NOT contain streaming code
-    const createCall = mockLambdaClient.commandCall(0, CreateFunctionCommand);
+    const createCall = mockLambdaClient.commandCalls(CreateFunctionCommand)[0];
     const codeBytes = createCall.args[0].input.Code?.ZipFile;
     expect(codeBytes).toBeInstanceOf(Uint8Array);
     const zip = await new JSZip().loadAsync(codeBytes as Uint8Array);

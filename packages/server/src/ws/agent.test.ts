@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import type { Server } from 'http';
 import request from 'superwstest';
+import { vi } from 'vitest';
 import type { AgentInfo } from '../agent/utils';
 import { AgentConnectionState } from '../agent/utils';
 import { initApp, shutdownApp } from '../app';
@@ -13,6 +14,7 @@ import * as executeBotModule from '../bots/execute';
 import type { BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import * as redisModule from '../redis';
 import { getCacheRedis } from '../redis';
@@ -319,7 +321,7 @@ describe('Agent WebSockets', () => {
               'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
               'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           });
-        expect(res.status).toBe(200);
+        expect(res).toHaveStatus(200);
         expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
         expect(res.body).toMatchObject(allOk);
       })
@@ -357,7 +359,7 @@ describe('Agent WebSockets', () => {
               'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
               'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           });
-        expect(res.status).toBe(400);
+        expect(res).toHaveStatus(400);
         expect(res.body.issue[0].details.text).toBe('Timeout');
       })
       .close()
@@ -413,7 +415,7 @@ describe('Agent WebSockets', () => {
       .exec((ws) => ws.send(pushResponse))
       .exec(async () => {
         const res = await pushRequest;
-        expect(res.status).toBe(200);
+        expect(res).toHaveStatus(200);
         expect(res.headers['content-type']).toBe('x-application/hl7-v2+er7; charset=utf-8');
         expect(res.text).toMatch(/MSH.*ACK.*\r/);
       })
@@ -432,6 +434,7 @@ describe('Agent WebSockets', () => {
         })
       )
       .expectJson({ type: 'agent:connect:response' })
+      .exec(() => heartbeat.dispatchEvent({ type: 'heartbeat' }))
       .expectJson({ type: 'agent:heartbeat:request' })
       // Send a ping
       .sendJson({ type: 'agent:heartbeat:request' })
@@ -457,13 +460,71 @@ describe('Agent WebSockets', () => {
     });
   });
 
+  test('Heartbeat version survives slow status update on connect', async () => {
+    // Regression test: the connect handler updates the agent status with a non-atomic
+    // read-modify-write (GET last info, SET merged status). It must complete before the
+    // server sends "agent:connect:response" -- when it ran after, a slow GET reply meant
+    // the merged write could land after the agent's heartbeat response was recorded,
+    // clobbering the reported version with stale info.
+    // Simulate a loaded Redis by delaying the reply of the first agent info GET.
+    const realRedis = getCacheRedis();
+    let delayedOnce = false;
+    const delayedRedis = new Proxy(realRedis, {
+      get(target, prop, receiver) {
+        if (prop === 'get') {
+          return async (key: string): Promise<string | null> => {
+            const result = await target.get(key);
+            if (!delayedOnce && key.includes('medplum:agent:')) {
+              delayedOnce = true;
+              await sleep(300);
+            }
+            return result;
+          };
+        }
+        const value = Reflect.get(target, prop, receiver);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    const cacheSpy = vi.spyOn(redisModule, 'getCacheRedis').mockReturnValue(delayedRedis);
+
+    try {
+      await request(server)
+        .ws('/ws/agent')
+        .sendText(JSON.stringify({ type: 'agent:connect:request', accessToken, agentId: agent.id }))
+        .expectText('{"type":"agent:connect:response"}')
+        // Report the agent version via a heartbeat response
+        .sendText(JSON.stringify({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION }))
+        // Give any (buggy) in-flight status update time to land before closing
+        .exec(() => sleep(400))
+        .close()
+        .expectClosed();
+    } finally {
+      cacheSpy.mockRestore();
+    }
+
+    let info: AgentInfo = { status: AgentConnectionState.UNKNOWN, version: 'unknown' };
+    for (let i = 0; i < 5; i++) {
+      await sleep(50);
+      const infoStr = (await getCacheRedis().get(`medplum:agent:${agent.id}:info`)) as string;
+      info = JSON.parse(infoStr) as AgentInfo;
+      if (info.status === AgentConnectionState.DISCONNECTED) {
+        break;
+      }
+    }
+    expect(info).toMatchObject<AgentInfo>({
+      status: AgentConnectionState.DISCONNECTED,
+      version: MEDPLUM_VERSION,
+      lastUpdated: expect.any(String),
+    });
+  });
+
   test('Logs when updating agent status fails on disconnect', async () => {
-    const errorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
     // Simulate Redis being unavailable (e.g. closing during shutdown) so the disconnect
     // status update rejects -- the close handler must catch it, not leak the rejection
-    const cacheSpy = jest.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
-      get: jest.fn().mockRejectedValue(new Error('Connection is closed.')),
-      set: jest.fn(),
+    const cacheSpy = vi.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
+      get: vi.fn().mockRejectedValue(new Error('Connection is closed.')),
+      set: vi.fn(),
     } as any);
 
     try {
@@ -531,7 +592,7 @@ describe('Agent WebSockets', () => {
       .exec((ws) => ws.send(pushResponse))
       .exec(async () => {
         const res = await pushRequest;
-        expect(res.status).toBe(200);
+        expect(res).toHaveStatus(200);
         expect(res.headers['content-type']).toBe('x-application/ping; charset=utf-8');
       })
       .close()
@@ -556,7 +617,7 @@ describe('Agent WebSockets', () => {
   });
 
   test('Received agent:error without callback', async () => {
-    const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
     await request(server)
       .ws('/ws/agent')
       .sendText(
@@ -674,7 +735,7 @@ describe('Agent WebSockets', () => {
     });
 
     test('Bot failure -- Error during Lambda execution, error in returnValue', async () => {
-      jest.spyOn(executeBotModule, 'executeBot').mockImplementationOnce(
+      vi.spyOn(executeBotModule, 'executeBot').mockImplementationOnce(
         async () =>
           ({
             success: false,

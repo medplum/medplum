@@ -34,14 +34,14 @@ describe('JsonPage', () => {
   });
 
   test('JSON tab renders', async () => {
-    await setup('/Practitioner/123/json');
+    await setup('/Practitioner/124/json');
     expect(await screen.findByTestId('resource-json')).toBeInTheDocument();
 
     expect(screen.getByTestId('resource-json')).toBeInTheDocument();
   });
 
   test('JSON submit', async () => {
-    await setup('/Practitioner/123/json');
+    await setup('/Practitioner/124/json');
     expect(await screen.findByTestId('resource-json')).toBeInTheDocument();
 
     await act(async () => {
@@ -58,7 +58,7 @@ describe('JsonPage', () => {
   });
 
   test('JSON submit with meta', async () => {
-    await setup('/Practitioner/123/json');
+    await setup('/Practitioner/124/json');
     expect(await screen.findByTestId('resource-json')).toBeInTheDocument();
 
     await act(async () => {

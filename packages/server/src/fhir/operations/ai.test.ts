@@ -4,6 +4,8 @@ import { ContentType } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth } from '../../test.setup';
@@ -60,14 +62,14 @@ describe('AI Operation', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('Happy path', async () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [
           {
             message: {
@@ -91,7 +93,7 @@ describe('AI Operation', () => {
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -115,7 +117,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Parameters');
     expect((res.body as Parameters).parameter).toHaveLength(2);
     expect((res.body as Parameters).parameter?.[0]?.name).toBe('content');
@@ -144,7 +146,7 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [
           {
             message: {
@@ -179,7 +181,7 @@ describe('AI Operation', () => {
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -205,7 +207,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Parameters');
 
     const params = res.body as Parameters;
@@ -247,7 +249,7 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [
           {
             message: {
@@ -259,7 +261,7 @@ describe('AI Operation', () => {
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -283,7 +285,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Parameters');
     expect((res.body as Parameters).parameter?.[0]?.valueString).toBe('I can help you with FHIR queries.');
     // When there are no tool calls, the implementation doesn't return a tool_calls parameter
@@ -317,7 +319,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Missing API key in project settings', async () => {
@@ -347,7 +349,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe(
       'OpenAI API key not configured in project secrets'
     );
@@ -368,7 +370,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe(
       'Expected 1 value(s) for input parameter model, but 0 provided'
     );
@@ -389,7 +391,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe(
       'Expected 1 value(s) for input parameter messages, but 0 provided'
     );
@@ -414,7 +416,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Messages must be an array');
   });
 
@@ -437,7 +439,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect((res.body as OperationOutcome).issue?.[0]?.severity).toBe('error');
   });
 
@@ -464,7 +466,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect((res.body as OperationOutcome).issue?.[0]?.severity).toBe('error');
   });
 
@@ -472,7 +474,7 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [
           {
             message: {
@@ -484,7 +486,7 @@ describe('AI Operation', () => {
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -504,11 +506,11 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Parameters');
     expect((res.body as Parameters).parameter?.[0]?.valueString).toBe('I can help you with general questions.');
 
-    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+    const fetchCall = (global.fetch as Mock).mock.calls[0];
     const bodyParam = JSON.parse(fetchCall[1].body);
     expect(bodyParam.tools).toBeUndefined();
     expect(bodyParam.tool_choice).toBeUndefined();
@@ -518,12 +520,12 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [{ message: { content: 'ok', tool_calls: null } }],
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -541,8 +543,8 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
-    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+    expect(res).toHaveStatus(200);
+    const fetchCall = (global.fetch as Mock).mock.calls[0];
     const bodyParam = JSON.parse(fetchCall[1].body);
     expect(bodyParam.temperature).toBe(0.3);
   });
@@ -551,12 +553,12 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [{ message: { content: 'ok', tool_calls: null } }],
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -570,8 +572,8 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
-    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe('https://api.openai.com/v1/chat/completions');
+    expect(res).toHaveStatus(200);
+    expect((global.fetch as Mock).mock.calls[0][0]).toBe('https://api.openai.com/v1/chat/completions');
   });
 
   test('Uses custom base URL secret (LiteLLM proxy)', async () => {
@@ -588,12 +590,12 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [{ message: { content: 'ok', tool_calls: null } }],
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -607,7 +609,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(global.fetch).toHaveBeenCalledWith(
       'https://litellm.example.com/v1/chat/completions',
       expect.objectContaining({
@@ -634,12 +636,12 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [{ message: { content: 'ok', tool_calls: null } }],
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -653,8 +655,8 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
-    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe('https://litellm.example.com/v1/chat/completions');
+    expect(res).toHaveStatus(200);
+    expect((global.fetch as Mock).mock.calls[0][0]).toBe('https://litellm.example.com/v1/chat/completions');
   });
 
   test('Unsupported content type', async () => {
@@ -664,7 +666,7 @@ describe('AI Operation', () => {
       .set('Content-Type', ContentType.TEXT)
       .send('hello');
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain(
       'Expected at least 1 value(s) for required input parameter'
     );
@@ -679,7 +681,7 @@ describe('AI Operation', () => {
         resourceType: 'Patient',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toContain(
       'Expected at least 1 value(s) for required input parameter'
     );
@@ -690,14 +692,14 @@ describe('AI Operation', () => {
       ok: false,
       status: 401,
       statusText: 'Unauthorized',
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         error: {
           message: 'Incorrect API key provided',
         },
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -717,14 +719,14 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Handles multiple messages in conversation', async () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [
           {
             message: {
@@ -736,7 +738,7 @@ describe('AI Operation', () => {
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const messages = [
       { role: 'user', content: 'First message' },
@@ -766,9 +768,9 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
-    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+    const fetchCall = (global.fetch as Mock).mock.calls[0];
     const bodyParam = JSON.parse(fetchCall[1].body);
     expect(bodyParam.messages).toEqual(messages);
   });
@@ -777,7 +779,7 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [
           {
             message: {
@@ -798,7 +800,7 @@ describe('AI Operation', () => {
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -822,7 +824,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const params = res.body as Parameters;
 
     const contentParam = params.parameter?.find((p) => p.name === 'content');
@@ -837,7 +839,7 @@ describe('AI Operation', () => {
     const mockFetchResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         choices: [
           {
             message: {
@@ -849,7 +851,7 @@ describe('AI Operation', () => {
       }),
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -873,9 +875,9 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
-    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+    const fetchCall = (global.fetch as Mock).mock.calls[0];
     const bodyParam = JSON.parse(fetchCall[1].body);
     expect(bodyParam.model).toBe('gpt-3.5-turbo');
   });
@@ -885,9 +887,9 @@ describe('AI Operation', () => {
       ok: true,
       status: 200,
       body: {
-        pipeThrough: jest.fn().mockReturnValue({
+        pipeThrough: vi.fn().mockReturnValue({
           getReader: () => ({
-            read: jest
+            read: vi
               .fn()
               .mockResolvedValueOnce({
                 done: false,
@@ -901,13 +903,13 @@ describe('AI Operation', () => {
                 done: true,
                 value: undefined,
               }),
-            releaseLock: jest.fn(),
+            releaseLock: vi.fn(),
           }),
         }),
       },
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockStreamResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockStreamResponse);
 
     const res = await request(app)
       .post(`/fhir/R4/$ai`)
@@ -928,7 +930,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('text/event-stream');
 
     // Parse SSE format - should not be Parameters format
@@ -969,9 +971,9 @@ describe('AI Operation', () => {
 
     let chunkIndex = 0;
     const mockReadableStream = {
-      pipeThrough: jest.fn().mockReturnValue({
-        getReader: jest.fn().mockReturnValue({
-          read: jest.fn().mockImplementation(async () => {
+      pipeThrough: vi.fn().mockReturnValue({
+        getReader: vi.fn().mockReturnValue({
+          read: vi.fn().mockImplementation(async () => {
             if (chunkIndex < streamChunks.length) {
               // Simulate network delay between chunks
               await new Promise<void>((resolve) => {
@@ -983,7 +985,7 @@ describe('AI Operation', () => {
             }
             return { done: true };
           }),
-          releaseLock: jest.fn(),
+          releaseLock: vi.fn(),
         }),
       }),
     };
@@ -994,7 +996,7 @@ describe('AI Operation', () => {
       body: mockReadableStream,
     };
 
-    global.fetch = jest.fn().mockResolvedValue(mockFetchResponse);
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse);
 
     // Make a real request to the endpoint and check the progressive streaming
     const res = await request(app)
@@ -1016,7 +1018,7 @@ describe('AI Operation', () => {
         ],
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('text/event-stream');
 
     // Verify response is SSE format, not Parameters format

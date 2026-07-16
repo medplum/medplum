@@ -5,16 +5,16 @@ import type { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
+import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
-
+vi.mock('hibp');
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('New patient', () => {
@@ -28,10 +28,10 @@ describe('New patient', () => {
   });
 
   beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    fetchMock.mockClear();
+    (pwnedPassword as unknown as Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    setupRecaptchaMock(true);
   });
 
   test('Patient registration', async () => {
@@ -50,20 +50,20 @@ describe('New patient', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     const res2 = await request(app).post('/auth/newproject').type('json').send({
       login: res1.body.login,
       projectName: 'Christina Project',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res2.body.code,
       code_verifier: 'xyz',
     });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     const projectId = resolveId(res3.body.project) as string;
 
@@ -82,13 +82,13 @@ describe('New patient', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
 
     const res5 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
       projectId: projectId,
     });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     expect(res5.body.code).toBeDefined();
 
     // Try to reuse the login
@@ -97,20 +97,20 @@ describe('New patient', () => {
       login: res4.body.login,
       projectId,
     });
-    expect(res6.status).toBe(400);
+    expect(res6).toHaveStatus(400);
 
     // Try to register as a patient without a login
     // (This should fail)
     const res7 = await request(app).post('/auth/newpatient').type('json').send({
       projectId,
     });
-    expect(res7.status).toBe(400);
+    expect(res7).toHaveStatus(400);
 
     // Get the Patient
     const res8 = await request(app)
       .get(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + res3.body.access_token);
-    expect(res8.status).toBe(200);
+    expect(res8).toHaveStatus(200);
 
     const patient = res8.body.entry[0].resource as Patient;
 
@@ -134,7 +134,7 @@ describe('New patient', () => {
         code: { text: 'test' },
         subject: createReference(patient),
       });
-    expect(res9.status).toBe(201);
+    expect(res9).toHaveStatus(201);
 
     // Create an observation for a different patient
     const res10 = await request(app)
@@ -147,7 +147,7 @@ describe('New patient', () => {
         code: { text: 'test' },
         subject: { reference: randomUUID() },
       });
-    expect(res10.status).toBe(201);
+    expect(res10).toHaveStatus(201);
 
     // Login as the patient
     const res11 = await request(app).post('/oauth2/token').type('form').send({
@@ -155,13 +155,13 @@ describe('New patient', () => {
       code: res5.body.code,
       code_verifier: 'xyz',
     });
-    expect(res11.status).toBe(200);
+    expect(res11).toHaveStatus(200);
 
     // Make sure that the patient can only access their observations
     const res12 = await request(app)
       .get(`/fhir/R4/Observation`)
       .set('Authorization', 'Bearer ' + res11.body.access_token);
-    expect(res12.status).toBe(200);
+    expect(res12).toHaveStatus(200);
     expect(res12.body.entry).toHaveLength(1);
     expect(res12.body.entry[0].resource.id).toStrictEqual(res9.body.id);
   });
@@ -182,20 +182,20 @@ describe('New patient', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     const res2 = await request(app).post('/auth/newproject').type('json').send({
       login: res1.body.login,
       projectName: 'Christina Project',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res2.body.code,
       code_verifier: 'xyz',
     });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     const projectId = resolveId(res3.body.project) as string;
 
@@ -218,13 +218,13 @@ describe('New patient', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
 
     // Patient registration should fail without a default policy
     const res5 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
       projectId,
     });
-    expect(res5.status).toBe(400);
+    expect(res5).toHaveStatus(400);
   });
 });

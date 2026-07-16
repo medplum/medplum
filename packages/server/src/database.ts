@@ -108,7 +108,7 @@ export function escapePgOptionsArg(value: string): string {
   return value.replaceAll('\\', '\\\\').replaceAll(' ', '\\ ');
 }
 
-const DEFAULT_MAX_CONNECTIONS = 100;
+const DEFAULT_MAX_CONNECTIONS = 50;
 const DEFAULT_STATEMENT_TIMEOUT = 60_000;
 const DEFAULT_TRANSACTION_ISOLATION = escapePgOptionsArg('repeatable read');
 const DEFAULT_IDLE_IN_TRANSACTION_SESSION_TIMEOUT = 30_000;

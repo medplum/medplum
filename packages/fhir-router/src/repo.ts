@@ -1,16 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SearchRequest, SortRule, WithId } from '@medplum/core';
+import type { Operation, SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   EMPTY,
   OperationOutcomeError,
   Operator,
   allOk,
+  applyPatch,
   badRequest,
   created,
   deepClone,
   evalFhirPath,
   generateId,
+  getSearchResourceTypes,
   globalSchema,
   matchesSearchRequest,
   multipleMatches,
@@ -19,9 +21,7 @@ import {
   preconditionFailed,
   stringify,
 } from '@medplum/core';
-import type { Bundle, OperationOutcome, Parameters, Reference, Resource } from '@medplum/fhirtypes';
-import type { Operation } from 'rfc6902';
-import { applyPatch } from 'rfc6902';
+import type { Bundle, OperationOutcome, Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 
 export type CreateResourceOptions = {
   assignedId?: boolean;
@@ -35,6 +35,13 @@ export type ReadHistoryOptions = {
   offset?: number;
   limit?: number;
 };
+
+type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
+
+export interface TransactionOptions {
+  readonly resourceTypes: ResourceTypeInput;
+  readonly serializable?: boolean;
+}
 
 export const RepositoryMode = {
   READER: 'reader',
@@ -196,10 +203,12 @@ export abstract class FhirRepository {
    * Runs a callback function within a transaction.
    *
    * @param callback - The callback function to be run within a transaction.
+   * @param options - The transaction options.
+   * @returns The result of the callback function.
    */
   abstract withTransaction<TResult>(
     callback: (txRepo: this) => Promise<TResult>,
-    options?: { serializable?: boolean }
+    options: TransactionOptions
   ): Promise<TResult>;
 
   /**
@@ -281,7 +290,10 @@ export abstract class FhirRepository {
         const createdResource = await txRepo.createResource(resource, options);
         return { resource: createdResource, outcome: created };
       },
-      { serializable: true } // Requires strong transactional guarantees to ensure unique resource creation
+      {
+        resourceTypes: getSearchResourceTypes(search),
+        serializable: true, // serializable to ensure unique resource creation
+      }
     );
   }
 
@@ -341,7 +353,7 @@ export abstract class FhirRepository {
         const updated = await txRepo.updateResource({ ...resource, id: existing.id }, options);
         return { resource: updated, outcome: allOk };
       },
-      { serializable: true }
+      { serializable: true, resourceTypes: getSearchResourceTypes(search) }
     );
   }
 
@@ -375,7 +387,7 @@ export abstract class FhirRepository {
         const resource = matches[0];
         await txRepo.deleteResource(resource.resourceType, resource.id);
       },
-      { serializable: true }
+      { serializable: true, resourceTypes: getSearchResourceTypes(search) }
     );
   }
 
@@ -396,7 +408,7 @@ export abstract class FhirRepository {
         const resource = matches[0];
         return txRepo.patchResource(resource.resourceType, resource.id, patch);
       },
-      { serializable: true }
+      { serializable: true, resourceTypes: getSearchResourceTypes(search) }
     );
   }
 }
@@ -438,11 +450,11 @@ export class MemoryRepository extends FhirRepository {
     // MockRepository ignores reader/writer mode
   }
 
-  async createResource<T extends Resource>(
+  private createResourceSync<T extends Resource>(
     resource: T,
     options?: CreateResourceOptions,
     update: boolean = false
-  ): Promise<WithId<T>> {
+  ): WithId<T> {
     //simulate round-tripping through a JSON serialized format
     const parsed = JSON.parse(stringify(resource)) as T;
     const result = {
@@ -490,6 +502,14 @@ export class MemoryRepository extends FhirRepository {
     resourceHistory.push(result);
 
     return deepClone(result);
+  }
+
+  async createResource<T extends Resource>(
+    resource: T,
+    options?: CreateResourceOptions,
+    update: boolean = false
+  ): Promise<WithId<T>> {
+    return this.createResourceSync(resource, options, update);
   }
 
   generateId(): string {
@@ -593,7 +613,7 @@ export class MemoryRepository extends FhirRepository {
     return deepClone(version);
   }
 
-  async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<WithId<T>>> {
+  private searchSync<T extends Resource>(searchRequest: SearchRequest<T>): Bundle<WithId<T>> {
     const { resourceType } = searchRequest;
     const resources = this.resources.get(resourceType) ?? new Map();
     const result = [];
@@ -618,6 +638,42 @@ export class MemoryRepository extends FhirRepository {
       entry: entry.length ? entry : undefined,
       total: result.length,
     };
+  }
+
+  async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<WithId<T>>> {
+    return this.searchSync(searchRequest);
+  }
+
+  async conditionalCreate<T extends Resource>(
+    resource: T,
+    search: SearchRequest<T>,
+    options?: CreateResourceOptions
+  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
+    if (search.resourceType !== resource.resourceType) {
+      throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
+    }
+
+    search.count = 2;
+    search.sortRules = undefined;
+
+    // Not wrapped in transaction as we can use synchronous access to simulate
+    // transaction-like behavior
+    const bundle = this.searchSync(search);
+    const matches = bundle.entry?.map((e) => e.resource as WithId<T>) ?? [];
+    if (matches.length === 1) {
+      const existing = matches[0];
+      if (!options?.assignedId && resource.id && resource.id !== existing.id) {
+        throw new OperationOutcomeError(
+          badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
+        );
+      }
+      return { resource: matches[0], outcome: allOk };
+    } else if (matches.length > 1) {
+      throw new OperationOutcomeError(multipleMatches);
+    }
+
+    const createdResource = this.createResourceSync(resource, options);
+    return { resource: createdResource, outcome: created };
   }
 
   async searchByReference<T extends Resource>(

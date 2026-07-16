@@ -33,7 +33,7 @@ describe('ClientApplication $rotate-secret', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({ ...client, secret: 'foo' } satisfies ClientApplication);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const updated = res.body as ClientApplication;
     expect(updated.secret).toEqual('foo');
   });
@@ -54,7 +54,7 @@ describe('ClientApplication $rotate-secret', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'secret', valueString: client.secret }],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const updated = res.body as ClientApplication;
     expect(updated.secret).toBeDefined();
     expect(updated.secret).not.toStrictEqual(client.secret);
@@ -77,7 +77,7 @@ describe('ClientApplication $rotate-secret', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'secret', valueString: 'incorrect' }],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue?.[0]?.code).toStrictEqual('invalid');
   });
 
@@ -97,7 +97,7 @@ describe('ClientApplication $rotate-secret', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'secret', valueString: client.secret }],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const updated = res.body as ClientApplication;
     expect(updated.secret).toBeDefined();
     expect(updated.secret).not.toStrictEqual(client.secret);
@@ -112,7 +112,7 @@ describe('ClientApplication $rotate-secret', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'retiringSecret', valueString: updated.retiringSecret }],
       } satisfies Parameters);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     const retired = res2.body as ClientApplication;
     expect(retired.secret).toStrictEqual(updated.secret);
     expect(retired.retiringSecret).toBeUndefined();
@@ -133,7 +133,7 @@ describe('ClientApplication $rotate-secret', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'secret', valueString: client.secret }],
       } satisfies Parameters);
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
     expect(res.body.issue?.[0]?.code).toStrictEqual('forbidden');
   });
 
@@ -153,7 +153,7 @@ describe('ClientApplication $rotate-secret', () => {
         resourceType: 'Parameters',
         parameter: [],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue?.[0]?.code).toStrictEqual('invalid');
   });
 
@@ -176,7 +176,7 @@ describe('ClientApplication $rotate-secret', () => {
           { name: 'retiringSecret', valueString: client.secret },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue?.[0]?.code).toStrictEqual('invalid');
   });
 });

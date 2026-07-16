@@ -42,7 +42,7 @@ describe('ClientApplication/:id/$smart-launch', () => {
       .get('/fhir/R4/ClientApplication/$smart-launch')
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 
   test('Requires launchUri to be configured', async () => {
@@ -50,7 +50,7 @@ describe('ClientApplication/:id/$smart-launch', () => {
       .get(`/fhir/R4/ClientApplication/${client.id}/$smart-launch`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Redirects to launchUri', async () => {
@@ -62,7 +62,7 @@ describe('ClientApplication/:id/$smart-launch', () => {
       .get(`/fhir/R4/ClientApplication/${client.id}/$smart-launch`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
     expect(res.headers['location'].startsWith(launchUri + '?')).toBe(true);
 
     const uri = new URL(res.headers['location']);
@@ -71,6 +71,19 @@ describe('ClientApplication/:id/$smart-launch', () => {
     // Ensure resource exists
     const launch = await repo.readResource<SmartAppLaunch>('SmartAppLaunch', launchId as string);
     expect(launch.id).toEqual(launchId);
+  });
+
+  test('Does not launch ClientApplication from another project', async () => {
+    const otherProject = await createTestProject({
+      client: { launchUri: 'https://example.com/other-project-smart-launch' },
+      withClient: true,
+    });
+
+    const res = await request(app)
+      .get(`/fhir/R4/ClientApplication/${otherProject.client.id}/$smart-launch`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res).toHaveStatus(404);
   });
 
   test('Preserves launch parameter', async () => {
@@ -85,7 +98,7 @@ describe('ClientApplication/:id/$smart-launch', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .query({ patient: patient.id })
       .send();
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
     expect(res.headers['location'].startsWith(launchUri + '?')).toBe(true);
 
     const uri = new URL(res.headers['location']);
@@ -113,6 +126,6 @@ describe('ClientApplication/:id/$smart-launch', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .query({ patient: patient.id, encounter: encounter.id })
       .send();
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 });

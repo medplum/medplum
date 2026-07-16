@@ -5,9 +5,9 @@ import TabItem from '@theme/TabItem';
 
 # Appointment $hold
 
-:::info[Alpha]
+:::info[Beta]
 
-The `$hold` operation is currently in [alpha](/docs/compliance/alpha-beta).
+The `$hold` operation is currently in [beta](/docs/compliance/alpha-beta).
 
 :::
 
@@ -19,7 +19,7 @@ The `$hold` operation places a hold on one or more schedules by atomically creat
 
 1. **[`$find`](/docs/scheduling/appointment-find)** — Query available time slots. Returns virtual `Appointment` resources with `contained` Slot resources.
 2. **`$hold`** — Submit one of those virtual Appointments to reserve the time. Creates a real `Appointment` (status: `pending`) and `Slot` (status: `busy-tentative`).
-3. **[`$confirm`](/docs/scheduling/appointment-confirm)** — Confirm the hold and transition the `Appointment` to `booked`.
+3. **[`$confirm`](/docs/scheduling/appointment-confirm)** or **[`$cancel`](/docs/scheduling/appointment-cancel)** — Confirm the hold and transition the `Appointment` to `booked`, or cancel the hold and transition the `Appointment` to `cancelled`.
 
 ## Use Cases
 
@@ -291,16 +291,14 @@ Returns `201 Created` with a response body containing a `Bundle` of all persiste
 
 ## Hold Logic
 
-`$hold` performs the following steps atomically inside a database transaction:
+`$hold` performs the following steps atomically inside a database transaction, ensuring safety when concurrent scheduling requests are received.
 
 1. Validates that each proposed Slot's start/end matches a valid slot duration defined in the Schedule's `SchedulingParameters`
 2. Loads existing Slots in the time window (including buffer margins) for each Schedule
 3. Checks that no existing busy Slot overlaps the requested time
-4. Verifies the requested time falls within the Schedule's defined availability windows
-5. Creates the `Appointment`, busy-tentative `Slot`(s), and any buffer `Slot`(s) atomically
+4. Verifies the requested time falls within the Schedule's defined availability windows or existing slots with status `free`
+5. Creates the `Appointment`, busy-tentative `Slot`(s), and any buffer `Slot`(s)
 6. Returns all created resources in the response Bundle
-
-The transaction uses serializable isolation to prevent double-booking under concurrent requests.
 
 ## Error Responses
 
