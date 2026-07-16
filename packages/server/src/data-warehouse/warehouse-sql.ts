@@ -273,34 +273,18 @@ export function buildManagedS3TablesIcebergAttachQuery(awsS3TableArn: string): s
 }
 
 /**
- * DuckDB setup for managed Iceberg (extensions, S3 secret, S3 Tables attach).
- * Postgres is attached separately after destination watermarks are resolved.
+ * DuckDB instance setup for managed Iceberg (extensions, S3 secret, S3 Tables attach).
+ *
+ * Run once per DuckDB instance. Session settings belong in
+ * `S3TablesWarehouseDestination.getConnectionSetupQueries` and must run on every connection.
  *
  * @param options - Attach options; requires `awsS3TableArn` and `s3Region`.
- * @returns SQL strings to run in order before per-table mutations.
+ * @returns SQL strings to run once on the DuckDB instance before opening work connections.
  */
 export function buildManagedIcebergSetupQueries(options: ManagedIcebergSetupOptions): string[] {
   return [
     ...buildManagedIcebergExtensionQueries(),
     buildManagedS3CredentialSecretQuery(options.s3Region),
-    /*
-     * the default is 524288, which can take a LOT of memory since we're copying
-     * JSON content data
-     */
-    'SET partitioned_write_flush_threshold = 10000;',
-    /*
-     * Misleading option.  This is to allow duckdb to insert into a "sorted table", which is really a hint anyway.
-     * https://github.com/duckdb/duckdb-iceberg/issues/851
-     * https://github.com/duckdb/duckdb-iceberg/pull/992
-     */
-    'SET unsafe_iceberg_ignore_sort_order=true',
-    /*
-     * See https://duckdb.org/docs/current/core_extensions/postgres/connection_pool
-     * the default connection pool settings are very aggressive; many connections, much parallelism
-     * That's not what we want for a sync process on a timer; we want to be gentle on our reader instances
-     */
-    'SET threads = 1',
-    'SET pg_use_ctid_scan = false',
     buildManagedS3TablesIcebergAttachQuery(options.awsS3TableArn),
   ];
 }

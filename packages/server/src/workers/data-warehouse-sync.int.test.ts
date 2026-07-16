@@ -10,7 +10,7 @@
  *
  * Contrast with:
  * - `data-warehouse-sync.test.ts` — unit tests for worker/scheduler wiring (mocked `syncData` / BullMQ).
- * - `data-warehouse/sync.int.test.ts` — same export pipeline via `syncData` directly (no worker layer).
+ * - `data-warehouse/sync.int.test.ts` — incremental `syncData` against fake S3 Iceberg (no worker layer).
  */
 
 import { DuckDBInstance } from '@duckdb/node-api';
@@ -47,8 +47,7 @@ function assertParquetMagic(bytes: Buffer): void {
 }
 
 function buildReadParquetFirstRowProjectionQuery(parquetPath: string): string {
-  const escapedPath = parquetPath.replaceAll("'", "''");
-  return `SELECT id::VARCHAR AS id, project_id::VARCHAR AS project_id FROM read_parquet('${escapedPath}') LIMIT 1`;
+  return `SELECT id AS id, project_id AS project_id FROM read_parquet('${parquetPath}') LIMIT 1`;
 }
 
 function buildTestConfig(outDir: string, base: MedplumServerConfig): MedplumServerConfig {
