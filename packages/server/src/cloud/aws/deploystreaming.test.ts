@@ -141,7 +141,7 @@ describe('Deploy Streaming', () => {
         }
         `,
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const bot = res1.body as Bot;
     const name = `medplum-bot-lambda-${bot.id}`;
@@ -159,7 +159,7 @@ describe('Deploy Streaming', () => {
         }
         `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
     expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
@@ -207,7 +207,7 @@ describe('Deploy Streaming', () => {
         `,
         filename: 'updated.js',
       });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(1);
     expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
@@ -242,7 +242,7 @@ describe('Deploy Streaming', () => {
         runtimeVersion: 'awslambda',
         streamingEnabled: true,
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const bot = res1.body as Bot;
 
@@ -258,7 +258,7 @@ describe('Deploy Streaming', () => {
         }
         `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Verify the zip contents contain streaming-specific code
     const createCall = mockLambdaClient.commandCalls(CreateFunctionCommand)[0];
@@ -304,7 +304,7 @@ describe('Deploy Streaming', () => {
         runtimeVersion: 'awslambda',
         streamingEnabled: false,
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const bot = res1.body as Bot;
 
@@ -320,7 +320,7 @@ describe('Deploy Streaming', () => {
         }
         `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Verify the zip does NOT contain streaming code
     const createCall = mockLambdaClient.commandCalls(CreateFunctionCommand)[0];

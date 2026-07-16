@@ -35,7 +35,7 @@ describe('Bot $init', () => {
         name: 'Alice personal bot',
         description: 'Alice bot description',
       });
-    expect(res2.status).toBe(403);
+    expect(res2).toHaveStatus(403);
   });
 
   test('Missing both data and url', async () => {
@@ -52,7 +52,7 @@ describe('Bot $init', () => {
         description: 'Alice bot description',
         sourceCode: { title: 'missing data and url', contentType: ContentType.JAVASCRIPT },
       });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body).toMatchObject(badRequest('Invalid attachment: Missing data or url'));
   });
 
@@ -70,7 +70,7 @@ describe('Bot $init', () => {
         description: 'Alice bot description',
         sourceCode: { title: 'invalid base-64 data', contentType: ContentType.JAVASCRIPT, data: 'invalid-base64' },
       });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body).toMatchObject(badRequest('Invalid attachment: Invalid base64 data'));
   });
 
@@ -89,7 +89,7 @@ describe('Bot $init', () => {
         name: 'Alice personal bot',
         description: 'Alice bot description',
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.resourceType).toBe('Bot');
     expect(res2.body.id).toBeDefined();
     expect(res2.body.code).toBeUndefined();
@@ -100,7 +100,7 @@ describe('Bot $init', () => {
     const res3 = await request(app)
       .get('/fhir/R4/Bot/' + res2.body.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.resourceType).toBe('Bot');
     expect(res3.body.id).toBe(res2.body.id);
 
@@ -110,7 +110,7 @@ describe('Bot $init', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
       .send({ foo: 'bar' });
-    expect(res4.status).toBe(400);
+    expect(res4).toHaveStatus(400);
   });
 
   test('Create bot with base-64 source code', async () => {
@@ -153,7 +153,7 @@ describe('Bot $init', () => {
           data: Buffer.from(executableCode).toString('base64'),
         },
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.resourceType).toBe('Bot');
     expect(res2.body.id).toBeDefined();
     expect(res2.body.code).toBeUndefined();

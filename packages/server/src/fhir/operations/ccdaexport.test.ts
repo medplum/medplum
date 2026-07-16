@@ -31,7 +31,7 @@ describe('C-CDA Export', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Organization' });
-    expect(orgRes.status).toBe(201);
+    expect(orgRes).toHaveStatus(201);
     const organization = orgRes.body as Organization;
 
     // Create practitioner
@@ -40,7 +40,7 @@ describe('C-CDA Export', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Practitioner' });
-    expect(practRes.status).toBe(201);
+    expect(practRes).toHaveStatus(201);
     const practitioner = practRes.body as Practitioner;
 
     // Create patient
@@ -58,7 +58,7 @@ describe('C-CDA Export', () => {
         ],
         managingOrganization: createReference(organization),
       } satisfies Patient);
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const patient = res1.body as Patient;
 
     // Create observation
@@ -75,7 +75,7 @@ describe('C-CDA Export', () => {
         performer: [createReference(practitioner), createReference(organization)],
         effectiveDateTime: new Date().toISOString(),
       } satisfies Observation);
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     const observation = res2.body as WithId<Observation>;
 
     // Create condition
@@ -93,7 +93,7 @@ describe('C-CDA Export', () => {
         recorder: createReference(practitioner),
         recordedDate: new Date().toISOString(),
       } satisfies Condition);
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
     const condition = res3.body as WithId<Condition>;
 
     // Execute the operation
@@ -101,7 +101,7 @@ describe('C-CDA Export', () => {
       .get(`/fhir/R4/Patient/${patient.id}/$ccda-export`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', ContentType.CDA_XML);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
 
     const result = res4.text;
     expect(result.includes('<given>Alice</given>')).toBe(true);

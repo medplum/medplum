@@ -31,7 +31,7 @@ describe('$clear-all-ws-subs', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Rejects invalid projectId', async () => {
@@ -46,7 +46,7 @@ describe('$clear-all-ws-subs', () => {
         parameter: [{ name: 'projectId', valueString: 'not-a-uuid' }],
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Clears all WS subscription hashes, cache entries, and user keys', async () => {
@@ -96,7 +96,7 @@ describe('$clear-all-ws-subs', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     expect(await pubSubRedis.exists(getActiveSubsKey(projectId, 'Observation'))).toBe(0);
     expect(await pubSubRedis.exists(getActiveSubsKey(projectId, 'Patient'))).toBe(0);
@@ -166,7 +166,7 @@ describe('$clear-all-ws-subs', () => {
           parameter: [{ name: 'projectId', valueString: projectId1 }],
         });
 
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
 
       expect(await pubSubRedis.exists(getActiveSubsKey(projectId1, 'Observation'))).toBe(0);
       expect(await cacheRedis.exists(`Subscription/${sub1Id}`)).toBe(0);

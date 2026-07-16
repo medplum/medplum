@@ -67,7 +67,7 @@ describe('Reset Password', () => {
       email: '',
       recaptchaToken: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Valid email address between 3 and 72 characters is required');
     expect(res.body.issue[0].expression[0]).toBe('email');
   });
@@ -77,7 +77,7 @@ describe('Reset Password', () => {
       email: 'admin@example.com',
       recaptchaToken: '',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Recaptcha token is required');
   });
 
@@ -88,7 +88,7 @@ describe('Reset Password', () => {
       email: 'admin@example.com',
       recaptchaToken: 'wrong',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Recaptcha failed');
   });
 
@@ -100,7 +100,7 @@ describe('Reset Password', () => {
         email: `alex${randomUUID()}@example.com`,
         recaptchaToken: 'xyz',
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
@@ -121,7 +121,7 @@ describe('Reset Password', () => {
       email,
       recaptchaToken: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
@@ -149,7 +149,7 @@ describe('Reset Password', () => {
       recaptchaToken: 'xyz',
       sendEmail: false,
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
@@ -172,7 +172,7 @@ describe('Reset Password', () => {
       email,
       recaptchaToken: '',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
@@ -216,7 +216,7 @@ describe('Reset Password', () => {
       projectId: project.id,
       recaptchaToken: 'xyz',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     expect(mockCreateTransport).toHaveBeenCalledWith(
       expect.objectContaining({ host: 'smtp.project.example.com', port: 587 })
@@ -251,7 +251,7 @@ describe('Reset Password', () => {
         email: `alice@${domain}`,
         recaptchaToken: 'xyz',
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe(
       'Cannot reset password for external auth. Contact your system administrator.'
     );
@@ -294,7 +294,7 @@ describe('Reset Password', () => {
       recaptchaSiteKey,
       recaptchaToken: 'xyz',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
@@ -339,7 +339,7 @@ describe('Reset Password', () => {
       recaptchaSiteKey,
       recaptchaToken: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({ issue: [{ code: 'invalid', details: { text: 'Invalid recaptchaSecretKey' } }] });
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
@@ -367,7 +367,7 @@ describe('Reset Password', () => {
       recaptchaSiteKey,
       recaptchaToken: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({ issue: [{ code: 'invalid', details: { text: 'Invalid recaptchaSiteKey' } }] });
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
@@ -397,7 +397,7 @@ describe('Reset Password', () => {
     });
 
     // Verify the response and expectations
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.issue[0].details.text).toBe('All OK');
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
@@ -436,7 +436,7 @@ describe('Reset Password', () => {
     });
 
     // Verify the response and expectations
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     // Verify email details
@@ -483,7 +483,7 @@ describe('Reset Password', () => {
     });
 
     // Verify the response and expectations
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     // Get newly created UserSecurityRequest

