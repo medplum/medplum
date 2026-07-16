@@ -422,9 +422,13 @@ function getValueSetOptions(
     .then((valueSet: ValueSet) => valueSet.expansion?.contains ?? []);
 }
 
-function useValueSetOptions(
-  valueSetUrl: string | undefined
-): [ValueSetExpansionContains[], boolean, boolean | undefined] {
+interface ValueSetOptionsState {
+  readonly options: ValueSetExpansionContains[];
+  readonly loading: boolean;
+  readonly available: boolean | undefined;
+}
+
+function useValueSetOptions(valueSetUrl: string | undefined): ValueSetOptionsState {
   const medplum = useMedplum();
   const [valueSetOptions, setValueSetOptions] = useState<ValueSetExpansionContains[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -458,7 +462,7 @@ function useValueSetOptions(
     loadValueSet().catch(console.error);
   }, [valueSetUrl, medplum]);
 
-  return [valueSetOptions, isLoading, isAvailable];
+  return { options: valueSetOptions, loading: isLoading, available: isAvailable };
 }
 
 function SuggestionsUnavailableDisplay({ valueSetUrl }: { readonly valueSetUrl: string | undefined }): JSX.Element {
@@ -490,7 +494,8 @@ function QuestionnaireRadioButtonInput(props: QuestionnaireChoiceInputProps): JS
   const { name, item, required, initial, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const initialValue = getItemInitialValue(initial);
-  const [valueSetOptions, isLoading, isValueSetAvailable] = useValueSetOptions(item.answerValueSet);
+  const { options: valueSetOptions, loading: isLoading, available: isValueSetAvailable } =
+    useValueSetOptions(item.answerValueSet);
 
   const options: [string, TypedValue][] = [];
   let defaultValue = undefined;
@@ -578,7 +583,8 @@ function QuestionnaireRadioButtonInput(props: QuestionnaireChoiceInputProps): JS
 function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
-  const [valueSetOptions, isLoading, isValueSetAvailable] = useValueSetOptions(item.answerValueSet);
+  const { options: valueSetOptions, loading: isLoading, available: isValueSetAvailable } =
+    useValueSetOptions(item.answerValueSet);
 
   // Get initial values from response
   const initialSelectedValues = item.answerValueSet
