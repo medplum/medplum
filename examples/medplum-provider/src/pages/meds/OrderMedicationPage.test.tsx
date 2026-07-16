@@ -148,6 +148,51 @@ describe('OrderMedicationPage', () => {
     expect(deleteSpy).not.toHaveBeenCalledWith('MedicationRequest', expect.any(String));
   });
 
+  test('infers days supply from a hyphenated compound number in the sig', async () => {
+    const medplum = new MockClient();
+    medplum.setProfile(DrAliceSmith);
+    searchMedicationsMock.mockResolvedValue([
+      {
+        resourceType: 'Medication',
+        id: 'med-aspirin-81',
+        code: { text: 'Aspirin 81 mg tablet' },
+      },
+    ]);
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <MedplumProvider medplum={medplum}>
+            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+              <Routes>
+                <Route
+                  path="/Patient/:patientId/MedicationRequest"
+                  element={<OrderMedicationPage patient={HomerSimpson} />}
+                />
+              </Routes>
+            </MemoryRouter>
+          </MedplumProvider>
+        </MantineProvider>
+      );
+    });
+
+    const searchInput = await screen.findByLabelText(/Search medication/i);
+    await user.type(searchInput, 'aspirin');
+    await user.click(await screen.findByText('Aspirin 81 mg tablet'));
+
+    const sigInput = screen.getByLabelText(/Sig \(directions\)/i);
+    await user.clear(sigInput);
+    await user.type(sigInput, 'Take 1 tablet every twenty-four hours');
+    const quantityInput = screen.getByLabelText('Quantity to dispense');
+    await user.clear(quantityInput);
+    await user.type(quantityInput, '48');
+
+    await waitFor(() => {
+      expect(screen.getAllByLabelText('Days supply')[0]).toHaveValue('48');
+    });
+  });
+
   test('medication title combines the drug name with the selected formulation, not just the strength', async () => {
     const medplum = new MockClient();
     medplum.setProfile(DrAliceSmith);
@@ -303,7 +348,7 @@ describe('OrderMedicationPage', () => {
     expect(screen.queryByRole('button', { name: /^Add to cart$/ })).not.toBeInTheDocument();
   });
 
-  test('re-prescription mode pre-fills and updates the linked replacement draft instead of adding to cart', async () => {
+  test('re-prescription mode retries rejected and uncertain replacements without retaining a status reason', async () => {
     const medplum = new MockClient();
     medplum.setProfile(DrAliceSmith);
     const readReference = vi.spyOn(medplum, 'readReference').mockResolvedValue(DrAliceSmith);
@@ -342,6 +387,7 @@ describe('OrderMedicationPage', () => {
           ],
         })
       )
+      .mockRejectedValueOnce(ORDER_MEDICATION_REJECTION)
       .mockResolvedValueOnce({
         launchUrl: 'https://ssu.example/widget/replacement',
         medicationRequestId: replacement.id,
@@ -401,8 +447,15 @@ describe('OrderMedicationPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
 
+    expect((await screen.findAllByText('bot rejected')).length).toBeGreaterThan(0);
+    expect(updateResource.mock.calls.some(([resource]) => (resource as MedicationRequest).status === 'unknown')).toBe(
+      true
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
+
     await waitFor(() => {
-      expect(orderMedicationMock).toHaveBeenCalledTimes(2);
+      expect(orderMedicationMock).toHaveBeenCalledTimes(3);
       expect(orderMedicationMock).toHaveBeenCalledWith(
         expect.objectContaining({
           patientId: HomerSimpson.id,
@@ -412,13 +465,15 @@ describe('OrderMedicationPage', () => {
     });
     const updatedReplacement = updateResource.mock.calls
       .map(([resource]) => resource as MedicationRequest)
-      .find((resource) => resource.id === replacement.id && resource.status === 'draft');
+      .filter((resource) => resource.id === replacement.id && resource.status === 'draft')
+      .at(-1);
     expect(updatedReplacement).toMatchObject({
       id: replacement.id,
       priorPrescription: replacement.priorPrescription,
       dosageInstruction: [{ text: 'Take 2 tablets daily', patientInstruction: 'With water' }],
       dispenseRequest: expect.objectContaining({ quantity: { value: 60, unit: 'C48542' } }),
     });
+    expect(updatedReplacement?.statusReason).toBeUndefined();
     expect(
       createResource.mock.calls.some(
         ([resource]) => (resource as MedicationRequest).resourceType === 'MedicationRequest'

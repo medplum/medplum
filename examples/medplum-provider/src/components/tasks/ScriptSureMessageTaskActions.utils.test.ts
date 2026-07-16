@@ -36,6 +36,8 @@ const oldMedicationRequest: WithId<MedicationRequest> = {
   extension: [
     { url: 'https://scriptsure.com/iframe-url', valueUrl: 'https://example.com/secret-session' },
     { url: 'https://scriptsure.com/pending-order-status', valueCode: 'in-cart' },
+    { url: 'https://transport.scriptsure.com/session-state', valueString: 'vendor-state' },
+    { url: 'https://scriptsure.com.example.com/clinical-review', valueBoolean: true },
     { url: 'https://example.com/clinical-review', valueBoolean: true },
   ],
   eventHistory: [{ reference: 'Provenance/prior-event' }],
@@ -78,7 +80,10 @@ describe('ScriptSureMessageTaskActions utilities', () => {
         validityPeriod: { start: '2026-07-15' },
       },
       priorPrescription: { reference: 'MedicationRequest/old-rx' },
-      extension: [{ url: 'https://example.com/clinical-review', valueBoolean: true }],
+      extension: [
+        { url: 'https://scriptsure.com.example.com/clinical-review', valueBoolean: true },
+        { url: 'https://example.com/clinical-review', valueBoolean: true },
+      ],
     });
     expect(replacement.id).toBeUndefined();
     expect(replacement.meta).toBeUndefined();

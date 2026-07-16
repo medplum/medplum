@@ -267,6 +267,7 @@ const SIG_NUMBER_WORDS: Readonly<Record<string, number>> = {
 };
 
 const SIG_NUMBER_WORDS_ALTERNATION = Object.keys(SIG_NUMBER_WORDS)
+  .sort((a, b) => b.length - a.length)
   .map((w) => w.replaceAll(/[ -]/g, '[ -]'))
   .join('|');
 const SIG_NUMBER_WORDS_RE = new RegExp(String.raw`\b(?:${SIG_NUMBER_WORDS_ALTERNATION})\b`, 'gi');
@@ -1137,6 +1138,7 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
             ...editableReplacement,
             ...body,
             priorPrescription: editableReplacement.priorPrescription,
+            statusReason: undefined,
           })
         : await medplum.createResource<MedicationRequest>(body);
       if (editableReplacement) {

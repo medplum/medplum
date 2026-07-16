@@ -10,6 +10,10 @@ import { MemoryRouter } from 'react-router';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { ScriptSureMessageTaskActions } from './ScriptSureMessageTaskActions';
+import {
+  SCRIPTSURE_REPLACEMENT_OUTPUT_CODE,
+  SCRIPTSURE_REPLACEMENT_OUTPUT_SYSTEM,
+} from './ScriptSureMessageTaskActions.utils';
 
 const notificationMocks = vi.hoisted(() => ({ showErrorNotification: vi.fn() }));
 vi.mock('../../utils/notifications', () => notificationMocks);
@@ -238,5 +242,46 @@ describe('ScriptSureMessageTaskActions', () => {
       ],
     });
     expect(onTaskChange).not.toHaveBeenCalled();
+  });
+
+  test('reopens an uncertain replacement draft without clearing its status before submission', async () => {
+    const user = userEvent.setup();
+    const medplum = new MockClient();
+    const replacement = await medplum.createResource<MedicationRequest>({
+      resourceType: 'MedicationRequest',
+      status: 'unknown',
+      statusReason: { text: 'ScriptSure response not received' },
+      intent: 'order',
+      subject: { reference: 'Patient/patient-1' },
+      medicationCodeableConcept: { text: 'Alinia 500 mg tablet' },
+    });
+    const task = await medplum.createResource<Task>({
+      ...scriptSureTask,
+      id: undefined,
+      output: [
+        {
+          type: {
+            coding: [
+              {
+                system: SCRIPTSURE_REPLACEMENT_OUTPUT_SYSTEM,
+                code: SCRIPTSURE_REPLACEMENT_OUTPUT_CODE,
+              },
+            ],
+          },
+          valueReference: { reference: `MedicationRequest/${replacement.id}` },
+        },
+      ],
+    });
+    const updateResource = vi.spyOn(medplum, 'updateResource');
+    setup(task, vi.fn(), medplum);
+
+    await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
+
+    expect(await screen.findByText('Edit replacement prescription')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'Submit replacement form for Alinia 500 mg tablet' })
+    ).toBeInTheDocument();
+    expect(updateResource).not.toHaveBeenCalled();
+    expect(notificationMocks.showErrorNotification).not.toHaveBeenCalled();
   });
 });

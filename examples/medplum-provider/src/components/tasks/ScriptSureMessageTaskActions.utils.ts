@@ -34,15 +34,20 @@ export function isScriptSureNewRxErrorTask(task: Task): boolean {
 }
 
 function isOrderLifecycleExtension(extension: Extension): boolean {
-  const url = extension.url.toLowerCase();
+  let hostname: string;
+  try {
+    hostname = new URL(extension.url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+
+  // Replacement drafts must not inherit any ScriptSure-owned transport state.
+  // Match the parsed host so lookalike URLs containing "scriptsure.com" remain intact.
   return (
     extension.url === SCRIPTSURE_IFRAME_URL_EXTENSION ||
     extension.url === SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION ||
-    url.includes('scriptsure.com') ||
-    url.includes('iframe') ||
-    url.includes('pending-order') ||
-    url.includes('med-cart') ||
-    url.includes('/cart')
+    hostname === 'scriptsure.com' ||
+    hostname.endsWith('.scriptsure.com')
   );
 }
 

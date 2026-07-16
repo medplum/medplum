@@ -179,7 +179,7 @@ export function ScriptSureMessageTaskActions(props: ScriptSureMessageTaskActions
         onTaskChange(response.task);
         return;
       }
-      if (replacement.status !== 'draft') {
+      if (replacement.status !== 'draft' && replacement.status !== 'unknown') {
         throw new Error(`Replacement MedicationRequest is not editable in status ${replacement.status ?? 'unknown'}`);
       }
       setReplacementDraft(replacement);
@@ -294,6 +294,7 @@ export function ScriptSureMessageTaskActions(props: ScriptSureMessageTaskActions
       >
         {replacementDraft && (
           <OrderMedicationPage
+            key={replacementDraft.id}
             replacementMedicationRequest={replacementDraft}
             onOrderComplete={handleReplacementOrderComplete}
           />
