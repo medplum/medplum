@@ -9,7 +9,7 @@ import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import * as emailModule from '../email/email';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { setupRecaptchaMock } from '../test.setup';
 import { WELCOME_EMAIL_SUBJECT } from './welcomeemail';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
