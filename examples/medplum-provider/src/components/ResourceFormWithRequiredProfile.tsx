@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert } from '@mantine/core';
+import { Alert, Text } from '@mantine/core';
 import type { InternalTypeSchema } from '@medplum/core';
 import { addProfileToResource, normalizeErrorString, tryGetProfile } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
@@ -64,16 +64,15 @@ export function ResourceFormWithRequiredProfile(props: ResourceFormWithRequiredP
   }
 
   if (profileUrl && !profile) {
-    const errorContent = (
-      <>
-        {missingProfileMessage && <p>{missingProfileMessage}</p>}
-        {profileError && <p>Server error: {normalizeErrorString(profileError)}</p>}
-      </>
-    );
-
+    // A caller-supplied message controls its own presentation and is rendered as-is. Callers that
+    // pass no message fall back to the raw server error in an alert (unchanged behavior for the edit
+    // pages). The technical error is also logged above for engineers.
+    if (missingProfileMessage) {
+      return <>{missingProfileMessage}</>;
+    }
     return (
       <Alert icon={<IconAlertCircle size={16} />} title="Not found" color="red">
-        {errorContent}
+        {profileError && <Text>Server error: {normalizeErrorString(profileError)}</Text>}
       </Alert>
     );
   }

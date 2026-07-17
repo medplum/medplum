@@ -145,6 +145,45 @@ describe('ResourceCreatePage', () => {
     );
   });
 
+  test('Shows friendly admin guidance when a required profile is missing', async () => {
+    vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
+    // The US Core Patient profile is not installed, so the schema request rejects.
+    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(
+      new Error(
+        'StructureDefinition profile with URL http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient not found'
+      )
+    );
+
+    await setup('/Patient/new');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Creating a Patient requires/i)).toBeInTheDocument();
+    });
+
+    // Admins see the specific profile URL and a docs link...
+    expect(screen.getByText('http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /profiles documentation/i })).toBeInTheDocument();
+    // ...and the raw server-error string is no longer shown.
+    expect(screen.queryByText(/Server error:/i)).not.toBeInTheDocument();
+  });
+
+  test('Directs non-admins to an administrator when a required profile is missing', async () => {
+    vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(false);
+    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(new Error('us-core-patient not found'));
+
+    await setup('/Patient/new');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Contact your administrator/i)).toBeInTheDocument();
+    });
+
+    // The specific profile URL is only shown to admins.
+    expect(
+      screen.queryByText('http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Server error:/i)).not.toBeInTheDocument();
+  });
+
   test('Handles form submission error', async () => {
     const user = userEvent.setup();
     await setup('/Practitioner/new');

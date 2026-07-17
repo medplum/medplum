@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Text } from '@mantine/core';
+import { Anchor, Center, Code, List, Paper, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, Loading, useMedplum } from '@medplum/react';
+import { IconFileAlert } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -101,6 +102,40 @@ export function ResourceCreatePage(): JSX.Element {
     return <Loading />;
   }
 
+  const missingProfileMessage = profileUrl && (
+    <Center p="xl">
+      <Paper shadow="md" p="xl" radius="md" withBorder maw={480}>
+        <Stack align="center" gap="sm" ta="center">
+          <IconFileAlert size={48} color="var(--mantine-color-gray-5)" />
+          <Title order={3}>{resourceType} creation is unavailable</Title>
+          {medplum.isProjectAdmin() ? (
+            <>
+              <Text size="sm" c="dimmed">
+                Creating a {resourceType} requires a FHIR profile that is not installed in this project:
+              </Text>
+              <List spacing={4} size="sm" withPadding>
+                <List.Item>
+                  <Code>{profileUrl}</Code>
+                </List.Item>
+              </List>
+              <Text size="sm" c="dimmed">
+                Import the profile’s StructureDefinition (e.g. the US Core profiles) to enable it. See{' '}
+                <Anchor href="https://www.medplum.com/docs/fhir-datastore/profiles" target="_blank" rel="noreferrer">
+                  the profiles documentation
+                </Anchor>
+                .
+              </Text>
+            </>
+          ) : (
+            <Text size="sm" c="dimmed">
+              {resourceType} creation is not set up yet. Contact your administrator to enable it.
+            </Text>
+          )}
+        </Stack>
+      </Paper>
+    </Center>
+  );
+
   return (
     <Document shadow="xs">
       <Stack>
@@ -110,6 +145,7 @@ export function ResourceCreatePage(): JSX.Element {
           onSubmit={handleSubmit}
           outcome={outcome}
           profileUrl={profileUrl}
+          missingProfileMessage={missingProfileMessage}
         />
       </Stack>
     </Document>
