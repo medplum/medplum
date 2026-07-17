@@ -102,6 +102,12 @@ export interface MedplumServerConfig {
   defaultLoginRateLimit?: number;
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
+  /**
+   * Enables project-based fair queueing for async batch jobs, so one project's backlog does not
+   * starve other projects. Default is `true`; overridable per-project via the
+   * `enableAsyncBatchFairQueue` Project.systemSetting.
+   */
+  enableAsyncBatchFairQueue?: boolean;
   /** Milliseconds of delay added per quota unit in async context, in lieu of consuming quota units. */
   asyncDelayScaling?: number;
   /** Optional config for global default for `maxUserWebSocketSubscriptions`; overridable by Project setting: `maxUserWebSocketSubscriptions` */

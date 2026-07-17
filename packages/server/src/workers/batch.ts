@@ -26,6 +26,7 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+import { decrementProjectJobCount, incrementProjectJobPriority, isFairQueueEnabled } from './fairqueue';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -138,10 +139,11 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
         return;
       }
 
-      // A delayed/re-queued job is not a failure; nothing to do.
+      // A delayed/re-queued job is not a terminal failure
       if (failedErr instanceof DelayedError) {
         return;
       }
+      // Terminal failure: the job is no longer in flight
 
       // This fires only when the job could not be recovered by re-entrant resume (e.g. it stalled
       // more than maxStalledCount times). Mark the AsyncJob failed if it is still in progress and
@@ -149,6 +151,8 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
 
       if ('asyncJob' in job.data && job.data.asyncJob) {
         job.data satisfies LegacyBatchJobData;
+        const logger = getBatchLogger(job.data.asyncJob.id, job.id);
+        await releaseFairQueueSlot(logger, job);
         const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
         const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
         await exec.failJob();
@@ -159,18 +163,34 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       }
 
       job.data satisfies ReentrantBatchJobData;
+      const logger = getBatchLogger(job.data.asyncJobId, job.id);
       try {
+        await releaseFairQueueSlot(logger, job);
         const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
         const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
         if (isJobActive(asyncJob)) {
           await new AsyncJobExecutor(systemRepo, asyncJob).failJob(failedErr ?? undefined);
         }
       } finally {
-        const logger = getBatchLogger(job.data.asyncJobId, job.id);
         const store = new BatchCheckpointStore(job.data.asyncJobId, logger);
         await store.cleanup(job.data.chunkSeq ?? 0);
       }
     });
+
+    // execBatchJob/execLegacyBatchJob swallow processing errors and return normally (they fail the
+    // AsyncJob internally), so BullMQ reports `completed` for both success and internal-failure
+    // terminal outcomes. Release the fair-queue slot for the project in both cases.
+    worker.on('completed', async (job) => {
+      let logger: ILogger;
+      if ('asyncJob' in job.data) {
+        logger = getBatchLogger(job.data.asyncJob.id, job.id);
+      } else {
+        logger = getBatchLogger(job.data.asyncJobId, job.id);
+      }
+
+      await releaseFairQueueSlot(logger, job);
+    });
+
     addVerboseQueueLogging<BatchJobData>(queue, worker, (job) => {
       const asyncJobRef = 'asyncJob' in job.data ? job.data.asyncJob : { id: job.data.asyncJobId };
       return {
@@ -182,6 +202,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
         onBehalfOf: job.data.authState.onBehalfOf && getReferenceString(job.data.authState.onBehalfOf),
         onBehalfOfMembership:
           job.data.authState.onBehalfOfMembership && getReferenceString(job.data.authState.onBehalfOfMembership),
+        priority: job.priority,
       };
     });
   }
@@ -200,15 +221,46 @@ export function getBatchQueue(): Queue<BatchJobData> | undefined {
 
 /**
  * Adds a batch job to the queue.
+ *
+ * When fair queueing is enabled, the project's in-flight batch count is incremented and used to set
+ * the job's BullMQ priority (lower priority number = higher priority), so a project with a large
+ * backlog yields to projects with fewer in-flight batches. The counter is decremented when the job
+ * reaches a terminal state (see the worker's `completed`/`failed` handlers in {@link initBatchWorker}).
+ * @param logger - The logger instance for logging purposes.
  * @param jobData - The batch job details.
  * @returns The enqueued job.
  */
-async function addBatchJobData(jobData: BatchJobData): Promise<Job<BatchJobData>> {
+async function addBatchJobData(logger: ILogger, jobData: BatchJobData): Promise<Job<BatchJobData>> {
   const queue = queueRegistry.get<BatchJobData>(queueName);
   if (!queue) {
     throw new Error(`Job queue ${queueName} not available`);
   }
+
+  if (isFairQueueEnabled(jobData.authState)) {
+    const priority = await incrementProjectJobPriority(logger, queueName, jobData.authState.project.id);
+    return queue.add(jobName, jobData, { priority });
+  }
+
   return queue.add(jobName, jobData);
+}
+
+/**
+ * Releases a project's fair-queue slot when a batch job reaches a terminal state. Best-effort:
+ * failures are logged and swallowed so they never disrupt BullMQ event handling. A leaked increment
+ * (e.g. this never runs due to a crash) is bounded by the counter's TTL.
+ * @param logger - The logger instance for logging purposes.
+ * @param job - The terminated batch job.
+ */
+async function releaseFairQueueSlot(logger: ILogger, job: Job<BatchJobData>): Promise<void> {
+  if (isFairQueueEnabled(job.data.authState)) {
+    try {
+      await decrementProjectJobCount(logger, queueName, job.data.authState.project.id);
+    } catch (err) {
+      logger.error('Failed to release async batch fair-queue slot', {
+        err: err instanceof Error ? err.message : err,
+      });
+    }
+  }
 }
 
 export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<AsyncJob>): Promise<Job<BatchJobData>> {
@@ -216,8 +268,9 @@ export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<Asyn
   // Persist the (potentially large) input bundle to durable object storage rather than carrying it
   // in the BullMQ job data (see https://github.com/medplum/medplum/issues/9124). The worker loads
   // it on the first run to preprocess.
-  await new BatchCheckpointStore(asyncJob.id, getBatchLogger(asyncJob.id)).saveInputBundle(bundle);
-  return addBatchJobData({ asyncJobId: asyncJob.id, authState, requestId, traceId });
+  const logger = getBatchLogger(asyncJob.id);
+  await new BatchCheckpointStore(asyncJob.id, logger).saveInputBundle(bundle);
+  return addBatchJobData(logger, { asyncJobId: asyncJob.id, authState, requestId, traceId });
 }
 
 export async function queueLegacyBatchProcessing(
@@ -226,7 +279,7 @@ export async function queueLegacyBatchProcessing(
 ): Promise<Job<BatchJobData>> {
   const { authentication: authState, requestId, traceId } = getAuthenticatedContext();
   const jobData: LegacyBatchJobData = { asyncJob, bundle, authState, requestId, traceId };
-  return addBatchJobData(jobData);
+  return addBatchJobData(getBatchLogger(asyncJob.id), jobData);
 }
 
 /**
