@@ -4,16 +4,13 @@ import { createReference, Operator, resolveId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { pwnedPassword } from 'hibp';
 import request from 'supertest';
-import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import { setupRecaptchaMock, withTestContext } from '../test.setup';
 
-vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
@@ -29,8 +26,6 @@ describe('New patient', () => {
 
   beforeEach(async () => {
     fetchMock.mockClear();
-    (pwnedPassword as unknown as Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
     setupRecaptchaMock(true);
   });
 

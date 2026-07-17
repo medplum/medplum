@@ -1,0 +1,201 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* Theme tokens consumed by the diagram's inline styles via var(--dg-*).
+   Surfaces are distinguished by shade (grape ramp for Medplum-managed, orange ramp for
+   user-managed) rather than heavy borders; extensibility is marked with a code-icon circle.
+   Light values here; dark overrides below. */
+
+/* ── Diagram scale — edit these four values to tune the whole figure at once.
+   Applied via .diagramScale on the How It Works section (and composed into .root). */
+.diagramScale {
+  --dg-size-section: 16px; /* Section headlines (Your Apps, Medplum Apps, …) */
+  --dg-size-card: 14px; /* Element label text (Custom App, FHIR REST API, …) */
+  --dg-chip: 36px; /* Icon tiles (width + height) */
+  --dg-weight-extrabold: 800; /* Section headline weight */
+}
+
+.root {
+  composes: diagramScale;
+  --dg-purple: var(--oc-grape-8);
+  --dg-purple-soft: var(--oc-grape-4);
+  --dg-purple-bg: var(--oc-grape-0);
+  --dg-border: var(--landing-border-strong);
+  --dg-bg-gray: var(--landing-surface-inset);
+  --dg-bg: var(--landing-surface);
+  --dg-text: var(--landing-color-heading);
+  --dg-muted: var(--landing-color-muted);
+  --dg-line: var(--landing-border-strong);
+  --dg-dot-fill: var(--landing-surface);
+  --dg-dot-stroke: var(--landing-border-strong);
+  --dg-sub: rgba(var(--oc-gray-8-rgb), 0.75);
+  --dg-dashed: var(--landing-color-muted);
+  --dg-hosted-bg: var(--oc-grape-9);
+  --dg-panel: var(--landing-surface-elevated);
+  --dg-chip-bg: var(--landing-surface-elevated);
+  --dg-int-bg: var(--landing-surface-inset);
+  --dg-int-pill-bg: var(--landing-surface-inset);
+  --dg-int-pill-border: var(--landing-border-strong);
+  --dg-panel-soft: var(--landing-surface-elevated);
+
+  /* Tonal fills — grape (Medplum-managed) and orange (user-managed). */
+  --dg-fill-build: var(--oc-grape-1);
+  --dg-fill-user: var(--oc-orange-2);
+  --dg-icon-build: var(--oc-grape-8);
+  --dg-icon-user: var(--oc-orange-5);
+
+  /* Light mode: transparent keeps the same 1px box as dark borders without showing a stroke. */
+  --dg-border-build: transparent;
+  --dg-border-user: transparent;
+
+  --dg-section-wrap-bg: rgba(var(--oc-gray-1-rgb), 0.5);
+  --dg-section-wrap-border: var(--oc-gray-2);
+  --dg-governance-divider: var(--oc-grape-2);
+  --dg-term-chip-bg: var(--oc-grape-0);
+
+  --dg-extensible-size: 22px; /* code-icon circle marker */
+
+  /* Derived type + layout (usually leave as-is) */
+  --dg-size-sub: 11.5px;
+  --dg-size-term: 12px;
+  --dg-weight-medium: 600;
+  --dg-weight-extrabold: 800;
+  --dg-leading-card: 16px;
+  --dg-leading-sub: 1.25;
+  --dg-row-pad: 8px 12px 8px 8px;
+  --dg-row-gap: 9px;
+  --dg-inner-gap: 8px;
+}
+
+/* Dark mode elevation ladder. */
+[data-theme='dark'] .root {
+  --dg-purple: var(--oc-grape-5);
+  --dg-purple-soft: var(--oc-grape-6);
+  --dg-purple-bg: rgba(156, 54, 181, 0.18);
+  --dg-border: var(--landing-border-strong);
+  --dg-bg-gray: var(--landing-surface-muted);
+  --dg-bg: var(--landing-surface-elevated);
+  --dg-text: var(--landing-color-heading);
+  --dg-muted: var(--landing-color-muted);
+  --dg-line: var(--landing-border-strong);
+  --dg-dot-fill: var(--landing-surface-muted);
+  --dg-dot-stroke: var(--landing-color-muted);
+  --dg-sub: rgba(var(--oc-gray-4-rgb), 0.75);
+  --dg-dashed: var(--landing-color-muted);
+  --dg-hosted-bg: var(--oc-grape-8);
+  --dg-panel: #232327;
+  --dg-chip-bg: var(--oc-gray-9);
+  --dg-int-bg: #242429;
+  --dg-int-pill-bg: #33333a;
+  --dg-int-pill-border: var(--landing-border-strong);
+  --dg-panel-soft: #232327;
+
+  --dg-fill-build: rgba(var(--oc-grape-8-rgb), 0.20);
+  --dg-fill-user: rgba(var(--oc-orange-8-rgb), 0.15);
+  --dg-icon-build: var(--oc-grape-4);
+  --dg-icon-user: var(--oc-orange-4);
+
+  --dg-border-build: rgba(var(--oc-grape-8-rgb), 0.25);
+  --dg-border-user: rgba(var(--oc-orange-8-rgb), 0.15);
+
+  --dg-section-wrap-bg: rgba(var(--oc-gray-8-rgb), 0.35);
+  --dg-section-wrap-border: var(--landing-border);
+  --dg-governance-divider: rgba(156, 54, 181, 0.35);
+  --dg-term-chip-bg: rgba(var(--oc-gray-9-rgb), 0.25);
+}
+
+/* ── Diagram text styles (all instances use these classes) ── */
+
+.sectionLabel {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: var(--dg-size-section);
+  font-weight: var(--dg-weight-extrabold, 800);
+  color: var(--dg-text, var(--landing-color-heading));
+  padding: 4px 6px;
+}
+
+.sectionLabelNote {
+  font-weight: 400;
+  color: var(--dg-muted);
+}
+
+.labelText {
+  font-size: var(--dg-size-card);
+  font-weight: var(--dg-weight-medium);
+  line-height: var(--dg-leading-card);
+  color: var(--dg-text);
+}
+
+.labelTextPreline {
+  composes: labelText;
+  white-space: pre-line;
+}
+
+.labelTextNowrap {
+  composes: labelText;
+  white-space: nowrap;
+}
+
+.labelTextGrow {
+  composes: labelText;
+  flex: 1;
+  min-width: 0;
+}
+
+.subText {
+  font-size: var(--dg-size-sub);
+  color: var(--dg-sub);
+  line-height: var(--dg-leading-sub);
+}
+
+.subTextGap {
+  composes: subText;
+  margin-top: 2px;
+}
+
+.subTextNowrap {
+  composes: subText;
+  white-space: nowrap;
+}
+
+.footnote {
+  font-size: var(--dg-size-card);
+  line-height: var(--dg-leading-sub);
+  color: var(--dg-muted);
+  padding: 4px 6px;
+}
+
+/* Icon tile — a light elevated square that holds the card's colored glyph. */
+.iconChip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dg-chip);
+  height: var(--dg-chip);
+  border-radius: 6px;
+  background: var(--dg-chip-bg);
+}
+
+.iconChip svg {
+  width: calc(var(--dg-chip) / 2);
+  height: calc(var(--dg-chip) / 2);
+}
+
+/* Grape circle + white code icon — marks extensible / customizable surfaces
+   (replaces the old striped "with extensibility" fill). */
+.extensibleMark {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dg-extensible-size);
+  height: var(--dg-extensible-size);
+  border-radius: 50%;
+  background: var(--oc-grape-9);
+  align-self: center;
+}
+
+[data-theme='dark'] .extensibleMark {
+  background: var(--oc-grape-8);
+}
