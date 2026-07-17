@@ -24,17 +24,17 @@ In order to integrate with Health Gorilla for labs, your organization must:
 
 ## Lab Integration Eligibility: Do I Qualify?
 
-Medplum integrates with labs like Labcorp and Quest Diagnostics through Health Gorilla to bring lab ordering and results directly into your workflow. Before we can submit an interface request on your behalf, there are a few things worth confirming so the process goes smoothly.
+Medplum integrates with labs like Labcorp and Quest Diagnostics through Health Gorilla to bring lab ordering and results directly into your workflow. Before we can submit a request for an API connection between your lab and Health Gorilla on your behalf, there are a few things worth confirming so the process goes smoothly.
 
 ### Eligibility Checklist
 
-- **An existing relationship with a lab rep**: Interface setup ultimately depends on your lab representative approving and processing the request on the lab's side. Before starting, you should already have an account with the lab and a point of contact there. We'll ask you to loop them in directly once the request is submitted, so having that relationship in place ahead of time avoids delays.
-- **Transaction volume**: Labs generally require a minimum order volume to justify standing up a dedicated interface. If your organization doesn't yet meet a lab's internal volume threshold, they may deny the interface request outright. If you're not sure whether you meet this bar, your lab rep can tell you.
-- **Bi-directional HL7 support**: Your organization (or your EHR/system) needs to support a bi-directional HL7 interface - one that can both send orders out and receive results back. If your setup can only handle one direction, the lab may not be able to complete the integration.
+- **An existing relationship with a lab rep**: Setting up this API connection ultimately depends on your lab representative approving and processing the request on the lab's side. Before starting, you should already have an account with the lab and a point of contact there. We'll ask you to loop them in directly once the request is submitted, so having that relationship in place ahead of time avoids delays.
+- **Transaction volume**: Labs generally require a minimum order volume to justify standing up a dedicated API connection. If your organization doesn't yet meet a lab's internal volume threshold, they may deny the request outright. If you're not sure whether you meet this bar, your lab rep can tell you.
+- **Parallel Interface Support**: If your lab account is used with an existing API-based connection to another EHR, you may also want to check with your lab rep that the new API-based connection will not impact any existing ones. This is usually possible, but worth confirming with your lab rep.
 
 ### What Happens Next
 
-If you meet the criteria above, reach out to your Medplum contact to start the process. We'll create your Health Gorilla tenancy, collect your lab details, and submit the interface request - but note that lab-side timelines vary, and your involvement (especially with your lab rep) is often the key to moving things along.
+If you meet the criteria above, reach out to your Medplum contact to start the process. We'll create your Health Gorilla tenant, collect your lab details, and submit the API connection request - but note that lab-side timelines vary, and your involvement (especially with your lab rep) is often the key to moving things along.
 
 ## Requisite information for successful lab order
 
