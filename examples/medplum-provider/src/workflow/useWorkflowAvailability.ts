@@ -12,6 +12,13 @@ import { WORKFLOWS } from './dependencies';
  * Each bot dependency is checked with a cheap `Bot?identifier=…` search — deduplicated and cached
  * by the {@link MedplumClient} request cache for the session, and never executes the bot. A
  * transient failure is treated as "present" so a network blip never blocks a workflow.
+ *
+ * Limitation: an empty search result is treated as "missing". If the current user's `AccessPolicy`
+ * hides `Bot` resources, the search returns empty (not an error) even when the bot is linked,
+ * producing a false "unavailable" — `searchOne` can't distinguish "no bot" from "no read access".
+ * The admin-only Get Started summary avoids this (admins can read bots); it only affects the
+ * per-user {@link WorkflowGate}. Erring toward blocking is intentional here: a user who can't see
+ * the bot most likely can't complete the workflow either.
  * @param medplum - The Medplum client used to look up bots by identifier.
  * @param dependencies - The dependencies to probe.
  * @returns The subset of `dependencies` confirmed missing.
