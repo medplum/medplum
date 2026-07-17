@@ -53,22 +53,21 @@ function getJobDataLoggingFields(job: Job<PostDeployJobData>): Record<string, st
 }
 
 export const initPostDeployMigrationWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions = defaultQueueOptions(config);
+  const queueOptions = defaultQueueOptions(config);
   const queue = new Queue<PostDeployJobData>(PostDeployMigrationQueueName, {
-    ...defaultOptions,
+    ...queueOptions,
     defaultJobOptions: {
-      ...defaultOptions.defaultJobOptions,
+      ...queueOptions.defaultJobOptions,
       attempts: 1, // No retries
     },
   });
 
   let worker: Worker<PostDeployJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'post-deploy-migration', { concurrency: 1 });
     worker = new Worker<PostDeployJobData>(
       PostDeployMigrationQueueName,
       async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
-      { ...defaultOptions, ...workerBullmq }
+      getWorkerBullmqConfig(config, 'post-deploy-migration', queueOptions, { concurrency: 1 })
     );
     addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
   }

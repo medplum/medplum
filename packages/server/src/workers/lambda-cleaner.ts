@@ -49,19 +49,18 @@ export interface LambdaCleanerSummary extends DeleteOldLambdaVersionStats {
 export const LambdaCleanerQueueName = 'LambdaCleanerQueue';
 
 export const initLambdaCleanerWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions = defaultQueueOptions(config);
+  const queueOptions = defaultQueueOptions(config);
   const queue = new Queue<LambdaCleanerJobData>(LambdaCleanerQueueName, {
-    ...defaultOptions,
-    defaultJobOptions: { ...defaultOptions.defaultJobOptions, attempts: 1 },
+    ...queueOptions,
+    defaultJobOptions: { ...queueOptions.defaultJobOptions, attempts: 1 },
   });
 
   let worker: Worker<LambdaCleanerJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerConfig = getWorkerBullmqConfig(config, 'lambda-cleaner', { concurrency: 1 });
     worker = new Worker<LambdaCleanerJobData>(
       LambdaCleanerQueueName,
       (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => lambdaCleanerJobProcessor(job)),
-      { ...defaultOptions, ...workerConfig }
+      getWorkerBullmqConfig(config, 'lambda-cleaner', queueOptions, { concurrency: 1 })
     );
     addVerboseQueueLogging<LambdaCleanerJobData>(queue, worker, (job) => ({
       asyncJob: `AsyncJob/${job.data.asyncJob.id}`,
