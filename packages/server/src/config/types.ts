@@ -105,9 +105,9 @@ export interface MedplumServerConfig {
   /**
    * Enables project-based fair queueing for async batch jobs, so one project's backlog does not
    * starve other projects. Default is `true`; overridable per-project via the
-   * `enableAsyncBatchFairQueue` Project.systemSetting.
+   * `asyncBatchFairQueueEnabled` Project.systemSetting.
    */
-  enableAsyncBatchFairQueue?: boolean;
+  asyncBatchFairQueueEnabled?: boolean;
   /** Milliseconds of delay added per quota unit in async context, in lieu of consuming quota units. */
   asyncDelayScaling?: number;
   /** Optional config for global default for `maxUserWebSocketSubscriptions`; overridable by Project setting: `maxUserWebSocketSubscriptions` */

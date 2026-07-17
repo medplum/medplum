@@ -86,23 +86,23 @@ describe('isFairQueueEnabled', () => {
   });
 
   test('defaults to enabled when neither config nor project override is set', () => {
-    getConfig().enableAsyncBatchFairQueue = undefined;
+    getConfig().asyncBatchFairQueueEnabled = undefined;
     expect(isFairQueueEnabled(baseAuthState)).toBe(true);
   });
 
   test('honors the server config flag when no project override is present', () => {
-    getConfig().enableAsyncBatchFairQueue = false;
+    getConfig().asyncBatchFairQueueEnabled = false;
     expect(isFairQueueEnabled(baseAuthState)).toBe(false);
-    getConfig().enableAsyncBatchFairQueue = undefined;
+    getConfig().asyncBatchFairQueueEnabled = undefined;
   });
 
   test('project systemSetting override wins over the server config flag', () => {
-    getConfig().enableAsyncBatchFairQueue = false;
+    getConfig().asyncBatchFairQueueEnabled = false;
     const authState = {
       project: {
         resourceType: 'Project',
         id: randomUUID(),
-        systemSetting: [{ name: 'enableAsyncBatchFairQueue', valueBoolean: true }],
+        systemSetting: [{ name: 'asyncBatchFairQueueEnabled', valueBoolean: true }],
       },
     } as unknown as AuthState;
     expect(isFairQueueEnabled(authState)).toBe(true);
@@ -111,10 +111,10 @@ describe('isFairQueueEnabled', () => {
       project: {
         resourceType: 'Project',
         id: randomUUID(),
-        systemSetting: [{ name: 'enableAsyncBatchFairQueue', valueBoolean: false }],
+        systemSetting: [{ name: 'asyncBatchFairQueueEnabled', valueBoolean: false }],
       },
     } as unknown as AuthState;
-    getConfig().enableAsyncBatchFairQueue = undefined;
+    getConfig().asyncBatchFairQueueEnabled = undefined;
     expect(isFairQueueEnabled(disabledAuthState)).toBe(false);
   });
 });

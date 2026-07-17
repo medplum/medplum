@@ -492,7 +492,7 @@ describe('Batch worker', () => {
           ...authState,
           project: {
             ...authState.project,
-            systemSetting: [{ name: 'enableAsyncBatchFairQueue', valueBoolean: false }],
+            systemSetting: [{ name: 'asyncBatchFairQueueEnabled', valueBoolean: false }],
           },
         };
         const asyncJob = await createAsyncJob();
@@ -659,7 +659,7 @@ describe('Batch worker', () => {
             ...authState,
             project: {
               ...authState.project,
-              systemSetting: [{ name: 'enableAsyncBatchFairQueue', valueBoolean: false }],
+              systemSetting: [{ name: 'asyncBatchFairQueueEnabled', valueBoolean: false }],
             },
           };
           await completedHandler(makeReentrantJob({ asyncJobId: 'x', authState: disabledAuthState }));

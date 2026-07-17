@@ -30,8 +30,8 @@ export const BULLMQ_MAX_PRIORITY = 2_097_151;
  */
 const FAIR_QUEUE_COUNTER_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 
-/** Project setting name for the per-project override of {@link ServerConfig.enableAsyncBatchFairQueue}. */
-const FAIR_QUEUE_SYSTEM_SETTING = 'enableAsyncBatchFairQueue';
+/** Project setting name for the per-project override of {@link ServerConfig.asyncBatchFairQueueEnabled}. */
+const FAIR_QUEUE_SYSTEM_SETTING = 'asyncBatchFairQueueEnabled';
 
 function getFairQueueKey(queueName: string, projectId: string): string {
   return `medplum:fairqueue:${queueName}:${projectId}`;
@@ -39,7 +39,7 @@ function getFairQueueKey(queueName: string, projectId: string): string {
 
 /**
  * Determines whether fair queueing is active for the given auth state. A per-project
- * `enableAsyncBatchFairQueue` Project setting wins if present; otherwise the server config flag
+ * `asyncBatchFairQueueEnabled` Project.systemSetting wins if present; otherwise the server config flag
  * applies, defaulting to enabled.
  * @param authState - The auth state the job was submitted under.
  * @returns True if fair queueing should be applied.
@@ -49,7 +49,7 @@ export function isFairQueueEnabled(authState: Readonly<AuthState>): boolean {
   if (override?.valueBoolean !== undefined) {
     return override.valueBoolean;
   }
-  return !!getConfig().enableAsyncBatchFairQueue;
+  return !!getConfig().asyncBatchFairQueueEnabled;
 }
 
 /**
