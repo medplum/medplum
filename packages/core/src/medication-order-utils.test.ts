@@ -38,6 +38,7 @@ import {
   parametersToMedicationCheckoutResponse,
   parametersToMedicationOrderResponse,
   parametersToMedicationOrderSetResponse,
+  parametersToOrderSetSyncResponse,
 } from './medication-order-utils';
 
 const TEST_EXT = {
@@ -302,6 +303,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
       pharmacyNote: 'Call patient first',
       patientInstruction: 'With food',
       appId: 'provider-app',
+      organization: { reference: 'Organization/practice-1' },
     };
     const result = medicationOrderRequestToParameters(req);
     expect(result.parameter).toContainEqual({ name: 'medicationRequestId', valueId: 'mr-1' });
@@ -316,6 +318,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
     expect(result.parameter).toContainEqual({ name: 'pharmacyNote', valueString: 'Call patient first' });
     expect(result.parameter).toContainEqual({ name: 'patientInstruction', valueString: 'With food' });
     expect(result.parameter).toContainEqual({ name: 'appId', valueString: 'provider-app' });
+    expect(result.parameter).toContainEqual({ name: 'organizationId', valueString: 'practice-1' });
 
     const drugs = result.parameter?.find((p) => p.name === 'drugs');
     expect(drugs?.part).toContainEqual({ name: 'routedMedId', valueInteger: 6876 });
@@ -400,6 +403,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
       patientId: 'pat-1',
       planDefinitionId: 'pd-1',
       appId: 'provider-app',
+      organization: { reference: 'Organization/practice-1' },
     };
     const result = medicationOrderSetRequestToParameters(req);
     expect(result.resourceType).toBe('Parameters');
@@ -407,6 +411,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
       { name: 'patientId', valueId: 'pat-1' },
       { name: 'planDefinitionId', valueId: 'pd-1' },
       { name: 'appId', valueString: 'provider-app' },
+      { name: 'organizationId', valueString: 'practice-1' },
     ]);
   });
 
@@ -510,6 +515,19 @@ describe('Custom FHIR operation Parameters helpers', () => {
     expect(result.parameter).toEqual([
       { name: 'patientId', valueId: 'pat-1' },
       { name: 'medicationRequestIds', valueId: 'mr-1' },
+    ]);
+  });
+
+  test('medicationCheckoutRequestToParameters emits organizationId when provided', () => {
+    const result = medicationCheckoutRequestToParameters({
+      patientId: 'pat-1',
+      medicationRequestIds: ['mr-1'],
+      organization: { reference: 'Organization/org-7' },
+    });
+    expect(result.parameter).toEqual([
+      { name: 'patientId', valueId: 'pat-1' },
+      { name: 'medicationRequestIds', valueId: 'mr-1' },
+      { name: 'organizationId', valueString: 'org-7' },
     ]);
   });
 
@@ -675,5 +693,75 @@ describe('Custom FHIR operation Parameters helpers', () => {
       };
       expect(() => parametersToMedicationCartManageResponse(params)).toThrow(INVALID_MEDICATION_CART_RESPONSE);
     });
+  });
+
+  test('parametersToOrderSetSyncResponse decodes counts + repeating per-action results', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'mode', valueCode: 'created' },
+        { name: 'planDefinitionId', valueId: 'pd-1' },
+        { name: 'scriptSureOrdersetId', valueInteger: 379 },
+        { name: 'syncedCount', valueInteger: 1 },
+        { name: 'failedCount', valueInteger: 1 },
+        {
+          name: 'results',
+          part: [
+            { name: 'actionTitle', valueString: 'Jardiance' },
+            { name: 'activityDefinitionUrl', valueCanonical: 'https://x/ActivityDefinition/j|1.0.0' },
+            { name: 'scriptSureSequenceId', valueInteger: 1011 },
+            { name: 'status', valueCode: 'synced' },
+          ],
+        },
+        {
+          name: 'results',
+          part: [
+            { name: 'actionTitle', valueString: 'Ozempic' },
+            { name: 'status', valueCode: 'failed' },
+            { name: 'error', valueString: 'drug not in FDB' },
+          ],
+        },
+      ],
+    };
+    expect(parametersToOrderSetSyncResponse(params)).toEqual({
+      mode: 'created',
+      planDefinitionId: 'pd-1',
+      scriptSureOrdersetId: 379,
+      syncedCount: 1,
+      failedCount: 1,
+      results: [
+        {
+          actionTitle: 'Jardiance',
+          activityDefinitionUrl: 'https://x/ActivityDefinition/j|1.0.0',
+          scriptSureSequenceId: 1011,
+          scriptSureOrderId: undefined,
+          status: 'synced',
+          error: undefined,
+        },
+        {
+          actionTitle: 'Ozempic',
+          activityDefinitionUrl: undefined,
+          scriptSureSequenceId: undefined,
+          scriptSureOrderId: undefined,
+          status: 'failed',
+          error: 'drug not in FDB',
+        },
+      ],
+    });
+  });
+
+  test('parametersToOrderSetSyncResponse derives counts from results when scalars absent', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'mode', valueCode: 'noop-already-synced' },
+        { name: 'results', part: [{ name: 'status', valueCode: 'synced' }] },
+        { name: 'results', part: [{ name: 'status', valueCode: 'failed' }] },
+      ],
+    };
+    const decoded = parametersToOrderSetSyncResponse(params);
+    expect(decoded.mode).toBe('noop-already-synced');
+    expect(decoded.syncedCount).toBe(1);
+    expect(decoded.failedCount).toBe(1);
   });
 });

@@ -61,7 +61,7 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.text).toBe('Client not found');
   });
 
@@ -74,7 +74,7 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.text).toBe('Missing redirect URI');
   });
 
@@ -88,7 +88,7 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.text).toBe('Invalid redirect URI');
   });
 
@@ -102,7 +102,7 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.text).toBe('Invalid redirect URI');
   });
 
@@ -116,7 +116,7 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toStrictEqual('unsupported_response_type');
@@ -133,7 +133,7 @@ describe('OAuth Authorize', () => {
       request: 'unsupported-request',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toStrictEqual('request_not_supported');
@@ -148,7 +148,7 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
@@ -163,7 +163,7 @@ describe('OAuth Authorize', () => {
       code_challenge_method: '',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
@@ -179,7 +179,7 @@ describe('OAuth Authorize', () => {
       aud: 'https://example.com/invalid',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
@@ -195,7 +195,7 @@ describe('OAuth Authorize', () => {
       launch: randomUUID(),
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
@@ -211,7 +211,7 @@ describe('OAuth Authorize', () => {
       aud: 'x',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
@@ -227,7 +227,7 @@ describe('OAuth Authorize', () => {
       aud: 'http://localhost:8103', // Intentionally omit the trailing slash, should still work
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
   });
@@ -243,7 +243,7 @@ describe('OAuth Authorize', () => {
       aud: 'http://localhost:8103/fhir/R4',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
   });
@@ -258,7 +258,7 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
   });
 
   test('prompt=none and no existing login', async () => {
@@ -272,7 +272,7 @@ describe('OAuth Authorize', () => {
       prompt: 'none',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
     expect(res.headers.location).toBeDefined();
     const location = new URL(res.headers.location);
     expect(location.host).toBe('example.com');
@@ -288,7 +288,7 @@ describe('OAuth Authorize', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.code).toBeDefined();
     expect(res1.headers['set-cookie']).toBeDefined();
 
@@ -297,7 +297,7 @@ describe('OAuth Authorize', () => {
       code: res1.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.id_token).toBeDefined();
 
     const cookies = parseSetCookie(res1.headers['set-cookie']);
@@ -318,7 +318,7 @@ describe('OAuth Authorize', () => {
     const res3 = await request(app)
       .get('/oauth2/authorize?' + params.toString())
       .set('Cookie', cookie.name + '=' + cookie.value);
-    expect(res3.status).toBe(302);
+    expect(res3).toHaveStatus(302);
     expect(res3.headers.location).toBeDefined();
 
     const location = new URL(res3.headers.location);
@@ -335,7 +335,7 @@ describe('OAuth Authorize', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.code).toBeDefined();
     expect(res1.headers['set-cookie']).toBeDefined();
 
@@ -344,7 +344,7 @@ describe('OAuth Authorize', () => {
       code: res1.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.id_token).toBeDefined();
 
     const cookies = parseSetCookie(res1.headers['set-cookie']);
@@ -364,7 +364,7 @@ describe('OAuth Authorize', () => {
     const res3 = await request(app)
       .get('/oauth2/authorize?' + params.toString())
       .set('Cookie', cookie.name + '=' + cookie.value);
-    expect(res3.status).toBe(302);
+    expect(res3).toHaveStatus(302);
     expect(res3.headers.location).toBeDefined();
 
     const location = new URL(res3.headers.location);
@@ -383,7 +383,7 @@ describe('OAuth Authorize', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.code).toBeDefined();
     expect(res1.headers['set-cookie']).toBeDefined();
 
@@ -392,7 +392,7 @@ describe('OAuth Authorize', () => {
       code: res1.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.id_token).toBeDefined();
 
     const cookies = parseSetCookie(res1.headers['set-cookie']);
@@ -423,7 +423,7 @@ describe('OAuth Authorize', () => {
     const res3 = await request(app)
       .get('/oauth2/authorize?' + params.toString())
       .set('Cookie', cookie.name + '=' + cookie.value);
-    expect(res3.status).toBe(302);
+    expect(res3).toHaveStatus(302);
     expect(res3.headers.location).toBeDefined();
 
     const location = new URL(res3.headers.location);
@@ -440,7 +440,7 @@ describe('OAuth Authorize', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.code).toBeDefined();
     expect(res1.headers['set-cookie']).toBeDefined();
 
@@ -452,7 +452,7 @@ describe('OAuth Authorize', () => {
       code: res1.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.id_token).toBeDefined();
 
     const cookies = parseSetCookie(res1.headers['set-cookie']);
@@ -474,7 +474,7 @@ describe('OAuth Authorize', () => {
     const res3 = await request(app)
       .get(`/oauth2/authorize?launch=${launch.id}&${params.toString()}&prompt=none`)
       .set('Cookie', cookie.name + '=' + cookie.value);
-    expect(res3.status).toBe(302);
+    expect(res3).toHaveStatus(302);
     expect(res3.headers.location).toBeDefined();
 
     const location = new URL(res3.headers.location);
@@ -499,7 +499,7 @@ describe('OAuth Authorize', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.code).toBeDefined();
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -507,7 +507,7 @@ describe('OAuth Authorize', () => {
       code: res1.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.id_token).toBeDefined();
 
     const params2 = new URLSearchParams({
@@ -521,7 +521,7 @@ describe('OAuth Authorize', () => {
       prompt: 'none',
     });
     const res3 = await request(app).get('/oauth2/authorize?' + params2.toString());
-    expect(res3.status).toBe(302);
+    expect(res3).toHaveStatus(302);
     expect(res3.headers.location).toBeDefined();
 
     const location2 = new URL(res3.headers.location);
@@ -541,7 +541,7 @@ describe('OAuth Authorize', () => {
       id_token_hint: 'invalid.jwt.invalid',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
     expect(res.headers.location).toBeDefined();
 
     const location = new URL(res.headers.location);
@@ -559,7 +559,7 @@ describe('OAuth Authorize', () => {
     });
 
     const res = await request(app).post('/oauth2/authorize').send(params.toString());
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
@@ -576,7 +576,7 @@ describe('OAuth Authorize', () => {
     });
 
     const res = await request(app).post('/oauth2/authorize').send(params.toString());
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Missing ClientApplication.redirectUri', async () => {
@@ -596,7 +596,7 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.text).toBe('Invalid redirect URI');
   });
 
@@ -618,7 +618,7 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.text).toBe('Invalid redirect URI');
   });
 });

@@ -32,7 +32,7 @@ describe('ChargeItemDefinition Apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Test'], family: 'Patient' }],
       });
-    expect(patient.status).toBe(201);
+    expect(patient).toHaveStatus(201);
 
     // 2. Create an encounter
     const encounter = await request(app)
@@ -51,7 +51,7 @@ describe('ChargeItemDefinition Apply', () => {
           reference: `Patient/${patient.body.id}`,
         },
       });
-    expect(encounter.status).toBe(201);
+    expect(encounter).toHaveStatus(201);
 
     // 3. Create a ChargeItemDefinition
     const chargeItemDefinition = await request(app)
@@ -86,7 +86,7 @@ describe('ChargeItemDefinition Apply', () => {
         ],
       });
 
-    expect(chargeItemDefinition.status).toBe(201);
+    expect(chargeItemDefinition).toHaveStatus(201);
 
     // 4. Create a draft ChargeItem first
     const draftChargeItem = await request(app)
@@ -116,7 +116,7 @@ describe('ChargeItemDefinition Apply', () => {
           ],
         },
       });
-    expect(draftChargeItem.status).toBe(201);
+    expect(draftChargeItem).toHaveStatus(201);
 
     // 5. Apply the ChargeItemDefinition to the draft ChargeItem using its reference
     const applyResult = await request(app)
@@ -136,7 +136,7 @@ describe('ChargeItemDefinition Apply', () => {
       });
 
     // 6. Verify the result
-    expect(applyResult.status).toBe(200);
+    expect(applyResult).toHaveStatus(200);
     const chargeItem = applyResult.body as ChargeItem;
     expect(chargeItem.resourceType).toBe('ChargeItem');
     expect(chargeItem.id).toBe(draftChargeItem.body.id);
@@ -162,7 +162,7 @@ describe('ChargeItemDefinition Apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Service'], family: 'CodeTest' }],
       });
-    expect(patient.status).toBe(201);
+    expect(patient).toHaveStatus(201);
 
     // 2. Create an encounter
     const encounter = await request(app)
@@ -181,7 +181,7 @@ describe('ChargeItemDefinition Apply', () => {
           reference: `Patient/${patient.body.id}`,
         },
       });
-    expect(encounter.status).toBe(201);
+    expect(encounter).toHaveStatus(201);
 
     // 3. Create a ChargeItemDefinition with code-specific surcharge
     const chargeItemDefinitionBody: ChargeItemDefinition = {
@@ -258,7 +258,7 @@ describe('ChargeItemDefinition Apply', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(chargeItemDefinitionBody);
-    expect(chargeItemDefinition.status).toBe(201);
+    expect(chargeItemDefinition).toHaveStatus(201);
 
     // 4. Create a draft ChargeItem with 99214 code
     const draftChargeItem = await request(app)
@@ -288,7 +288,7 @@ describe('ChargeItemDefinition Apply', () => {
           ],
         },
       });
-    expect(draftChargeItem.status).toBe(201);
+    expect(draftChargeItem).toHaveStatus(201);
 
     // 5. Apply the ChargeItemDefinition to the draft ChargeItem
     const applyResult = await request(app)
@@ -308,7 +308,7 @@ describe('ChargeItemDefinition Apply', () => {
       });
 
     // 6. Verify the result
-    expect(applyResult.status).toBe(200);
+    expect(applyResult).toHaveStatus(200);
     const chargeItem = applyResult.body as ChargeItem;
     expect(chargeItem.resourceType).toBe('ChargeItem');
     expect(chargeItem.id).toBe(draftChargeItem.body.id);
@@ -333,7 +333,7 @@ describe('ChargeItemDefinition Apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Discount'], family: 'TestCase' }],
       });
-    expect(patient.status).toBe(201);
+    expect(patient).toHaveStatus(201);
 
     // 2. Create an encounter
     const encounter = await request(app)
@@ -352,7 +352,7 @@ describe('ChargeItemDefinition Apply', () => {
           reference: `Patient/${patient.body.id}`,
         },
       });
-    expect(encounter.status).toBe(201);
+    expect(encounter).toHaveStatus(201);
 
     // 3. Create a ChargeItemDefinition with various discount types
     const chargeItemDefinitionBody: ChargeItemDefinition = {
@@ -447,7 +447,7 @@ describe('ChargeItemDefinition Apply', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(chargeItemDefinitionBody);
-    expect(chargeItemDefinition.status).toBe(201);
+    expect(chargeItemDefinition).toHaveStatus(201);
 
     // 4. Create a draft ChargeItem
     const draftChargeItem = await request(app)
@@ -477,7 +477,7 @@ describe('ChargeItemDefinition Apply', () => {
           ],
         },
       });
-    expect(draftChargeItem.status).toBe(201);
+    expect(draftChargeItem).toHaveStatus(201);
 
     // 5. Apply the ChargeItemDefinition to the draft ChargeItem
     const applyResult = await request(app)
@@ -497,7 +497,7 @@ describe('ChargeItemDefinition Apply', () => {
       });
 
     // 6. Verify the result
-    expect(applyResult.status).toBe(200);
+    expect(applyResult).toHaveStatus(200);
     const chargeItem = applyResult.body as ChargeItem;
     expect(chargeItem.resourceType).toBe('ChargeItem');
     expect(chargeItem.id).toBe(draftChargeItem.body.id);
@@ -523,7 +523,7 @@ describe('ChargeItemDefinition Apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Base'], family: 'Applicability' }],
       });
-    expect(patient.status).toBe(201);
+    expect(patient).toHaveStatus(201);
 
     // Create an encounter
     const encounter = await request(app)
@@ -542,7 +542,7 @@ describe('ChargeItemDefinition Apply', () => {
           reference: `Patient/${patient.body.id}`,
         },
       });
-    expect(encounter.status).toBe(201);
+    expect(encounter).toHaveStatus(201);
 
     // Create a ChargeItemDefinition with base price applicability
     const chargeItemDefinitionBody: ChargeItemDefinition = {
@@ -621,7 +621,7 @@ describe('ChargeItemDefinition Apply', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(chargeItemDefinitionBody);
-    expect(chargeItemDefinition.status).toBe(201);
+    expect(chargeItemDefinition).toHaveStatus(201);
 
     // Create a ChargeItem for a new patient
     const newPatientChargeItem = await request(app)
@@ -651,7 +651,7 @@ describe('ChargeItemDefinition Apply', () => {
           ],
         },
       });
-    expect(newPatientChargeItem.status).toBe(201);
+    expect(newPatientChargeItem).toHaveStatus(201);
 
     // Apply the ChargeItemDefinition to the new patient ChargeItem
     const newPatientApplyResult = await request(app)
@@ -671,7 +671,7 @@ describe('ChargeItemDefinition Apply', () => {
       });
 
     // Verify new patient pricing
-    expect(newPatientApplyResult.status).toBe(200);
+    expect(newPatientApplyResult).toHaveStatus(200);
     const newPatientResult = newPatientApplyResult.body as ChargeItem;
     expect(newPatientResult.resourceType).toBe('ChargeItem');
     expect(newPatientResult.id).toBe(newPatientChargeItem.body.id);
@@ -711,7 +711,7 @@ describe('ChargeItemDefinition Apply', () => {
           ],
         },
       });
-    expect(establishedPatientChargeItem.status).toBe(201);
+    expect(establishedPatientChargeItem).toHaveStatus(201);
 
     // Apply the ChargeItemDefinition to the established patient ChargeItem
     const establishedPatientApplyResult = await request(app)
@@ -731,7 +731,7 @@ describe('ChargeItemDefinition Apply', () => {
       });
 
     // Verify established patient pricing
-    expect(establishedPatientApplyResult.status).toBe(200);
+    expect(establishedPatientApplyResult).toHaveStatus(200);
     const establishedPatientResult = establishedPatientApplyResult.body as ChargeItem;
 
     // Established Patient base price: $100
@@ -769,7 +769,7 @@ describe('ChargeItemDefinition Apply', () => {
           ],
         },
       });
-    expect(otherChargeItem.status).toBe(201);
+    expect(otherChargeItem).toHaveStatus(201);
 
     // Apply the ChargeItemDefinition to the other ChargeItem
     const otherApplyResult = await request(app)
@@ -788,7 +788,7 @@ describe('ChargeItemDefinition Apply', () => {
         ],
       });
 
-    expect(otherApplyResult.status).toBe(200);
+    expect(otherApplyResult).toHaveStatus(200);
     const otherResult = otherApplyResult.body as ChargeItem;
     expect(otherResult.priceOverride?.value).toBe(150);
     expect(otherResult.priceOverride?.currency).toBe('USD');

@@ -41,6 +41,7 @@ import patientBundleData from '../../data/patient-david-james-williams.json';
 import visitBundleData from '../../data/simple-initial-visit-bundle.json';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './GetStartedPage.module.css';
+import { buildOrderSetImportNotification } from './orderSetImportNotification';
 
 export function GetStartedPage(): JSX.Element {
   const medplum = useMedplum();
@@ -134,15 +135,9 @@ export function GetStartedPage(): JSX.Element {
       const pdLocation = result.entry?.find((e) => e.response?.location?.startsWith('PlanDefinition/'))?.response
         ?.location;
       const pdId = pdLocation?.split('/')[1];
-      if (pdId) {
-        await syncOrderSet(pdId);
-      }
+      const syncResult = pdId ? await syncOrderSet(pdId) : undefined;
 
-      showNotification({
-        color: 'green',
-        title: 'Success',
-        message: `Imported ${resourceCount} resources for Geriatric T2DM Order Set`,
-      });
+      showNotification({ ...buildOrderSetImportNotification(resourceCount, syncResult) });
     } catch (error) {
       showErrorNotification(error);
     } finally {

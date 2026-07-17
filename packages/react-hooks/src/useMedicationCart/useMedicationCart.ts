@@ -29,14 +29,14 @@ export interface UseMedicationCartReturn {
   /**
    * Persist a draft `MedicationRequest` as a cart line via plain FHIR
    * `createResource` (no custom operation). Vendor staging happens later at
-   * {@link checkout}.
+   * {@link UseMedicationCartReturn.checkout}.
    */
   addToCart: (medicationRequest: MedicationRequest) => Promise<MedicationRequest>;
-  /** True while one or more {@link addToCart} calls are in flight. */
+  /** True while one or more {@link UseMedicationCartReturn.addToCart} calls are in flight. */
   adding: boolean;
   /**
    * Submit draft cart lines to the vendor's batch approval queue and return an
-   * embeddable approval-widget URL. Refuses while {@link adding} is true.
+   * embeddable approval-widget URL. Refuses while {@link UseMedicationCartReturn.adding} is true.
    */
   checkout: (input: MedicationCheckoutRequest) => Promise<MedicationCheckoutResponse>;
   /** Remove a single draft `MedicationRequest` from the patient's vendor cart. */

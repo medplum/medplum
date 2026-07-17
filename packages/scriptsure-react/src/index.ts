@@ -8,3 +8,4 @@ export * from './useScriptSureIFrame';
 export * from './useScriptSureOrderMedication';
 export * from './useScriptSureOrderSet';
 export * from './useScriptSurePharmacySearch';
+export * from './useScriptSurePractice';
