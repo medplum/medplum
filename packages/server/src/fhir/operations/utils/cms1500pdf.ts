@@ -330,6 +330,23 @@ function createDate(date: string | undefined, x: number, y: number): (Content | 
   ];
 }
 
+const CMS_PLACE_OF_SERVICE_SYSTEM = 'https://www.cms.gov/Medicare/Coding/place-of-service-codes';
+
+/**
+ * Returns the CMS-1500 Box 24B place-of-service CODE for a claim line.
+ *
+ * Box 24B must hold a two-digit code from the CMS Place of Service code set, so only a
+ * `locationCodeableConcept` coding from that system is used. Codings from other systems and the
+ * legacy `locationAddress.state` read are deliberately NOT used as fallbacks: neither can produce
+ * a valid place-of-service code, and a blank box is better than an unfilable value.
+ *
+ * @param item - The claim line item.
+ * @returns The two-digit place-of-service code, or undefined.
+ */
+export function getPlaceOfService(item: ClaimItem): string | undefined {
+  return item.locationCodeableConcept?.coding?.find((c) => c.system === CMS_PLACE_OF_SERVICE_SYSTEM)?.code;
+}
+
 /**
  * Formats CMS-1500 Box 24E diagnosis pointers for a service line.
  *
@@ -341,25 +358,6 @@ function createDate(date: string | undefined, x: number, y: number): (Content | 
  * @param diagnosisSequence - The 1-based diagnosis pointers for a single service line.
  * @returns The Box 24E reference letters (e.g. "AB"), or an empty string when there are none.
  */
-const CMS_PLACE_OF_SERVICE_SYSTEM = 'https://www.cms.gov/Medicare/Coding/place-of-service-codes';
-
-/**
- * Returns the CMS-1500 Box 24B place-of-service CODE for a claim line.
- * Prefers a `locationCodeableConcept` coding (the CMS place-of-service code system, then any
- * coding), falling back to the legacy `locationAddress.state` read for claims that carry an
- * address instead of a code.
- * @param item - The claim line item.
- * @returns The two-digit place-of-service code, or undefined.
- */
-export function getPlaceOfService(item: ClaimItem): string | undefined {
-  const coding = item.locationCodeableConcept?.coding;
-  return (
-    coding?.find((c) => c.system === CMS_PLACE_OF_SERVICE_SYSTEM)?.code ??
-    coding?.[0]?.code ??
-    item.locationAddress?.state
-  );
-}
-
 export function formatDiagnosisPointers(diagnosisSequence: number[] | undefined): string {
   return (diagnosisSequence ?? [])
     .filter((seq) => seq >= 1 && seq <= 26)

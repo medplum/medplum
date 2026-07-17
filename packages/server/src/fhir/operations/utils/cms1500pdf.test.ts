@@ -123,22 +123,36 @@ describe('CMS 1500 PDF Utils', () => {
     expect(getPlaceOfService(item)).toStrictEqual('11');
   });
 
-  test('falls back to the first locationCodeableConcept coding when the CMS system is absent', () => {
+  test('ignores locationCodeableConcept codings from other systems', () => {
     const item: ClaimItem = {
       sequence: 1,
       productOrService: {},
       locationCodeableConcept: { coding: [{ system: 'http://example.com/other', code: '02' }] },
     };
-    expect(getPlaceOfService(item)).toStrictEqual('02');
+    expect(getPlaceOfService(item)).toBeUndefined();
   });
 
-  test('falls back to locationAddress.state when no coding is present (legacy behavior)', () => {
+  test('never emits locationAddress.state — a state abbreviation is not a place-of-service code', () => {
     const item: ClaimItem = {
       sequence: 1,
       productOrService: {},
       locationAddress: { state: 'CA' },
     };
-    expect(getPlaceOfService(item)).toStrictEqual('CA');
+    expect(getPlaceOfService(item)).toBeUndefined();
+  });
+
+  test('finds the CMS-system coding regardless of its position', () => {
+    const item: ClaimItem = {
+      sequence: 1,
+      productOrService: {},
+      locationCodeableConcept: {
+        coding: [
+          { system: 'http://example.com/other', code: 'XX' },
+          { system: 'https://www.cms.gov/Medicare/Coding/place-of-service-codes', code: '02' },
+        ],
+      },
+    };
+    expect(getPlaceOfService(item)).toStrictEqual('02');
   });
 
   test('returns undefined when the claim line has no location information', () => {
