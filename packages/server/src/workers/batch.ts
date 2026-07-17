@@ -116,7 +116,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
 
   let worker: Worker<BatchJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'batch');
+    const workerOptions = getWorkerBullmqConfig(config, 'batch', { concurrency: 15 });
     worker = new Worker<BatchJobData>(
       queueName,
       (job) => {
@@ -131,11 +131,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
           }
         });
       },
-      {
-        ...defaultOptions,
-        concurrency: 1,
-        ...workerBullmq,
-      }
+      { ...defaultOptions, ...workerOptions }
     );
 
     worker.on('failed', async (job, failedErr) => {

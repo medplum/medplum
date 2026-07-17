@@ -64,14 +64,11 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config, options
 
   let worker: Worker<PostDeployJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'post-deploy-migration');
+    const workerBullmq = getWorkerBullmqConfig(config, 'post-deploy-migration', { concurrency: 1 });
     worker = new Worker<PostDeployJobData>(
       PostDeployMigrationQueueName,
       async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
-      {
-        ...workerBullmq,
-        ...defaultOptions,
-      }
+      { ...defaultOptions, ...workerBullmq }
     );
     addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
   }

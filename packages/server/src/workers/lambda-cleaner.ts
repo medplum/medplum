@@ -57,11 +57,11 @@ export const initLambdaCleanerWorker: WorkerInitializer = (config, options?: Wor
 
   let worker: Worker<LambdaCleanerJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerConfig = getWorkerBullmqConfig(config, 'lambda-cleaner');
+    const workerConfig = getWorkerBullmqConfig(config, 'lambda-cleaner', { concurrency: 1 });
     worker = new Worker<LambdaCleanerJobData>(
       LambdaCleanerQueueName,
       (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => lambdaCleanerJobProcessor(job)),
-      { ...defaultOptions, concurrency: 1, ...workerConfig }
+      { ...defaultOptions, ...workerConfig }
     );
     addVerboseQueueLogging<LambdaCleanerJobData>(queue, worker, (job) => ({
       asyncJob: `AsyncJob/${job.data.asyncJob.id}`,

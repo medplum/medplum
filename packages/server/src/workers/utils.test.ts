@@ -380,6 +380,37 @@ describe('worker utils', () => {
       });
     });
 
+    test('worker defaults supersede global bullmq config', () => {
+      const config = {
+        bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
+      } as MedplumServerConfig;
+
+      const result = getWorkerBullmqConfig(config, 'batch', { concurrency: 1 });
+      expect(result).toStrictEqual({
+        concurrency: 1,
+        removeOnComplete: { count: 1 },
+        removeOnFail: { count: 1 },
+      });
+    });
+
+    test('per-worker overrides supersede worker defaults', () => {
+      const config = {
+        bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
+        workers: {
+          bullmq: {
+            batch: { concurrency: 5 },
+          },
+        },
+      } as MedplumServerConfig;
+
+      const result = getWorkerBullmqConfig(config, 'batch', { concurrency: 1 });
+      expect(result).toStrictEqual({
+        concurrency: 5,
+        removeOnComplete: { count: 1 },
+        removeOnFail: { count: 1 },
+      });
+    });
+
     test('per-worker overrides do not affect other workers', () => {
       const config = {
         bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },

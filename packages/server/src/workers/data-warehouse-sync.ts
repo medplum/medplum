@@ -79,17 +79,14 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
     defaultJobOptions: { ...defaultOptions.defaultJobOptions, attempts: 1 },
   });
 
-  const workerBullmq = getWorkerBullmqConfig(config, 'data-warehouse-sync') ?? {};
+  const workerBullmq = getWorkerBullmqConfig(config, 'data-warehouse-sync', {
+    lockDuration: DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
+    concurrency: 1, // Data warehouse sync is intentionally serialized.
+  });
   const worker = new Worker<DataWarehouseSyncJobData>(
     DataWarehouseSyncQueueName,
     async (job) => processDataWarehouseSyncJob(config, job),
-    {
-      ...defaultOptions,
-      ...workerBullmq,
-      lockDuration: workerBullmq.lockDuration ?? DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
-      // Data warehouse sync is intentionally serialized.
-      concurrency: 1,
-    }
+    { ...defaultOptions, ...workerBullmq }
   );
   addVerboseQueueLogging<DataWarehouseSyncJobData>(queue, worker, (job) => ({
     trigger: job.data.trigger,

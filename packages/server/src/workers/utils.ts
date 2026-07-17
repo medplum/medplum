@@ -281,13 +281,25 @@ export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<n
   throw new Error('Cannot delay Post-deploy migration job since job.token is not available');
 }
 
+/**
+ * Builds the effective bullmq config for a worker by merging, in increasing order of precedence:
+ * the global `bullmq` server config, worker-specific defaults from code, and the per-worker
+ * `workers.bullmq.<workerName>` server config.
+ * @param config - The server config.
+ * @param workerName - The worker to build the config for.
+ * @param workerDefaults - Worker-specific defaults that supersede the global `bullmq` server
+ * config (including the defaults added by `addDefaults`) but are overridden by the per-worker
+ * `workers.bullmq.<workerName>` server config.
+ * @returns The merged bullmq config for the worker.
+ */
 export function getWorkerBullmqConfig(
   config: MedplumServerConfig,
-  workerName: WorkerName
+  workerName: WorkerName,
+  workerDefaults?: Partial<MedplumBullmqConfig>
 ): Partial<MedplumBullmqConfig> | undefined {
   const perWorker = config.workers?.bullmq?.[workerName];
-  if (perWorker) {
-    return { ...config.bullmq, ...perWorker };
+  if (perWorker || workerDefaults) {
+    return { ...config.bullmq, ...workerDefaults, ...perWorker };
   }
   return config.bullmq;
 }
