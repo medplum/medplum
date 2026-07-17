@@ -8,10 +8,11 @@ import type { ScriptSurePharmacySearchParams } from './pharmacy-search';
 
 export type UseScriptSurePharmacySearchReturn = UsePharmacySearchReturn<ScriptSurePharmacySearchParams>;
 
+/* eslint-disable jsdoc/escape-inline-tags -- TSDoc cross-package {@link @package#symbol} references */
 /**
  * React hook that provides ScriptSure-specific pharmacy search and add-to-favorites functionality.
  *
- * Thin wrapper around the generic {@link usePharmacySearch} hook, pre-configured with
+ * Thin wrapper around the generic {@link @medplum/react-hooks#usePharmacySearch} hook, pre-configured with
  * ScriptSure bot identifiers and widened so search params carry ScriptSure-only
  * `specialties` filters for POST /v3/pharmacy/search.
  *
