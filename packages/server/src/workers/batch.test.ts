@@ -479,7 +479,7 @@ describe('Batch worker', () => {
           queueBatchProcessing(singleEntryBundle(), asyncJob)
         );
 
-        expect(prioritySpy).toHaveBeenCalledWith('BatchQueue', authState.project.id);
+        expect(prioritySpy).toHaveBeenCalledWith(expect.anything(), 'BatchQueue', authState.project.id);
         expect(queue.add).toHaveBeenCalledWith('BatchJobData', expect.anything(), { priority: 4 });
       }));
 
@@ -631,7 +631,7 @@ describe('Batch worker', () => {
           const { completedHandler } = captureWorker();
           const decrSpy = vi.spyOn(fairqueue, 'decrementProjectJobCount').mockResolvedValue();
           await completedHandler(makeReentrantJob({ asyncJobId: 'x', authState }));
-          expect(decrSpy).toHaveBeenCalledWith('BatchQueue', authState.project.id);
+          expect(decrSpy).toHaveBeenCalledWith(expect.anything(), 'BatchQueue', authState.project.id);
         }));
 
       test('failed handler releases the slot on terminal failure', () =>
@@ -640,7 +640,7 @@ describe('Batch worker', () => {
           const decrSpy = vi.spyOn(fairqueue, 'decrementProjectJobCount').mockResolvedValue();
           const asyncJob = await createAsyncJob();
           await failedHandler(makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState }), new Error('boom'));
-          expect(decrSpy).toHaveBeenCalledWith('BatchQueue', authState.project.id);
+          expect(decrSpy).toHaveBeenCalledWith(expect.anything(), 'BatchQueue', authState.project.id);
         }));
 
       test('failed handler does NOT release the slot for a DelayedError (still in flight)', () =>
