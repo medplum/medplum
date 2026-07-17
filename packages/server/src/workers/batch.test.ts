@@ -439,12 +439,10 @@ describe('Batch worker', () => {
           queueBatchProcessing(bundle, asyncJob)
         );
 
-        // Enqueued data carries asyncJobId and authState, but NOT the bundle (#9124). Fair queueing
-        // is enabled by default, so a priority derived from the project's in-flight count is set.
+        // Enqueued data carries asyncJobId and authState, but NOT the bundle (#9124).
         expect(queue.add).toHaveBeenCalledWith(
           'BatchJobData',
-          expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: asyncJob.id, authState }),
-          expect.objectContaining({ priority: expect.any(Number) })
+          expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: asyncJob.id, authState })
         );
         const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
         expect(enqueued.bundle).toBeUndefined();
@@ -473,9 +471,16 @@ describe('Batch worker', () => {
         queue.add.mockClear();
         // Control the derived priority so the assertion is deterministic.
         const prioritySpy = vi.spyOn(fairqueue, 'incrementProjectJobPriority').mockResolvedValue(4);
+        const enabledAuthState: AuthState = {
+          ...authState,
+          project: {
+            ...authState.project,
+            systemSetting: [{ name: 'asyncBatchFairQueueEnabled', valueBoolean: true }],
+          },
+        };
         const asyncJob = await createAsyncJob();
 
-        await runInAuthenticatedContext(authState, undefined, undefined, undefined, () =>
+        await runInAuthenticatedContext(enabledAuthState, undefined, undefined, undefined, () =>
           queueBatchProcessing(singleEntryBundle(), asyncJob)
         );
 
@@ -504,7 +509,7 @@ describe('Batch worker', () => {
         expect(prioritySpy).not.toHaveBeenCalled();
         // Enqueued with just the name and data — no options/priority argument.
         expect(queue.add).toHaveBeenCalledTimes(1);
-        expect(queue.add.mock.calls[0]).toHaveLength(2);
+        expect(queue.add).toHaveBeenCalledWith('BatchJobData', expect.anything());
       }));
   });
 
@@ -626,11 +631,31 @@ describe('Batch worker', () => {
     });
 
     describe('fair-queue slot release', () => {
+      let enabledAuthState: AuthState;
+      let disabledAuthState: AuthState;
+
+      beforeAll(() => {
+        enabledAuthState = {
+          ...authState,
+          project: {
+            ...authState.project,
+            systemSetting: [{ name: 'asyncBatchFairQueueEnabled', valueBoolean: true }],
+          },
+        };
+
+        disabledAuthState = {
+          ...authState,
+          project: {
+            ...authState.project,
+            systemSetting: [{ name: 'asyncBatchFairQueueEnabled', valueBoolean: false }],
+          },
+        };
+      });
       test('completed handler releases the slot', () =>
         withTestContext(async () => {
           const { completedHandler } = captureWorker();
           const decrSpy = vi.spyOn(fairqueue, 'decrementProjectJobCount').mockResolvedValue();
-          await completedHandler(makeReentrantJob({ asyncJobId: 'x', authState }));
+          await completedHandler(makeReentrantJob({ asyncJobId: 'x', authState: enabledAuthState }));
           expect(decrSpy).toHaveBeenCalledWith(expect.anything(), 'BatchQueue', authState.project.id);
         }));
 
@@ -639,7 +664,10 @@ describe('Batch worker', () => {
           const { failedHandler } = captureWorker();
           const decrSpy = vi.spyOn(fairqueue, 'decrementProjectJobCount').mockResolvedValue();
           const asyncJob = await createAsyncJob();
-          await failedHandler(makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState }), new Error('boom'));
+          await failedHandler(
+            makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState: enabledAuthState }),
+            new Error('boom')
+          );
           expect(decrSpy).toHaveBeenCalledWith(expect.anything(), 'BatchQueue', authState.project.id);
         }));
 
@@ -647,7 +675,7 @@ describe('Batch worker', () => {
         withTestContext(async () => {
           const { failedHandler } = captureWorker();
           const decrSpy = vi.spyOn(fairqueue, 'decrementProjectJobCount').mockResolvedValue();
-          await failedHandler(makeReentrantJob({ asyncJobId: 'x', authState }), new DelayedError());
+          await failedHandler(makeReentrantJob({ asyncJobId: 'x', authState: enabledAuthState }), new DelayedError());
           expect(decrSpy).not.toHaveBeenCalled();
         }));
 
@@ -655,13 +683,6 @@ describe('Batch worker', () => {
         withTestContext(async () => {
           const { completedHandler } = captureWorker();
           const decrSpy = vi.spyOn(fairqueue, 'decrementProjectJobCount').mockResolvedValue();
-          const disabledAuthState: AuthState = {
-            ...authState,
-            project: {
-              ...authState.project,
-              systemSetting: [{ name: 'asyncBatchFairQueueEnabled', valueBoolean: false }],
-            },
-          };
           await completedHandler(makeReentrantJob({ asyncJobId: 'x', authState: disabledAuthState }));
           expect(decrSpy).not.toHaveBeenCalled();
         }));

@@ -85,14 +85,14 @@ describe('isFairQueueEnabled', () => {
     await loadTestConfig();
   });
 
-  test('defaults to enabled when neither config nor project override is set', () => {
+  test('defaults to disabled when neither config nor project override is set', () => {
     getConfig().asyncBatchFairQueueEnabled = undefined;
-    expect(isFairQueueEnabled(baseAuthState)).toBe(true);
+    expect(isFairQueueEnabled(baseAuthState)).toBe(false);
   });
 
   test('honors the server config flag when no project override is present', () => {
-    getConfig().asyncBatchFairQueueEnabled = false;
-    expect(isFairQueueEnabled(baseAuthState)).toBe(false);
+    getConfig().asyncBatchFairQueueEnabled = true;
+    expect(isFairQueueEnabled(baseAuthState)).toBe(true);
     getConfig().asyncBatchFairQueueEnabled = undefined;
   });
 
