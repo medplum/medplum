@@ -53,8 +53,6 @@ import { repoAccess } from './repository/access-tracker';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
-vi.mock('hibp');
-
 describe('FHIR Repo', () => {
   const globalSystemRepo = getGlobalSystemRepo();
   let testProject: WithId<Project>;

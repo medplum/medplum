@@ -19,6 +19,8 @@
     "circular": "npx madge --circular dist/index.js",
     "clean": "rimraf dist",
     "dev": "tsx watch --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./src/otel/instrumentation.ts src/index.ts",
+    "dev:no-workers": "tsx watch --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./src/otel/instrumentation.ts src/index.ts file:medplum.config.json,file:medplum-no-workers-partial.config.json",
+    "dev:workers": "tsx watch --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./src/otel/instrumentation.ts src/index.ts file:medplum.config.json,file:medplum-workers-partial.config.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "migrate": "npm run build --workspace=@medplum/definitions && tsx src/migrations/migrate-main.ts",

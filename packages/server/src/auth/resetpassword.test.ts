@@ -7,15 +7,13 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import request from 'supertest';
-import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import { setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
@@ -24,7 +22,6 @@ const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
   return { mockCreateTransport, mockSendMail };
 });
 
-vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 vi.mock('nodemailer', () => ({
   createTransport: mockCreateTransport,
@@ -52,8 +49,6 @@ describe('Reset Password', () => {
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
 
     fetchMock.mockClear();
-    (pwnedPassword as unknown as Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
     setupRecaptchaMock(true);
     getConfig().recaptchaSecretKey = testRecaptchaSecretKey;
   });
