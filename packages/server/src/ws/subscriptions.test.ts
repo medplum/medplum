@@ -46,7 +46,6 @@ import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDispatchJob } from '../workers/test-utils';
 import { cleanupR4SubscriptionResources } from './subscriptions';
 
-vi.mock('hibp');
 const wsSubscriptionTestChannels = vi.hoisted(() => {
   const suffix = process.env.VITEST_WORKER_ID ?? process.env.VITEST_POOL_ID ?? `pid-${process.pid}`;
   return {

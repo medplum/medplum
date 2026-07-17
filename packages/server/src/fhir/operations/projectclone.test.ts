@@ -16,24 +16,15 @@ import type {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { pwnedPassword } from 'hibp';
 import { Readable } from 'stream';
 import request from 'supertest';
-import type { Mock } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
-import {
-  createTestProject,
-  initTestAuth,
-  setupPwnedPasswordMock,
-  setupRecaptchaMock,
-  withTestContext,
-} from '../../test.setup';
+import { createTestProject, initTestAuth, setupRecaptchaMock, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { createProject } from './projectinit';
 
-vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 
 describe('Project clone', () => {
@@ -43,8 +34,6 @@ describe('Project clone', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     fetchMock.mockClear();
-    (pwnedPassword as unknown as Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
     setupRecaptchaMock(true);
   });
 
