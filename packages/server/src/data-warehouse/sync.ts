@@ -9,6 +9,7 @@ import type { MedplumDatabaseConfig } from '../config/types';
 import type { Expression } from '../fhir/sql';
 import { Conjunction } from '../fhir/sql';
 import { globalLogger } from '../logger';
+import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import type { WarehouseSourceTable } from './config';
 import { buildPgConnectionURI } from './config';
 import type { DataWarehouseDestination } from './destination';
@@ -121,6 +122,14 @@ async function withWarehouseConnection<T>(
   }
 }
 
+function recordTableSyncMetrics(result: SyncTableResult): void {
+  const attrs = { attributes: { table: result.destination } };
+  recordHistogramValue('medplum.datawarehouse.table.syncDuration', result.syncDurationMs / 1000, attrs);
+  recordHistogramValue('medplum.datawarehouse.table.watermarkDuration', result.watermarkDurationMs / 1000, attrs);
+  recordHistogramValue('medplum.datawarehouse.table.rowsInserted', result.rowsInserted, attrs);
+  incrementCounter('medplum.datawarehouse.table.count', attrs);
+}
+
 async function syncWarehouseTable(
   connection: WarehouseSyncDuckdbConnection,
   options: SyncOptions,
@@ -178,12 +187,14 @@ async function syncWarehouseTable(
     );
   }
 
-  return {
+  const result: SyncTableResult = {
     destination,
     rowsInserted,
     syncDurationMs,
     watermarkDurationMs,
   };
+  recordTableSyncMetrics(result);
+  return result;
 }
 
 async function runWarehouseTableSync(
