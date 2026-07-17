@@ -4,7 +4,7 @@
 import { ActionIcon, Box, Center, Flex, Skeleton, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import type { SearchRequest, WithId } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
 import { normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
@@ -155,7 +155,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   // The list renders the parent thread (topic) of each tuple; the last message is
   // looked up by thread id when rendering each row.
-  const items = useMemo(() => threadMessages.map(([topic]) => topic as WithId<Communication>), [threadMessages]);
+  const items = useMemo(() => threadMessages.map(([topic]) => topic), [threadMessages]);
   const lastMessageByThreadId = useMemo(() => {
     const map = new Map<string, Communication | undefined>();
     for (const [topic, last] of threadMessages) {
@@ -190,11 +190,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   return (
     <>
       <div className={classes.container}>
-        <ListWithDetailPane<WithId<Communication>>
+        <ListWithDetailPane<Communication>
           items={items}
           loading={loading}
           selectedKey={selectedThread?.id}
-          selected={selectedThread as WithId<Communication> | undefined}
+          selected={selectedThread}
           listWidth={380}
           tabs={tabs}
           activeTab={status}
@@ -210,7 +210,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
           renderItem={(item) => (
             <ThreadListItem
               topic={item}
-              lastCommunication={lastMessageByThreadId.get(item.id)}
+              lastCommunication={item.id ? lastMessageByThreadId.get(item.id) : undefined}
               getThreadUri={getThreadUri}
             />
           )}

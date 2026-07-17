@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Divider, Flex, Menu, Paper, ScrollArea, Stack, Text } from '@mantine/core';
-import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
 import { IconChevronDown } from '@tabler/icons-react';
@@ -13,7 +12,7 @@ import classes from './ThreadDetail.module.css';
 
 export interface ThreadDetailProps {
   /** The selected thread (parent Communication) to display. */
-  readonly thread: WithId<Communication>;
+  readonly thread: Communication;
   /** Whether to show the patient summary sidebar. */
   readonly showPatientSummary?: boolean;
   /** Optional sections configuration for the patient summary. */

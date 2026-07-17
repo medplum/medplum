@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Center, Divider, Flex, Group, Pagination, ScrollArea, Stack, Tabs, Text } from '@mantine/core';
-import type { WithId } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
@@ -15,7 +14,7 @@ export interface ListWithDetailPaneTab {
   readonly uri: string;
 }
 
-export interface ListWithDetailPaneItemContext<T extends { id: string } = WithId<Resource>> {
+export interface ListWithDetailPaneItemContext<T extends { id?: string } = Resource> {
   readonly selected: boolean;
   readonly index: number;
   readonly items: T[];
@@ -26,7 +25,7 @@ export interface ListWithDetailPaneDetailContext {
 }
 
 /** Props shared by every ListWithDetailPane, independent of the header style. */
-export interface ListWithDetailPanePropsBase<T extends { id: string } = WithId<Resource>> {
+export interface ListWithDetailPanePropsBase<T extends { id?: string } = Resource> {
   // List sidebar
   /** The current page of items to render in the list. */
   readonly items: T[];
@@ -89,7 +88,7 @@ export interface ListWithDetailPaneTabsHeaderProps {
 /** The sidebar header is plain text or pill tabs, never both. */
 export type ListWithDetailPaneHeaderProps = ListWithDetailPaneTextHeaderProps | ListWithDetailPaneTabsHeaderProps;
 
-export type ListWithDetailPaneProps<T extends { id: string } = WithId<Resource>> = ListWithDetailPanePropsBase<T> &
+export type ListWithDetailPaneProps<T extends { id?: string } = Resource> = ListWithDetailPanePropsBase<T> &
   ListWithDetailPaneHeaderProps;
 
 // Configs
@@ -104,7 +103,7 @@ const HEADER_HEIGHT = 64;
  * @param props - The ListWithDetailPane React props.
  * @returns The ListWithDetailPane React node.
  */
-export function ListWithDetailPane<T extends { id: string } = WithId<Resource>>(
+export function ListWithDetailPane<T extends { id?: string } = Resource>(
   props: ListWithDetailPaneProps<T>
 ): JSX.Element {
   const {
