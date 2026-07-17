@@ -54,9 +54,7 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
  * @param domain - The email domain, e.g. "example.com".
  * @returns External auth url if available. Otherwise undefined.
  */
-async function getExternalAuthForDomain(
-  domain: string
-): Promise<{ domain: string; authorizeUrl: string } | undefined> {
+async function getExternalAuthForDomain(domain: string): Promise<{ domain: string; authorizeUrl: string } | undefined> {
   const domainConfig = await getDomainConfiguration(domain);
   if (!domainConfig) {
     return undefined;

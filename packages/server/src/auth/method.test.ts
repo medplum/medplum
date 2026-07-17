@@ -176,10 +176,7 @@ describe('Method', () => {
     );
 
     // Domain lookup is case-insensitive
-    const res = await request(app)
-      .post('/auth/method')
-      .type('json')
-      .send({ domain: domain.toUpperCase() });
+    const res = await request(app).post('/auth/method').type('json').send({ domain: domain.toUpperCase() });
     expect(res.status).toBe(200);
     expect(res.body.authorizeUrl).toBeDefined();
   });

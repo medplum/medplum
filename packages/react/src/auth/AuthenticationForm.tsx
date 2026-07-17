@@ -52,7 +52,15 @@ export interface EmailFormProps extends BaseLoginRequest {
 }
 
 export function EmailForm(props: EmailFormProps): JSX.Element {
-  const { setEmail, onRegister, handleAuthResponse, children, disableEmailAuth, externalAuthDomain, ...baseLoginRequest } = props;
+  const {
+    setEmail,
+    onRegister,
+    handleAuthResponse,
+    children,
+    disableEmailAuth,
+    externalAuthDomain,
+    ...baseLoginRequest
+  } = props;
   const medplum = useMedplum();
   const googleClientId = !props.disableGoogleAuth && getGoogleClientId(props.googleClientId);
   const [outcome, setOutcome] = useState<OperationOutcome>();
