@@ -49,7 +49,7 @@ export function isFairQueueEnabled(authState: Readonly<AuthState>): boolean {
   if (override?.valueBoolean !== undefined) {
     return override.valueBoolean;
   }
-  return getConfig().enableAsyncBatchFairQueue !== false;
+  return !!getConfig().enableAsyncBatchFairQueue;
 }
 
 /**
