@@ -105,18 +105,17 @@ const defaultCheckpointEntries = 10;
 const defaultCheckpointIntervalMs = 5000;
 
 export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions = defaultQueueOptions(config);
+  const queueOptions = defaultQueueOptions(config);
   const queue = new Queue<BatchJobData>(queueName, {
-    ...defaultOptions,
+    ...queueOptions,
     defaultJobOptions: {
-      ...defaultOptions.defaultJobOptions,
+      ...queueOptions.defaultJobOptions,
       attempts: 1,
     },
   });
 
   let worker: Worker<BatchJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'batch');
     worker = new Worker<BatchJobData>(
       queueName,
       (job) => {
@@ -131,11 +130,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
           }
         });
       },
-      {
-        ...defaultOptions,
-        concurrency: 1,
-        ...workerBullmq,
-      }
+      getWorkerBullmqConfig(config, 'batch', queueOptions, { concurrency: 15 })
     );
 
     worker.on('failed', async (job, failedErr) => {

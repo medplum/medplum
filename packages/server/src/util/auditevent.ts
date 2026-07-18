@@ -395,12 +395,10 @@ export async function createSubscriptionAuditEvent(
   resource: Resource,
   startTime: string,
   outcome: AuditEventOutcome,
-  outcomeDesc?: string,
-  subscription?: Subscription,
+  outcomeDesc: string,
+  subscription: Subscription,
   bot?: Bot
 ): Promise<void> {
-  const auditedEvent = subscription ?? resource;
-
   let extension: Extension[] | undefined;
   const tracingExt = buildTracingExtension();
   if (tracingExt) {
@@ -409,9 +407,9 @@ export async function createSubscriptionAuditEvent(
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
-      project: auditedEvent.meta?.project,
-      account: auditedEvent.meta?.account,
-      accounts: auditedEvent.meta?.accounts,
+      project: subscription.meta?.project,
+      account: subscription.meta?.account,
+      accounts: subscription.meta?.accounts,
     },
     period: {
       start: startTime,
@@ -423,12 +421,12 @@ export async function createSubscriptionAuditEvent(
     },
     agent: [
       {
-        type: { text: auditedEvent.resourceType },
+        type: { text: subscription.resourceType },
         requestor: false,
       },
     ],
     source: {
-      observer: applyOptionalRedaction(createReference(auditedEvent)) as Reference as Reference<Practitioner>,
+      observer: applyOptionalRedaction(createReference(subscription)) as Reference<Subscription>,
     },
     entity: createAuditEventEntities(resource, subscription, bot),
     outcome,

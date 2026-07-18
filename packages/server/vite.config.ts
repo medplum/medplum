@@ -42,6 +42,7 @@ export default defineConfig({
       '@azure/storage-blob': resolve(serverDir, 'src/__mocks__/@azure/storage-blob.ts'),
       '@google-cloud/secret-manager': resolve(serverDir, 'src/__mocks__/@google-cloud/secret-manager.ts'),
       '@google-cloud/storage': resolve(serverDir, 'src/__mocks__/@google-cloud/storage.ts'),
+      hibp: resolve(serverDir, 'src/__mocks__/hibp.ts'),
     },
   },
   test: {
