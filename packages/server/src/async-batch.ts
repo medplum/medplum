@@ -50,5 +50,6 @@ export function asyncBatchHandler(
 }
 
 function useLegacyBatchProcessing(project: Project): boolean {
-  return !project.systemSetting?.find((s) => s.name === 'reentrantAsyncBatch')?.valueBoolean;
+  // Projects must opt-out of reentrant async batch processing
+  return project.systemSetting?.find((s) => s.name === 'reentrantAsyncBatch')?.valueBoolean === false;
 }
