@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedicationRequest, Patient } from '@medplum/fhirtypes';
+import type { MedicationRequest, Patient, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '../test-utils/render';
@@ -213,6 +213,39 @@ describe('ResourceDiffTable', () => {
 
     const operations = screen.getAllByText('Replace identifier');
     expect(operations).toHaveLength(1);
+  });
+
+  test('Array reorder with out-of-range patch index', async () => {
+    // Reordering array elements produces a JSON patch such as:
+    //   [{ op: 'add', path: '/telecom/0' }, { op: 'remove', path: '/telecom/2' }]
+    // JSON Patch paths are sequential, so "/telecom/2" only exists after the "add" is applied.
+    // Evaluating "telecom[2]" statically against the original resource resolves to nothing.
+    // This previously crashed with "Cannot read properties of undefined (reading 'type')".
+    const original: Practitioner = {
+      resourceType: 'Practitioner',
+      id: '123',
+      meta: { versionId: '456' },
+      telecom: [
+        { system: 'phone', value: '555-555-1234' },
+        { use: 'work', system: 'email', value: 'alice@example.com' },
+      ],
+    };
+
+    const revised: Practitioner = {
+      ...original,
+      meta: { versionId: '457' },
+      telecom: [
+        { system: 'email', value: 'alice@example.com' },
+        { system: 'phone', value: '555-555-1234' },
+      ],
+    };
+
+    await act(async () => {
+      setup({ original, revised });
+    });
+
+    expect(await screen.findByText('Add telecom[0]')).toBeInTheDocument();
+    expect(screen.getByText('Remove telecom[2]')).toBeInTheDocument();
   });
 
   test('Change attachment URL', async () => {

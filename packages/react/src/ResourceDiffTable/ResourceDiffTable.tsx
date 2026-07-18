@@ -166,8 +166,12 @@ function touchUpValue(
   property: InternalSchemaElement | undefined,
   input: TypedValue[] | TypedValue | undefined
 ): TypedValue | undefined {
-  if (!input) {
-    return input;
+  if (!input || (Array.isArray(input) && input.length === 0)) {
+    // Empty array means the FHIRPath expression did not resolve to a value.
+    // This can happen when array elements are reordered, inserted, or removed,
+    // because JSON Patch paths are sequential (each operation assumes the prior
+    // operations were already applied), but we evaluate them statically.
+    return undefined;
   }
   return {
     type: Array.isArray(input) ? input[0].type : input.type,
