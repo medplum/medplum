@@ -21,7 +21,14 @@ import type { AuthState } from '../oauth/middleware';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, streamToString, withTestContext } from '../test.setup';
 import type { LegacyBatchJobData, ReentrantBatchJobData } from './batch';
-import { execBatchJob, execLegacyBatchJob, getBatchQueue, initBatchWorker, queueBatchProcessing } from './batch';
+import {
+  execBatchJob,
+  execLegacyBatchJob,
+  getBatchQueue,
+  initBatchWorker,
+  queueBatchProcessing,
+  queueLegacyBatchProcessing,
+} from './batch';
 import * as fairqueue from './fairqueue';
 import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
@@ -168,6 +175,27 @@ describe('Batch worker', () => {
         expect(results.type).toStrictEqual('batch-response');
         expect(results.entry).toHaveLength(3);
         expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201']);
+      }));
+
+    test('Counts per-entry errors on completion', () =>
+      withTestContext(async () => {
+        // One successful create and one failing read, so the completion path's error tally runs.
+        const bundle: Bundle = {
+          resourceType: 'Bundle',
+          type: 'batch',
+          entry: [
+            { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
+            { request: { method: 'GET', url: 'Patient/00000000-0000-4000-8000-000000000000' } },
+          ],
+        };
+        const { asyncJob, job } = await setupReentrantJob(bundle);
+
+        await expect(execBatchJob(job)).resolves.toBeUndefined();
+
+        const finished = await readAsyncJob(asyncJob.id);
+        expect(finished.status).toStrictEqual('completed');
+        const results = await readResultsBundle(finished);
+        expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '404']);
       }));
 
     test('Assembles completion results from memory without re-reading chunks written this run', () =>
@@ -395,6 +423,28 @@ describe('Batch worker', () => {
         expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '404']);
       }));
 
+    test('Returns early without attaching results when the response bundle has no entries', () =>
+      withTestContext(async () => {
+        const asyncJob = await createAsyncJob();
+        const job = makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState });
+
+        // An ok outcome whose response bundle carries no `entry` makes the worker return early,
+        // before uploading a Binary or completing the job.
+        const { allOk } = await import('@medplum/core');
+        const { FhirRouter } = await import('@medplum/fhir-router');
+        vi.spyOn(FhirRouter.prototype, 'handleRequest').mockResolvedValue([
+          allOk,
+          { resourceType: 'Bundle', type: 'batch-response' },
+        ]);
+
+        await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
+
+        const finished = await readAsyncJob(asyncJob.id);
+        // completeJob is never reached on the empty-bundle early return, so the status is unchanged.
+        expect(finished.status).toStrictEqual('accepted');
+        expect(finished.output).toBeUndefined();
+      }));
+
     test('Fails the job when the batch request returns a non-ok outcome', () =>
       withTestContext(async () => {
         const asyncJob = await createAsyncJob();
@@ -423,6 +473,20 @@ describe('Batch worker', () => {
         const finished = await readAsyncJob(asyncJob.id);
         expect(finished.status).toStrictEqual('error');
         writeSpy.mockRestore();
+      }));
+
+    test('Swallows a failJob error thrown after an unexpected processing error', () =>
+      withTestContext(async () => {
+        const asyncJob = await createAsyncJob();
+        const job = makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState });
+
+        vi.spyOn(getBinaryStorage(), 'writeBinary').mockRejectedValue(new Error('storage exploded'));
+        vi.spyOn(AsyncJobExecutor.prototype, 'failJob').mockRejectedValue(new Error('db down'));
+
+        // Both the processing error and the failJob rejection are caught; execLegacyBatchJob resolves.
+        await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
+        expect(AsyncJobExecutor.prototype.failJob).toHaveBeenCalled();
+        expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('accepted');
       }));
   });
 
@@ -513,6 +577,26 @@ describe('Batch worker', () => {
       }));
   });
 
+  describe('queueLegacyBatchProcessing', () => {
+    test('Enqueues legacy job data carrying the bundle inline', () =>
+      withTestContext(async () => {
+        const queue = getBatchQueue() as any;
+        queue.add.mockClear();
+        const bundle = singleEntryBundle();
+        const asyncJob = await createAsyncJob();
+
+        await runInAuthenticatedContext(authState, undefined, undefined, undefined, () =>
+          queueLegacyBatchProcessing(bundle, asyncJob)
+        );
+
+        // Unlike the re-entrant path, the legacy job carries the bundle and asyncJob inline.
+        expect(queue.add).toHaveBeenCalledWith(
+          'BatchJobData',
+          expect.objectContaining<Partial<LegacyBatchJobData>>({ asyncJob, bundle, authState })
+        );
+      }));
+  });
+
   describe('worker wiring', () => {
     // Captures the processor function and the `failed`/`completed` event handlers registered by
     // initBatchWorker.
@@ -531,6 +615,13 @@ describe('Batch worker', () => {
       const completedHandler = onCalls.find((c) => c[0] === 'completed')?.[1] as (job: Job) => Promise<void>;
       return { processor, failedHandler, completedHandler };
     }
+
+    test('Does not create a worker when workerEnabled is false', () => {
+      const result = initBatchWorker(config, { workerEnabled: false });
+      expect(result.worker).toBeUndefined();
+      expect(result.queue).toBeDefined();
+      expect(result.name).toStrictEqual('BatchQueue');
+    });
 
     test('Dispatches re-entrant jobs to execBatchJob', () =>
       withTestContext(async () => {
@@ -568,6 +659,29 @@ describe('Batch worker', () => {
           asyncJob: getReferenceString(asyncJob),
         });
         expect(logFields(makeReentrantJob({ asyncJobId: asyncJob.id, authState }))).toHaveProperty('asyncJob');
+      }));
+
+    test('Verbose logging fields resolve optional profile and on-behalf-of references when present', () =>
+      withTestContext(async () => {
+        const spy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
+        initBatchWorker(config);
+        const logFields = spy.mock.calls.at(-1)?.[2] as (job: Job) => Record<string, unknown>;
+
+        const profile = { reference: 'Practitioner/p1' };
+        const onBehalfOf = { resourceType: 'Practitioner', id: 'p2' };
+        const onBehalfOfMembership = { resourceType: 'ProjectMembership', id: 'm2' };
+        const richAuthState = {
+          ...authState,
+          profile,
+          onBehalfOf,
+          onBehalfOfMembership,
+        } as unknown as AuthState;
+
+        expect(logFields(makeReentrantJob({ asyncJobId: 'x', authState: richAuthState }))).toMatchObject({
+          profile: getReferenceString(profile),
+          onBehalfOf: getReferenceString(onBehalfOf),
+          onBehalfOfMembership: getReferenceString(onBehalfOfMembership),
+        });
       }));
 
     describe('failed handler', () => {
@@ -657,6 +771,26 @@ describe('Batch worker', () => {
           const decrSpy = vi.spyOn(fairqueue, 'decrementProjectJobCount').mockResolvedValue();
           await completedHandler(makeReentrantJob({ asyncJobId: 'x', authState: enabledAuthState }));
           expect(decrSpy).toHaveBeenCalledWith(expect.anything(), 'BatchQueue', authState.project.id);
+        }));
+
+      test('completed handler releases the slot for a legacy job', () =>
+        withTestContext(async () => {
+          const { completedHandler } = captureWorker();
+          const decrSpy = vi.spyOn(fairqueue, 'decrementProjectJobCount').mockResolvedValue();
+          const asyncJob = await createAsyncJob();
+          // The legacy branch derives the logger from asyncJob.id rather than asyncJobId.
+          await completedHandler(makeLegacyJob({ asyncJob, bundle: singleEntryBundle(), authState: enabledAuthState }));
+          expect(decrSpy).toHaveBeenCalledWith(expect.anything(), 'BatchQueue', authState.project.id);
+        }));
+
+      test('completed handler swallows a decrement failure', () =>
+        withTestContext(async () => {
+          const { completedHandler } = captureWorker();
+          vi.spyOn(fairqueue, 'decrementProjectJobCount').mockRejectedValue(new Error('redis down'));
+          // A failed slot release is logged and swallowed so it never disrupts BullMQ event handling.
+          await expect(
+            completedHandler(makeReentrantJob({ asyncJobId: 'x', authState: enabledAuthState }))
+          ).resolves.toBeUndefined();
         }));
 
       test('failed handler releases the slot on terminal failure', () =>

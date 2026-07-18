@@ -7,9 +7,15 @@ import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+import * as redisModule from '../redis';
 import { getRateLimitRedis } from '../redis';
 import { deleteRedisKeys } from '../test.setup';
-import { decrementProjectJobCount, incrementProjectJobPriority, isFairQueueEnabled } from './fairqueue';
+import {
+  BULLMQ_MAX_PRIORITY,
+  decrementProjectJobCount,
+  incrementProjectJobPriority,
+  isFairQueueEnabled,
+} from './fairqueue';
 
 const KEY_PREFIX = 'medplum:fairqueue:';
 
@@ -75,6 +81,82 @@ describe('Fair queue counter', () => {
     // bounds it so it cannot linger forever.
     expect(await getRateLimitRedis().get(key)).toStrictEqual('-1');
     expect(await getRateLimitRedis().pttl(key)).toBeGreaterThan(0);
+  });
+});
+
+describe('Fair queue counter Redis handling', () => {
+  const queueName = 'TestQueue';
+  const logger: ILogger = globalLogger;
+
+  afterEach(() => {
+    // Restores both the getRateLimitRedis spy and the per-test logger.error spy.
+    vi.restoreAllMocks();
+  });
+
+  // Replaces getRateLimitRedis with a fake whose pipeline .exec() resolves to `execResult`, so the
+  // increment/decrement error branches can be exercised without a real Redis round trip.
+  function mockPipeline(execResult: unknown): void {
+    const pipeline: any = {
+      incr: () => pipeline,
+      decr: () => pipeline,
+      expire: () => pipeline,
+      exec: async () => execResult,
+    };
+    vi.spyOn(redisModule, 'getRateLimitRedis').mockReturnValue({ pipeline: () => pipeline } as any);
+  }
+
+  test('clamps the returned priority to the BullMQ maximum', async () => {
+    // INCR can exceed the valid BullMQ priority range for a project with a very large backlog.
+    mockPipeline([[null, BULLMQ_MAX_PRIORITY + 100]]);
+    expect(await incrementProjectJobPriority(logger, queueName, randomUUID())).toStrictEqual(BULLMQ_MAX_PRIORITY);
+  });
+
+  test('logs and falls back to priority 1 when the increment pipeline returns no results', async () => {
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    mockPipeline(null);
+    const projectId = randomUUID();
+
+    expect(await incrementProjectJobPriority(logger, queueName, projectId)).toStrictEqual(1);
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to increment fairqueue project job count',
+      expect.objectContaining({ queueName, projectId })
+    );
+  });
+
+  test('logs and falls back to priority 1 when the increment command reports an error', async () => {
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    const commandErr = new Error('INCR failed');
+    mockPipeline([[commandErr, null]]);
+    const projectId = randomUUID();
+
+    // With no usable INCR result the priority defaults to 1.
+    expect(await incrementProjectJobPriority(logger, queueName, projectId)).toStrictEqual(1);
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to increment fairqueue project job count',
+      expect.objectContaining({ queueName, projectId, error: commandErr })
+    );
+  });
+
+  test('logs when the decrement pipeline returns no results', async () => {
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    mockPipeline(null);
+    const projectId = randomUUID();
+
+    await decrementProjectJobCount(logger, queueName, projectId);
+    expect(errorSpy).toHaveBeenCalledWith('Failed to decrement fairqueue project job count', { queueName, projectId });
+  });
+
+  test('logs when the decrement command reports an error', async () => {
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    const commandErr = new Error('DECR failed');
+    mockPipeline([[commandErr, null]]);
+    const projectId = randomUUID();
+
+    await decrementProjectJobCount(logger, queueName, projectId);
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to decrement fairqueue project job count',
+      expect.objectContaining({ queueName, projectId, error: commandErr })
+    );
   });
 });
 
