@@ -107,14 +107,10 @@ export const initReindexWorker: WorkerInitializer = (config, options?: WorkerIni
 
   let worker: Worker<ReindexJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'reindex');
     worker = new Worker<ReindexJobData>(
       ReindexQueueName,
       async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
-      {
-        ...defaultOptions,
-        ...workerBullmq,
-      }
+      getWorkerBullmqConfig(config, 'reindex', defaultOptions)
     );
     addVerboseQueueLogging<ReindexJobData>(queue, worker, (job) => ({
       asyncJob: 'AsyncJob/' + job.data.asyncJobId,
